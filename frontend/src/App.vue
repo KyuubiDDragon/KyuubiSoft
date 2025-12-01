@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,5 +67,8 @@ onMounted(async () => {
         </div>
       </div>
     </Teleport>
+
+    <!-- PWA Update Prompt -->
+    <PWAUpdatePrompt />
   </div>
 </template>

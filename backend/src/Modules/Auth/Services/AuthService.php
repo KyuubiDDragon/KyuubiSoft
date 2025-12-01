@@ -46,8 +46,8 @@ class AuthService
             'email' => $request->email,
             'username' => $request->username ?? explode('@', $request->email)[0],
             'password_hash' => $passwordHash,
-            'is_active' => true,
-            'is_verified' => false,
+            'is_active' => 1,
+            'is_verified' => 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);

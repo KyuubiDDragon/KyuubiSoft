@@ -40,7 +40,8 @@ class AuthMiddleware implements MiddlewareInterface
         } catch (\Exception $e) {
             // Log the actual error for debugging
             error_log('JWT validation failed: ' . $e->getMessage() . ' | Token prefix: ' . substr($token, 0, 50) . '...');
-            return JsonResponse::unauthorized('Invalid or expired token');
+            // TEMPORARY: Return actual error message for debugging
+            return JsonResponse::unauthorized('JWT Error: ' . $e->getMessage());
         }
     }
 

@@ -171,11 +171,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="univer-wrapper h-full flex flex-col">
+  <div class="univer-wrapper">
     <!-- Loading -->
     <div
       v-if="isLoading"
-      class="flex-1 flex items-center justify-center bg-dark-800 border border-dark-600 rounded-lg min-h-[600px]"
+      class="loading-container"
     >
       <div class="text-center">
         <div class="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -187,7 +187,7 @@ defineExpose({
     <!-- Error State -->
     <div
       v-else-if="loadError"
-      class="flex-1 flex items-center justify-center bg-dark-800 border border-red-600/50 rounded-lg min-h-[600px]"
+      class="loading-container border-red-600/50"
     >
       <div class="text-center p-6">
         <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,31 +201,49 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Univer Container -->
+    <!-- Univer Container - always rendered but hidden when loading -->
     <div
+      v-show="!isLoading && !loadError"
       ref="containerRef"
-      class="univer-container flex-1 rounded-lg overflow-hidden min-h-[600px]"
-      :class="{ 'invisible': isLoading || loadError }"
+      class="univer-container"
     ></div>
   </div>
 </template>
 
 <style>
-/* Container styling */
-.univer-container {
+/* Wrapper needs explicit height */
+.univer-wrapper {
+  width: 100%;
+  height: 700px;
+  position: relative;
+}
+
+/* Loading state */
+.loading-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
   border: 1px solid #3f3f46;
   border-radius: 0.5rem;
 }
 
-/* Make Univer fill the container */
-.univer-container > div {
-  height: 100% !important;
-  width: 100% !important;
+/* Main container - explicit dimensions required for Univer */
+.univer-container {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-/* Ensure proper sizing */
-.univer-wrapper {
-  width: 100%;
+/* Ensure Univer's internal container fills the space */
+.univer-container > div,
+.univer-container .univer-app-container-wrapper {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Custom scrollbar for dark mode */

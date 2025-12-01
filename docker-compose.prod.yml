@@ -1,8 +1,9 @@
 # =============================================================================
 # KyuubiSoft - Portainer Stack Configuration
 # =============================================================================
-# Für Deployment über Portainer mit Plesk Reverse Proxy
+# Für Deployment über Portainer mit Plesk Docker Proxy Rules
 # Domain: dev.kyuubisoft.com
+# Images werden von GitHub Container Registry (ghcr.io) gezogen
 # =============================================================================
 
 version: '3.8'
@@ -11,63 +12,54 @@ services:
   # ===================
   # NGINX Web Server
   # ===================
-  # Erreichbar über Plesk Reverse Proxy auf Port 8080
   nginx:
     image: nginx:alpine
     container_name: kyuubisoft_nginx
     ports:
-      - "8080:80"  # Plesk Docker Proxy verbindet sich hierher
+      - "8080:80"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - frontend_build:/var/www/frontend:ro
-      - ./backend/public:/var/www/backend/public:ro
+      - frontend_dist:/var/www/frontend:ro
+      - backend_public:/var/www/backend/public:ro
     depends_on:
       - backend
       - frontend
     networks:
       - kyuubisoft_network
     restart: unless-stopped
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
 
   # ===================
   # Vue.js Frontend
   # ===================
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-https://dev.kyuubisoft.com/api}
+    image: ghcr.io/kyuubiddragon/kyuubisoft-frontend:latest
     container_name: kyuubisoft_frontend
     volumes:
-      - frontend_build:/app/dist
+      - frontend_dist:/app/dist
     networks:
       - kyuubisoft_network
-    restart: "no"  # Nur für Build, läuft nicht permanent
+    # Kopiert die gebauten Dateien ins Volume und beendet sich
+    command: sh -c "cp -r /usr/share/nginx/html/* /app/dist/ && echo 'Frontend files copied'"
+    restart: "no"
 
   # ===================
   # PHP Backend (PHP-FPM)
   # ===================
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/kyuubiddragon/kyuubisoft-backend:latest
     container_name: kyuubisoft_backend
     volumes:
-      - ./backend:/var/www/html
-      - backend_logs:/var/www/html/storage/logs
-      - backend_cache:/var/www/html/storage/cache
-      - backend_uploads:/var/www/html/storage/uploads
+      - backend_public:/var/www/html/public
+      - backend_storage:/var/www/html/storage
     environment:
       APP_ENV: ${APP_ENV:-production}
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: ${APP_URL:-https://dev.kyuubisoft.com}
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
+      DB_DATABASE: ${DB_DATABASE:-kyuubisoft}
+      DB_USERNAME: ${DB_USERNAME:-kyuubisoft}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900}
@@ -84,8 +76,6 @@ services:
     networks:
       - kyuubisoft_network
     restart: unless-stopped
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
 
   # ===================
   # MySQL Database
@@ -93,24 +83,20 @@ services:
   mysql:
     image: mysql:8.0
     container_name: kyuubisoft_mysql
-    # Kein externer Port - nur intern erreichbar
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
-      - mysql_backup:/backup
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_DATABASE: ${DB_DATABASE:-kyuubisoft}
+      MYSQL_USER: ${DB_USERNAME:-kyuubisoft}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
-      --innodb-buffer-pool-size=256M
-      --max-connections=100
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -125,16 +111,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: kyuubisoft_redis
-    # Kein externer Port - nur intern erreichbar
     volumes:
       - redis_data:/data
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 128mb
-      --maxmemory-policy allkeys-lru
-      --save 900 1
-      --save 300 10
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     networks:
       - kyuubisoft_network
     restart: unless-stopped
@@ -142,20 +121,10 @@ services:
 networks:
   kyuubisoft_network:
     driver: bridge
-    name: kyuubisoft_network
 
 volumes:
   mysql_data:
-    name: kyuubisoft_mysql_data
-  mysql_backup:
-    name: kyuubisoft_mysql_backup
   redis_data:
-    name: kyuubisoft_redis_data
-  frontend_build:
-    name: kyuubisoft_frontend_build
-  backend_logs:
-    name: kyuubisoft_backend_logs
-  backend_cache:
-    name: kyuubisoft_backend_cache
-  backend_uploads:
-    name: kyuubisoft_backend_uploads
+  frontend_dist:
+  backend_public:
+  backend_storage:

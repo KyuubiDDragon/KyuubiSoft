@@ -14,6 +14,7 @@ use App\Modules\Settings\Controllers\SettingsController;
 use App\Modules\Dashboard\Controllers\DashboardController;
 use App\Modules\System\Controllers\SystemController;
 use App\Modules\Search\Controllers\SearchController;
+use App\Modules\Connections\Controllers\ConnectionController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -90,6 +91,18 @@ class Router
                 $protected->put('/documents/{id}', [DocumentController::class, 'update']);
                 $protected->delete('/documents/{id}', [DocumentController::class, 'delete']);
                 $protected->get('/documents/{id}/versions', [DocumentController::class, 'versions']);
+
+                // Connections
+                $protected->get('/connections', [ConnectionController::class, 'index']);
+                $protected->post('/connections', [ConnectionController::class, 'create']);
+                $protected->get('/connections/tags', [ConnectionController::class, 'getTags']);
+                $protected->post('/connections/tags', [ConnectionController::class, 'createTag']);
+                $protected->delete('/connections/tags/{tagId}', [ConnectionController::class, 'deleteTag']);
+                $protected->get('/connections/{id}', [ConnectionController::class, 'show']);
+                $protected->put('/connections/{id}', [ConnectionController::class, 'update']);
+                $protected->delete('/connections/{id}', [ConnectionController::class, 'delete']);
+                $protected->get('/connections/{id}/credentials', [ConnectionController::class, 'getCredentials']);
+                $protected->post('/connections/{id}/used', [ConnectionController::class, 'markUsed']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

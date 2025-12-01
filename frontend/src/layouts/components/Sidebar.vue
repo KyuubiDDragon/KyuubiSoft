@@ -7,6 +7,7 @@ import {
   HomeIcon,
   ListBulletIcon,
   DocumentTextIcon,
+  ServerIcon,
   Cog6ToothIcon,
   ChartBarIcon,
   UsersIcon,
@@ -25,6 +26,7 @@ const allNavigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Listen', href: '/lists', icon: ListBulletIcon },
   { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
+  { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
   { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
   // Admin-Bereich (nur für owner/admin sichtbar)
   { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },

@@ -7,6 +7,7 @@ const RegisterView = () => import('@/modules/auth/views/RegisterView.vue')
 const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
+const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
@@ -43,6 +44,12 @@ const routes = [
     path: '/documents',
     name: 'documents',
     component: DocumentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/connections',
+    name: 'connections',
+    component: ConnectionsView,
     meta: { requiresAuth: true },
   },
   {

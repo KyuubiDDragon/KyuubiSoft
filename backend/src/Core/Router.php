@@ -12,6 +12,7 @@ use App\Modules\Lists\Controllers\ListController;
 use App\Modules\Documents\Controllers\DocumentController;
 use App\Modules\Settings\Controllers\SettingsController;
 use App\Modules\Dashboard\Controllers\DashboardController;
+use App\Modules\System\Controllers\SystemController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -92,6 +93,18 @@ class Router
                 $protected->get('/settings/system', [SettingsController::class, 'getSystemSettings'])
                     ->add(new PermissionMiddleware('settings.system.read'));
                 $protected->put('/settings/system', [SettingsController::class, 'updateSystemSettings'])
+                    ->add(new PermissionMiddleware('settings.system.write'));
+
+                // System (Owner only)
+                $protected->get('/system/info', [SystemController::class, 'getInfo'])
+                    ->add(new PermissionMiddleware('settings.system.read'));
+                $protected->get('/system/metrics', [SystemController::class, 'getMetrics'])
+                    ->add(new PermissionMiddleware('settings.system.read'));
+                $protected->get('/system/audit-logs', [SystemController::class, 'getAuditLogs'])
+                    ->add(new PermissionMiddleware('settings.system.read'));
+                $protected->post('/system/clear-cache', [SystemController::class, 'clearCache'])
+                    ->add(new PermissionMiddleware('settings.system.write'));
+                $protected->post('/system/terminate-sessions', [SystemController::class, 'terminateSessions'])
                     ->add(new PermissionMiddleware('settings.system.write'));
 
             })->add(AuthMiddleware::class);

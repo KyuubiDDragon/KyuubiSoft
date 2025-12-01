@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
+import { useUiStore } from '@/stores/ui'
 
 export const useAuthStore = defineStore('auth', () => {
+  const uiStore = useUiStore()
   // State
   const user = ref(null)
   const accessToken = ref(null)
@@ -117,6 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     const response = await api.get('/api/v1/auth/me')
     user.value = response.data.data
+    uiStore.setAuthenticated(true)
   }
 
   function logout() {
@@ -129,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     clearTokens()
     user.value = null
+    uiStore.setAuthenticated(false)
   }
 
   function setTokens(access, refresh) {

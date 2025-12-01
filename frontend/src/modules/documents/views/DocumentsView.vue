@@ -1,17 +1,19 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   PlusIcon,
   DocumentTextIcon,
   TrashIcon,
   PencilIcon,
-  EyeIcon,
   ChevronRightIcon,
-  ClockIcon
+  ClockIcon,
+  CodeBracketIcon,
+  DocumentIcon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import TipTapEditor from '@/components/TipTapEditor.vue'
 
 const route = useRoute()
 const uiStore = useUiStore()
@@ -28,8 +30,13 @@ const editContent = ref('')
 const docForm = reactive({
   title: '',
   content: '',
-  format: 'markdown'
+  format: 'richtext'
 })
+
+const formatOptions = [
+  { value: 'richtext', label: 'Rich Text', icon: DocumentIcon, description: 'WYSIWYG Editor mit Formatierung' },
+  { value: 'markdown', label: 'Markdown', icon: CodeBracketIcon, description: 'Markdown mit Live-Vorschau' },
+]
 
 // Simple Markdown to HTML conversion
 function renderMarkdown(content) {
@@ -62,6 +69,17 @@ function renderMarkdown(content) {
     .replace(/\n/gim, '<br>')
 
   return `<p class="text-gray-300 mb-4">${html}</p>`
+}
+
+function getFormatIcon(format) {
+  if (format === 'markdown') return CodeBracketIcon
+  return DocumentIcon
+}
+
+function getFormatLabel(format) {
+  if (format === 'markdown') return 'Markdown'
+  if (format === 'richtext') return 'Rich Text'
+  return format
 }
 
 // API Calls
@@ -161,7 +179,7 @@ function cancelEditing() {
 function resetForm() {
   docForm.title = ''
   docForm.content = ''
-  docForm.format = 'markdown'
+  docForm.format = 'richtext'
 }
 
 function goBack() {
@@ -200,8 +218,9 @@ function formatDate(dateString) {
           <p v-if="selectedDoc" class="text-gray-400 mt-1 flex items-center gap-2">
             <ClockIcon class="w-4 h-4" />
             Zuletzt bearbeitet: {{ formatDate(selectedDoc.updated_at) }}
+            <span class="badge badge-primary ml-2">{{ getFormatLabel(selectedDoc.format) }}</span>
           </p>
-          <p v-else class="text-gray-400 mt-1">Verwalte deine Markdown-Dokumente</p>
+          <p v-else class="text-gray-400 mt-1">Verwalte deine Dokumente</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -232,35 +251,52 @@ function formatDate(dateString) {
 
     <!-- Document View/Edit -->
     <template v-else-if="selectedDoc">
-      <!-- Editor -->
-      <div v-if="isEditing" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="space-y-2">
-          <label class="label">Markdown</label>
-          <textarea
+      <!-- Rich Text Editor (TipTap) -->
+      <template v-if="selectedDoc.format === 'richtext' || !selectedDoc.format">
+        <div class="bg-dark-800 rounded-lg overflow-hidden">
+          <TipTapEditor
             v-model="editContent"
-            class="input font-mono text-sm h-[600px] resize-none"
-            placeholder="Schreibe hier deinen Markdown-Text..."
-          ></textarea>
+            :editable="isEditing"
+            placeholder="Beginne hier zu schreiben..."
+          />
         </div>
-        <div class="space-y-2">
-          <label class="label">Vorschau</label>
-          <div
-            class="bg-dark-800 border border-dark-700 rounded-lg p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-            v-html="renderMarkdown(editContent)"
-          ></div>
-        </div>
-      </div>
-
-      <!-- Read-only View -->
-      <div v-else class="bg-dark-800 border border-dark-700 rounded-lg p-8">
-        <div
-          class="prose prose-invert max-w-none"
-          v-html="renderMarkdown(selectedDoc.content)"
-        ></div>
-        <div v-if="!selectedDoc.content" class="text-center py-12 text-gray-400">
+        <div v-if="!isEditing && !selectedDoc.content" class="text-center py-12 text-gray-400">
           Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Inhalt hinzuzufügen.
         </div>
-      </div>
+      </template>
+
+      <!-- Markdown Editor -->
+      <template v-else-if="selectedDoc.format === 'markdown'">
+        <!-- Editor -->
+        <div v-if="isEditing" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="label">Markdown</label>
+            <textarea
+              v-model="editContent"
+              class="input font-mono text-sm h-[600px] resize-none"
+              placeholder="Schreibe hier deinen Markdown-Text..."
+            ></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="label">Vorschau</label>
+            <div
+              class="bg-dark-800 border border-dark-700 rounded-lg p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
+              v-html="renderMarkdown(editContent)"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Read-only View -->
+        <div v-else class="bg-dark-800 border border-dark-700 rounded-lg p-8">
+          <div
+            class="prose prose-invert max-w-none"
+            v-html="renderMarkdown(selectedDoc.content)"
+          ></div>
+          <div v-if="!selectedDoc.content" class="text-center py-12 text-gray-400">
+            Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Inhalt hinzuzufügen.
+          </div>
+        </div>
+      </template>
     </template>
 
     <!-- Documents List -->
@@ -269,7 +305,7 @@ function formatDate(dateString) {
       <div v-if="documents.length === 0" class="card p-12 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
         <h3 class="text-lg font-medium text-white mb-2">Keine Dokumente vorhanden</h3>
-        <p class="text-gray-400 mb-6">Erstelle dein erstes Dokument mit dem Markdown-Editor.</p>
+        <p class="text-gray-400 mb-6">Erstelle dein erstes Dokument.</p>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
           Erstes Dokument erstellen
@@ -286,9 +322,9 @@ function formatDate(dateString) {
         >
           <div class="flex items-start justify-between">
             <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
-              <DocumentTextIcon class="w-5 h-5 text-primary-400" />
+              <component :is="getFormatIcon(doc.format)" class="w-5 h-5 text-primary-400" />
             </div>
-            <span class="badge badge-primary">{{ doc.format }}</span>
+            <span class="badge badge-primary">{{ getFormatLabel(doc.format) }}</span>
           </div>
           <h3 class="text-lg font-medium text-white mt-4">{{ doc.title }}</h3>
           <p class="text-gray-500 text-sm mt-2">
@@ -313,10 +349,10 @@ function formatDate(dateString) {
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
         @click.self="showCreateModal = false"
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-md border border-dark-700">
+        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
           <h2 class="text-xl font-bold text-white mb-6">Neues Dokument</h2>
 
-          <form @submit.prevent="createDocument" class="space-y-4">
+          <form @submit.prevent="createDocument" class="space-y-6">
             <div>
               <label class="label">Titel</label>
               <input
@@ -330,10 +366,22 @@ function formatDate(dateString) {
 
             <div>
               <label class="label">Format</label>
-              <select v-model="docForm.format" class="input">
-                <option value="markdown">Markdown</option>
-                <option value="plaintext">Plain Text</option>
-              </select>
+              <div class="grid grid-cols-2 gap-4 mt-2">
+                <button
+                  v-for="option in formatOptions"
+                  :key="option.value"
+                  type="button"
+                  @click="docForm.format = option.value"
+                  class="p-4 rounded-lg border-2 transition-all text-left"
+                  :class="docForm.format === option.value
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <component :is="option.icon" class="w-6 h-6 text-primary-400 mb-2" />
+                  <p class="font-medium text-white">{{ option.label }}</p>
+                  <p class="text-sm text-gray-400 mt-1">{{ option.description }}</p>
+                </button>
+              </div>
             </div>
 
             <div class="flex gap-3 pt-4">

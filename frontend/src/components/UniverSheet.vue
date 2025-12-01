@@ -39,16 +39,31 @@ function getDefaultWorkbookData() {
   return {
     id: 'workbook-' + Date.now(),
     name: 'Arbeitsmappe',
+    appVersion: '0.0.0',
     sheetOrder: ['sheet-1'],
     sheets: {
       'sheet-1': {
         id: 'sheet-1',
         name: 'Tabelle 1',
-        rowCount: 100,
-        columnCount: 26,
+        rowCount: 200,
+        columnCount: 30,
         cellData: {},
+        rowData: {},
+        columnData: {},
+        showGridlines: 1,
         defaultRowHeight: 24,
         defaultColumnWidth: 88,
+        rowHeader: {
+          width: 46,
+          hidden: 0,
+        },
+        columnHeader: {
+          height: 20,
+          hidden: 0,
+        },
+        scrollTop: 0,
+        scrollLeft: 0,
+        zoomRatio: 1,
       }
     }
   }
@@ -72,6 +87,7 @@ async function initUniver() {
         [LocaleType.EN_US]: merge({}, sheetsCoreEnUS),
       },
       theme: defaultTheme,
+      darkMode: true,
       presets: [
         UniverSheetsCorePreset({
           container: containerRef.value,
@@ -195,98 +211,39 @@ defineExpose({
 </template>
 
 <style>
-/* Dark Theme Overrides for Univer */
-.univer-wrapper {
-  --univer-bg: #1a1a2e;
-  --univer-bg-secondary: #27272a;
-  --univer-text: #e4e4e7;
-  --univer-text-secondary: #a1a1aa;
-  --univer-border: #3f3f46;
-  --univer-primary: #3b82f6;
-}
-
+/* Container styling */
 .univer-container {
-  background: var(--univer-bg);
-  border: 1px solid var(--univer-border);
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
 }
 
 /* Make Univer fill the container */
 .univer-container > div {
   height: 100% !important;
+  width: 100% !important;
 }
 
-/* Toolbar styling */
-.univer-container .univer-toolbar,
-.univer-container .univer-header {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
+/* Ensure proper sizing */
+.univer-wrapper {
+  width: 100%;
 }
 
-.univer-container .univer-toolbar-btn {
-  color: var(--univer-text) !important;
-}
-
-.univer-container .univer-toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Formula bar */
-.univer-container .univer-formula-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-formula-bar input,
-.univer-container .univer-formula-bar textarea {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-}
-
-/* Sheet tabs */
-.univer-container .univer-sheet-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-sheet-bar-item {
-  color: var(--univer-text-secondary) !important;
-}
-
-.univer-container .univer-sheet-bar-item-active {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-}
-
-/* Scrollbars */
+/* Custom scrollbar for dark mode */
 .univer-container ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 .univer-container ::-webkit-scrollbar-track {
-  background: var(--univer-bg);
+  background: #1a1a2e;
 }
 
 .univer-container ::-webkit-scrollbar-thumb {
-  background: var(--univer-border);
+  background: #3f3f46;
   border-radius: 5px;
 }
 
 .univer-container ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
-}
-
-/* Dropdowns and context menus */
-.univer-popup,
-.univer-dropdown,
-.univer-context-menu {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-  color: var(--univer-text) !important;
-}
-
-.univer-dropdown-item:hover,
-.univer-context-menu-item:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -20,27 +20,20 @@ const workbookRef = ref(null)
 const isLoading = ref(true)
 const loadError = ref(null)
 
-// CDN URLs for Univer
-const UNIVER_VERSION = '0.5.4'
-const CDN_BASE = `https://unpkg.com/@univerjs`
+// Use Univer's preset bundle which includes all dependencies
+const PRESET_VERSION = '0.5.4'
 
 const cssFiles = [
-  `${CDN_BASE}/design@${UNIVER_VERSION}/lib/index.css`,
-  `${CDN_BASE}/ui@${UNIVER_VERSION}/lib/index.css`,
-  `${CDN_BASE}/sheets-ui@${UNIVER_VERSION}/lib/index.css`,
-  `${CDN_BASE}/sheets-formula-ui@${UNIVER_VERSION}/lib/index.css`,
+  `https://unpkg.com/@univerjs/preset-sheets-core@${PRESET_VERSION}/lib/index.css`,
 ]
 
 const jsFiles = [
-  `${CDN_BASE}/core@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/design@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/engine-render@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/engine-formula@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/ui@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/sheets@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/sheets-ui@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/sheets-formula@${UNIVER_VERSION}/lib/umd/index.js`,
-  `${CDN_BASE}/sheets-formula-ui@${UNIVER_VERSION}/lib/umd/index.js`,
+  // Dependencies first
+  'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
+  'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
+  'https://unpkg.com/rxjs@7.8.1/dist/bundles/rxjs.umd.min.js',
+  // Univer preset
+  `https://unpkg.com/@univerjs/preset-sheets-core@${PRESET_VERSION}/lib/umd/index.js`,
 ]
 
 // Load CSS file
@@ -87,8 +80,7 @@ function parseWorkbookData(jsonStr) {
 // Create default workbook data
 function getDefaultWorkbookData() {
   return {
-    id: 'workbook-1',
-    locale: window.UniverCore?.LocaleType?.DE_DE || 'deDE',
+    id: 'workbook-' + Date.now(),
     name: 'Arbeitsmappe',
     sheetOrder: ['sheet-1'],
     sheets: {
@@ -98,71 +90,51 @@ function getDefaultWorkbookData() {
         rowCount: 100,
         columnCount: 26,
         cellData: {},
-        rowData: {},
-        columnData: {},
-        defaultRowHeight: 24,
-        defaultColumnWidth: 100,
       }
     }
   }
 }
 
 async function initUniver() {
+  isLoading.value = true
+  loadError.value = null
+
   try {
     // Load CSS files
     await Promise.all(cssFiles.map(loadCSS))
 
-    // Load JS files sequentially (order matters)
+    // Load JS files sequentially (order matters for dependencies)
     for (const url of jsFiles) {
       await loadScript(url)
     }
 
     // Wait for globals to be available
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 200))
 
-    const {
-      Univer,
-      UniverInstanceType,
-      LocaleType,
-    } = window.UniverCore
+    // Check if preset is loaded
+    const UniverPresetSheetsCore = window.UniverPresetSheetsCore
+    if (!UniverPresetSheetsCore) {
+      throw new Error('Univer Preset konnte nicht geladen werden')
+    }
 
-    const { defaultTheme } = window.UniverDesign
-    const { UniverRenderEnginePlugin } = window.UniverEngineRender
-    const { UniverFormulaEnginePlugin } = window.UniverEngineFormula
-    const { UniverUIPlugin } = window.UniverUi
-    const { UniverSheetsPlugin } = window.UniverSheets
-    const { UniverSheetsUIPlugin } = window.UniverSheetsUi
-    const { UniverSheetsFormulaPlugin } = window.UniverSheetsFormula
-    const { UniverSheetsFormulaUIPlugin } = window.UniverSheetsFormulaUi
-
-    // Create Univer instance
-    const univer = new Univer({
-      theme: defaultTheme,
-      locale: LocaleType.DE_DE,
-    })
-
-    univerRef.value = univer
-
-    // Register plugins
-    univer.registerPlugin(UniverRenderEnginePlugin)
-    univer.registerPlugin(UniverFormulaEnginePlugin)
-    univer.registerPlugin(UniverUIPlugin, {
-      container: containerRef.value,
-    })
-    univer.registerPlugin(UniverSheetsPlugin)
-    univer.registerPlugin(UniverSheetsUIPlugin)
-    univer.registerPlugin(UniverSheetsFormulaPlugin)
-    univer.registerPlugin(UniverSheetsFormulaUIPlugin)
+    const { createUniver, LocaleType, defaultTheme } = UniverPresetSheetsCore
 
     // Load or create workbook data
     const savedData = parseWorkbookData(props.modelValue)
     const workbookData = savedData || getDefaultWorkbookData()
 
-    // Create workbook
-    const workbook = univer.createUnit(UniverInstanceType.UNIVER_SHEET, workbookData)
-    workbookRef.value = workbook
+    // Create Univer with preset
+    const { univer, univerAPI } = createUniver({
+      locale: LocaleType.EN_US,
+      theme: defaultTheme,
+      container: containerRef.value,
+      workbook: workbookData,
+    })
 
-    // Auto-save on changes
+    univerRef.value = { univer, univerAPI }
+    workbookRef.value = univerAPI.getActiveWorkbook()
+
+    // Setup auto-save
     setupAutoSave(univer)
 
     isLoading.value = false
@@ -174,23 +146,29 @@ async function initUniver() {
 }
 
 function setupAutoSave(univer) {
-  // Debounce save
   let saveTimeout = null
 
   const save = () => {
     if (saveTimeout) clearTimeout(saveTimeout)
     saveTimeout = setTimeout(() => {
-      if (workbookRef.value) {
-        const snapshot = workbookRef.value.save()
-        const jsonStr = JSON.stringify(snapshot)
-        emit('update:modelValue', jsonStr)
-        emit('change', jsonStr)
+      if (univerRef.value?.univerAPI) {
+        try {
+          const workbook = univerRef.value.univerAPI.getActiveWorkbook()
+          if (workbook) {
+            const snapshot = workbook.save()
+            const jsonStr = JSON.stringify(snapshot)
+            emit('update:modelValue', jsonStr)
+            emit('change', jsonStr)
+          }
+        } catch (e) {
+          console.warn('Auto-save failed:', e)
+        }
       }
     }, 500)
   }
 
-  // Listen for command execution (any change)
-  univer.onCommandExecuted(() => {
+  // Listen for command execution
+  univer.onCommandExecuted?.(() => {
     save()
   })
 }
@@ -200,24 +178,30 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (univerRef.value) {
-    univerRef.value.dispose()
+  if (univerRef.value?.univer) {
+    try {
+      univerRef.value.univer.dispose()
+    } catch (e) {
+      console.warn('Dispose failed:', e)
+    }
   }
 })
 
 function saveData() {
-  if (workbookRef.value) {
-    const snapshot = workbookRef.value.save()
-    const jsonStr = JSON.stringify(snapshot)
-    emit('update:modelValue', jsonStr)
-    emit('change', jsonStr)
+  if (univerRef.value?.univerAPI) {
+    const workbook = univerRef.value.univerAPI.getActiveWorkbook()
+    if (workbook) {
+      const snapshot = workbook.save()
+      const jsonStr = JSON.stringify(snapshot)
+      emit('update:modelValue', jsonStr)
+      emit('change', jsonStr)
+    }
   }
 }
 
 defineExpose({
   saveData,
   getInstance: () => univerRef.value,
-  getWorkbook: () => workbookRef.value
 })
 </script>
 
@@ -249,99 +233,142 @@ defineExpose({
     <!-- Univer Container -->
     <div
       ref="containerRef"
-      class="univer-container flex-1 border border-dark-600 rounded-lg overflow-hidden min-h-[600px]"
-      :style="{ display: isLoading || loadError ? 'none' : 'block' }"
+      class="univer-container flex-1 rounded-lg overflow-hidden min-h-[600px]"
+      :class="{ 'hidden': isLoading || loadError }"
     ></div>
   </div>
 </template>
 
 <style>
-/* Univer Dark Theme Overrides */
+/* Dark Theme Overrides for Univer */
 .univer-wrapper {
-  --univer-bg-color: #1a1a2e;
-  --univer-bg-color-secondary: #27272a;
-  --univer-text-color: #e4e4e7;
-  --univer-text-color-secondary: #a1a1aa;
-  --univer-border-color: #3f3f46;
-  --univer-primary-color: #3b82f6;
+  --univer-bg: #1a1a2e;
+  --univer-bg-secondary: #27272a;
+  --univer-text: #e4e4e7;
+  --univer-text-secondary: #a1a1aa;
+  --univer-border: #3f3f46;
 }
 
 .univer-container {
-  background: var(--univer-bg-color);
+  background: var(--univer-bg);
+  border: 1px solid var(--univer-border);
 }
 
-/* Override Univer's default styles for dark mode */
+/* Global Univer overrides */
+.univer-container [class*="univer"] {
+  font-family: inherit;
+}
+
+/* Workbench */
+.univer-container .univer-app-container-wrapper,
+.univer-container .univer-workbench-container,
 .univer-container .univer-workbench {
-  background: var(--univer-bg-color) !important;
+  background: var(--univer-bg) !important;
 }
 
+/* Header/Toolbar */
+.univer-container .univer-header,
 .univer-container .univer-toolbar {
-  background: var(--univer-bg-color-secondary) !important;
-  border-bottom: 1px solid var(--univer-border-color) !important;
+  background: var(--univer-bg-secondary) !important;
+  border-color: var(--univer-border) !important;
 }
 
-.univer-container .univer-toolbar-btn {
-  color: var(--univer-text-color) !important;
+.univer-container .univer-toolbar-group {
+  border-color: var(--univer-border) !important;
 }
 
-.univer-container .univer-toolbar-btn:hover {
+.univer-container .univer-toolbar-btn,
+.univer-container .univer-icon-btn {
+  color: var(--univer-text) !important;
+}
+
+.univer-container .univer-toolbar-btn:hover,
+.univer-container .univer-icon-btn:hover {
   background: rgba(255, 255, 255, 0.1) !important;
 }
 
+/* Formula Bar */
 .univer-container .univer-formula-bar {
-  background: var(--univer-bg-color-secondary) !important;
-  border-bottom: 1px solid var(--univer-border-color) !important;
+  background: var(--univer-bg-secondary) !important;
+  border-color: var(--univer-border) !important;
 }
 
-.univer-container .univer-formula-bar input {
-  background: var(--univer-bg-color) !important;
-  color: var(--univer-text-color) !important;
-  border: 1px solid var(--univer-border-color) !important;
+.univer-container .univer-formula-bar input,
+.univer-container .univer-formula-bar textarea {
+  background: var(--univer-bg) !important;
+  color: var(--univer-text) !important;
+  border-color: var(--univer-border) !important;
 }
 
+/* Sheet tabs */
 .univer-container .univer-sheet-bar {
-  background: var(--univer-bg-color-secondary) !important;
-  border-top: 1px solid var(--univer-border-color) !important;
+  background: var(--univer-bg-secondary) !important;
+  border-color: var(--univer-border) !important;
 }
 
-.univer-container .univer-sheet-bar-btn {
-  color: var(--univer-text-color-secondary) !important;
+.univer-container .univer-sheet-bar-item {
+  background: var(--univer-bg-secondary) !important;
+  color: var(--univer-text-secondary) !important;
+  border-color: var(--univer-border) !important;
 }
 
-.univer-container .univer-sheet-bar-btn.univer-sheet-bar-btn-active {
-  background: var(--univer-bg-color) !important;
-  color: var(--univer-text-color) !important;
+.univer-container .univer-sheet-bar-item.univer-sheet-bar-item-active,
+.univer-container .univer-sheet-bar-item:hover {
+  background: var(--univer-bg) !important;
+  color: var(--univer-text) !important;
+}
+
+/* Cells and grid */
+.univer-container .univer-sheet-container {
+  background: var(--univer-bg) !important;
 }
 
 /* Scrollbars */
 .univer-container ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .univer-container ::-webkit-scrollbar-track {
-  background: var(--univer-bg-color);
+  background: var(--univer-bg);
 }
 
 .univer-container ::-webkit-scrollbar-thumb {
-  background: var(--univer-border-color);
-  border-radius: 4px;
+  background: var(--univer-border);
+  border-radius: 5px;
 }
 
 .univer-container ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
 
-/* Context menus and dropdowns */
+/* Dropdowns and menus */
+.univer-dropdown,
 .univer-context-menu,
-.univer-dropdown {
-  background: var(--univer-bg-color-secondary) !important;
-  border: 1px solid var(--univer-border-color) !important;
-  color: var(--univer-text-color) !important;
+.univer-popup {
+  background: var(--univer-bg-secondary) !important;
+  border-color: var(--univer-border) !important;
+  color: var(--univer-text) !important;
 }
 
-.univer-context-menu-item:hover,
-.univer-dropdown-item:hover {
+.univer-dropdown-item:hover,
+.univer-context-menu-item:hover {
   background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Input fields */
+.univer-container input,
+.univer-container textarea,
+.univer-container select {
+  background: var(--univer-bg) !important;
+  color: var(--univer-text) !important;
+  border-color: var(--univer-border) !important;
+}
+
+/* Status bar */
+.univer-container .univer-status-bar {
+  background: var(--univer-bg-secondary) !important;
+  border-color: var(--univer-border) !important;
+  color: var(--univer-text-secondary) !important;
 }
 </style>

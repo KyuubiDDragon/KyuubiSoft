@@ -422,16 +422,14 @@ class AuthService
     private function get2FAQrCodeUrl(string $email, string $secret): string
     {
         $issuer = 'KyuubiSoft';
-        $otpauth = sprintf(
+        // Return otpauth URL - QR code will be generated in frontend
+        return sprintf(
             'otpauth://totp/%s:%s?secret=%s&issuer=%s',
             urlencode($issuer),
             urlencode($email),
             $secret,
             urlencode($issuer)
         );
-
-        // Return Google Charts QR code URL
-        return 'https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=' . urlencode($otpauth);
     }
 
     private function generateBackupCodes(): array

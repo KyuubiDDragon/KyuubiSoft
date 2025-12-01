@@ -18,7 +18,8 @@ async function loadUsers() {
 
   try {
     const response = await api.get('/api/v1/users')
-    users.value = response.data.data || []
+    // API returns paginated data: { data: { items: [...], total, page, per_page } }
+    users.value = response.data.data?.items || response.data.data || []
   } catch (err) {
     error.value = 'Fehler beim Laden der Benutzer'
     console.error(err)

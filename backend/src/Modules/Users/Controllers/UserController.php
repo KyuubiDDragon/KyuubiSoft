@@ -32,6 +32,11 @@ class UserController
         $users = $this->userRepository->findAll($perPage, $offset);
         $total = $this->userRepository->count();
 
+        // Add roles to each user
+        foreach ($users as &$user) {
+            $user['roles'] = $this->rbacManager->getUserRoles($user['id']);
+        }
+
         return JsonResponse::paginated($users, $total, $page, $perPage);
     }
 

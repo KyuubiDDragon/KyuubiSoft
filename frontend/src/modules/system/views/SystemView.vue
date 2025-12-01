@@ -50,6 +50,7 @@ function formatDate(dateStr) {
 }
 
 function getActionLabel(action) {
+  if (!action) return '-'
   const labels = {
     'user.login': 'Anmeldung',
     'user.logout': 'Abmeldung',
@@ -71,6 +72,7 @@ function getActionLabel(action) {
 }
 
 function getActionColor(action) {
+  if (!action) return 'text-gray-400'
   if (action.includes('delete') || action.includes('terminate')) return 'text-red-400'
   if (action.includes('create') || action.includes('register')) return 'text-green-400'
   if (action.includes('login')) return 'text-blue-400'

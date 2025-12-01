@@ -9,6 +9,8 @@ import {
   DocumentTextIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  UsersIcon,
+  ShieldCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/vue/24/outline'
@@ -18,12 +20,35 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-const navigation = [
+// Alle Menüpunkte mit optionalen Rollen/Berechtigungen
+const allNavigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Listen', href: '/lists', icon: ListBulletIcon },
   { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
   { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
+  // Admin-Bereich (nur für owner/admin sichtbar)
+  { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
+  { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
 ]
+
+// Gefilterte Navigation basierend auf Benutzerrechten
+const navigation = computed(() => {
+  return allNavigation.filter(item => {
+    // Keine Einschränkung - immer sichtbar
+    if (!item.roles && !item.permission) {
+      return true
+    }
+    // Rollenbasierte Sichtbarkeit
+    if (item.roles) {
+      return item.roles.some(role => authStore.hasRole(role))
+    }
+    // Berechtigungsbasierte Sichtbarkeit
+    if (item.permission) {
+      return authStore.hasPermission(item.permission)
+    }
+    return false
+  })
+})
 
 const sidebarClass = computed(() => ({
   'w-64': !uiStore.sidebarCollapsed,

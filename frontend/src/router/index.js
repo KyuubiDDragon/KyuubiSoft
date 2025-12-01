@@ -8,6 +8,8 @@ const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue'
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
+const UsersView = () => import('@/modules/users/views/UsersView.vue')
+const SystemView = () => import('@/modules/system/views/SystemView.vue')
 
 const routes = [
   // Auth routes
@@ -50,6 +52,20 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
+  // Admin routes (role-protected)
+  {
+    path: '/users',
+    name: 'users',
+    component: UsersView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/system',
+    name: 'system',
+    component: SystemView,
+    meta: { requiresAuth: true, roles: ['owner'] },
+  },
+
   // Catch all
   {
     path: '/:pathMatch(.*)*',
@@ -88,6 +104,14 @@ router.beforeEach(async (to, from, next) => {
   // Check permissions if required
   if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
     return next({ name: 'dashboard' })
+  }
+
+  // Check roles if required
+  if (to.meta.roles) {
+    const hasRequiredRole = to.meta.roles.some(role => authStore.hasRole(role))
+    if (!hasRequiredRole) {
+      return next({ name: 'dashboard' })
+    }
   }
 
   next()

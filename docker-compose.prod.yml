@@ -16,7 +16,7 @@ services:
     image: nginx:alpine
     container_name: kyuubisoft_nginx
     ports:
-      - "127.0.0.1:8080:80"  # Nur localhost, Plesk macht den Rest
+      - "8080:80"  # Plesk Docker Proxy verbindet sich hierher
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro

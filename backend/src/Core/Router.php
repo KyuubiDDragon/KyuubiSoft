@@ -13,6 +13,7 @@ use App\Modules\Documents\Controllers\DocumentController;
 use App\Modules\Settings\Controllers\SettingsController;
 use App\Modules\Dashboard\Controllers\DashboardController;
 use App\Modules\System\Controllers\SystemController;
+use App\Modules\Search\Controllers\SearchController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -56,6 +57,9 @@ class Router
                 // Dashboard
                 $protected->get('/dashboard', [DashboardController::class, 'index']);
                 $protected->get('/dashboard/stats', [DashboardController::class, 'stats']);
+
+                // Search
+                $protected->get('/search', [SearchController::class, 'search']);
 
                 // Users
                 $protected->get('/users', [UserController::class, 'index'])

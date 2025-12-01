@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   PlusIcon,
@@ -9,11 +9,16 @@ import {
   ChevronRightIcon,
   ClockIcon,
   CodeBracketIcon,
-  DocumentIcon
+  DocumentIcon,
+  TableCellsIcon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import TipTapEditor from '@/components/TipTapEditor.vue'
+
+// Lazy load heavy editors
+const MonacoEditor = defineAsyncComponent(() => import('@/components/MonacoEditor.vue'))
+const UniverSheet = defineAsyncComponent(() => import('@/components/UniverSheet.vue'))
 
 const route = useRoute()
 const uiStore = useUiStore()
@@ -36,6 +41,8 @@ const docForm = reactive({
 const formatOptions = [
   { value: 'richtext', label: 'Rich Text', icon: DocumentIcon, description: 'WYSIWYG Editor mit Formatierung' },
   { value: 'markdown', label: 'Markdown', icon: CodeBracketIcon, description: 'Markdown mit Live-Vorschau' },
+  { value: 'code', label: 'Code', icon: CodeBracketIcon, description: 'Code-Editor mit Syntax-Highlighting' },
+  { value: 'spreadsheet', label: 'Tabelle', icon: TableCellsIcon, description: 'Excel-ähnliche Tabellenkalkulation' },
 ]
 
 // Simple Markdown to HTML conversion
@@ -73,13 +80,14 @@ function renderMarkdown(content) {
 
 function getFormatIcon(format) {
   if (format === 'markdown') return CodeBracketIcon
+  if (format === 'code') return CodeBracketIcon
+  if (format === 'spreadsheet') return TableCellsIcon
   return DocumentIcon
 }
 
 function getFormatLabel(format) {
-  if (format === 'markdown') return 'Markdown'
-  if (format === 'richtext') return 'Rich Text'
-  return format
+  const option = formatOptions.find(o => o.value === format)
+  return option?.label || format
 }
 
 // API Calls
@@ -225,14 +233,21 @@ function formatDate(dateString) {
       </div>
       <div class="flex gap-2">
         <template v-if="selectedDoc">
-          <button v-if="!isEditing" @click="startEditing" class="btn-primary">
-            <PencilIcon class="w-5 h-5 mr-2" />
-            Bearbeiten
-          </button>
-          <template v-else>
-            <button @click="cancelEditing" class="btn-secondary">Abbrechen</button>
-            <button @click="updateDocument" class="btn-primary">Speichern</button>
+          <!-- Spreadsheet doesn't need edit toggle -->
+          <template v-if="selectedDoc.format !== 'spreadsheet'">
+            <button v-if="!isEditing" @click="startEditing" class="btn-primary">
+              <PencilIcon class="w-5 h-5 mr-2" />
+              Bearbeiten
+            </button>
+            <template v-else>
+              <button @click="cancelEditing" class="btn-secondary">Abbrechen</button>
+              <button @click="updateDocument" class="btn-primary">Speichern</button>
+            </template>
           </template>
+          <!-- Spreadsheet auto-saves -->
+          <button v-else @click="updateDocument" class="btn-primary">
+            Speichern
+          </button>
           <button @click="deleteDocument(selectedDoc.id)" class="btn-secondary text-red-400">
             <TrashIcon class="w-5 h-5" />
           </button>
@@ -297,6 +312,30 @@ function formatDate(dateString) {
           </div>
         </div>
       </template>
+
+      <!-- Code Editor (Monaco) -->
+      <template v-else-if="selectedDoc.format === 'code'">
+        <div class="bg-dark-800 rounded-lg overflow-hidden">
+          <MonacoEditor
+            v-model="editContent"
+            :read-only="!isEditing"
+            height="600px"
+          />
+        </div>
+        <div v-if="!isEditing && !selectedDoc.content" class="text-center py-12 text-gray-400">
+          Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Code hinzuzufügen.
+        </div>
+      </template>
+
+      <!-- Spreadsheet (Univer) -->
+      <template v-else-if="selectedDoc.format === 'spreadsheet'">
+        <div class="bg-dark-800 rounded-lg overflow-hidden">
+          <UniverSheet
+            v-model="editContent"
+            :read-only="false"
+          />
+        </div>
+      </template>
     </template>
 
     <!-- Documents List -->
@@ -349,7 +388,7 @@ function formatDate(dateString) {
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
         @click.self="showCreateModal = false"
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
+        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-2xl border border-dark-700">
           <h2 class="text-xl font-bold text-white mb-6">Neues Dokument</h2>
 
           <form @submit.prevent="createDocument" class="space-y-6">
@@ -366,7 +405,7 @@ function formatDate(dateString) {
 
             <div>
               <label class="label">Format</label>
-              <div class="grid grid-cols-2 gap-4 mt-2">
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                 <button
                   v-for="option in formatOptions"
                   :key="option.value"
@@ -378,8 +417,8 @@ function formatDate(dateString) {
                     : 'border-dark-600 hover:border-dark-500'"
                 >
                   <component :is="option.icon" class="w-6 h-6 text-primary-400 mb-2" />
-                  <p class="font-medium text-white">{{ option.label }}</p>
-                  <p class="text-sm text-gray-400 mt-1">{{ option.description }}</p>
+                  <p class="font-medium text-white text-sm">{{ option.label }}</p>
+                  <p class="text-xs text-gray-400 mt-1">{{ option.description }}</p>
                 </button>
               </div>
             </div>

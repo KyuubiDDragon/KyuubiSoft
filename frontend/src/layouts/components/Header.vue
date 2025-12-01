@@ -3,13 +3,12 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import GlobalSearch from '@/components/GlobalSearch.vue'
 import {
-  MagnifyingGlassIcon,
   BellIcon,
   MoonIcon,
   SunIcon,
   ArrowRightOnRectangleIcon,
-  UserIcon,
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 
@@ -18,7 +17,6 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const showUserMenu = ref(false)
-const searchQuery = ref('')
 
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
@@ -42,17 +40,9 @@ function goToSettings() {
 
 <template>
   <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-6">
-    <!-- Search -->
-    <div class="flex-1 max-w-md">
-      <div class="relative">
-        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Suchen..."
-          class="input pl-10 py-2 bg-dark-900"
-        />
-      </div>
+    <!-- Global Search -->
+    <div class="flex-1">
+      <GlobalSearch />
     </div>
 
     <!-- Actions -->
@@ -61,15 +51,18 @@ function goToSettings() {
       <button
         @click="uiStore.toggleDarkMode"
         class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        title="Dark Mode umschalten"
       >
         <SunIcon v-if="uiStore.isDarkMode" class="w-5 h-5" />
         <MoonIcon v-else class="w-5 h-5" />
       </button>
 
-      <!-- Notifications -->
-      <button class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors relative">
+      <!-- Notifications (placeholder) -->
+      <button
+        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors relative"
+        title="Benachrichtigungen"
+      >
         <BellIcon class="w-5 h-5" />
-        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
       </button>
 
       <!-- User menu -->

@@ -27,12 +27,8 @@ export default defineConfig({
           'vendor': ['vue', 'vue-router', 'pinia'],
           'charts': ['chart.js', 'vue-chartjs'],
           'tiptap': ['@tiptap/vue-3', '@tiptap/starter-kit'],
-          'handsontable': ['handsontable'],
         },
       },
     },
-  },
-  optimizeDeps: {
-    include: ['handsontable'],
   },
 })

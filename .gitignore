@@ -1,0 +1,55 @@
+# ===================
+# Environment
+# ===================
+.env
+.env.local
+.env.*.local
+
+# ===================
+# Dependencies
+# ===================
+/backend/vendor/
+/frontend/node_modules/
+
+# ===================
+# Build Output
+# ===================
+/frontend/dist/
+/frontend/.vite/
+
+# ===================
+# IDE
+# ===================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===================
+# OS
+# ===================
+.DS_Store
+Thumbs.db
+
+# ===================
+# Logs & Cache
+# ===================
+/backend/storage/logs/*
+!/backend/storage/logs/.gitkeep
+/backend/storage/cache/*
+!/backend/storage/cache/.gitkeep
+*.log
+
+# ===================
+# Testing
+# ===================
+/backend/.phpunit.result.cache
+/frontend/coverage/
+
+# ===================
+# Docker
+# ===================
+docker/nginx/ssl/*.pem
+docker/nginx/ssl/*.key
+docker/nginx/ssl/*.crt

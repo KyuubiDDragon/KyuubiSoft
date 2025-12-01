@@ -1,0 +1,96 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+// Lazy load views
+const LoginView = () => import('@/modules/auth/views/LoginView.vue')
+const RegisterView = () => import('@/modules/auth/views/RegisterView.vue')
+const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
+const ListsView = () => import('@/modules/lists/views/ListsView.vue')
+const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
+const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
+
+const routes = [
+  // Auth routes
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView,
+    meta: { layout: 'auth', guest: true },
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: { layout: 'auth', guest: true },
+  },
+
+  // Protected routes
+  {
+    path: '/',
+    name: 'dashboard',
+    component: DashboardView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lists',
+    name: 'lists',
+    component: ListsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/documents',
+    name: 'documents',
+    component: DocumentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: { requiresAuth: true },
+  },
+
+  // Catch all
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+// Navigation guard
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+
+  // Wait for auth initialization
+  if (!authStore.isInitialized) {
+    await authStore.initialize()
+  }
+
+  const requiresAuth = to.meta.requiresAuth
+  const guestOnly = to.meta.guest
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (requiresAuth && !isAuthenticated) {
+    // Redirect to login
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  if (guestOnly && isAuthenticated) {
+    // Redirect to dashboard
+    return next({ name: 'dashboard' })
+  }
+
+  // Check permissions if required
+  if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
+    return next({ name: 'dashboard' })
+  }
+
+  next()
+})
+
+export default router

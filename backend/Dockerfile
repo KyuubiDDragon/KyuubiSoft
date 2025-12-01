@@ -1,0 +1,72 @@
+FROM php:8.3-fpm-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    zip \
+    unzip \
+    git \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    icu-dev \
+    oniguruma-dev \
+    linux-headers \
+    $PHPIZE_DEPS
+
+# Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        zip \
+        intl \
+        opcache
+
+# Install Redis extension
+RUN pecl install redis-6.0.2 \
+    && docker-php-ext-enable redis
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy composer files first for better caching
+COPY composer.json composer.lock* ./
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || true
+
+# Copy application files
+COPY . .
+
+# Run composer scripts after copying all files
+RUN if [ -f "composer.json" ]; then \
+        composer dump-autoload --optimize; \
+    fi
+
+# Create storage directories
+RUN mkdir -p storage/logs storage/cache storage/uploads \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage
+
+# Copy PHP configuration
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-custom.conf
+
+# Expose port
+EXPOSE 9000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD php-fpm-healthcheck || exit 1
+
+CMD ["php-fpm"]

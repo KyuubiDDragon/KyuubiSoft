@@ -5,8 +5,8 @@ import api from '@/core/api/axios'
 import {
   ListBulletIcon,
   DocumentTextIcon,
-  CheckCircleIcon,
   ClockIcon,
+  PlusIcon,
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
@@ -17,6 +17,8 @@ const stats = ref({
   total_documents: 0,
 })
 
+const recentLists = ref([])
+const recentDocuments = ref([])
 const isLoading = ref(true)
 
 onMounted(async () => {
@@ -25,12 +27,29 @@ onMounted(async () => {
     if (response.data.data?.quick_stats) {
       stats.value = response.data.data.quick_stats
     }
+    if (response.data.data?.recent_lists) {
+      recentLists.value = response.data.data.recent_lists
+    }
+    if (response.data.data?.recent_documents) {
+      recentDocuments.value = response.data.data.recent_documents
+    }
   } catch (error) {
     console.error('Failed to load dashboard:', error)
   } finally {
     isLoading.value = false
   }
 })
+
+function formatDate(dateString) {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
 
 const statCards = [
   {
@@ -107,11 +126,40 @@ const statCards = [
             Alle anzeigen
           </RouterLink>
         </div>
-        <div class="text-center py-8 text-gray-500">
+
+        <!-- Empty state -->
+        <div v-if="recentLists.length === 0" class="text-center py-8 text-gray-500">
           <ListBulletIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>Noch keine Listen erstellt</p>
           <RouterLink to="/lists" class="btn-primary mt-4 inline-block">
+            <PlusIcon class="w-4 h-4 mr-1 inline" />
             Liste erstellen
+          </RouterLink>
+        </div>
+
+        <!-- List items -->
+        <div v-else class="space-y-3">
+          <RouterLink
+            v-for="list in recentLists"
+            :key="list.id"
+            :to="`/lists?open=${list.id}`"
+            class="flex items-center gap-3 p-3 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors group"
+          >
+            <div
+              class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              :style="{ backgroundColor: list.color || '#3B82F6' }"
+            >
+              <ListBulletIcon class="w-4 h-4 text-white" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-white font-medium truncate">{{ list.title }}</p>
+              <p class="text-sm text-gray-500">
+                {{ list.open_count }} offen von {{ list.item_count }}
+              </p>
+            </div>
+            <span class="text-xs text-gray-500 hidden sm:block">
+              {{ formatDate(list.updated_at) }}
+            </span>
           </RouterLink>
         </div>
       </div>
@@ -124,11 +172,35 @@ const statCards = [
             Alle anzeigen
           </RouterLink>
         </div>
-        <div class="text-center py-8 text-gray-500">
+
+        <!-- Empty state -->
+        <div v-if="recentDocuments.length === 0" class="text-center py-8 text-gray-500">
           <DocumentTextIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>Noch keine Dokumente erstellt</p>
           <RouterLink to="/documents" class="btn-primary mt-4 inline-block">
+            <PlusIcon class="w-4 h-4 mr-1 inline" />
             Dokument erstellen
+          </RouterLink>
+        </div>
+
+        <!-- Document items -->
+        <div v-else class="space-y-3">
+          <RouterLink
+            v-for="doc in recentDocuments"
+            :key="doc.id"
+            :to="`/documents?open=${doc.id}`"
+            class="flex items-center gap-3 p-3 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors group"
+          >
+            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+              <DocumentTextIcon class="w-4 h-4 text-green-400" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-white font-medium truncate">{{ doc.title }}</p>
+              <p class="text-sm text-gray-500">{{ doc.format }}</p>
+            </div>
+            <span class="text-xs text-gray-500 hidden sm:block">
+              {{ formatDate(doc.updated_at) }}
+            </span>
           </RouterLink>
         </div>
       </div>

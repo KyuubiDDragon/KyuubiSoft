@@ -87,6 +87,8 @@ api.interceptors.response.use(
             localStorage.setItem('refresh_token', newRefreshToken)
           }
 
+          isRefreshing = false
+
           // Process queued requests
           processQueue(null, access_token)
 
@@ -94,6 +96,8 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${access_token}`
           return api(originalRequest)
         } catch (refreshError) {
+          isRefreshing = false
+
           // Refresh failed, process queue with error
           processQueue(refreshError, null)
 
@@ -107,16 +111,18 @@ api.interceptors.response.use(
           }
 
           return Promise.reject(refreshError)
-        } finally {
-          isRefreshing = false
         }
       } else {
-        // No refresh token, redirect to login
+        // No refresh token - reset flag and redirect
+        isRefreshing = false
+
         localStorage.removeItem('access_token')
 
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login'
         }
+
+        return Promise.reject(error)
       }
     }
 

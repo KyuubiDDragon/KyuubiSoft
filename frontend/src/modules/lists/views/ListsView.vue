@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   PlusIcon,
   ListBulletIcon,
@@ -12,6 +13,7 @@ import {
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // State
@@ -55,6 +57,12 @@ const totalCount = computed(() => {
 // API Calls
 onMounted(async () => {
   await loadLists()
+
+  // Check for ?open=id query parameter from Dashboard
+  const openId = route.query.open
+  if (openId) {
+    await selectList(openId)
+  }
 })
 
 async function loadLists() {

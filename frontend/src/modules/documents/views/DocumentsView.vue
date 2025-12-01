@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -12,6 +13,7 @@ import {
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // State
@@ -65,6 +67,12 @@ function renderMarkdown(content) {
 // API Calls
 onMounted(async () => {
   await loadDocuments()
+
+  // Check for ?open=id query parameter from Dashboard
+  const openId = route.query.open
+  if (openId) {
+    await selectDocument(openId)
+  }
 })
 
 async function loadDocuments() {

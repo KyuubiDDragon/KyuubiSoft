@@ -1,22 +1,7 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { Univer, LocaleType, UniverInstanceType } from '@univerjs/core'
-import { defaultTheme } from '@univerjs/design'
-import { UniverDocsPlugin } from '@univerjs/docs'
-import { UniverDocsUIPlugin } from '@univerjs/docs-ui'
-import { UniverFormulaEnginePlugin } from '@univerjs/engine-formula'
-import { UniverRenderEnginePlugin } from '@univerjs/engine-render'
-import { UniverSheetsPlugin } from '@univerjs/sheets'
-import { UniverSheetsUIPlugin } from '@univerjs/sheets-ui'
-import { UniverSheetsFormulaPlugin } from '@univerjs/sheets-formula'
-import { UniverUIPlugin } from '@univerjs/ui'
-
-// Import styles
-import '@univerjs/design/lib/index.css'
-import '@univerjs/ui/lib/index.css'
-import '@univerjs/docs-ui/lib/index.css'
-import '@univerjs/sheets-ui/lib/index.css'
-import '@univerjs/sheets-formula/lib/index.css'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import Handsontable from 'handsontable'
+import 'handsontable/dist/handsontable.full.min.css'
 
 const props = defineProps({
   modelValue: {
@@ -32,119 +17,106 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change'])
 
 const containerRef = ref(null)
-const univerRef = ref(null)
-const workbookRef = ref(null)
+const hotInstance = ref(null)
 const isLoading = ref(true)
 
 // Parse saved data or create default
 function parseData(jsonStr) {
   if (!jsonStr) {
-    return getDefaultWorkbookData()
+    return getDefaultData()
   }
   try {
-    return JSON.parse(jsonStr)
+    const parsed = JSON.parse(jsonStr)
+    return parsed.data || getDefaultData()
   } catch {
-    return getDefaultWorkbookData()
+    return getDefaultData()
   }
 }
 
-function getDefaultWorkbookData() {
-  return {
-    id: 'workbook-1',
-    name: 'Tabelle',
-    sheetOrder: ['sheet-1'],
-    appVersion: '1.0.0',
-    sheets: {
-      'sheet-1': {
-        id: 'sheet-1',
-        name: 'Tabelle 1',
-        rowCount: 100,
-        columnCount: 26,
-        cellData: {},
-        rowData: {},
-        columnData: {},
-        defaultColumnWidth: 100,
-        defaultRowHeight: 24
-      }
-    }
+function getDefaultData() {
+  // Create 20 rows x 10 columns of empty data
+  const data = []
+  for (let i = 0; i < 20; i++) {
+    data.push(Array(10).fill(''))
   }
+  return data
 }
 
-onMounted(async () => {
-  try {
-    // Create Univer instance
-    const univer = new Univer({
-      theme: defaultTheme,
-      locale: LocaleType.DE_DE
-    })
-    univerRef.value = univer
+function getColumnHeaders() {
+  return ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+}
 
-    // Register plugins
-    univer.registerPlugin(UniverRenderEnginePlugin)
-    univer.registerPlugin(UniverFormulaEnginePlugin)
-    univer.registerPlugin(UniverUIPlugin, {
-      container: containerRef.value
-    })
-    univer.registerPlugin(UniverDocsPlugin)
-    univer.registerPlugin(UniverDocsUIPlugin)
-    univer.registerPlugin(UniverSheetsPlugin)
-    univer.registerPlugin(UniverSheetsUIPlugin)
-    univer.registerPlugin(UniverSheetsFormulaPlugin)
+onMounted(() => {
+  const initialData = parseData(props.modelValue)
 
-    // Load data
-    const workbookData = parseData(props.modelValue)
-    const workbook = univer.createUnit(UniverInstanceType.UNIVER_SHEET, workbookData)
-    workbookRef.value = workbook
+  hotInstance.value = new Handsontable(containerRef.value, {
+    data: initialData,
+    colHeaders: getColumnHeaders(),
+    rowHeaders: true,
+    width: '100%',
+    height: 500,
+    licenseKey: 'non-commercial-and-evaluation',
+    readOnly: props.readOnly,
 
-    // Listen for changes
-    const commandService = univer.__getInjector().get('ICommandService')
-    if (commandService) {
-      commandService.onCommandExecuted(() => {
+    // Styling
+    className: 'htDark',
+
+    // Features
+    contextMenu: !props.readOnly,
+    manualColumnResize: true,
+    manualRowResize: true,
+    minRows: 20,
+    minCols: 10,
+    minSpareRows: 1,
+    minSpareCols: 1,
+
+    // Auto-save on change
+    afterChange: (changes) => {
+      if (changes) {
         saveData()
-      })
-    }
+      }
+    },
 
-    isLoading.value = false
-  } catch (error) {
-    console.error('Failed to initialize Univer:', error)
-    isLoading.value = false
-  }
+    afterCreateRow: () => saveData(),
+    afterCreateCol: () => saveData(),
+    afterRemoveRow: () => saveData(),
+    afterRemoveCol: () => saveData(),
+  })
+
+  isLoading.value = false
 })
 
 onBeforeUnmount(() => {
-  if (univerRef.value) {
-    univerRef.value.dispose()
+  if (hotInstance.value) {
+    hotInstance.value.destroy()
   }
 })
 
 function saveData() {
-  if (!workbookRef.value) return
+  if (!hotInstance.value) return
 
-  try {
-    const snapshot = workbookRef.value.save()
-    const jsonStr = JSON.stringify(snapshot)
-    emit('update:modelValue', jsonStr)
-    emit('change', jsonStr)
-  } catch (error) {
-    console.error('Failed to save spreadsheet data:', error)
-  }
+  const data = hotInstance.value.getData()
+  const jsonStr = JSON.stringify({ data })
+  emit('update:modelValue', jsonStr)
+  emit('change', jsonStr)
 }
 
-watch(() => props.modelValue, (newValue) => {
-  // Only reload if we have a completely different structure
-  // Normal edits are handled by the editor itself
-}, { deep: false })
+watch(() => props.readOnly, (readOnly) => {
+  if (hotInstance.value) {
+    hotInstance.value.updateSettings({ readOnly })
+  }
+})
 
 defineExpose({
   saveData,
-  getWorkbook: () => workbookRef.value
+  getInstance: () => hotInstance.value
 })
 </script>
 
 <template>
-  <div class="univer-sheet-wrapper">
+  <div class="spreadsheet-wrapper">
     <!-- Loading -->
-    <div v-if="isLoading" class="flex items-center justify-center bg-dark-800 border border-dark-600 rounded-lg h-[600px]">
+    <div v-if="isLoading" class="flex items-center justify-center bg-dark-800 border border-dark-600 rounded-lg h-[500px]">
       <div class="text-center">
         <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
         <p class="text-gray-400 text-sm">Tabelle wird geladen...</p>
@@ -154,38 +126,92 @@ defineExpose({
     <!-- Spreadsheet Container -->
     <div
       ref="containerRef"
-      class="univer-container border border-dark-600 rounded-lg overflow-hidden"
-      :style="{ height: '600px', display: isLoading ? 'none' : 'block' }"
+      class="handsontable-container border border-dark-600 rounded-lg overflow-hidden"
+      :style="{ display: isLoading ? 'none' : 'block' }"
     ></div>
   </div>
 </template>
 
 <style>
-.univer-sheet-wrapper {
-  --univer-bg: #1a1a2e;
-  --univer-border-color: #27272a;
+/* Dark theme for Handsontable */
+.handsontable-container .handsontable {
+  color: #e4e4e7;
+  font-size: 13px;
 }
 
-.univer-container {
-  background: var(--univer-bg);
+.handsontable-container .handsontable th,
+.handsontable-container .handsontable td {
+  background: #1a1a2e;
+  border-color: #27272a;
 }
 
-/* Override Univer styles for dark theme */
-.univer-container .univer-toolbar {
+.handsontable-container .handsontable th {
+  background: #27272a;
+  color: #a1a1aa;
+  font-weight: 600;
+}
+
+.handsontable-container .handsontable td.current,
+.handsontable-container .handsontable td.area {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.handsontable-container .handsontable .htCore td.htDimmed {
+  color: #6b7280;
+}
+
+.handsontable-container .handsontable thead th .relative {
+  padding: 4px 8px;
+}
+
+.handsontable-container .handsontable .wtBorder {
+  background-color: #3b82f6;
+}
+
+.handsontable-container .handsontable .wtBorder.current {
+  background-color: #3b82f6;
+}
+
+.handsontable-container .handsontable td.area-1::before,
+.handsontable-container .handsontable td.area-2::before,
+.handsontable-container .handsontable td.area-3::before,
+.handsontable-container .handsontable td.area-4::before {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Selected cell */
+.handsontable-container .handsontable td.highlight {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Input when editing */
+.handsontable-container .handsontable .handsontableInput {
+  background: #1e1e2e;
+  color: #e4e4e7;
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Context menu */
+.htContextMenu {
   background: #1e1e2e !important;
-  border-bottom: 1px solid #27272a !important;
+  border: 1px solid #27272a !important;
 }
 
-.univer-container .univer-sheet-container {
-  background: #1a1a2e !important;
-}
-
-.univer-container .univer-cell {
+.htContextMenu td {
+  background: #1e1e2e !important;
   color: #e4e4e7 !important;
 }
 
-.univer-container .univer-header-cell {
+.htContextMenu td:hover {
   background: #27272a !important;
-  color: #a1a1aa !important;
+}
+
+.htContextMenu td.htDisabled {
+  color: #4b5563 !important;
+}
+
+.htContextMenu td.htSeparator {
+  border-top-color: #27272a !important;
 }
 </style>

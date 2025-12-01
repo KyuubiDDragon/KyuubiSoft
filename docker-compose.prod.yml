@@ -16,7 +16,7 @@ services:
     image: ghcr.io/kyuubiddragon/kyuubisoft-nginx:latest
     container_name: kyuubisoft_nginx
     ports:
-      - "8080:80"
+      - "8090:80"
     volumes:
       - frontend_dist:/var/www/frontend:ro
     depends_on:

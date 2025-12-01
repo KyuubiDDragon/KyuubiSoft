@@ -39,16 +39,31 @@ function getDefaultWorkbookData() {
   return {
     id: 'workbook-' + Date.now(),
     name: 'Arbeitsmappe',
+    appVersion: '0.0.0',
     sheetOrder: ['sheet-1'],
     sheets: {
       'sheet-1': {
         id: 'sheet-1',
         name: 'Tabelle 1',
-        rowCount: 100,
-        columnCount: 26,
+        rowCount: 200,
+        columnCount: 30,
         cellData: {},
+        rowData: {},
+        columnData: {},
+        showGridlines: 1,
         defaultRowHeight: 24,
         defaultColumnWidth: 88,
+        rowHeader: {
+          width: 46,
+          hidden: 0,
+        },
+        columnHeader: {
+          height: 20,
+          hidden: 0,
+        },
+        scrollTop: 0,
+        scrollLeft: 0,
+        zoomRatio: 1,
       }
     }
   }
@@ -72,6 +87,7 @@ async function initUniver() {
         [LocaleType.EN_US]: merge({}, sheetsCoreEnUS),
       },
       theme: defaultTheme,
+      darkMode: true,
       presets: [
         UniverSheetsCorePreset({
           container: containerRef.value,
@@ -155,11 +171,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="univer-wrapper h-full flex flex-col">
+  <div class="univer-wrapper">
     <!-- Loading -->
     <div
       v-if="isLoading"
-      class="flex-1 flex items-center justify-center bg-dark-800 border border-dark-600 rounded-lg min-h-[600px]"
+      class="loading-container"
     >
       <div class="text-center">
         <div class="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -171,7 +187,7 @@ defineExpose({
     <!-- Error State -->
     <div
       v-else-if="loadError"
-      class="flex-1 flex items-center justify-center bg-dark-800 border border-red-600/50 rounded-lg min-h-[600px]"
+      class="loading-container border-red-600/50"
     >
       <div class="text-center p-6">
         <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,108 +201,67 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Univer Container -->
+    <!-- Univer Container - always rendered but hidden when loading -->
     <div
+      v-show="!isLoading && !loadError"
       ref="containerRef"
-      class="univer-container flex-1 rounded-lg overflow-hidden min-h-[600px]"
-      :class="{ 'invisible': isLoading || loadError }"
+      class="univer-container"
     ></div>
   </div>
 </template>
 
 <style>
-/* Dark Theme Overrides for Univer */
+/* Wrapper needs explicit height */
 .univer-wrapper {
-  --univer-bg: #1a1a2e;
-  --univer-bg-secondary: #27272a;
-  --univer-text: #e4e4e7;
-  --univer-text-secondary: #a1a1aa;
-  --univer-border: #3f3f46;
-  --univer-primary: #3b82f6;
+  width: 100%;
+  height: 700px;
+  position: relative;
 }
 
+/* Loading state */
+.loading-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+}
+
+/* Main container - explicit dimensions required for Univer */
 .univer-container {
-  background: var(--univer-bg);
-  border: 1px solid var(--univer-border);
+  width: 100%;
+  height: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-/* Make Univer fill the container */
-.univer-container > div {
+/* Ensure Univer's internal container fills the space */
+.univer-container > div,
+.univer-container .univer-app-container-wrapper {
+  width: 100% !important;
   height: 100% !important;
 }
 
-/* Toolbar styling */
-.univer-container .univer-toolbar,
-.univer-container .univer-header {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-toolbar-btn {
-  color: var(--univer-text) !important;
-}
-
-.univer-container .univer-toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Formula bar */
-.univer-container .univer-formula-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-formula-bar input,
-.univer-container .univer-formula-bar textarea {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-}
-
-/* Sheet tabs */
-.univer-container .univer-sheet-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-sheet-bar-item {
-  color: var(--univer-text-secondary) !important;
-}
-
-.univer-container .univer-sheet-bar-item-active {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-}
-
-/* Scrollbars */
+/* Custom scrollbar for dark mode */
 .univer-container ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 .univer-container ::-webkit-scrollbar-track {
-  background: var(--univer-bg);
+  background: #1a1a2e;
 }
 
 .univer-container ::-webkit-scrollbar-thumb {
-  background: var(--univer-border);
+  background: #3f3f46;
   border-radius: 5px;
 }
 
 .univer-container ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
-}
-
-/* Dropdowns and context menus */
-.univer-popup,
-.univer-dropdown,
-.univer-context-menu {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-  color: var(--univer-text) !important;
-}
-
-.univer-dropdown-item:hover,
-.univer-context-menu-item:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
 }
 </style>

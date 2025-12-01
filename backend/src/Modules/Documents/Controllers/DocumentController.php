@@ -12,6 +12,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class DocumentController
 {
@@ -76,20 +77,20 @@ class DocumentController
         return JsonResponse::created($doc, 'Document created successfully');
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $docId = $args['id'];
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $doc = $this->getDocumentForUser($docId, $userId);
 
         return JsonResponse::success($doc);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $docId = $args['id'];
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
         $doc = $this->getDocumentForUser($docId, $userId, true);
@@ -118,10 +119,10 @@ class DocumentController
         return JsonResponse::success($updated, 'Document updated successfully');
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $docId = $args['id'];
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getDocumentForUser($docId, $userId, true);
 
@@ -130,10 +131,10 @@ class DocumentController
         return JsonResponse::success(null, 'Document deleted successfully');
     }
 
-    public function versions(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function versions(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $docId = $args['id'];
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getDocumentForUser($docId, $userId);
 

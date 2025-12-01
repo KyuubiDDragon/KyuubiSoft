@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const isAppReady = ref(false)
@@ -21,6 +22,12 @@ const layout = computed(() => {
 // Initialize auth state before showing app
 onMounted(async () => {
   await authStore.initialize()
+
+  // If not authenticated and on a protected route, redirect first
+  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false && route.meta.layout !== 'auth') {
+    await router.replace({ name: 'login', query: { redirect: route.fullPath } })
+  }
+
   isAppReady.value = true
 })
 </script>

@@ -86,7 +86,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_URL=https://dev.kyuubisoft.com/api
+            VITE_API_URL=https://dev.kyuubisoft.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

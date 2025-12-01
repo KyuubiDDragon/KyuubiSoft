@@ -44,8 +44,9 @@ class AuthController
     {
         $data = $request->getParsedBody() ?? [];
 
+        // Unterstützt 'login' oder 'email' Feld für Abwärtskompatibilität
         $loginRequest = new LoginRequest(
-            email: $data['email'] ?? '',
+            login: $data['login'] ?? $data['email'] ?? '',
             password: $data['password'] ?? '',
             twoFactorCode: $data['two_factor_code'] ?? null
         );

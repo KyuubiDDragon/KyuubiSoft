@@ -11,7 +11,7 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const form = reactive({
-  email: '',
+  login: '',
   password: '',
   twoFactorCode: '',
 })
@@ -27,7 +27,7 @@ async function handleSubmit() {
 
   try {
     const result = await authStore.login({
-      email: form.email,
+      login: form.login,
       password: form.password,
       two_factor_code: form.twoFactorCode || undefined,
     })
@@ -74,20 +74,20 @@ async function handleSubmit() {
         Bitte gib deinen 2FA-Code ein.
       </div>
 
-      <!-- Email -->
+      <!-- Login (E-Mail oder Benutzername) -->
       <div v-if="!requires2FA">
-        <label for="email" class="label">E-Mail</label>
+        <label for="login" class="label">E-Mail oder Benutzername</label>
         <input
-          id="email"
-          v-model="form.email"
-          type="email"
-          autocomplete="email"
+          id="login"
+          v-model="form.login"
+          type="text"
+          autocomplete="username"
           required
           class="input"
-          :class="{ 'input-error': errors.email }"
-          placeholder="deine@email.de"
+          :class="{ 'input-error': errors.login }"
+          placeholder="E-Mail oder Benutzername"
         />
-        <p v-if="errors.email" class="mt-1 text-sm text-red-400">{{ errors.email }}</p>
+        <p v-if="errors.login" class="mt-1 text-sm text-red-400">{{ errors.login }}</p>
       </div>
 
       <!-- Password -->

@@ -22,10 +22,42 @@ class DashboardController
         $data = [
             'welcome_message' => 'Welcome to KyuubiSoft Dashboard',
             'quick_stats' => $this->getQuickStats($userId),
+            'recent_lists' => $this->getRecentLists($userId),
+            'recent_documents' => $this->getRecentDocuments($userId),
             'recent_activity' => $this->getRecentActivity($userId),
         ];
 
         return JsonResponse::success($data);
+    }
+
+    private function getRecentLists(string $userId): array
+    {
+        $lists = $this->db->fetchAllAssociative(
+            'SELECT l.id, l.title, l.type, l.color, l.updated_at,
+                    (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
+                    (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = 0) as open_count
+             FROM lists l
+             WHERE l.user_id = ? AND l.is_archived = 0
+             ORDER BY l.updated_at DESC
+             LIMIT 5',
+            [$userId]
+        );
+
+        return $lists;
+    }
+
+    private function getRecentDocuments(string $userId): array
+    {
+        $documents = $this->db->fetchAllAssociative(
+            'SELECT id, title, format, updated_at
+             FROM documents
+             WHERE user_id = ? AND is_archived = 0
+             ORDER BY updated_at DESC
+             LIMIT 5',
+            [$userId]
+        );
+
+        return $documents;
     }
 
     public function stats(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

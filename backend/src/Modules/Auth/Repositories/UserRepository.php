@@ -32,6 +32,26 @@ class UserRepository
         return $result ?: null;
     }
 
+    public function findByUsername(string $username): ?array
+    {
+        $result = $this->db->fetchAssociative(
+            'SELECT * FROM users WHERE username = ?',
+            [$username]
+        );
+
+        return $result ?: null;
+    }
+
+    public function findByEmailOrUsername(string $login): ?array
+    {
+        $result = $this->db->fetchAssociative(
+            'SELECT * FROM users WHERE email = ? OR username = ?',
+            [$login, $login]
+        );
+
+        return $result ?: null;
+    }
+
     public function create(array $data): array
     {
         $this->db->insert('users', $data);

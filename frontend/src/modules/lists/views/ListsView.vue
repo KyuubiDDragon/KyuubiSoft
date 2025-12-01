@@ -1,14 +1,15 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import draggable from 'vuedraggable'
 import {
   PlusIcon,
   ListBulletIcon,
   TrashIcon,
   PencilIcon,
   CheckIcon,
-  XMarkIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  Bars3Icon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -23,6 +24,7 @@ const isLoading = ref(true)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const newItemContent = ref('')
+const isDragging = ref(false)
 
 // Form für neue/editierte Liste
 const listForm = reactive({
@@ -53,6 +55,17 @@ const completedCount = computed(() => {
 const totalCount = computed(() => {
   return selectedList.value?.items?.length || 0
 })
+
+// Drag options
+const dragOptions = computed(() => ({
+  animation: 200,
+  group: 'items',
+  disabled: false,
+  ghostClass: 'ghost-item',
+  chosenClass: 'chosen-item',
+  dragClass: 'drag-item',
+  handle: '.drag-handle'
+}))
 
 // API Calls
 onMounted(async () => {
@@ -120,6 +133,14 @@ async function selectList(listId) {
   try {
     const response = await api.get(`/api/v1/lists/${listId}`)
     selectedList.value = response.data.data
+    // Ensure items have sort_order
+    if (selectedList.value.items) {
+      selectedList.value.items = selectedList.value.items.map((item, index) => ({
+        ...item,
+        sort_order: item.sort_order ?? index
+      }))
+      selectedList.value.items.sort((a, b) => a.sort_order - b.sort_order)
+    }
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Liste')
   }
@@ -130,7 +151,8 @@ async function addItem() {
 
   try {
     const response = await api.post(`/api/v1/lists/${selectedList.value.id}/items`, {
-      content: newItemContent.value
+      content: newItemContent.value,
+      sort_order: selectedList.value.items?.length || 0
     })
     selectedList.value.items.push(response.data.data)
     newItemContent.value = ''
@@ -157,6 +179,26 @@ async function deleteItem(itemId) {
     selectedList.value.items = selectedList.value.items.filter(i => i.id !== itemId)
   } catch (error) {
     uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function onDragEnd() {
+  isDragging.value = false
+
+  // Update sort_order for all items
+  const itemOrders = selectedList.value.items.map((item, index) => ({
+    id: item.id,
+    sort_order: index
+  }))
+
+  try {
+    await api.put(`/api/v1/lists/${selectedList.value.id}/items/reorder`, {
+      items: itemOrders
+    })
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern der Reihenfolge')
+    // Reload to get correct order
+    await selectList(selectedList.value.id)
   }
 }
 
@@ -244,39 +286,58 @@ function goBack() {
         </button>
       </div>
 
-      <!-- Items -->
-      <div class="space-y-2">
-        <div
-          v-for="item in selectedList.items"
-          :key="item.id"
-          class="flex items-center gap-3 p-4 bg-dark-800 rounded-lg border border-dark-700 group"
-        >
-          <button
-            @click="toggleItem(item)"
-            class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors"
-            :class="item.is_completed
-              ? 'bg-green-600 border-green-600'
-              : 'border-gray-500 hover:border-primary-500'"
-          >
-            <CheckIcon v-if="item.is_completed" class="w-4 h-4 text-white" />
-          </button>
-          <span
-            class="flex-1"
-            :class="item.is_completed ? 'text-gray-500 line-through' : 'text-white'"
-          >
-            {{ item.content }}
-          </span>
-          <button
-            @click="deleteItem(item.id)"
-            class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
-          >
-            <TrashIcon class="w-4 h-4" />
-          </button>
-        </div>
+      <!-- Drag hint -->
+      <p v-if="selectedList.items?.length > 1" class="text-xs text-gray-500 flex items-center gap-1">
+        <Bars3Icon class="w-4 h-4" />
+        Ziehe Einträge am Griff, um sie neu zu sortieren
+      </p>
 
-        <div v-if="selectedList.items?.length === 0" class="text-center py-12 text-gray-400">
-          Keine Einträge vorhanden. Füge den ersten hinzu!
-        </div>
+      <!-- Items with Drag & Drop -->
+      <draggable
+        v-model="selectedList.items"
+        v-bind="dragOptions"
+        item-key="id"
+        @start="isDragging = true"
+        @end="onDragEnd"
+        class="space-y-2"
+      >
+        <template #item="{ element: item }">
+          <div
+            class="flex items-center gap-3 p-4 bg-dark-800 rounded-lg border border-dark-700 group transition-all"
+            :class="{ 'border-primary-500 shadow-lg shadow-primary-500/10': isDragging }"
+          >
+            <!-- Drag Handle -->
+            <div class="drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 text-gray-600 hover:text-gray-400 transition-colors">
+              <Bars3Icon class="w-5 h-5" />
+            </div>
+
+            <button
+              @click="toggleItem(item)"
+              class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0"
+              :class="item.is_completed
+                ? 'bg-green-600 border-green-600'
+                : 'border-gray-500 hover:border-primary-500'"
+            >
+              <CheckIcon v-if="item.is_completed" class="w-4 h-4 text-white" />
+            </button>
+            <span
+              class="flex-1"
+              :class="item.is_completed ? 'text-gray-500 line-through' : 'text-white'"
+            >
+              {{ item.content }}
+            </span>
+            <button
+              @click="deleteItem(item.id)"
+              class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+            >
+              <TrashIcon class="w-4 h-4" />
+            </button>
+          </div>
+        </template>
+      </draggable>
+
+      <div v-if="selectedList.items?.length === 0" class="text-center py-12 text-gray-400">
+        Keine Einträge vorhanden. Füge den ersten hinzu!
       </div>
     </div>
 
@@ -392,3 +453,17 @@ function goBack() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.ghost-item {
+  @apply opacity-50 bg-primary-600/20 border-primary-500;
+}
+
+.chosen-item {
+  @apply shadow-lg shadow-primary-500/20;
+}
+
+.drag-item {
+  @apply opacity-90;
+}
+</style>

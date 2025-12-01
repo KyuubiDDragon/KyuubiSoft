@@ -1,8 +1,9 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import api from '@/core/api/axios'
+import QRCode from 'qrcode'
 import {
   UserIcon,
   ShieldCheckIcon,
@@ -22,6 +23,7 @@ const isChangingPassword = ref(false)
 // 2FA state
 const twoFactorEnabled = ref(false)
 const twoFactorSetup = ref(null)
+const qrCodeDataUrl = ref('')
 const verificationCode = ref('')
 const isEnabling2FA = ref(false)
 const isDisabling2FA = ref(false)
@@ -31,7 +33,6 @@ const tabs = [
   { id: 'profile', name: 'Profil', icon: UserIcon },
   { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
   { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
-  { id: 'notifications', name: 'Benachrichtigungen', icon: BellIcon },
 ]
 
 const profile = reactive({
@@ -113,6 +114,18 @@ async function startEnable2FA() {
   try {
     const response = await api.post('/api/v1/auth/2fa/enable')
     twoFactorSetup.value = response.data.data
+
+    // Generate QR code from otpauth URL
+    if (twoFactorSetup.value.qr_code_url) {
+      qrCodeDataUrl.value = await QRCode.toDataURL(twoFactorSetup.value.qr_code_url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      })
+    }
   } catch (error) {
     const message = error.response?.data?.error || 'Fehler beim Aktivieren von 2FA'
     uiStore.showError(message)
@@ -132,6 +145,7 @@ async function verify2FA() {
     })
     twoFactorEnabled.value = true
     twoFactorSetup.value = null
+    qrCodeDataUrl.value = ''
     verificationCode.value = ''
     isEnabling2FA.value = false
     uiStore.showSuccess('2FA erfolgreich aktiviert!')
@@ -143,6 +157,7 @@ async function verify2FA() {
 
 function cancelEnable2FA() {
   twoFactorSetup.value = null
+  qrCodeDataUrl.value = ''
   verificationCode.value = ''
   isEnabling2FA.value = false
 }
@@ -318,7 +333,13 @@ async function disable2FA() {
               <p class="text-gray-300">Scanne den QR-Code mit deiner Authenticator-App:</p>
 
               <div class="bg-white p-4 rounded-lg inline-block">
-                <img :src="twoFactorSetup.qr_code" alt="2FA QR Code" class="w-48 h-48" />
+                <img v-if="qrCodeDataUrl" :src="qrCodeDataUrl" alt="2FA QR Code" class="w-48 h-48" />
+                <div v-else class="w-48 h-48 flex items-center justify-center">
+                  <svg class="animate-spin h-8 w-8 text-gray-400" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
               </div>
 
               <div class="bg-dark-700/50 rounded-lg p-4">
@@ -437,12 +458,6 @@ async function disable2FA() {
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Notifications -->
-        <div v-if="activeTab === 'notifications'" class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-6">Benachrichtigungen</h2>
-          <p class="text-gray-400">Benachrichtigungseinstellungen werden bald verfügbar sein.</p>
         </div>
       </div>
     </div>

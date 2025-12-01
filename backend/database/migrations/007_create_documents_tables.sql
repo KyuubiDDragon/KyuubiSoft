@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS documents (
     folder_id CHAR(36) NULL,
     title VARCHAR(255) NOT NULL,
     content LONGTEXT NULL,
-    format ENUM('markdown', 'html', 'plain') NOT NULL DEFAULT 'markdown',
+    format ENUM('markdown', 'html', 'plain', 'richtext', 'code', 'spreadsheet') NOT NULL DEFAULT 'markdown',
     is_archived BOOLEAN NOT NULL DEFAULT FALSE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

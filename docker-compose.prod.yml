@@ -13,15 +13,12 @@ services:
   # NGINX Web Server
   # ===================
   nginx:
-    image: nginx:alpine
+    image: ghcr.io/kyuubiddragon/kyuubisoft-nginx:latest
     container_name: kyuubisoft_nginx
     ports:
       - "8080:80"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
       - frontend_dist:/var/www/frontend:ro
-      - backend_public:/var/www/backend/public:ro
     depends_on:
       - backend
       - frontend
@@ -50,7 +47,6 @@ services:
     image: ghcr.io/kyuubiddragon/kyuubisoft-backend:latest
     container_name: kyuubisoft_backend
     volumes:
-      - backend_public:/var/www/html/public
       - backend_storage:/var/www/html/storage
     environment:
       APP_ENV: ${APP_ENV:-production}
@@ -85,16 +81,17 @@ services:
     container_name: kyuubisoft_mysql
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE:-kyuubisoft}
       MYSQL_USER: ${DB_USERNAME:-kyuubisoft}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: UTC
     command: >
       --default-authentication-plugin=mysql_native_password
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
+      --default-time-zone=+00:00
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -126,5 +123,4 @@ volumes:
   mysql_data:
   redis_data:
   frontend_dist:
-  backend_public:
   backend_storage:

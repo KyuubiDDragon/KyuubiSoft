@@ -13,6 +13,7 @@ use App\Core\Security\RbacManager;
 use App\Modules\Auth\Repositories\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 class UserController
 {
@@ -40,10 +41,10 @@ class UserController
         return JsonResponse::paginated($users, $total, $page, $perPage);
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $currentUserId = $request->getAttribute('user_id');
-        $userId = $args['id'];
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         // Users can only view themselves unless they have permission
         if ($userId !== $currentUserId && !$this->rbacManager->hasPermission($currentUserId, 'users.read')) {
@@ -63,10 +64,10 @@ class UserController
         return JsonResponse::success($user);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $currentUserId = $request->getAttribute('user_id');
-        $userId = $args['id'];
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         // Users can only update themselves unless they have permission
         if ($userId !== $currentUserId && !$this->rbacManager->hasPermission($currentUserId, 'users.write')) {
@@ -113,10 +114,10 @@ class UserController
         return JsonResponse::success($updatedUser, 'User updated successfully');
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $currentUserId = $request->getAttribute('user_id');
-        $userId = $args['id'];
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         if ($userId === $currentUserId) {
             throw new ForbiddenException('You cannot delete your own account');

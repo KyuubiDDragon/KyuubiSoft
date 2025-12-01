@@ -12,6 +12,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class ListController
 {
@@ -76,10 +77,10 @@ class ListController
         return JsonResponse::created($list, 'List created successfully');
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $list = $this->getListForUser($listId, $userId);
 
@@ -92,10 +93,10 @@ class ListController
         return JsonResponse::success($list);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
         $list = $this->getListForUser($listId, $userId, true);
@@ -119,10 +120,10 @@ class ListController
         return JsonResponse::success($updated, 'List updated successfully');
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getListForUser($listId, $userId, true);
 
@@ -131,10 +132,11 @@ class ListController
         return JsonResponse::success(null, 'List deleted successfully');
     }
 
-    public function addItem(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function addItem(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $route = RouteContext::fromRequest($request)->getRoute();
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
+        $listId = $route->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
         $this->getListForUser($listId, $userId, true);
@@ -171,11 +173,12 @@ class ListController
         return JsonResponse::created($item, 'Item added successfully');
     }
 
-    public function updateItem(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function updateItem(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $route = RouteContext::fromRequest($request)->getRoute();
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
-        $itemId = $args['itemId'];
+        $listId = $route->getArgument('id');
+        $itemId = $route->getArgument('itemId');
         $data = $request->getParsedBody() ?? [];
 
         $this->getListForUser($listId, $userId, true);
@@ -216,11 +219,12 @@ class ListController
         return JsonResponse::success($updated, 'Item updated successfully');
     }
 
-    public function deleteItem(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteItem(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $route = RouteContext::fromRequest($request)->getRoute();
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
-        $itemId = $args['itemId'];
+        $listId = $route->getArgument('id');
+        $itemId = $route->getArgument('itemId');
 
         $this->getListForUser($listId, $userId, true);
 
@@ -236,10 +240,10 @@ class ListController
         return JsonResponse::success(null, 'Item deleted successfully');
     }
 
-    public function reorderItems(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function reorderItems(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $listId = $args['id'];
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
         $this->getListForUser($listId, $userId, true);

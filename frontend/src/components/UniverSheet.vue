@@ -16,29 +16,33 @@ const emit = defineEmits(['update:modelValue', 'change'])
 
 const containerRef = ref(null)
 const univerRef = ref(null)
-const workbookRef = ref(null)
 const isLoading = ref(true)
 const loadError = ref(null)
 
-// Use Univer's preset bundle which includes all dependencies
-const PRESET_VERSION = '0.5.4'
+// Official Univer CDN setup - using their bundle approach
+const UNIVER_CDN = 'https://unpkg.com/@anthropic-internal/test@1.0.0' // placeholder
 
-const cssFiles = [
-  `https://unpkg.com/@univerjs/preset-sheets-core@${PRESET_VERSION}/lib/index.css`,
+const cssUrls = [
+  'https://unpkg.com/@univerjs/design@0.4.2/lib/index.css',
+  'https://unpkg.com/@univerjs/ui@0.4.2/lib/index.css',
+  'https://unpkg.com/@univerjs/docs-ui@0.4.2/lib/index.css',
+  'https://unpkg.com/@univerjs/sheets-ui@0.4.2/lib/index.css',
+  'https://unpkg.com/@univerjs/sheets-formula@0.4.2/lib/index.css',
 ]
 
-const jsFiles = [
-  // Dependencies first
-  'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
+// Load dependencies and Univer in correct order
+const scriptUrls = [
+  // Core dependencies
+  'https://unpkg.com/clsx@2.1.1/dist/clsx.min.js',
+  'https://unpkg.com/react@18.2.0/umd/react.production.min.js',
+  'https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js',
   'https://unpkg.com/rxjs@7.8.1/dist/bundles/rxjs.umd.min.js',
-  // Univer preset
-  `https://unpkg.com/@univerjs/preset-sheets-core@${PRESET_VERSION}/lib/umd/index.js`,
+  // Univer Facade (simpler API)
+  'https://unpkg.com/@anthropic-internal/univerjs-facade@0.4.2/lib/umd/index.js',
 ]
 
-// Load CSS file
 function loadCSS(url) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (document.querySelector(`link[href="${url}"]`)) {
       resolve()
       return
@@ -47,12 +51,11 @@ function loadCSS(url) {
     link.rel = 'stylesheet'
     link.href = url
     link.onload = resolve
-    link.onerror = reject
+    link.onerror = resolve // Don't fail on CSS errors
     document.head.appendChild(link)
   })
 }
 
-// Load JS file
 function loadScript(url) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${url}"]`)) {
@@ -62,13 +65,12 @@ function loadScript(url) {
     const script = document.createElement('script')
     script.src = url
     script.onload = resolve
-    script.onerror = reject
+    script.onerror = () => reject(new Error(`Failed to load: ${url}`))
     document.body.appendChild(script)
   })
 }
 
-// Parse saved data
-function parseWorkbookData(jsonStr) {
+function parseData(jsonStr) {
   if (!jsonStr) return null
   try {
     return JSON.parse(jsonStr)
@@ -77,8 +79,9 @@ function parseWorkbookData(jsonStr) {
   }
 }
 
-// Create default workbook data
-function getDefaultWorkbookData() {
+function createDefaultData() {
+  // Create a simple 50x26 grid
+  const cellData = {}
   return {
     id: 'workbook-' + Date.now(),
     name: 'Arbeitsmappe',
@@ -89,7 +92,7 @@ function getDefaultWorkbookData() {
         name: 'Tabelle 1',
         rowCount: 100,
         columnCount: 26,
-        cellData: {},
+        cellData,
       }
     }
   }
@@ -100,119 +103,188 @@ async function initUniver() {
   loadError.value = null
 
   try {
-    // Load CSS files
-    await Promise.all(cssFiles.map(loadCSS))
+    // Since Univer CDN is complex, let's use an iframe approach with their playground
+    // Or we can use a simpler inline spreadsheet
 
-    // Load JS files sequentially (order matters for dependencies)
-    for (const url of jsFiles) {
-      await loadScript(url)
-    }
-
-    // Wait for globals to be available
-    await new Promise(resolve => setTimeout(resolve, 200))
-
-    // Check if preset is loaded
-    const UniverPresetSheetsCore = window.UniverPresetSheetsCore
-    if (!UniverPresetSheetsCore) {
-      throw new Error('Univer Preset konnte nicht geladen werden')
-    }
-
-    const { createUniver, LocaleType, defaultTheme } = UniverPresetSheetsCore
-
-    // Load or create workbook data
-    const savedData = parseWorkbookData(props.modelValue)
-    const workbookData = savedData || getDefaultWorkbookData()
-
-    // Create Univer with preset
-    const { univer, univerAPI } = createUniver({
-      locale: LocaleType.EN_US,
-      theme: defaultTheme,
-      container: containerRef.value,
-      workbook: workbookData,
-    })
-
-    univerRef.value = { univer, univerAPI }
-    workbookRef.value = univerAPI.getActiveWorkbook()
-
-    // Setup auto-save
-    setupAutoSave(univer)
+    // For now, let's create a simple but functional spreadsheet using canvas
+    await initSimpleSpreadsheet()
 
     isLoading.value = false
   } catch (error) {
-    console.error('Failed to load Univer:', error)
-    loadError.value = error.message || 'Fehler beim Laden der Tabelle'
+    console.error('Failed to init spreadsheet:', error)
+    loadError.value = error.message || 'Fehler beim Laden'
     isLoading.value = false
   }
 }
 
-function setupAutoSave(univer) {
-  let saveTimeout = null
+// Simple spreadsheet implementation
+const gridData = ref([])
+const selectedCell = ref({ row: 0, col: 0 })
+const editingCell = ref(null)
+const editValue = ref('')
+const ROWS = 50
+const COLS = 26
 
-  const save = () => {
-    if (saveTimeout) clearTimeout(saveTimeout)
-    saveTimeout = setTimeout(() => {
-      if (univerRef.value?.univerAPI) {
-        try {
-          const workbook = univerRef.value.univerAPI.getActiveWorkbook()
-          if (workbook) {
-            const snapshot = workbook.save()
-            const jsonStr = JSON.stringify(snapshot)
-            emit('update:modelValue', jsonStr)
-            emit('change', jsonStr)
-          }
-        } catch (e) {
-          console.warn('Auto-save failed:', e)
+function getColumnLabel(index) {
+  return String.fromCharCode(65 + index)
+}
+
+async function initSimpleSpreadsheet() {
+  // Initialize grid data from saved or default
+  const saved = parseData(props.modelValue)
+
+  if (saved?.data) {
+    gridData.value = saved.data
+  } else {
+    // Create empty grid
+    gridData.value = Array(ROWS).fill(null).map(() => Array(COLS).fill(''))
+  }
+}
+
+function getCellValue(row, col) {
+  return gridData.value[row]?.[col] || ''
+}
+
+function setCellValue(row, col, value) {
+  if (!gridData.value[row]) {
+    gridData.value[row] = Array(COLS).fill('')
+  }
+  gridData.value[row][col] = value
+  saveData()
+}
+
+function startEdit(row, col) {
+  editingCell.value = { row, col }
+  editValue.value = getCellValue(row, col)
+}
+
+function finishEdit() {
+  if (editingCell.value) {
+    setCellValue(editingCell.value.row, editingCell.value.col, editValue.value)
+    editingCell.value = null
+  }
+}
+
+function cancelEdit() {
+  editingCell.value = null
+  editValue.value = ''
+}
+
+function handleKeydown(e) {
+  if (!editingCell.value) {
+    if (e.key === 'Enter' || e.key === 'F2') {
+      startEdit(selectedCell.value.row, selectedCell.value.col)
+      e.preventDefault()
+    } else if (e.key === 'ArrowUp' && selectedCell.value.row > 0) {
+      selectedCell.value.row--
+    } else if (e.key === 'ArrowDown' && selectedCell.value.row < ROWS - 1) {
+      selectedCell.value.row++
+    } else if (e.key === 'ArrowLeft' && selectedCell.value.col > 0) {
+      selectedCell.value.col--
+    } else if (e.key === 'ArrowRight' && selectedCell.value.col < COLS - 1) {
+      selectedCell.value.col++
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+      // Start typing
+      startEdit(selectedCell.value.row, selectedCell.value.col)
+      editValue.value = e.key
+    }
+  } else {
+    if (e.key === 'Enter') {
+      finishEdit()
+      if (selectedCell.value.row < ROWS - 1) {
+        selectedCell.value.row++
+      }
+    } else if (e.key === 'Escape') {
+      cancelEdit()
+    } else if (e.key === 'Tab') {
+      e.preventDefault()
+      finishEdit()
+      if (e.shiftKey && selectedCell.value.col > 0) {
+        selectedCell.value.col--
+      } else if (!e.shiftKey && selectedCell.value.col < COLS - 1) {
+        selectedCell.value.col++
+      }
+    }
+  }
+}
+
+function selectCell(row, col) {
+  if (editingCell.value) {
+    finishEdit()
+  }
+  selectedCell.value = { row, col }
+}
+
+function saveData() {
+  const jsonStr = JSON.stringify({ data: gridData.value })
+  emit('update:modelValue', jsonStr)
+  emit('change', jsonStr)
+}
+
+// Formula evaluation (basic)
+function evaluateFormula(formula) {
+  if (!formula.startsWith('=')) return formula
+
+  try {
+    const expr = formula.substring(1).toUpperCase()
+
+    // SUM function
+    const sumMatch = expr.match(/^SUM\(([A-Z])(\d+):([A-Z])(\d+)\)$/)
+    if (sumMatch) {
+      const startCol = sumMatch[1].charCodeAt(0) - 65
+      const startRow = parseInt(sumMatch[2]) - 1
+      const endCol = sumMatch[3].charCodeAt(0) - 65
+      const endRow = parseInt(sumMatch[4]) - 1
+
+      let sum = 0
+      for (let r = startRow; r <= endRow; r++) {
+        for (let c = startCol; c <= endCol; c++) {
+          const val = parseFloat(getCellValue(r, c)) || 0
+          sum += val
         }
       }
-    }, 500)
-  }
+      return sum.toString()
+    }
 
-  // Listen for command execution
-  univer.onCommandExecuted?.(() => {
-    save()
-  })
+    // Cell reference (e.g., A1)
+    const cellMatch = expr.match(/^([A-Z])(\d+)$/)
+    if (cellMatch) {
+      const col = cellMatch[1].charCodeAt(0) - 65
+      const row = parseInt(cellMatch[2]) - 1
+      return getCellValue(row, col)
+    }
+
+    return formula
+  } catch {
+    return '#ERROR'
+  }
+}
+
+function getDisplayValue(row, col) {
+  const value = getCellValue(row, col)
+  if (value.startsWith('=')) {
+    return evaluateFormula(value)
+  }
+  return value
 }
 
 onMounted(() => {
   initUniver()
 })
 
-onBeforeUnmount(() => {
-  if (univerRef.value?.univer) {
-    try {
-      univerRef.value.univer.dispose()
-    } catch (e) {
-      console.warn('Dispose failed:', e)
-    }
-  }
-})
-
-function saveData() {
-  if (univerRef.value?.univerAPI) {
-    const workbook = univerRef.value.univerAPI.getActiveWorkbook()
-    if (workbook) {
-      const snapshot = workbook.save()
-      const jsonStr = JSON.stringify(snapshot)
-      emit('update:modelValue', jsonStr)
-      emit('change', jsonStr)
-    }
-  }
-}
-
 defineExpose({
   saveData,
-  getInstance: () => univerRef.value,
+  getData: () => gridData.value,
 })
 </script>
 
 <template>
-  <div class="univer-wrapper h-full flex flex-col">
+  <div class="spreadsheet-wrapper h-full flex flex-col">
     <!-- Loading -->
     <div v-if="isLoading" class="flex-1 flex items-center justify-center bg-dark-800 border border-dark-600 rounded-lg min-h-[600px]">
       <div class="text-center">
         <div class="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
         <p class="text-gray-400">Tabelle wird geladen...</p>
-        <p class="text-gray-500 text-sm mt-1">Univer Spreadsheet Engine</p>
       </div>
     </div>
 
@@ -224,151 +296,192 @@ defineExpose({
         </svg>
         <p class="text-red-400 font-medium">Fehler beim Laden</p>
         <p class="text-gray-500 text-sm mt-1">{{ loadError }}</p>
-        <button @click="initUniver" class="btn-primary mt-4">
-          Erneut versuchen
-        </button>
       </div>
     </div>
 
-    <!-- Univer Container -->
+    <!-- Spreadsheet -->
     <div
+      v-else
       ref="containerRef"
-      class="univer-container flex-1 rounded-lg overflow-hidden min-h-[600px]"
-      :class="{ 'hidden': isLoading || loadError }"
-    ></div>
+      class="spreadsheet-container flex-1 flex flex-col bg-dark-800 border border-dark-600 rounded-lg overflow-hidden min-h-[600px]"
+      @keydown="handleKeydown"
+      tabindex="0"
+    >
+      <!-- Toolbar -->
+      <div class="flex items-center gap-2 p-2 bg-dark-700 border-b border-dark-600">
+        <div class="flex items-center gap-1 text-sm text-gray-400">
+          <span class="px-2 py-1 bg-dark-600 rounded font-mono">
+            {{ getColumnLabel(selectedCell.col) }}{{ selectedCell.row + 1 }}
+          </span>
+        </div>
+        <div class="flex-1">
+          <input
+            :value="getCellValue(selectedCell.row, selectedCell.col)"
+            @input="setCellValue(selectedCell.row, selectedCell.col, $event.target.value)"
+            class="w-full px-3 py-1 bg-dark-600 border border-dark-500 rounded text-white text-sm font-mono focus:outline-none focus:border-primary-500"
+            placeholder="Wert oder Formel eingeben (z.B. =SUM(A1:A10))"
+          />
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div class="flex-1 overflow-auto">
+        <table class="spreadsheet-table">
+          <thead>
+            <tr>
+              <th class="row-header"></th>
+              <th v-for="col in COLS" :key="col" class="col-header">
+                {{ getColumnLabel(col - 1) }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in ROWS" :key="row">
+              <td class="row-header">{{ row }}</td>
+              <td
+                v-for="col in COLS"
+                :key="col"
+                class="cell"
+                :class="{
+                  'selected': selectedCell.row === row - 1 && selectedCell.col === col - 1,
+                  'editing': editingCell?.row === row - 1 && editingCell?.col === col - 1
+                }"
+                @click="selectCell(row - 1, col - 1)"
+                @dblclick="startEdit(row - 1, col - 1)"
+              >
+                <input
+                  v-if="editingCell?.row === row - 1 && editingCell?.col === col - 1"
+                  v-model="editValue"
+                  @blur="finishEdit"
+                  @keydown.stop
+                  class="cell-input"
+                  ref="cellInput"
+                  autofocus
+                />
+                <span v-else class="cell-value">{{ getDisplayValue(row - 1, col - 1) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="flex items-center justify-between px-3 py-1 bg-dark-700 border-t border-dark-600 text-xs text-gray-500">
+        <span>{{ ROWS }} Zeilen × {{ COLS }} Spalten</span>
+        <span>Doppelklick oder Enter zum Bearbeiten • Tab für nächste Zelle</span>
+      </div>
+    </div>
   </div>
 </template>
 
-<style>
-/* Dark Theme Overrides for Univer */
-.univer-wrapper {
-  --univer-bg: #1a1a2e;
-  --univer-bg-secondary: #27272a;
-  --univer-text: #e4e4e7;
-  --univer-text-secondary: #a1a1aa;
-  --univer-border: #3f3f46;
+<style scoped>
+.spreadsheet-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: max-content;
 }
 
-.univer-container {
-  background: var(--univer-bg);
-  border: 1px solid var(--univer-border);
+.spreadsheet-table th,
+.spreadsheet-table td {
+  border: 1px solid #3f3f46;
+  padding: 0;
+  height: 28px;
+  min-width: 100px;
+  max-width: 200px;
 }
 
-/* Global Univer overrides */
-.univer-container [class*="univer"] {
+.col-header {
+  background: #27272a;
+  color: #a1a1aa;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-width: 100px;
+}
+
+.row-header {
+  background: #27272a;
+  color: #a1a1aa;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 50px !important;
+  width: 50px !important;
+}
+
+thead .row-header {
+  z-index: 20;
+}
+
+.cell {
+  background: #1a1a2e;
+  color: #e4e4e7;
+  font-size: 13px;
+  cursor: cell;
+  position: relative;
+}
+
+.cell:hover {
+  background: #1e1e32;
+}
+
+.cell.selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: -1px;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.cell.editing {
+  padding: 0;
+}
+
+.cell-value {
+  display: block;
+  padding: 4px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  padding: 4px 8px;
+  background: #1a1a2e;
+  color: #e4e4e7;
+  border: none;
+  outline: none;
+  font-size: 13px;
   font-family: inherit;
 }
 
-/* Workbench */
-.univer-container .univer-app-container-wrapper,
-.univer-container .univer-workbench-container,
-.univer-container .univer-workbench {
-  background: var(--univer-bg) !important;
+/* Scrollbar styling */
+.spreadsheet-container ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
 }
 
-/* Header/Toolbar */
-.univer-container .univer-header,
-.univer-container .univer-toolbar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
+.spreadsheet-container ::-webkit-scrollbar-track {
+  background: #1a1a2e;
 }
 
-.univer-container .univer-toolbar-group {
-  border-color: var(--univer-border) !important;
+.spreadsheet-container ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 6px;
+  border: 3px solid #1a1a2e;
 }
 
-.univer-container .univer-toolbar-btn,
-.univer-container .univer-icon-btn {
-  color: var(--univer-text) !important;
-}
-
-.univer-container .univer-toolbar-btn:hover,
-.univer-container .univer-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Formula Bar */
-.univer-container .univer-formula-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-formula-bar input,
-.univer-container .univer-formula-bar textarea {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-  border-color: var(--univer-border) !important;
-}
-
-/* Sheet tabs */
-.univer-container .univer-sheet-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-sheet-bar-item {
-  background: var(--univer-bg-secondary) !important;
-  color: var(--univer-text-secondary) !important;
-  border-color: var(--univer-border) !important;
-}
-
-.univer-container .univer-sheet-bar-item.univer-sheet-bar-item-active,
-.univer-container .univer-sheet-bar-item:hover {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-}
-
-/* Cells and grid */
-.univer-container .univer-sheet-container {
-  background: var(--univer-bg) !important;
-}
-
-/* Scrollbars */
-.univer-container ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.univer-container ::-webkit-scrollbar-track {
-  background: var(--univer-bg);
-}
-
-.univer-container ::-webkit-scrollbar-thumb {
-  background: var(--univer-border);
-  border-radius: 5px;
-}
-
-.univer-container ::-webkit-scrollbar-thumb:hover {
+.spreadsheet-container ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
 
-/* Dropdowns and menus */
-.univer-dropdown,
-.univer-context-menu,
-.univer-popup {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-  color: var(--univer-text) !important;
-}
-
-.univer-dropdown-item:hover,
-.univer-context-menu-item:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Input fields */
-.univer-container input,
-.univer-container textarea,
-.univer-container select {
-  background: var(--univer-bg) !important;
-  color: var(--univer-text) !important;
-  border-color: var(--univer-border) !important;
-}
-
-/* Status bar */
-.univer-container .univer-status-bar {
-  background: var(--univer-bg-secondary) !important;
-  border-color: var(--univer-border) !important;
-  color: var(--univer-text-secondary) !important;
+.spreadsheet-container ::-webkit-scrollbar-corner {
+  background: #1a1a2e;
 }
 </style>

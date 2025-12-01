@@ -27,8 +27,18 @@ export default defineConfig({
           'vendor': ['vue', 'vue-router', 'pinia'],
           'charts': ['chart.js', 'vue-chartjs'],
           'tiptap': ['@tiptap/vue-3', '@tiptap/starter-kit'],
+          'univer': ['@univerjs/presets', '@univerjs/preset-sheets-core'],
         },
       },
     },
+  },
+  optimizeDeps: {
+    include: [
+      '@univerjs/presets',
+      '@univerjs/preset-sheets-core',
+      'react',
+      'react-dom',
+      'rxjs',
+    ],
   },
 })

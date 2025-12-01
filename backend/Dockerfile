@@ -13,6 +13,7 @@ RUN apk add --no-cache \
     icu-dev \
     oniguruma-dev \
     linux-headers \
+    fcgi \
     $PHPIZE_DEPS
 
 # Install PHP extensions
@@ -32,6 +33,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Install Redis extension
 RUN pecl install redis-6.0.2 \
     && docker-php-ext-enable redis
+
+# Install php-fpm-healthcheck
+RUN curl -o /usr/local/bin/php-fpm-healthcheck https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \
+    && chmod +x /usr/local/bin/php-fpm-healthcheck
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

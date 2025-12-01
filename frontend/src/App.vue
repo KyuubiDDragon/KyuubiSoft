@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -9,6 +9,7 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 const route = useRoute()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const isAppReady = ref(false)
 
 const layout = computed(() => {
   if (route.meta.layout === 'auth') {
@@ -17,12 +18,24 @@ const layout = computed(() => {
   return DefaultLayout
 })
 
-// Initialize auth state
-authStore.initialize()
+// Initialize auth state before showing app
+onMounted(async () => {
+  await authStore.initialize()
+  isAppReady.value = true
+})
 </script>
 
 <template>
-  <div :class="{ 'dark': uiStore.isDarkMode }">
+  <!-- Loading screen while initializing -->
+  <div v-if="!isAppReady" class="min-h-screen bg-dark-900 flex items-center justify-center">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-gray-400">Laden...</p>
+    </div>
+  </div>
+
+  <!-- App content -->
+  <div v-else :class="{ 'dark': uiStore.isDarkMode }">
     <component :is="layout">
       <RouterView />
     </component>

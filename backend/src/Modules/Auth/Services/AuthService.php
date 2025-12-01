@@ -83,7 +83,8 @@ class AuthService
 
     public function login(LoginRequest $request): array
     {
-        $user = $this->userRepository->findByEmail($request->email);
+        // Find user by email or username
+        $user = $this->userRepository->findByEmailOrUsername($request->login);
 
         if (!$user) {
             throw new AuthException('Invalid credentials');

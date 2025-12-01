@@ -26,6 +26,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: true
+  },
+  minHeight: {
+    type: String,
+    default: '500px'
   }
 })
 
@@ -129,7 +133,7 @@ function insertTable() {
 </script>
 
 <template>
-  <div class="tiptap-editor">
+  <div class="tiptap-editor h-full flex flex-col">
     <!-- Toolbar -->
     <div v-if="editable && editor" class="flex flex-wrap gap-1 p-2 bg-dark-700 border border-dark-600 rounded-t-lg">
       <!-- Text Formatting -->
@@ -396,15 +400,22 @@ function insertTable() {
     <!-- Editor Content -->
     <EditorContent
       :editor="editor"
-      class="tiptap-content"
+      class="tiptap-content flex-1 overflow-hidden"
       :class="editable ? 'border-x border-b border-dark-600 rounded-b-lg' : 'border border-dark-600 rounded-lg'"
+      :style="{ minHeight: props.minHeight }"
     />
   </div>
 </template>
 
 <style>
+.tiptap-content {
+  display: flex;
+  flex-direction: column;
+}
+
 .tiptap-content .ProseMirror {
-  @apply p-4 min-h-[400px] max-h-[600px] overflow-y-auto text-gray-300 focus:outline-none;
+  @apply p-4 h-full overflow-y-auto text-gray-300 focus:outline-none;
+  flex: 1;
 }
 
 .tiptap-content .ProseMirror p.is-editor-empty:first-child::before {

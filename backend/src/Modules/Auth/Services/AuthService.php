@@ -69,6 +69,10 @@ class AuthService
         $refreshData = $this->jwtManager->generateRefreshToken($userId);
         $this->refreshTokenRepository->store($userId, $refreshData['token_id'], $refreshData['expires_at']);
 
+        // Add roles and permissions to user object
+        $user['roles'] = $roles;
+        $user['permissions'] = $permissions;
+
         return [
             'user' => $this->sanitizeUser($user),
             'access_token' => $accessToken,
@@ -132,6 +136,10 @@ class AuthService
 
         $refreshData = $this->jwtManager->generateRefreshToken($user['id']);
         $this->refreshTokenRepository->store($user['id'], $refreshData['token_id'], $refreshData['expires_at']);
+
+        // Add roles and permissions to user object
+        $user['roles'] = $roles;
+        $user['permissions'] = $permissions;
 
         return [
             'user' => $this->sanitizeUser($user),

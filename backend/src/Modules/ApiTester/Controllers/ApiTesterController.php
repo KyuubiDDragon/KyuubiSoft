@@ -114,6 +114,7 @@ class ApiTesterController
         );
 
         foreach ($environments as &$env) {
+            $env['is_active'] = (bool) $env['is_active'];
             $env['variables'] = $env['variables'] ? json_decode($env['variables'], true) : [];
         }
 
@@ -148,6 +149,7 @@ class ApiTesterController
         }
 
         $env = $this->db->fetchAssociative('SELECT * FROM api_environments WHERE id = ?', [$id]);
+        $env['is_active'] = (bool) $env['is_active'];
         $env['variables'] = json_decode($env['variables'], true);
 
         return JsonResponse::created($env, 'Environment created');

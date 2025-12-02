@@ -59,8 +59,9 @@ class BookmarkController
 
         $bookmarks = $this->db->fetchAllAssociative($sql, $params, $types);
 
-        // Add tags to each bookmark
+        // Add tags to each bookmark and cast booleans
         foreach ($bookmarks as &$bookmark) {
+            $bookmark['is_favorite'] = (bool) $bookmark['is_favorite'];
             $bookmark['tags'] = $this->db->fetchAllAssociative(
                 'SELECT bt.* FROM bookmark_tags bt
                  JOIN bookmark_tag_mappings btm ON bt.id = btm.tag_id
@@ -131,6 +132,7 @@ class BookmarkController
             'SELECT * FROM bookmarks WHERE id = ?',
             [$id]
         );
+        $bookmark['is_favorite'] = (bool) $bookmark['is_favorite'];
 
         return JsonResponse::created($bookmark, 'Bookmark created');
     }
@@ -150,6 +152,7 @@ class BookmarkController
             throw new NotFoundException('Bookmark not found');
         }
 
+        $bookmark['is_favorite'] = (bool) $bookmark['is_favorite'];
         $bookmark['tags'] = $this->db->fetchAllAssociative(
             'SELECT bt.* FROM bookmark_tags bt
              JOIN bookmark_tag_mappings btm ON bt.id = btm.tag_id

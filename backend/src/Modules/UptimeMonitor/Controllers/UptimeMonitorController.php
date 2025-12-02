@@ -28,8 +28,12 @@ class UptimeMonitorController
             [$userId]
         );
 
-        // Add recent checks for each monitor
+        // Add recent checks for each monitor and cast booleans
         foreach ($monitors as &$monitor) {
+            $monitor['is_active'] = (bool) $monitor['is_active'];
+            $monitor['is_paused'] = (bool) $monitor['is_paused'];
+            $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
+            $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
             $monitor['recent_checks'] = $this->db->fetchAllAssociative(
                 'SELECT status, response_time, checked_at FROM uptime_checks
                  WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT 30',
@@ -73,6 +77,10 @@ class UptimeMonitorController
         ]);
 
         $monitor = $this->db->fetchAssociative('SELECT * FROM uptime_monitors WHERE id = ?', [$id]);
+        $monitor['is_active'] = (bool) $monitor['is_active'];
+        $monitor['is_paused'] = (bool) $monitor['is_paused'];
+        $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
+        $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
 
         return JsonResponse::created($monitor, 'Monitor created');
     }
@@ -92,6 +100,12 @@ class UptimeMonitorController
             throw new NotFoundException('Monitor not found');
         }
 
+        // Cast booleans
+        $monitor['is_active'] = (bool) $monitor['is_active'];
+        $monitor['is_paused'] = (bool) $monitor['is_paused'];
+        $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
+        $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
+
         // Get recent checks
         $monitor['recent_checks'] = $this->db->fetchAllAssociative(
             'SELECT * FROM uptime_checks WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT 100',
@@ -99,10 +113,14 @@ class UptimeMonitorController
         );
 
         // Get incidents
-        $monitor['incidents'] = $this->db->fetchAllAssociative(
+        $incidents = $this->db->fetchAllAssociative(
             'SELECT * FROM uptime_incidents WHERE monitor_id = ? ORDER BY started_at DESC LIMIT 10',
             [$id]
         );
+        foreach ($incidents as &$incident) {
+            $incident['is_resolved'] = (bool) $incident['is_resolved'];
+        }
+        $monitor['incidents'] = $incidents;
 
         // Calculate uptime stats for different periods
         $monitor['stats'] = [

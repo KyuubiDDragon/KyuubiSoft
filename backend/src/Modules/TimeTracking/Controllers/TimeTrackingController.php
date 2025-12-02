@@ -33,27 +33,50 @@ class TimeTrackingController
                 LEFT JOIN projects p ON p.id = te.project_id
                 WHERE te.user_id = ?';
         $sqlParams = [$userId];
+        $types = [\PDO::PARAM_STR];
 
         if ($projectId) {
             $sql .= ' AND te.project_id = ?';
             $sqlParams[] = $projectId;
+            $types[] = \PDO::PARAM_STR;
         }
 
         if ($from) {
             $sql .= ' AND te.started_at >= ?';
             $sqlParams[] = $from;
+            $types[] = \PDO::PARAM_STR;
         }
 
         if ($to) {
             $sql .= ' AND te.started_at <= ?';
             $sqlParams[] = $to . ' 23:59:59';
+            $types[] = \PDO::PARAM_STR;
         }
+
+        // Count total before adding LIMIT/OFFSET
+        $countSql = 'SELECT COUNT(*) FROM time_entries te WHERE te.user_id = ?';
+        $countParams = [$userId];
+        if ($projectId) {
+            $countSql .= ' AND te.project_id = ?';
+            $countParams[] = $projectId;
+        }
+        if ($from) {
+            $countSql .= ' AND te.started_at >= ?';
+            $countParams[] = $from;
+        }
+        if ($to) {
+            $countSql .= ' AND te.started_at <= ?';
+            $countParams[] = $to . ' 23:59:59';
+        }
+        $total = (int) $this->db->fetchOne($countSql, $countParams);
 
         $sql .= ' ORDER BY te.started_at DESC LIMIT ? OFFSET ?';
         $sqlParams[] = $limit;
         $sqlParams[] = $offset;
+        $types[] = \PDO::PARAM_INT;
+        $types[] = \PDO::PARAM_INT;
 
-        $entries = $this->db->fetchAllAssociative($sql, $sqlParams);
+        $entries = $this->db->fetchAllAssociative($sql, $sqlParams, $types);
 
         foreach ($entries as &$entry) {
             $entry['tags'] = json_decode($entry['tags'] ?? '[]', true);
@@ -62,17 +85,9 @@ class TimeTrackingController
             $entry['duration_seconds'] = $this->calculateDuration($entry);
         }
 
-        // Get total count
-        $countSql = str_replace(
-            ['SELECT te.*, p.name as project_name, p.color as project_color', ' LIMIT ? OFFSET ?'],
-            ['SELECT COUNT(*) as total', ''],
-            $sql
-        );
-        $total = $this->db->fetchOne($countSql, array_slice($sqlParams, 0, -2));
-
-        return JsonResponse::success( [
+        return JsonResponse::success([
             'items' => $entries,
-            'total' => (int) $total,
+            'total' => $total,
             'limit' => $limit,
             'offset' => $offset,
         ]);

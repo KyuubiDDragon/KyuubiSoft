@@ -63,7 +63,15 @@ class UserRepository
     {
         $data['updated_at'] = date('Y-m-d H:i:s');
 
-        return $this->db->update('users', $data, ['id' => $id]) > 0;
+        // Build types array for proper NULL handling
+        $types = [];
+        foreach ($data as $key => $value) {
+            if ($value === null) {
+                $types[$key] = \Doctrine\DBAL\ParameterType::NULL;
+            }
+        }
+
+        return $this->db->update('users', $data, ['id' => $id], $types) > 0;
     }
 
     public function delete(string $id): bool

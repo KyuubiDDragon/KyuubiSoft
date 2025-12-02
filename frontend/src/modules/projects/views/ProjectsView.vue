@@ -311,15 +311,15 @@ const filteredLinkedItems = computed(() => {
 function getLinkedItemRoute(link) {
   switch (link.type) {
     case 'document':
-      return { name: 'documents', query: { id: link.id } }
+      return { name: 'documents', query: { open: link.item_id } }
     case 'list':
-      return { name: 'lists', query: { id: link.id } }
+      return { name: 'lists', query: { open: link.item_id } }
     case 'kanban_board':
-      return { name: 'kanban', query: { board: link.id } }
+      return { name: 'kanban', query: { open: link.item_id } }
     case 'connection':
-      return { name: 'connections', query: { id: link.id } }
+      return { name: 'connections', query: { open: link.item_id } }
     case 'snippet':
-      return { name: 'snippets', query: { id: link.id } }
+      return { name: 'snippets', query: { open: link.item_id } }
     default:
       return null
   }

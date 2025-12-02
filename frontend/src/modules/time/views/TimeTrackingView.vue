@@ -130,7 +130,16 @@ function stopLocalTimer() {
 
 function updateCurrentDuration() {
   if (!runningEntry.value) return
-  const start = new Date(runningEntry.value.started_at)
+  let startStr = runningEntry.value.started_at
+  // Ensure proper ISO format with T separator
+  if (startStr.includes(' ') && !startStr.includes('T')) {
+    startStr = startStr.replace(' ', 'T')
+  }
+  // If no timezone info, assume UTC (backend stores in UTC)
+  if (!startStr.endsWith('Z') && !startStr.includes('+') && !/\d{2}:\d{2}:\d{2}-/.test(startStr)) {
+    startStr += 'Z'
+  }
+  const start = new Date(startStr)
   const now = new Date()
   currentDuration.value = Math.floor((now - start) / 1000)
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -24,6 +25,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // State
@@ -106,6 +108,15 @@ const filteredConnections = computed(() => {
 // API Calls
 onMounted(async () => {
   await Promise.all([loadConnections(), loadTags()])
+
+  // Check for ?open=id query parameter to auto-open a connection
+  const openId = route.query.open
+  if (openId) {
+    const connection = connections.value.find(c => c.id === openId)
+    if (connection) {
+      showCredentials(connection)
+    }
+  }
 })
 
 async function loadConnections() {

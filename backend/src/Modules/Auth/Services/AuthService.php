@@ -287,37 +287,29 @@ class AuthService
 
     public function verify2FA(string $userId, string $code): array
     {
-        try {
-            $user = $this->userRepository->findById($userId);
+        $user = $this->userRepository->findById($userId);
 
-            if (empty($user['two_factor_temp_secret'])) {
-                throw new AuthException('2FA not initiated');
-            }
-
-            if (!$this->verify2FACode($user['two_factor_temp_secret'], $code)) {
-                throw new AuthException('Invalid verification code');
-            }
-
-            // Activate 2FA
-            $this->userRepository->update($userId, [
-                'two_factor_secret' => $user['two_factor_temp_secret'],
-                'two_factor_temp_secret' => null,
-            ]);
-
-            // Generate backup codes
-            $backupCodes = $this->generateBackupCodes();
-            $this->userRepository->storeBackupCodes($userId, $backupCodes);
-
-            return [
-                'backup_codes' => $backupCodes,
-            ];
-        } catch (AuthException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            error_log("2FA VERIFY ERROR: " . $e->getMessage());
-            error_log("2FA VERIFY TRACE: " . $e->getTraceAsString());
-            throw $e;
+        if (empty($user['two_factor_temp_secret'])) {
+            throw new AuthException('2FA not initiated');
         }
+
+        if (!$this->verify2FACode($user['two_factor_temp_secret'], $code)) {
+            throw new AuthException('Invalid verification code');
+        }
+
+        // Activate 2FA
+        $this->userRepository->update($userId, [
+            'two_factor_secret' => $user['two_factor_temp_secret'],
+            'two_factor_temp_secret' => null,
+        ]);
+
+        // Generate backup codes
+        $backupCodes = $this->generateBackupCodes();
+        $this->userRepository->storeBackupCodes($userId, $backupCodes);
+
+        return [
+            'backup_codes' => $backupCodes,
+        ];
     }
 
     public function disable2FA(string $userId, string $code): void

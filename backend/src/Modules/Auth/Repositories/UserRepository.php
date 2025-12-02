@@ -106,7 +106,6 @@ class UserRepository
             $this->db->insert('two_factor_backup_codes', [
                 'user_id' => $userId,
                 'code' => hash('sha256', $code),
-                'used_at' => null,
             ]);
         }
     }

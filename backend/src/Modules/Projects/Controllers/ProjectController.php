@@ -325,7 +325,7 @@ class ProjectController
         // Get items not yet linked to this project
         $items = match($type) {
             'document' => $this->db->fetchAllAssociative(
-                'SELECT id, title as name, type, updated_at FROM documents
+                'SELECT id, title as name, format, updated_at FROM documents
                  WHERE user_id = ? AND id NOT IN (SELECT linkable_id FROM project_links WHERE project_id = ? AND linkable_type = ?)
                  ORDER BY updated_at DESC LIMIT 50',
                 [$userId, $projectId, $type]
@@ -483,7 +483,7 @@ class ProjectController
     private function fetchLinkedItem(string $type, string $itemId): ?array
     {
         return match($type) {
-            'document' => $this->db->fetchAssociative('SELECT id, title, type FROM documents WHERE id = ?', [$itemId]),
+            'document' => $this->db->fetchAssociative('SELECT id, title, format FROM documents WHERE id = ?', [$itemId]),
             'list' => $this->db->fetchAssociative('SELECT id, title FROM lists WHERE id = ?', [$itemId]),
             'kanban_board' => $this->db->fetchAssociative('SELECT id, title, color FROM kanban_boards WHERE id = ?', [$itemId]),
             'connection' => $this->db->fetchAssociative('SELECT id, name, type, host FROM connections WHERE id = ?', [$itemId]),

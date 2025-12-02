@@ -263,6 +263,109 @@ class ListController
         return JsonResponse::success(null, 'Items reordered successfully');
     }
 
+    // Sharing functionality
+    public function getShares(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can view shares
+        $list = $this->db->fetchAssociative('SELECT * FROM lists WHERE id = ?', [$listId]);
+        if (!$list || $list['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $shares = $this->db->fetchAllAssociative(
+            'SELECT ls.*, u.username, u.email
+             FROM list_shares ls
+             JOIN users u ON ls.user_id = u.id
+             WHERE ls.list_id = ?',
+            [$listId]
+        );
+
+        return JsonResponse::success($shares);
+    }
+
+    public function addShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Only owner can add shares
+        $list = $this->db->fetchAssociative('SELECT * FROM lists WHERE id = ?', [$listId]);
+        if (!$list || $list['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        if (empty($data['user_id']) && empty($data['email'])) {
+            throw new ValidationException('User ID or email is required');
+        }
+
+        // Find user by email if not provided by ID
+        $shareUserId = $data['user_id'] ?? null;
+        if (!$shareUserId && !empty($data['email'])) {
+            $user = $this->db->fetchAssociative('SELECT id FROM users WHERE email = ?', [$data['email']]);
+            if (!$user) {
+                throw new NotFoundException('User not found with this email');
+            }
+            $shareUserId = $user['id'];
+        }
+
+        // Can't share with yourself
+        if ($shareUserId === $userId) {
+            throw new ValidationException('Cannot share with yourself');
+        }
+
+        // Check if already shared
+        $existing = $this->db->fetchAssociative(
+            'SELECT * FROM list_shares WHERE list_id = ? AND user_id = ?',
+            [$listId, $shareUserId]
+        );
+
+        $permission = $data['permission'] ?? 'view';
+        if (!in_array($permission, ['view', 'edit'])) {
+            $permission = 'view';
+        }
+
+        if ($existing) {
+            $this->db->update('list_shares', ['permission' => $permission], [
+                'list_id' => $listId,
+                'user_id' => $shareUserId,
+            ]);
+        } else {
+            $this->db->insert('list_shares', [
+                'list_id' => $listId,
+                'user_id' => $shareUserId,
+                'permission' => $permission,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return JsonResponse::success(null, 'List shared successfully');
+    }
+
+    public function removeShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $listId = $route->getArgument('id');
+        $shareUserId = $route->getArgument('userId');
+
+        // Only owner can remove shares
+        $list = $this->db->fetchAssociative('SELECT * FROM lists WHERE id = ?', [$listId]);
+        if (!$list || $list['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $this->db->delete('list_shares', [
+            'list_id' => $listId,
+            'user_id' => $shareUserId,
+        ]);
+
+        return JsonResponse::success(null, 'Share removed successfully');
+    }
+
     private function getListForUser(string $listId, string $userId, bool $requireOwner = false): array
     {
         $list = $this->db->fetchAssociative(

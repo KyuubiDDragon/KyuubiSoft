@@ -8,6 +8,8 @@ const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue'
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
 const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
+const SnippetsView = () => import('@/modules/snippets/views/SnippetsView.vue')
+const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
@@ -50,6 +52,18 @@ const routes = [
     path: '/connections',
     name: 'connections',
     component: ConnectionsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/snippets',
+    name: 'snippets',
+    component: SnippetsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/kanban',
+    name: 'kanban',
+    component: KanbanView,
     meta: { requiresAuth: true },
   },
   {

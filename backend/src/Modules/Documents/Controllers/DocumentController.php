@@ -28,21 +28,47 @@ class DocumentController
         $page = max(1, (int) ($queryParams['page'] ?? 1));
         $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 20)));
         $offset = ($page - 1) * $perPage;
+        $includeShared = ($queryParams['include_shared'] ?? '1') === '1';
 
-        $documents = $this->db->fetchAllAssociative(
-            'SELECT id, user_id, folder_id, title, format, is_archived, created_at, updated_at
-             FROM documents
-             WHERE user_id = ? AND is_archived = FALSE
-             ORDER BY updated_at DESC
-             LIMIT ? OFFSET ?',
-            [$userId, $perPage, $offset],
-            [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
-        );
+        // Get own documents and shared documents
+        if ($includeShared) {
+            $documents = $this->db->fetchAllAssociative(
+                'SELECT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
+                        u.username as owner_name, ds.permission as shared_permission,
+                        CASE WHEN d.user_id = ? THEN 1 ELSE 0 END as is_owner
+                 FROM documents d
+                 LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?
+                 LEFT JOIN users u ON d.user_id = u.id
+                 WHERE (d.user_id = ? OR ds.user_id = ?) AND d.is_archived = FALSE
+                 ORDER BY d.updated_at DESC
+                 LIMIT ? OFFSET ?',
+                [$userId, $userId, $userId, $userId, $perPage, $offset],
+                [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+            );
 
-        $total = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
-            [$userId]
-        );
+            $total = (int) $this->db->fetchOne(
+                'SELECT COUNT(DISTINCT d.id) FROM documents d
+                 LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?
+                 WHERE (d.user_id = ? OR ds.user_id = ?) AND d.is_archived = FALSE',
+                [$userId, $userId, $userId]
+            );
+        } else {
+            $documents = $this->db->fetchAllAssociative(
+                'SELECT id, user_id, folder_id, title, format, is_archived, created_at, updated_at,
+                        1 as is_owner
+                 FROM documents
+                 WHERE user_id = ? AND is_archived = FALSE
+                 ORDER BY updated_at DESC
+                 LIMIT ? OFFSET ?',
+                [$userId, $perPage, $offset],
+                [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+            );
+
+            $total = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
+                [$userId]
+            );
+        }
 
         return JsonResponse::paginated($documents, $total, $page, $perPage);
     }
@@ -177,6 +203,110 @@ class DocumentController
         }
 
         throw new ForbiddenException('Access denied');
+    }
+
+    // Sharing functionality
+    public function getShares(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can view shares
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $shares = $this->db->fetchAllAssociative(
+            'SELECT ds.*, u.username, u.email
+             FROM document_shares ds
+             JOIN users u ON ds.user_id = u.id
+             WHERE ds.document_id = ?',
+            [$docId]
+        );
+
+        return JsonResponse::success($shares);
+    }
+
+    public function addShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Only owner can add shares
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        if (empty($data['user_id']) && empty($data['email'])) {
+            throw new ValidationException('User ID or email is required');
+        }
+
+        // Find user by email if not provided by ID
+        $shareUserId = $data['user_id'] ?? null;
+        if (!$shareUserId && !empty($data['email'])) {
+            $user = $this->db->fetchAssociative('SELECT id FROM users WHERE email = ?', [$data['email']]);
+            if (!$user) {
+                throw new NotFoundException('User not found with this email');
+            }
+            $shareUserId = $user['id'];
+        }
+
+        // Can't share with yourself
+        if ($shareUserId === $userId) {
+            throw new ValidationException('Cannot share with yourself');
+        }
+
+        // Check if already shared
+        $existing = $this->db->fetchAssociative(
+            'SELECT * FROM document_shares WHERE document_id = ? AND user_id = ?',
+            [$docId, $shareUserId]
+        );
+
+        $permission = $data['permission'] ?? 'view';
+        if (!in_array($permission, ['view', 'edit'])) {
+            $permission = 'view';
+        }
+
+        if ($existing) {
+            // Update permission
+            $this->db->update('document_shares', ['permission' => $permission], [
+                'document_id' => $docId,
+                'user_id' => $shareUserId,
+            ]);
+        } else {
+            $this->db->insert('document_shares', [
+                'document_id' => $docId,
+                'user_id' => $shareUserId,
+                'permission' => $permission,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return JsonResponse::success(null, 'Document shared successfully');
+    }
+
+    public function removeShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $docId = $route->getArgument('id');
+        $shareUserId = $route->getArgument('userId');
+
+        // Only owner can remove shares
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $this->db->delete('document_shares', [
+            'document_id' => $docId,
+            'user_id' => $shareUserId,
+        ]);
+
+        return JsonResponse::success(null, 'Share removed successfully');
     }
 
     private function createVersion(string $docId, string $content, string $userId, ?string $summary = null): void

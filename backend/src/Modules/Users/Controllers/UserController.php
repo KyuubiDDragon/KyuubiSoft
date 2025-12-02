@@ -86,7 +86,7 @@ class UserController
         $selfFields = ['username', 'avatar_url'];
 
         // Additional fields for admins
-        $adminFields = ['email', 'is_active', 'is_verified'];
+        $adminFields = ['email', 'is_active', 'is_verified', 'restricted_to_projects'];
 
         foreach ($selfFields as $field) {
             if (isset($data[$field])) {

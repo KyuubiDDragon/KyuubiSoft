@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,7 +18,8 @@ use Slim\Routing\RouteContext;
 class ListController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -30,32 +32,57 @@ class ListController
         $offset = ($page - 1) * $perPage;
         $projectId = $queryParams['project_id'] ?? null;
 
+        // Check if user is restricted to projects only
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = [];
+
+        if ($isRestricted) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::paginated([], 0, $page, $perPage);
+            }
+        }
+
         // Build project filter
         $projectJoin = '';
         $projectParams = [];
         $projectTypes = [];
 
         if ($projectId) {
+            if ($isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::paginated([], 0, $page, $perPage);
+            }
             $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = ? AND pl.project_id = ?';
             $projectParams = ['list', $projectId];
             $projectTypes = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        } elseif ($isRestricted) {
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $projectJoin = " INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = 'list' AND pl.project_id IN ({$placeholders})";
+            $projectParams = $accessibleProjectIds;
+            $projectTypes = array_fill(0, count($accessibleProjectIds), \PDO::PARAM_STR);
         }
 
-        $sql = 'SELECT l.*,
+        $whereClause = $isRestricted ? 'l.is_archived = FALSE' : 'l.user_id = ? AND l.is_archived = FALSE';
+
+        $sql = 'SELECT DISTINCT l.*,
                     (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
                     (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = TRUE) as completed_count
              FROM lists l' . $projectJoin . '
-             WHERE l.user_id = ? AND l.is_archived = FALSE
+             WHERE ' . $whereClause . '
              ORDER BY l.updated_at DESC
              LIMIT ? OFFSET ?';
 
-        $params = array_merge($projectParams, [$userId, $perPage, $offset]);
-        $types = array_merge($projectTypes, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]);
+        $params = $isRestricted
+            ? array_merge($projectParams, [$perPage, $offset])
+            : array_merge($projectParams, [$userId, $perPage, $offset]);
+        $types = $isRestricted
+            ? array_merge($projectTypes, [\PDO::PARAM_INT, \PDO::PARAM_INT])
+            : array_merge($projectTypes, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]);
 
         $lists = $this->db->fetchAllAssociative($sql, $params, $types);
 
-        $countSql = 'SELECT COUNT(*) FROM lists l' . $projectJoin . ' WHERE l.user_id = ? AND l.is_archived = FALSE';
-        $countParams = array_merge($projectParams, [$userId]);
+        $countSql = 'SELECT COUNT(DISTINCT l.id) FROM lists l' . $projectJoin . ' WHERE ' . $whereClause;
+        $countParams = $isRestricted ? $projectParams : array_merge($projectParams, [$userId]);
 
         $total = (int) $this->db->fetchOne($countSql, $countParams);
 
@@ -388,6 +415,14 @@ class ListController
 
         if (!$list) {
             throw new NotFoundException('List not found');
+        }
+
+        // Check if user is restricted to projects only
+        if ($this->projectAccess->isUserRestricted($userId)) {
+            if (!$this->projectAccess->canAccessItem($userId, 'list', $listId)) {
+                throw new ForbiddenException('Access denied - list not in your accessible projects');
+            }
+            return $list;
         }
 
         // Check ownership

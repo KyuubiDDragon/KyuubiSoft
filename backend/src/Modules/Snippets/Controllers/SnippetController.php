@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,7 +18,8 @@ use Slim\Routing\RouteContext;
 class SnippetController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -33,20 +35,41 @@ class SnippetController
         $category = $queryParams['category'] ?? null;
         $projectId = $queryParams['project_id'] ?? null;
 
+        // Check if user is restricted to projects only
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = [];
+
+        if ($isRestricted) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::paginated([], 0, $page, $perPage);
+            }
+        }
+
         // Build project filter
         $projectJoin = '';
         $projectParams = [];
         $projectTypes = [];
 
         if ($projectId) {
+            if ($isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::paginated([], 0, $page, $perPage);
+            }
             $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = s.id AND pl.linkable_type = ? AND pl.project_id = ?';
             $projectParams = ['snippet', $projectId];
             $projectTypes = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        } elseif ($isRestricted) {
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $projectJoin = " INNER JOIN project_links pl ON pl.linkable_id = s.id AND pl.linkable_type = 'snippet' AND pl.project_id IN ({$placeholders})";
+            $projectParams = $accessibleProjectIds;
+            $projectTypes = array_fill(0, count($accessibleProjectIds), \PDO::PARAM_STR);
         }
 
-        $sql = 'SELECT s.* FROM snippets s' . $projectJoin . ' WHERE s.user_id = ?';
-        $params = array_merge($projectParams, [$userId]);
-        $types = array_merge($projectTypes, [\PDO::PARAM_STR]);
+        $whereClause = $isRestricted ? '1=1' : 's.user_id = ?';
+
+        $sql = 'SELECT DISTINCT s.* FROM snippets s' . $projectJoin . ' WHERE ' . $whereClause;
+        $params = $isRestricted ? $projectParams : array_merge($projectParams, [$userId]);
+        $types = $isRestricted ? $projectTypes : array_merge($projectTypes, [\PDO::PARAM_STR]);
 
         if ($search) {
             $sql .= ' AND (s.title LIKE ? OR s.description LIKE ? OR s.content LIKE ?)';
@@ -85,8 +108,8 @@ class SnippetController
         }
 
         // Count total
-        $countSql = 'SELECT COUNT(*) FROM snippets s' . $projectJoin . ' WHERE s.user_id = ?';
-        $countParams = array_merge($projectParams, [$userId]);
+        $countSql = 'SELECT COUNT(DISTINCT s.id) FROM snippets s' . $projectJoin . ' WHERE ' . $whereClause;
+        $countParams = $isRestricted ? $projectParams : array_merge($projectParams, [$userId]);
 
         if ($search) {
             $countSql .= ' AND (s.title LIKE ? OR s.description LIKE ? OR s.content LIKE ?)';
@@ -246,12 +269,25 @@ class SnippetController
     private function getSnippetForUser(string $snippetId, string $userId): array
     {
         $snippet = $this->db->fetchAssociative(
-            'SELECT * FROM snippets WHERE id = ? AND user_id = ?',
-            [$snippetId, $userId]
+            'SELECT * FROM snippets WHERE id = ?',
+            [$snippetId]
         );
 
         if (!$snippet) {
             throw new NotFoundException('Snippet not found');
+        }
+
+        // Check if user is restricted to projects only
+        if ($this->projectAccess->isUserRestricted($userId)) {
+            if (!$this->projectAccess->canAccessItem($userId, 'snippet', $snippetId)) {
+                throw new ForbiddenException('Access denied - snippet not in your accessible projects');
+            }
+            return $snippet;
+        }
+
+        // Check ownership for non-restricted users
+        if ($snippet['user_id'] !== $userId) {
+            throw new ForbiddenException('Access denied');
         }
 
         return $snippet;

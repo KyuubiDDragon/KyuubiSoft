@@ -28,6 +28,18 @@ async function loadUsers() {
   }
 }
 
+async function toggleProjectRestriction(user) {
+  try {
+    const newValue = !user.restricted_to_projects
+    await api.put(`/api/v1/users/${user.id}`, {
+      restricted_to_projects: newValue
+    })
+    user.restricted_to_projects = newValue
+  } catch (err) {
+    console.error('Failed to toggle restriction:', err)
+  }
+}
+
 function getRoleBadgeClass(role) {
   const classes = {
     owner: 'bg-purple-600 text-white',
@@ -83,6 +95,9 @@ function getRoleBadgeClass(role) {
               Status
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Projektzugriff
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
               Registriert
             </th>
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -128,6 +143,18 @@ function getRoleBadgeClass(role) {
                 {{ user.is_active ? 'Aktiv' : 'Inaktiv' }}
               </span>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                @click="toggleProjectRestriction(user)"
+                class="px-2 py-1 text-xs font-medium rounded-full transition-colors"
+                :class="user.restricted_to_projects
+                  ? 'bg-orange-900 text-orange-300 hover:bg-orange-800'
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
+                :title="user.restricted_to_projects ? 'Nur geteilte Projekte' : 'Voller Zugriff'"
+              >
+                {{ user.restricted_to_projects ? 'Eingeschränkt' : 'Voller Zugriff' }}
+              </button>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
               {{ new Date(user.created_at).toLocaleDateString('de-DE') }}
             </td>
@@ -141,7 +168,7 @@ function getRoleBadgeClass(role) {
             </td>
           </tr>
           <tr v-if="users.length === 0">
-            <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+            <td colspan="7" class="px-6 py-12 text-center text-gray-400">
               Keine Benutzer gefunden
             </td>
           </tr>

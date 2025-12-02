@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Projects\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -14,7 +15,8 @@ use Slim\Routing\RouteContext;
 class ProjectController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     public function index(Request $request, Response $response): Response
@@ -25,13 +27,26 @@ class ProjectController
         $status = $params['status'] ?? null;
         $search = $params['search'] ?? null;
 
-        // Simplified query - fetch projects first
-        $sql = 'SELECT DISTINCT p.*
-                FROM projects p
-                LEFT JOIN project_shares ps ON ps.project_id = p.id AND ps.user_id = ?
-                WHERE p.user_id = ? OR ps.user_id IS NOT NULL';
-        $sqlParams = [$userId, $userId];
-        $types = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        // Check if user is restricted to projects only
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+
+        if ($isRestricted) {
+            // Restricted users only see projects shared with them
+            $sql = 'SELECT DISTINCT p.*
+                    FROM projects p
+                    INNER JOIN project_shares ps ON ps.project_id = p.id AND ps.user_id = ?
+                    WHERE 1=1';
+            $sqlParams = [$userId];
+            $types = [\PDO::PARAM_STR];
+        } else {
+            // Normal users see their own projects and shared ones
+            $sql = 'SELECT DISTINCT p.*
+                    FROM projects p
+                    LEFT JOIN project_shares ps ON ps.project_id = p.id AND ps.user_id = ?
+                    WHERE p.user_id = ? OR ps.user_id IS NOT NULL';
+            $sqlParams = [$userId, $userId];
+            $types = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        }
 
         if ($status) {
             $sql .= ' AND p.status = ?';

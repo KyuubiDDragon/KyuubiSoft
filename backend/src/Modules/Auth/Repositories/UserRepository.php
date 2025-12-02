@@ -119,7 +119,7 @@ class UserRepository
     public function findAll(int $limit = 50, int $offset = 0): array
     {
         return $this->db->fetchAllAssociative(
-            'SELECT id, email, username, avatar_url, is_active, is_verified, last_login_at, created_at
+            'SELECT id, email, username, avatar_url, is_active, is_verified, restricted_to_projects, last_login_at, created_at
              FROM users
              ORDER BY created_at DESC
              LIMIT ? OFFSET ?',

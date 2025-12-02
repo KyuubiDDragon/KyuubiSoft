@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -18,9 +19,13 @@ import {
   CodeBracketIcon,
   ArchiveBoxIcon,
   CheckCircleIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid, FolderIcon as FolderIconSolid } from '@heroicons/vue/24/solid'
 
+const router = useRouter()
 const uiStore = useUiStore()
 
 // State
@@ -35,6 +40,10 @@ const linkableItems = ref([])
 const loadingLinkable = ref(false)
 const statusFilter = ref('')
 const searchQuery = ref('')
+
+// Linked items filter and sort
+const linkedItemsFilter = ref('')
+const linkedItemsSort = ref('date_desc')
 
 // Form
 const form = ref({
@@ -265,6 +274,65 @@ function getLinkIcon(type) {
   return linkType?.icon || LinkIcon
 }
 
+// Filtered and sorted linked items
+const filteredLinkedItems = computed(() => {
+  if (!selectedProject.value?.linked_items) return []
+
+  let items = [...selectedProject.value.linked_items]
+
+  // Filter by type
+  if (linkedItemsFilter.value) {
+    items = items.filter(item => item.type === linkedItemsFilter.value)
+  }
+
+  // Sort
+  items.sort((a, b) => {
+    switch (linkedItemsSort.value) {
+      case 'name_asc':
+        return (a.data.name || a.data.title || '').localeCompare(b.data.name || b.data.title || '')
+      case 'name_desc':
+        return (b.data.name || b.data.title || '').localeCompare(a.data.name || a.data.title || '')
+      case 'type_asc':
+        return a.type.localeCompare(b.type)
+      case 'type_desc':
+        return b.type.localeCompare(a.type)
+      case 'date_asc':
+        return new Date(a.linked_at) - new Date(b.linked_at)
+      case 'date_desc':
+      default:
+        return new Date(b.linked_at) - new Date(a.linked_at)
+    }
+  })
+
+  return items
+})
+
+// Get route for linked item
+function getLinkedItemRoute(link) {
+  switch (link.type) {
+    case 'document':
+      return { name: 'documents', query: { id: link.id } }
+    case 'list':
+      return { name: 'lists', query: { id: link.id } }
+    case 'kanban_board':
+      return { name: 'kanban', query: { board: link.id } }
+    case 'connection':
+      return { name: 'connections', query: { id: link.id } }
+    case 'snippet':
+      return { name: 'snippets', query: { id: link.id } }
+    default:
+      return null
+  }
+}
+
+// Open linked item
+function openLinkedItem(link) {
+  const route = getLinkedItemRoute(link)
+  if (route) {
+    router.push(route)
+  }
+}
+
 onMounted(() => {
   fetchProjects()
 })
@@ -464,39 +532,75 @@ onMounted(() => {
       <div class="bg-dark-800 border border-dark-700 rounded-xl">
         <div class="flex items-center justify-between p-4 border-b border-dark-700">
           <h2 class="text-lg font-semibold text-white">Verknüpfte Elemente</h2>
-          <div class="flex gap-2">
-            <button
-              v-for="type in linkTypes"
-              :key="type.value"
-              @click="openLinkModal(type.value)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
-              :title="type.label + ' verknüpfen'"
+          <div class="flex items-center gap-3">
+            <!-- Filter -->
+            <select
+              v-model="linkedItemsFilter"
+              class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
             >
-              <component :is="type.icon" class="w-5 h-5" />
-            </button>
+              <option value="">Alle Typen</option>
+              <option v-for="type in linkTypes" :key="type.value" :value="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+            <!-- Sort -->
+            <select
+              v-model="linkedItemsSort"
+              class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
+            >
+              <option value="date_desc">Neueste zuerst</option>
+              <option value="date_asc">Älteste zuerst</option>
+              <option value="name_asc">Name A-Z</option>
+              <option value="name_desc">Name Z-A</option>
+              <option value="type_asc">Typ A-Z</option>
+              <option value="type_desc">Typ Z-A</option>
+            </select>
+            <!-- Add buttons -->
+            <div class="flex gap-1 border-l border-dark-600 pl-3">
+              <button
+                v-for="type in linkTypes"
+                :key="type.value"
+                @click="openLinkModal(type.value)"
+                class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                :title="type.label + ' verknüpfen'"
+              >
+                <component :is="type.icon" class="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
         <div class="p-4">
-          <div v-if="selectedProject.linked_items?.length" class="space-y-2">
+          <div v-if="filteredLinkedItems.length" class="space-y-2">
             <div
-              v-for="link in selectedProject.linked_items"
+              v-for="link in filteredLinkedItems"
               :key="link.link_id"
-              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg group"
+              @click="openLinkedItem(link)"
+              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg group cursor-pointer hover:bg-dark-600 transition-colors"
             >
               <div class="flex items-center gap-3">
                 <component :is="getLinkIcon(link.type)" class="w-5 h-5 text-gray-400" />
                 <div>
-                  <p class="text-white">{{ link.data.name || link.data.title }}</p>
+                  <p class="text-white group-hover:text-primary-400 transition-colors">{{ link.data.name || link.data.title }}</p>
                   <p class="text-xs text-gray-500">{{ linkTypes.find(t => t.value === link.type)?.label }}</p>
                 </div>
               </div>
-              <button
-                @click="removeLink(link)"
-                class="p-1.5 text-gray-400 hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <TrashIcon class="w-4 h-4" />
-              </button>
+              <div class="flex items-center gap-2">
+                <ArrowTopRightOnSquareIcon class="w-4 h-4 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <button
+                  @click.stop="removeLink(link)"
+                  class="p-1.5 text-gray-400 hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <TrashIcon class="w-4 h-4" />
+                </button>
+              </div>
             </div>
+          </div>
+          <div v-else-if="selectedProject.linked_items?.length && linkedItemsFilter" class="text-center py-8">
+            <FunnelIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
+            <p class="text-gray-400">Keine Elemente für diesen Filter</p>
+            <button @click="linkedItemsFilter = ''" class="text-sm text-primary-500 hover:text-primary-400 mt-1">
+              Filter zurücksetzen
+            </button>
           </div>
           <div v-else class="text-center py-8">
             <LinkIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />

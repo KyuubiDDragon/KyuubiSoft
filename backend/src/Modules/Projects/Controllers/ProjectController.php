@@ -25,37 +25,51 @@ class ProjectController
         $status = $params['status'] ?? null;
         $search = $params['search'] ?? null;
 
-        $sql = 'SELECT p.*,
-                    (SELECT COUNT(*) FROM project_links WHERE project_id = p.id) as link_count,
-                    (SELECT SUM(duration_seconds) FROM time_entries WHERE project_id = p.id) as total_time_seconds
+        // Simplified query - fetch projects first
+        $sql = 'SELECT DISTINCT p.*
                 FROM projects p
-                WHERE (p.user_id = ? OR EXISTS (
-                    SELECT 1 FROM project_shares ps WHERE ps.project_id = p.id AND ps.user_id = ?
-                ))';
+                LEFT JOIN project_shares ps ON ps.project_id = p.id AND ps.user_id = ?
+                WHERE p.user_id = ? OR ps.user_id IS NOT NULL';
         $sqlParams = [$userId, $userId];
+        $types = [\PDO::PARAM_STR, \PDO::PARAM_STR];
 
         if ($status) {
             $sql .= ' AND p.status = ?';
             $sqlParams[] = $status;
+            $types[] = \PDO::PARAM_STR;
         }
 
         if ($search) {
             $sql .= ' AND (p.name LIKE ? OR p.description LIKE ?)';
             $sqlParams[] = '%' . $search . '%';
             $sqlParams[] = '%' . $search . '%';
+            $types[] = \PDO::PARAM_STR;
+            $types[] = \PDO::PARAM_STR;
         }
 
         $sql .= ' ORDER BY p.is_favorite DESC, p.updated_at DESC';
 
-        $projects = $this->db->fetchAllAssociative($sql, $sqlParams);
+        $projects = $this->db->fetchAllAssociative($sql, $sqlParams, $types);
 
+        // Fetch counts separately for each project
         foreach ($projects as &$project) {
             $project['is_favorite'] = (bool) $project['is_favorite'];
             $project['is_owner'] = $project['user_id'] === $userId;
-            $project['total_time_seconds'] = (int) ($project['total_time_seconds'] ?? 0);
+
+            // Get link count
+            $project['link_count'] = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM project_links WHERE project_id = ?',
+                [$project['id']]
+            );
+
+            // Get total time
+            $project['total_time_seconds'] = (int) ($this->db->fetchOne(
+                'SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries WHERE project_id = ?',
+                [$project['id']]
+            ) ?? 0);
         }
 
-        return JsonResponse::success( ['items' => $projects]);
+        return JsonResponse::success(['items' => $projects]);
     }
 
     public function create(Request $request, Response $response): Response

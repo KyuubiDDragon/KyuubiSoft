@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class WebhookController
 {
@@ -105,10 +106,10 @@ class WebhookController
         ], 201);
     }
 
-    public function show(Request $request, Response $response, array $args): Response
+    public function show(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $webhookId = $args['id'];
+        $webhookId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $webhook = $this->db->fetchAssociative(
             'SELECT * FROM webhooks WHERE id = ? AND user_id = ?',
@@ -138,10 +139,10 @@ class WebhookController
         return JsonResponse::success( $webhook);
     }
 
-    public function update(Request $request, Response $response, array $args): Response
+    public function update(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $webhookId = $args['id'];
+        $webhookId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $webhook = $this->db->fetchAssociative(
@@ -208,10 +209,10 @@ class WebhookController
         return JsonResponse::success( ['message' => 'Webhook aktualisiert']);
     }
 
-    public function delete(Request $request, Response $response, array $args): Response
+    public function delete(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $webhookId = $args['id'];
+        $webhookId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $deleted = $this->db->delete('webhooks', [
             'id' => $webhookId,
@@ -225,10 +226,10 @@ class WebhookController
         return JsonResponse::success( ['message' => 'Webhook gelöscht']);
     }
 
-    public function test(Request $request, Response $response, array $args): Response
+    public function test(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $webhookId = $args['id'];
+        $webhookId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $webhook = $this->db->fetchAssociative(
             'SELECT * FROM webhooks WHERE id = ? AND user_id = ?',

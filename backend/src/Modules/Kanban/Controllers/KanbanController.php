@@ -97,11 +97,25 @@ class KanbanController
 
         foreach ($columns as &$column) {
             $column['cards'] = $this->db->fetchAllAssociative(
-                'SELECT * FROM kanban_cards WHERE column_id = ? ORDER BY position',
+                'SELECT kc.*, u.username as assignee_name, u.email as assignee_email
+                 FROM kanban_cards kc
+                 LEFT JOIN users u ON u.id = kc.assigned_to
+                 WHERE kc.column_id = ?
+                 ORDER BY kc.position',
                 [$column['id']]
             );
             foreach ($column['cards'] as &$card) {
                 $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+                if ($card['assigned_to']) {
+                    $card['assignee'] = [
+                        'id' => $card['assigned_to'],
+                        'username' => $card['assignee_name'],
+                        'email' => $card['assignee_email'],
+                    ];
+                } else {
+                    $card['assignee'] = null;
+                }
+                unset($card['assignee_name'], $card['assignee_email']);
             }
         }
 
@@ -274,6 +288,7 @@ class KanbanController
             'position' => $maxPosition + 1,
             'priority' => $data['priority'] ?? 'medium',
             'due_date' => $data['due_date'] ?? null,
+            'assigned_to' => $data['assigned_to'] ?? null,
             'labels' => isset($data['labels']) ? json_encode($data['labels']) : null,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -299,10 +314,10 @@ class KanbanController
         $this->getBoardForUser($boardId, $userId, true);
 
         $updateData = ['updated_at' => date('Y-m-d H:i:s')];
-        $allowedFields = ['title', 'description', 'color', 'priority', 'due_date'];
+        $allowedFields = ['title', 'description', 'color', 'priority', 'due_date', 'assigned_to'];
 
         foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
             }
         }
@@ -369,6 +384,36 @@ class KanbanController
         $this->db->update('kanban_boards', ['updated_at' => date('Y-m-d H:i:s')], ['id' => $boardId]);
 
         return JsonResponse::success(null, 'Card moved successfully');
+    }
+
+    public function getBoardUsers(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $board = $this->getBoardForUser($boardId, $userId);
+
+        // Get board owner
+        $owner = $this->db->fetchAssociative(
+            'SELECT id, username, email FROM users WHERE id = ?',
+            [$board['user_id']]
+        );
+
+        // Get shared users
+        $sharedUsers = $this->db->fetchAllAssociative(
+            'SELECT u.id, u.username, u.email, kbs.permission
+             FROM kanban_board_shares kbs
+             JOIN users u ON u.id = kbs.user_id
+             WHERE kbs.board_id = ?',
+            [$boardId]
+        );
+
+        $users = [$owner];
+        foreach ($sharedUsers as $user) {
+            $users[] = $user;
+        }
+
+        return JsonResponse::success(['users' => $users]);
     }
 
     private function getBoardForUser(string $boardId, string $userId, bool $requireEditAccess = false): array

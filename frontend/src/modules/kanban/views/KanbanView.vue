@@ -12,6 +12,7 @@ import {
   CalendarIcon,
   TagIcon,
   FlagIcon,
+  UserCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid'
 
@@ -28,6 +29,7 @@ const editingBoard = ref(null)
 const editingCard = ref(null)
 const editingColumn = ref(null)
 const targetColumnId = ref(null)
+const boardUsers = ref([])
 
 // Board form
 const boardForm = ref({
@@ -51,6 +53,7 @@ const cardForm = ref({
   due_date: null,
   labels: [],
   color: null,
+  assigned_to: null,
 })
 
 // Colors for boards
@@ -96,9 +99,21 @@ async function fetchBoard(boardId) {
   try {
     const response = await api.get(`/api/v1/kanban/boards/${boardId}`)
     selectedBoard.value = response.data.data
+    // Also fetch board users
+    await fetchBoardUsers(boardId)
   } catch (error) {
     uiStore.showError('Fehler beim Laden des Boards')
     selectedBoard.value = null
+  }
+}
+
+// Fetch board users for assignment
+async function fetchBoardUsers(boardId) {
+  try {
+    const response = await api.get(`/api/v1/kanban/boards/${boardId}/users`)
+    boardUsers.value = response.data.data.users || []
+  } catch (error) {
+    boardUsers.value = []
   }
 }
 
@@ -235,6 +250,7 @@ function openCardModal(columnId, card = null) {
       due_date: card.due_date,
       labels: card.labels || [],
       color: card.color,
+      assigned_to: card.assigned_to || null,
     }
   } else {
     cardForm.value = {
@@ -244,6 +260,7 @@ function openCardModal(columnId, card = null) {
       due_date: null,
       labels: [],
       color: null,
+      assigned_to: null,
     }
   }
   showCardModal.value = true
@@ -528,6 +545,7 @@ onMounted(() => {
               >
                 <template #item="{ element: card }">
                   <div
+                    @click="openCardModal(column.id, card)"
                     class="bg-dark-700 rounded-lg p-3 cursor-pointer hover:bg-dark-600 transition-colors group"
                     :class="{ 'border-l-4': card.color }"
                     :style="card.color ? { borderLeftColor: card.color } : {}"
@@ -568,16 +586,20 @@ onMounted(() => {
                           <CalendarIcon class="w-3 h-3" />
                           {{ formatDate(card.due_date) }}
                         </span>
+                        <!-- Assignee -->
+                        <span
+                          v-if="card.assignee"
+                          class="text-xs flex items-center gap-1 text-gray-400"
+                          :title="card.assignee.username"
+                        >
+                          <div class="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center text-[10px] text-white font-medium">
+                            {{ card.assignee.username?.[0]?.toUpperCase() || '?' }}
+                          </div>
+                        </span>
                       </div>
 
                       <!-- Actions -->
                       <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          @click.stop="openCardModal(column.id, card)"
-                          class="p-1 text-gray-400 hover:text-white rounded"
-                        >
-                          <PencilIcon class="w-3 h-3" />
-                        </button>
                         <button
                           @click.stop="deleteCard(card)"
                           class="p-1 text-gray-400 hover:text-red-400 rounded"
@@ -832,6 +854,22 @@ onMounted(() => {
                   class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">
+                <UserCircleIcon class="w-4 h-4 inline mr-1" />
+                Zugewiesen an
+              </label>
+              <select
+                v-model="cardForm.assigned_to"
+                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+              >
+                <option :value="null">Niemand</option>
+                <option v-for="user in boardUsers" :key="user.id" :value="user.id">
+                  {{ user.username }} ({{ user.email }})
+                </option>
+              </select>
             </div>
 
             <div>

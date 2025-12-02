@@ -131,6 +131,7 @@ class Router
                 $protected->get('/kanban/boards/{id}', [KanbanController::class, 'show']);
                 $protected->put('/kanban/boards/{id}', [KanbanController::class, 'update']);
                 $protected->delete('/kanban/boards/{id}', [KanbanController::class, 'delete']);
+                $protected->get('/kanban/boards/{id}/users', [KanbanController::class, 'getBoardUsers']);
                 // Kanban Columns
                 $protected->post('/kanban/boards/{id}/columns', [KanbanController::class, 'createColumn']);
                 $protected->put('/kanban/boards/{id}/columns/{columnId}', [KanbanController::class, 'updateColumn']);

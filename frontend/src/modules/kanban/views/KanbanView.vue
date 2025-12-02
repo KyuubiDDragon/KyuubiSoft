@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import draggable from 'vuedraggable'
 import {
   PlusIcon,
@@ -19,6 +20,13 @@ import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid
 
 const route = useRoute()
 const uiStore = useUiStore()
+const projectStore = useProjectStore()
+
+// Watch for project changes
+watch(() => projectStore.selectedProjectId, () => {
+  fetchBoards()
+  selectedBoard.value = null
+})
 
 // State
 const boards = ref([])
@@ -87,7 +95,10 @@ const labelColors = [
 async function fetchBoards() {
   loading.value = true
   try {
-    const response = await api.get('/api/v1/kanban/boards')
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
+    const response = await api.get('/api/v1/kanban/boards', { params })
     boards.value = response.data.data.items || []
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Boards')
@@ -150,9 +161,16 @@ async function saveBoard() {
       }
     } else {
       const response = await api.post('/api/v1/kanban/boards', boardForm.value)
+      const newBoard = response.data.data
+
+      // Link to selected project if one is active
+      if (projectStore.selectedProjectId) {
+        await projectStore.linkToSelectedProject('kanban_board', newBoard.id)
+      }
+
       uiStore.showSuccess('Board erstellt')
       // Select the new board
-      await fetchBoard(response.data.data.id)
+      await fetchBoard(newBoard.id)
     }
     await fetchBoards()
     showBoardModal.value = false

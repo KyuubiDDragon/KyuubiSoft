@@ -29,45 +29,60 @@ class DocumentController
         $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 20)));
         $offset = ($page - 1) * $perPage;
         $includeShared = ($queryParams['include_shared'] ?? '1') === '1';
+        $projectId = $queryParams['project_id'] ?? null;
+
+        // Build project filter join and where clause
+        $projectJoin = '';
+        $projectWhere = '';
+        $projectParams = [];
+        $projectTypes = [];
+
+        if ($projectId) {
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = d.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $projectParams = ['document', $projectId];
+            $projectTypes = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        }
 
         // Get own documents and shared documents
         if ($includeShared) {
-            $documents = $this->db->fetchAllAssociative(
-                'SELECT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
+            $sql = 'SELECT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
                         u.username as owner_name, ds.permission as shared_permission,
                         CASE WHEN d.user_id = ? THEN 1 ELSE 0 END as is_owner
                  FROM documents d
                  LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?
-                 LEFT JOIN users u ON d.user_id = u.id
+                 LEFT JOIN users u ON d.user_id = u.id' . $projectJoin . '
                  WHERE (d.user_id = ? OR ds.user_id = ?) AND d.is_archived = FALSE
                  ORDER BY d.updated_at DESC
-                 LIMIT ? OFFSET ?',
-                [$userId, $userId, $userId, $userId, $perPage, $offset],
-                [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
-            );
+                 LIMIT ? OFFSET ?';
 
-            $total = (int) $this->db->fetchOne(
-                'SELECT COUNT(DISTINCT d.id) FROM documents d
-                 LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?
-                 WHERE (d.user_id = ? OR ds.user_id = ?) AND d.is_archived = FALSE',
-                [$userId, $userId, $userId]
-            );
+            $params = array_merge([$userId, $userId], $projectParams, [$userId, $userId, $perPage, $offset]);
+            $types = array_merge([\PDO::PARAM_STR, \PDO::PARAM_STR], $projectTypes, [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]);
+
+            $documents = $this->db->fetchAllAssociative($sql, $params, $types);
+
+            $countSql = 'SELECT COUNT(DISTINCT d.id) FROM documents d
+                 LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?' . $projectJoin . '
+                 WHERE (d.user_id = ? OR ds.user_id = ?) AND d.is_archived = FALSE';
+            $countParams = array_merge([$userId], $projectParams, [$userId, $userId]);
+
+            $total = (int) $this->db->fetchOne($countSql, $countParams);
         } else {
-            $documents = $this->db->fetchAllAssociative(
-                'SELECT id, user_id, folder_id, title, format, is_archived, created_at, updated_at,
+            $sql = 'SELECT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
                         1 as is_owner
-                 FROM documents
-                 WHERE user_id = ? AND is_archived = FALSE
-                 ORDER BY updated_at DESC
-                 LIMIT ? OFFSET ?',
-                [$userId, $perPage, $offset],
-                [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
-            );
+                 FROM documents d' . $projectJoin . '
+                 WHERE d.user_id = ? AND d.is_archived = FALSE
+                 ORDER BY d.updated_at DESC
+                 LIMIT ? OFFSET ?';
 
-            $total = (int) $this->db->fetchOne(
-                'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
-                [$userId]
-            );
+            $params = array_merge($projectParams, [$userId, $perPage, $offset]);
+            $types = array_merge($projectTypes, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]);
+
+            $documents = $this->db->fetchAllAssociative($sql, $params, $types);
+
+            $countSql = 'SELECT COUNT(*) FROM documents d' . $projectJoin . ' WHERE d.user_id = ? AND d.is_archived = FALSE';
+            $countParams = array_merge($projectParams, [$userId]);
+
+            $total = (int) $this->db->fetchOne($countSql, $countParams);
         }
 
         return JsonResponse::paginated($documents, $total, $page, $perPage);

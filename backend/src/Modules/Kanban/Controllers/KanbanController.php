@@ -24,19 +24,31 @@ class KanbanController
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $queryParams = $request->getQueryParams();
+        $projectId = $queryParams['project_id'] ?? null;
 
-        $boards = $this->db->fetchAllAssociative(
-            'SELECT kb.*,
+        // Build project filter
+        $projectJoin = '';
+        $projectParams = [];
+
+        if ($projectId) {
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $projectParams = ['kanban_board', $projectId];
+        }
+
+        $sql = 'SELECT kb.*,
                     (SELECT COUNT(*) FROM kanban_columns WHERE board_id = kb.id) as column_count,
                     (SELECT COUNT(*) FROM kanban_cards kc
                      JOIN kanban_columns col ON kc.column_id = col.id
                      WHERE col.board_id = kb.id) as card_count
              FROM kanban_boards kb
-             LEFT JOIN kanban_board_shares kbs ON kb.id = kbs.board_id AND kbs.user_id = ?
+             LEFT JOIN kanban_board_shares kbs ON kb.id = kbs.board_id AND kbs.user_id = ?' . $projectJoin . '
              WHERE (kb.user_id = ? OR kbs.user_id = ?) AND kb.is_archived = FALSE
-             ORDER BY kb.updated_at DESC',
-            [$userId, $userId, $userId]
-        );
+             ORDER BY kb.updated_at DESC';
+
+        $params = array_merge([$userId], $projectParams, [$userId, $userId]);
+
+        $boards = $this->db->fetchAllAssociative($sql, $params);
 
         return JsonResponse::success(['items' => $boards]);
     }

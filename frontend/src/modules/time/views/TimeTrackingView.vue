@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import {
   PlayIcon,
   StopIcon,
@@ -19,6 +20,13 @@ import {
 import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
+const projectStore = useProjectStore()
+
+// Watch for global project changes and sync with local filter
+watch(() => projectStore.selectedProjectId, (newId) => {
+  filterProjectId.value = newId || ''
+  fetchData()
+})
 
 // State
 const entries = ref([])
@@ -31,8 +39,8 @@ const editingEntry = ref(null)
 const timerInterval = ref(null)
 const currentDuration = ref(0)
 
-// Filters
-const filterProjectId = ref('')
+// Filters - initialize with global project if set
+const filterProjectId = ref(projectStore.selectedProjectId || '')
 const filterFrom = ref('')
 const filterTo = ref('')
 
@@ -49,10 +57,10 @@ const form = ref({
   duration_seconds: null,
 })
 
-// Quick start form
+// Quick start form - use selected project as default
 const quickForm = ref({
   task_name: '',
-  project_id: null,
+  project_id: projectStore.selectedProjectId || null,
 })
 
 // Fetch data
@@ -271,7 +279,6 @@ onUnmounted(() => {
 })
 
 // Watch for running entry changes
-import { watch } from 'vue'
 watch(runningEntry, (val) => {
   if (val) {
     startLocalTimer()

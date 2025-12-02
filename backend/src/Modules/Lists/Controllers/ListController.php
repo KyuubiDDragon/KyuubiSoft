@@ -28,23 +28,36 @@ class ListController
         $page = max(1, (int) ($queryParams['page'] ?? 1));
         $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 20)));
         $offset = ($page - 1) * $perPage;
+        $projectId = $queryParams['project_id'] ?? null;
 
-        $lists = $this->db->fetchAllAssociative(
-            'SELECT l.*,
+        // Build project filter
+        $projectJoin = '';
+        $projectParams = [];
+        $projectTypes = [];
+
+        if ($projectId) {
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $projectParams = ['list', $projectId];
+            $projectTypes = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        }
+
+        $sql = 'SELECT l.*,
                     (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
                     (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = TRUE) as completed_count
-             FROM lists l
+             FROM lists l' . $projectJoin . '
              WHERE l.user_id = ? AND l.is_archived = FALSE
              ORDER BY l.updated_at DESC
-             LIMIT ? OFFSET ?',
-            [$userId, $perPage, $offset],
-            [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
-        );
+             LIMIT ? OFFSET ?';
 
-        $total = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM lists WHERE user_id = ? AND is_archived = FALSE',
-            [$userId]
-        );
+        $params = array_merge($projectParams, [$userId, $perPage, $offset]);
+        $types = array_merge($projectTypes, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]);
+
+        $lists = $this->db->fetchAllAssociative($sql, $params, $types);
+
+        $countSql = 'SELECT COUNT(*) FROM lists l' . $projectJoin . ' WHERE l.user_id = ? AND l.is_archived = FALSE';
+        $countParams = array_merge($projectParams, [$userId]);
+
+        $total = (int) $this->db->fetchOne($countSql, $countParams);
 
         return JsonResponse::paginated($lists, $total, $page, $perPage);
     }

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import {
   PlusIcon,
   CodeBracketIcon,
@@ -20,6 +21,12 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const uiStore = useUiStore()
+const projectStore = useProjectStore()
+
+// Watch for project changes
+watch(() => projectStore.selectedProjectId, () => {
+  loadSnippets()
+})
 
 // State
 const snippets = ref([])
@@ -106,8 +113,11 @@ onMounted(async () => {
 async function loadSnippets() {
   isLoading.value = true
   try {
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
     const [snippetsRes, categoriesRes, languagesRes] = await Promise.all([
-      api.get('/api/v1/snippets'),
+      api.get('/api/v1/snippets', { params }),
       api.get('/api/v1/snippets/categories'),
       api.get('/api/v1/snippets/languages'),
     ])
@@ -129,7 +139,14 @@ async function saveSnippet() {
       await api.put(`/api/v1/snippets/${editingSnippet.value.id}`, data)
       uiStore.showSuccess('Snippet aktualisiert')
     } else {
-      await api.post('/api/v1/snippets', data)
+      const response = await api.post('/api/v1/snippets', data)
+      const newSnippet = response.data.data
+
+      // Link to selected project if one is active
+      if (projectStore.selectedProjectId) {
+        await projectStore.linkToSelectedProject('snippet', newSnippet.id)
+      }
+
       uiStore.showSuccess('Snippet erstellt')
     }
 

@@ -31,13 +31,25 @@ class SnippetController
         $search = $queryParams['search'] ?? null;
         $language = $queryParams['language'] ?? null;
         $category = $queryParams['category'] ?? null;
+        $projectId = $queryParams['project_id'] ?? null;
 
-        $sql = 'SELECT * FROM snippets WHERE user_id = ?';
-        $params = [$userId];
-        $types = [\PDO::PARAM_STR];
+        // Build project filter
+        $projectJoin = '';
+        $projectParams = [];
+        $projectTypes = [];
+
+        if ($projectId) {
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = s.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $projectParams = ['snippet', $projectId];
+            $projectTypes = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+        }
+
+        $sql = 'SELECT s.* FROM snippets s' . $projectJoin . ' WHERE s.user_id = ?';
+        $params = array_merge($projectParams, [$userId]);
+        $types = array_merge($projectTypes, [\PDO::PARAM_STR]);
 
         if ($search) {
-            $sql .= ' AND (title LIKE ? OR description LIKE ? OR content LIKE ?)';
+            $sql .= ' AND (s.title LIKE ? OR s.description LIKE ? OR s.content LIKE ?)';
             $searchTerm = "%{$search}%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -48,18 +60,18 @@ class SnippetController
         }
 
         if ($language) {
-            $sql .= ' AND language = ?';
+            $sql .= ' AND s.language = ?';
             $params[] = $language;
             $types[] = \PDO::PARAM_STR;
         }
 
         if ($category) {
-            $sql .= ' AND category = ?';
+            $sql .= ' AND s.category = ?';
             $params[] = $category;
             $types[] = \PDO::PARAM_STR;
         }
 
-        $sql .= ' ORDER BY is_favorite DESC, use_count DESC, updated_at DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY s.is_favorite DESC, s.use_count DESC, s.updated_at DESC LIMIT ? OFFSET ?';
         $params[] = $perPage;
         $params[] = $offset;
         $types[] = \PDO::PARAM_INT;
@@ -73,21 +85,21 @@ class SnippetController
         }
 
         // Count total
-        $countSql = 'SELECT COUNT(*) FROM snippets WHERE user_id = ?';
-        $countParams = [$userId];
+        $countSql = 'SELECT COUNT(*) FROM snippets s' . $projectJoin . ' WHERE s.user_id = ?';
+        $countParams = array_merge($projectParams, [$userId]);
 
         if ($search) {
-            $countSql .= ' AND (title LIKE ? OR description LIKE ? OR content LIKE ?)';
+            $countSql .= ' AND (s.title LIKE ? OR s.description LIKE ? OR s.content LIKE ?)';
             $countParams[] = "%{$search}%";
             $countParams[] = "%{$search}%";
             $countParams[] = "%{$search}%";
         }
         if ($language) {
-            $countSql .= ' AND language = ?';
+            $countSql .= ' AND s.language = ?';
             $countParams[] = $language;
         }
         if ($category) {
-            $countSql .= ' AND category = ?';
+            $countSql .= ' AND s.category = ?';
             $countParams[] = $category;
         }
 

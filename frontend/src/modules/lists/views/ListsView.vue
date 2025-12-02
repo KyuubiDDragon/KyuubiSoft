@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import draggable from 'vuedraggable'
 import {
@@ -13,9 +13,16 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 
 const route = useRoute()
 const uiStore = useUiStore()
+const projectStore = useProjectStore()
+
+// Watch for project changes
+watch(() => projectStore.selectedProjectId, () => {
+  loadLists()
+})
 
 // State
 const lists = ref([])
@@ -81,7 +88,10 @@ onMounted(async () => {
 async function loadLists() {
   isLoading.value = true
   try {
-    const response = await api.get('/api/v1/lists')
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
+    const response = await api.get('/api/v1/lists', { params })
     lists.value = response.data.data?.items || []
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Listen')
@@ -93,7 +103,14 @@ async function loadLists() {
 async function createList() {
   try {
     const response = await api.post('/api/v1/lists', listForm)
-    lists.value.unshift(response.data.data)
+    const newList = response.data.data
+
+    // Link to selected project if one is active
+    if (projectStore.selectedProjectId) {
+      await projectStore.linkToSelectedProject('list', newList.id)
+    }
+
+    lists.value.unshift(newList)
     showCreateModal.value = false
     resetForm()
     uiStore.showSuccess('Liste erstellt')

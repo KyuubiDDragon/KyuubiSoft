@@ -359,9 +359,13 @@ class AuthService
         // TOTP verification (RFC 6238)
         $timeSlice = (int) floor(time() / 30);
 
+        error_log("2FA DEBUG: Server time: " . time() . ", TimeSlice: " . $timeSlice);
+        error_log("2FA DEBUG: Input code: " . $code . ", Secret length: " . strlen($secret));
+
         // Check current and previous time slice (allows for clock drift)
         for ($i = -1; $i <= 1; $i++) {
             $calculatedCode = $this->calculateTOTP($secret, $timeSlice + $i);
+            error_log("2FA DEBUG: TimeSlice+" . $i . " = " . ($timeSlice + $i) . ", Calculated: " . $calculatedCode);
             if (hash_equals($calculatedCode, $code)) {
                 return true;
             }

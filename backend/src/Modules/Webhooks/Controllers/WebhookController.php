@@ -97,7 +97,7 @@ class WebhookController
             'type' => $type,
             'events' => json_encode(array_values($events)),
             'secret' => $secret,
-            'is_active' => true,
+            'is_active' => 1,
         ]);
 
         return JsonResponse::success( [

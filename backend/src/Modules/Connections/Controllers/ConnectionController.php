@@ -141,7 +141,7 @@ class ConnectionController
             'username' => $data['username'] ?? null,
             'color' => $data['color'] ?? '#6366f1',
             'icon' => $data['icon'] ?? null,
-            'is_favorite' => (bool) ($data['is_favorite'] ?? false),
+            'is_favorite' => !empty($data['is_favorite']) ? 1 : 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ];

@@ -129,8 +129,8 @@ class TimeTrackingController
             'task_name' => $taskName,
             'description' => $data['description'] ?? null,
             'started_at' => date('Y-m-d H:i:s'),
-            'is_running' => true,
-            'is_billable' => $data['is_billable'] ?? false,
+            'is_running' => 1,
+            'is_billable' => !empty($data['is_billable']) ? 1 : 0,
             'hourly_rate' => $data['hourly_rate'] ?? null,
             'tags' => json_encode($data['tags'] ?? []),
         ]);
@@ -227,8 +227,8 @@ class TimeTrackingController
             'started_at' => $startedAt,
             'ended_at' => $endedAt,
             'duration_seconds' => $durationSeconds,
-            'is_running' => false,
-            'is_billable' => $data['is_billable'] ?? false,
+            'is_running' => 0,
+            'is_billable' => !empty($data['is_billable']) ? 1 : 0,
             'hourly_rate' => $data['hourly_rate'] ?? null,
             'tags' => json_encode($data['tags'] ?? []),
         ]);

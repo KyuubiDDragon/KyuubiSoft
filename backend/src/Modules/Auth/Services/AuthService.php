@@ -12,17 +12,22 @@ use App\Modules\Auth\DTOs\LoginRequest;
 use App\Modules\Auth\DTOs\RegisterRequest;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
+use PragmaRX\Google2FA\Google2FA;
 use Ramsey\Uuid\Uuid;
 
 class AuthService
 {
+    private Google2FA $google2fa;
+
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly RefreshTokenRepository $refreshTokenRepository,
         private readonly JwtManager $jwtManager,
         private readonly PasswordHasher $passwordHasher,
         private readonly RbacManager $rbacManager
-    ) {}
+    ) {
+        $this->google2fa = new Google2FA();
+    }
 
     public function register(RegisterRequest $request): array
     {
@@ -344,83 +349,13 @@ class AuthService
 
     private function generate2FASecret(): string
     {
-        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        $secret = '';
-
-        for ($i = 0; $i < 16; $i++) {
-            $secret .= $chars[random_int(0, strlen($chars) - 1)];
-        }
-
-        return $secret;
+        return $this->google2fa->generateSecretKey();
     }
 
     private function verify2FACode(string $secret, string $code): bool
     {
-        // TOTP verification (RFC 6238)
-        $timeSlice = (int) floor(time() / 30);
-
-        error_log("2FA DEBUG: Server time: " . time() . ", TimeSlice: " . $timeSlice);
-        error_log("2FA DEBUG: Input code: " . $code . ", Secret length: " . strlen($secret));
-
-        // Check current and previous time slice (allows for clock drift)
-        for ($i = -1; $i <= 1; $i++) {
-            $calculatedCode = $this->calculateTOTP($secret, $timeSlice + $i);
-            error_log("2FA DEBUG: TimeSlice+" . $i . " = " . ($timeSlice + $i) . ", Calculated: " . $calculatedCode);
-            if (hash_equals($calculatedCode, $code)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function calculateTOTP(string $secret, int $timeSlice): string
-    {
-        // Decode base32 secret
-        $secretKey = $this->base32Decode($secret);
-
-        // Pack time slice as 64-bit big-endian
-        $time = pack('N*', 0, $timeSlice);
-
-        // Generate HMAC-SHA1 hash
-        $hash = hash_hmac('sha1', $time, $secretKey, true);
-
-        // Dynamic truncation
-        $offset = ord(substr($hash, -1)) & 0x0F;
-        $code = (
-            ((ord($hash[$offset]) & 0x7F) << 24) |
-            ((ord($hash[$offset + 1]) & 0xFF) << 16) |
-            ((ord($hash[$offset + 2]) & 0xFF) << 8) |
-            (ord($hash[$offset + 3]) & 0xFF)
-        ) % 1000000;
-
-        return str_pad((string) $code, 6, '0', STR_PAD_LEFT);
-    }
-
-    private function base32Decode(string $input): string
-    {
-        $map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        $input = strtoupper($input);
-        $output = '';
-        $buffer = 0;
-        $bitsLeft = 0;
-
-        for ($i = 0; $i < strlen($input); $i++) {
-            $val = strpos($map, $input[$i]);
-            if ($val === false) {
-                continue;
-            }
-
-            $buffer = ($buffer << 5) | $val;
-            $bitsLeft += 5;
-
-            if ($bitsLeft >= 8) {
-                $bitsLeft -= 8;
-                $output .= chr(($buffer >> $bitsLeft) & 0xFF);
-            }
-        }
-
-        return $output;
+        // Window of 1 allows for 30 seconds clock drift in either direction
+        return $this->google2fa->verifyKey($secret, $code, 1);
     }
 
     private function get2FAQrCodeUrl(string $email, string $secret): string

@@ -474,7 +474,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import api from '@/services/api'
+import api from '@/core/api/axios'
 
 // State
 const collections = ref([])

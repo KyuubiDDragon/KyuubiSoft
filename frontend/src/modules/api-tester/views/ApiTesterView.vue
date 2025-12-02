@@ -749,7 +749,7 @@ onMounted(() => {
                 <textarea
                   v-model="requestForm.body"
                   class="input w-full h-40 font-mono text-sm"
-                  :placeholder="requestForm.body_type === 'json' ? '{\n  \"key\": \"value\"\n}' : 'Request Body'"
+                  :placeholder="requestForm.body_type === 'json' ? '{ \"key\": \"value\" }' : 'Request Body'"
                 ></textarea>
                 <button
                   v-if="requestForm.body_type === 'json'"

@@ -1,480 +1,23 @@
-<template>
-  <div class="api-tester">
-    <!-- Header -->
-    <div class="api-tester-header">
-      <h1>API Tester</h1>
-      <div class="header-actions">
-        <select v-model="selectedEnvironmentId" class="environment-select" @change="setActiveEnvironment">
-          <option value="">No Environment</option>
-          <option v-for="env in environments" :key="env.id" :value="env.id">
-            {{ env.name }}
-          </option>
-        </select>
-        <button class="btn btn-secondary" @click="openEnvironmentModal">
-          <i class="fas fa-cog"></i>
-          Environments
-        </button>
-        <button class="btn btn-secondary" @click="openHistoryModal">
-          <i class="fas fa-history"></i>
-          History
-        </button>
-      </div>
-    </div>
-
-    <div class="api-tester-layout">
-      <!-- Sidebar - Collections -->
-      <div class="sidebar">
-        <div class="sidebar-header">
-          <h3>Collections</h3>
-          <button class="btn btn-sm btn-primary" @click="openCollectionModal()">
-            <i class="fas fa-plus"></i>
-          </button>
-        </div>
-        <div class="collections-list">
-          <div
-            v-for="collection in collections"
-            :key="collection.id"
-            class="collection-item"
-            :class="{ expanded: expandedCollections.includes(collection.id) }"
-          >
-            <div class="collection-header" @click="toggleCollection(collection.id)">
-              <div class="collection-info">
-                <span class="collection-icon" :style="{ color: collection.color }">
-                  <i class="fas fa-folder"></i>
-                </span>
-                <span class="collection-name">{{ collection.name }}</span>
-                <span class="request-count">({{ collection.request_count || 0 }})</span>
-              </div>
-              <div class="collection-actions">
-                <button class="btn-icon" @click.stop="openCollectionModal(collection)" title="Edit">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn-icon" @click.stop="addRequestToCollection(collection.id)" title="Add Request">
-                  <i class="fas fa-plus"></i>
-                </button>
-                <button class="btn-icon danger" @click.stop="deleteCollection(collection.id)" title="Delete">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-            <div v-if="expandedCollections.includes(collection.id)" class="collection-requests">
-              <div
-                v-for="req in getCollectionRequests(collection.id)"
-                :key="req.id"
-                class="request-item"
-                :class="{ active: currentRequest?.id === req.id }"
-                @click="selectRequest(req)"
-              >
-                <span class="method-badge" :class="req.method.toLowerCase()">{{ req.method }}</span>
-                <span class="request-name">{{ req.name }}</span>
-              </div>
-              <div v-if="getCollectionRequests(collection.id).length === 0" class="empty-collection">
-                No requests yet
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Uncategorized Requests -->
-        <div class="sidebar-section">
-          <h4>Uncategorized</h4>
-          <div
-            v-for="req in uncategorizedRequests"
-            :key="req.id"
-            class="request-item"
-            :class="{ active: currentRequest?.id === req.id }"
-            @click="selectRequest(req)"
-          >
-            <span class="method-badge" :class="req.method.toLowerCase()">{{ req.method }}</span>
-            <span class="request-name">{{ req.name }}</span>
-          </div>
-          <button class="btn btn-sm btn-ghost full-width" @click="createNewRequest()">
-            <i class="fas fa-plus"></i> New Request
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="main-content">
-        <!-- Request Bar -->
-        <div class="request-bar">
-          <select v-model="requestForm.method" class="method-select">
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
-            <option value="PUT">PUT</option>
-            <option value="PATCH">PATCH</option>
-            <option value="DELETE">DELETE</option>
-            <option value="HEAD">HEAD</option>
-            <option value="OPTIONS">OPTIONS</option>
-          </select>
-          <input
-            v-model="requestForm.url"
-            type="text"
-            class="url-input"
-            placeholder="Enter request URL (e.g., https://api.example.com/users)"
-          />
-          <button class="btn btn-primary btn-send" :disabled="sending" @click="sendRequest">
-            <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
-            {{ sending ? 'Sending...' : 'Send' }}
-          </button>
-          <button v-if="currentRequest" class="btn btn-secondary" @click="saveRequest">
-            <i class="fas fa-save"></i>
-            Save
-          </button>
-        </div>
-
-        <!-- Request Name (when editing) -->
-        <div v-if="currentRequest || isNewRequest" class="request-name-bar">
-          <input
-            v-model="requestForm.name"
-            type="text"
-            class="request-name-input"
-            placeholder="Request name"
-          />
-          <select v-model="requestForm.collection_id" class="collection-select">
-            <option value="">No Collection</option>
-            <option v-for="col in collections" :key="col.id" :value="col.id">
-              {{ col.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Request Tabs -->
-        <div class="request-section">
-          <div class="tabs">
-            <button
-              v-for="tab in requestTabs"
-              :key="tab.id"
-              class="tab"
-              :class="{ active: activeRequestTab === tab.id }"
-              @click="activeRequestTab = tab.id"
-            >
-              {{ tab.label }}
-              <span v-if="tab.id === 'headers' && Object.keys(requestForm.headers).length" class="badge">
-                {{ Object.keys(requestForm.headers).length }}
-              </span>
-            </button>
-          </div>
-
-          <div class="tab-content">
-            <!-- Params Tab -->
-            <div v-if="activeRequestTab === 'params'" class="params-tab">
-              <p class="tab-hint">Query parameters are appended to the URL.</p>
-              <div class="key-value-editor">
-                <div v-for="(param, index) in queryParams" :key="index" class="key-value-row">
-                  <input v-model="param.key" type="text" placeholder="Key" @input="updateQueryParams" />
-                  <input v-model="param.value" type="text" placeholder="Value" @input="updateQueryParams" />
-                  <button class="btn-icon danger" @click="removeQueryParam(index)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-                <button class="btn btn-sm btn-ghost" @click="addQueryParam">
-                  <i class="fas fa-plus"></i> Add Parameter
-                </button>
-              </div>
-            </div>
-
-            <!-- Headers Tab -->
-            <div v-if="activeRequestTab === 'headers'" class="headers-tab">
-              <div class="key-value-editor">
-                <div v-for="(value, key, index) in requestForm.headers" :key="index" class="key-value-row">
-                  <input :value="key" type="text" placeholder="Header" @input="updateHeaderKey(key, $event)" />
-                  <input v-model="requestForm.headers[key]" type="text" placeholder="Value" />
-                  <button class="btn-icon danger" @click="removeHeader(key)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-                <button class="btn btn-sm btn-ghost" @click="addHeader">
-                  <i class="fas fa-plus"></i> Add Header
-                </button>
-              </div>
-            </div>
-
-            <!-- Body Tab -->
-            <div v-if="activeRequestTab === 'body'" class="body-tab">
-              <div class="body-type-selector">
-                <label v-for="type in bodyTypes" :key="type.value">
-                  <input v-model="requestForm.body_type" type="radio" :value="type.value" />
-                  {{ type.label }}
-                </label>
-              </div>
-              <div v-if="requestForm.body_type !== 'none'" class="body-editor">
-                <textarea
-                  v-model="requestForm.body"
-                  class="body-textarea"
-                  :placeholder="getBodyPlaceholder()"
-                  rows="10"
-                ></textarea>
-                <button
-                  v-if="requestForm.body_type === 'json'"
-                  class="btn btn-sm btn-ghost format-btn"
-                  @click="formatJson"
-                >
-                  <i class="fas fa-indent"></i> Format JSON
-                </button>
-              </div>
-            </div>
-
-            <!-- Auth Tab -->
-            <div v-if="activeRequestTab === 'auth'" class="auth-tab">
-              <div class="auth-type-selector">
-                <select v-model="requestForm.auth_type">
-                  <option value="none">No Auth</option>
-                  <option value="bearer">Bearer Token</option>
-                  <option value="basic">Basic Auth</option>
-                  <option value="api_key">API Key</option>
-                </select>
-              </div>
-
-              <div v-if="requestForm.auth_type === 'bearer'" class="auth-config">
-                <div class="form-group">
-                  <label>Token</label>
-                  <input v-model="requestForm.auth_config.token" type="text" placeholder="Enter bearer token" />
-                </div>
-              </div>
-
-              <div v-if="requestForm.auth_type === 'basic'" class="auth-config">
-                <div class="form-group">
-                  <label>Username</label>
-                  <input v-model="requestForm.auth_config.username" type="text" placeholder="Username" />
-                </div>
-                <div class="form-group">
-                  <label>Password</label>
-                  <input v-model="requestForm.auth_config.password" type="password" placeholder="Password" />
-                </div>
-              </div>
-
-              <div v-if="requestForm.auth_type === 'api_key'" class="auth-config">
-                <div class="form-group">
-                  <label>Key</label>
-                  <input v-model="requestForm.auth_config.key" type="text" placeholder="Header or query param name" />
-                </div>
-                <div class="form-group">
-                  <label>Value</label>
-                  <input v-model="requestForm.auth_config.value" type="text" placeholder="API key value" />
-                </div>
-                <div class="form-group">
-                  <label>Add to</label>
-                  <select v-model="requestForm.auth_config.add_to">
-                    <option value="header">Header</option>
-                    <option value="query">Query Params</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Response Section -->
-        <div class="response-section" :class="{ 'has-response': response }">
-          <div class="response-header">
-            <h3>Response</h3>
-            <div v-if="response" class="response-meta">
-              <span class="status-badge" :class="getStatusClass(response.status)">
-                {{ response.status }} {{ getStatusText(response.status) }}
-              </span>
-              <span class="meta-item">
-                <i class="fas fa-clock"></i> {{ response.time }}ms
-              </span>
-              <span class="meta-item">
-                <i class="fas fa-weight-hanging"></i> {{ formatBytes(response.size) }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="response" class="response-content">
-            <div class="tabs">
-              <button
-                v-for="tab in responseTabs"
-                :key="tab.id"
-                class="tab"
-                :class="{ active: activeResponseTab === tab.id }"
-                @click="activeResponseTab = tab.id"
-              >
-                {{ tab.label }}
-              </button>
-            </div>
-
-            <div class="tab-content">
-              <div v-if="activeResponseTab === 'body'" class="response-body">
-                <div v-if="response.error" class="error-message">
-                  <i class="fas fa-exclamation-circle"></i>
-                  {{ response.error }}
-                </div>
-                <pre v-else class="response-text">{{ formatResponseBody(response.body) }}</pre>
-              </div>
-
-              <div v-if="activeResponseTab === 'headers'" class="response-headers">
-                <table class="headers-table">
-                  <tr v-for="(value, key) in response.headers" :key="key">
-                    <td class="header-key">{{ key }}</td>
-                    <td class="header-value">{{ value }}</td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="response-placeholder">
-            <i class="fas fa-paper-plane"></i>
-            <p>Send a request to see the response</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Collection Modal -->
-    <div v-if="showCollectionModal" class="modal-overlay" @click.self="closeCollectionModal">
-      <div class="modal modal-sm">
-        <div class="modal-header">
-          <h2>{{ editingCollection ? 'Edit Collection' : 'New Collection' }}</h2>
-          <button class="btn-close" @click="closeCollectionModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Name *</label>
-            <input v-model="collectionForm.name" type="text" placeholder="Collection name" />
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea v-model="collectionForm.description" rows="3" placeholder="Optional description"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Color</label>
-            <div class="color-picker">
-              <button
-                v-for="color in collectionColors"
-                :key="color"
-                class="color-option"
-                :class="{ active: collectionForm.color === color }"
-                :style="{ backgroundColor: color }"
-                @click="collectionForm.color = color"
-              ></button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeCollectionModal">Cancel</button>
-          <button class="btn btn-primary" @click="saveCollection">
-            {{ editingCollection ? 'Update' : 'Create' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Environment Modal -->
-    <div v-if="showEnvironmentModal" class="modal-overlay" @click.self="closeEnvironmentModal">
-      <div class="modal modal-lg">
-        <div class="modal-header">
-          <h2>Manage Environments</h2>
-          <button class="btn-close" @click="closeEnvironmentModal">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="environments-layout">
-            <div class="environments-sidebar">
-              <div
-                v-for="env in environments"
-                :key="env.id"
-                class="environment-item"
-                :class="{ active: editingEnvironment?.id === env.id }"
-                @click="selectEnvironment(env)"
-              >
-                <span class="env-name">{{ env.name }}</span>
-                <span v-if="env.is_active" class="active-badge">Active</span>
-              </div>
-              <button class="btn btn-sm btn-ghost full-width" @click="createNewEnvironment">
-                <i class="fas fa-plus"></i> New Environment
-              </button>
-            </div>
-            <div class="environment-editor">
-              <div v-if="editingEnvironment" class="environment-form">
-                <div class="form-group">
-                  <label>Name *</label>
-                  <input v-model="environmentForm.name" type="text" placeholder="Environment name" />
-                </div>
-                <div class="form-group">
-                  <label>Variables</label>
-                  <p class="hint">Use {{variableName}} in requests to reference these values.</p>
-                  <div class="key-value-editor">
-                    <div v-for="(value, key, index) in environmentForm.variables" :key="index" class="key-value-row">
-                      <input :value="key" type="text" placeholder="Variable" @input="updateEnvVarKey(key, $event)" />
-                      <input v-model="environmentForm.variables[key]" type="text" placeholder="Value" />
-                      <button class="btn-icon danger" @click="removeEnvVar(key)">
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                    <button class="btn btn-sm btn-ghost" @click="addEnvVar">
-                      <i class="fas fa-plus"></i> Add Variable
-                    </button>
-                  </div>
-                </div>
-                <div class="environment-actions">
-                  <button class="btn btn-primary" @click="saveEnvironment">Save</button>
-                  <button
-                    v-if="!editingEnvironment.is_active"
-                    class="btn btn-secondary"
-                    @click="activateEnvironment"
-                  >
-                    Set as Active
-                  </button>
-                  <button class="btn btn-danger" @click="deleteEnvironment">Delete</button>
-                </div>
-              </div>
-              <div v-else class="no-selection">
-                <p>Select an environment to edit or create a new one</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- History Modal -->
-    <div v-if="showHistoryModal" class="modal-overlay" @click.self="closeHistoryModal">
-      <div class="modal modal-lg">
-        <div class="modal-header">
-          <h2>Request History</h2>
-          <div class="header-actions">
-            <button class="btn btn-danger btn-sm" @click="clearHistory">Clear All</button>
-            <button class="btn-close" @click="closeHistoryModal">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-        <div class="modal-body">
-          <div v-if="history.length === 0" class="empty-state">
-            <i class="fas fa-history"></i>
-            <p>No request history yet</p>
-          </div>
-          <div v-else class="history-list">
-            <div
-              v-for="item in history"
-              :key="item.id"
-              class="history-item"
-              @click="loadFromHistory(item)"
-            >
-              <span class="method-badge" :class="item.method.toLowerCase()">{{ item.method }}</span>
-              <span class="history-url">{{ item.url }}</span>
-              <span class="status-badge" :class="getStatusClass(item.response_status)">
-                {{ item.response_status }}
-              </span>
-              <span class="history-time">{{ item.response_time }}ms</span>
-              <span class="history-date">{{ formatDate(item.executed_at) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
+import { useUiStore } from '@/stores/ui'
+import {
+  PlusIcon,
+  FolderIcon,
+  TrashIcon,
+  PencilIcon,
+  PlayIcon,
+  ClockIcon,
+  Cog6ToothIcon,
+  DocumentDuplicateIcon,
+  XMarkIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  BookmarkIcon,
+} from '@heroicons/vue/24/outline'
+
+const uiStore = useUiStore()
 
 // State
 const collections = ref([])
@@ -487,20 +30,18 @@ const currentRequest = ref(null)
 const isNewRequest = ref(false)
 const sending = ref(false)
 const response = ref(null)
+const isLoading = ref(true)
+
+// Modals
+const showCollectionModal = ref(false)
+const showEnvironmentModal = ref(false)
+const showHistoryModal = ref(false)
+const editingCollection = ref(null)
+const editingEnvironment = ref(null)
 
 // Tabs
 const activeRequestTab = ref('params')
 const activeResponseTab = ref('body')
-const requestTabs = [
-  { id: 'params', label: 'Params' },
-  { id: 'headers', label: 'Headers' },
-  { id: 'body', label: 'Body' },
-  { id: 'auth', label: 'Auth' }
-]
-const responseTabs = [
-  { id: 'body', label: 'Body' },
-  { id: 'headers', label: 'Headers' }
-]
 
 // Form data
 const requestForm = reactive({
@@ -517,20 +58,6 @@ const requestForm = reactive({
 
 const queryParams = ref([{ key: '', value: '' }])
 
-const bodyTypes = [
-  { value: 'none', label: 'None' },
-  { value: 'json', label: 'JSON' },
-  { value: 'form', label: 'Form' },
-  { value: 'raw', label: 'Raw' }
-]
-
-// Modals
-const showCollectionModal = ref(false)
-const showEnvironmentModal = ref(false)
-const showHistoryModal = ref(false)
-const editingCollection = ref(null)
-const editingEnvironment = ref(null)
-
 const collectionForm = reactive({
   name: '',
   description: '',
@@ -542,7 +69,7 @@ const environmentForm = reactive({
   variables: {}
 })
 
-const collectionColors = [
+const colors = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
   '#eab308', '#22c55e', '#14b8a6', '#0ea5e9', '#64748b'
 ]
@@ -554,22 +81,25 @@ const uncategorizedRequests = computed(() => {
 
 // Methods
 async function loadData() {
+  isLoading.value = true
   try {
     const [colRes, reqRes, envRes] = await Promise.all([
-      api.get('/api-tester/collections'),
-      api.get('/api-tester/requests'),
-      api.get('/api-tester/environments')
+      api.get('/api/v1/api-tester/collections'),
+      api.get('/api/v1/api-tester/requests'),
+      api.get('/api/v1/api-tester/environments')
     ])
-    collections.value = colRes.data.items || []
-    requests.value = reqRes.data.items || []
-    environments.value = envRes.data.items || []
+    collections.value = colRes.data.data?.items || []
+    requests.value = reqRes.data.data?.items || []
+    environments.value = envRes.data.data?.items || []
 
     const activeEnv = environments.value.find(e => e.is_active)
     if (activeEnv) {
       selectedEnvironmentId.value = activeEnv.id
     }
   } catch (error) {
-    console.error('Failed to load data:', error)
+    uiStore.showError('Fehler beim Laden der Daten')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -597,7 +127,7 @@ function selectRequest(req) {
   requestForm.body_type = req.body_type || 'none'
   requestForm.body = req.body || ''
   requestForm.auth_type = req.auth_type || 'none'
-  requestForm.auth_config = { ...req.auth_config }
+  requestForm.auth_config = { ...(req.auth_config || {}) }
   response.value = null
   parseQueryParams()
 }
@@ -653,7 +183,7 @@ function updateQueryParams() {
     const queryString = params.toString()
     requestForm.url = queryString ? `${baseUrl}?${queryString}` : baseUrl
   } catch {
-    // Invalid URL, ignore
+    // Invalid URL
   }
 }
 
@@ -686,31 +216,26 @@ function removeHeader(key) {
   delete requestForm.headers[key]
 }
 
-function getBodyPlaceholder() {
-  switch (requestForm.body_type) {
-    case 'json': return '{\n  "key": "value"\n}'
-    case 'form': return 'key1=value1&key2=value2'
-    default: return 'Enter request body'
-  }
-}
-
 function formatJson() {
   try {
     const parsed = JSON.parse(requestForm.body)
     requestForm.body = JSON.stringify(parsed, null, 2)
   } catch {
-    // Invalid JSON, ignore
+    uiStore.showError('Ungültiges JSON')
   }
 }
 
 async function sendRequest() {
-  if (!requestForm.url) return
+  if (!requestForm.url) {
+    uiStore.showError('URL ist erforderlich')
+    return
+  }
 
   sending.value = true
   response.value = null
 
   try {
-    const res = await api.post('/api-tester/execute', {
+    const res = await api.post('/api/v1/api-tester/execute', {
       request_id: currentRequest.value?.id,
       method: requestForm.method,
       url: requestForm.url,
@@ -720,7 +245,7 @@ async function sendRequest() {
       auth_type: requestForm.auth_type,
       auth_config: requestForm.auth_config
     })
-    response.value = res.data
+    response.value = res.data.data
   } catch (error) {
     response.value = {
       status: 0,
@@ -736,7 +261,10 @@ async function sendRequest() {
 }
 
 async function saveRequest() {
-  if (!requestForm.name || !requestForm.url) return
+  if (!requestForm.name || !requestForm.url) {
+    uiStore.showError('Name und URL sind erforderlich')
+    return
+  }
 
   const data = {
     name: requestForm.name,
@@ -752,40 +280,57 @@ async function saveRequest() {
 
   try {
     if (currentRequest.value) {
-      await api.put(`/api-tester/requests/${currentRequest.value.id}`, data)
+      await api.put(`/api/v1/api-tester/requests/${currentRequest.value.id}`, data)
+      uiStore.showSuccess('Request gespeichert')
     } else {
-      const res = await api.post('/api-tester/requests', data)
-      currentRequest.value = res.data
+      const res = await api.post('/api/v1/api-tester/requests', data)
+      currentRequest.value = res.data.data
       isNewRequest.value = false
+      uiStore.showSuccess('Request erstellt')
     }
     await loadData()
   } catch (error) {
-    console.error('Failed to save request:', error)
+    uiStore.showError('Fehler beim Speichern')
+  }
+}
+
+async function deleteRequest(req) {
+  if (!confirm('Request wirklich löschen?')) return
+  try {
+    await api.delete(`/api/v1/api-tester/requests/${req.id}`)
+    if (currentRequest.value?.id === req.id) {
+      currentRequest.value = null
+      resetRequestForm()
+    }
+    await loadData()
+    uiStore.showSuccess('Request gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
   }
 }
 
 function getStatusClass(status) {
-  if (!status) return 'unknown'
-  if (status >= 200 && status < 300) return 'success'
-  if (status >= 300 && status < 400) return 'redirect'
-  if (status >= 400 && status < 500) return 'client-error'
-  return 'server-error'
+  if (!status) return 'bg-gray-600'
+  if (status >= 200 && status < 300) return 'bg-green-600'
+  if (status >= 300 && status < 400) return 'bg-blue-600'
+  if (status >= 400 && status < 500) return 'bg-orange-600'
+  return 'bg-red-600'
 }
 
-function getStatusText(status) {
-  const statusTexts = {
-    200: 'OK', 201: 'Created', 204: 'No Content',
-    301: 'Moved Permanently', 302: 'Found', 304: 'Not Modified',
-    400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
-    404: 'Not Found', 405: 'Method Not Allowed', 422: 'Unprocessable Entity',
-    500: 'Internal Server Error', 502: 'Bad Gateway', 503: 'Service Unavailable'
+function getMethodClass(method) {
+  const classes = {
+    GET: 'bg-green-600/20 text-green-400',
+    POST: 'bg-yellow-600/20 text-yellow-400',
+    PUT: 'bg-blue-600/20 text-blue-400',
+    PATCH: 'bg-purple-600/20 text-purple-400',
+    DELETE: 'bg-red-600/20 text-red-400',
   }
-  return statusTexts[status] || ''
+  return classes[method] || 'bg-gray-600/20 text-gray-400'
 }
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B'
-  const sizes = ['B', 'KB', 'MB', 'GB']
+  const sizes = ['B', 'KB', 'MB']
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
 }
@@ -798,10 +343,6 @@ function formatResponseBody(body) {
   } catch {
     return body
   }
-}
-
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleString()
 }
 
 // Collection methods
@@ -819,46 +360,42 @@ function openCollectionModal(collection = null) {
   showCollectionModal.value = true
 }
 
-function closeCollectionModal() {
-  showCollectionModal.value = false
-  editingCollection.value = null
-}
-
 async function saveCollection() {
-  if (!collectionForm.name) return
+  if (!collectionForm.name) {
+    uiStore.showError('Name ist erforderlich')
+    return
+  }
 
   try {
     if (editingCollection.value) {
-      await api.put(`/api-tester/collections/${editingCollection.value.id}`, collectionForm)
+      await api.put(`/api/v1/api-tester/collections/${editingCollection.value.id}`, collectionForm)
+      uiStore.showSuccess('Collection aktualisiert')
     } else {
-      await api.post('/api-tester/collections', collectionForm)
+      await api.post('/api/v1/api-tester/collections', collectionForm)
+      uiStore.showSuccess('Collection erstellt')
     }
     await loadData()
-    closeCollectionModal()
+    showCollectionModal.value = false
   } catch (error) {
-    console.error('Failed to save collection:', error)
+    uiStore.showError('Fehler beim Speichern')
   }
 }
 
 async function deleteCollection(id) {
-  if (!confirm('Delete this collection and all its requests?')) return
+  if (!confirm('Collection und alle Requests löschen?')) return
 
   try {
-    await api.delete(`/api-tester/collections/${id}`)
+    await api.delete(`/api/v1/api-tester/collections/${id}`)
     await loadData()
+    uiStore.showSuccess('Collection gelöscht')
   } catch (error) {
-    console.error('Failed to delete collection:', error)
+    uiStore.showError('Fehler beim Löschen')
   }
 }
 
 // Environment methods
 function openEnvironmentModal() {
   showEnvironmentModal.value = true
-  editingEnvironment.value = null
-}
-
-function closeEnvironmentModal() {
-  showEnvironmentModal.value = false
   editingEnvironment.value = null
 }
 
@@ -892,18 +429,22 @@ function removeEnvVar(key) {
 }
 
 async function saveEnvironment() {
-  if (!environmentForm.name) return
+  if (!environmentForm.name) {
+    uiStore.showError('Name ist erforderlich')
+    return
+  }
 
   try {
     if (editingEnvironment.value?.id) {
-      await api.put(`/api-tester/environments/${editingEnvironment.value.id}`, environmentForm)
+      await api.put(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`, environmentForm)
     } else {
-      const res = await api.post('/api-tester/environments', environmentForm)
-      editingEnvironment.value = res.data
+      const res = await api.post('/api/v1/api-tester/environments', environmentForm)
+      editingEnvironment.value = res.data.data
     }
     await loadData()
+    uiStore.showSuccess('Environment gespeichert')
   } catch (error) {
-    console.error('Failed to save environment:', error)
+    uiStore.showError('Fehler beim Speichern')
   }
 }
 
@@ -911,35 +452,26 @@ async function activateEnvironment() {
   if (!editingEnvironment.value?.id) return
 
   try {
-    await api.put(`/api-tester/environments/${editingEnvironment.value.id}`, { is_active: true })
+    await api.put(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`, { is_active: true })
     selectedEnvironmentId.value = editingEnvironment.value.id
     await loadData()
+    uiStore.showSuccess('Environment aktiviert')
   } catch (error) {
-    console.error('Failed to activate environment:', error)
-  }
-}
-
-async function setActiveEnvironment() {
-  if (!selectedEnvironmentId.value) return
-
-  try {
-    await api.put(`/api-tester/environments/${selectedEnvironmentId.value}`, { is_active: true })
-    await loadData()
-  } catch (error) {
-    console.error('Failed to set active environment:', error)
+    uiStore.showError('Fehler beim Aktivieren')
   }
 }
 
 async function deleteEnvironment() {
   if (!editingEnvironment.value?.id) return
-  if (!confirm('Delete this environment?')) return
+  if (!confirm('Environment löschen?')) return
 
   try {
-    await api.delete(`/api-tester/environments/${editingEnvironment.value.id}`)
+    await api.delete(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`)
     editingEnvironment.value = null
     await loadData()
+    uiStore.showSuccess('Environment gelöscht')
   } catch (error) {
-    console.error('Failed to delete environment:', error)
+    uiStore.showError('Fehler beim Löschen')
   }
 }
 
@@ -947,21 +479,17 @@ async function deleteEnvironment() {
 async function openHistoryModal() {
   showHistoryModal.value = true
   try {
-    const res = await api.get('/api-tester/history')
-    history.value = res.data.items || []
+    const res = await api.get('/api/v1/api-tester/history')
+    history.value = res.data.data?.items || []
   } catch (error) {
-    console.error('Failed to load history:', error)
+    uiStore.showError('Fehler beim Laden')
   }
-}
-
-function closeHistoryModal() {
-  showHistoryModal.value = false
 }
 
 async function loadFromHistory(item) {
   try {
-    const res = await api.get(`/api-tester/history/${item.id}`)
-    const historyItem = res.data
+    const res = await api.get(`/api/v1/api-tester/history/${item.id}`)
+    const historyItem = res.data.data
 
     currentRequest.value = null
     isNewRequest.value = true
@@ -981,20 +509,21 @@ async function loadFromHistory(item) {
       error: historyItem.error_message
     }
 
-    closeHistoryModal()
+    showHistoryModal.value = false
   } catch (error) {
-    console.error('Failed to load history item:', error)
+    uiStore.showError('Fehler beim Laden')
   }
 }
 
 async function clearHistory() {
-  if (!confirm('Clear all request history?')) return
+  if (!confirm('Gesamte Historie löschen?')) return
 
   try {
-    await api.delete('/api-tester/history')
+    await api.delete('/api/v1/api-tester/history')
     history.value = []
+    uiStore.showSuccess('Historie gelöscht')
   } catch (error) {
-    console.error('Failed to clear history:', error)
+    uiStore.showError('Fehler beim Löschen')
   }
 }
 
@@ -1003,842 +532,478 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.api-tester {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--bg-primary);
-}
-
-.api-tester-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.api-tester-header h1 {
-  font-size: 1.5rem;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.environment-select {
-  padding: 0.5rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  min-width: 150px;
-}
-
-.api-tester-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 280px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.sidebar-header h3 {
-  margin: 0;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.collections-list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.collection-item {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.collection-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.collection-header:hover {
-  background: var(--bg-tertiary);
-}
-
-.collection-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.collection-icon {
-  font-size: 0.875rem;
-}
-
-.collection-name {
-  font-weight: 500;
-}
-
-.request-count {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-
-.collection-actions {
-  display: flex;
-  gap: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.collection-header:hover .collection-actions {
-  opacity: 1;
-}
-
-.collection-requests {
-  background: var(--bg-primary);
-  padding: 0.5rem 0;
-}
-
-.request-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem 0.5rem 2rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.request-item:hover {
-  background: var(--bg-tertiary);
-}
-
-.request-item.active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.request-item.active .method-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-}
-
-.method-badge {
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 0.125rem 0.375rem;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-
-.method-badge.get { background: #22c55e20; color: #22c55e; }
-.method-badge.post { background: #eab30820; color: #eab308; }
-.method-badge.put { background: #0ea5e920; color: #0ea5e9; }
-.method-badge.patch { background: #8b5cf620; color: #8b5cf6; }
-.method-badge.delete { background: #ef444420; color: #ef4444; }
-.method-badge.head { background: #64748b20; color: #64748b; }
-.method-badge.options { background: #ec489920; color: #ec4899; }
-
-.request-name {
-  font-size: 0.875rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.empty-collection {
-  padding: 0.5rem 2rem;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-style: italic;
-}
-
-.sidebar-section {
-  padding: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.sidebar-section h4 {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin: 0 0 0.5rem 0;
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.request-bar {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.method-select {
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-weight: 600;
-  min-width: 100px;
-}
-
-.url-input {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: monospace;
-}
-
-.btn-send {
-  min-width: 100px;
-}
-
-.request-name-bar {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.request-name-input {
-  flex: 1;
-  padding: 0.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-}
-
-.collection-select {
-  padding: 0.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-  min-width: 150px;
-}
-
-/* Request Section */
-.request-section {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tabs {
-  display: flex;
-  gap: 0;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tab {
-  padding: 0.75rem 1.5rem;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 0.875rem;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab:hover {
-  color: var(--text-primary);
-}
-
-.tab.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-.tab .badge {
-  background: var(--primary-color);
-  color: white;
-  font-size: 0.625rem;
-  padding: 0.125rem 0.375rem;
-  border-radius: 10px;
-  margin-left: 0.25rem;
-}
-
-.tab-content {
-  padding: 1rem;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.tab-hint {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.key-value-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.key-value-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.key-value-row input {
-  flex: 1;
-  padding: 0.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-  font-family: monospace;
-  font-size: 0.875rem;
-}
-
-.body-type-selector {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.body-type-selector label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.body-editor {
-  position: relative;
-}
-
-.body-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: monospace;
-  font-size: 0.875rem;
-  resize: vertical;
-}
-
-.format-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-}
-
-.auth-type-selector select {
-  padding: 0.5rem 1rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-  min-width: 200px;
-}
-
-.auth-config {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Response Section */
-.response-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.response-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.response-header h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.response-meta {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.status-badge.success { background: #22c55e20; color: #22c55e; }
-.status-badge.redirect { background: #0ea5e920; color: #0ea5e9; }
-.status-badge.client-error { background: #f9731620; color: #f97316; }
-.status-badge.server-error { background: #ef444420; color: #ef4444; }
-.status-badge.unknown { background: #64748b20; color: #64748b; }
-
-.meta-item {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.response-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.response-content .tab-content {
-  flex: 1;
-  overflow-y: auto;
-  max-height: none;
-}
-
-.response-body {
-  height: 100%;
-}
-
-.error-message {
-  color: #ef4444;
-  padding: 1rem;
-  background: #ef444410;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.response-text {
-  margin: 0;
-  padding: 1rem;
-  background: var(--bg-primary);
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 0.875rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-x: auto;
-}
-
-.headers-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.headers-table tr {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.headers-table td {
-  padding: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.header-key {
-  font-weight: 600;
-  color: var(--primary-color);
-  width: 30%;
-}
-
-.header-value {
-  font-family: monospace;
-  word-break: break-all;
-}
-
-.response-placeholder {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-}
-
-.response-placeholder i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-/* Modals */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  width: 90%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.modal-sm { max-width: 400px; }
-.modal-lg { max-width: 800px; }
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 0.75rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
-}
-
-.hint {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.color-picker {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.color-option {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.color-option:hover {
-  transform: scale(1.1);
-}
-
-.color-option.active {
-  border-color: white;
-  box-shadow: 0 0 0 2px var(--primary-color);
-}
-
-/* Environments Modal */
-.environments-layout {
-  display: flex;
-  gap: 1.5rem;
-  min-height: 300px;
-}
-
-.environments-sidebar {
-  width: 200px;
-  border-right: 1px solid var(--border-color);
-  padding-right: 1.5rem;
-}
-
-.environment-item {
-  padding: 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-bottom: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background 0.2s;
-}
-
-.environment-item:hover {
-  background: var(--bg-tertiary);
-}
-
-.environment-item.active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.active-badge {
-  font-size: 0.625rem;
-  background: #22c55e;
-  color: white;
-  padding: 0.125rem 0.375rem;
-  border-radius: 3px;
-}
-
-.environment-editor {
-  flex: 1;
-}
-
-.environment-form {
-  height: 100%;
-}
-
-.environment-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.no-selection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-secondary);
-}
-
-/* History Modal */
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.history-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.history-item:hover {
-  background: var(--bg-primary);
-}
-
-.history-url {
-  flex: 1;
-  font-family: monospace;
-  font-size: 0.875rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.history-time {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-
-.history-date {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  min-width: 120px;
-  text-align: right;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: var(--text-secondary);
-}
-
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-/* Buttons */
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--border-color);
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-}
-
-.btn-ghost:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.btn-icon:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-icon.danger:hover {
-  background: #ef444420;
-  color: #ef4444;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.btn-close:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.full-width {
-  width: 100%;
-  justify-content: center;
-}
-</style>
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">API Tester</h1>
+        <p class="text-gray-400 mt-1">Teste und debugge deine APIs</p>
+      </div>
+      <div class="flex gap-2">
+        <select
+          v-model="selectedEnvironmentId"
+          class="input w-40"
+        >
+          <option value="">Kein Environment</option>
+          <option v-for="env in environments" :key="env.id" :value="env.id">
+            {{ env.name }}
+          </option>
+        </select>
+        <button @click="openEnvironmentModal" class="btn-secondary">
+          <Cog6ToothIcon class="w-5 h-5" />
+        </button>
+        <button @click="openHistoryModal" class="btn-secondary">
+          <ClockIcon class="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+
+    <div class="flex gap-6">
+      <!-- Sidebar -->
+      <div class="w-72 flex-shrink-0 space-y-4">
+        <!-- Collections -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase">Collections</h3>
+            <button @click="openCollectionModal()" class="btn-icon">
+              <PlusIcon class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="space-y-1">
+            <div v-for="collection in collections" :key="collection.id">
+              <div
+                class="flex items-center justify-between p-2 rounded-lg hover:bg-dark-700 cursor-pointer group"
+                @click="toggleCollection(collection.id)"
+              >
+                <div class="flex items-center gap-2">
+                  <component
+                    :is="expandedCollections.includes(collection.id) ? ChevronDownIcon : ChevronRightIcon"
+                    class="w-4 h-4 text-gray-500"
+                  />
+                  <FolderIcon class="w-4 h-4" :style="{ color: collection.color }" />
+                  <span class="text-sm text-white">{{ collection.name }}</span>
+                  <span class="text-xs text-gray-500">({{ collection.request_count || 0 }})</span>
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100">
+                  <button @click.stop="addRequestToCollection(collection.id)" class="btn-icon-sm">
+                    <PlusIcon class="w-3 h-3" />
+                  </button>
+                  <button @click.stop="openCollectionModal(collection)" class="btn-icon-sm">
+                    <PencilIcon class="w-3 h-3" />
+                  </button>
+                  <button @click.stop="deleteCollection(collection.id)" class="btn-icon-sm text-red-400">
+                    <TrashIcon class="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="expandedCollections.includes(collection.id)" class="ml-6 space-y-1">
+                <div
+                  v-for="req in getCollectionRequests(collection.id)"
+                  :key="req.id"
+                  class="flex items-center gap-2 p-2 rounded-lg cursor-pointer group"
+                  :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                  @click="selectRequest(req)"
+                >
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(req.method)">
+                    {{ req.method }}
+                  </span>
+                  <span class="text-sm text-gray-300 truncate flex-1">{{ req.name }}</span>
+                  <button @click.stop="deleteRequest(req)" class="btn-icon-sm opacity-0 group-hover:opacity-100 text-red-400">
+                    <TrashIcon class="w-3 h-3" />
+                  </button>
+                </div>
+                <div v-if="getCollectionRequests(collection.id).length === 0" class="text-xs text-gray-500 p-2">
+                  Keine Requests
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Uncategorized -->
+          <div class="mt-4 pt-4 border-t border-dark-600">
+            <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Unkategorisiert</h4>
+            <div class="space-y-1">
+              <div
+                v-for="req in uncategorizedRequests"
+                :key="req.id"
+                class="flex items-center gap-2 p-2 rounded-lg cursor-pointer group"
+                :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                @click="selectRequest(req)"
+              >
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(req.method)">
+                  {{ req.method }}
+                </span>
+                <span class="text-sm text-gray-300 truncate flex-1">{{ req.name }}</span>
+              </div>
+            </div>
+            <button @click="createNewRequest" class="btn-ghost w-full mt-2 text-sm">
+              <PlusIcon class="w-4 h-4 mr-1" />
+              Neuer Request
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 space-y-4">
+        <!-- Request Bar -->
+        <div class="card">
+          <div class="flex gap-2">
+            <select v-model="requestForm.method" class="input w-28 font-bold">
+              <option>GET</option>
+              <option>POST</option>
+              <option>PUT</option>
+              <option>PATCH</option>
+              <option>DELETE</option>
+              <option>HEAD</option>
+              <option>OPTIONS</option>
+            </select>
+            <input
+              v-model="requestForm.url"
+              type="text"
+              class="input flex-1 font-mono"
+              placeholder="https://api.example.com/users"
+            />
+            <button @click="sendRequest" :disabled="sending" class="btn-primary px-6">
+              <PlayIcon v-if="!sending" class="w-5 h-5 mr-1" />
+              <span v-else class="animate-spin w-5 h-5 mr-1 border-2 border-white border-t-transparent rounded-full"></span>
+              {{ sending ? 'Senden...' : 'Senden' }}
+            </button>
+            <button v-if="currentRequest || isNewRequest" @click="saveRequest" class="btn-secondary">
+              <BookmarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div v-if="currentRequest || isNewRequest" class="flex gap-2 mt-3">
+            <input
+              v-model="requestForm.name"
+              type="text"
+              class="input flex-1"
+              placeholder="Request Name"
+            />
+            <select v-model="requestForm.collection_id" class="input w-48">
+              <option value="">Keine Collection</option>
+              <option v-for="col in collections" :key="col.id" :value="col.id">
+                {{ col.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Request Tabs -->
+        <div class="card">
+          <div class="flex border-b border-dark-600 -mx-4 -mt-4 px-4">
+            <button
+              v-for="tab in ['params', 'headers', 'body', 'auth']"
+              :key="tab"
+              class="px-4 py-3 text-sm font-medium border-b-2 -mb-px capitalize"
+              :class="activeRequestTab === tab ? 'border-primary-500 text-primary-500' : 'border-transparent text-gray-400 hover:text-white'"
+              @click="activeRequestTab = tab"
+            >
+              {{ tab }}
+            </button>
+          </div>
+
+          <div class="mt-4">
+            <!-- Params -->
+            <div v-if="activeRequestTab === 'params'" class="space-y-2">
+              <p class="text-xs text-gray-500 mb-3">Query Parameter werden an die URL angehängt.</p>
+              <div v-for="(param, index) in queryParams" :key="index" class="flex gap-2">
+                <input v-model="param.key" type="text" class="input flex-1 font-mono text-sm" placeholder="Key" @input="updateQueryParams" />
+                <input v-model="param.value" type="text" class="input flex-1 font-mono text-sm" placeholder="Value" @input="updateQueryParams" />
+                <button @click="removeQueryParam(index)" class="btn-icon text-red-400">
+                  <XMarkIcon class="w-4 h-4" />
+                </button>
+              </div>
+              <button @click="addQueryParam" class="btn-ghost text-sm">
+                <PlusIcon class="w-4 h-4 mr-1" /> Parameter hinzufügen
+              </button>
+            </div>
+
+            <!-- Headers -->
+            <div v-if="activeRequestTab === 'headers'" class="space-y-2">
+              <div v-for="(value, key) in requestForm.headers" :key="key" class="flex gap-2">
+                <input :value="key" type="text" class="input flex-1 font-mono text-sm" placeholder="Header" @input="updateHeaderKey(key, $event)" />
+                <input v-model="requestForm.headers[key]" type="text" class="input flex-1 font-mono text-sm" placeholder="Value" />
+                <button @click="removeHeader(key)" class="btn-icon text-red-400">
+                  <XMarkIcon class="w-4 h-4" />
+                </button>
+              </div>
+              <button @click="addHeader" class="btn-ghost text-sm">
+                <PlusIcon class="w-4 h-4 mr-1" /> Header hinzufügen
+              </button>
+            </div>
+
+            <!-- Body -->
+            <div v-if="activeRequestTab === 'body'">
+              <div class="flex gap-4 mb-3">
+                <label v-for="type in ['none', 'json', 'form', 'raw']" :key="type" class="flex items-center gap-2 text-sm">
+                  <input v-model="requestForm.body_type" type="radio" :value="type" class="text-primary-500" />
+                  <span class="capitalize">{{ type }}</span>
+                </label>
+              </div>
+              <div v-if="requestForm.body_type !== 'none'" class="relative">
+                <textarea
+                  v-model="requestForm.body"
+                  class="input w-full h-40 font-mono text-sm"
+                  :placeholder="requestForm.body_type === 'json' ? '{\n  \"key\": \"value\"\n}' : 'Request Body'"
+                ></textarea>
+                <button
+                  v-if="requestForm.body_type === 'json'"
+                  @click="formatJson"
+                  class="absolute top-2 right-2 btn-ghost text-xs"
+                >
+                  Format JSON
+                </button>
+              </div>
+            </div>
+
+            <!-- Auth -->
+            <div v-if="activeRequestTab === 'auth'">
+              <select v-model="requestForm.auth_type" class="input w-48 mb-4">
+                <option value="none">Keine Auth</option>
+                <option value="bearer">Bearer Token</option>
+                <option value="basic">Basic Auth</option>
+                <option value="api_key">API Key</option>
+              </select>
+
+              <div v-if="requestForm.auth_type === 'bearer'" class="space-y-3">
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Token</label>
+                  <input v-model="requestForm.auth_config.token" type="text" class="input w-full font-mono" placeholder="Bearer Token" />
+                </div>
+              </div>
+
+              <div v-if="requestForm.auth_type === 'basic'" class="space-y-3">
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Username</label>
+                  <input v-model="requestForm.auth_config.username" type="text" class="input w-full" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Password</label>
+                  <input v-model="requestForm.auth_config.password" type="password" class="input w-full" />
+                </div>
+              </div>
+
+              <div v-if="requestForm.auth_type === 'api_key'" class="space-y-3">
+                <div class="flex gap-3">
+                  <div class="flex-1">
+                    <label class="text-sm text-gray-400 mb-1 block">Key</label>
+                    <input v-model="requestForm.auth_config.key" type="text" class="input w-full" placeholder="X-API-Key" />
+                  </div>
+                  <div class="flex-1">
+                    <label class="text-sm text-gray-400 mb-1 block">Value</label>
+                    <input v-model="requestForm.auth_config.value" type="text" class="input w-full" />
+                  </div>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Hinzufügen zu</label>
+                  <select v-model="requestForm.auth_config.add_to" class="input w-40">
+                    <option value="header">Header</option>
+                    <option value="query">Query Params</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-white">Response</h3>
+            <div v-if="response" class="flex items-center gap-4 text-sm">
+              <span class="px-2 py-1 rounded font-bold text-white" :class="getStatusClass(response.status)">
+                {{ response.status || 'Error' }}
+              </span>
+              <span class="text-gray-400">{{ response.time }}ms</span>
+              <span class="text-gray-400">{{ formatBytes(response.size) }}</span>
+            </div>
+          </div>
+
+          <div v-if="response">
+            <div class="flex border-b border-dark-600 -mx-4 px-4 mb-4">
+              <button
+                v-for="tab in ['body', 'headers']"
+                :key="tab"
+                class="px-4 py-2 text-sm font-medium border-b-2 -mb-px capitalize"
+                :class="activeResponseTab === tab ? 'border-primary-500 text-primary-500' : 'border-transparent text-gray-400 hover:text-white'"
+                @click="activeResponseTab = tab"
+              >
+                {{ tab }}
+              </button>
+            </div>
+
+            <div v-if="activeResponseTab === 'body'">
+              <div v-if="response.error" class="p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-400">
+                {{ response.error }}
+              </div>
+              <pre v-else class="p-4 bg-dark-900 rounded-lg text-sm font-mono text-gray-300 overflow-auto max-h-96">{{ formatResponseBody(response.body) }}</pre>
+            </div>
+
+            <div v-if="activeResponseTab === 'headers'" class="space-y-1">
+              <div v-for="(value, key) in response.headers" :key="key" class="flex gap-4 py-1 border-b border-dark-700">
+                <span class="text-primary-400 font-medium w-48 shrink-0">{{ key }}</span>
+                <span class="text-gray-300 font-mono text-sm break-all">{{ value }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="flex flex-col items-center justify-center py-12 text-gray-500">
+            <PlayIcon class="w-12 h-12 mb-3 opacity-50" />
+            <p>Sende einen Request um die Response zu sehen</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collection Modal -->
+    <div v-if="showCollectionModal" class="modal-overlay" @click.self="showCollectionModal = false">
+      <div class="modal max-w-md">
+        <div class="modal-header">
+          <h2>{{ editingCollection ? 'Collection bearbeiten' : 'Neue Collection' }}</h2>
+          <button @click="showCollectionModal = false" class="btn-icon">
+            <XMarkIcon class="w-5 h-5" />
+          </button>
+        </div>
+        <div class="modal-body space-y-4">
+          <div>
+            <label class="text-sm text-gray-400 mb-1 block">Name *</label>
+            <input v-model="collectionForm.name" type="text" class="input w-full" />
+          </div>
+          <div>
+            <label class="text-sm text-gray-400 mb-1 block">Beschreibung</label>
+            <textarea v-model="collectionForm.description" class="input w-full" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="text-sm text-gray-400 mb-1 block">Farbe</label>
+            <div class="flex gap-2">
+              <button
+                v-for="color in colors"
+                :key="color"
+                class="w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110"
+                :class="collectionForm.color === color ? 'border-white' : 'border-transparent'"
+                :style="{ backgroundColor: color }"
+                @click="collectionForm.color = color"
+              ></button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showCollectionModal = false" class="btn-secondary">Abbrechen</button>
+          <button @click="saveCollection" class="btn-primary">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Modal -->
+    <div v-if="showEnvironmentModal" class="modal-overlay" @click.self="showEnvironmentModal = false">
+      <div class="modal max-w-3xl">
+        <div class="modal-header">
+          <h2>Environments</h2>
+          <button @click="showEnvironmentModal = false" class="btn-icon">
+            <XMarkIcon class="w-5 h-5" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="flex gap-6">
+            <div class="w-48 border-r border-dark-600 pr-6">
+              <div class="space-y-1">
+                <div
+                  v-for="env in environments"
+                  :key="env.id"
+                  class="p-2 rounded-lg cursor-pointer flex items-center justify-between"
+                  :class="editingEnvironment?.id === env.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                  @click="selectEnvironment(env)"
+                >
+                  <span class="text-sm">{{ env.name }}</span>
+                  <span v-if="env.is_active" class="text-[10px] bg-green-600 text-white px-1.5 py-0.5 rounded">Active</span>
+                </div>
+              </div>
+              <button @click="createNewEnvironment" class="btn-ghost w-full mt-3 text-sm">
+                <PlusIcon class="w-4 h-4 mr-1" /> Neu
+              </button>
+            </div>
+
+            <div class="flex-1">
+              <div v-if="editingEnvironment" class="space-y-4">
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Name *</label>
+                  <input v-model="environmentForm.name" type="text" class="input w-full" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-400 mb-1 block">Variablen</label>
+                  <p class="text-xs text-gray-500 mb-2">Verwende {{variableName}} in Requests.</p>
+                  <div class="space-y-2">
+                    <div v-for="(value, key) in environmentForm.variables" :key="key" class="flex gap-2">
+                      <input :value="key" type="text" class="input flex-1 font-mono text-sm" @input="updateEnvVarKey(key, $event)" />
+                      <input v-model="environmentForm.variables[key]" type="text" class="input flex-1 font-mono text-sm" />
+                      <button @click="removeEnvVar(key)" class="btn-icon text-red-400">
+                        <XMarkIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button @click="addEnvVar" class="btn-ghost text-sm">
+                      <PlusIcon class="w-4 h-4 mr-1" /> Variable hinzufügen
+                    </button>
+                  </div>
+                </div>
+                <div class="flex gap-2 pt-4">
+                  <button @click="saveEnvironment" class="btn-primary">Speichern</button>
+                  <button v-if="!editingEnvironment.is_active && editingEnvironment.id" @click="activateEnvironment" class="btn-secondary">
+                    Aktivieren
+                  </button>
+                  <button v-if="editingEnvironment.id" @click="deleteEnvironment" class="btn-danger">Löschen</button>
+                </div>
+              </div>
+              <div v-else class="flex items-center justify-center h-48 text-gray-500">
+                Wähle ein Environment oder erstelle ein neues
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Modal -->
+    <div v-if="showHistoryModal" class="modal-overlay" @click.self="showHistoryModal = false">
+      <div class="modal max-w-3xl">
+        <div class="modal-header">
+          <h2>Request Historie</h2>
+          <div class="flex items-center gap-2">
+            <button @click="clearHistory" class="btn-danger text-sm">Löschen</button>
+            <button @click="showHistoryModal = false" class="btn-icon">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div v-if="history.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-500">
+            <ClockIcon class="w-12 h-12 mb-3 opacity-50" />
+            <p>Keine Historie vorhanden</p>
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="item in history"
+              :key="item.id"
+              class="flex items-center gap-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600"
+              @click="loadFromHistory(item)"
+            >
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(item.method)">
+                {{ item.method }}
+              </span>
+              <span class="flex-1 font-mono text-sm text-gray-300 truncate">{{ item.url }}</span>
+              <span class="px-2 py-0.5 rounded text-xs font-bold text-white" :class="getStatusClass(item.response_status)">
+                {{ item.response_status }}
+              </span>
+              <span class="text-xs text-gray-500">{{ item.response_time }}ms</span>
+              <span class="text-xs text-gray-500">{{ new Date(item.executed_at).toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

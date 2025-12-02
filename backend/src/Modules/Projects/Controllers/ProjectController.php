@@ -78,7 +78,7 @@ class ProjectController
             'color' => $data['color'] ?? '#6366f1',
             'icon' => $data['icon'] ?? 'folder',
             'status' => 'active',
-            'is_favorite' => false,
+            'is_favorite' => 0,
         ]);
 
         return JsonResponse::success( [

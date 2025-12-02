@@ -119,7 +119,7 @@ class SnippetController
             'language' => $data['language'] ?? 'text',
             'category' => $data['category'] ?? null,
             'tags' => isset($data['tags']) ? json_encode($data['tags']) : null,
-            'is_favorite' => (bool) ($data['is_favorite'] ?? false),
+            'is_favorite' => !empty($data['is_favorite']) ? 1 : 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);

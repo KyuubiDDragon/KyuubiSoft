@@ -162,10 +162,9 @@ class TimeTrackingController
         $entry['is_running'] = true;
         $entry['is_billable'] = (bool) $entry['is_billable'];
 
-        return JsonResponse::success( [
+        return JsonResponse::created([
             'entry' => $entry,
-            'message' => 'Zeiterfassung gestartet',
-        ], 201);
+        ], 'Zeiterfassung gestartet');
     }
 
     public function stop(Request $request, Response $response): Response
@@ -248,10 +247,9 @@ class TimeTrackingController
             'tags' => json_encode($data['tags'] ?? []),
         ]);
 
-        return JsonResponse::success( [
+        return JsonResponse::created([
             'id' => $id,
-            'message' => 'Zeiteintrag erstellt',
-        ], 201);
+        ], 'Zeiteintrag erstellt');
     }
 
     public function update(Request $request, Response $response): Response

@@ -95,10 +95,9 @@ class ProjectController
             'is_favorite' => 0,
         ]);
 
-        return JsonResponse::success( [
+        return JsonResponse::created([
             'id' => $id,
-            'message' => 'Projekt erstellt',
-        ], 201);
+        ], 'Projekt erstellt');
     }
 
     public function show(Request $request, Response $response): Response
@@ -279,10 +278,9 @@ class ProjectController
             'linkable_id' => $itemId,
         ]);
 
-        return JsonResponse::success( [
+        return JsonResponse::created([
             'id' => $linkId,
-            'message' => 'Element verknüpft',
-        ], 201);
+        ], 'Element verknüpft');
     }
 
     public function removeLink(Request $request, Response $response): Response

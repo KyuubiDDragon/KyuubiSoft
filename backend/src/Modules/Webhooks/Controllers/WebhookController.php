@@ -100,10 +100,9 @@ class WebhookController
             'is_active' => 1,
         ]);
 
-        return JsonResponse::success( [
+        return JsonResponse::created([
             'id' => $id,
-            'message' => 'Webhook erstellt',
-        ], 201);
+        ], 'Webhook erstellt');
     }
 
     public function show(Request $request, Response $response): Response

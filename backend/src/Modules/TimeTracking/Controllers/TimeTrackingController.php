@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class TimeTrackingController
 {
@@ -152,10 +153,10 @@ class TimeTrackingController
         ], 201);
     }
 
-    public function stop(Request $request, Response $response, array $args): Response
+    public function stop(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $entryId = $args['id'];
+        $entryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $entry = $this->db->fetchAssociative(
             'SELECT * FROM time_entries WHERE id = ? AND user_id = ?',
@@ -238,10 +239,10 @@ class TimeTrackingController
         ], 201);
     }
 
-    public function update(Request $request, Response $response, array $args): Response
+    public function update(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $entryId = $args['id'];
+        $entryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $entry = $this->db->fetchAssociative(
@@ -312,10 +313,10 @@ class TimeTrackingController
         return JsonResponse::success( ['message' => 'Eintrag aktualisiert']);
     }
 
-    public function delete(Request $request, Response $response, array $args): Response
+    public function delete(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $entryId = $args['id'];
+        $entryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $deleted = $this->db->delete('time_entries', [
             'id' => $entryId,

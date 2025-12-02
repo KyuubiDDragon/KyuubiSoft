@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class ProjectController
 {
@@ -86,10 +87,10 @@ class ProjectController
         ], 201);
     }
 
-    public function show(Request $request, Response $response, array $args): Response
+    public function show(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $project = $this->getProjectForUser($projectId, $userId);
 
@@ -141,10 +142,10 @@ class ProjectController
         return JsonResponse::success( $project);
     }
 
-    public function update(Request $request, Response $response, array $args): Response
+    public function update(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
@@ -200,10 +201,10 @@ class ProjectController
         return JsonResponse::success( ['message' => 'Projekt aktualisiert']);
     }
 
-    public function delete(Request $request, Response $response, array $args): Response
+    public function delete(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         // Only owner can delete
         $deleted = $this->db->delete('projects', [
@@ -219,10 +220,10 @@ class ProjectController
     }
 
     // Link management
-    public function addLink(Request $request, Response $response, array $args): Response
+    public function addLink(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
@@ -270,11 +271,12 @@ class ProjectController
         ], 201);
     }
 
-    public function removeLink(Request $request, Response $response, array $args): Response
+    public function removeLink(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
-        $linkId = $args['linkId'];
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $projectId = $route->getArgument('id');
+        $linkId = $route->getArgument('linkId');
 
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
 
@@ -294,11 +296,12 @@ class ProjectController
         return JsonResponse::success( ['message' => 'Verknüpfung entfernt']);
     }
 
-    public function getLinkableItems(Request $request, Response $response, array $args): Response
+    public function getLinkableItems(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
-        $type = $args['type'];
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $projectId = $route->getArgument('id');
+        $type = $route->getArgument('type');
 
         $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet'];
         if (!in_array($type, $validTypes)) {
@@ -344,10 +347,10 @@ class ProjectController
     }
 
     // Shares
-    public function getShares(Request $request, Response $response, array $args): Response
+    public function getShares(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $project = $this->getProjectForUser($projectId, $userId);
 
@@ -366,10 +369,10 @@ class ProjectController
         return JsonResponse::success( ['shares' => $shares]);
     }
 
-    public function addShare(Request $request, Response $response, array $args): Response
+    public function addShare(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
+        $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         // Only owner can share
@@ -416,11 +419,12 @@ class ProjectController
         return JsonResponse::success( ['message' => 'Projekt geteilt']);
     }
 
-    public function removeShare(Request $request, Response $response, array $args): Response
+    public function removeShare(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $projectId = $args['id'];
-        $shareUserId = $args['userId'];
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $projectId = $route->getArgument('id');
+        $shareUserId = $route->getArgument('userId');
 
         // Only owner can remove shares
         $project = $this->db->fetchAssociative(

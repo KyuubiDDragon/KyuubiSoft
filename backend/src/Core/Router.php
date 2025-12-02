@@ -17,6 +17,9 @@ use App\Modules\Search\Controllers\SearchController;
 use App\Modules\Connections\Controllers\ConnectionController;
 use App\Modules\Snippets\Controllers\SnippetController;
 use App\Modules\Kanban\Controllers\KanbanController;
+use App\Modules\Webhooks\Controllers\WebhookController;
+use App\Modules\Projects\Controllers\ProjectController;
+use App\Modules\TimeTracking\Controllers\TimeTrackingController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -138,6 +141,39 @@ class Router
                 $protected->put('/kanban/boards/{id}/cards/{cardId}', [KanbanController::class, 'updateCard']);
                 $protected->delete('/kanban/boards/{id}/cards/{cardId}', [KanbanController::class, 'deleteCard']);
                 $protected->put('/kanban/boards/{id}/cards/{cardId}/move', [KanbanController::class, 'moveCard']);
+
+                // Webhooks
+                $protected->get('/webhooks', [WebhookController::class, 'index']);
+                $protected->post('/webhooks', [WebhookController::class, 'create']);
+                $protected->get('/webhooks/events', [WebhookController::class, 'getAvailableEvents']);
+                $protected->get('/webhooks/{id}', [WebhookController::class, 'show']);
+                $protected->put('/webhooks/{id}', [WebhookController::class, 'update']);
+                $protected->delete('/webhooks/{id}', [WebhookController::class, 'delete']);
+                $protected->post('/webhooks/{id}/test', [WebhookController::class, 'test']);
+
+                // Projects
+                $protected->get('/projects', [ProjectController::class, 'index']);
+                $protected->post('/projects', [ProjectController::class, 'create']);
+                $protected->get('/projects/{id}', [ProjectController::class, 'show']);
+                $protected->put('/projects/{id}', [ProjectController::class, 'update']);
+                $protected->delete('/projects/{id}', [ProjectController::class, 'delete']);
+                $protected->post('/projects/{id}/links', [ProjectController::class, 'addLink']);
+                $protected->delete('/projects/{id}/links/{linkId}', [ProjectController::class, 'removeLink']);
+                $protected->get('/projects/{id}/linkable/{type}', [ProjectController::class, 'getLinkableItems']);
+                $protected->get('/projects/{id}/shares', [ProjectController::class, 'getShares']);
+                $protected->post('/projects/{id}/shares', [ProjectController::class, 'addShare']);
+                $protected->delete('/projects/{id}/shares/{userId}', [ProjectController::class, 'removeShare']);
+
+                // Time Tracking
+                $protected->get('/time', [TimeTrackingController::class, 'index']);
+                $protected->get('/time/running', [TimeTrackingController::class, 'getRunning']);
+                $protected->post('/time/start', [TimeTrackingController::class, 'start']);
+                $protected->post('/time/{id}/stop', [TimeTrackingController::class, 'stop']);
+                $protected->post('/time', [TimeTrackingController::class, 'create']);
+                $protected->put('/time/{id}', [TimeTrackingController::class, 'update']);
+                $protected->delete('/time/{id}', [TimeTrackingController::class, 'delete']);
+                $protected->get('/time/stats', [TimeTrackingController::class, 'getStats']);
+                $protected->get('/time/projects', [TimeTrackingController::class, 'getProjects']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

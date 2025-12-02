@@ -10,6 +10,9 @@ const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue'
 const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
 const SnippetsView = () => import('@/modules/snippets/views/SnippetsView.vue')
 const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
+const ProjectsView = () => import('@/modules/projects/views/ProjectsView.vue')
+const TimeTrackingView = () => import('@/modules/time/views/TimeTrackingView.vue')
+const WebhooksView = () => import('@/modules/webhooks/views/WebhooksView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
@@ -64,6 +67,24 @@ const routes = [
     path: '/kanban',
     name: 'kanban',
     component: KanbanView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/projects',
+    name: 'projects',
+    component: ProjectsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/time',
+    name: 'time',
+    component: TimeTrackingView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/webhooks',
+    name: 'webhooks',
+    component: WebhooksView,
     meta: { requiresAuth: true },
   },
   {

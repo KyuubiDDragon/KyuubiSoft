@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import draggable from 'vuedraggable'
@@ -16,6 +17,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // State
@@ -372,8 +374,14 @@ function isOverdue(dateStr) {
   return new Date(dateStr) < new Date()
 }
 
-onMounted(() => {
-  fetchBoards()
+onMounted(async () => {
+  await fetchBoards()
+
+  // Check for ?open=id query parameter to auto-open a board
+  const openId = route.query.open
+  if (openId) {
+    await fetchBoard(openId)
+  }
 })
 </script>
 

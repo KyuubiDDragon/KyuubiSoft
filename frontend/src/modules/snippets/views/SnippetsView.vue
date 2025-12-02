@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -17,6 +18,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // State
@@ -90,6 +92,15 @@ const filteredSnippets = computed(() => {
 // API Calls
 onMounted(async () => {
   await loadSnippets()
+
+  // Check for ?open=id query parameter to auto-open a snippet
+  const openId = route.query.open
+  if (openId) {
+    const snippet = snippets.value.find(s => s.id === openId)
+    if (snippet) {
+      openEditModal(snippet)
+    }
+  }
 })
 
 async function loadSnippets() {

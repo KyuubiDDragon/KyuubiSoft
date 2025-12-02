@@ -13,6 +13,10 @@ const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
 const ProjectsView = () => import('@/modules/projects/views/ProjectsView.vue')
 const TimeTrackingView = () => import('@/modules/time/views/TimeTrackingView.vue')
 const WebhooksView = () => import('@/modules/webhooks/views/WebhooksView.vue')
+const BookmarksView = () => import('@/modules/bookmarks/views/BookmarksView.vue')
+const UptimeView = () => import('@/modules/uptime/views/UptimeView.vue')
+const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
+const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
@@ -85,6 +89,30 @@ const routes = [
     path: '/webhooks',
     name: 'webhooks',
     component: WebhooksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bookmarks',
+    name: 'bookmarks',
+    component: BookmarksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/uptime',
+    name: 'uptime',
+    component: UptimeView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/invoices',
+    name: 'invoices',
+    component: InvoicesView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/api-tester',
+    name: 'api-tester',
+    component: ApiTesterView,
     meta: { requiresAuth: true },
   },
   {

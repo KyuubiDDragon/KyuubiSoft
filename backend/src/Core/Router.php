@@ -20,6 +20,10 @@ use App\Modules\Kanban\Controllers\KanbanController;
 use App\Modules\Webhooks\Controllers\WebhookController;
 use App\Modules\Projects\Controllers\ProjectController;
 use App\Modules\TimeTracking\Controllers\TimeTrackingController;
+use App\Modules\Bookmarks\Controllers\BookmarkController;
+use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
+use App\Modules\Invoices\Controllers\InvoiceController;
+use App\Modules\ApiTester\Controllers\ApiTesterController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -175,6 +179,68 @@ class Router
                 $protected->delete('/time/{id}', [TimeTrackingController::class, 'delete']);
                 $protected->get('/time/stats', [TimeTrackingController::class, 'getStats']);
                 $protected->get('/time/projects', [TimeTrackingController::class, 'getProjects']);
+
+                // Bookmarks
+                $protected->get('/bookmarks', [BookmarkController::class, 'index']);
+                $protected->post('/bookmarks', [BookmarkController::class, 'create']);
+                $protected->get('/bookmarks/tags', [BookmarkController::class, 'getTags']);
+                $protected->post('/bookmarks/tags', [BookmarkController::class, 'createTag']);
+                $protected->delete('/bookmarks/tags/{tagId}', [BookmarkController::class, 'deleteTag']);
+                $protected->get('/bookmarks/{id}', [BookmarkController::class, 'show']);
+                $protected->put('/bookmarks/{id}', [BookmarkController::class, 'update']);
+                $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
+                $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
+
+                // Uptime Monitor
+                $protected->get('/uptime', [UptimeMonitorController::class, 'index']);
+                $protected->post('/uptime', [UptimeMonitorController::class, 'create']);
+                $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats']);
+                $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show']);
+                $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update']);
+                $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete']);
+                $protected->post('/uptime/{id}/check', [UptimeMonitorController::class, 'check']);
+
+                // Invoices - Clients
+                $protected->get('/clients', [InvoiceController::class, 'getClients']);
+                $protected->post('/clients', [InvoiceController::class, 'createClient']);
+                $protected->put('/clients/{id}', [InvoiceController::class, 'updateClient']);
+                $protected->delete('/clients/{id}', [InvoiceController::class, 'deleteClient']);
+
+                // Invoices
+                $protected->get('/invoices', [InvoiceController::class, 'index']);
+                $protected->post('/invoices', [InvoiceController::class, 'create']);
+                $protected->get('/invoices/stats', [InvoiceController::class, 'getStats']);
+                $protected->post('/invoices/from-time', [InvoiceController::class, 'createFromTimeEntries']);
+                $protected->get('/invoices/{id}', [InvoiceController::class, 'show']);
+                $protected->put('/invoices/{id}', [InvoiceController::class, 'update']);
+                $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete']);
+                $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem']);
+                $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem']);
+                $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem']);
+
+                // API Tester - Collections
+                $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections']);
+                $protected->post('/api-tester/collections', [ApiTesterController::class, 'createCollection']);
+                $protected->put('/api-tester/collections/{id}', [ApiTesterController::class, 'updateCollection']);
+                $protected->delete('/api-tester/collections/{id}', [ApiTesterController::class, 'deleteCollection']);
+
+                // API Tester - Environments
+                $protected->get('/api-tester/environments', [ApiTesterController::class, 'getEnvironments']);
+                $protected->post('/api-tester/environments', [ApiTesterController::class, 'createEnvironment']);
+                $protected->put('/api-tester/environments/{id}', [ApiTesterController::class, 'updateEnvironment']);
+                $protected->delete('/api-tester/environments/{id}', [ApiTesterController::class, 'deleteEnvironment']);
+
+                // API Tester - Requests
+                $protected->get('/api-tester/requests', [ApiTesterController::class, 'getRequests']);
+                $protected->post('/api-tester/requests', [ApiTesterController::class, 'createRequest']);
+                $protected->put('/api-tester/requests/{id}', [ApiTesterController::class, 'updateRequest']);
+                $protected->delete('/api-tester/requests/{id}', [ApiTesterController::class, 'deleteRequest']);
+                $protected->post('/api-tester/execute', [ApiTesterController::class, 'executeRequest']);
+
+                // API Tester - History
+                $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory']);
+                $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem']);
+                $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

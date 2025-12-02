@@ -563,7 +563,7 @@ onMounted(() => {
       <!-- Sidebar -->
       <div class="w-72 flex-shrink-0 space-y-4">
         <!-- Collections -->
-        <div class="card">
+        <div class="card p-4">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-gray-400 uppercase">Collections</h3>
             <button @click="openCollectionModal()" class="btn-icon">
@@ -650,7 +650,7 @@ onMounted(() => {
       <!-- Main Content -->
       <div class="flex-1 space-y-4">
         <!-- Request Bar -->
-        <div class="card">
+        <div class="card p-4">
           <div class="flex gap-2">
             <select v-model="requestForm.method" class="input w-28 font-bold">
               <option>GET</option>
@@ -694,7 +694,7 @@ onMounted(() => {
         </div>
 
         <!-- Request Tabs -->
-        <div class="card">
+        <div class="card p-4">
           <div class="flex border-b border-dark-600 -mx-4 -mt-4 px-4">
             <button
               v-for="tab in ['params', 'headers', 'body', 'auth']"
@@ -812,7 +812,7 @@ onMounted(() => {
         </div>
 
         <!-- Response -->
-        <div class="card">
+        <div class="card p-4">
           <div class="flex items-center justify-between mb-4">
             <h3 class="font-semibold text-white">Response</h3>
             <div v-if="response" class="flex items-center gap-4 text-sm">

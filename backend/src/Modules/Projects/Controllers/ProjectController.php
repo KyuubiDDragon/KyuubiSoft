@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Projects\Controllers;
 
-use App\Core\JsonResponse;
+use App\Core\Http\JsonResponse;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -54,7 +54,7 @@ class ProjectController
             $project['total_time_seconds'] = (int) ($project['total_time_seconds'] ?? 0);
         }
 
-        return JsonResponse::success($response, ['items' => $projects]);
+        return JsonResponse::success( ['items' => $projects]);
     }
 
     public function create(Request $request, Response $response): Response
@@ -64,7 +64,7 @@ class ProjectController
 
         $name = trim($data['name'] ?? '');
         if (empty($name)) {
-            return JsonResponse::error($response, 'Name ist erforderlich', 400);
+            return JsonResponse::error( 'Name ist erforderlich', 400);
         }
 
         $id = Uuid::uuid4()->toString();
@@ -80,7 +80,7 @@ class ProjectController
             'is_favorite' => false,
         ]);
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'id' => $id,
             'message' => 'Projekt erstellt',
         ], 201);
@@ -94,7 +94,7 @@ class ProjectController
         $project = $this->getProjectForUser($projectId, $userId);
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
         // Get linked items
@@ -138,7 +138,7 @@ class ProjectController
         $project['is_favorite'] = (bool) $project['is_favorite'];
         $project['is_owner'] = $project['user_id'] === $userId;
 
-        return JsonResponse::success($response, $project);
+        return JsonResponse::success( $project);
     }
 
     public function update(Request $request, Response $response, array $args): Response
@@ -150,7 +150,7 @@ class ProjectController
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
         $updates = [];
@@ -178,7 +178,7 @@ class ProjectController
 
         if (isset($data['status'])) {
             if (!in_array($data['status'], ['active', 'archived', 'completed'])) {
-                return JsonResponse::error($response, 'Ungültiger Status', 400);
+                return JsonResponse::error( 'Ungültiger Status', 400);
             }
             $updates[] = 'status = ?';
             $params[] = $data['status'];
@@ -197,7 +197,7 @@ class ProjectController
             );
         }
 
-        return JsonResponse::success($response, ['message' => 'Projekt aktualisiert']);
+        return JsonResponse::success( ['message' => 'Projekt aktualisiert']);
     }
 
     public function delete(Request $request, Response $response, array $args): Response
@@ -212,10 +212,10 @@ class ProjectController
         ]);
 
         if (!$deleted) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
-        return JsonResponse::success($response, ['message' => 'Projekt gelöscht']);
+        return JsonResponse::success( ['message' => 'Projekt gelöscht']);
     }
 
     // Link management
@@ -228,7 +228,7 @@ class ProjectController
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
         $type = $data['type'] ?? '';
@@ -236,13 +236,13 @@ class ProjectController
 
         $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet'];
         if (!in_array($type, $validTypes)) {
-            return JsonResponse::error($response, 'Ungültiger Linktyp', 400);
+            return JsonResponse::error( 'Ungültiger Linktyp', 400);
         }
 
         // Verify the item exists
         $item = $this->fetchLinkedItem($type, $itemId);
         if (!$item) {
-            return JsonResponse::error($response, 'Element nicht gefunden', 404);
+            return JsonResponse::error( 'Element nicht gefunden', 404);
         }
 
         // Check if link already exists
@@ -252,7 +252,7 @@ class ProjectController
         );
 
         if ($existing) {
-            return JsonResponse::error($response, 'Link existiert bereits', 400);
+            return JsonResponse::error( 'Link existiert bereits', 400);
         }
 
         $linkId = Uuid::uuid4()->toString();
@@ -264,7 +264,7 @@ class ProjectController
             'linkable_id' => $itemId,
         ]);
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'id' => $linkId,
             'message' => 'Element verknüpft',
         ], 201);
@@ -279,7 +279,7 @@ class ProjectController
         $project = $this->getProjectForUser($projectId, $userId, 'edit');
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
         $deleted = $this->db->delete('project_links', [
@@ -288,10 +288,10 @@ class ProjectController
         ]);
 
         if (!$deleted) {
-            return JsonResponse::error($response, 'Link nicht gefunden', 404);
+            return JsonResponse::error( 'Link nicht gefunden', 404);
         }
 
-        return JsonResponse::success($response, ['message' => 'Verknüpfung entfernt']);
+        return JsonResponse::success( ['message' => 'Verknüpfung entfernt']);
     }
 
     public function getLinkableItems(Request $request, Response $response, array $args): Response
@@ -302,7 +302,7 @@ class ProjectController
 
         $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet'];
         if (!in_array($type, $validTypes)) {
-            return JsonResponse::error($response, 'Ungültiger Typ', 400);
+            return JsonResponse::error( 'Ungültiger Typ', 400);
         }
 
         // Get items not yet linked to this project
@@ -340,7 +340,7 @@ class ProjectController
             default => [],
         };
 
-        return JsonResponse::success($response, ['items' => $items]);
+        return JsonResponse::success( ['items' => $items]);
     }
 
     // Shares
@@ -352,7 +352,7 @@ class ProjectController
         $project = $this->getProjectForUser($projectId, $userId);
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
         $shares = $this->db->fetchAllAssociative(
@@ -363,7 +363,7 @@ class ProjectController
             [$projectId]
         );
 
-        return JsonResponse::success($response, ['shares' => $shares]);
+        return JsonResponse::success( ['shares' => $shares]);
     }
 
     public function addShare(Request $request, Response $response, array $args): Response
@@ -379,7 +379,7 @@ class ProjectController
         );
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden oder keine Berechtigung', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden oder keine Berechtigung', 404);
         }
 
         $shareUserId = $data['user_id'] ?? null;
@@ -387,7 +387,7 @@ class ProjectController
         $permission = $data['permission'] ?? 'view';
 
         if (!in_array($permission, ['view', 'edit'])) {
-            return JsonResponse::error($response, 'Ungültige Berechtigung', 400);
+            return JsonResponse::error( 'Ungültige Berechtigung', 400);
         }
 
         // Find user by ID or email
@@ -396,15 +396,15 @@ class ProjectController
         } elseif ($email) {
             $shareUser = $this->db->fetchAssociative('SELECT id FROM users WHERE email = ?', [$email]);
         } else {
-            return JsonResponse::error($response, 'User-ID oder E-Mail erforderlich', 400);
+            return JsonResponse::error( 'User-ID oder E-Mail erforderlich', 400);
         }
 
         if (!$shareUser) {
-            return JsonResponse::error($response, 'Benutzer nicht gefunden', 404);
+            return JsonResponse::error( 'Benutzer nicht gefunden', 404);
         }
 
         if ($shareUser['id'] === $userId) {
-            return JsonResponse::error($response, 'Kann nicht mit sich selbst teilen', 400);
+            return JsonResponse::error( 'Kann nicht mit sich selbst teilen', 400);
         }
 
         $this->db->executeStatement(
@@ -413,7 +413,7 @@ class ProjectController
             [$projectId, $shareUser['id'], $permission]
         );
 
-        return JsonResponse::success($response, ['message' => 'Projekt geteilt']);
+        return JsonResponse::success( ['message' => 'Projekt geteilt']);
     }
 
     public function removeShare(Request $request, Response $response, array $args): Response
@@ -429,7 +429,7 @@ class ProjectController
         );
 
         if (!$project) {
-            return JsonResponse::error($response, 'Projekt nicht gefunden oder keine Berechtigung', 404);
+            return JsonResponse::error( 'Projekt nicht gefunden oder keine Berechtigung', 404);
         }
 
         $this->db->delete('project_shares', [
@@ -437,7 +437,7 @@ class ProjectController
             'user_id' => $shareUserId,
         ]);
 
-        return JsonResponse::success($response, ['message' => 'Freigabe entfernt']);
+        return JsonResponse::success( ['message' => 'Freigabe entfernt']);
     }
 
     private function getProjectForUser(string $projectId, string $userId, string $requiredPermission = 'view'): ?array

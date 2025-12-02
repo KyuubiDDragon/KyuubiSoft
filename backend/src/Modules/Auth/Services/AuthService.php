@@ -287,29 +287,45 @@ class AuthService
 
     public function verify2FA(string $userId, string $code): array
     {
-        $user = $this->userRepository->findById($userId);
+        try {
+            $user = $this->userRepository->findById($userId);
 
-        if (empty($user['two_factor_temp_secret'])) {
-            throw new AuthException('2FA not initiated');
+            if (empty($user['two_factor_temp_secret'])) {
+                throw new AuthException('2FA not initiated');
+            }
+
+            if (!$this->verify2FACode($user['two_factor_temp_secret'], $code)) {
+                throw new AuthException('Invalid verification code');
+            }
+
+            error_log("2FA: Code verified, activating 2FA for user: " . $userId);
+
+            // Activate 2FA
+            $this->userRepository->update($userId, [
+                'two_factor_secret' => $user['two_factor_temp_secret'],
+                'two_factor_temp_secret' => null,
+            ]);
+
+            error_log("2FA: User updated, generating backup codes");
+
+            // Generate backup codes
+            $backupCodes = $this->generateBackupCodes();
+
+            error_log("2FA: Backup codes generated, storing them");
+
+            $this->userRepository->storeBackupCodes($userId, $backupCodes);
+
+            error_log("2FA: Backup codes stored successfully");
+
+            return [
+                'backup_codes' => $backupCodes,
+            ];
+        } catch (\Throwable $e) {
+            error_log("2FA VERIFY ERROR: " . $e->getMessage());
+            error_log("2FA VERIFY ERROR FILE: " . $e->getFile() . ":" . $e->getLine());
+            error_log("2FA VERIFY TRACE: " . $e->getTraceAsString());
+            throw $e;
         }
-
-        if (!$this->verify2FACode($user['two_factor_temp_secret'], $code)) {
-            throw new AuthException('Invalid verification code');
-        }
-
-        // Activate 2FA
-        $this->userRepository->update($userId, [
-            'two_factor_secret' => $user['two_factor_temp_secret'],
-            'two_factor_temp_secret' => null,
-        ]);
-
-        // Generate backup codes
-        $backupCodes = $this->generateBackupCodes();
-        $this->userRepository->storeBackupCodes($userId, $backupCodes);
-
-        return [
-            'backup_codes' => $backupCodes,
-        ];
     }
 
     public function disable2FA(string $userId, string $code): void

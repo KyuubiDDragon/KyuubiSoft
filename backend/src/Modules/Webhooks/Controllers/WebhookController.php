@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Webhooks\Controllers;
 
-use App\Core\JsonResponse;
+use App\Core\Http\JsonResponse;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -50,7 +50,7 @@ class WebhookController
             $webhook['is_active'] = (bool) $webhook['is_active'];
         }
 
-        return JsonResponse::success($response, ['items' => $webhooks]);
+        return JsonResponse::success( ['items' => $webhooks]);
     }
 
     public function create(Request $request, Response $response): Response
@@ -65,25 +65,25 @@ class WebhookController
         $secret = $data['secret'] ?? null;
 
         if (empty($name)) {
-            return JsonResponse::error($response, 'Name ist erforderlich', 400);
+            return JsonResponse::error( 'Name ist erforderlich', 400);
         }
 
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-            return JsonResponse::error($response, 'Gültige URL ist erforderlich', 400);
+            return JsonResponse::error( 'Gültige URL ist erforderlich', 400);
         }
 
         if (!in_array($type, ['discord', 'slack', 'custom'])) {
-            return JsonResponse::error($response, 'Ungültiger Webhook-Typ', 400);
+            return JsonResponse::error( 'Ungültiger Webhook-Typ', 400);
         }
 
         if (empty($events) || !is_array($events)) {
-            return JsonResponse::error($response, 'Mindestens ein Event ist erforderlich', 400);
+            return JsonResponse::error( 'Mindestens ein Event ist erforderlich', 400);
         }
 
         // Validate events
         $events = array_intersect($events, $this->availableEvents);
         if (empty($events)) {
-            return JsonResponse::error($response, 'Keine gültigen Events ausgewählt', 400);
+            return JsonResponse::error( 'Keine gültigen Events ausgewählt', 400);
         }
 
         $id = Uuid::uuid4()->toString();
@@ -99,7 +99,7 @@ class WebhookController
             'is_active' => true,
         ]);
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'id' => $id,
             'message' => 'Webhook erstellt',
         ], 201);
@@ -116,7 +116,7 @@ class WebhookController
         );
 
         if (!$webhook) {
-            return JsonResponse::error($response, 'Webhook nicht gefunden', 404);
+            return JsonResponse::error( 'Webhook nicht gefunden', 404);
         }
 
         $webhook['events'] = json_decode($webhook['events'], true);
@@ -135,7 +135,7 @@ class WebhookController
 
         $webhook['recent_logs'] = $logs;
 
-        return JsonResponse::success($response, $webhook);
+        return JsonResponse::success( $webhook);
     }
 
     public function update(Request $request, Response $response, array $args): Response
@@ -150,7 +150,7 @@ class WebhookController
         );
 
         if (!$webhook) {
-            return JsonResponse::error($response, 'Webhook nicht gefunden', 404);
+            return JsonResponse::error( 'Webhook nicht gefunden', 404);
         }
 
         $updates = [];
@@ -164,7 +164,7 @@ class WebhookController
         if (isset($data['url'])) {
             $url = trim($data['url']);
             if (!filter_var($url, FILTER_VALIDATE_URL)) {
-                return JsonResponse::error($response, 'Gültige URL ist erforderlich', 400);
+                return JsonResponse::error( 'Gültige URL ist erforderlich', 400);
             }
             $updates[] = 'url = ?';
             $params[] = $url;
@@ -172,7 +172,7 @@ class WebhookController
 
         if (isset($data['type'])) {
             if (!in_array($data['type'], ['discord', 'slack', 'custom'])) {
-                return JsonResponse::error($response, 'Ungültiger Webhook-Typ', 400);
+                return JsonResponse::error( 'Ungültiger Webhook-Typ', 400);
             }
             $updates[] = 'type = ?';
             $params[] = $data['type'];
@@ -181,7 +181,7 @@ class WebhookController
         if (isset($data['events']) && is_array($data['events'])) {
             $events = array_intersect($data['events'], $this->availableEvents);
             if (empty($events)) {
-                return JsonResponse::error($response, 'Keine gültigen Events', 400);
+                return JsonResponse::error( 'Keine gültigen Events', 400);
             }
             $updates[] = 'events = ?';
             $params[] = json_encode(array_values($events));
@@ -205,7 +205,7 @@ class WebhookController
             );
         }
 
-        return JsonResponse::success($response, ['message' => 'Webhook aktualisiert']);
+        return JsonResponse::success( ['message' => 'Webhook aktualisiert']);
     }
 
     public function delete(Request $request, Response $response, array $args): Response
@@ -219,10 +219,10 @@ class WebhookController
         ]);
 
         if (!$deleted) {
-            return JsonResponse::error($response, 'Webhook nicht gefunden', 404);
+            return JsonResponse::error( 'Webhook nicht gefunden', 404);
         }
 
-        return JsonResponse::success($response, ['message' => 'Webhook gelöscht']);
+        return JsonResponse::success( ['message' => 'Webhook gelöscht']);
     }
 
     public function test(Request $request, Response $response, array $args): Response
@@ -236,7 +236,7 @@ class WebhookController
         );
 
         if (!$webhook) {
-            return JsonResponse::error($response, 'Webhook nicht gefunden', 404);
+            return JsonResponse::error( 'Webhook nicht gefunden', 404);
         }
 
         $testPayload = $this->buildPayload($webhook['type'], 'test', [
@@ -246,7 +246,7 @@ class WebhookController
 
         $result = $this->sendWebhook($webhook, 'test', $testPayload);
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'success' => $result['success'],
             'status' => $result['status'],
             'message' => $result['success'] ? 'Test erfolgreich' : 'Test fehlgeschlagen: ' . $result['error'],
@@ -266,7 +266,7 @@ class WebhookController
             ];
         }
 
-        return JsonResponse::success($response, ['events' => $events]);
+        return JsonResponse::success( ['events' => $events]);
     }
 
     private function getEventLabel(string $event): string

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeTracking\Controllers;
 
-use App\Core\JsonResponse;
+use App\Core\Http\JsonResponse;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -69,7 +69,7 @@ class TimeTrackingController
         );
         $total = $this->db->fetchOne($countSql, array_slice($sqlParams, 0, -2));
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'items' => $entries,
             'total' => (int) $total,
             'limit' => $limit,
@@ -96,7 +96,7 @@ class TimeTrackingController
             $entry['duration_seconds'] = $this->calculateDuration($entry);
         }
 
-        return JsonResponse::success($response, ['entry' => $entry]);
+        return JsonResponse::success( ['entry' => $entry]);
     }
 
     public function start(Request $request, Response $response): Response
@@ -116,7 +116,7 @@ class TimeTrackingController
 
         $taskName = trim($data['task_name'] ?? '');
         if (empty($taskName)) {
-            return JsonResponse::error($response, 'Aufgabenname ist erforderlich', 400);
+            return JsonResponse::error( 'Aufgabenname ist erforderlich', 400);
         }
 
         $id = Uuid::uuid4()->toString();
@@ -146,7 +146,7 @@ class TimeTrackingController
         $entry['is_running'] = true;
         $entry['is_billable'] = (bool) $entry['is_billable'];
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'entry' => $entry,
             'message' => 'Zeiterfassung gestartet',
         ], 201);
@@ -163,11 +163,11 @@ class TimeTrackingController
         );
 
         if (!$entry) {
-            return JsonResponse::error($response, 'Eintrag nicht gefunden', 404);
+            return JsonResponse::error( 'Eintrag nicht gefunden', 404);
         }
 
         if (!$entry['is_running']) {
-            return JsonResponse::error($response, 'Eintrag läuft nicht', 400);
+            return JsonResponse::error( 'Eintrag läuft nicht', 400);
         }
 
         $this->stopEntry($entryId);
@@ -184,7 +184,7 @@ class TimeTrackingController
         $updated['is_running'] = false;
         $updated['is_billable'] = (bool) $updated['is_billable'];
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'entry' => $updated,
             'message' => 'Zeiterfassung gestoppt',
         ]);
@@ -197,7 +197,7 @@ class TimeTrackingController
 
         $taskName = trim($data['task_name'] ?? '');
         if (empty($taskName)) {
-            return JsonResponse::error($response, 'Aufgabenname ist erforderlich', 400);
+            return JsonResponse::error( 'Aufgabenname ist erforderlich', 400);
         }
 
         $startedAt = $data['started_at'] ?? null;
@@ -205,7 +205,7 @@ class TimeTrackingController
         $durationSeconds = $data['duration_seconds'] ?? null;
 
         if (!$startedAt) {
-            return JsonResponse::error($response, 'Startzeit ist erforderlich', 400);
+            return JsonResponse::error( 'Startzeit ist erforderlich', 400);
         }
 
         // Calculate duration if ended_at provided
@@ -232,7 +232,7 @@ class TimeTrackingController
             'tags' => json_encode($data['tags'] ?? []),
         ]);
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'id' => $id,
             'message' => 'Zeiteintrag erstellt',
         ], 201);
@@ -250,7 +250,7 @@ class TimeTrackingController
         );
 
         if (!$entry) {
-            return JsonResponse::error($response, 'Eintrag nicht gefunden', 404);
+            return JsonResponse::error( 'Eintrag nicht gefunden', 404);
         }
 
         $updates = [];
@@ -309,7 +309,7 @@ class TimeTrackingController
             );
         }
 
-        return JsonResponse::success($response, ['message' => 'Eintrag aktualisiert']);
+        return JsonResponse::success( ['message' => 'Eintrag aktualisiert']);
     }
 
     public function delete(Request $request, Response $response, array $args): Response
@@ -323,10 +323,10 @@ class TimeTrackingController
         ]);
 
         if (!$deleted) {
-            return JsonResponse::error($response, 'Eintrag nicht gefunden', 404);
+            return JsonResponse::error( 'Eintrag nicht gefunden', 404);
         }
 
-        return JsonResponse::success($response, ['message' => 'Eintrag gelöscht']);
+        return JsonResponse::success( ['message' => 'Eintrag gelöscht']);
     }
 
     public function getStats(Request $request, Response $response): Response
@@ -375,7 +375,7 @@ class TimeTrackingController
             [$userId, $from, $to . ' 23:59:59']
         );
 
-        return JsonResponse::success($response, [
+        return JsonResponse::success( [
             'period' => ['from' => $from, 'to' => $to],
             'totals' => [
                 'entry_count' => (int) $totals['entry_count'],
@@ -397,7 +397,7 @@ class TimeTrackingController
             [$userId, 'active']
         );
 
-        return JsonResponse::success($response, ['projects' => $projects]);
+        return JsonResponse::success( ['projects' => $projects]);
     }
 
     private function stopEntry(string $entryId): void

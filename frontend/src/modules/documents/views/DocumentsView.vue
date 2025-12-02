@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, defineAsyncComponent } from 'vue'
+import { ref, reactive, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   PlusIcon,
@@ -14,6 +14,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 
 // Lazy load heavy editors
@@ -22,6 +23,12 @@ const UniverSheet = defineAsyncComponent(() => import('@/components/UniverSheet.
 
 const route = useRoute()
 const uiStore = useUiStore()
+const projectStore = useProjectStore()
+
+// Watch for project changes
+watch(() => projectStore.selectedProjectId, () => {
+  loadDocuments()
+})
 
 // State
 const documents = ref([])
@@ -104,7 +111,10 @@ onMounted(async () => {
 async function loadDocuments() {
   isLoading.value = true
   try {
-    const response = await api.get('/api/v1/documents')
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
+    const response = await api.get('/api/v1/documents', { params })
     documents.value = response.data.data?.items || []
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Dokumente')
@@ -116,11 +126,18 @@ async function loadDocuments() {
 async function createDocument() {
   try {
     const response = await api.post('/api/v1/documents', docForm)
-    documents.value.unshift(response.data.data)
+    const newDoc = response.data.data
+
+    // Link to selected project if one is active
+    if (projectStore.selectedProjectId) {
+      await projectStore.linkToSelectedProject('document', newDoc.id)
+    }
+
+    documents.value.unshift(newDoc)
     showCreateModal.value = false
     resetForm()
     // Open the new document
-    await selectDocument(response.data.data.id)
+    await selectDocument(newDoc.id)
     isEditing.value = true
     uiStore.showSuccess('Dokument erstellt')
   } catch (error) {

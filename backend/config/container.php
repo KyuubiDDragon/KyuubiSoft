@@ -8,6 +8,7 @@ use App\Core\Security\PasswordHasher;
 use App\Core\Security\RbacManager;
 use App\Core\Services\CacheService;
 use App\Core\Services\LoggerService;
+use App\Core\Services\ProjectAccessService;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Services\AuthService;
@@ -97,5 +98,10 @@ return [
             $c->get(PasswordHasher::class),
             $c->get(RbacManager::class)
         );
+    },
+
+    // Project Access Service
+    ProjectAccessService::class => function (ContainerInterface $c): ProjectAccessService {
+        return new ProjectAccessService($c->get(DBALConnection::class));
     },
 ];

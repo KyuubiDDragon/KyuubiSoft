@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,26 +18,68 @@ use Slim\Routing\RouteContext;
 class KanbanController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     // Board methods
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $queryParams = $request->getQueryParams();
+        $projectId = $queryParams['project_id'] ?? null;
 
-        $boards = $this->db->fetchAllAssociative(
-            'SELECT kb.*,
-                    (SELECT COUNT(*) FROM kanban_columns WHERE board_id = kb.id) as column_count,
-                    (SELECT COUNT(*) FROM kanban_cards kc
-                     JOIN kanban_columns col ON kc.column_id = col.id
-                     WHERE col.board_id = kb.id) as card_count
-             FROM kanban_boards kb
-             LEFT JOIN kanban_board_shares kbs ON kb.id = kbs.board_id AND kbs.user_id = ?
-             WHERE (kb.user_id = ? OR kbs.user_id = ?) AND kb.is_archived = FALSE
-             ORDER BY kb.updated_at DESC',
-            [$userId, $userId, $userId]
-        );
+        // Check if user is restricted to projects only
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = [];
+
+        if ($isRestricted) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::success(['items' => []]);
+            }
+        }
+
+        // Build project filter
+        $projectJoin = '';
+        $projectParams = [];
+
+        if ($projectId) {
+            if ($isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::success(['items' => []]);
+            }
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $projectParams = ['kanban_board', $projectId];
+        } elseif ($isRestricted) {
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $projectJoin = " INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = 'kanban_board' AND pl.project_id IN ({$placeholders})";
+            $projectParams = $accessibleProjectIds;
+        }
+
+        if ($isRestricted) {
+            $sql = 'SELECT DISTINCT kb.*,
+                        (SELECT COUNT(*) FROM kanban_columns WHERE board_id = kb.id) as column_count,
+                        (SELECT COUNT(*) FROM kanban_cards kc
+                         JOIN kanban_columns col ON kc.column_id = col.id
+                         WHERE col.board_id = kb.id) as card_count
+                 FROM kanban_boards kb' . $projectJoin . '
+                 WHERE kb.is_archived = FALSE
+                 ORDER BY kb.updated_at DESC';
+            $params = $projectParams;
+        } else {
+            $sql = 'SELECT kb.*,
+                        (SELECT COUNT(*) FROM kanban_columns WHERE board_id = kb.id) as column_count,
+                        (SELECT COUNT(*) FROM kanban_cards kc
+                         JOIN kanban_columns col ON kc.column_id = col.id
+                         WHERE col.board_id = kb.id) as card_count
+                 FROM kanban_boards kb
+                 LEFT JOIN kanban_board_shares kbs ON kb.id = kbs.board_id AND kbs.user_id = ?' . $projectJoin . '
+                 WHERE (kb.user_id = ? OR kbs.user_id = ?) AND kb.is_archived = FALSE
+                 ORDER BY kb.updated_at DESC';
+            $params = array_merge([$userId], $projectParams, [$userId, $userId]);
+        }
+
+        $boards = $this->db->fetchAllAssociative($sql, $params);
 
         return JsonResponse::success(['items' => $boards]);
     }
@@ -425,6 +468,14 @@ class KanbanController
 
         if (!$board) {
             throw new NotFoundException('Board not found');
+        }
+
+        // Check if user is restricted to projects only
+        if ($this->projectAccess->isUserRestricted($userId)) {
+            if (!$this->projectAccess->canAccessItem($userId, 'kanban_board', $boardId)) {
+                throw new ForbiddenException('Access denied - board not in your accessible projects');
+            }
+            return $board;
         }
 
         if ($board['user_id'] === $userId) {

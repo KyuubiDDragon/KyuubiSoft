@@ -22,6 +22,8 @@ import {
   FunnelIcon,
   ArrowsUpDownIcon,
   ArrowTopRightOnSquareIcon,
+  UserGroupIcon,
+  UserPlusIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid, FolderIcon as FolderIconSolid } from '@heroicons/vue/24/solid'
 
@@ -44,6 +46,13 @@ const searchQuery = ref('')
 // Linked items filter and sort
 const linkedItemsFilter = ref('')
 const linkedItemsSort = ref('date_desc')
+
+// Members management
+const showMembersModal = ref(false)
+const projectShares = ref([])
+const loadingShares = ref(false)
+const newMemberEmail = ref('')
+const newMemberPermission = ref('view')
 
 // Form
 const form = ref({
@@ -333,6 +342,76 @@ function openLinkedItem(link) {
   }
 }
 
+// Fetch project shares/members
+async function fetchProjectShares() {
+  if (!selectedProject.value) return
+  loadingShares.value = true
+  try {
+    const response = await api.get(`/api/v1/projects/${selectedProject.value.id}/shares`)
+    projectShares.value = response.data.data.shares || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Mitglieder')
+    projectShares.value = []
+  } finally {
+    loadingShares.value = false
+  }
+}
+
+// Open members modal
+async function openMembersModal() {
+  showMembersModal.value = true
+  newMemberEmail.value = ''
+  newMemberPermission.value = 'view'
+  await fetchProjectShares()
+}
+
+// Add project member
+async function addMember() {
+  if (!newMemberEmail.value.trim()) {
+    uiStore.showError('E-Mail ist erforderlich')
+    return
+  }
+
+  try {
+    await api.post(`/api/v1/projects/${selectedProject.value.id}/shares`, {
+      email: newMemberEmail.value.trim(),
+      permission: newMemberPermission.value
+    })
+    uiStore.showSuccess('Mitglied hinzugefügt')
+    newMemberEmail.value = ''
+    await fetchProjectShares()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+  }
+}
+
+// Remove project member
+async function removeMember(userId) {
+  if (!confirm('Mitglied wirklich entfernen?')) return
+
+  try {
+    await api.delete(`/api/v1/projects/${selectedProject.value.id}/shares/${userId}`)
+    uiStore.showSuccess('Mitglied entfernt')
+    await fetchProjectShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+// Update member permission
+async function updateMemberPermission(userId, permission) {
+  try {
+    await api.post(`/api/v1/projects/${selectedProject.value.id}/shares`, {
+      user_id: userId,
+      permission
+    })
+    uiStore.showSuccess('Berechtigung aktualisiert')
+    await fetchProjectShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
 onMounted(() => {
   fetchProjects()
 })
@@ -368,6 +447,14 @@ onMounted(() => {
             class="p-2 text-gray-400 hover:text-yellow-400 hover:bg-dark-700 rounded-lg transition-colors"
           >
             <component :is="selectedProject.is_favorite ? StarIconSolid : StarIcon" class="w-5 h-5" :class="{ 'text-yellow-400': selectedProject.is_favorite }" />
+          </button>
+          <button
+            v-if="selectedProject.is_owner"
+            @click="openMembersModal"
+            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          >
+            <UserGroupIcon class="w-5 h-5" />
+            <span>Mitglieder</span>
           </button>
           <button
             @click="openModal(selectedProject)"
@@ -719,6 +806,104 @@ onMounted(() => {
                   <p v-if="item.type || item.language" class="text-xs text-gray-500">{{ item.type || item.language }}</p>
                 </div>
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Members Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showMembersModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        @click.self="showMembersModal = false"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">
+              Projektmitglieder
+            </h2>
+            <button @click="showMembersModal = false" class="p-1 text-gray-400 hover:text-white rounded">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4 overflow-y-auto flex-1">
+            <!-- Add member form -->
+            <div class="bg-dark-700 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Mitglied hinzufügen</h3>
+              <div class="flex gap-2">
+                <input
+                  v-model="newMemberEmail"
+                  type="email"
+                  placeholder="E-Mail Adresse"
+                  class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  @keyup.enter="addMember"
+                />
+                <select
+                  v-model="newMemberPermission"
+                  class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                >
+                  <option value="view">Lesen</option>
+                  <option value="edit">Bearbeiten</option>
+                </select>
+                <button
+                  @click="addMember"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+                >
+                  <UserPlusIcon class="w-5 h-5" />
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">
+                Eingeschränkte Benutzer sehen nur Inhalte in Projekten, denen sie zugewiesen sind.
+              </p>
+            </div>
+
+            <!-- Members list -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Aktuelle Mitglieder</h3>
+              <div v-if="loadingShares" class="flex items-center justify-center py-8">
+                <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div v-else-if="projectShares.length === 0" class="text-center py-8 text-gray-500">
+                Noch keine Mitglieder hinzugefügt
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="share in projectShares"
+                  :key="share.user_id"
+                  class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
+                      <span class="text-xs font-semibold text-white">
+                        {{ share.username?.[0]?.toUpperCase() || 'U' }}
+                      </span>
+                    </div>
+                    <div>
+                      <p class="text-white text-sm">{{ share.username }}</p>
+                      <p class="text-xs text-gray-500">{{ share.email }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select
+                      :value="share.permission"
+                      @change="updateMemberPermission(share.user_id, $event.target.value)"
+                      class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
+                    >
+                      <option value="view">Lesen</option>
+                      <option value="edit">Bearbeiten</option>
+                    </select>
+                    <button
+                      @click="removeMember(share.user_id)"
+                      class="p-1.5 text-gray-400 hover:text-red-400 rounded transition-colors"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

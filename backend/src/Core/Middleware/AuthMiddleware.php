@@ -27,19 +27,19 @@ class AuthMiddleware implements MiddlewareInterface
 
         try {
             $payload = $this->jwtManager->validateAccessToken($token);
-
-            // Add user info to request attributes
-            $request = $request
-                ->withAttribute('user_id', $payload->sub)
-                ->withAttribute('user_email', $payload->email ?? null)
-                ->withAttribute('user_roles', $payload->roles ?? [])
-                ->withAttribute('user_permissions', $payload->permissions ?? [])
-                ->withAttribute('jwt_payload', $payload);
-
-            return $handler->handle($request);
         } catch (\Exception $e) {
             return JsonResponse::unauthorized('Invalid or expired token');
         }
+
+        // Add user info to request attributes
+        $request = $request
+            ->withAttribute('user_id', $payload->sub)
+            ->withAttribute('user_email', $payload->email ?? null)
+            ->withAttribute('user_roles', $payload->roles ?? [])
+            ->withAttribute('user_permissions', $payload->permissions ?? [])
+            ->withAttribute('jwt_payload', $payload);
+
+        return $handler->handle($request);
     }
 
     private function extractToken(ServerRequestInterface $request): ?string

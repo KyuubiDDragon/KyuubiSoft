@@ -49,7 +49,7 @@ class CalendarController
         if (in_array('kanban', $sources)) {
             $kanbanDue = $this->db->fetchAllAssociative(
                 "SELECT kc.id, kc.title, NULL as description, kc.due_date as start_date, NULL as end_date,
-                        TRUE as all_day, COALESCE(kc.flag_color, 'orange') as color, 'kanban' as source_type, kb.id as source_id
+                        TRUE as all_day, COALESCE(kc.color, 'orange') as color, 'kanban' as source_type, kb.id as source_id
                  FROM kanban_cards kc
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
@@ -189,7 +189,7 @@ class CalendarController
 
         // Kanban due dates
         $kanbanDue = $this->db->fetchAllAssociative(
-            "SELECT kc.id, kc.title, kc.due_date as start_date, 'kanban' as type, COALESCE(kc.flag_color, 'orange') as color
+            "SELECT kc.id, kc.title, kc.due_date as start_date, 'kanban' as type, COALESCE(kc.color, 'orange') as color
              FROM kanban_cards kc
              JOIN kanban_columns col ON kc.column_id = col.id
              JOIN kanban_boards kb ON col.board_id = kb.id

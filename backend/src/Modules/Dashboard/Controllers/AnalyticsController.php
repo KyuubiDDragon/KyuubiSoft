@@ -344,10 +344,11 @@ class AnalyticsController
     private function getUptimeStatusData(string $userId): array
     {
         return $this->db->fetchAllAssociative(
-            "SELECT id, name, url, status, last_check, response_time
-             FROM uptime_monitors
-             WHERE user_id = ? AND is_active = TRUE
-             ORDER BY status DESC, name ASC
+            "SELECT um.id, um.name, um.url, um.current_status as status, um.last_check_at as last_check,
+                    (SELECT uc.response_time FROM uptime_checks uc WHERE uc.monitor_id = um.id ORDER BY uc.checked_at DESC LIMIT 1) as response_time
+             FROM uptime_monitors um
+             WHERE um.user_id = ? AND um.is_active = TRUE
+             ORDER BY um.current_status DESC, um.name ASC
              LIMIT 10",
             [$userId]
         );

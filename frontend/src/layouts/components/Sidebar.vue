@@ -116,7 +116,7 @@ function navigateTo(href) {
       <!-- Logo -->
       <div class="h-16 flex items-center justify-center border-b border-dark-700 gap-2">
         <img
-          src="/logo.svg"
+          src="/logo.png"
           alt="KyuubiSoft"
           class="w-10 h-10"
         />

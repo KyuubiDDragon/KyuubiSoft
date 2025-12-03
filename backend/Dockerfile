@@ -14,7 +14,13 @@ RUN apk add --no-cache \
     oniguruma-dev \
     linux-headers \
     fcgi \
+    python3 \
+    py3-pip \
+    ffmpeg \
     $PHPIZE_DEPS
+
+# Install yt-dlp
+RUN pip3 install --break-system-packages yt-dlp
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \

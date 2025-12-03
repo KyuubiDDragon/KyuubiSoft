@@ -277,8 +277,6 @@ class AuthService
         // Generate secret
         $secret = $this->generate2FASecret();
 
-        error_log("2FA ENABLE DEBUG: Generated secret: " . $secret);
-
         // Store temporarily (not activated yet)
         $this->userRepository->update($userId, [
             'two_factor_temp_secret' => $secret,
@@ -286,14 +284,9 @@ class AuthService
 
         $user = $this->userRepository->findById($userId);
 
-        error_log("2FA ENABLE DEBUG: Stored in DB: " . $user['two_factor_temp_secret']);
-
-        $qrUrl = $this->get2FAQrCodeUrl($user['email'], $secret);
-        error_log("2FA ENABLE DEBUG: QR URL: " . $qrUrl);
-
         return [
             'secret' => $secret,
-            'qr_code_url' => $qrUrl,
+            'qr_code_url' => $this->get2FAQrCodeUrl($user['email'], $secret),
         ];
     }
 
@@ -361,24 +354,8 @@ class AuthService
 
     private function verify2FACode(string $secret, string $code): bool
     {
-        // Debug logging
-        error_log("2FA LIB DEBUG: Secret: " . $secret . ", Code: " . $code);
-        error_log("2FA LIB DEBUG: Server timestamp: " . time());
-
-        try {
-            // Calculate what the current code SHOULD be
-            $currentCode = $this->google2fa->getCurrentOtp($secret);
-            error_log("2FA LIB DEBUG: Expected current code: " . $currentCode);
-
-            // Window of 1 allows for 30 seconds clock drift in either direction
-            $result = $this->google2fa->verifyKey($secret, $code, 1);
-            error_log("2FA LIB DEBUG: Verify result: " . ($result ? 'true' : 'false'));
-            return $result;
-        } catch (\Throwable $e) {
-            error_log("2FA LIB ERROR: " . $e->getMessage());
-            error_log("2FA LIB ERROR TRACE: " . $e->getTraceAsString());
-            return false;
-        }
+        // Window of 2 allows for 60 seconds clock drift in either direction
+        return $this->google2fa->verifyKey($secret, $code, 2);
     }
 
     private function get2FAQrCodeUrl(string $email, string $secret): string

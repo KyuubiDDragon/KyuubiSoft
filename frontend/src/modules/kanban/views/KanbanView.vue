@@ -25,6 +25,7 @@ import {
   CheckCircleIcon,
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
+  ClockIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import { useAuthStore } from '@/stores/auth'
@@ -106,6 +107,10 @@ const comments = ref([])
 const newComment = ref('')
 const editingComment = ref(null)
 const editCommentContent = ref('')
+
+// Activities state
+const activities = ref([])
+const showActivities = ref(false)
 
 // Colors for boards
 const boardColors = [
@@ -306,6 +311,8 @@ function openCardModal(columnId, card = null) {
   attachmentPreview.value = null
   checklists.value = []
   comments.value = []
+  activities.value = []
+  showActivities.value = false
   newChecklistTitle.value = ''
   newItemContents.value = {}
   newComment.value = ''
@@ -912,6 +919,41 @@ function formatCommentDate(dateStr) {
   if (diffHours < 24) return `vor ${diffHours} Std.`
   if (diffDays < 7) return `vor ${diffDays} Tagen`
   return date.toLocaleDateString('de-DE')
+}
+
+// ==================
+// Activity Functions
+// ==================
+
+async function fetchActivities() {
+  if (!editingCard.value) return
+  try {
+    const response = await api.get(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/activities`
+    )
+    activities.value = response.data.data.activities || []
+  } catch (error) {
+    activities.value = []
+  }
+}
+
+function getActivityLabel(activity) {
+  const labels = {
+    'card_created': 'hat die Karte erstellt',
+    'card_moved': `hat die Karte verschoben von "${activity.details?.from_column}" nach "${activity.details?.to_column}"`,
+    'card_updated': `hat ${activity.details?.field === 'title' ? 'den Titel' : 'die Beschreibung'} geändert`,
+    'assignee_added': `hat ${activity.details?.assignee_name} zugewiesen`,
+    'assignee_removed': `hat ${activity.details?.assignee_name} entfernt`,
+    'flag_changed': `hat die Priorität geändert von "${activity.details?.old_flag}" auf "${activity.details?.new_flag}"`,
+    'tag_added': `hat Tag "${activity.details?.tag_name}" hinzugefügt`,
+    'tag_removed': `hat Tag "${activity.details?.tag_name}" entfernt`,
+    'checklist_item_completed': `hat "${activity.details?.item_text}" abgehakt`,
+    'checklist_item_uncompleted': `hat "${activity.details?.item_text}" wieder geöffnet`,
+    'comment_added': 'hat einen Kommentar hinzugefügt',
+    'due_date_set': `hat Fälligkeitsdatum auf ${activity.details?.due_date} gesetzt`,
+    'due_date_removed': 'hat das Fälligkeitsdatum entfernt',
+  }
+  return labels[activity.action] || activity.action
 }
 
 // Get priority info
@@ -1760,16 +1802,34 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Right Column: Comments -->
+            <!-- Right Column: Comments & Activities -->
             <div v-if="editingCard" class="w-80 border-l border-dark-700 flex flex-col bg-dark-850">
-              <div class="p-4 border-b border-dark-700">
-                <label class="block text-sm font-medium text-gray-300">
+              <!-- Tabs -->
+              <div class="flex border-b border-dark-700">
+                <button
+                  @click="showActivities = false"
+                  :class="[
+                    'flex-1 px-4 py-3 text-sm font-medium transition-colors',
+                    !showActivities ? 'text-primary-400 border-b-2 border-primary-500' : 'text-gray-400 hover:text-white'
+                  ]"
+                >
                   <ChatBubbleLeftIcon class="w-4 h-4 inline mr-1" />
                   Kommentare ({{ comments.length }})
-                </label>
+                </button>
+                <button
+                  @click="showActivities = true; fetchActivities()"
+                  :class="[
+                    'flex-1 px-4 py-3 text-sm font-medium transition-colors',
+                    showActivities ? 'text-primary-400 border-b-2 border-primary-500' : 'text-gray-400 hover:text-white'
+                  ]"
+                >
+                  <ClockIcon class="w-4 h-4 inline mr-1" />
+                  Aktivitäten
+                </button>
               </div>
 
-              <div class="flex-1 overflow-y-auto p-4">
+              <!-- Comments View -->
+              <div v-if="!showActivities" class="flex-1 overflow-y-auto p-4">
                 <!-- Add comment -->
                 <div class="flex gap-2 mb-4">
                   <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
@@ -1850,6 +1910,32 @@ onMounted(async () => {
 
                   <p v-if="comments.length === 0" class="text-gray-500 text-sm text-center py-8">
                     Noch keine Kommentare
+                  </p>
+                </div>
+              </div>
+
+              <!-- Activities View -->
+              <div v-else class="flex-1 overflow-y-auto p-4">
+                <div class="space-y-3">
+                  <div
+                    v-for="activity in activities"
+                    :key="activity.id"
+                    class="flex gap-2"
+                  >
+                    <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
+                      {{ activity.username?.[0]?.toUpperCase() || '?' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm">
+                        <span class="text-white font-medium">{{ activity.username }}</span>
+                        <span class="text-gray-400"> {{ getActivityLabel(activity) }}</span>
+                      </p>
+                      <span class="text-xs text-gray-500">{{ formatCommentDate(activity.created_at) }}</span>
+                    </div>
+                  </div>
+
+                  <p v-if="activities.length === 0" class="text-gray-500 text-sm text-center py-8">
+                    Noch keine Aktivitäten
                   </p>
                 </div>
               </div>

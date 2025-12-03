@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -23,8 +23,12 @@ import {
   ShieldCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
   ChevronUpDownIcon,
   XMarkIcon,
+  DocumentDuplicateIcon,
+  BriefcaseIcon,
+  CommandLineIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -34,11 +38,30 @@ const uiStore = useUiStore()
 const projectStore = useProjectStore()
 
 const showProjectDropdown = ref(false)
+const expandedGroups = ref(['inhalte', 'projektmanagement']) // Default expanded groups
 
 // Load projects on mount
 onMounted(() => {
   projectStore.loadProjects()
+  // Expand group containing current route
+  expandGroupForCurrentRoute()
 })
+
+// Watch route changes to expand relevant group
+watch(() => route.path, () => {
+  expandGroupForCurrentRoute()
+})
+
+function expandGroupForCurrentRoute() {
+  for (const group of navigationGroups.value) {
+    if (group.children) {
+      const hasActiveChild = group.children.some(child => isActive(child.href))
+      if (hasActiveChild && !expandedGroups.value.includes(group.id)) {
+        expandedGroups.value.push(group.id)
+      }
+    }
+  }
+}
 
 function selectProject(projectId) {
   projectStore.selectProject(projectId)
@@ -50,45 +73,112 @@ function clearProjectSelection() {
   showProjectDropdown.value = false
 }
 
-// Alle Menüpunkte mit optionalen Rollen/Berechtigungen
-const allNavigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
-  { name: 'Listen', href: '/lists', icon: ListBulletIcon },
-  { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
-  { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
-  { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
-  { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon },
-  { name: 'Projekte', href: '/projects', icon: FolderIcon },
-  { name: 'Zeiterfassung', href: '/time', icon: ClockIcon },
-  { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
-  { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
-  { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
-  { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon },
-  { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },
-  { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
-  // Admin-Bereich (nur für owner/admin sichtbar)
-  { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
-  { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
+function toggleGroup(groupId) {
+  const index = expandedGroups.value.indexOf(groupId)
+  if (index === -1) {
+    expandedGroups.value.push(groupId)
+  } else {
+    expandedGroups.value.splice(index, 1)
+  }
+}
+
+function isGroupExpanded(groupId) {
+  return expandedGroups.value.includes(groupId)
+}
+
+// Navigation mit Gruppen
+const allNavigationGroups = [
+  // Dashboard - Standalone
+  { id: 'dashboard', name: 'Dashboard', href: '/', icon: HomeIcon },
+
+  // Inhalte
+  {
+    id: 'inhalte',
+    name: 'Inhalte',
+    icon: DocumentDuplicateIcon,
+    children: [
+      { name: 'Listen', href: '/lists', icon: ListBulletIcon },
+      { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
+      { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
+      { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
+    ],
+  },
+
+  // Projektmanagement
+  {
+    id: 'projektmanagement',
+    name: 'Projektmanagement',
+    icon: BriefcaseIcon,
+    children: [
+      { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon },
+      { name: 'Projekte', href: '/projects', icon: FolderIcon },
+      { name: 'Zeiterfassung', href: '/time', icon: ClockIcon },
+    ],
+  },
+
+  // Entwicklung & Tools
+  {
+    id: 'entwicklung',
+    name: 'Entwicklung & Tools',
+    icon: CommandLineIcon,
+    children: [
+      { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
+      { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
+      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
+      { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },
+    ],
+  },
+
+  // Business
+  {
+    id: 'business',
+    name: 'Business',
+    icon: CurrencyDollarIcon,
+    children: [
+      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon },
+    ],
+  },
+
+  // Administration
+  {
+    id: 'administration',
+    name: 'Administration',
+    icon: Cog6ToothIcon,
+    children: [
+      { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
+      { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
+      { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
+    ],
+  },
 ]
 
-// Gefilterte Navigation basierend auf Benutzerrechten
-const navigation = computed(() => {
-  return allNavigation.filter(item => {
-    // Keine Einschränkung - immer sichtbar
-    if (!item.roles && !item.permission) {
-      return true
-    }
-    // Rollenbasierte Sichtbarkeit
-    if (item.roles) {
-      return item.roles.some(role => authStore.hasRole(role))
-    }
-    // Berechtigungsbasierte Sichtbarkeit
-    if (item.permission) {
-      return authStore.hasPermission(item.permission)
-    }
-    return false
-  })
+// Filter navigation based on user permissions
+function filterItem(item) {
+  if (!item.roles && !item.permission) return true
+  if (item.roles) return item.roles.some(role => authStore.hasRole(role))
+  if (item.permission) return authStore.hasPermission(item.permission)
+  return false
+}
+
+const navigationGroups = computed(() => {
+  return allNavigationGroups
+    .map(group => {
+      if (group.children) {
+        const filteredChildren = group.children.filter(filterItem)
+        // Hide group if no children are visible
+        if (filteredChildren.length === 0) return null
+        return { ...group, children: filteredChildren }
+      }
+      return filterItem(group) ? group : null
+    })
+    .filter(Boolean)
 })
+
+// Check if any child in group is active
+function isGroupActive(group) {
+  if (!group.children) return false
+  return group.children.some(child => isActive(child.href))
+}
 
 const sidebarClass = computed(() => ({
   'w-64': !uiStore.sidebarCollapsed,
@@ -208,25 +298,101 @@ function navigateTo(href) {
 
       <!-- Navigation -->
       <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        <button
-          v-for="item in navigation"
-          :key="item.name"
-          @click="navigateTo(item.href)"
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200"
-          :class="[
-            isActive(item.href)
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-          ]"
-        >
-          <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
-          <span
-            v-if="!uiStore.sidebarCollapsed"
-            class="font-medium"
+        <template v-for="group in navigationGroups" :key="group.id">
+          <!-- Standalone item (no children) -->
+          <button
+            v-if="!group.children"
+            @click="navigateTo(group.href)"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200"
+            :class="[
+              isActive(group.href)
+                ? 'bg-primary-600 text-white'
+                : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+            ]"
           >
-            {{ item.name }}
-          </span>
-        </button>
+            <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
+            <span v-if="!uiStore.sidebarCollapsed" class="font-medium">
+              {{ group.name }}
+            </span>
+          </button>
+
+          <!-- Group with children -->
+          <div v-else class="space-y-1">
+            <!-- Group header -->
+            <button
+              @click="uiStore.sidebarCollapsed ? null : toggleGroup(group.id)"
+              class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200"
+              :class="[
+                isGroupActive(group)
+                  ? 'text-primary-400'
+                  : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+              ]"
+            >
+              <div class="flex items-center gap-3">
+                <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
+                <span v-if="!uiStore.sidebarCollapsed" class="font-medium text-sm">
+                  {{ group.name }}
+                </span>
+              </div>
+              <ChevronDownIcon
+                v-if="!uiStore.sidebarCollapsed"
+                class="w-4 h-4 transition-transform duration-200"
+                :class="{ 'rotate-180': isGroupExpanded(group.id) }"
+              />
+            </button>
+
+            <!-- Children (expanded view) -->
+            <div
+              v-if="!uiStore.sidebarCollapsed && isGroupExpanded(group.id)"
+              class="ml-4 pl-4 border-l border-dark-600 space-y-1"
+            >
+              <button
+                v-for="child in group.children"
+                :key="child.name"
+                @click="navigateTo(child.href)"
+                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200"
+                :class="[
+                  isActive(child.href)
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+                ]"
+              >
+                <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
+                <span class="font-medium text-sm">{{ child.name }}</span>
+              </button>
+            </div>
+
+            <!-- Collapsed view: Show tooltip/dropdown on hover -->
+            <div
+              v-if="uiStore.sidebarCollapsed"
+              class="group relative"
+            >
+              <div
+                class="absolute left-full ml-2 top-0 hidden group-hover:block z-50"
+              >
+                <div class="bg-dark-700 border border-dark-600 rounded-lg shadow-xl py-2 min-w-48">
+                  <div class="px-3 py-1 text-xs text-gray-500 font-semibold uppercase">
+                    {{ group.name }}
+                  </div>
+                  <button
+                    v-for="child in group.children"
+                    :key="child.name"
+                    @click="navigateTo(child.href)"
+                    class="w-full flex items-center gap-3 px-3 py-2 transition-colors"
+                    :class="[
+                      isActive(child.href)
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-300 hover:bg-dark-600 hover:text-white'
+                    ]"
+                  >
+                    <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
+                    <span class="text-sm">{{ child.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
       </nav>
 
       <!-- User section -->

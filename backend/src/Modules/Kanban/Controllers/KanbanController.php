@@ -406,6 +406,11 @@ class KanbanController
             [$cardId]
         );
 
+        // Log activity
+        $this->logActivity($cardId, $userId, 'card_created', [
+            'title' => $data['title'],
+        ]);
+
         return JsonResponse::created($card, 'Card created successfully');
     }
 
@@ -418,6 +423,9 @@ class KanbanController
         $data = $request->getParsedBody() ?? [];
 
         $this->getBoardForUser($boardId, $userId, true);
+
+        // Get old card for comparison
+        $oldCard = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
 
         $updateData = ['updated_at' => date('Y-m-d H:i:s')];
         $allowedFields = ['title', 'description', 'color', 'priority', 'due_date', 'assigned_to'];
@@ -436,6 +444,50 @@ class KanbanController
 
         // Update board timestamp
         $this->db->update('kanban_boards', ['updated_at' => date('Y-m-d H:i:s')], ['id' => $boardId]);
+
+        // Log activity for specific changes
+        if (isset($data['priority']) && $data['priority'] !== $oldCard['priority']) {
+            $this->logActivity($cardId, $userId, 'flag_changed', [
+                'old_flag' => $oldCard['priority'],
+                'new_flag' => $data['priority'],
+            ]);
+        }
+
+        if (array_key_exists('assigned_to', $data) && $data['assigned_to'] !== $oldCard['assigned_to']) {
+            if ($data['assigned_to']) {
+                $assigneeName = $this->getUsername($data['assigned_to']);
+                $this->logActivity($cardId, $userId, 'assignee_added', [
+                    'assignee_id' => $data['assigned_to'],
+                    'assignee_name' => $assigneeName,
+                ]);
+            } elseif ($oldCard['assigned_to']) {
+                $oldAssigneeName = $this->getUsername($oldCard['assigned_to']);
+                $this->logActivity($cardId, $userId, 'assignee_removed', [
+                    'assignee_id' => $oldCard['assigned_to'],
+                    'assignee_name' => $oldAssigneeName,
+                ]);
+            }
+        }
+
+        if (array_key_exists('due_date', $data) && $data['due_date'] !== $oldCard['due_date']) {
+            if ($data['due_date']) {
+                $this->logActivity($cardId, $userId, 'due_date_set', [
+                    'due_date' => $data['due_date'],
+                ]);
+            } else {
+                $this->logActivity($cardId, $userId, 'due_date_removed', [
+                    'old_due_date' => $oldCard['due_date'],
+                ]);
+            }
+        }
+
+        if (isset($data['title']) && $data['title'] !== $oldCard['title']) {
+            $this->logActivity($cardId, $userId, 'card_updated', [
+                'field' => 'title',
+                'old_value' => $oldCard['title'],
+                'new_value' => $data['title'],
+            ]);
+        }
 
         $card = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
         $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
@@ -470,13 +522,17 @@ class KanbanController
             throw new ValidationException('Column ID and position are required');
         }
 
-        // Verify column belongs to board
-        $column = $this->db->fetchAssociative(
+        // Get old column for logging
+        $card = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
+        $oldColumn = $this->db->fetchAssociative('SELECT * FROM kanban_columns WHERE id = ?', [$card['column_id']]);
+
+        // Verify new column belongs to board
+        $newColumn = $this->db->fetchAssociative(
             'SELECT * FROM kanban_columns WHERE id = ? AND board_id = ?',
             [$data['column_id'], $boardId]
         );
 
-        if (!$column) {
+        if (!$newColumn) {
             throw new NotFoundException('Column not found');
         }
 
@@ -488,6 +544,16 @@ class KanbanController
 
         // Update board timestamp
         $this->db->update('kanban_boards', ['updated_at' => date('Y-m-d H:i:s')], ['id' => $boardId]);
+
+        // Log activity if column changed
+        if ($card['column_id'] !== $data['column_id']) {
+            $this->logActivity($cardId, $userId, 'card_moved', [
+                'from_column' => $oldColumn['title'],
+                'from_column_id' => $oldColumn['id'],
+                'to_column' => $newColumn['title'],
+                'to_column_id' => $newColumn['id'],
+            ]);
+        }
 
         return JsonResponse::success(null, 'Card moved successfully');
     }
@@ -810,6 +876,12 @@ class KanbanController
                 'tag_id' => $tagId,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
+
+            // Log activity
+            $this->logActivity($cardId, $userId, 'tag_added', [
+                'tag_id' => $tagId,
+                'tag_name' => $tag['name'],
+            ]);
         } catch (\Exception $e) {
             // Tag already assigned, ignore
         }
@@ -827,7 +899,18 @@ class KanbanController
 
         $this->getBoardForUser($boardId, $userId, true);
 
+        // Get tag for logging
+        $tag = $this->db->fetchAssociative('SELECT * FROM kanban_tags WHERE id = ?', [$tagId]);
+
         $this->db->delete('kanban_card_tags', ['card_id' => $cardId, 'tag_id' => $tagId]);
+
+        // Log activity
+        if ($tag) {
+            $this->logActivity($cardId, $userId, 'tag_removed', [
+                'tag_id' => $tagId,
+                'tag_name' => $tag['name'],
+            ]);
+        }
 
         return JsonResponse::success(null, 'Tag removed from card');
     }
@@ -1190,7 +1273,9 @@ class KanbanController
         $this->getBoardForUser($boardId, $userId, true);
 
         $item = $this->db->fetchAssociative(
-            'SELECT * FROM kanban_checklist_items WHERE id = ?',
+            'SELECT ci.*, cl.card_id FROM kanban_checklist_items ci
+             JOIN kanban_card_checklists cl ON cl.id = ci.checklist_id
+             WHERE ci.id = ?',
             [$itemId]
         );
 
@@ -1205,6 +1290,12 @@ class KanbanController
             'completed_by' => $isCompleted ? $userId : null,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $itemId]);
+
+        // Log activity
+        $this->logActivity($item['card_id'], $userId, $isCompleted ? 'checklist_item_completed' : 'checklist_item_uncompleted', [
+            'item_id' => $itemId,
+            'item_text' => $item['content'],
+        ]);
 
         $item = $this->db->fetchAssociative(
             'SELECT ci.*, u.username as completed_by_name
@@ -1306,6 +1397,11 @@ class KanbanController
             [$commentId]
         );
 
+        // Log activity
+        $this->logActivity($cardId, $userId, 'comment_added', [
+            'comment_id' => $commentId,
+        ]);
+
         return JsonResponse::created($comment, 'Comment added');
     }
 
@@ -1363,5 +1459,52 @@ class KanbanController
         $this->db->delete('kanban_card_comments', ['id' => $commentId]);
 
         return JsonResponse::success(null, 'Comment deleted');
+    }
+
+    // ==================
+    // Activity Log Methods
+    // ==================
+
+    public function getCardActivities(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+
+        $this->getBoardForUser($boardId, $userId);
+
+        $activities = $this->db->fetchAllAssociative(
+            'SELECT a.*, u.username, u.email
+             FROM kanban_card_activities a
+             JOIN users u ON u.id = a.user_id
+             WHERE a.card_id = ?
+             ORDER BY a.created_at DESC
+             LIMIT 100',
+            [$cardId]
+        );
+
+        foreach ($activities as &$activity) {
+            $activity['details'] = $activity['details'] ? json_decode($activity['details'], true) : null;
+        }
+
+        return JsonResponse::success(['activities' => $activities]);
+    }
+
+    private function logActivity(string $cardId, string $userId, string $action, ?array $details = null): void
+    {
+        $this->db->insert('kanban_card_activities', [
+            'id' => Uuid::uuid4()->toString(),
+            'card_id' => $cardId,
+            'user_id' => $userId,
+            'action' => $action,
+            'details' => $details ? json_encode($details) : null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    private function getUsername(string $userId): string
+    {
+        return $this->db->fetchOne('SELECT username FROM users WHERE id = ?', [$userId]) ?: 'Unknown';
     }
 }

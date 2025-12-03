@@ -367,8 +367,37 @@ class KanbanController
         // Update board timestamp
         $this->db->update('kanban_boards', ['updated_at' => date('Y-m-d H:i:s')], ['id' => $boardId]);
 
+        // Add tags if provided
+        if (!empty($data['tags'])) {
+            foreach ($data['tags'] as $tag) {
+                $tagId = is_array($tag) ? ($tag['id'] ?? null) : $tag;
+                if ($tagId) {
+                    // Verify tag belongs to this board
+                    $existingTag = $this->db->fetchOne(
+                        'SELECT id FROM kanban_tags WHERE id = ? AND board_id = ?',
+                        [$tagId, $boardId]
+                    );
+                    if ($existingTag) {
+                        $this->db->insert('kanban_card_tags', [
+                            'card_id' => $cardId,
+                            'tag_id' => $tagId,
+                        ]);
+                    }
+                }
+            }
+        }
+
         $card = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
         $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+
+        // Get tags for response
+        $card['tags'] = $this->db->fetchAllAssociative(
+            'SELECT t.* FROM kanban_tags t
+             JOIN kanban_card_tags ct ON t.id = ct.tag_id
+             WHERE ct.card_id = ?
+             ORDER BY t.name',
+            [$cardId]
+        );
 
         return JsonResponse::created($card, 'Card created successfully');
     }

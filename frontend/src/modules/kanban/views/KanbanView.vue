@@ -408,11 +408,24 @@ async function onColumnDragEnd() {
   // Wait for Vue to update the model before reading column order
   await nextTick()
   const columnIds = selectedBoard.value.columns.map(col => col.id)
+  console.log('Reordering columns:', columnIds)
   try {
-    await api.put(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/reorder`, {
+    const response = await api.put(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/reorder`, {
       columns: columnIds,
     })
+    console.log('Reorder response:', response.data)
+
+    // Sync local state with server response
+    if (response.data.data?.columns) {
+      const serverOrder = response.data.data.columns
+      selectedBoard.value.columns.sort((a, b) => {
+        const posA = serverOrder.find(c => c.id === a.id)?.position ?? 999
+        const posB = serverOrder.find(c => c.id === b.id)?.position ?? 999
+        return posA - posB
+      })
+    }
   } catch (error) {
+    console.error('Reorder error:', error)
     uiStore.showError('Fehler beim Sortieren')
     await fetchBoard(selectedBoard.value.id)
   }

@@ -165,6 +165,9 @@ class WidgetController
             ['widget_type' => 'recent_documents', 'position_x' => 2, 'position_y' => 1, 'width' => 2, 'height' => 2],
             ['widget_type' => 'productivity_chart', 'position_x' => 0, 'position_y' => 3, 'width' => 2, 'height' => 2],
             ['widget_type' => 'calendar_preview', 'position_x' => 2, 'position_y' => 3, 'width' => 2, 'height' => 2],
+            ['widget_type' => 'uptime_status', 'position_x' => 0, 'position_y' => 5, 'width' => 1, 'height' => 1],
+            ['widget_type' => 'time_tracking_today', 'position_x' => 1, 'position_y' => 5, 'width' => 1, 'height' => 1],
+            ['widget_type' => 'kanban_summary', 'position_x' => 2, 'position_y' => 5, 'width' => 2, 'height' => 2],
         ];
 
         $widgets = [];

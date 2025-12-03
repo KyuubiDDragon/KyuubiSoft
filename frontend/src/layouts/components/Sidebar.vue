@@ -39,7 +39,7 @@ const uiStore = useUiStore()
 const projectStore = useProjectStore()
 
 const showProjectDropdown = ref(false)
-const expandedGroups = ref(['inhalte', 'projektmanagement']) // Default expanded groups
+const expandedGroups = ref([]) // Only expand groups with active routes
 
 // Load projects on mount
 onMounted(() => {

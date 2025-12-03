@@ -6,6 +6,7 @@ namespace App\Modules\YouTubeDownloader\Controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteContext;
 
 class YouTubeController
 {
@@ -162,16 +163,24 @@ class YouTubeController
     /**
      * Serve downloaded file
      */
-    public function serveFile(Request $request, Response $response, array $args): Response
+    public function serveFile(Request $request, Response $response): Response
     {
-        $filename = $args['filename'] ?? '';
+        // Get filename from route
+        $routeContext = RouteContext::fromRequest($request);
+        $route = $routeContext->getRoute();
+        $filename = $route ? $route->getArgument('filename', '') : '';
 
         // Sanitize filename to prevent directory traversal
         $filename = basename($filename);
+
+        if (empty($filename)) {
+            return $this->jsonResponse($response, ['error' => 'Kein Dateiname angegeben'], 400);
+        }
+
         $filepath = $this->downloadPath . '/' . $filename;
 
         if (!file_exists($filepath)) {
-            return $this->jsonResponse($response, ['error' => 'Datei nicht gefunden'], 404);
+            return $this->jsonResponse($response, ['error' => 'Datei nicht gefunden', 'file' => $filename], 404);
         }
 
         // Get mime type and file size
@@ -179,7 +188,12 @@ class YouTubeController
         $fileSize = filesize($filepath);
 
         // Create a stream from the file
-        $stream = new \Slim\Psr7\Stream(fopen($filepath, 'rb'));
+        $fileHandle = fopen($filepath, 'rb');
+        if (!$fileHandle) {
+            return $this->jsonResponse($response, ['error' => 'Datei konnte nicht geöffnet werden'], 500);
+        }
+
+        $stream = new \Slim\Psr7\Stream($fileHandle);
 
         // Schedule file deletion after request completes
         register_shutdown_function(function () use ($filepath) {

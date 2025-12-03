@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import GlobalSearch from '@/components/GlobalSearch.vue'
+import NotificationCenter from '@/components/NotificationCenter.vue'
 import {
-  BellIcon,
   MoonIcon,
   SunIcon,
   ArrowRightOnRectangleIcon,
@@ -57,13 +57,8 @@ function goToSettings() {
         <MoonIcon v-else class="w-5 h-5" />
       </button>
 
-      <!-- Notifications (placeholder) -->
-      <button
-        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors relative"
-        title="Benachrichtigungen"
-      >
-        <BellIcon class="w-5 h-5" />
-      </button>
+      <!-- Notifications -->
+      <NotificationCenter />
 
       <!-- User menu -->
       <div class="relative">

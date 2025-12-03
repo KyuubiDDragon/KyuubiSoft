@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -405,6 +405,8 @@ async function onCardDragEnd(columnId, evt) {
 
 // Handle column drag end
 async function onColumnDragEnd() {
+  // Wait for Vue to update the model before reading column order
+  await nextTick()
   const columnIds = selectedBoard.value.columns.map(col => col.id)
   try {
     await api.put(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/reorder`, {

@@ -114,19 +114,18 @@ function navigateTo(href) {
   >
     <div class="flex flex-col h-full">
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-center border-b border-dark-700">
+      <div class="h-16 flex items-center justify-center border-b border-dark-700 gap-2">
+        <img
+          src="/logo.svg"
+          alt="KyuubiSoft"
+          class="w-10 h-10"
+        />
         <h1
           v-if="!uiStore.sidebarCollapsed"
           class="text-xl font-bold text-gradient"
         >
           KyuubiSoft
         </h1>
-        <span
-          v-else
-          class="text-2xl font-bold text-primary-500"
-        >
-          K
-        </span>
       </div>
 
       <!-- Project Selector -->

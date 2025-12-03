@@ -12,8 +12,6 @@ import {
   ClockIcon,
 } from '@heroicons/vue/24/outline'
 
-const api = useApi()
-
 const currentDate = ref(new Date())
 const events = ref([])
 const isLoading = ref(true)

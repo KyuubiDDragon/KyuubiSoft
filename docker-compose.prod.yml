@@ -121,6 +121,29 @@ services:
       - kyuubisoft_network
     restart: unless-stopped
 
+  # ===================
+  # Uptime Scheduler
+  # ===================
+  scheduler:
+    image: ghcr.io/kyuubiddragon/kyuubisoft-backend:latest
+    container_name: kyuubisoft_scheduler
+    volumes:
+      - backend_storage:/var/www/html/storage
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-kyuubisoft}
+      DB_USERNAME: ${DB_USERNAME:-kyuubisoft}
+      DB_PASSWORD: ${DB_PASSWORD}
+    command: /bin/sh -c "while true; do php /var/www/html/bin/uptime-check.php >> /var/www/html/storage/logs/scheduler.log 2>&1; sleep 60; done"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - kyuubisoft_network
+    restart: unless-stopped
+
 networks:
   kyuubisoft_network:
     driver: bridge

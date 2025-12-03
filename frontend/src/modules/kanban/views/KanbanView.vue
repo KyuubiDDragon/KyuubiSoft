@@ -641,9 +641,11 @@ async function fetchLinkableItems() {
       `/api/v1/kanban/boards/${selectedBoard.value.id}/linkable/${linkType.value}`,
       { params: { search: linkSearchQuery.value } }
     )
-    linkableItems.value = response.data.data.items || []
+    linkableItems.value = response.data.data?.items || []
   } catch (error) {
+    console.error('Error fetching linkable items:', error)
     linkableItems.value = []
+    uiStore.showError('Fehler beim Laden der Elemente')
   } finally {
     isLoadingLinkables.value = false
   }
@@ -1406,7 +1408,7 @@ onMounted(async () => {
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         @click.self="showCardModal = false"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">
               {{ editingCard ? 'Karte bearbeiten' : 'Neue Karte' }}
@@ -1419,440 +1421,422 @@ onMounted(async () => {
             </button>
           </div>
 
-          <div class="p-4 space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
-              <input
-                v-model="cardForm.title"
-                type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                placeholder="Kartenname"
-              />
-            </div>
+          <div class="flex-1 overflow-hidden flex">
+            <!-- Left Column: Main Content -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+                <input
+                  v-model="cardForm.title"
+                  type="text"
+                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  placeholder="Kartenname"
+                />
+              </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
-              <textarea
-                v-model="cardForm.description"
-                rows="4"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
-                placeholder="Details zur Karte..."
-              ></textarea>
-            </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+                <textarea
+                  v-model="cardForm.description"
+                  rows="3"
+                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                  placeholder="Details zur Karte..."
+                ></textarea>
+              </div>
 
-            <div class="grid grid-cols-2 gap-4">
+              <!-- Checklists Section - directly after description -->
+              <div v-if="editingCard">
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <ClipboardDocumentListIcon class="w-4 h-4 inline mr-1" />
+                  Checklisten
+                </label>
+
+                <div class="space-y-3 mb-3">
+                  <div
+                    v-for="checklist in checklists"
+                    :key="checklist.id"
+                    class="bg-dark-700 rounded-lg p-3"
+                  >
+                    <div class="flex items-center justify-between mb-2">
+                      <h4 class="text-white font-medium text-sm">{{ checklist.title }}</h4>
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">
+                          {{ getChecklistProgress(checklist).completed }}/{{ getChecklistProgress(checklist).total }}
+                        </span>
+                        <button
+                          @click="deleteChecklist(checklist.id)"
+                          class="p-1 text-gray-400 hover:text-red-400"
+                        >
+                          <TrashIcon class="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="checklist.items?.length" class="h-1 bg-dark-600 rounded-full mb-2 overflow-hidden">
+                      <div
+                        class="h-full bg-green-500 transition-all duration-300"
+                        :style="{ width: getChecklistProgress(checklist).percent + '%' }"
+                      ></div>
+                    </div>
+
+                    <div class="space-y-1">
+                      <div
+                        v-for="item in checklist.items"
+                        :key="item.id"
+                        class="flex items-center gap-2 group"
+                      >
+                        <button
+                          @click="toggleChecklistItem(item.id)"
+                          class="flex-shrink-0 text-gray-400 hover:text-green-400"
+                        >
+                          <CheckCircleIconSolid v-if="item.is_completed" class="w-5 h-5 text-green-500" />
+                          <CheckCircleIcon v-else class="w-5 h-5" />
+                        </button>
+                        <span
+                          class="flex-1 text-sm"
+                          :class="item.is_completed ? 'text-gray-500 line-through' : 'text-gray-300'"
+                        >
+                          {{ item.content }}
+                        </span>
+                        <button
+                          @click="deleteChecklistItem(item.id)"
+                          class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                        >
+                          <XMarkIcon class="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="mt-2 flex gap-2">
+                      <input
+                        v-model="newItemContents[checklist.id]"
+                        type="text"
+                        class="flex-1 bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                        placeholder="Neuer Eintrag..."
+                        @keydown.enter="addChecklistItem(checklist.id)"
+                      />
+                      <button
+                        @click="addChecklistItem(checklist.id)"
+                        class="px-2 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
+                      >
+                        <PlusIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <input
+                    v-model="newChecklistTitle"
+                    type="text"
+                    class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                    placeholder="Neue Checkliste..."
+                    @keydown.enter="createChecklist"
+                  />
+                  <button
+                    @click="createChecklist"
+                    class="px-3 py-2 bg-dark-600 text-gray-300 rounded-lg hover:bg-dark-500 transition-colors"
+                    :disabled="!newChecklistTitle.trim()"
+                  >
+                    <PlusIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">
+                    <FlagIcon class="w-4 h-4 inline mr-1" />
+                    Priorität
+                  </label>
+                  <select
+                    v-model="cardForm.priority"
+                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  >
+                    <option v-for="p in priorities" :key="p.value" :value="p.value">
+                      {{ p.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">
+                    <CalendarIcon class="w-4 h-4 inline mr-1" />
+                    Fälligkeitsdatum
+                  </label>
+                  <input
+                    v-model="cardForm.due_date"
+                    type="date"
+                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">
-                  <FlagIcon class="w-4 h-4 inline mr-1" />
-                  Priorität
+                  <UserCircleIcon class="w-4 h-4 inline mr-1" />
+                  Zugewiesen an
                 </label>
                 <select
-                  v-model="cardForm.priority"
+                  v-model="cardForm.assigned_to"
                   class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option v-for="p in priorities" :key="p.value" :value="p.value">
-                    {{ p.label }}
+                  <option :value="null">Niemand</option>
+                  <option v-for="user in boardUsers" :key="user.id" :value="user.id">
+                    {{ user.username }} ({{ user.email }})
                   </option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">
-                  <CalendarIcon class="w-4 h-4 inline mr-1" />
-                  Fälligkeitsdatum
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <TagIcon class="w-4 h-4 inline mr-1" />
+                  Labels
                 </label>
-                <input
-                  v-model="cardForm.due_date"
-                  type="date"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">
-                <UserCircleIcon class="w-4 h-4 inline mr-1" />
-                Zugewiesen an
-              </label>
-              <select
-                v-model="cardForm.assigned_to"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
-              >
-                <option :value="null">Niemand</option>
-                <option v-for="user in boardUsers" :key="user.id" :value="user.id">
-                  {{ user.username }} ({{ user.email }})
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <TagIcon class="w-4 h-4 inline mr-1" />
-                Labels
-              </label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="label in labelColors"
-                  :key="label.name"
-                  @click="toggleLabel(label.name)"
-                  class="w-10 h-6 rounded transition-all"
-                  :class="[
-                    label.bg,
-                    cardForm.labels.includes(label.name) ? 'ring-2 ring-white' : 'opacity-50 hover:opacity-100'
-                  ]"
-                ></button>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Kartenfarbe (Akzent)</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  @click="cardForm.color = null"
-                  class="w-8 h-8 rounded-lg bg-dark-600 flex items-center justify-center transition-transform hover:scale-110"
-                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': !cardForm.color }"
-                >
-                  <XMarkIcon class="w-4 h-4 text-gray-400" />
-                </button>
-                <button
-                  v-for="color in boardColors"
-                  :key="color"
-                  @click="cardForm.color = color"
-                  class="w-8 h-8 rounded-lg transition-transform hover:scale-110"
-                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': cardForm.color === color }"
-                  :style="{ backgroundColor: color }"
-                ></button>
-              </div>
-            </div>
-
-            <!-- Attachments -->
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <PhotoIcon class="w-4 h-4 inline mr-1" />
-                Bilder / Screenshots
-              </label>
-
-              <!-- Existing attachments -->
-              <div v-if="cardForm.attachments.length" class="grid grid-cols-3 gap-2 mb-3">
-                <div
-                  v-for="attachment in cardForm.attachments"
-                  :key="attachment.id"
-                  class="relative group aspect-square bg-dark-700 rounded-lg overflow-hidden"
-                >
-                  <img
-                    :src="getAttachmentUrl(attachment.filename)"
-                    :alt="attachment.original_name"
-                    class="w-full h-full object-cover cursor-pointer"
-                    @click="openAttachmentPreview(attachment)"
-                  />
-                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      @click="openAttachmentPreview(attachment)"
-                      class="p-1.5 bg-dark-600 rounded-lg text-white hover:bg-dark-500"
-                      title="Vergrößern"
-                    >
-                      <PhotoIcon class="w-4 h-4" />
-                    </button>
-                    <button
-                      @click="deleteAttachment(attachment.id)"
-                      class="p-1.5 bg-red-600 rounded-lg text-white hover:bg-red-500"
-                      title="Löschen"
-                    >
-                      <TrashIcon class="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-[10px] text-gray-300 px-1 py-0.5 truncate">
-                    {{ attachment.original_name }}
-                  </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="label in labelColors"
+                    :key="label.name"
+                    @click="toggleLabel(label.name)"
+                    class="w-10 h-6 rounded transition-all"
+                    :class="[
+                      label.bg,
+                      cardForm.labels.includes(label.name) ? 'ring-2 ring-white' : 'opacity-50 hover:opacity-100'
+                    ]"
+                  ></button>
                 </div>
               </div>
 
-              <!-- Upload area -->
-              <div
-                v-if="editingCard"
-                class="border-2 border-dashed border-dark-600 rounded-lg p-4 text-center hover:border-primary-500 transition-colors cursor-pointer relative"
-                @click="$refs.attachmentInput.click()"
-              >
-                <input
-                  ref="attachmentInput"
-                  type="file"
-                  accept="image/*"
-                  class="hidden"
-                  @change="uploadAttachment"
-                />
-                <div v-if="!isUploadingAttachment" class="text-gray-400">
-                  <PhotoIcon class="w-8 h-8 mx-auto mb-2" />
-                  <p class="text-sm">Bild hochladen</p>
-                  <p class="text-xs text-gray-500 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
-                </div>
-                <div v-else class="text-primary-400">
-                  <div class="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p class="text-sm">Wird hochgeladen...</p>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Kartenfarbe</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    @click="cardForm.color = null"
+                    class="w-8 h-8 rounded-lg bg-dark-600 flex items-center justify-center transition-transform hover:scale-110"
+                    :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': !cardForm.color }"
+                  >
+                    <XMarkIcon class="w-4 h-4 text-gray-400" />
+                  </button>
+                  <button
+                    v-for="color in boardColors"
+                    :key="color"
+                    @click="cardForm.color = color"
+                    class="w-8 h-8 rounded-lg transition-transform hover:scale-110"
+                    :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': cardForm.color === color }"
+                    :style="{ backgroundColor: color }"
+                  ></button>
                 </div>
               </div>
 
-              <!-- Info for new cards -->
-              <p v-else class="text-xs text-gray-500 italic">
-                Bitte erst die Karte speichern, um Bilder hinzuzufügen.
-              </p>
-            </div>
+              <!-- Attachments -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <PhotoIcon class="w-4 h-4 inline mr-1" />
+                  Bilder / Screenshots
+                </label>
 
-            <!-- Tags Section -->
-            <div v-if="selectedBoard?.tags?.length">
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <TagIcon class="w-4 h-4 inline mr-1" />
-                Tags
-              </label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="tag in selectedBoard.tags"
-                  :key="tag.id"
-                  @click="toggleCardTag(tag.id)"
-                  class="px-2 py-1 text-xs rounded-lg transition-all"
-                  :class="cardForm.tags?.some(t => t.id === tag.id)
-                    ? 'ring-2 ring-white'
-                    : 'opacity-60 hover:opacity-100'"
-                  :style="{ backgroundColor: tag.color + '40', color: tag.color }"
-                >
-                  {{ tag.name }}
-                </button>
-              </div>
-              <p v-if="!selectedBoard.tags?.length" class="text-xs text-gray-500 mt-1">
-                Keine Tags vorhanden. <button @click="openTagModal()" class="text-primary-400 hover:underline">Tag erstellen</button>
-              </p>
-            </div>
-
-            <!-- Links Section -->
-            <div v-if="editingCard">
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <LinkIcon class="w-4 h-4 inline mr-1" />
-                Verknüpfte Elemente
-              </label>
-
-              <!-- Existing links -->
-              <div v-if="cardForm.links?.length" class="space-y-2 mb-3">
-                <div
-                  v-for="link in cardForm.links"
-                  :key="link.id"
-                  class="flex items-center justify-between p-2 bg-dark-700 rounded-lg group"
-                >
+                <div v-if="cardForm.attachments.length" class="grid grid-cols-4 gap-2 mb-3">
                   <div
-                    class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary-400"
-                    @click="navigateToLink(link)"
+                    v-for="attachment in cardForm.attachments"
+                    :key="attachment.id"
+                    class="relative group aspect-square bg-dark-700 rounded-lg overflow-hidden"
                   >
-                    <component :is="getLinkIcon(link.linkable_type)" class="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span class="truncate text-sm">{{ link.linkable?.title || link.linkable?.url || 'Unbekannt' }}</span>
-                    <span class="text-xs text-gray-500">({{ getLinkTypeName(link.linkable_type) }})</span>
+                    <img
+                      :src="getAttachmentUrl(attachment.filename)"
+                      :alt="attachment.original_name"
+                      class="w-full h-full object-cover cursor-pointer"
+                      @click="openAttachmentPreview(attachment)"
+                    />
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        @click="deleteAttachment(attachment.id)"
+                        class="p-1.5 bg-red-600 rounded-lg text-white hover:bg-red-500"
+                      >
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
+                </div>
+
+                <div
+                  v-if="editingCard"
+                  class="border-2 border-dashed border-dark-600 rounded-lg p-3 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                  @click="$refs.attachmentInput.click()"
+                >
+                  <input
+                    ref="attachmentInput"
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="uploadAttachment"
+                  />
+                  <div v-if="!isUploadingAttachment" class="text-gray-400 text-sm">
+                    <PhotoIcon class="w-6 h-6 mx-auto mb-1" />
+                    <p>Bild hochladen</p>
+                  </div>
+                  <div v-else class="text-primary-400">
+                    <div class="w-5 h-5 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  </div>
+                </div>
+                <p v-else class="text-xs text-gray-500 italic">
+                  Bitte erst die Karte speichern, um Bilder hinzuzufügen.
+                </p>
+              </div>
+
+              <!-- Tags Section -->
+              <div v-if="selectedBoard?.tags?.length">
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <TagIcon class="w-4 h-4 inline mr-1" />
+                  Tags
+                </label>
+                <div class="flex flex-wrap gap-2">
                   <button
-                    @click="removeLink(link.id)"
-                    class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    v-for="tag in selectedBoard.tags"
+                    :key="tag.id"
+                    @click="toggleCardTag(tag.id)"
+                    class="px-2 py-1 text-xs rounded-lg transition-all"
+                    :class="cardForm.tags?.some(t => t.id === tag.id)
+                      ? 'ring-2 ring-white'
+                      : 'opacity-60 hover:opacity-100'"
+                    :style="{ backgroundColor: tag.color + '40', color: tag.color }"
                   >
-                    <XMarkIcon class="w-4 h-4" />
+                    {{ tag.name }}
                   </button>
                 </div>
               </div>
 
-              <!-- Add link button -->
-              <button
-                @click="openLinkModal"
-                class="w-full p-2 border-2 border-dashed border-dark-600 rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
-              >
-                <LinkIcon class="w-4 h-4" />
-                Element verknüpfen
-              </button>
-            </div>
+              <!-- Links Section -->
+              <div v-if="editingCard">
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  <LinkIcon class="w-4 h-4 inline mr-1" />
+                  Verknüpfte Elemente
+                </label>
 
-            <!-- Checklists Section -->
-            <div v-if="editingCard">
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <ClipboardDocumentListIcon class="w-4 h-4 inline mr-1" />
-                Checklisten
-              </label>
-
-              <!-- Existing checklists -->
-              <div class="space-y-3 mb-3">
-                <div
-                  v-for="checklist in checklists"
-                  :key="checklist.id"
-                  class="bg-dark-700 rounded-lg p-3"
-                >
-                  <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-white font-medium text-sm">{{ checklist.title }}</h4>
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs text-gray-500">
-                        {{ getChecklistProgress(checklist).completed }}/{{ getChecklistProgress(checklist).total }}
-                      </span>
-                      <button
-                        @click="deleteChecklist(checklist.id)"
-                        class="p-1 text-gray-400 hover:text-red-400"
-                      >
-                        <TrashIcon class="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Progress bar -->
-                  <div v-if="checklist.items?.length" class="h-1 bg-dark-600 rounded-full mb-2 overflow-hidden">
+                <div v-if="cardForm.links?.length" class="space-y-2 mb-3">
+                  <div
+                    v-for="link in cardForm.links"
+                    :key="link.id"
+                    class="flex items-center justify-between p-2 bg-dark-700 rounded-lg group"
+                  >
                     <div
-                      class="h-full bg-green-500 transition-all duration-300"
-                      :style="{ width: getChecklistProgress(checklist).percent + '%' }"
-                    ></div>
-                  </div>
-
-                  <!-- Items -->
-                  <div class="space-y-1">
-                    <div
-                      v-for="item in checklist.items"
-                      :key="item.id"
-                      class="flex items-center gap-2 group"
+                      class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary-400"
+                      @click="navigateToLink(link)"
                     >
-                      <button
-                        @click="toggleChecklistItem(item.id)"
-                        class="flex-shrink-0 text-gray-400 hover:text-green-400"
-                      >
-                        <CheckCircleIconSolid v-if="item.is_completed" class="w-5 h-5 text-green-500" />
-                        <CheckCircleIcon v-else class="w-5 h-5" />
-                      </button>
-                      <span
-                        class="flex-1 text-sm"
-                        :class="item.is_completed ? 'text-gray-500 line-through' : 'text-gray-300'"
-                      >
-                        {{ item.content }}
-                      </span>
-                      <button
-                        @click="deleteChecklistItem(item.id)"
-                        class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
-                      >
-                        <XMarkIcon class="w-3 h-3" />
-                      </button>
+                      <component :is="getLinkIcon(link.linkable_type)" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span class="truncate text-sm">{{ link.linkable?.title || link.linkable?.url || 'Unbekannt' }}</span>
+                      <span class="text-xs text-gray-500">({{ getLinkTypeName(link.linkable_type) }})</span>
                     </div>
-                  </div>
-
-                  <!-- Add item input -->
-                  <div class="mt-2 flex gap-2">
-                    <input
-                      v-model="newItemContents[checklist.id]"
-                      type="text"
-                      class="flex-1 bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                      placeholder="Neuer Eintrag..."
-                      @keydown.enter="addChecklistItem(checklist.id)"
-                    />
                     <button
-                      @click="addChecklistItem(checklist.id)"
-                      class="px-2 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
+                      @click="removeLink(link.id)"
+                      class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <PlusIcon class="w-4 h-4" />
+                      <XMarkIcon class="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <!-- Add new checklist -->
-              <div class="flex gap-2">
-                <input
-                  v-model="newChecklistTitle"
-                  type="text"
-                  class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                  placeholder="Neue Checkliste..."
-                  @keydown.enter="createChecklist"
-                />
                 <button
-                  @click="createChecklist"
-                  class="px-3 py-2 bg-dark-600 text-gray-300 rounded-lg hover:bg-dark-500 transition-colors"
-                  :disabled="!newChecklistTitle.trim()"
+                  @click="openLinkModal"
+                  class="w-full p-2 border-2 border-dashed border-dark-600 rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
                 >
-                  <PlusIcon class="w-4 h-4" />
+                  <LinkIcon class="w-4 h-4" />
+                  Element verknüpfen
                 </button>
               </div>
             </div>
 
-            <!-- Comments Section -->
-            <div v-if="editingCard">
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                <ChatBubbleLeftIcon class="w-4 h-4 inline mr-1" />
-                Kommentare ({{ comments.length }})
-              </label>
-
-              <!-- Add comment -->
-              <div class="flex gap-2 mb-3">
-                <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                  {{ authStore.user?.username?.[0]?.toUpperCase() || '?' }}
-                </div>
-                <div class="flex-1">
-                  <textarea
-                    v-model="newComment"
-                    rows="2"
-                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
-                    placeholder="Kommentar schreiben..."
-                  ></textarea>
-                  <button
-                    v-if="newComment.trim()"
-                    @click="addCommentAction"
-                    class="mt-2 px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
-                  >
-                    Kommentieren
-                  </button>
-                </div>
+            <!-- Right Column: Comments -->
+            <div v-if="editingCard" class="w-80 border-l border-dark-700 flex flex-col bg-dark-850">
+              <div class="p-4 border-b border-dark-700">
+                <label class="block text-sm font-medium text-gray-300">
+                  <ChatBubbleLeftIcon class="w-4 h-4 inline mr-1" />
+                  Kommentare ({{ comments.length }})
+                </label>
               </div>
 
-              <!-- Comments list -->
-              <div class="space-y-3 max-h-60 overflow-y-auto">
-                <div
-                  v-for="comment in comments"
-                  :key="comment.id"
-                  class="flex gap-2"
-                >
-                  <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
-                    {{ comment.username?.[0]?.toUpperCase() || '?' }}
+              <div class="flex-1 overflow-y-auto p-4">
+                <!-- Add comment -->
+                <div class="flex gap-2 mb-4">
+                  <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                    {{ authStore.user?.username?.[0]?.toUpperCase() || '?' }}
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="text-white text-sm font-medium">{{ comment.username }}</span>
-                      <span class="text-xs text-gray-500">{{ formatCommentDate(comment.created_at) }}</span>
-                      <template v-if="comment.user_id === authStore.user?.id">
-                        <button
-                          @click="startEditComment(comment)"
-                          class="text-xs text-gray-400 hover:text-white"
-                        >
-                          Bearbeiten
-                        </button>
-                        <button
-                          @click="deleteCommentAction(comment.id)"
-                          class="text-xs text-gray-400 hover:text-red-400"
-                        >
-                          Löschen
-                        </button>
-                      </template>
-                    </div>
-                    <div v-if="editingComment === comment.id" class="space-y-2">
-                      <textarea
-                        v-model="editCommentContent"
-                        rows="2"
-                        class="w-full bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500 resize-none"
-                      ></textarea>
-                      <div class="flex gap-2">
-                        <button
-                          @click="saveEditComment(comment.id)"
-                          class="px-2 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-500"
-                        >
-                          Speichern
-                        </button>
-                        <button
-                          @click="editingComment = null"
-                          class="px-2 py-1 text-gray-400 hover:text-white text-xs"
-                        >
-                          Abbrechen
-                        </button>
-                      </div>
-                    </div>
-                    <p v-else class="text-gray-300 text-sm whitespace-pre-wrap">{{ comment.content }}</p>
+                  <div class="flex-1">
+                    <textarea
+                      v-model="newComment"
+                      rows="2"
+                      class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                      placeholder="Kommentar schreiben..."
+                    ></textarea>
+                    <button
+                      v-if="newComment.trim()"
+                      @click="addCommentAction"
+                      class="mt-2 px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
+                    >
+                      Senden
+                    </button>
                   </div>
                 </div>
 
-                <p v-if="comments.length === 0" class="text-gray-500 text-sm text-center py-4">
-                  Noch keine Kommentare
-                </p>
+                <!-- Comments list -->
+                <div class="space-y-4">
+                  <div
+                    v-for="comment in comments"
+                    :key="comment.id"
+                    class="flex gap-2"
+                  >
+                    <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
+                      {{ comment.username?.[0]?.toUpperCase() || '?' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="text-white text-sm font-medium">{{ comment.username }}</span>
+                        <span class="text-xs text-gray-500">{{ formatCommentDate(comment.created_at) }}</span>
+                      </div>
+                      <template v-if="comment.user_id === authStore.user?.id">
+                        <div class="flex gap-2 mb-1">
+                          <button
+                            @click="startEditComment(comment)"
+                            class="text-xs text-gray-400 hover:text-white"
+                          >
+                            Bearbeiten
+                          </button>
+                          <button
+                            @click="deleteCommentAction(comment.id)"
+                            class="text-xs text-gray-400 hover:text-red-400"
+                          >
+                            Löschen
+                          </button>
+                        </div>
+                      </template>
+                      <div v-if="editingComment === comment.id" class="space-y-2">
+                        <textarea
+                          v-model="editCommentContent"
+                          rows="2"
+                          class="w-full bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500 resize-none"
+                        ></textarea>
+                        <div class="flex gap-2">
+                          <button
+                            @click="saveEditComment(comment.id)"
+                            class="px-2 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-500"
+                          >
+                            Speichern
+                          </button>
+                          <button
+                            @click="editingComment = null"
+                            class="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                      <p v-else class="text-gray-300 text-sm whitespace-pre-wrap bg-dark-700 rounded-lg p-2">{{ comment.content }}</p>
+                    </div>
+                  </div>
+
+                  <p v-if="comments.length === 0" class="text-gray-500 text-sm text-center py-8">
+                    Noch keine Kommentare
+                  </p>
+                </div>
               </div>
             </div>
           </div>

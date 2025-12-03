@@ -930,10 +930,10 @@ class KanbanController
 
         $items = [];
         $typeMapping = [
-            'document' => ['table' => 'documents', 'fields' => 'id, title, updated_at', 'archived' => 'is_archived = 0'],
-            'list' => ['table' => 'lists', 'fields' => 'id, title, updated_at', 'archived' => 'is_archived = 0'],
-            'snippet' => ['table' => 'snippets', 'fields' => 'id, title, language, updated_at', 'archived' => null],
-            'bookmark' => ['table' => 'bookmarks', 'fields' => 'id, title, url, updated_at', 'archived' => null],
+            'document' => ['table' => 'documents', 'fields' => 't.id, t.title, t.updated_at', 'archived' => 'is_archived = 0'],
+            'list' => ['table' => 'lists', 'fields' => 't.id, t.title, t.updated_at', 'archived' => 'is_archived = 0'],
+            'snippet' => ['table' => 'snippets', 'fields' => 't.id, t.title, t.language, t.updated_at', 'archived' => null],
+            'bookmark' => ['table' => 'bookmarks', 'fields' => 't.id, t.title, t.url, t.updated_at', 'archived' => null],
         ];
 
         if (!isset($typeMapping[$type])) {
@@ -957,16 +957,16 @@ class KanbanController
             $sql .= ' ORDER BY t.updated_at DESC LIMIT 50';
             $items = $this->db->fetchAllAssociative($sql, $params);
         } else {
-            // No project filter - show all user's items
-            $archivedConditionNoAlias = $config['archived'] ? " AND {$config['archived']}" : '';
-            $sql = "SELECT {$config['fields']} FROM {$config['table']} WHERE user_id = ?{$archivedConditionNoAlias}";
+            // No project filter - show all user's items (use same alias for consistency)
+            $archivedConditionWithAlias = $config['archived'] ? " AND t.{$config['archived']}" : '';
+            $sql = "SELECT {$config['fields']} FROM {$config['table']} t WHERE t.user_id = ?{$archivedConditionWithAlias}";
             $params = [$userId];
 
             if ($search) {
-                $sql .= ' AND title LIKE ?';
+                $sql .= ' AND t.title LIKE ?';
                 $params[] = "%{$search}%";
             }
-            $sql .= ' ORDER BY updated_at DESC LIMIT 50';
+            $sql .= ' ORDER BY t.updated_at DESC LIMIT 50';
             $items = $this->db->fetchAllAssociative($sql, $params);
         }
 

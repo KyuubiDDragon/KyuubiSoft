@@ -138,10 +138,10 @@ class Router
                 $protected->delete('/kanban/boards/{id}', [KanbanController::class, 'delete']);
                 $protected->get('/kanban/boards/{id}/users', [KanbanController::class, 'getBoardUsers']);
                 // Kanban Columns
+                $protected->put('/kanban/boards/{id}/columns/reorder', [KanbanController::class, 'reorderColumns']);
                 $protected->post('/kanban/boards/{id}/columns', [KanbanController::class, 'createColumn']);
                 $protected->put('/kanban/boards/{id}/columns/{columnId}', [KanbanController::class, 'updateColumn']);
                 $protected->delete('/kanban/boards/{id}/columns/{columnId}', [KanbanController::class, 'deleteColumn']);
-                $protected->put('/kanban/boards/{id}/columns/reorder', [KanbanController::class, 'reorderColumns']);
                 // Kanban Cards
                 $protected->post('/kanban/boards/{id}/columns/{columnId}/cards', [KanbanController::class, 'createCard']);
                 $protected->put('/kanban/boards/{id}/cards/{cardId}', [KanbanController::class, 'updateCard']);

@@ -277,6 +277,8 @@ class AuthService
         // Generate secret
         $secret = $this->generate2FASecret();
 
+        error_log("2FA ENABLE DEBUG: Generated secret: " . $secret);
+
         // Store temporarily (not activated yet)
         $this->userRepository->update($userId, [
             'two_factor_temp_secret' => $secret,
@@ -284,9 +286,14 @@ class AuthService
 
         $user = $this->userRepository->findById($userId);
 
+        error_log("2FA ENABLE DEBUG: Stored in DB: " . $user['two_factor_temp_secret']);
+
+        $qrUrl = $this->get2FAQrCodeUrl($user['email'], $secret);
+        error_log("2FA ENABLE DEBUG: QR URL: " . $qrUrl);
+
         return [
             'secret' => $secret,
-            'qr_code_url' => $this->get2FAQrCodeUrl($user['email'], $secret),
+            'qr_code_url' => $qrUrl,
         ];
     }
 

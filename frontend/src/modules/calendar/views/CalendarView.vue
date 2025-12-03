@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useApi } from '@/composables/useApi'
+import api from '@/core/api/axios'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,

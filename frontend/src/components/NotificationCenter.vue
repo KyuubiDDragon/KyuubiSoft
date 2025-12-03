@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useApi } from '@/composables/useApi'
+import api from '@/core/api/axios'
 import {
   BellIcon,
   CheckIcon,
@@ -14,7 +14,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
-const api = useApi()
 
 const isOpen = ref(false)
 const notifications = ref([])

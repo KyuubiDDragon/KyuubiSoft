@@ -2,19 +2,36 @@
 import { ref, computed } from 'vue'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
-// Tool Components
+// Tool Components - Developer
 import JsonToolkit from '../components/tools/JsonToolkit.vue'
-import QrCodeGenerator from '../components/tools/QrCodeGenerator.vue'
-import PasswordGenerator from '../components/tools/PasswordGenerator.vue'
 import RegexTester from '../components/tools/RegexTester.vue'
 import JwtDecoder from '../components/tools/JwtDecoder.vue'
 import CronParser from '../components/tools/CronParser.vue'
-import ColorPicker from '../components/tools/ColorPicker.vue'
-import PomodoroTimer from '../components/tools/PomodoroTimer.vue'
-import UnitConverter from '../components/tools/UnitConverter.vue'
 import DiffViewer from '../components/tools/DiffViewer.vue'
 import HashGenerator from '../components/tools/HashGenerator.vue'
 import LoremIpsumGenerator from '../components/tools/LoremIpsumGenerator.vue'
+import TimestampConverter from '../components/tools/TimestampConverter.vue'
+import BaseConverter from '../components/tools/BaseConverter.vue'
+import MarkdownPreview from '../components/tools/MarkdownPreview.vue'
+
+// Tool Components - Media
+import QrCodeGenerator from '../components/tools/QrCodeGenerator.vue'
+import ColorPicker from '../components/tools/ColorPicker.vue'
+import ImageCompressor from '../components/tools/ImageCompressor.vue'
+import FaviconGenerator from '../components/tools/FaviconGenerator.vue'
+
+// Tool Components - Productivity
+import PasswordGenerator from '../components/tools/PasswordGenerator.vue'
+import PomodoroTimer from '../components/tools/PomodoroTimer.vue'
+import UnitConverter from '../components/tools/UnitConverter.vue'
+import QuickNotes from '../components/tools/QuickNotes.vue'
+import MeetingTimer from '../components/tools/MeetingTimer.vue'
+
+// Tool Components - Network
+import IpCalculator from '../components/tools/IpCalculator.vue'
+import SslChecker from '../components/tools/SslChecker.vue'
+import DnsLookup from '../components/tools/DnsLookup.vue'
+import WhoisLookup from '../components/tools/WhoisLookup.vue'
 
 // State
 const searchQuery = ref('')
@@ -30,7 +47,7 @@ const toolCategories = [
       {
         id: 'json-toolkit',
         name: 'JSON Toolkit',
-        description: 'JSON formatieren, validieren, minifizieren',
+        description: 'JSON formatieren, validieren, minifizieren, Base64, UUID',
         icon: '📋',
         component: JsonToolkit,
       },
@@ -65,7 +82,7 @@ const toolCategories = [
       {
         id: 'hash-generator',
         name: 'Hash Generator',
-        description: 'MD5, SHA1, SHA256 Hashes erstellen',
+        description: 'MD5, SHA1, SHA256, SHA512 Hashes erstellen',
         icon: '🔒',
         component: HashGenerator,
       },
@@ -75,6 +92,27 @@ const toolCategories = [
         description: 'Platzhaltertext generieren',
         icon: '📝',
         component: LoremIpsumGenerator,
+      },
+      {
+        id: 'timestamp-converter',
+        name: 'Timestamp Converter',
+        description: 'Unix/ISO/Datum Zeitstempel umrechnen',
+        icon: '🕐',
+        component: TimestampConverter,
+      },
+      {
+        id: 'base-converter',
+        name: 'Base Converter',
+        description: 'Binär, Oktal, Dezimal, Hex umrechnen',
+        icon: '🔢',
+        component: BaseConverter,
+      },
+      {
+        id: 'markdown-preview',
+        name: 'Markdown Preview',
+        description: 'Markdown schreiben und live Vorschau',
+        icon: '📄',
+        component: MarkdownPreview,
       },
     ],
   },
@@ -104,6 +142,20 @@ const toolCategories = [
         icon: '🎨',
         component: ColorPicker,
       },
+      {
+        id: 'image-compressor',
+        name: 'Image Compressor',
+        description: 'Bilder komprimieren und konvertieren',
+        icon: '🖼️',
+        component: ImageCompressor,
+      },
+      {
+        id: 'favicon-generator',
+        name: 'Favicon Generator',
+        description: 'Favicons in allen Größen erstellen',
+        icon: '⭐',
+        component: FaviconGenerator,
+      },
     ],
   },
   {
@@ -121,21 +173,36 @@ const toolCategories = [
       {
         id: 'pomodoro',
         name: 'Pomodoro Timer',
-        description: 'Focus-Timer mit Intervallen',
+        description: 'Focus-Timer mit Pausen-Intervallen',
         icon: '🍅',
         component: PomodoroTimer,
       },
       {
         id: 'unit-converter',
         name: 'Unit Converter',
-        description: 'Einheiten umrechnen',
+        description: 'Einheiten umrechnen (Länge, Gewicht, etc.)',
         icon: '📐',
         component: UnitConverter,
+      },
+      {
+        id: 'quick-notes',
+        name: 'Quick Notes',
+        description: 'Schnelle Notizen mit Auto-Save',
+        icon: '📓',
+        component: QuickNotes,
+        fullWidth: true,
+      },
+      {
+        id: 'meeting-timer',
+        name: 'Meeting Timer',
+        description: 'Meeting-Timer mit Redezeit-Tracking',
+        icon: '👥',
+        component: MeetingTimer,
       },
     ],
   },
   {
-    id: 'api',
+    id: 'network',
     name: 'API & Netzwerk',
     icon: '🌐',
     tools: [
@@ -145,6 +212,34 @@ const toolCategories = [
         description: 'REST APIs testen und debuggen',
         icon: '🧪',
         route: '/api-tester',
+      },
+      {
+        id: 'ip-calculator',
+        name: 'IP/Subnet Calculator',
+        description: 'IP-Adressen und Subnetze berechnen',
+        icon: '🔌',
+        component: IpCalculator,
+      },
+      {
+        id: 'ssl-checker',
+        name: 'SSL Checker',
+        description: 'SSL-Zertifikate prüfen',
+        icon: '🛡️',
+        component: SslChecker,
+      },
+      {
+        id: 'dns-lookup',
+        name: 'DNS Lookup',
+        description: 'DNS Records abfragen',
+        icon: '🔎',
+        component: DnsLookup,
+      },
+      {
+        id: 'whois-lookup',
+        name: 'WHOIS Lookup',
+        description: 'Domain-Informationen abfragen',
+        icon: '📇',
+        component: WhoisLookup,
       },
     ],
   },
@@ -218,6 +313,7 @@ function closeTool() {
         <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <span>{{ category.icon }}</span>
           {{ category.name }}
+          <span class="text-sm font-normal text-gray-500">({{ category.tools.length }})</span>
         </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -237,6 +333,7 @@ function closeTool() {
                   {{ tool.description }}
                 </p>
               </div>
+              <span v-if="tool.route" class="text-xs text-gray-600">↗</span>
             </div>
           </button>
         </div>
@@ -255,7 +352,10 @@ function closeTool() {
         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
         @click.self="closeTool"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-5xl max-h-[90vh] flex flex-col">
+        <div
+          class="bg-dark-800 rounded-xl border border-dark-600 max-h-[90vh] flex flex-col"
+          :class="activeTool.fullWidth ? 'w-full max-w-6xl' : 'w-full max-w-4xl'"
+        >
           <!-- Modal Header -->
           <div class="flex items-center justify-between p-4 border-b border-dark-600">
             <h2 class="text-lg font-semibold text-white flex items-center gap-2">

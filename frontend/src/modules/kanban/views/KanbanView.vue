@@ -548,10 +548,23 @@ async function deleteTag(tag) {
 }
 
 async function toggleCardTag(tagId) {
-  if (!editingCard.value) return
-
   const hasTag = cardForm.value.tags?.some(t => t.id === tagId)
+  const tag = selectedBoard.value.tags.find(t => t.id === tagId)
 
+  // For new cards - just update local state
+  if (!editingCard.value) {
+    if (hasTag) {
+      cardForm.value.tags = cardForm.value.tags.filter(t => t.id !== tagId)
+    } else {
+      if (tag) {
+        if (!cardForm.value.tags) cardForm.value.tags = []
+        cardForm.value.tags.push(tag)
+      }
+    }
+    return
+  }
+
+  // For existing cards - update via API
   try {
     if (hasTag) {
       await api.delete(
@@ -562,7 +575,6 @@ async function toggleCardTag(tagId) {
       await api.post(
         `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/tags/${tagId}`
       )
-      const tag = selectedBoard.value.tags.find(t => t.id === tagId)
       if (tag) {
         if (!cardForm.value.tags) cardForm.value.tags = []
         cardForm.value.tags.push(tag)
@@ -1381,7 +1393,7 @@ onMounted(async () => {
             </div>
 
             <!-- Tags Section -->
-            <div v-if="editingCard && selectedBoard?.tags?.length">
+            <div v-if="selectedBoard?.tags?.length">
               <label class="block text-sm font-medium text-gray-300 mb-2">
                 <TagIcon class="w-4 h-4 inline mr-1" />
                 Tags

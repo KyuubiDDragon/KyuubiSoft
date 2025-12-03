@@ -29,6 +29,7 @@ import {
   DocumentDuplicateIcon,
   BriefcaseIcon,
   CommandLineIcon,
+  CalendarIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -112,6 +113,7 @@ const allNavigationGroups = [
     children: [
       { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon },
       { name: 'Projekte', href: '/projects', icon: FolderIcon },
+      { name: 'Kalender', href: '/calendar', icon: CalendarIcon },
       { name: 'Zeiterfassung', href: '/time', icon: ClockIcon },
     ],
   },

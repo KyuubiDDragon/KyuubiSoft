@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
+import QuickNotes from '@/components/QuickNotes.vue'
 
 const uiStore = useUiStore()
 
@@ -30,6 +31,9 @@ const mainClass = computed(() => ({
         <slot />
       </main>
     </div>
+
+    <!-- Quick Notes Floating Widget -->
+    <QuickNotes />
 
     <!-- Loading overlay -->
     <Transition name="fade">

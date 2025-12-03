@@ -25,6 +25,11 @@ use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
 use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
+use App\Modules\QuickNotes\Controllers\QuickNoteController;
+use App\Modules\Notifications\Controllers\NotificationController;
+use App\Modules\Dashboard\Controllers\WidgetController;
+use App\Modules\Dashboard\Controllers\AnalyticsController;
+use App\Modules\Calendar\Controllers\CalendarController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -283,6 +288,42 @@ class Router
                 $protected->post('/youtube/info', [YouTubeController::class, 'getInfo']);
                 $protected->post('/youtube/download', [YouTubeController::class, 'download']);
                 $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup']);
+
+                // Quick Notes
+                $protected->get('/quick-notes', [QuickNoteController::class, 'index']);
+                $protected->post('/quick-notes', [QuickNoteController::class, 'create']);
+                $protected->put('/quick-notes/reorder', [QuickNoteController::class, 'reorder']);
+                $protected->put('/quick-notes/{id}', [QuickNoteController::class, 'update']);
+                $protected->delete('/quick-notes/{id}', [QuickNoteController::class, 'delete']);
+
+                // Notifications
+                $protected->get('/notifications', [NotificationController::class, 'index']);
+                $protected->get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+                $protected->post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+                $protected->delete('/notifications/clear', [NotificationController::class, 'clearAll']);
+                $protected->post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+                $protected->delete('/notifications/{id}', [NotificationController::class, 'delete']);
+                $protected->get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
+                $protected->put('/notifications/preferences', [NotificationController::class, 'updatePreferences']);
+
+                // Dashboard Widgets
+                $protected->get('/dashboard/widgets', [WidgetController::class, 'getUserWidgets']);
+                $protected->get('/dashboard/widgets/available', [WidgetController::class, 'getAvailableWidgets']);
+                $protected->post('/dashboard/widgets/layout', [WidgetController::class, 'saveLayout']);
+                $protected->post('/dashboard/widgets/reset', [WidgetController::class, 'resetToDefault']);
+                $protected->put('/dashboard/widgets/{id}', [WidgetController::class, 'updateWidget']);
+                $protected->delete('/dashboard/widgets/{id}', [WidgetController::class, 'deleteWidget']);
+
+                // Analytics
+                $protected->get('/analytics/productivity', [AnalyticsController::class, 'getProductivityStats']);
+                $protected->get('/analytics/widget-data', [AnalyticsController::class, 'getWidgetData']);
+
+                // Calendar
+                $protected->get('/calendar/events', [CalendarController::class, 'getEvents']);
+                $protected->get('/calendar/upcoming', [CalendarController::class, 'getUpcoming']);
+                $protected->post('/calendar/events', [CalendarController::class, 'createEvent']);
+                $protected->put('/calendar/events/{id}', [CalendarController::class, 'updateEvent']);
+                $protected->delete('/calendar/events/{id}', [CalendarController::class, 'deleteEvent']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

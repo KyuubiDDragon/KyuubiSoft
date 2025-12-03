@@ -18,44 +18,74 @@ class DashboardController
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $queryParams = $request->getQueryParams();
+        $projectId = $queryParams['project_id'] ?? null;
 
         $data = [
             'welcome_message' => 'Welcome to KyuubiSoft Dashboard',
-            'quick_stats' => $this->getQuickStats($userId),
-            'recent_lists' => $this->getRecentLists($userId),
-            'recent_documents' => $this->getRecentDocuments($userId),
+            'quick_stats' => $this->getQuickStats($userId, $projectId),
+            'recent_lists' => $this->getRecentLists($userId, $projectId),
+            'recent_documents' => $this->getRecentDocuments($userId, $projectId),
             'recent_activity' => $this->getRecentActivity($userId),
         ];
 
         return JsonResponse::success($data);
     }
 
-    private function getRecentLists(string $userId): array
+    private function getRecentLists(string $userId, ?string $projectId = null): array
     {
-        $lists = $this->db->fetchAllAssociative(
-            'SELECT l.id, l.title, l.type, l.color, l.updated_at,
-                    (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
-                    (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = 0) as open_count
-             FROM lists l
-             WHERE l.user_id = ? AND l.is_archived = 0
-             ORDER BY l.updated_at DESC
-             LIMIT 5',
-            [$userId]
-        );
+        if ($projectId) {
+            // Filter by project
+            $lists = $this->db->fetchAllAssociative(
+                'SELECT l.id, l.title, l.type, l.color, l.updated_at,
+                        (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
+                        (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = 0) as open_count
+                 FROM lists l
+                 INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = ?
+                 WHERE l.user_id = ? AND l.is_archived = 0 AND pl.project_id = ?
+                 ORDER BY l.updated_at DESC
+                 LIMIT 5',
+                ['list', $userId, $projectId]
+            );
+        } else {
+            $lists = $this->db->fetchAllAssociative(
+                'SELECT l.id, l.title, l.type, l.color, l.updated_at,
+                        (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) as item_count,
+                        (SELECT COUNT(*) FROM list_items WHERE list_id = l.id AND is_completed = 0) as open_count
+                 FROM lists l
+                 WHERE l.user_id = ? AND l.is_archived = 0
+                 ORDER BY l.updated_at DESC
+                 LIMIT 5',
+                [$userId]
+            );
+        }
 
         return $lists;
     }
 
-    private function getRecentDocuments(string $userId): array
+    private function getRecentDocuments(string $userId, ?string $projectId = null): array
     {
-        $documents = $this->db->fetchAllAssociative(
-            'SELECT id, title, format, updated_at
-             FROM documents
-             WHERE user_id = ? AND is_archived = 0
-             ORDER BY updated_at DESC
-             LIMIT 5',
-            [$userId]
-        );
+        if ($projectId) {
+            // Filter by project
+            $documents = $this->db->fetchAllAssociative(
+                'SELECT d.id, d.title, d.format, d.updated_at
+                 FROM documents d
+                 INNER JOIN project_links pl ON pl.linkable_id = d.id AND pl.linkable_type = ?
+                 WHERE d.user_id = ? AND d.is_archived = 0 AND pl.project_id = ?
+                 ORDER BY d.updated_at DESC
+                 LIMIT 5',
+                ['document', $userId, $projectId]
+            );
+        } else {
+            $documents = $this->db->fetchAllAssociative(
+                'SELECT id, title, format, updated_at
+                 FROM documents
+                 WHERE user_id = ? AND is_archived = 0
+                 ORDER BY updated_at DESC
+                 LIMIT 5',
+                [$userId]
+            );
+        }
 
         return $documents;
     }
@@ -73,24 +103,49 @@ class DashboardController
         return JsonResponse::success($stats);
     }
 
-    private function getQuickStats(string $userId): array
+    private function getQuickStats(string $userId, ?string $projectId = null): array
     {
-        $listCount = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM lists WHERE user_id = ? AND is_archived = FALSE',
-            [$userId]
-        );
+        if ($projectId) {
+            // Filter by project
+            $listCount = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM lists l
+                 INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = ?
+                 WHERE l.user_id = ? AND l.is_archived = FALSE AND pl.project_id = ?',
+                ['list', $userId, $projectId]
+            );
 
-        $openTasks = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM list_items li
-             JOIN lists l ON li.list_id = l.id
-             WHERE l.user_id = ? AND li.is_completed = FALSE',
-            [$userId]
-        );
+            $openTasks = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM list_items li
+                 JOIN lists l ON li.list_id = l.id
+                 INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = ?
+                 WHERE l.user_id = ? AND li.is_completed = FALSE AND pl.project_id = ?',
+                ['list', $userId, $projectId]
+            );
 
-        $documentCount = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
-            [$userId]
-        );
+            $documentCount = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM documents d
+                 INNER JOIN project_links pl ON pl.linkable_id = d.id AND pl.linkable_type = ?
+                 WHERE d.user_id = ? AND d.is_archived = FALSE AND pl.project_id = ?',
+                ['document', $userId, $projectId]
+            );
+        } else {
+            $listCount = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM lists WHERE user_id = ? AND is_archived = FALSE',
+                [$userId]
+            );
+
+            $openTasks = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM list_items li
+                 JOIN lists l ON li.list_id = l.id
+                 WHERE l.user_id = ? AND li.is_completed = FALSE',
+                [$userId]
+            );
+
+            $documentCount = (int) $this->db->fetchOne(
+                'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
+                [$userId]
+            );
+        }
 
         return [
             'total_lists' => $listCount,

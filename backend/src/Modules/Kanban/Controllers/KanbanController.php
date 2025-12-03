@@ -149,6 +149,7 @@ class KanbanController
             );
             foreach ($column['cards'] as &$card) {
                 $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+                $card['attachments'] = $card['attachments'] ? json_decode($card['attachments'], true) : [];
                 if ($card['assigned_to']) {
                     $card['assignee'] = [
                         'id' => $card['assigned_to'],
@@ -457,6 +458,168 @@ class KanbanController
         }
 
         return JsonResponse::success(['users' => $users]);
+    }
+
+    // Card Attachments
+    public function uploadAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        // Verify card exists and belongs to board
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $boardId]
+        );
+
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        $uploadedFiles = $request->getUploadedFiles();
+        if (empty($uploadedFiles['file'])) {
+            throw new ValidationException('No file uploaded');
+        }
+
+        $file = $uploadedFiles['file'];
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            throw new ValidationException('File upload failed');
+        }
+
+        // Validate file type (images only)
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $mimeType = $file->getClientMediaType();
+        if (!in_array($mimeType, $allowedTypes)) {
+            throw new ValidationException('Only images are allowed (JPEG, PNG, GIF, WebP)');
+        }
+
+        // Max 5MB
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            throw new ValidationException('File too large (max 5MB)');
+        }
+
+        // Generate unique filename
+        $extension = pathinfo($file->getClientFilename(), PATHINFO_EXTENSION);
+        $filename = Uuid::uuid4()->toString() . '.' . $extension;
+        $uploadPath = __DIR__ . '/../../../../storage/uploads/kanban/';
+
+        // Ensure directory exists
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        $file->moveTo($uploadPath . $filename);
+
+        // Create attachment record
+        $attachment = [
+            'id' => Uuid::uuid4()->toString(),
+            'filename' => $filename,
+            'original_name' => $file->getClientFilename(),
+            'mime_type' => $mimeType,
+            'size' => $file->getSize(),
+            'uploaded_at' => date('Y-m-d H:i:s'),
+        ];
+
+        // Get existing attachments and add new one
+        $attachments = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+        $attachments[] = $attachment;
+
+        $this->db->update('kanban_cards', [
+            'attachments' => json_encode($attachments),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $cardId]);
+
+        // Update board timestamp
+        $this->db->update('kanban_boards', ['updated_at' => date('Y-m-d H:i:s')], ['id' => $boardId]);
+
+        return JsonResponse::created($attachment, 'Attachment uploaded successfully');
+    }
+
+    public function deleteAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+        $attachmentId = $route->getArgument('attachmentId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        // Verify card exists and belongs to board
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $boardId]
+        );
+
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        $attachments = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+        $attachmentIndex = null;
+        $attachmentToDelete = null;
+
+        foreach ($attachments as $index => $attachment) {
+            if ($attachment['id'] === $attachmentId) {
+                $attachmentIndex = $index;
+                $attachmentToDelete = $attachment;
+                break;
+            }
+        }
+
+        if ($attachmentIndex === null) {
+            throw new NotFoundException('Attachment not found');
+        }
+
+        // Delete file
+        $filePath = __DIR__ . '/../../../../storage/uploads/kanban/' . $attachmentToDelete['filename'];
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        // Remove from array and save
+        array_splice($attachments, $attachmentIndex, 1);
+
+        $this->db->update('kanban_cards', [
+            'attachments' => empty($attachments) ? null : json_encode($attachments),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $cardId]);
+
+        return JsonResponse::success(null, 'Attachment deleted successfully');
+    }
+
+    public function serveAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $filename = $route->getArgument('filename');
+
+        // Sanitize filename
+        $filename = basename($filename);
+        $filePath = __DIR__ . '/../../../../storage/uploads/kanban/' . $filename;
+
+        if (!file_exists($filePath)) {
+            throw new NotFoundException('File not found');
+        }
+
+        // Get mime type
+        $mimeType = mime_content_type($filePath);
+
+        $response = $response
+            ->withHeader('Content-Type', $mimeType)
+            ->withHeader('Content-Length', (string) filesize($filePath))
+            ->withHeader('Cache-Control', 'public, max-age=31536000');
+
+        $response->getBody()->write(file_get_contents($filePath));
+
+        return $response;
     }
 
     private function getBoardForUser(string $boardId, string $userId, bool $requireEditAccess = false): array

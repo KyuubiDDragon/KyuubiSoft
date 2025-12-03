@@ -147,6 +147,10 @@ class Router
                 $protected->put('/kanban/boards/{id}/cards/{cardId}', [KanbanController::class, 'updateCard']);
                 $protected->delete('/kanban/boards/{id}/cards/{cardId}', [KanbanController::class, 'deleteCard']);
                 $protected->put('/kanban/boards/{id}/cards/{cardId}/move', [KanbanController::class, 'moveCard']);
+                // Kanban Card Attachments
+                $protected->post('/kanban/boards/{id}/cards/{cardId}/attachments', [KanbanController::class, 'uploadAttachment']);
+                $protected->delete('/kanban/boards/{id}/cards/{cardId}/attachments/{attachmentId}', [KanbanController::class, 'deleteAttachment']);
+                $protected->get('/kanban/attachments/{filename}', [KanbanController::class, 'serveAttachment']);
 
                 // Webhooks
                 $protected->get('/webhooks', [WebhookController::class, 'index']);

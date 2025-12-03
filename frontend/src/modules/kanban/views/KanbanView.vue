@@ -15,6 +15,8 @@ import {
   TagIcon,
   FlagIcon,
   UserCircleIcon,
+  PhotoIcon,
+  PaperClipIcon,
 } from '@heroicons/vue/24/outline'
 import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid'
 
@@ -64,7 +66,12 @@ const cardForm = ref({
   labels: [],
   color: null,
   assigned_to: null,
+  attachments: [],
 })
+
+// Attachment upload state
+const isUploadingAttachment = ref(false)
+const attachmentPreview = ref(null)
 
 // Colors for boards
 const boardColors = [
@@ -262,6 +269,7 @@ async function deleteColumn(column) {
 function openCardModal(columnId, card = null) {
   targetColumnId.value = columnId
   editingCard.value = card
+  attachmentPreview.value = null
   if (card) {
     cardForm.value = {
       title: card.title,
@@ -271,6 +279,7 @@ function openCardModal(columnId, card = null) {
       labels: card.labels || [],
       color: card.color,
       assigned_to: card.assigned_to || null,
+      attachments: card.attachments || [],
     }
   } else {
     cardForm.value = {
@@ -281,6 +290,7 @@ function openCardModal(columnId, card = null) {
       labels: [],
       color: null,
       assigned_to: null,
+      attachments: [],
     }
   }
   showCardModal.value = true
@@ -366,6 +376,100 @@ function toggleLabel(color) {
   } else {
     cardForm.value.labels.push(color)
   }
+}
+
+// Upload attachment
+async function uploadAttachment(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  // Only allow when editing existing card
+  if (!editingCard.value) {
+    uiStore.showError('Bitte erst die Karte speichern, dann Bilder hinzufügen')
+    event.target.value = ''
+    return
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    uiStore.showError('Nur Bilder erlaubt (JPEG, PNG, GIF, WebP)')
+    event.target.value = ''
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    uiStore.showError('Datei zu groß (max 5MB)')
+    event.target.value = ''
+    return
+  }
+
+  isUploadingAttachment.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/attachments`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+
+    // Add to local attachments
+    cardForm.value.attachments.push(response.data.data)
+    uiStore.showSuccess('Bild hochgeladen')
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hochladen')
+  } finally {
+    isUploadingAttachment.value = false
+    event.target.value = ''
+  }
+}
+
+// Delete attachment
+async function deleteAttachment(attachmentId) {
+  if (!editingCard.value) return
+
+  if (!confirm('Bild wirklich löschen?')) return
+
+  try {
+    await api.delete(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/attachments/${attachmentId}`
+    )
+
+    // Remove from local attachments
+    cardForm.value.attachments = cardForm.value.attachments.filter(a => a.id !== attachmentId)
+    uiStore.showSuccess('Bild gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+// Get attachment URL
+function getAttachmentUrl(filename) {
+  return `/api/v1/kanban/attachments/${filename}`
+}
+
+// Open attachment preview
+function openAttachmentPreview(attachment) {
+  attachmentPreview.value = attachment
+}
+
+// Close attachment preview
+function closeAttachmentPreview() {
+  attachmentPreview.value = null
+}
+
+// Format file size
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
 // Get priority info
@@ -594,6 +698,27 @@ onMounted(async () => {
                       {{ card.description }}
                     </p>
 
+                    <!-- Attachment thumbnails -->
+                    <div v-if="card.attachments?.length" class="flex flex-wrap gap-1 mb-2">
+                      <div
+                        v-for="attachment in card.attachments.slice(0, 3)"
+                        :key="attachment.id"
+                        class="w-12 h-12 rounded overflow-hidden bg-dark-600"
+                      >
+                        <img
+                          :src="getAttachmentUrl(attachment.filename)"
+                          :alt="attachment.original_name"
+                          class="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div
+                        v-if="card.attachments.length > 3"
+                        class="w-12 h-12 rounded bg-dark-600 flex items-center justify-center text-xs text-gray-400"
+                      >
+                        +{{ card.attachments.length - 3 }}
+                      </div>
+                    </div>
+
                     <!-- Footer -->
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
@@ -621,6 +746,14 @@ onMounted(async () => {
                           <div class="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center text-[10px] text-white font-medium">
                             {{ card.assignee.username?.[0]?.toUpperCase() || '?' }}
                           </div>
+                        </span>
+                        <!-- Attachment count -->
+                        <span
+                          v-if="card.attachments?.length && !card.attachments.slice(0, 3).length"
+                          class="text-xs flex items-center gap-1 text-gray-500"
+                        >
+                          <PaperClipIcon class="w-3 h-3" />
+                          {{ card.attachments.length }}
                         </span>
                       </div>
 
@@ -937,6 +1070,78 @@ onMounted(async () => {
                 ></button>
               </div>
             </div>
+
+            <!-- Attachments -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <PhotoIcon class="w-4 h-4 inline mr-1" />
+                Bilder / Screenshots
+              </label>
+
+              <!-- Existing attachments -->
+              <div v-if="cardForm.attachments.length" class="grid grid-cols-3 gap-2 mb-3">
+                <div
+                  v-for="attachment in cardForm.attachments"
+                  :key="attachment.id"
+                  class="relative group aspect-square bg-dark-700 rounded-lg overflow-hidden"
+                >
+                  <img
+                    :src="getAttachmentUrl(attachment.filename)"
+                    :alt="attachment.original_name"
+                    class="w-full h-full object-cover cursor-pointer"
+                    @click="openAttachmentPreview(attachment)"
+                  />
+                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      @click="openAttachmentPreview(attachment)"
+                      class="p-1.5 bg-dark-600 rounded-lg text-white hover:bg-dark-500"
+                      title="Vergrößern"
+                    >
+                      <PhotoIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="deleteAttachment(attachment.id)"
+                      class="p-1.5 bg-red-600 rounded-lg text-white hover:bg-red-500"
+                      title="Löschen"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-[10px] text-gray-300 px-1 py-0.5 truncate">
+                    {{ attachment.original_name }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload area -->
+              <div
+                v-if="editingCard"
+                class="border-2 border-dashed border-dark-600 rounded-lg p-4 text-center hover:border-primary-500 transition-colors cursor-pointer relative"
+                @click="$refs.attachmentInput.click()"
+              >
+                <input
+                  ref="attachmentInput"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="uploadAttachment"
+                />
+                <div v-if="!isUploadingAttachment" class="text-gray-400">
+                  <PhotoIcon class="w-8 h-8 mx-auto mb-2" />
+                  <p class="text-sm">Bild hochladen</p>
+                  <p class="text-xs text-gray-500 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                </div>
+                <div v-else class="text-primary-400">
+                  <div class="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p class="text-sm">Wird hochgeladen...</p>
+                </div>
+              </div>
+
+              <!-- Info for new cards -->
+              <p v-else class="text-xs text-gray-500 italic">
+                Bitte erst die Karte speichern, um Bilder hinzuzufügen.
+              </p>
+            </div>
           </div>
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
@@ -952,6 +1157,33 @@ onMounted(async () => {
             >
               {{ editingCard ? 'Speichern' : 'Erstellen' }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Attachment Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="attachmentPreview"
+        class="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
+        @click.self="closeAttachmentPreview"
+      >
+        <div class="relative max-w-5xl max-h-[90vh] w-full">
+          <button
+            @click="closeAttachmentPreview"
+            class="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+          >
+            <XMarkIcon class="w-6 h-6" />
+          </button>
+          <img
+            :src="getAttachmentUrl(attachmentPreview.filename)"
+            :alt="attachmentPreview.original_name"
+            class="max-w-full max-h-[85vh] mx-auto rounded-lg"
+          />
+          <div class="text-center mt-3 text-gray-400">
+            <p>{{ attachmentPreview.original_name }}</p>
+            <p class="text-xs text-gray-500">{{ formatFileSize(attachmentPreview.size) }}</p>
           </div>
         </div>
       </div>

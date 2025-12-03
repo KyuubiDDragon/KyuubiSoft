@@ -15,6 +15,13 @@ import {
   TagIcon,
   FlagIcon,
   UserCircleIcon,
+  PhotoIcon,
+  PaperClipIcon,
+  LinkIcon,
+  DocumentIcon,
+  ListBulletIcon,
+  CodeBracketIcon,
+  BookmarkIcon,
 } from '@heroicons/vue/24/outline'
 import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid'
 
@@ -64,7 +71,24 @@ const cardForm = ref({
   labels: [],
   color: null,
   assigned_to: null,
+  attachments: [],
 })
+
+// Attachment upload state
+const isUploadingAttachment = ref(false)
+const attachmentPreview = ref(null)
+
+// Tags state
+const showTagModal = ref(false)
+const tagForm = ref({ name: '', color: '#6B7280' })
+const editingTag = ref(null)
+
+// Links state
+const showLinkModal = ref(false)
+const linkType = ref('document')
+const linkSearchQuery = ref('')
+const linkableItems = ref([])
+const isLoadingLinkables = ref(false)
 
 // Colors for boards
 const boardColors = [
@@ -262,6 +286,7 @@ async function deleteColumn(column) {
 function openCardModal(columnId, card = null) {
   targetColumnId.value = columnId
   editingCard.value = card
+  attachmentPreview.value = null
   if (card) {
     cardForm.value = {
       title: card.title,
@@ -271,6 +296,9 @@ function openCardModal(columnId, card = null) {
       labels: card.labels || [],
       color: card.color,
       assigned_to: card.assigned_to || null,
+      attachments: card.attachments || [],
+      tags: card.tags || [],
+      links: card.links || [],
     }
   } else {
     cardForm.value = {
@@ -281,6 +309,9 @@ function openCardModal(columnId, card = null) {
       labels: [],
       color: null,
       assigned_to: null,
+      attachments: [],
+      tags: [],
+      links: [],
     }
   }
   showCardModal.value = true
@@ -368,6 +399,287 @@ function toggleLabel(color) {
   }
 }
 
+// Upload attachment
+async function uploadAttachment(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  // Only allow when editing existing card
+  if (!editingCard.value) {
+    uiStore.showError('Bitte erst die Karte speichern, dann Bilder hinzufügen')
+    event.target.value = ''
+    return
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    uiStore.showError('Nur Bilder erlaubt (JPEG, PNG, GIF, WebP)')
+    event.target.value = ''
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    uiStore.showError('Datei zu groß (max 5MB)')
+    event.target.value = ''
+    return
+  }
+
+  isUploadingAttachment.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/attachments`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+
+    // Add to local attachments
+    cardForm.value.attachments.push(response.data.data)
+    uiStore.showSuccess('Bild hochgeladen')
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hochladen')
+  } finally {
+    isUploadingAttachment.value = false
+    event.target.value = ''
+  }
+}
+
+// Delete attachment
+async function deleteAttachment(attachmentId) {
+  if (!editingCard.value) return
+
+  if (!confirm('Bild wirklich löschen?')) return
+
+  try {
+    await api.delete(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/attachments/${attachmentId}`
+    )
+
+    // Remove from local attachments
+    cardForm.value.attachments = cardForm.value.attachments.filter(a => a.id !== attachmentId)
+    uiStore.showSuccess('Bild gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+// Get attachment URL
+function getAttachmentUrl(filename) {
+  return `/api/v1/kanban/attachments/${filename}`
+}
+
+// Open attachment preview
+function openAttachmentPreview(attachment) {
+  attachmentPreview.value = attachment
+}
+
+// Close attachment preview
+function closeAttachmentPreview() {
+  attachmentPreview.value = null
+}
+
+// Format file size
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// ==================
+// Tag Functions
+// ==================
+
+function openTagModal(tag = null) {
+  editingTag.value = tag
+  if (tag) {
+    tagForm.value = { name: tag.name, color: tag.color }
+  } else {
+    tagForm.value = { name: '', color: '#6B7280' }
+  }
+  showTagModal.value = true
+}
+
+async function saveTag() {
+  if (!tagForm.value.name.trim()) {
+    uiStore.showError('Tag-Name ist erforderlich')
+    return
+  }
+
+  try {
+    if (editingTag.value) {
+      await api.put(
+        `/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${editingTag.value.id}`,
+        tagForm.value
+      )
+      uiStore.showSuccess('Tag aktualisiert')
+    } else {
+      const response = await api.post(
+        `/api/v1/kanban/boards/${selectedBoard.value.id}/tags`,
+        tagForm.value
+      )
+      selectedBoard.value.tags.push(response.data.data)
+      uiStore.showSuccess('Tag erstellt')
+    }
+    await fetchBoard(selectedBoard.value.id)
+    showTagModal.value = false
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+  }
+}
+
+async function deleteTag(tag) {
+  if (!confirm(`Tag "${tag.name}" wirklich löschen? Er wird von allen Karten entfernt.`)) return
+
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${tag.id}`)
+    uiStore.showSuccess('Tag gelöscht')
+    await fetchBoard(selectedBoard.value.id)
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function toggleCardTag(tagId) {
+  if (!editingCard.value) return
+
+  const hasTag = cardForm.value.tags?.some(t => t.id === tagId)
+
+  try {
+    if (hasTag) {
+      await api.delete(
+        `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/tags/${tagId}`
+      )
+      cardForm.value.tags = cardForm.value.tags.filter(t => t.id !== tagId)
+    } else {
+      await api.post(
+        `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/tags/${tagId}`
+      )
+      const tag = selectedBoard.value.tags.find(t => t.id === tagId)
+      if (tag) {
+        if (!cardForm.value.tags) cardForm.value.tags = []
+        cardForm.value.tags.push(tag)
+      }
+    }
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
+// ==================
+// Link Functions
+// ==================
+
+const linkTypes = [
+  { id: 'document', name: 'Dokument', icon: DocumentIcon },
+  { id: 'list', name: 'Liste', icon: ListBulletIcon },
+  { id: 'snippet', name: 'Snippet', icon: CodeBracketIcon },
+  { id: 'bookmark', name: 'Bookmark', icon: BookmarkIcon },
+]
+
+function openLinkModal() {
+  if (!editingCard.value) {
+    uiStore.showError('Bitte erst die Karte speichern')
+    return
+  }
+  showLinkModal.value = true
+  linkType.value = 'document'
+  linkSearchQuery.value = ''
+  fetchLinkableItems()
+}
+
+async function fetchLinkableItems() {
+  isLoadingLinkables.value = true
+  try {
+    const response = await api.get(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/linkable/${linkType.value}`,
+      { params: { search: linkSearchQuery.value } }
+    )
+    linkableItems.value = response.data.data.items || []
+  } catch (error) {
+    linkableItems.value = []
+  } finally {
+    isLoadingLinkables.value = false
+  }
+}
+
+async function addLink(item) {
+  if (!editingCard.value) return
+
+  // Check if already linked
+  if (cardForm.value.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType.value)) {
+    uiStore.showError('Bereits verlinkt')
+    return
+  }
+
+  try {
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/links`,
+      { linkable_type: linkType.value, linkable_id: item.id }
+    )
+    if (!cardForm.value.links) cardForm.value.links = []
+    cardForm.value.links.push(response.data.data)
+    uiStore.showSuccess('Verlinkt')
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Verlinken')
+  }
+}
+
+async function removeLink(linkId) {
+  if (!editingCard.value) return
+
+  try {
+    await api.delete(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/links/${linkId}`
+    )
+    cardForm.value.links = cardForm.value.links.filter(l => l.id !== linkId)
+    uiStore.showSuccess('Link entfernt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+function getLinkIcon(type) {
+  const typeConfig = linkTypes.find(t => t.id === type)
+  return typeConfig?.icon || LinkIcon
+}
+
+function getLinkTypeName(type) {
+  const typeConfig = linkTypes.find(t => t.id === type)
+  return typeConfig?.name || type
+}
+
+function navigateToLink(link) {
+  const routes = {
+    document: `/documents?open=${link.linkable_id}`,
+    list: `/lists?open=${link.linkable_id}`,
+    snippet: `/snippets?open=${link.linkable_id}`,
+    bookmark: link.linkable?.url || '#',
+  }
+  const route = routes[link.linkable_type]
+  if (link.linkable_type === 'bookmark' && link.linkable?.url) {
+    window.open(link.linkable.url, '_blank')
+  } else if (route) {
+    window.location.href = route
+  }
+}
+
+// Debounced search for linkables
+let linkSearchTimeout = null
+function onLinkSearchInput() {
+  clearTimeout(linkSearchTimeout)
+  linkSearchTimeout = setTimeout(() => {
+    fetchLinkableItems()
+  }, 300)
+}
+
 // Get priority info
 function getPriorityInfo(priority) {
   return priorities.find(p => p.value === priority) || priorities[1]
@@ -427,6 +739,15 @@ onMounted(async () => {
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button
+          v-if="selectedBoard"
+          @click="openTagModal()"
+          class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          title="Tags verwalten"
+        >
+          <TagIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">Tags</span>
+        </button>
         <button
           v-if="selectedBoard"
           @click="openColumnModal()"
@@ -586,6 +907,18 @@ onMounted(async () => {
                       ></span>
                     </div>
 
+                    <!-- Tags -->
+                    <div v-if="card.tags?.length" class="flex flex-wrap gap-1 mb-2">
+                      <span
+                        v-for="tag in card.tags"
+                        :key="tag.id"
+                        class="px-1.5 py-0.5 text-[10px] rounded font-medium"
+                        :style="{ backgroundColor: tag.color + '30', color: tag.color }"
+                      >
+                        {{ tag.name }}
+                      </span>
+                    </div>
+
                     <!-- Title -->
                     <p class="text-white text-sm font-medium mb-2">{{ card.title }}</p>
 
@@ -593,6 +926,27 @@ onMounted(async () => {
                     <p v-if="card.description" class="text-gray-400 text-xs line-clamp-2 mb-2">
                       {{ card.description }}
                     </p>
+
+                    <!-- Attachment thumbnails -->
+                    <div v-if="card.attachments?.length" class="flex flex-wrap gap-1 mb-2">
+                      <div
+                        v-for="attachment in card.attachments.slice(0, 3)"
+                        :key="attachment.id"
+                        class="w-12 h-12 rounded overflow-hidden bg-dark-600"
+                      >
+                        <img
+                          :src="getAttachmentUrl(attachment.filename)"
+                          :alt="attachment.original_name"
+                          class="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div
+                        v-if="card.attachments.length > 3"
+                        class="w-12 h-12 rounded bg-dark-600 flex items-center justify-center text-xs text-gray-400"
+                      >
+                        +{{ card.attachments.length - 3 }}
+                      </div>
+                    </div>
 
                     <!-- Footer -->
                     <div class="flex items-center justify-between">
@@ -621,6 +975,22 @@ onMounted(async () => {
                           <div class="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center text-[10px] text-white font-medium">
                             {{ card.assignee.username?.[0]?.toUpperCase() || '?' }}
                           </div>
+                        </span>
+                        <!-- Attachment count -->
+                        <span
+                          v-if="card.attachments?.length && !card.attachments.slice(0, 3).length"
+                          class="text-xs flex items-center gap-1 text-gray-500"
+                        >
+                          <PaperClipIcon class="w-3 h-3" />
+                          {{ card.attachments.length }}
+                        </span>
+                        <!-- Link count -->
+                        <span
+                          v-if="card.links?.length"
+                          class="text-xs flex items-center gap-1 text-gray-500"
+                        >
+                          <LinkIcon class="w-3 h-3" />
+                          {{ card.links.length }}
                         </span>
                       </div>
 
@@ -937,6 +1307,144 @@ onMounted(async () => {
                 ></button>
               </div>
             </div>
+
+            <!-- Attachments -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <PhotoIcon class="w-4 h-4 inline mr-1" />
+                Bilder / Screenshots
+              </label>
+
+              <!-- Existing attachments -->
+              <div v-if="cardForm.attachments.length" class="grid grid-cols-3 gap-2 mb-3">
+                <div
+                  v-for="attachment in cardForm.attachments"
+                  :key="attachment.id"
+                  class="relative group aspect-square bg-dark-700 rounded-lg overflow-hidden"
+                >
+                  <img
+                    :src="getAttachmentUrl(attachment.filename)"
+                    :alt="attachment.original_name"
+                    class="w-full h-full object-cover cursor-pointer"
+                    @click="openAttachmentPreview(attachment)"
+                  />
+                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      @click="openAttachmentPreview(attachment)"
+                      class="p-1.5 bg-dark-600 rounded-lg text-white hover:bg-dark-500"
+                      title="Vergrößern"
+                    >
+                      <PhotoIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="deleteAttachment(attachment.id)"
+                      class="p-1.5 bg-red-600 rounded-lg text-white hover:bg-red-500"
+                      title="Löschen"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-[10px] text-gray-300 px-1 py-0.5 truncate">
+                    {{ attachment.original_name }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload area -->
+              <div
+                v-if="editingCard"
+                class="border-2 border-dashed border-dark-600 rounded-lg p-4 text-center hover:border-primary-500 transition-colors cursor-pointer relative"
+                @click="$refs.attachmentInput.click()"
+              >
+                <input
+                  ref="attachmentInput"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="uploadAttachment"
+                />
+                <div v-if="!isUploadingAttachment" class="text-gray-400">
+                  <PhotoIcon class="w-8 h-8 mx-auto mb-2" />
+                  <p class="text-sm">Bild hochladen</p>
+                  <p class="text-xs text-gray-500 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                </div>
+                <div v-else class="text-primary-400">
+                  <div class="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p class="text-sm">Wird hochgeladen...</p>
+                </div>
+              </div>
+
+              <!-- Info for new cards -->
+              <p v-else class="text-xs text-gray-500 italic">
+                Bitte erst die Karte speichern, um Bilder hinzuzufügen.
+              </p>
+            </div>
+
+            <!-- Tags Section -->
+            <div v-if="editingCard && selectedBoard?.tags?.length">
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <TagIcon class="w-4 h-4 inline mr-1" />
+                Tags
+              </label>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="tag in selectedBoard.tags"
+                  :key="tag.id"
+                  @click="toggleCardTag(tag.id)"
+                  class="px-2 py-1 text-xs rounded-lg transition-all"
+                  :class="cardForm.tags?.some(t => t.id === tag.id)
+                    ? 'ring-2 ring-white'
+                    : 'opacity-60 hover:opacity-100'"
+                  :style="{ backgroundColor: tag.color + '40', color: tag.color }"
+                >
+                  {{ tag.name }}
+                </button>
+              </div>
+              <p v-if="!selectedBoard.tags?.length" class="text-xs text-gray-500 mt-1">
+                Keine Tags vorhanden. <button @click="openTagModal()" class="text-primary-400 hover:underline">Tag erstellen</button>
+              </p>
+            </div>
+
+            <!-- Links Section -->
+            <div v-if="editingCard">
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <LinkIcon class="w-4 h-4 inline mr-1" />
+                Verknüpfte Elemente
+              </label>
+
+              <!-- Existing links -->
+              <div v-if="cardForm.links?.length" class="space-y-2 mb-3">
+                <div
+                  v-for="link in cardForm.links"
+                  :key="link.id"
+                  class="flex items-center justify-between p-2 bg-dark-700 rounded-lg group"
+                >
+                  <div
+                    class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary-400"
+                    @click="navigateToLink(link)"
+                  >
+                    <component :is="getLinkIcon(link.linkable_type)" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span class="truncate text-sm">{{ link.linkable?.title || link.linkable?.url || 'Unbekannt' }}</span>
+                    <span class="text-xs text-gray-500">({{ getLinkTypeName(link.linkable_type) }})</span>
+                  </div>
+                  <button
+                    @click="removeLink(link.id)"
+                    class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <XMarkIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add link button -->
+              <button
+                @click="openLinkModal"
+                class="w-full p-2 border-2 border-dashed border-dark-600 rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                <LinkIcon class="w-4 h-4" />
+                Element verknüpfen
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
@@ -952,6 +1460,199 @@ onMounted(async () => {
             >
               {{ editingCard ? 'Speichern' : 'Erstellen' }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Attachment Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="attachmentPreview"
+        class="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
+        @click.self="closeAttachmentPreview"
+      >
+        <div class="relative max-w-5xl max-h-[90vh] w-full">
+          <button
+            @click="closeAttachmentPreview"
+            class="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+          >
+            <XMarkIcon class="w-6 h-6" />
+          </button>
+          <img
+            :src="getAttachmentUrl(attachmentPreview.filename)"
+            :alt="attachmentPreview.original_name"
+            class="max-w-full max-h-[85vh] mx-auto rounded-lg"
+          />
+          <div class="text-center mt-3 text-gray-400">
+            <p>{{ attachmentPreview.original_name }}</p>
+            <p class="text-xs text-gray-500">{{ formatFileSize(attachmentPreview.size) }}</p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Tag Management Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showTagModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        @click.self="showTagModal = false"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">
+              {{ editingTag ? 'Tag bearbeiten' : 'Tags verwalten' }}
+            </h2>
+            <button @click="showTagModal = false" class="p-1 text-gray-400 hover:text-white rounded">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <!-- Create/Edit Tag Form -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Tag-Name</label>
+                <input
+                  v-model="tagForm.name"
+                  type="text"
+                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  placeholder="z.B. Frontend, Backend, Bug..."
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Farbe</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="color in boardColors"
+                    :key="color"
+                    @click="tagForm.color = color"
+                    class="w-8 h-8 rounded-lg transition-transform hover:scale-110"
+                    :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': tagForm.color === color }"
+                    :style="{ backgroundColor: color }"
+                  ></button>
+                </div>
+              </div>
+              <button
+                @click="saveTag"
+                class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              >
+                {{ editingTag ? 'Speichern' : 'Tag erstellen' }}
+              </button>
+            </div>
+
+            <!-- Existing Tags -->
+            <div v-if="selectedBoard?.tags?.length && !editingTag">
+              <h3 class="text-sm font-medium text-gray-400 mb-2">Bestehende Tags</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="tag in selectedBoard.tags"
+                  :key="tag.id"
+                  class="flex items-center justify-between p-2 bg-dark-700 rounded-lg"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded" :style="{ backgroundColor: tag.color }"></div>
+                    <span class="text-white">{{ tag.name }}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button
+                      @click="openTagModal(tag)"
+                      class="p-1 text-gray-400 hover:text-white rounded"
+                    >
+                      <PencilIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="deleteTag(tag)"
+                      class="p-1 text-gray-400 hover:text-red-400 rounded"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="!selectedBoard?.tags?.length && !editingTag" class="text-center py-4 text-gray-500">
+              Keine Tags vorhanden
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Link Selection Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showLinkModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] flex items-center justify-center p-4"
+        @click.self="showLinkModal = false"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">Element verknüpfen</h2>
+            <button @click="showLinkModal = false" class="p-1 text-gray-400 hover:text-white rounded">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4 flex-1 overflow-hidden flex flex-col">
+            <!-- Type Tabs -->
+            <div class="flex gap-2">
+              <button
+                v-for="lt in linkTypes"
+                :key="lt.id"
+                @click="linkType = lt.id; fetchLinkableItems()"
+                class="px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5"
+                :class="linkType === lt.id ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+              >
+                <component :is="lt.icon" class="w-4 h-4" />
+                {{ lt.name }}
+              </button>
+            </div>
+
+            <!-- Search -->
+            <input
+              v-model="linkSearchQuery"
+              type="text"
+              @input="onLinkSearchInput"
+              class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              placeholder="Suchen..."
+            />
+
+            <!-- Results -->
+            <div class="flex-1 overflow-y-auto space-y-2">
+              <div v-if="isLoadingLinkables" class="text-center py-8 text-gray-400">
+                <div class="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+
+              <div v-else-if="linkableItems.length === 0" class="text-center py-8 text-gray-500">
+                Keine {{ getLinkTypeName(linkType) }}e gefunden
+              </div>
+
+              <button
+                v-else
+                v-for="item in linkableItems"
+                :key="item.id"
+                @click="addLink(item)"
+                class="w-full flex items-center gap-3 p-3 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors text-left"
+                :disabled="cardForm.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType)"
+                :class="{ 'opacity-50 cursor-not-allowed': cardForm.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType) }"
+              >
+                <component :is="getLinkIcon(linkType)" class="w-5 h-5 text-gray-400 flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-white truncate">{{ item.title || item.url }}</p>
+                  <p v-if="item.language" class="text-xs text-gray-500">{{ item.language }}</p>
+                  <p v-if="item.url" class="text-xs text-gray-500 truncate">{{ item.url }}</p>
+                </div>
+                <span
+                  v-if="cardForm.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType)"
+                  class="text-xs text-green-400"
+                >
+                  Verknüpft
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

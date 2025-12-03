@@ -143,6 +143,10 @@ async function verify2FA() {
     await api.post('/api/v1/auth/2fa/verify', {
       code: verificationCode.value
     })
+
+    // Refresh user data to get updated two_factor_enabled status
+    await authStore.fetchUser()
+
     twoFactorEnabled.value = true
     twoFactorSetup.value = null
     qrCodeDataUrl.value = ''

@@ -338,6 +338,9 @@ class AuthService
 
     private function sanitizeUser(array $user): array
     {
+        // Add two_factor_enabled flag before removing secret
+        $user['two_factor_enabled'] = !empty($user['two_factor_secret']);
+
         unset(
             $user['password_hash'],
             $user['two_factor_secret'],

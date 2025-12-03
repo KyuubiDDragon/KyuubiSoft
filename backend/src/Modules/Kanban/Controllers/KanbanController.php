@@ -317,14 +317,21 @@ class KanbanController
             throw new ValidationException('Columns array is required');
         }
 
+        // Update each column's position using raw SQL for reliability
         foreach ($data['columns'] as $position => $columnId) {
-            $this->db->update('kanban_columns', ['position' => $position], [
-                'id' => $columnId,
-                'board_id' => $boardId,
-            ]);
+            $this->db->executeStatement(
+                'UPDATE kanban_columns SET position = ?, updated_at = NOW() WHERE id = ? AND board_id = ?',
+                [(int) $position, $columnId, $boardId]
+            );
         }
 
-        return JsonResponse::success(null, 'Columns reordered successfully');
+        // Return the updated order for verification
+        $updatedColumns = $this->db->fetchAllAssociative(
+            'SELECT id, title, position FROM kanban_columns WHERE board_id = ? ORDER BY position',
+            [$boardId]
+        );
+
+        return JsonResponse::success(['columns' => $updatedColumns], 'Columns reordered successfully');
     }
 
     // Card methods

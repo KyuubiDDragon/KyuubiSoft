@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
 import {
   ListBulletIcon,
@@ -10,6 +11,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
 
 const stats = ref({
   total_lists: 0,
@@ -21,9 +23,13 @@ const recentLists = ref([])
 const recentDocuments = ref([])
 const isLoading = ref(true)
 
-onMounted(async () => {
+async function fetchDashboard() {
+  isLoading.value = true
   try {
-    const response = await api.get('/api/v1/dashboard')
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
+    const response = await api.get('/api/v1/dashboard', { params })
     if (response.data.data?.quick_stats) {
       stats.value = response.data.data.quick_stats
     }
@@ -38,6 +44,15 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// Watch for project changes
+watch(() => projectStore.selectedProjectId, () => {
+  fetchDashboard()
+})
+
+onMounted(() => {
+  fetchDashboard()
 })
 
 function formatDate(dateString) {

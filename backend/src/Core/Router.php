@@ -163,6 +163,20 @@ class Router
                 $protected->post('/kanban/boards/{id}/cards/{cardId}/links', [KanbanController::class, 'addCardLink']);
                 $protected->delete('/kanban/boards/{id}/cards/{cardId}/links/{linkId}', [KanbanController::class, 'removeCardLink']);
                 $protected->get('/kanban/boards/{id}/linkable/{type}', [KanbanController::class, 'getLinkableItems']);
+                // Kanban Checklists
+                $protected->get('/kanban/boards/{id}/cards/{cardId}/checklists', [KanbanController::class, 'getChecklists']);
+                $protected->post('/kanban/boards/{id}/cards/{cardId}/checklists', [KanbanController::class, 'createChecklist']);
+                $protected->put('/kanban/boards/{id}/checklists/{checklistId}', [KanbanController::class, 'updateChecklist']);
+                $protected->delete('/kanban/boards/{id}/checklists/{checklistId}', [KanbanController::class, 'deleteChecklist']);
+                $protected->post('/kanban/boards/{id}/checklists/{checklistId}/items', [KanbanController::class, 'addChecklistItem']);
+                $protected->put('/kanban/boards/{id}/checklist-items/{itemId}', [KanbanController::class, 'updateChecklistItem']);
+                $protected->post('/kanban/boards/{id}/checklist-items/{itemId}/toggle', [KanbanController::class, 'toggleChecklistItem']);
+                $protected->delete('/kanban/boards/{id}/checklist-items/{itemId}', [KanbanController::class, 'deleteChecklistItem']);
+                // Kanban Comments
+                $protected->get('/kanban/boards/{id}/cards/{cardId}/comments', [KanbanController::class, 'getComments']);
+                $protected->post('/kanban/boards/{id}/cards/{cardId}/comments', [KanbanController::class, 'addComment']);
+                $protected->put('/kanban/boards/{id}/comments/{commentId}', [KanbanController::class, 'updateComment']);
+                $protected->delete('/kanban/boards/{id}/comments/{commentId}', [KanbanController::class, 'deleteComment']);
 
                 // Webhooks
                 $protected->get('/webhooks', [WebhookController::class, 'index']);

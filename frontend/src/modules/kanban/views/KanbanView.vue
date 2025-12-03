@@ -22,12 +22,18 @@ import {
   ListBulletIcon,
   CodeBracketIcon,
   BookmarkIcon,
+  CheckCircleIcon,
+  ChatBubbleLeftIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
+import { useAuthStore } from '@/stores/auth'
 import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
 
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
@@ -89,6 +95,17 @@ const linkType = ref('document')
 const linkSearchQuery = ref('')
 const linkableItems = ref([])
 const isLoadingLinkables = ref(false)
+
+// Checklists state
+const checklists = ref([])
+const newChecklistTitle = ref('')
+const newItemContents = ref({}) // { checklistId: 'content' }
+
+// Comments state
+const comments = ref([])
+const newComment = ref('')
+const editingComment = ref(null)
+const editCommentContent = ref('')
 
 // Colors for boards
 const boardColors = [
@@ -287,6 +304,13 @@ function openCardModal(columnId, card = null) {
   targetColumnId.value = columnId
   editingCard.value = card
   attachmentPreview.value = null
+  checklists.value = []
+  comments.value = []
+  newChecklistTitle.value = ''
+  newItemContents.value = {}
+  newComment.value = ''
+  editingComment.value = null
+
   if (card) {
     cardForm.value = {
       title: card.title,
@@ -300,6 +324,9 @@ function openCardModal(columnId, card = null) {
       tags: card.tags || [],
       links: card.links || [],
     }
+    // Fetch checklists and comments for existing cards
+    fetchChecklists()
+    fetchComments()
   } else {
     cardForm.value = {
       title: '',
@@ -690,6 +717,184 @@ function onLinkSearchInput() {
   linkSearchTimeout = setTimeout(() => {
     fetchLinkableItems()
   }, 300)
+}
+
+// ==================
+// Checklist Functions
+// ==================
+
+async function fetchChecklists() {
+  if (!editingCard.value) return
+  try {
+    const response = await api.get(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/checklists`
+    )
+    checklists.value = response.data.data.checklists || []
+  } catch (error) {
+    checklists.value = []
+  }
+}
+
+async function createChecklist() {
+  if (!editingCard.value || !newChecklistTitle.value.trim()) return
+
+  try {
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/checklists`,
+      { title: newChecklistTitle.value.trim() }
+    )
+    checklists.value.push(response.data.data)
+    newChecklistTitle.value = ''
+  } catch (error) {
+    uiStore.showError('Fehler beim Erstellen der Checkliste')
+  }
+}
+
+async function deleteChecklist(checklistId) {
+  if (!confirm('Checkliste wirklich löschen?')) return
+
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/checklists/${checklistId}`)
+    checklists.value = checklists.value.filter(c => c.id !== checklistId)
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function addChecklistItem(checklistId) {
+  const content = newItemContents.value[checklistId]?.trim()
+  if (!content) return
+
+  try {
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/checklists/${checklistId}/items`,
+      { content }
+    )
+    const checklist = checklists.value.find(c => c.id === checklistId)
+    if (checklist) {
+      checklist.items.push(response.data.data)
+    }
+    newItemContents.value[checklistId] = ''
+  } catch (error) {
+    uiStore.showError('Fehler beim Hinzufügen')
+  }
+}
+
+async function toggleChecklistItem(itemId) {
+  try {
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/checklist-items/${itemId}/toggle`
+    )
+    // Update local state
+    for (const checklist of checklists.value) {
+      const item = checklist.items.find(i => i.id === itemId)
+      if (item) {
+        Object.assign(item, response.data.data)
+        break
+      }
+    }
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
+async function deleteChecklistItem(itemId) {
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/checklist-items/${itemId}`)
+    for (const checklist of checklists.value) {
+      checklist.items = checklist.items.filter(i => i.id !== itemId)
+    }
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+function getChecklistProgress(checklist) {
+  if (!checklist.items?.length) return { completed: 0, total: 0, percent: 0 }
+  const completed = checklist.items.filter(i => i.is_completed).length
+  const total = checklist.items.length
+  return { completed, total, percent: Math.round((completed / total) * 100) }
+}
+
+// ==================
+// Comment Functions
+// ==================
+
+async function fetchComments() {
+  if (!editingCard.value) return
+  try {
+    const response = await api.get(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/comments`
+    )
+    comments.value = response.data.data.comments || []
+  } catch (error) {
+    comments.value = []
+  }
+}
+
+async function addCommentAction() {
+  if (!editingCard.value || !newComment.value.trim()) return
+
+  try {
+    const response = await api.post(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/comments`,
+      { content: newComment.value.trim() }
+    )
+    comments.value.unshift(response.data.data)
+    newComment.value = ''
+  } catch (error) {
+    uiStore.showError('Fehler beim Hinzufügen')
+  }
+}
+
+function startEditComment(comment) {
+  editingComment.value = comment.id
+  editCommentContent.value = comment.content
+}
+
+async function saveEditComment(commentId) {
+  if (!editCommentContent.value.trim()) return
+
+  try {
+    await api.put(
+      `/api/v1/kanban/boards/${selectedBoard.value.id}/comments/${commentId}`,
+      { content: editCommentContent.value.trim() }
+    )
+    const comment = comments.value.find(c => c.id === commentId)
+    if (comment) {
+      comment.content = editCommentContent.value.trim()
+    }
+    editingComment.value = null
+    editCommentContent.value = ''
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern')
+  }
+}
+
+async function deleteCommentAction(commentId) {
+  if (!confirm('Kommentar wirklich löschen?')) return
+
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/comments/${commentId}`)
+    comments.value = comments.value.filter(c => c.id !== commentId)
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+function formatCommentDate(dateStr) {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'gerade eben'
+  if (diffMins < 60) return `vor ${diffMins} Min.`
+  if (diffHours < 24) return `vor ${diffHours} Std.`
+  if (diffDays < 7) return `vor ${diffDays} Tagen`
+  return date.toLocaleDateString('de-DE')
 }
 
 // Get priority info
@@ -1456,6 +1661,199 @@ onMounted(async () => {
                 <LinkIcon class="w-4 h-4" />
                 Element verknüpfen
               </button>
+            </div>
+
+            <!-- Checklists Section -->
+            <div v-if="editingCard">
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <ClipboardDocumentListIcon class="w-4 h-4 inline mr-1" />
+                Checklisten
+              </label>
+
+              <!-- Existing checklists -->
+              <div class="space-y-3 mb-3">
+                <div
+                  v-for="checklist in checklists"
+                  :key="checklist.id"
+                  class="bg-dark-700 rounded-lg p-3"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-white font-medium text-sm">{{ checklist.title }}</h4>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-500">
+                        {{ getChecklistProgress(checklist).completed }}/{{ getChecklistProgress(checklist).total }}
+                      </span>
+                      <button
+                        @click="deleteChecklist(checklist.id)"
+                        class="p-1 text-gray-400 hover:text-red-400"
+                      >
+                        <TrashIcon class="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Progress bar -->
+                  <div v-if="checklist.items?.length" class="h-1 bg-dark-600 rounded-full mb-2 overflow-hidden">
+                    <div
+                      class="h-full bg-green-500 transition-all duration-300"
+                      :style="{ width: getChecklistProgress(checklist).percent + '%' }"
+                    ></div>
+                  </div>
+
+                  <!-- Items -->
+                  <div class="space-y-1">
+                    <div
+                      v-for="item in checklist.items"
+                      :key="item.id"
+                      class="flex items-center gap-2 group"
+                    >
+                      <button
+                        @click="toggleChecklistItem(item.id)"
+                        class="flex-shrink-0 text-gray-400 hover:text-green-400"
+                      >
+                        <CheckCircleIconSolid v-if="item.is_completed" class="w-5 h-5 text-green-500" />
+                        <CheckCircleIcon v-else class="w-5 h-5" />
+                      </button>
+                      <span
+                        class="flex-1 text-sm"
+                        :class="item.is_completed ? 'text-gray-500 line-through' : 'text-gray-300'"
+                      >
+                        {{ item.content }}
+                      </span>
+                      <button
+                        @click="deleteChecklistItem(item.id)"
+                        class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                      >
+                        <XMarkIcon class="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Add item input -->
+                  <div class="mt-2 flex gap-2">
+                    <input
+                      v-model="newItemContents[checklist.id]"
+                      type="text"
+                      class="flex-1 bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                      placeholder="Neuer Eintrag..."
+                      @keydown.enter="addChecklistItem(checklist.id)"
+                    />
+                    <button
+                      @click="addChecklistItem(checklist.id)"
+                      class="px-2 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
+                    >
+                      <PlusIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add new checklist -->
+              <div class="flex gap-2">
+                <input
+                  v-model="newChecklistTitle"
+                  type="text"
+                  class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  placeholder="Neue Checkliste..."
+                  @keydown.enter="createChecklist"
+                />
+                <button
+                  @click="createChecklist"
+                  class="px-3 py-2 bg-dark-600 text-gray-300 rounded-lg hover:bg-dark-500 transition-colors"
+                  :disabled="!newChecklistTitle.trim()"
+                >
+                  <PlusIcon class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div v-if="editingCard">
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <ChatBubbleLeftIcon class="w-4 h-4 inline mr-1" />
+                Kommentare ({{ comments.length }})
+              </label>
+
+              <!-- Add comment -->
+              <div class="flex gap-2 mb-3">
+                <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                  {{ authStore.user?.username?.[0]?.toUpperCase() || '?' }}
+                </div>
+                <div class="flex-1">
+                  <textarea
+                    v-model="newComment"
+                    rows="2"
+                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                    placeholder="Kommentar schreiben..."
+                  ></textarea>
+                  <button
+                    v-if="newComment.trim()"
+                    @click="addCommentAction"
+                    class="mt-2 px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
+                  >
+                    Kommentieren
+                  </button>
+                </div>
+              </div>
+
+              <!-- Comments list -->
+              <div class="space-y-3 max-h-60 overflow-y-auto">
+                <div
+                  v-for="comment in comments"
+                  :key="comment.id"
+                  class="flex gap-2"
+                >
+                  <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
+                    {{ comment.username?.[0]?.toUpperCase() || '?' }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-white text-sm font-medium">{{ comment.username }}</span>
+                      <span class="text-xs text-gray-500">{{ formatCommentDate(comment.created_at) }}</span>
+                      <template v-if="comment.user_id === authStore.user?.id">
+                        <button
+                          @click="startEditComment(comment)"
+                          class="text-xs text-gray-400 hover:text-white"
+                        >
+                          Bearbeiten
+                        </button>
+                        <button
+                          @click="deleteCommentAction(comment.id)"
+                          class="text-xs text-gray-400 hover:text-red-400"
+                        >
+                          Löschen
+                        </button>
+                      </template>
+                    </div>
+                    <div v-if="editingComment === comment.id" class="space-y-2">
+                      <textarea
+                        v-model="editCommentContent"
+                        rows="2"
+                        class="w-full bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500 resize-none"
+                      ></textarea>
+                      <div class="flex gap-2">
+                        <button
+                          @click="saveEditComment(comment.id)"
+                          class="px-2 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-500"
+                        >
+                          Speichern
+                        </button>
+                        <button
+                          @click="editingComment = null"
+                          class="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                    <p v-else class="text-gray-300 text-sm whitespace-pre-wrap">{{ comment.content }}</p>
+                  </div>
+                </div>
+
+                <p v-if="comments.length === 0" class="text-gray-500 text-sm text-center py-4">
+                  Noch keine Kommentare
+                </p>
+              </div>
             </div>
           </div>
 

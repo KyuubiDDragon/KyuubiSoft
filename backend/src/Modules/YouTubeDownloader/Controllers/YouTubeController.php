@@ -174,26 +174,26 @@ class YouTubeController
             return $this->jsonResponse($response, ['error' => 'Datei nicht gefunden'], 404);
         }
 
-        // Get mime type
+        // Get mime type and file size
         $mimeType = mime_content_type($filepath) ?: 'application/octet-stream';
+        $fileSize = filesize($filepath);
 
-        // Stream the file
-        $stream = fopen($filepath, 'rb');
-        $response = $response
+        // Create a stream from the file
+        $stream = new \Slim\Psr7\Stream(fopen($filepath, 'rb'));
+
+        // Schedule file deletion after request completes
+        register_shutdown_function(function () use ($filepath) {
+            if (file_exists($filepath)) {
+                @unlink($filepath);
+            }
+        });
+
+        return $response
             ->withHeader('Content-Type', $mimeType)
             ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->withHeader('Content-Length', (string) filesize($filepath));
-
-        $body = $response->getBody();
-        while (!feof($stream)) {
-            $body->write(fread($stream, 8192));
-        }
-        fclose($stream);
-
-        // Delete file after serving (cleanup)
-        unlink($filepath);
-
-        return $response;
+            ->withHeader('Content-Length', (string) $fileSize)
+            ->withHeader('Cache-Control', 'no-cache, must-revalidate')
+            ->withBody($stream);
     }
 
     /**

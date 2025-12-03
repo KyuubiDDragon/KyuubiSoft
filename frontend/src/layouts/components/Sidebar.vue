@@ -18,6 +18,7 @@ import {
   SignalIcon,
   CurrencyDollarIcon,
   BeakerIcon,
+  VideoCameraIcon,
   Cog6ToothIcon,
   UsersIcon,
   ShieldCheckIcon,
@@ -65,6 +66,7 @@ const allNavigation = [
   { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
   { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon },
   { name: 'API Tester', href: '/api-tester', icon: BeakerIcon },
+  { name: 'YouTube Downloader', href: '/youtube-downloader', icon: VideoCameraIcon },
   { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
   // Admin-Bereich (nur für owner/admin sichtbar)
   { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },

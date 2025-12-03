@@ -24,6 +24,7 @@ use App\Modules\Bookmarks\Controllers\BookmarkController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
+use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -241,6 +242,12 @@ class Router
                 $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory']);
                 $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem']);
                 $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory']);
+
+                // YouTube Downloader
+                $protected->post('/youtube/info', [YouTubeController::class, 'getInfo']);
+                $protected->post('/youtube/download', [YouTubeController::class, 'download']);
+                $protected->get('/youtube/file/{filename}', [YouTubeController::class, 'serveFile']);
+                $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

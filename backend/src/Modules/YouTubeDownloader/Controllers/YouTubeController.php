@@ -46,10 +46,19 @@ class YouTubeController
             return $this->jsonResponse($response, ['error' => 'Video konnte nicht gefunden werden'], 404);
         }
 
+        // yt-dlp might output warnings/errors before JSON, try to find the JSON object
+        $jsonStart = strpos($output, '{');
+        if ($jsonStart !== false) {
+            $output = substr($output, $jsonStart);
+        }
+
         $info = json_decode($output, true);
 
-        if (!$info) {
-            return $this->jsonResponse($response, ['error' => 'Video-Informationen konnten nicht geladen werden'], 500);
+        if (!$info || json_last_error() !== JSON_ERROR_NONE) {
+            return $this->jsonResponse($response, [
+                'error' => 'Video-Informationen konnten nicht geladen werden',
+                'debug' => substr($output, 0, 500)
+            ], 500);
         }
 
         // Extract relevant formats

@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useApi } from '@/composables/useApi'
+import { ref, onMounted } from 'vue'
+import api from '@/core/api/axios'
 import {
   PencilSquareIcon,
   XMarkIcon,
@@ -13,8 +13,6 @@ import {
 
 // Alias for consistency
 const PinIcon = MapPinIcon
-
-const api = useApi()
 
 const isOpen = ref(false)
 const isMinimized = ref(false)

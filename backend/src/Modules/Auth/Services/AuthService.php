@@ -359,12 +359,17 @@ class AuthService
         error_log("2FA LIB DEBUG: Server timestamp: " . time());
 
         try {
+            // Calculate what the current code SHOULD be
+            $currentCode = $this->google2fa->getCurrentOtp($secret);
+            error_log("2FA LIB DEBUG: Expected current code: " . $currentCode);
+
             // Window of 1 allows for 30 seconds clock drift in either direction
             $result = $this->google2fa->verifyKey($secret, $code, 1);
             error_log("2FA LIB DEBUG: Verify result: " . ($result ? 'true' : 'false'));
             return $result;
         } catch (\Throwable $e) {
             error_log("2FA LIB ERROR: " . $e->getMessage());
+            error_log("2FA LIB ERROR TRACE: " . $e->getTraceAsString());
             return false;
         }
     }

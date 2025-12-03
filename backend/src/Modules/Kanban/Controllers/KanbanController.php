@@ -150,6 +150,26 @@ class KanbanController
             foreach ($column['cards'] as &$card) {
                 $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
                 $card['attachments'] = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+
+                // Get tags for this card
+                $card['tags'] = $this->db->fetchAllAssociative(
+                    'SELECT t.* FROM kanban_tags t
+                     JOIN kanban_card_tags ct ON t.id = ct.tag_id
+                     WHERE ct.card_id = ?
+                     ORDER BY t.name',
+                    [$card['id']]
+                );
+
+                // Get links for this card
+                $links = $this->db->fetchAllAssociative(
+                    'SELECT * FROM kanban_card_links WHERE card_id = ? ORDER BY created_at DESC',
+                    [$card['id']]
+                );
+                foreach ($links as &$link) {
+                    $link['linkable'] = $this->getLinkableData($link['linkable_type'], $link['linkable_id']);
+                }
+                $card['links'] = $links;
+
                 if ($card['assigned_to']) {
                     $card['assignee'] = [
                         'id' => $card['assigned_to'],
@@ -164,6 +184,12 @@ class KanbanController
         }
 
         $board['columns'] = $columns;
+
+        // Get all board tags
+        $board['tags'] = $this->db->fetchAllAssociative(
+            'SELECT * FROM kanban_tags WHERE board_id = ? ORDER BY name',
+            [$boardId]
+        );
 
         return JsonResponse::success($board);
     }
@@ -620,6 +646,323 @@ class KanbanController
         $response->getBody()->write(file_get_contents($filePath));
 
         return $response;
+    }
+
+    // ==================
+    // Tag Methods
+    // ==================
+
+    public function getTags(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $this->getBoardForUser($boardId, $userId);
+
+        $tags = $this->db->fetchAllAssociative(
+            'SELECT * FROM kanban_tags WHERE board_id = ? ORDER BY name',
+            [$boardId]
+        );
+
+        return JsonResponse::success(['items' => $tags]);
+    }
+
+    public function createTag(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        if (empty($data['name'])) {
+            throw new ValidationException('Tag name is required');
+        }
+
+        $tagId = Uuid::uuid4()->toString();
+
+        $this->db->insert('kanban_tags', [
+            'id' => $tagId,
+            'board_id' => $boardId,
+            'name' => trim($data['name']),
+            'color' => $data['color'] ?? '#6B7280',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $tag = $this->db->fetchAssociative('SELECT * FROM kanban_tags WHERE id = ?', [$tagId]);
+
+        return JsonResponse::created($tag, 'Tag created successfully');
+    }
+
+    public function updateTag(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $tagId = $route->getArgument('tagId');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        $updateData = [];
+        if (isset($data['name'])) {
+            $updateData['name'] = trim($data['name']);
+        }
+        if (isset($data['color'])) {
+            $updateData['color'] = $data['color'];
+        }
+
+        if (!empty($updateData)) {
+            $this->db->update('kanban_tags', $updateData, ['id' => $tagId, 'board_id' => $boardId]);
+        }
+
+        $tag = $this->db->fetchAssociative('SELECT * FROM kanban_tags WHERE id = ?', [$tagId]);
+
+        return JsonResponse::success($tag, 'Tag updated successfully');
+    }
+
+    public function deleteTag(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $tagId = $route->getArgument('tagId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        $this->db->delete('kanban_tags', ['id' => $tagId, 'board_id' => $boardId]);
+
+        return JsonResponse::success(null, 'Tag deleted successfully');
+    }
+
+    public function addCardTag(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+        $tagId = $route->getArgument('tagId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        // Verify card belongs to board
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $boardId]
+        );
+
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        // Verify tag belongs to board
+        $tag = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_tags WHERE id = ? AND board_id = ?',
+            [$tagId, $boardId]
+        );
+
+        if (!$tag) {
+            throw new NotFoundException('Tag not found');
+        }
+
+        // Add tag (ignore if already exists)
+        try {
+            $this->db->insert('kanban_card_tags', [
+                'card_id' => $cardId,
+                'tag_id' => $tagId,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {
+            // Tag already assigned, ignore
+        }
+
+        return JsonResponse::success(null, 'Tag added to card');
+    }
+
+    public function removeCardTag(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+        $tagId = $route->getArgument('tagId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        $this->db->delete('kanban_card_tags', ['card_id' => $cardId, 'tag_id' => $tagId]);
+
+        return JsonResponse::success(null, 'Tag removed from card');
+    }
+
+    // ==================
+    // Link Methods
+    // ==================
+
+    public function getCardLinks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+
+        $this->getBoardForUser($boardId, $userId);
+
+        $links = $this->db->fetchAllAssociative(
+            'SELECT * FROM kanban_card_links WHERE card_id = ? ORDER BY created_at DESC',
+            [$cardId]
+        );
+
+        // Enrich with linkable data
+        foreach ($links as &$link) {
+            $link['linkable'] = $this->getLinkableData($link['linkable_type'], $link['linkable_id']);
+        }
+
+        return JsonResponse::success(['items' => $links]);
+    }
+
+    public function addCardLink(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        if (empty($data['linkable_type']) || empty($data['linkable_id'])) {
+            throw new ValidationException('Linkable type and ID are required');
+        }
+
+        $allowedTypes = ['document', 'list', 'snippet', 'bookmark'];
+        if (!in_array($data['linkable_type'], $allowedTypes)) {
+            throw new ValidationException('Invalid linkable type');
+        }
+
+        // Verify linkable exists
+        $linkable = $this->getLinkableData($data['linkable_type'], $data['linkable_id']);
+        if (!$linkable) {
+            throw new NotFoundException('Linked item not found');
+        }
+
+        $linkId = Uuid::uuid4()->toString();
+
+        try {
+            $this->db->insert('kanban_card_links', [
+                'id' => $linkId,
+                'card_id' => $cardId,
+                'linkable_type' => $data['linkable_type'],
+                'linkable_id' => $data['linkable_id'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {
+            throw new ValidationException('Link already exists');
+        }
+
+        $link = $this->db->fetchAssociative('SELECT * FROM kanban_card_links WHERE id = ?', [$linkId]);
+        $link['linkable'] = $linkable;
+
+        return JsonResponse::created($link, 'Link added successfully');
+    }
+
+    public function removeCardLink(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $cardId = $route->getArgument('cardId');
+        $linkId = $route->getArgument('linkId');
+
+        $this->getBoardForUser($boardId, $userId, true);
+
+        $this->db->delete('kanban_card_links', ['id' => $linkId, 'card_id' => $cardId]);
+
+        return JsonResponse::success(null, 'Link removed successfully');
+    }
+
+    public function getLinkableItems(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $type = $route->getArgument('type');
+        $queryParams = $request->getQueryParams();
+        $search = $queryParams['search'] ?? '';
+
+        $this->getBoardForUser($boardId, $userId);
+
+        // Check if board is linked to a project
+        $projectId = $this->db->fetchOne(
+            'SELECT project_id FROM project_links WHERE linkable_type = ? AND linkable_id = ?',
+            ['kanban_board', $boardId]
+        );
+
+        $items = [];
+        $typeMapping = [
+            'document' => ['table' => 'documents', 'fields' => 'id, title, updated_at'],
+            'list' => ['table' => 'lists', 'fields' => 'id, title, updated_at'],
+            'snippet' => ['table' => 'code_snippets', 'fields' => 'id, title, language, updated_at'],
+            'bookmark' => ['table' => 'bookmarks', 'fields' => 'id, title, url, updated_at'],
+        ];
+
+        if (!isset($typeMapping[$type])) {
+            return JsonResponse::success(['items' => []]);
+        }
+
+        $config = $typeMapping[$type];
+
+        if ($projectId) {
+            // Filter by project - only show items linked to the same project
+            $sql = "SELECT {$config['fields']} FROM {$config['table']} t
+                    INNER JOIN project_links pl ON pl.linkable_id = t.id AND pl.linkable_type = ?
+                    WHERE pl.project_id = ?";
+            $params = [$type, $projectId];
+
+            if ($search) {
+                $sql .= ' AND t.title LIKE ?';
+                $params[] = "%{$search}%";
+            }
+            $sql .= ' ORDER BY t.updated_at DESC LIMIT 50';
+            $items = $this->db->fetchAllAssociative($sql, $params);
+        } else {
+            // No project filter - show all user's items
+            $sql = "SELECT {$config['fields']} FROM {$config['table']} WHERE user_id = ?";
+            $params = [$userId];
+
+            if ($search) {
+                $sql .= ' AND title LIKE ?';
+                $params[] = "%{$search}%";
+            }
+            $sql .= ' ORDER BY updated_at DESC LIMIT 50';
+            $items = $this->db->fetchAllAssociative($sql, $params);
+        }
+
+        return JsonResponse::success(['items' => $items, 'projectFiltered' => (bool) $projectId]);
+    }
+
+    private function getLinkableData(string $type, string $id): ?array
+    {
+        return match ($type) {
+            'document' => $this->db->fetchAssociative(
+                'SELECT id, title, updated_at FROM documents WHERE id = ?',
+                [$id]
+            ) ?: null,
+            'list' => $this->db->fetchAssociative(
+                'SELECT id, title, updated_at FROM lists WHERE id = ?',
+                [$id]
+            ) ?: null,
+            'snippet' => $this->db->fetchAssociative(
+                'SELECT id, title, language, updated_at FROM code_snippets WHERE id = ?',
+                [$id]
+            ) ?: null,
+            'bookmark' => $this->db->fetchAssociative(
+                'SELECT id, title, url, updated_at FROM bookmarks WHERE id = ?',
+                [$id]
+            ) ?: null,
+            default => null,
+        };
     }
 
     private function getBoardForUser(string $boardId, string $userId, bool $requireEditAccess = false): array

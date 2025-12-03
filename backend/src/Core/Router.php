@@ -151,6 +151,18 @@ class Router
                 $protected->post('/kanban/boards/{id}/cards/{cardId}/attachments', [KanbanController::class, 'uploadAttachment']);
                 $protected->delete('/kanban/boards/{id}/cards/{cardId}/attachments/{attachmentId}', [KanbanController::class, 'deleteAttachment']);
                 $protected->get('/kanban/attachments/{filename}', [KanbanController::class, 'serveAttachment']);
+                // Kanban Tags
+                $protected->get('/kanban/boards/{id}/tags', [KanbanController::class, 'getTags']);
+                $protected->post('/kanban/boards/{id}/tags', [KanbanController::class, 'createTag']);
+                $protected->put('/kanban/boards/{id}/tags/{tagId}', [KanbanController::class, 'updateTag']);
+                $protected->delete('/kanban/boards/{id}/tags/{tagId}', [KanbanController::class, 'deleteTag']);
+                $protected->post('/kanban/boards/{id}/cards/{cardId}/tags/{tagId}', [KanbanController::class, 'addCardTag']);
+                $protected->delete('/kanban/boards/{id}/cards/{cardId}/tags/{tagId}', [KanbanController::class, 'removeCardTag']);
+                // Kanban Card Links
+                $protected->get('/kanban/boards/{id}/cards/{cardId}/links', [KanbanController::class, 'getCardLinks']);
+                $protected->post('/kanban/boards/{id}/cards/{cardId}/links', [KanbanController::class, 'addCardLink']);
+                $protected->delete('/kanban/boards/{id}/cards/{cardId}/links/{linkId}', [KanbanController::class, 'removeCardLink']);
+                $protected->get('/kanban/boards/{id}/linkable/{type}', [KanbanController::class, 'getLinkableItems']);
 
                 // Webhooks
                 $protected->get('/webhooks', [WebhookController::class, 'index']);

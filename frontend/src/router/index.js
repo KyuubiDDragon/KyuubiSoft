@@ -18,6 +18,7 @@ const UptimeView = () => import('@/modules/uptime/views/UptimeView.vue')
 const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
 const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
 const YouTubeDownloaderView = () => import('@/modules/youtube-downloader/views/YouTubeDownloaderView.vue')
+const ToolboxView = () => import('@/modules/toolbox/views/ToolboxView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
@@ -120,6 +121,12 @@ const routes = [
     path: '/youtube-downloader',
     name: 'youtube-downloader',
     component: YouTubeDownloaderView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/toolbox',
+    name: 'toolbox',
+    component: ToolboxView,
     meta: { requiresAuth: true },
   },
   {

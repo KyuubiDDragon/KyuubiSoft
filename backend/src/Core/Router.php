@@ -56,6 +56,9 @@ class Router
                 $auth->post('/reset-password', [AuthController::class, 'resetPassword']);
             });
 
+            // Public YouTube file download (filename is unique/random ID)
+            $group->get('/youtube/file/{filename}', [YouTubeController::class, 'serveFile']);
+
             // Protected routes
             $group->group('', function (RouteCollectorProxy $protected) {
                 // Auth (protected)
@@ -276,7 +279,6 @@ class Router
                 // YouTube Downloader
                 $protected->post('/youtube/info', [YouTubeController::class, 'getInfo']);
                 $protected->post('/youtube/download', [YouTubeController::class, 'download']);
-                $protected->get('/youtube/file/{filename}', [YouTubeController::class, 'serveFile']);
                 $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup']);
 
                 // Settings

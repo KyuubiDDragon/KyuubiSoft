@@ -354,8 +354,19 @@ class AuthService
 
     private function verify2FACode(string $secret, string $code): bool
     {
-        // Window of 1 allows for 30 seconds clock drift in either direction
-        return $this->google2fa->verifyKey($secret, $code, 1);
+        // Debug logging
+        error_log("2FA LIB DEBUG: Secret: " . $secret . ", Code: " . $code);
+        error_log("2FA LIB DEBUG: Server timestamp: " . time());
+
+        try {
+            // Window of 1 allows for 30 seconds clock drift in either direction
+            $result = $this->google2fa->verifyKey($secret, $code, 1);
+            error_log("2FA LIB DEBUG: Verify result: " . ($result ? 'true' : 'false'));
+            return $result;
+        } catch (\Throwable $e) {
+            error_log("2FA LIB ERROR: " . $e->getMessage());
+            return false;
+        }
     }
 
     private function get2FAQrCodeUrl(string $email, string $secret): string

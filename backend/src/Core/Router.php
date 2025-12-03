@@ -181,6 +181,9 @@ class Router
                 $protected->put('/kanban/boards/{id}/comments/{commentId}', [KanbanController::class, 'updateComment']);
                 $protected->delete('/kanban/boards/{id}/comments/{commentId}', [KanbanController::class, 'deleteComment']);
 
+                // Kanban Card Activities
+                $protected->get('/kanban/boards/{id}/cards/{cardId}/activities', [KanbanController::class, 'getCardActivities']);
+
                 // Webhooks
                 $protected->get('/webhooks', [WebhookController::class, 'index']);
                 $protected->post('/webhooks', [WebhookController::class, 'create']);

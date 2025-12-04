@@ -833,16 +833,8 @@ class DockerController
             return $defaultHost;
         }
 
-        // Fall back to local socket (no host configured)
-        return [
-            'id' => null,
-            'name' => 'Lokal',
-            'type' => 'socket',
-            'socket_path' => '/var/run/docker.sock',
-            'tcp_host' => null,
-            'tcp_port' => null,
-            'tls_enabled' => false,
-        ];
+        // No host configured - create a default local host automatically
+        return $this->hostRepository->createDefaultForUser($userId);
     }
 
     /**

@@ -623,4 +623,457 @@ class ToolsController
 
         return $serverParams['REMOTE_ADDR'] ?? '127.0.0.1';
     }
+
+    /**
+     * Security Headers Check
+     */
+    public function securityHeaders(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $params = $request->getQueryParams();
+        $url = $params['url'] ?? '';
+
+        if (empty($url)) {
+            throw new ValidationException('URL is required');
+        }
+
+        // Ensure URL has protocol
+        if (!preg_match('/^https?:\/\//', $url)) {
+            $url = 'https://' . $url;
+        }
+
+        try {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'HEAD',
+                    'timeout' => 15,
+                    'follow_location' => 1,
+                    'max_redirects' => 5,
+                    'ignore_errors' => true,
+                    'user_agent' => 'Mozilla/5.0 (compatible; SecurityHeadersChecker/1.0)',
+                ],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+
+            $headers = @get_headers($url, true, $context);
+
+            if ($headers === false) {
+                return JsonResponse::error('Could not retrieve headers', 500);
+            }
+
+            // Normalize header keys to lowercase for consistent checking
+            $normalizedHeaders = [];
+            foreach ($headers as $key => $value) {
+                if (!is_numeric($key)) {
+                    $normalizedHeaders[strtolower($key)] = is_array($value) ? end($value) : $value;
+                }
+            }
+
+            // Define security headers to check
+            $securityChecks = $this->analyzeSecurityHeaders($normalizedHeaders);
+
+            // Calculate score
+            $maxScore = array_sum(array_column($securityChecks, 'weight'));
+            $earnedScore = 0;
+            foreach ($securityChecks as $check) {
+                if ($check['present'] && $check['valid']) {
+                    $earnedScore += $check['weight'];
+                }
+            }
+
+            $grade = $this->calculateSecurityGrade($earnedScore, $maxScore);
+
+            return JsonResponse::success([
+                'url' => $url,
+                'headers' => $normalizedHeaders,
+                'checks' => $securityChecks,
+                'score' => [
+                    'earned' => $earnedScore,
+                    'max' => $maxScore,
+                    'percentage' => $maxScore > 0 ? round(($earnedScore / $maxScore) * 100) : 0,
+                    'grade' => $grade,
+                ],
+                'checkedAt' => date('c'),
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Security headers check failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function analyzeSecurityHeaders(array $headers): array
+    {
+        $checks = [];
+
+        // Content-Security-Policy
+        $csp = $headers['content-security-policy'] ?? null;
+        $checks['content-security-policy'] = [
+            'name' => 'Content-Security-Policy',
+            'present' => $csp !== null,
+            'value' => $csp,
+            'valid' => $csp !== null && strlen($csp) > 10,
+            'weight' => 25,
+            'description' => 'Verhindert XSS und andere Code-Injection-Angriffe',
+            'recommendation' => $csp === null ? "Setze einen CSP-Header, z.B.: default-src 'self'; script-src 'self'" : null,
+        ];
+
+        // Strict-Transport-Security
+        $hsts = $headers['strict-transport-security'] ?? null;
+        $hstsValid = $hsts !== null && preg_match('/max-age=(\d+)/', $hsts, $m) && (int)$m[1] >= 31536000;
+        $checks['strict-transport-security'] = [
+            'name' => 'Strict-Transport-Security',
+            'present' => $hsts !== null,
+            'value' => $hsts,
+            'valid' => $hstsValid,
+            'weight' => 20,
+            'description' => 'Erzwingt HTTPS-Verbindungen',
+            'recommendation' => $hsts === null ? 'Setze: max-age=31536000; includeSubDomains; preload' : ($hstsValid ? null : 'max-age sollte mindestens 31536000 (1 Jahr) sein'),
+        ];
+
+        // X-Content-Type-Options
+        $xcto = $headers['x-content-type-options'] ?? null;
+        $checks['x-content-type-options'] = [
+            'name' => 'X-Content-Type-Options',
+            'present' => $xcto !== null,
+            'value' => $xcto,
+            'valid' => strtolower($xcto ?? '') === 'nosniff',
+            'weight' => 15,
+            'description' => 'Verhindert MIME-Type-Sniffing',
+            'recommendation' => $xcto === null ? 'Setze: nosniff' : null,
+        ];
+
+        // X-Frame-Options
+        $xfo = $headers['x-frame-options'] ?? null;
+        $xfoValid = $xfo !== null && in_array(strtoupper($xfo), ['DENY', 'SAMEORIGIN']);
+        $checks['x-frame-options'] = [
+            'name' => 'X-Frame-Options',
+            'present' => $xfo !== null,
+            'value' => $xfo,
+            'valid' => $xfoValid,
+            'weight' => 15,
+            'description' => 'Verhindert Clickjacking durch Iframe-Einbettung',
+            'recommendation' => $xfo === null ? 'Setze: DENY oder SAMEORIGIN' : null,
+        ];
+
+        // X-XSS-Protection (Legacy, but still checked)
+        $xxss = $headers['x-xss-protection'] ?? null;
+        $checks['x-xss-protection'] = [
+            'name' => 'X-XSS-Protection',
+            'present' => $xxss !== null,
+            'value' => $xxss,
+            'valid' => $xxss !== null,
+            'weight' => 5,
+            'description' => 'Legacy XSS-Filter (veraltet, CSP bevorzugen)',
+            'recommendation' => null, // Not critical
+        ];
+
+        // Referrer-Policy
+        $rp = $headers['referrer-policy'] ?? null;
+        $rpValid = $rp !== null && in_array(strtolower($rp), ['no-referrer', 'no-referrer-when-downgrade', 'origin', 'origin-when-cross-origin', 'same-origin', 'strict-origin', 'strict-origin-when-cross-origin']);
+        $checks['referrer-policy'] = [
+            'name' => 'Referrer-Policy',
+            'present' => $rp !== null,
+            'value' => $rp,
+            'valid' => $rpValid,
+            'weight' => 10,
+            'description' => 'Kontrolliert Referrer-Informationen',
+            'recommendation' => $rp === null ? 'Setze: strict-origin-when-cross-origin' : null,
+        ];
+
+        // Permissions-Policy (formerly Feature-Policy)
+        $pp = $headers['permissions-policy'] ?? $headers['feature-policy'] ?? null;
+        $checks['permissions-policy'] = [
+            'name' => 'Permissions-Policy',
+            'present' => $pp !== null,
+            'value' => $pp,
+            'valid' => $pp !== null && strlen($pp) > 5,
+            'weight' => 10,
+            'description' => 'Kontrolliert Browser-Features (Kamera, Mikrofon, etc.)',
+            'recommendation' => $pp === null ? 'Setze: geolocation=(), microphone=(), camera=()' : null,
+        ];
+
+        // Cross-Origin headers
+        $coep = $headers['cross-origin-embedder-policy'] ?? null;
+        $checks['cross-origin-embedder-policy'] = [
+            'name' => 'Cross-Origin-Embedder-Policy',
+            'present' => $coep !== null,
+            'value' => $coep,
+            'valid' => $coep !== null,
+            'weight' => 5,
+            'description' => 'Isoliert Dokument von Cross-Origin-Ressourcen',
+            'recommendation' => null,
+        ];
+
+        $coop = $headers['cross-origin-opener-policy'] ?? null;
+        $checks['cross-origin-opener-policy'] = [
+            'name' => 'Cross-Origin-Opener-Policy',
+            'present' => $coop !== null,
+            'value' => $coop,
+            'valid' => $coop !== null,
+            'weight' => 5,
+            'description' => 'Isoliert Browsing-Context-Gruppe',
+            'recommendation' => null,
+        ];
+
+        // Check for server info disclosure (negative points conceptually)
+        $server = $headers['server'] ?? null;
+        $serverSafe = $server === null || !preg_match('/\d+\.\d+/', $server);
+        $checks['server'] = [
+            'name' => 'Server (Information Disclosure)',
+            'present' => $server !== null,
+            'value' => $server,
+            'valid' => $serverSafe,
+            'weight' => 0, // Informational
+            'description' => 'Server-Version sollte nicht offengelegt werden',
+            'recommendation' => $server !== null && !$serverSafe ? 'Verstecke Server-Versionsinformationen' : null,
+        ];
+
+        $xPoweredBy = $headers['x-powered-by'] ?? null;
+        $checks['x-powered-by'] = [
+            'name' => 'X-Powered-By (Information Disclosure)',
+            'present' => $xPoweredBy !== null,
+            'value' => $xPoweredBy,
+            'valid' => $xPoweredBy === null,
+            'weight' => 0, // Informational, negative if present
+            'description' => 'Sollte entfernt werden - offenbart Technologie-Stack',
+            'recommendation' => $xPoweredBy !== null ? 'Entferne den X-Powered-By Header' : null,
+        ];
+
+        return $checks;
+    }
+
+    private function calculateSecurityGrade(int $earned, int $max): string
+    {
+        if ($max === 0) return 'F';
+
+        $percentage = ($earned / $max) * 100;
+
+        if ($percentage >= 90) return 'A+';
+        if ($percentage >= 80) return 'A';
+        if ($percentage >= 70) return 'B';
+        if ($percentage >= 60) return 'C';
+        if ($percentage >= 50) return 'D';
+        return 'F';
+    }
+
+    /**
+     * Open Graph / Meta Tags Preview
+     */
+    public function openGraph(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $params = $request->getQueryParams();
+        $url = $params['url'] ?? '';
+
+        if (empty($url)) {
+            throw new ValidationException('URL is required');
+        }
+
+        // Ensure URL has protocol
+        if (!preg_match('/^https?:\/\//', $url)) {
+            $url = 'https://' . $url;
+        }
+
+        try {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => 15,
+                    'follow_location' => 1,
+                    'max_redirects' => 5,
+                    'ignore_errors' => true,
+                    'user_agent' => 'Mozilla/5.0 (compatible; OpenGraphPreview/1.0; +https://kyuubisoft.com)',
+                    'header' => "Accept: text/html,application/xhtml+xml\r\n",
+                ],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+
+            $html = @file_get_contents($url, false, $context);
+
+            if ($html === false) {
+                return JsonResponse::error('Could not fetch URL', 500);
+            }
+
+            // Limit HTML size to prevent memory issues
+            $html = substr($html, 0, 500000);
+
+            // Parse meta tags
+            $metaTags = $this->parseMetaTags($html);
+
+            // Extract Open Graph data
+            $og = $this->extractOpenGraph($metaTags);
+
+            // Extract Twitter Card data
+            $twitter = $this->extractTwitterCard($metaTags);
+
+            // Extract basic meta
+            $basic = $this->extractBasicMeta($metaTags, $html);
+
+            // Detect favicon
+            $favicon = $this->extractFavicon($html, $url);
+
+            return JsonResponse::success([
+                'url' => $url,
+                'basic' => $basic,
+                'openGraph' => $og,
+                'twitter' => $twitter,
+                'favicon' => $favicon,
+                'allMeta' => $metaTags,
+                'checkedAt' => date('c'),
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Open Graph check failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function parseMetaTags(string $html): array
+    {
+        $tags = [];
+
+        // Match meta tags
+        preg_match_all('/<meta\s+([^>]+)>/i', $html, $matches);
+
+        foreach ($matches[1] as $attributes) {
+            $tag = [];
+
+            // Extract name/property and content
+            if (preg_match('/(?:name|property)\s*=\s*["\']([^"\']+)["\']/i', $attributes, $m)) {
+                $tag['name'] = $m[1];
+            }
+            if (preg_match('/content\s*=\s*["\']([^"\']*)["\']?/i', $attributes, $m)) {
+                $tag['content'] = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+            if (preg_match('/charset\s*=\s*["\']?([^"\'\s>]+)/i', $attributes, $m)) {
+                $tag['charset'] = $m[1];
+            }
+            if (preg_match('/http-equiv\s*=\s*["\']([^"\']+)["\']/i', $attributes, $m)) {
+                $tag['http-equiv'] = $m[1];
+            }
+
+            if (!empty($tag)) {
+                $tags[] = $tag;
+            }
+        }
+
+        return $tags;
+    }
+
+    private function extractOpenGraph(array $metaTags): array
+    {
+        $og = [];
+
+        foreach ($metaTags as $tag) {
+            $name = $tag['name'] ?? '';
+            if (str_starts_with($name, 'og:')) {
+                $key = substr($name, 3);
+                $og[$key] = $tag['content'] ?? '';
+            }
+        }
+
+        return $og;
+    }
+
+    private function extractTwitterCard(array $metaTags): array
+    {
+        $twitter = [];
+
+        foreach ($metaTags as $tag) {
+            $name = $tag['name'] ?? '';
+            if (str_starts_with($name, 'twitter:')) {
+                $key = substr($name, 8);
+                $twitter[$key] = $tag['content'] ?? '';
+            }
+        }
+
+        return $twitter;
+    }
+
+    private function extractBasicMeta(array $metaTags, string $html): array
+    {
+        $basic = [
+            'title' => null,
+            'description' => null,
+            'keywords' => null,
+            'author' => null,
+            'robots' => null,
+            'viewport' => null,
+            'canonical' => null,
+            'language' => null,
+        ];
+
+        // Extract title from <title> tag
+        if (preg_match('/<title[^>]*>([^<]+)<\/title>/i', $html, $m)) {
+            $basic['title'] = html_entity_decode(trim($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        // Extract canonical link
+        if (preg_match('/<link[^>]+rel\s*=\s*["\']canonical["\'][^>]+href\s*=\s*["\']([^"\']+)["\']/i', $html, $m)) {
+            $basic['canonical'] = $m[1];
+        }
+
+        // Extract language
+        if (preg_match('/<html[^>]+lang\s*=\s*["\']([^"\']+)["\']/i', $html, $m)) {
+            $basic['language'] = $m[1];
+        }
+
+        // Extract from meta tags
+        foreach ($metaTags as $tag) {
+            $name = strtolower($tag['name'] ?? '');
+            $content = $tag['content'] ?? '';
+
+            switch ($name) {
+                case 'description':
+                    $basic['description'] = $content;
+                    break;
+                case 'keywords':
+                    $basic['keywords'] = $content;
+                    break;
+                case 'author':
+                    $basic['author'] = $content;
+                    break;
+                case 'robots':
+                    $basic['robots'] = $content;
+                    break;
+                case 'viewport':
+                    $basic['viewport'] = $content;
+                    break;
+            }
+        }
+
+        return $basic;
+    }
+
+    private function extractFavicon(string $html, string $baseUrl): ?string
+    {
+        // Try to find favicon in HTML
+        $patterns = [
+            '/<link[^>]+rel\s*=\s*["\'](?:shortcut )?icon["\'][^>]+href\s*=\s*["\']([^"\']+)["\']/i',
+            '/<link[^>]+href\s*=\s*["\']([^"\']+)["\'][^>]+rel\s*=\s*["\'](?:shortcut )?icon["\']/i',
+            '/<link[^>]+rel\s*=\s*["\']apple-touch-icon["\'][^>]+href\s*=\s*["\']([^"\']+)["\']/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $html, $m)) {
+                $favicon = $m[1];
+                // Make absolute URL
+                if (!preg_match('/^https?:\/\//', $favicon)) {
+                    $parsed = parse_url($baseUrl);
+                    $base = $parsed['scheme'] . '://' . $parsed['host'];
+                    if (str_starts_with($favicon, '/')) {
+                        $favicon = $base . $favicon;
+                    } else {
+                        $favicon = $base . '/' . $favicon;
+                    }
+                }
+                return $favicon;
+            }
+        }
+
+        // Default to /favicon.ico
+        $parsed = parse_url($baseUrl);
+        return ($parsed['scheme'] ?? 'https') . '://' . ($parsed['host'] ?? '') . '/favicon.ico';
+    }
 }

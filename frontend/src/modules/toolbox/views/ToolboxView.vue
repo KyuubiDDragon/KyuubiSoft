@@ -13,6 +13,9 @@ import LoremIpsumGenerator from '../components/tools/LoremIpsumGenerator.vue'
 import TimestampConverter from '../components/tools/TimestampConverter.vue'
 import BaseConverter from '../components/tools/BaseConverter.vue'
 import MarkdownPreview from '../components/tools/MarkdownPreview.vue'
+import UuidGenerator from '../components/tools/UuidGenerator.vue'
+import TextCaseConverter from '../components/tools/TextCaseConverter.vue'
+import EncodingTool from '../components/tools/EncodingTool.vue'
 
 // Tool Components - Media
 import QrCodeGenerator from '../components/tools/QrCodeGenerator.vue'
@@ -32,6 +35,8 @@ import IpCalculator from '../components/tools/IpCalculator.vue'
 import SslChecker from '../components/tools/SslChecker.vue'
 import DnsLookup from '../components/tools/DnsLookup.vue'
 import WhoisLookup from '../components/tools/WhoisLookup.vue'
+import SecurityHeadersChecker from '../components/tools/SecurityHeadersChecker.vue'
+import OpenGraphPreviewer from '../components/tools/OpenGraphPreviewer.vue'
 
 // State
 const searchQuery = ref('')
@@ -113,6 +118,27 @@ const toolCategories = [
         description: 'Markdown schreiben und live Vorschau',
         icon: '📄',
         component: MarkdownPreview,
+      },
+      {
+        id: 'uuid-generator',
+        name: 'UUID Generator',
+        description: 'UUID v1/v4, ULID, NanoID generieren',
+        icon: '🆔',
+        component: UuidGenerator,
+      },
+      {
+        id: 'text-case-converter',
+        name: 'Text Case Converter',
+        description: 'camelCase, snake_case, kebab-case umwandeln',
+        icon: '🔤',
+        component: TextCaseConverter,
+      },
+      {
+        id: 'encoding-tool',
+        name: 'Encoding Tool',
+        description: 'Base64, URL, HTML, Hex kodieren/dekodieren',
+        icon: '🔄',
+        component: EncodingTool,
       },
     ],
   },
@@ -240,6 +266,20 @@ const toolCategories = [
         description: 'Domain-Informationen abfragen',
         icon: '📇',
         component: WhoisLookup,
+      },
+      {
+        id: 'security-headers',
+        name: 'Security Headers',
+        description: 'HTTP Security Headers prüfen und bewerten',
+        icon: '🔐',
+        component: SecurityHeadersChecker,
+      },
+      {
+        id: 'open-graph',
+        name: 'Open Graph Previewer',
+        description: 'Social Media Vorschau und Meta-Tags analysieren',
+        icon: '🔗',
+        component: OpenGraphPreviewer,
       },
     ],
   },

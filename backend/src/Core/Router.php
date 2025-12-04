@@ -361,6 +361,8 @@ class Router
                 $protected->get('/tools/port-check', [ToolsController::class, 'portCheck']);
                 $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders']);
                 $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup']);
+                $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders']);
+                $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph']);
 
             })->add(AuthMiddleware::class);
         });

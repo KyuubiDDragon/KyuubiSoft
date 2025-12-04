@@ -299,7 +299,8 @@ function getStateColor(state) {
 }
 
 function toggleStack(stackName) {
-  expandedStacks.value[stackName] = !expandedStacks.value[stackName]
+  const currentState = expandedStacks.value[stackName] ?? true // Match default from isStackExpanded
+  expandedStacks.value[stackName] = !currentState
 }
 
 function isStackExpanded(stackName) {

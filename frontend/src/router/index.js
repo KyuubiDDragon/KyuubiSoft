@@ -20,6 +20,10 @@ const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue
 const YouTubeDownloaderView = () => import('@/modules/youtube-downloader/views/YouTubeDownloaderView.vue')
 const ToolboxView = () => import('@/modules/toolbox/views/ToolboxView.vue')
 const DockerView = () => import('@/modules/docker/views/DockerView.vue')
+const DockerfileGeneratorView = () => import('@/modules/docker/views/DockerfileGeneratorView.vue')
+const DockerComposeView = () => import('@/modules/docker/views/DockerComposeView.vue')
+const DockerCommandView = () => import('@/modules/docker/views/DockerCommandView.vue')
+const DockerignoreView = () => import('@/modules/docker/views/DockerignoreView.vue')
 const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
@@ -135,6 +139,30 @@ const routes = [
     path: '/docker',
     name: 'docker',
     component: DockerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/dockerfile',
+    name: 'docker-dockerfile',
+    component: DockerfileGeneratorView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/compose',
+    name: 'docker-compose',
+    component: DockerComposeView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/command',
+    name: 'docker-command',
+    component: DockerCommandView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/ignore',
+    name: 'docker-ignore',
+    component: DockerignoreView,
     meta: { requiresAuth: true },
   },
   {

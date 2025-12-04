@@ -394,6 +394,22 @@ class Router
                 // Docker Stack/Compose Operations
                 $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose']);
                 $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose']);
+                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp']);
+                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown']);
+                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart']);
+                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack']);
+                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack']);
+
+                // Docker Deploy
+                $protected->post('/docker/run', [DockerController::class, 'runContainer']);
+                $protected->post('/docker/pull', [DockerController::class, 'pullImage']);
+                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer']);
+
+                // Docker Backups
+                $protected->get('/docker/backups', [DockerController::class, 'listBackups']);
+                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup']);
+                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup']);
+                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup']);
 
                 $protected->get('/docker/images', [DockerController::class, 'images']);
                 $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);

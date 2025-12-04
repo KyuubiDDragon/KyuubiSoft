@@ -1128,4 +1128,650 @@ class DockerController
         }
         return false;
     }
+
+    // ========================================================================
+    // Quick Deploy (docker run)
+    // ========================================================================
+
+    /**
+     * Run a new container (docker run)
+     */
+    public function runContainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $body = $request->getParsedBody();
+
+        // Required fields
+        $image = $body['image'] ?? null;
+        if (empty($image)) {
+            throw new ValidationException('Image is required');
+        }
+
+        // Validate image name
+        if (!preg_match('/^[a-zA-Z0-9._\/:@-]+$/', $image)) {
+            throw new ValidationException('Invalid image name');
+        }
+
+        // Optional fields
+        $name = $body['name'] ?? null;
+        $ports = $body['ports'] ?? []; // Array of "host:container" or "host:container/protocol"
+        $env = $body['env'] ?? []; // Array of "KEY=VALUE"
+        $volumes = $body['volumes'] ?? []; // Array of "host:container" or "host:container:ro"
+        $network = $body['network'] ?? null;
+        $restart = $body['restart'] ?? 'unless-stopped'; // no, always, unless-stopped, on-failure
+        $detach = $body['detach'] ?? true;
+        $pull = $body['pull'] ?? 'missing'; // always, missing, never
+        $labels = $body['labels'] ?? []; // Array of "key=value"
+        $command = $body['command'] ?? null;
+
+        // Build docker run command
+        $cmd = 'run';
+
+        if ($detach) {
+            $cmd .= ' -d';
+        }
+
+        if ($name && preg_match('/^[a-zA-Z0-9_-]+$/', $name)) {
+            $cmd .= ' --name ' . escapeshellarg($name);
+        }
+
+        if ($restart && in_array($restart, ['no', 'always', 'unless-stopped', 'on-failure'])) {
+            $cmd .= ' --restart ' . $restart;
+        }
+
+        if ($pull && in_array($pull, ['always', 'missing', 'never'])) {
+            $cmd .= ' --pull ' . $pull;
+        }
+
+        // Ports
+        foreach ($ports as $port) {
+            if (preg_match('/^[\d:\/a-z]+$/i', $port)) {
+                $cmd .= ' -p ' . escapeshellarg($port);
+            }
+        }
+
+        // Environment variables
+        foreach ($env as $e) {
+            if (is_string($e) && strpos($e, '=') !== false) {
+                $cmd .= ' -e ' . escapeshellarg($e);
+            }
+        }
+
+        // Volumes
+        foreach ($volumes as $vol) {
+            if (preg_match('/^[a-zA-Z0-9_.\/:-]+$/', $vol)) {
+                $cmd .= ' -v ' . escapeshellarg($vol);
+            }
+        }
+
+        // Network
+        if ($network && preg_match('/^[a-zA-Z0-9_-]+$/', $network)) {
+            $cmd .= ' --network ' . escapeshellarg($network);
+        }
+
+        // Labels
+        foreach ($labels as $label) {
+            if (is_string($label) && strpos($label, '=') !== false) {
+                $cmd .= ' --label ' . escapeshellarg($label);
+            }
+        }
+
+        // Add image
+        $cmd .= ' ' . escapeshellarg($image);
+
+        // Add command if provided
+        if ($command) {
+            $cmd .= ' ' . $command;
+        }
+
+        try {
+            $output = $this->execDockerOnHost($host, $cmd);
+            $containerId = trim($output);
+
+            return JsonResponse::success([
+                'message' => 'Container started successfully',
+                'container_id' => $containerId,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to run container: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Pull an image
+     */
+    public function pullImage(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $body = $request->getParsedBody();
+
+        $image = $body['image'] ?? null;
+        if (empty($image) || !preg_match('/^[a-zA-Z0-9._\/:@-]+$/', $image)) {
+            throw new ValidationException('Valid image name is required');
+        }
+
+        try {
+            $output = $this->execDockerOnHost($host, 'pull ' . escapeshellarg($image));
+
+            return JsonResponse::success([
+                'message' => 'Image pulled successfully',
+                'output' => $output,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to pull image: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Remove a container
+     */
+    public function removeContainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $containerId = $this->getRouteArg($request, 'id');
+        $params = $request->getQueryParams();
+        $force = ($params['force'] ?? 'false') === 'true';
+        $removeVolumes = ($params['volumes'] ?? 'false') === 'true';
+
+        if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
+            throw new ValidationException('Invalid container ID');
+        }
+
+        try {
+            $cmd = 'rm';
+            if ($force) $cmd .= ' -f';
+            if ($removeVolumes) $cmd .= ' -v';
+            $cmd .= ' ' . $containerId;
+
+            $this->execDockerOnHost($host, $cmd);
+
+            return JsonResponse::success(['message' => 'Container removed successfully']);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to remove container: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // ========================================================================
+    // Stack Deploy (docker-compose)
+    // ========================================================================
+
+    /**
+     * Deploy a new stack from compose content
+     */
+    public function deployStack(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $userId = $request->getAttribute('user_id');
+        $body = $request->getParsedBody();
+
+        // Only allow on local host
+        if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
+            return JsonResponse::error('Stack deployment only available on local Docker host', 403);
+        }
+
+        $stackName = $body['name'] ?? null;
+        $composeContent = $body['compose'] ?? null;
+        $envContent = $body['env'] ?? null;
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Valid stack name is required');
+        }
+
+        if (empty($composeContent)) {
+            throw new ValidationException('Compose content is required');
+        }
+
+        // Create stack directory
+        $stacksDir = $this->getStacksDirectory($userId);
+        $stackDir = $stacksDir . '/' . $stackName;
+
+        if (is_dir($stackDir)) {
+            throw new ValidationException('Stack with this name already exists');
+        }
+
+        if (!mkdir($stackDir, 0755, true)) {
+            return JsonResponse::error('Failed to create stack directory', 500);
+        }
+
+        try {
+            // Write docker-compose.yml
+            $composePath = $stackDir . '/docker-compose.yml';
+            file_put_contents($composePath, $composeContent);
+
+            // Write .env if provided
+            if ($envContent) {
+                $envPath = $stackDir . '/.env';
+                file_put_contents($envPath, $envContent);
+            }
+
+            // Run docker compose up
+            $output = shell_exec("cd " . escapeshellarg($stackDir) . " && docker compose -p " . escapeshellarg($stackName) . " up -d 2>&1");
+
+            return JsonResponse::success([
+                'message' => 'Stack deployed successfully',
+                'stack' => $stackName,
+                'path' => $stackDir,
+                'output' => $output,
+            ]);
+        } catch (\Exception $e) {
+            // Cleanup on failure
+            $this->removeDirectory($stackDir);
+            return JsonResponse::error('Failed to deploy stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Start a stack (docker compose up -d)
+     */
+    public function stackUp(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        try {
+            $workingDir = $this->getStackWorkingDir($host, $stackName);
+
+            if ($workingDir && is_dir($workingDir)) {
+                $output = shell_exec("cd " . escapeshellarg($workingDir) . " && docker compose up -d 2>&1");
+            } else {
+                // Try to start just by project name
+                $output = shell_exec("docker compose -p " . escapeshellarg($stackName) . " up -d 2>&1");
+            }
+
+            return JsonResponse::success([
+                'message' => 'Stack started successfully',
+                'output' => $output,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to start stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Stop a stack (docker compose down)
+     */
+    public function stackDown(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+        $params = $request->getQueryParams();
+        $removeVolumes = ($params['volumes'] ?? 'false') === 'true';
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        try {
+            $workingDir = $this->getStackWorkingDir($host, $stackName);
+            $volumeFlag = $removeVolumes ? ' -v' : '';
+
+            if ($workingDir && is_dir($workingDir)) {
+                $output = shell_exec("cd " . escapeshellarg($workingDir) . " && docker compose down{$volumeFlag} 2>&1");
+            } else {
+                $output = shell_exec("docker compose -p " . escapeshellarg($stackName) . " down{$volumeFlag} 2>&1");
+            }
+
+            return JsonResponse::success([
+                'message' => 'Stack stopped successfully',
+                'output' => $output,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to stop stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Restart a stack (docker compose restart)
+     */
+    public function stackRestart(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        try {
+            $workingDir = $this->getStackWorkingDir($host, $stackName);
+
+            if ($workingDir && is_dir($workingDir)) {
+                $output = shell_exec("cd " . escapeshellarg($workingDir) . " && docker compose restart 2>&1");
+            } else {
+                $output = shell_exec("docker compose -p " . escapeshellarg($stackName) . " restart 2>&1");
+            }
+
+            return JsonResponse::success([
+                'message' => 'Stack restarted successfully',
+                'output' => $output,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to restart stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get stack working directory from container labels
+     */
+    private function getStackWorkingDir(array $host, string $stackName): ?string
+    {
+        try {
+            $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
+            $containerIds = array_filter(explode("\n", trim($output)));
+
+            if (empty($containerIds)) {
+                return null;
+            }
+
+            $labels = $this->getContainerLabels($host, $containerIds[0]);
+            return $labels['com.docker.compose.project.working_dir'] ?? null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    // ========================================================================
+    // Backup & Restore
+    // ========================================================================
+
+    /**
+     * Backup a stack's .env and docker-compose files
+     */
+    public function backupStack(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $userId = $request->getAttribute('user_id');
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        // Only allow on local host
+        if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
+            return JsonResponse::error('Backup only available on local Docker host', 403);
+        }
+
+        try {
+            // Find stack working directory
+            $workingDir = $this->getStackWorkingDir($host, $stackName);
+
+            if (!$workingDir || !is_dir($workingDir)) {
+                return JsonResponse::error('Stack working directory not found', 404);
+            }
+
+            // Get compose file path from labels
+            $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
+            $containerIds = array_filter(explode("\n", trim($output)));
+
+            if (empty($containerIds)) {
+                return JsonResponse::error('No containers found for stack', 404);
+            }
+
+            $labels = $this->getContainerLabels($host, $containerIds[0]);
+            $configFiles = $labels['com.docker.compose.project.config_files'] ?? null;
+
+            // Prepare backup data
+            $backupData = [
+                'stack_name' => $stackName,
+                'working_dir' => $workingDir,
+                'backup_date' => date('Y-m-d H:i:s'),
+                'files' => [],
+            ];
+
+            // Read compose file(s)
+            if ($configFiles) {
+                $paths = explode(',', $configFiles);
+                foreach ($paths as $path) {
+                    $path = trim($path);
+                    if (file_exists($path)) {
+                        $backupData['files'][] = [
+                            'name' => basename($path),
+                            'path' => $path,
+                            'content' => file_get_contents($path),
+                        ];
+                    }
+                }
+            }
+
+            // Read .env file if exists
+            $envPath = $workingDir . '/.env';
+            if (file_exists($envPath)) {
+                $backupData['files'][] = [
+                    'name' => '.env',
+                    'path' => $envPath,
+                    'content' => file_get_contents($envPath),
+                ];
+            }
+
+            // Save backup to user's backup directory
+            $backupsDir = $this->getBackupsDirectory($userId);
+            $backupFileName = $stackName . '_' . date('Y-m-d_His') . '.json';
+            $backupPath = $backupsDir . '/' . $backupFileName;
+
+            file_put_contents($backupPath, json_encode($backupData, JSON_PRETTY_PRINT));
+
+            return JsonResponse::success([
+                'message' => 'Backup created successfully',
+                'backup_file' => $backupFileName,
+                'files_count' => count($backupData['files']),
+                'files' => array_map(fn($f) => $f['name'], $backupData['files']),
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to create backup: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * List all backups for the current user
+     */
+    public function listBackups(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $stackName = $params['stack'] ?? null;
+
+        try {
+            $backupsDir = $this->getBackupsDirectory($userId);
+            $backups = [];
+
+            $files = glob($backupsDir . '/*.json');
+            foreach ($files as $file) {
+                $fileName = basename($file);
+
+                // Filter by stack if provided
+                if ($stackName && !str_starts_with($fileName, $stackName . '_')) {
+                    continue;
+                }
+
+                $data = json_decode(file_get_contents($file), true);
+                $backups[] = [
+                    'file' => $fileName,
+                    'stack_name' => $data['stack_name'] ?? 'unknown',
+                    'backup_date' => $data['backup_date'] ?? null,
+                    'files_count' => count($data['files'] ?? []),
+                    'files' => array_map(fn($f) => $f['name'], $data['files'] ?? []),
+                    'size' => filesize($file),
+                ];
+            }
+
+            // Sort by date descending
+            usort($backups, fn($a, $b) => strcmp($b['backup_date'] ?? '', $a['backup_date'] ?? ''));
+
+            return JsonResponse::success(['backups' => $backups]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to list backups: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get backup details
+     */
+    public function getBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $fileName = $this->getRouteArg($request, 'file');
+
+        if (empty($fileName) || !preg_match('/^[a-zA-Z0-9_.-]+\.json$/', $fileName)) {
+            throw new ValidationException('Invalid backup file name');
+        }
+
+        try {
+            $backupsDir = $this->getBackupsDirectory($userId);
+            $backupPath = $backupsDir . '/' . $fileName;
+
+            if (!file_exists($backupPath)) {
+                return JsonResponse::error('Backup not found', 404);
+            }
+
+            $data = json_decode(file_get_contents($backupPath), true);
+
+            return JsonResponse::success([
+                'backup' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to get backup: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Restore a stack from backup
+     */
+    public function restoreBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $fileName = $this->getRouteArg($request, 'file');
+        $body = $request->getParsedBody();
+        $targetDir = $body['target_dir'] ?? null;
+        $deploy = $body['deploy'] ?? false;
+
+        if (empty($fileName) || !preg_match('/^[a-zA-Z0-9_.-]+\.json$/', $fileName)) {
+            throw new ValidationException('Invalid backup file name');
+        }
+
+        try {
+            $backupsDir = $this->getBackupsDirectory($userId);
+            $backupPath = $backupsDir . '/' . $fileName;
+
+            if (!file_exists($backupPath)) {
+                return JsonResponse::error('Backup not found', 404);
+            }
+
+            $data = json_decode(file_get_contents($backupPath), true);
+            $stackName = $data['stack_name'] ?? 'restored_stack';
+
+            // Determine target directory
+            if (!$targetDir) {
+                $targetDir = $data['working_dir'] ?? null;
+            }
+
+            if (!$targetDir) {
+                // Create in user's stacks directory
+                $stacksDir = $this->getStacksDirectory($userId);
+                $targetDir = $stacksDir . '/' . $stackName . '_restored_' . date('YmdHis');
+            }
+
+            // Create directory if it doesn't exist
+            if (!is_dir($targetDir)) {
+                if (!mkdir($targetDir, 0755, true)) {
+                    return JsonResponse::error('Failed to create target directory', 500);
+                }
+            }
+
+            // Restore files
+            $restoredFiles = [];
+            foreach ($data['files'] ?? [] as $file) {
+                $targetPath = $targetDir . '/' . $file['name'];
+                file_put_contents($targetPath, $file['content']);
+                $restoredFiles[] = $file['name'];
+            }
+
+            $result = [
+                'message' => 'Backup restored successfully',
+                'target_dir' => $targetDir,
+                'files_restored' => $restoredFiles,
+            ];
+
+            // Deploy if requested
+            if ($deploy) {
+                $output = shell_exec("cd " . escapeshellarg($targetDir) . " && docker compose -p " . escapeshellarg($stackName) . " up -d 2>&1");
+                $result['deploy_output'] = $output;
+            }
+
+            return JsonResponse::success($result);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to restore backup: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Delete a backup
+     */
+    public function deleteBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $fileName = $this->getRouteArg($request, 'file');
+
+        if (empty($fileName) || !preg_match('/^[a-zA-Z0-9_.-]+\.json$/', $fileName)) {
+            throw new ValidationException('Invalid backup file name');
+        }
+
+        try {
+            $backupsDir = $this->getBackupsDirectory($userId);
+            $backupPath = $backupsDir . '/' . $fileName;
+
+            if (!file_exists($backupPath)) {
+                return JsonResponse::error('Backup not found', 404);
+            }
+
+            unlink($backupPath);
+
+            return JsonResponse::success(['message' => 'Backup deleted successfully']);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to delete backup: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get user's stacks directory
+     */
+    private function getStacksDirectory(string $userId): string
+    {
+        $dir = __DIR__ . '/../../../../storage/docker/stacks/' . $userId;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir;
+    }
+
+    /**
+     * Get user's backups directory
+     */
+    private function getBackupsDirectory(string $userId): string
+    {
+        $dir = __DIR__ . '/../../../../storage/docker/backups/' . $userId;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir;
+    }
+
+    /**
+     * Recursively remove a directory
+     */
+    private function removeDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) return;
+
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . '/' . $file;
+            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
+        }
+        rmdir($dir);
+    }
 }

@@ -625,7 +625,7 @@ function isGroupExpanded(groupId) {
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -708,7 +708,7 @@ function isGroupExpanded(groupId) {
       <div
         v-if="showTagModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showTagModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -763,7 +763,7 @@ function isGroupExpanded(groupId) {
       <div
         v-if="showGroupModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showGroupModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">

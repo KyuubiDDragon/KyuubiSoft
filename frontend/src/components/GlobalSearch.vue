@@ -149,7 +149,7 @@ defineExpose({ open, close })
       <div
         v-if="isOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-[15vh]"
-        @click.self="close"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 shadow-2xl overflow-hidden">
           <!-- Search Input -->

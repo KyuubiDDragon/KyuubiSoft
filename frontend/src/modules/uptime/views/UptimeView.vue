@@ -765,7 +765,7 @@ function toggleMonitorSelection(monitorId) {
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -927,7 +927,7 @@ function toggleMonitorSelection(monitorId) {
       <div
         v-if="showFolderModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showFolderModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-sm border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -978,7 +978,7 @@ function toggleMonitorSelection(monitorId) {
       <div
         v-if="showDetailModal && selectedMonitor"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showDetailModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">

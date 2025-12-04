@@ -416,7 +416,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
         <div
           v-if="showEventModal"
           class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click.self="showEventModal = false"
+          
         >
           <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">

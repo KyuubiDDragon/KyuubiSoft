@@ -932,7 +932,7 @@ onUnmounted(() => {
       <div
         v-if="selectedContainer"
         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-        @click.self="closeDetails"
+        
       >
         <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
@@ -1119,7 +1119,7 @@ onUnmounted(() => {
       <div
         v-if="showComposeModal"
         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-        @click.self="closeComposeModal"
+        
       >
         <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
           <!-- Modal Header -->

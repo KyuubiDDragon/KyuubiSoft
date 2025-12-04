@@ -507,7 +507,7 @@ watch(runningEntry, (val) => {
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">

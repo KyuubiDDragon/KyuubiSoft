@@ -875,25 +875,10 @@ class ToolsController
         }
 
         try {
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'GET',
-                    'timeout' => 15,
-                    'follow_location' => 1,
-                    'max_redirects' => 5,
-                    'ignore_errors' => true,
-                    'user_agent' => 'Mozilla/5.0 (compatible; OpenGraphPreview/1.0; +https://kyuubisoft.com)',
-                    'header' => "Accept: text/html,application/xhtml+xml\r\n",
-                ],
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ],
-            ]);
+            // Use cURL for better reliability
+            $html = $this->fetchUrlWithCurl($url);
 
-            $html = @file_get_contents($url, false, $context);
-
-            if ($html === false) {
+            if ($html === false || empty($html)) {
                 return JsonResponse::error('Could not fetch URL', 500);
             }
 
@@ -927,6 +912,41 @@ class ToolsController
         } catch (\Exception $e) {
             return JsonResponse::error('Open Graph check failed: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function fetchUrlWithCurl(string $url): string|false
+    {
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Cache-Control: no-cache',
+            ],
+            CURLOPT_ENCODING => '', // Accept all encodings (gzip, deflate, etc.)
+        ]);
+
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+
+        curl_close($ch);
+
+        if ($error || $httpCode >= 400) {
+            return false;
+        }
+
+        return $html;
     }
 
     private function parseMetaTags(string $html): array

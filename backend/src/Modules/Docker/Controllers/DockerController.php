@@ -9,12 +9,23 @@ use App\Core\Http\JsonResponse;
 use App\Modules\Docker\Repositories\DockerHostRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 class DockerController
 {
     public function __construct(
         private readonly DockerHostRepository $hostRepository
     ) {}
+
+    /**
+     * Helper to get route argument
+     */
+    private function getRouteArg(ServerRequestInterface $request, string $name): ?string
+    {
+        $routeContext = RouteContext::fromRequest($request);
+        $route = $routeContext->getRoute();
+        return $route ? $route->getArgument($name) : null;
+    }
 
     // ========================================================================
     // Docker Host Management
@@ -41,10 +52,10 @@ class DockerController
     /**
      * Get a single Docker host
      */
-    public function getHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function getHost(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $hostId = $args['id'] ?? '';
+        $hostId = $this->getRouteArg($request, 'id');
 
         if (empty($hostId)) {
             throw new ValidationException('Host ID is required');
@@ -110,10 +121,10 @@ class DockerController
     /**
      * Update a Docker host
      */
-    public function updateHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function updateHost(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $hostId = $args['id'] ?? '';
+        $hostId = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody();
 
         if (empty($hostId)) {
@@ -180,10 +191,10 @@ class DockerController
     /**
      * Delete a Docker host
      */
-    public function deleteHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteHost(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $hostId = $args['id'] ?? '';
+        $hostId = $this->getRouteArg($request, 'id');
 
         if (empty($hostId)) {
             throw new ValidationException('Host ID is required');
@@ -203,10 +214,10 @@ class DockerController
     /**
      * Set a Docker host as default
      */
-    public function setDefaultHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function setDefaultHost(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $hostId = $args['id'] ?? '';
+        $hostId = $this->getRouteArg($request, 'id');
 
         if (empty($hostId)) {
             throw new ValidationException('Host ID is required');
@@ -226,10 +237,10 @@ class DockerController
     /**
      * Test connection to a Docker host
      */
-    public function testHostConnection(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function testHostConnection(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $hostId = $args['id'] ?? '';
+        $hostId = $this->getRouteArg($request, 'id');
 
         if (empty($hostId)) {
             throw new ValidationException('Host ID is required');
@@ -349,10 +360,10 @@ class DockerController
     /**
      * Get container details
      */
-    public function containerDetails(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function containerDetails(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
 
         if (empty($containerId)) {
             throw new ValidationException('Container ID is required');
@@ -417,10 +428,10 @@ class DockerController
     /**
      * Start a container
      */
-    public function startContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function startContainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
             throw new ValidationException('Invalid container ID');
@@ -437,10 +448,10 @@ class DockerController
     /**
      * Stop a container
      */
-    public function stopContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function stopContainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
             throw new ValidationException('Invalid container ID');
@@ -457,10 +468,10 @@ class DockerController
     /**
      * Restart a container
      */
-    public function restartContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function restartContainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
             throw new ValidationException('Invalid container ID');
@@ -477,10 +488,10 @@ class DockerController
     /**
      * Get container logs
      */
-    public function containerLogs(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function containerLogs(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
         $params = $request->getQueryParams();
         $tail = min((int) ($params['tail'] ?? 100), 1000);
         $since = $params['since'] ?? '';
@@ -510,10 +521,10 @@ class DockerController
     /**
      * Get container stats
      */
-    public function containerStats(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function containerStats(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $containerId = $args['id'] ?? '';
+        $containerId = $this->getRouteArg($request, 'id');
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
             throw new ValidationException('Invalid container ID');
@@ -586,10 +597,10 @@ class DockerController
     /**
      * Get image details
      */
-    public function imageDetails(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function imageDetails(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $host = $this->resolveHost($request);
-        $imageId = $args['id'] ?? '';
+        $imageId = $this->getRouteArg($request, 'id');
 
         if (empty($imageId)) {
             throw new ValidationException('Image ID is required');

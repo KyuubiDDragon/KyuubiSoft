@@ -16,9 +16,11 @@ import {
   XCircleIcon,
   InformationCircleIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   ServerStackIcon,
   ComputerDesktopIcon,
   Cog6ToothIcon,
+  RectangleStackIcon,
 } from '@heroicons/vue/24/outline'
 
 // State
@@ -36,6 +38,10 @@ const showHostDropdown = ref(false)
 
 // Data
 const containers = ref([])
+const stacks = ref([])
+const standaloneContainers = ref([])
+const showGrouped = ref(true)
+const expandedStacks = ref({})
 const images = ref([])
 const networks = ref([])
 const volumes = ref([])
@@ -119,9 +125,22 @@ async function checkDockerStatus() {
 
 async function loadContainers() {
   try {
-    const response = await api.get('/api/v1/docker/containers', { params: { all: 'true', ...getHostParams() } })
+    const response = await api.get('/api/v1/docker/containers', {
+      params: { all: 'true', grouped: 'true', ...getHostParams() }
+    })
     const data = response.data.data || response.data
-    containers.value = data.containers || []
+
+    // Store grouped data
+    stacks.value = data.stacks || []
+    standaloneContainers.value = data.standalone || []
+
+    // Flatten for total count and backward compatibility
+    const allContainers = []
+    stacks.value.forEach(stack => {
+      allContainers.push(...stack.containers)
+    })
+    allContainers.push(...standaloneContainers.value)
+    containers.value = allContainers
   } catch (e) {
     console.error('Failed to load containers:', e)
   }
@@ -277,6 +296,14 @@ function getStateColor(state) {
     case 'restarting': return 'text-blue-400'
     default: return 'text-gray-400'
   }
+}
+
+function toggleStack(stackName) {
+  expandedStacks.value[stackName] = !expandedStacks.value[stackName]
+}
+
+function isStackExpanded(stackName) {
+  return expandedStacks.value[stackName] ?? true // Expanded by default
 }
 
 function getStateIcon(state) {
@@ -578,59 +605,152 @@ onUnmounted(() => {
         <div v-if="containers.length === 0" class="card p-8 text-center text-gray-400">
           Keine Container gefunden
         </div>
-        <div v-else class="space-y-2">
-          <div
-            v-for="container in containers"
-            :key="container.id"
-            class="card p-4 hover:bg-dark-700 transition-colors cursor-pointer"
-            @click="showContainerDetails(container)"
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-4">
-                <component
-                  :is="getStateIcon(container.state)"
-                  class="w-5 h-5"
-                  :class="getStateColor(container.state)"
+
+        <template v-else>
+          <!-- Stacks -->
+          <div v-for="stack in stacks" :key="stack.name" class="card overflow-hidden">
+            <!-- Stack Header -->
+            <div
+              class="flex items-center justify-between p-4 bg-dark-700 cursor-pointer hover:bg-dark-600 transition-colors"
+              @click="toggleStack(stack.name)"
+            >
+              <div class="flex items-center gap-3">
+                <ChevronRightIcon
+                  class="w-4 h-4 text-gray-400 transition-transform"
+                  :class="{ 'rotate-90': isStackExpanded(stack.name) }"
                 />
+                <RectangleStackIcon class="w-5 h-5 text-primary-400" />
                 <div>
-                  <h3 class="font-medium text-white">{{ container.name }}</h3>
-                  <p class="text-sm text-gray-400">{{ container.image }}</p>
+                  <h3 class="font-medium text-white">{{ stack.name }}</h3>
+                  <p class="text-xs text-gray-400">
+                    {{ stack.running }}/{{ stack.total }} Container aktiv
+                  </p>
                 </div>
               </div>
-              <div class="flex items-center gap-4">
-                <div class="text-right hidden sm:block">
-                  <p class="text-sm text-gray-300">{{ container.status }}</p>
-                  <p class="text-xs text-gray-500">{{ container.ports || 'Keine Ports' }}</p>
-                </div>
-                <div class="flex items-center gap-2" @click.stop>
-                  <button
-                    v-if="container.state !== 'running'"
-                    @click="startContainer(container)"
-                    class="btn-icon text-green-400 hover:bg-green-500/20"
-                    title="Starten"
-                  >
-                    <PlayIcon class="w-4 h-4" />
-                  </button>
-                  <button
-                    v-if="container.state === 'running'"
-                    @click="stopContainer(container)"
-                    class="btn-icon text-red-400 hover:bg-red-500/20"
-                    title="Stoppen"
-                  >
-                    <StopIcon class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="restartContainer(container)"
-                    class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                    title="Neustarten"
-                  >
-                    <ArrowPathIcon class="w-4 h-4" />
-                  </button>
+              <div class="flex items-center gap-2">
+                <span
+                  class="px-2 py-1 text-xs rounded-full"
+                  :class="stack.running === stack.total ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'"
+                >
+                  {{ stack.running === stack.total ? 'Healthy' : 'Partial' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stack Containers -->
+            <div v-if="isStackExpanded(stack.name)" class="divide-y divide-dark-600">
+              <div
+                v-for="container in stack.containers"
+                :key="container.id"
+                class="p-4 pl-12 hover:bg-dark-700 transition-colors cursor-pointer"
+                @click="showContainerDetails(container)"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <component
+                      :is="getStateIcon(container.state)"
+                      class="w-5 h-5"
+                      :class="getStateColor(container.state)"
+                    />
+                    <div>
+                      <h3 class="font-medium text-white">
+                        {{ container.service || container.name }}
+                      </h3>
+                      <p class="text-sm text-gray-400">{{ container.image }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                      <p class="text-sm text-gray-300">{{ container.status }}</p>
+                      <p class="text-xs text-gray-500">{{ container.ports || 'Keine Ports' }}</p>
+                    </div>
+                    <div class="flex items-center gap-2" @click.stop>
+                      <button
+                        v-if="container.state !== 'running'"
+                        @click="startContainer(container)"
+                        class="btn-icon text-green-400 hover:bg-green-500/20"
+                        title="Starten"
+                      >
+                        <PlayIcon class="w-4 h-4" />
+                      </button>
+                      <button
+                        v-if="container.state === 'running'"
+                        @click="stopContainer(container)"
+                        class="btn-icon text-red-400 hover:bg-red-500/20"
+                        title="Stoppen"
+                      >
+                        <StopIcon class="w-4 h-4" />
+                      </button>
+                      <button
+                        @click="restartContainer(container)"
+                        class="btn-icon text-blue-400 hover:bg-blue-500/20"
+                        title="Neustarten"
+                      >
+                        <ArrowPathIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+
+          <!-- Standalone Containers -->
+          <div v-if="standaloneContainers.length > 0" class="space-y-2">
+            <h3 class="text-sm font-medium text-gray-400 px-1">Einzelne Container</h3>
+            <div
+              v-for="container in standaloneContainers"
+              :key="container.id"
+              class="card p-4 hover:bg-dark-700 transition-colors cursor-pointer"
+              @click="showContainerDetails(container)"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <component
+                    :is="getStateIcon(container.state)"
+                    class="w-5 h-5"
+                    :class="getStateColor(container.state)"
+                  />
+                  <div>
+                    <h3 class="font-medium text-white">{{ container.name }}</h3>
+                    <p class="text-sm text-gray-400">{{ container.image }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right hidden sm:block">
+                    <p class="text-sm text-gray-300">{{ container.status }}</p>
+                    <p class="text-xs text-gray-500">{{ container.ports || 'Keine Ports' }}</p>
+                  </div>
+                  <div class="flex items-center gap-2" @click.stop>
+                    <button
+                      v-if="container.state !== 'running'"
+                      @click="startContainer(container)"
+                      class="btn-icon text-green-400 hover:bg-green-500/20"
+                      title="Starten"
+                    >
+                      <PlayIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                      v-if="container.state === 'running'"
+                      @click="stopContainer(container)"
+                      class="btn-icon text-red-400 hover:bg-red-500/20"
+                      title="Stoppen"
+                    >
+                      <StopIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="restartContainer(container)"
+                      class="btn-icon text-blue-400 hover:bg-blue-500/20"
+                      title="Neustarten"
+                    >
+                      <ArrowPathIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
 
       <!-- Images Tab -->

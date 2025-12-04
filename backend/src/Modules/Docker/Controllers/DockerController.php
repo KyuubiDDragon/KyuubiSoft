@@ -983,6 +983,29 @@ class DockerController
             // Try to read file (direct access or via docker container)
             $content = $this->readHostFile($host, $composePath);
 
+            // If not found, try common compose filenames in working directory
+            if ($content === null && $workingDir) {
+                $commonComposeNames = [
+                    'docker-compose.yml',
+                    'docker-compose.yaml',
+                    'docker-compose.prod.yml',
+                    'docker-compose.prod.yaml',
+                    'docker-compose.production.yml',
+                    'compose.yml',
+                    'compose.yaml',
+                ];
+
+                foreach ($commonComposeNames as $filename) {
+                    $altPath = $workingDir . '/' . $filename;
+                    $altContent = $this->readHostFile($host, $altPath);
+                    if ($altContent !== null) {
+                        $content = $altContent;
+                        $composePath = $altPath;
+                        break;
+                    }
+                }
+            }
+
             if ($content === null) {
                 // List available files in the directory for debugging
                 $availableFiles = $this->listHostDirectory($host, $workingDir);
@@ -1526,6 +1549,7 @@ class DockerController
             ];
 
             // Read compose file(s) - try direct access first, then via docker container
+            $foundComposeFile = false;
             if ($configFiles) {
                 $paths = explode(',', $configFiles);
                 foreach ($paths as $path) {
@@ -1537,6 +1561,34 @@ class DockerController
                             'path' => $path,
                             'content' => $content,
                         ];
+                        $foundComposeFile = true;
+                    }
+                }
+            }
+
+            // If no compose file found from labels, try common filenames in working directory
+            if (!$foundComposeFile && $workingDir) {
+                $commonComposeNames = [
+                    'docker-compose.yml',
+                    'docker-compose.yaml',
+                    'docker-compose.prod.yml',
+                    'docker-compose.prod.yaml',
+                    'docker-compose.production.yml',
+                    'compose.yml',
+                    'compose.yaml',
+                ];
+
+                foreach ($commonComposeNames as $filename) {
+                    $path = $workingDir . '/' . $filename;
+                    $content = $this->readHostFile($host, $path);
+                    if ($content !== null) {
+                        $backupData['files'][] = [
+                            'name' => $filename,
+                            'path' => $path,
+                            'content' => $content,
+                        ];
+                        $foundComposeFile = true;
+                        break; // Only take first found
                     }
                 }
             }

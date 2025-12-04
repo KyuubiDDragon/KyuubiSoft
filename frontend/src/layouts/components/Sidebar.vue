@@ -30,6 +30,7 @@ import {
   BriefcaseIcon,
   CommandLineIcon,
   CalendarIcon,
+  CubeIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -128,6 +129,7 @@ const allNavigationGroups = [
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },
+      { name: 'Docker', href: '/docker', icon: CubeIcon },
     ],
   },
 

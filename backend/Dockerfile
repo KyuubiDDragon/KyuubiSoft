@@ -17,6 +17,7 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     ffmpeg \
+    docker-cli \
     $PHPIZE_DEPS
 
 # Install yt-dlp
@@ -64,10 +65,11 @@ RUN if [ -f "composer.json" ]; then \
         composer dump-autoload --optimize; \
     fi
 
-# Create storage directories
+# Create storage directories and add www-data to docker group for Docker socket access
 RUN mkdir -p storage/logs storage/cache storage/uploads \
     && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage
+    && chmod -R 755 /var/www/html/storage \
+    && addgroup www-data docker 2>/dev/null || true
 
 # Copy PHP configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini

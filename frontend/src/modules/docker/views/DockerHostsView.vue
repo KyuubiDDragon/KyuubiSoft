@@ -87,7 +87,7 @@ async function fetchHosts() {
 async function fetchProjects() {
   try {
     const response = await api.get('/api/v1/projects')
-    projects.value = response.data.data.projects || []
+    projects.value = response.data.data.items || []
   } catch (error) {
     console.error('Failed to fetch projects:', error)
   }

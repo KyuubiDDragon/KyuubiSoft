@@ -47,6 +47,7 @@ const phpFpmStatus = ref(null)
 const services = ref([])
 const commonServices = ref([])
 const serviceFilter = ref('running')
+const serviceSearch = ref('')
 const showServiceModal = ref(false)
 const selectedService = ref(null)
 const serviceStatus = ref(null)
@@ -106,9 +107,11 @@ async function loadProcesses() {
 
 async function loadServices() {
   try {
-    const response = await api.get('/api/v1/server/services', {
-      params: { type: serviceFilter.value }
-    })
+    const params = { type: serviceFilter.value }
+    if (serviceSearch.value) {
+      params.search = serviceSearch.value
+    }
+    const response = await api.get('/api/v1/server/services', { params })
     const data = response.data.data
     services.value = data.services || []
     commonServices.value = data.common || []
@@ -377,14 +380,26 @@ function toggleAutoRefresh() {
       </div>
 
       <!-- Service Filter -->
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <h3 class="text-lg font-medium text-white">Alle Services</h3>
-        <select v-model="serviceFilter" @change="loadServices" class="input w-48">
+        <select v-model="serviceFilter" @change="loadServices" class="input w-40">
           <option value="all">Alle</option>
           <option value="running">Laufend</option>
           <option value="failed">Fehlgeschlagen</option>
           <option value="enabled">Aktiviert</option>
         </select>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="serviceSearch"
+            type="text"
+            class="input w-48"
+            placeholder="Suche..."
+            @keyup.enter="loadServices"
+          />
+          <button @click="loadServices" class="btn-secondary">
+            <ArrowPathIcon class="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <!-- Services Table -->

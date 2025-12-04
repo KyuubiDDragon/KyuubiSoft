@@ -204,24 +204,46 @@ const sidebarClass = computed(() => ({
   'w-20': uiStore.sidebarCollapsed,
 }))
 
+// Collect all navigation hrefs for sibling detection
+const allNavigationHrefs = computed(() => {
+  const hrefs = new Set()
+  allNavigationGroups.forEach(group => {
+    if (group.href) {
+      hrefs.add(group.href)
+    }
+    if (group.children) {
+      group.children.forEach(child => {
+        hrefs.add(child.href)
+      })
+    }
+  })
+  return hrefs
+})
+
 function isActive(href) {
   if (href === '/') {
     return route.path === '/'
   }
-  // Exact match for routes that have sub-routes
-  // e.g., /docker should not be active when on /docker/hosts
+  // Exact match always returns true
   if (route.path === href) {
     return true
   }
-  // For routes with children, only match if it's a deeper subpath
-  // e.g., /docker/containers/123 should match /docker
-  // but /docker/hosts should NOT match /docker
+
+  // If the current route is a known navigation item (sibling),
+  // only exact match should be active
+  // e.g., when on /docker/hosts, /docker should NOT be active
+  if (allNavigationHrefs.value.has(route.path)) {
+    return false
+  }
+
+  // For deeper paths not in navigation (like /docker/containers/123),
+  // check if href is a parent
   const hrefSegments = href.split('/').filter(Boolean)
   const pathSegments = route.path.split('/').filter(Boolean)
 
   // If the href has the same number of segments or more, require exact match
   if (pathSegments.length <= hrefSegments.length) {
-    return route.path === href
+    return false
   }
 
   // Check if all href segments match the beginning of the path

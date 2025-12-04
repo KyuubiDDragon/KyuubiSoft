@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import {
   ArrowPathIcon,
@@ -15,6 +15,10 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   InformationCircleIcon,
+  ChevronDownIcon,
+  ServerStackIcon,
+  ComputerDesktopIcon,
+  Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 
 // State
@@ -23,6 +27,12 @@ const loading = ref(false)
 const error = ref(null)
 const dockerAvailable = ref(null)
 const dockerVersion = ref('')
+
+// Host Selection
+const dockerHosts = ref([])
+const selectedHostId = ref(null)
+const currentHostName = ref('Lokal')
+const showHostDropdown = ref(false)
 
 // Data
 const containers = ref([])
@@ -52,12 +62,51 @@ const stoppedContainers = computed(() =>
   containers.value.filter(c => c.state !== 'running').length
 )
 
+// Helper to get host query params
+function getHostParams() {
+  return selectedHostId.value ? { host_id: selectedHostId.value } : {}
+}
+
 // Methods
+async function loadHosts() {
+  try {
+    const response = await api.get('/api/v1/docker/hosts')
+    dockerHosts.value = response.data.data.hosts || []
+
+    // Find default host
+    const defaultHost = dockerHosts.value.find(h => h.is_default)
+    if (defaultHost) {
+      selectedHostId.value = defaultHost.id
+      currentHostName.value = defaultHost.name
+    }
+  } catch (e) {
+    console.error('Failed to load Docker hosts:', e)
+  }
+}
+
+async function selectHost(host) {
+  if (host) {
+    selectedHostId.value = host.id
+    currentHostName.value = host.name
+  } else {
+    selectedHostId.value = null
+    currentHostName.value = 'Lokal'
+  }
+  showHostDropdown.value = false
+
+  // Re-check status and reload data for new host
+  await checkDockerStatus()
+  if (dockerAvailable.value) {
+    await refreshData()
+  }
+}
+
 async function checkDockerStatus() {
   try {
-    const response = await api.get('/api/v1/docker/status')
+    const response = await api.get('/api/v1/docker/status', { params: getHostParams() })
     dockerAvailable.value = response.data.available
     dockerVersion.value = response.data.version || ''
+    currentHostName.value = response.data.host_name || currentHostName.value
     if (!response.data.available) {
       error.value = response.data.error || 'Docker is not available'
     }
@@ -69,7 +118,7 @@ async function checkDockerStatus() {
 
 async function loadContainers() {
   try {
-    const response = await api.get('/api/v1/docker/containers', { params: { all: 'true' } })
+    const response = await api.get('/api/v1/docker/containers', { params: { all: 'true', ...getHostParams() } })
     containers.value = response.data.containers || []
   } catch (e) {
     console.error('Failed to load containers:', e)
@@ -78,7 +127,7 @@ async function loadContainers() {
 
 async function loadImages() {
   try {
-    const response = await api.get('/api/v1/docker/images')
+    const response = await api.get('/api/v1/docker/images', { params: getHostParams() })
     images.value = response.data.images || []
   } catch (e) {
     console.error('Failed to load images:', e)
@@ -87,7 +136,7 @@ async function loadImages() {
 
 async function loadNetworks() {
   try {
-    const response = await api.get('/api/v1/docker/networks')
+    const response = await api.get('/api/v1/docker/networks', { params: getHostParams() })
     networks.value = response.data.networks || []
   } catch (e) {
     console.error('Failed to load networks:', e)
@@ -96,7 +145,7 @@ async function loadNetworks() {
 
 async function loadVolumes() {
   try {
-    const response = await api.get('/api/v1/docker/volumes')
+    const response = await api.get('/api/v1/docker/volumes', { params: getHostParams() })
     volumes.value = response.data.volumes || []
   } catch (e) {
     console.error('Failed to load volumes:', e)
@@ -105,7 +154,7 @@ async function loadVolumes() {
 
 async function loadSystemInfo() {
   try {
-    const response = await api.get('/api/v1/docker/system')
+    const response = await api.get('/api/v1/docker/system', { params: getHostParams() })
     systemInfo.value = response.data
   } catch (e) {
     console.error('Failed to load system info:', e)
@@ -133,7 +182,7 @@ async function refreshData() {
 
 async function startContainer(container) {
   try {
-    await api.post(`/api/v1/docker/containers/${container.id}/start`)
+    await api.post(`/api/v1/docker/containers/${container.id}/start`, null, { params: getHostParams() })
     await loadContainers()
   } catch (e) {
     error.value = 'Failed to start container'
@@ -142,7 +191,7 @@ async function startContainer(container) {
 
 async function stopContainer(container) {
   try {
-    await api.post(`/api/v1/docker/containers/${container.id}/stop`)
+    await api.post(`/api/v1/docker/containers/${container.id}/stop`, null, { params: getHostParams() })
     await loadContainers()
   } catch (e) {
     error.value = 'Failed to stop container'
@@ -151,7 +200,7 @@ async function stopContainer(container) {
 
 async function restartContainer(container) {
   try {
-    await api.post(`/api/v1/docker/containers/${container.id}/restart`)
+    await api.post(`/api/v1/docker/containers/${container.id}/restart`, null, { params: getHostParams() })
     await loadContainers()
   } catch (e) {
     error.value = 'Failed to restart container'
@@ -168,15 +217,15 @@ async function showContainerDetails(container) {
 
   try {
     const [detailsRes, logsRes] = await Promise.all([
-      api.get(`/api/v1/docker/containers/${container.id}`),
-      api.get(`/api/v1/docker/containers/${container.id}/logs`, { params: { tail: 100 } }),
+      api.get(`/api/v1/docker/containers/${container.id}`, { params: getHostParams() }),
+      api.get(`/api/v1/docker/containers/${container.id}/logs`, { params: { tail: 100, ...getHostParams() } }),
     ])
     containerDetails.value = detailsRes.data
     containerLogs.value = logsRes.data.logs || ''
 
     // Only load stats if container is running
     if (container.state === 'running') {
-      const statsRes = await api.get(`/api/v1/docker/containers/${container.id}/stats`)
+      const statsRes = await api.get(`/api/v1/docker/containers/${container.id}/stats`, { params: getHostParams() })
       containerStats.value = statsRes.data
     }
   } catch (e) {
@@ -189,7 +238,7 @@ async function showContainerDetails(container) {
 async function refreshLogs() {
   if (!selectedContainer.value) return
   try {
-    const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/logs`, { params: { tail: 100 } })
+    const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/logs`, { params: { tail: 100, ...getHostParams() } })
     containerLogs.value = response.data.logs || ''
   } catch (e) {
     console.error('Failed to refresh logs:', e)
@@ -199,7 +248,7 @@ async function refreshLogs() {
 async function refreshStats() {
   if (!selectedContainer.value || selectedContainer.value.state !== 'running') return
   try {
-    const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/stats`)
+    const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/stats`, { params: getHostParams() })
     containerStats.value = response.data
   } catch (e) {
     console.error('Failed to refresh stats:', e)
@@ -242,6 +291,10 @@ function formatBytes(bytes) {
 
 // Lifecycle
 onMounted(async () => {
+  // Load available hosts first
+  await loadHosts()
+
+  // Check status for default/selected host
   await checkDockerStatus()
   if (dockerAvailable.value) {
     await refreshData()
@@ -278,6 +331,82 @@ onUnmounted(() => {
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- Host Selector -->
+        <div class="relative">
+          <button
+            @click="showHostDropdown = !showHostDropdown"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg border border-dark-600 transition-colors"
+          >
+            <ServerStackIcon class="w-4 h-4 text-gray-400" />
+            <span class="text-sm text-white">{{ currentHostName }}</span>
+            <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+          </button>
+
+          <!-- Host Dropdown -->
+          <div
+            v-if="showHostDropdown"
+            class="absolute right-0 mt-1 py-1 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-50 min-w-48"
+          >
+            <!-- Local/Default Option -->
+            <button
+              @click="selectHost(null)"
+              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
+              :class="!selectedHostId ? 'bg-dark-600' : ''"
+            >
+              <ComputerDesktopIcon class="w-4 h-4 text-blue-400" />
+              <span class="text-sm text-gray-300">Lokal (Standard)</span>
+            </button>
+
+            <template v-if="dockerHosts.length > 0">
+              <div class="h-px bg-dark-600 my-1"></div>
+
+              <button
+                v-for="host in dockerHosts"
+                :key="host.id"
+                @click="selectHost(host)"
+                class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
+                :class="selectedHostId === host.id ? 'bg-dark-600' : ''"
+              >
+                <ComputerDesktopIcon
+                  v-if="host.type === 'socket'"
+                  class="w-4 h-4 text-blue-400"
+                />
+                <GlobeAltIcon v-else class="w-4 h-4 text-purple-400" />
+                <div class="flex-1 min-w-0">
+                  <span class="text-sm text-gray-300 block truncate">{{ host.name }}</span>
+                  <span v-if="host.project_name" class="text-xs text-gray-500">{{ host.project_name }}</span>
+                </div>
+                <CheckCircleIcon
+                  v-if="host.connection_status === 'connected'"
+                  class="w-4 h-4 text-green-400 flex-shrink-0"
+                />
+                <XCircleIcon
+                  v-else-if="host.connection_status === 'error'"
+                  class="w-4 h-4 text-red-400 flex-shrink-0"
+                />
+              </button>
+            </template>
+
+            <div class="h-px bg-dark-600 my-1"></div>
+
+            <!-- Manage Hosts Link -->
+            <a
+              href="/docker/hosts"
+              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
+            >
+              <Cog6ToothIcon class="w-4 h-4 text-gray-400" />
+              <span class="text-sm text-gray-400">Hosts verwalten</span>
+            </a>
+          </div>
+
+          <!-- Backdrop -->
+          <div
+            v-if="showHostDropdown"
+            class="fixed inset-0 z-40"
+            @click="showHostDropdown = false"
+          ></div>
+        </div>
+
         <label class="flex items-center gap-2 text-sm text-gray-400">
           <input v-model="autoRefresh" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
           Auto-Refresh

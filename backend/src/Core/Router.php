@@ -236,6 +236,7 @@ class Router
                 // Uptime Monitor
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index']);
                 $protected->post('/uptime', [UptimeMonitorController::class, 'create']);
+                $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes']);
                 $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats']);
                 $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show']);
                 $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update']);

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -14,12 +14,18 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   ClockIcon,
+  GlobeAltIcon,
+  ServerIcon,
+  ShieldCheckIcon,
+  CubeIcon,
+  UsersIcon,
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
 
 // State
 const monitors = ref([])
+const monitorTypes = ref({})
 const stats = ref(null)
 const isLoading = ref(true)
 const showModal = ref(false)
@@ -33,20 +39,33 @@ let refreshInterval = null
 const form = ref({
   name: '',
   url: '',
+  hostname: '',
+  port: null,
   type: 'https',
   check_interval: 300,
   timeout: 30,
   expected_status_code: 200,
   expected_keyword: '',
+  dns_record_type: 'A',
+  ssl_expiry_warn_days: 14,
   notify_on_down: true,
   notify_on_recovery: true,
 })
 
-const monitorTypes = [
-  { value: 'https', label: 'HTTPS' },
-  { value: 'http', label: 'HTTP' },
-  { value: 'ping', label: 'Ping' },
-]
+// Type icons mapping
+const typeIcons = {
+  http: GlobeAltIcon,
+  https: ShieldCheckIcon,
+  ping: SignalIcon,
+  tcp: ServerIcon,
+  udp: ServerIcon,
+  minecraft: CubeIcon,
+  source: PlayIcon,
+  fivem: PlayIcon,
+  teamspeak: UsersIcon,
+  dns: GlobeAltIcon,
+  ssl: ShieldCheckIcon,
+}
 
 const intervalOptions = [
   { value: 60, label: '1 Minute' },
@@ -56,14 +75,36 @@ const intervalOptions = [
   { value: 3600, label: '1 Stunde' },
 ]
 
+const dnsRecordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']
+
 // Computed
 const upCount = computed(() => monitors.value.filter(m => m.current_status === 'up').length)
 const downCount = computed(() => monitors.value.filter(m => m.current_status === 'down').length)
 
+const currentTypeInfo = computed(() => {
+  return monitorTypes.value[form.value.type] || {}
+})
+
+const showUrlField = computed(() => ['http', 'https'].includes(form.value.type))
+const showHostnameField = computed(() => !showUrlField.value)
+const showPortField = computed(() => !['http', 'https', 'ping', 'dns'].includes(form.value.type))
+const showHttpFields = computed(() => ['http', 'https'].includes(form.value.type))
+const showDnsFields = computed(() => form.value.type === 'dns')
+const showSslFields = computed(() => form.value.type === 'ssl')
+const isGameServer = computed(() => currentTypeInfo.value.game_server === true)
+
+// Watch type changes to set default port
+watch(() => form.value.type, (newType) => {
+  const typeInfo = monitorTypes.value[newType]
+  if (typeInfo?.default_port && !editingMonitor.value) {
+    form.value.port = typeInfo.default_port
+  }
+})
+
 // API Calls
 onMounted(async () => {
   await loadData()
-  refreshInterval = setInterval(loadData, 60000) // Refresh every minute
+  refreshInterval = setInterval(loadData, 60000)
 })
 
 onUnmounted(() => {
@@ -73,12 +114,14 @@ onUnmounted(() => {
 async function loadData() {
   isLoading.value = monitors.value.length === 0
   try {
-    const [monitorsRes, statsRes] = await Promise.all([
+    const [monitorsRes, statsRes, typesRes] = await Promise.all([
       api.get('/api/v1/uptime'),
       api.get('/api/v1/uptime/stats'),
+      api.get('/api/v1/uptime/types'),
     ])
     monitors.value = monitorsRes.data.data?.items || []
     stats.value = statsRes.data.data
+    monitorTypes.value = typesRes.data.data || {}
   } catch (error) {
     uiStore.showError('Fehler beim Laden')
   } finally {
@@ -87,8 +130,18 @@ async function loadData() {
 }
 
 async function saveMonitor() {
-  if (!form.value.name.trim() || !form.value.url.trim()) {
-    uiStore.showError('Name und URL sind erforderlich')
+  if (!form.value.name.trim()) {
+    uiStore.showError('Name ist erforderlich')
+    return
+  }
+
+  if (showUrlField.value && !form.value.url.trim()) {
+    uiStore.showError('URL ist erforderlich')
+    return
+  }
+
+  if (showHostnameField.value && !form.value.hostname.trim()) {
+    uiStore.showError('Hostname ist erforderlich')
     return
   }
 
@@ -138,10 +191,8 @@ async function checkNow(monitor) {
     const result = response.data.data
     monitor.current_status = result.status
     monitor.last_check_at = new Date().toISOString()
-    if (result.status === 'up') {
-      monitor.last_up_at = new Date().toISOString()
-    } else {
-      monitor.last_down_at = new Date().toISOString()
+    if (result.data) {
+      monitor.game_server_data = result.data
     }
     uiStore.showSuccess(`Check abgeschlossen: ${result.status.toUpperCase()}`)
   } catch (error) {
@@ -167,11 +218,15 @@ function openCreateModal() {
   form.value = {
     name: '',
     url: '',
+    hostname: '',
+    port: null,
     type: 'https',
     check_interval: 300,
     timeout: 30,
     expected_status_code: 200,
     expected_keyword: '',
+    dns_record_type: 'A',
+    ssl_expiry_warn_days: 14,
     notify_on_down: true,
     notify_on_recovery: true,
   }
@@ -182,12 +237,16 @@ function openEditModal(monitor) {
   editingMonitor.value = monitor
   form.value = {
     name: monitor.name,
-    url: monitor.url,
+    url: monitor.url || '',
+    hostname: monitor.hostname || '',
+    port: monitor.port,
     type: monitor.type,
     check_interval: monitor.check_interval,
     timeout: monitor.timeout,
     expected_status_code: monitor.expected_status_code,
     expected_keyword: monitor.expected_keyword || '',
+    dns_record_type: monitor.dns_record_type || 'A',
+    ssl_expiry_warn_days: monitor.ssl_expiry_warn_days || 14,
     notify_on_down: monitor.notify_on_down,
     notify_on_recovery: monitor.notify_on_recovery,
   }
@@ -222,6 +281,24 @@ function getStatusBg(status) {
     default: return 'bg-gray-500'
   }
 }
+
+function getTypeIcon(type) {
+  return typeIcons[type] || SignalIcon
+}
+
+function getTypeName(type) {
+  return monitorTypes.value[type]?.name || type.toUpperCase()
+}
+
+function formatGameServerInfo(monitor) {
+  const data = monitor.game_server_data
+  if (!data) return null
+
+  if (data.players_online !== undefined) {
+    return `${data.players_online}/${data.players_max} Spieler`
+  }
+  return null
+}
 </script>
 
 <template>
@@ -230,7 +307,7 @@ function getStatusBg(status) {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-white">Uptime Monitor</h1>
-        <p class="text-gray-400 mt-1">Überwache deine Websites und Services</p>
+        <p class="text-gray-400 mt-1">Überwache Websites, Server und Game-Server</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
@@ -316,15 +393,29 @@ function getStatusBg(status) {
             :class="getStatusBg(monitor.current_status)"
           ></div>
 
+          <!-- Type icon -->
+          <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center">
+            <component :is="getTypeIcon(monitor.type)" class="w-4 h-4 text-gray-400" />
+          </div>
+
           <!-- Info -->
           <div class="flex-1 min-w-0 cursor-pointer" @click="openDetail(monitor)">
             <div class="flex items-center gap-2">
               <h3 class="font-medium text-white">{{ monitor.name }}</h3>
+              <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
+                {{ getTypeName(monitor.type) }}
+              </span>
               <span v-if="monitor.is_paused" class="px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
                 Pausiert
               </span>
             </div>
-            <p class="text-sm text-gray-500 truncate">{{ monitor.url }}</p>
+            <div class="flex items-center gap-3 text-sm text-gray-500">
+              <span class="truncate">{{ monitor.hostname || monitor.url }}</span>
+              <span v-if="monitor.port" class="text-gray-600">:{{ monitor.port }}</span>
+              <span v-if="formatGameServerInfo(monitor)" class="text-primary-400">
+                {{ formatGameServerInfo(monitor) }}
+              </span>
+            </div>
           </div>
 
           <!-- Uptime bars (last 30 checks) -->
@@ -388,7 +479,7 @@ function getStatusBg(status) {
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
         @click.self="showModal = false"
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700">
+        <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
               {{ editingMonitor ? 'Monitor bearbeiten' : 'Neuer Monitor' }}
@@ -399,51 +490,108 @@ function getStatusBg(status) {
           </div>
 
           <form @submit.prevent="saveMonitor" class="p-4 space-y-4">
+            <!-- Name -->
             <div>
               <label class="label">Name *</label>
-              <input v-model="form.name" type="text" class="input" placeholder="Meine Website" required />
+              <input v-model="form.name" type="text" class="input" placeholder="Mein Server" required />
             </div>
 
+            <!-- Type Selection -->
             <div>
+              <label class="label">Typ *</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button
+                  v-for="(info, type) in monitorTypes"
+                  :key="type"
+                  type="button"
+                  @click="form.type = type"
+                  class="p-3 rounded-lg border text-left transition-colors"
+                  :class="form.type === type
+                    ? 'border-primary-500 bg-primary-500/10 text-white'
+                    : 'border-dark-600 bg-dark-700 text-gray-400 hover:border-dark-500'"
+                >
+                  <component :is="getTypeIcon(type)" class="w-5 h-5 mb-1" />
+                  <p class="text-sm font-medium">{{ info.name }}</p>
+                </button>
+              </div>
+              <p v-if="currentTypeInfo.description" class="text-xs text-gray-500 mt-2">
+                {{ currentTypeInfo.description }}
+              </p>
+            </div>
+
+            <!-- URL (for HTTP/HTTPS) -->
+            <div v-if="showUrlField">
               <label class="label">URL *</label>
               <input v-model="form.url" type="url" class="input" placeholder="https://example.com" required />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="label">Typ</label>
-                <select v-model="form.type" class="input">
-                  <option v-for="type in monitorTypes" :key="type.value" :value="type.value">
-                    {{ type.label }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="label">Check-Intervall</label>
-                <select v-model="form.check_interval" class="input">
-                  <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
+            <!-- Hostname (for other types) -->
+            <div v-if="showHostnameField">
+              <label class="label">Hostname / IP *</label>
+              <input v-model="form.hostname" type="text" class="input" placeholder="play.example.com" required />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Port -->
+            <div v-if="showPortField" class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">Port</label>
+                <input v-model.number="form.port" type="number" class="input" :placeholder="currentTypeInfo.default_port || '25565'" />
+              </div>
               <div>
                 <label class="label">Timeout (Sek.)</label>
                 <input v-model.number="form.timeout" type="number" class="input" min="5" max="60" />
               </div>
+            </div>
+
+            <!-- HTTP-specific fields -->
+            <div v-if="showHttpFields" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="label">Timeout (Sek.)</label>
+                  <input v-model.number="form.timeout" type="number" class="input" min="5" max="60" />
+                </div>
+                <div>
+                  <label class="label">Erwarteter Status</label>
+                  <input v-model.number="form.expected_status_code" type="number" class="input" />
+                </div>
+              </div>
               <div>
-                <label class="label">Erwarteter Status</label>
-                <input v-model.number="form.expected_status_code" type="number" class="input" />
+                <label class="label">Erwartetes Keyword (optional)</label>
+                <input v-model="form.expected_keyword" type="text" class="input" placeholder="z.B. 'OK' oder 'Welcome'" />
               </div>
             </div>
 
-            <div>
-              <label class="label">Erwartetes Keyword (optional)</label>
-              <input v-model="form.expected_keyword" type="text" class="input" placeholder="z.B. 'OK' oder 'Welcome'" />
+            <!-- DNS-specific fields -->
+            <div v-if="showDnsFields">
+              <label class="label">DNS Record Typ</label>
+              <select v-model="form.dns_record_type" class="input">
+                <option v-for="type in dnsRecordTypes" :key="type" :value="type">{{ type }}</option>
+              </select>
             </div>
 
+            <!-- SSL-specific fields -->
+            <div v-if="showSslFields" class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">Port</label>
+                <input v-model.number="form.port" type="number" class="input" placeholder="443" />
+              </div>
+              <div>
+                <label class="label">Warnung (Tage vor Ablauf)</label>
+                <input v-model.number="form.ssl_expiry_warn_days" type="number" class="input" min="1" max="90" />
+              </div>
+            </div>
+
+            <!-- Check Interval -->
+            <div>
+              <label class="label">Check-Intervall</label>
+              <select v-model="form.check_interval" class="input">
+                <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Notifications -->
             <div class="flex gap-4">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="form.notify_on_down" type="checkbox" class="checkbox" />
@@ -478,7 +626,11 @@ function getStatusBg(status) {
                 class="w-3 h-3 rounded-full"
                 :class="getStatusBg(selectedMonitor.current_status)"
               ></div>
+              <component :is="getTypeIcon(selectedMonitor.type)" class="w-5 h-5 text-gray-400" />
               <h2 class="text-lg font-semibold text-white">{{ selectedMonitor.name }}</h2>
+              <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
+                {{ getTypeName(selectedMonitor.type) }}
+              </span>
             </div>
             <button @click="showDetailModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -486,12 +638,72 @@ function getStatusBg(status) {
           </div>
 
           <div class="p-4 space-y-6">
+            <!-- Game Server Data -->
+            <div v-if="selectedMonitor.game_server_data && Object.keys(selectedMonitor.game_server_data).length" class="bg-dark-700 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Server Info</h3>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div v-if="selectedMonitor.game_server_data.players_online !== undefined">
+                  <p class="text-xs text-gray-500">Spieler</p>
+                  <p class="text-lg font-bold text-white">
+                    {{ selectedMonitor.game_server_data.players_online }}/{{ selectedMonitor.game_server_data.players_max }}
+                  </p>
+                </div>
+                <div v-if="selectedMonitor.game_server_data.map">
+                  <p class="text-xs text-gray-500">Map</p>
+                  <p class="text-sm text-white">{{ selectedMonitor.game_server_data.map }}</p>
+                </div>
+                <div v-if="selectedMonitor.game_server_data.version">
+                  <p class="text-xs text-gray-500">Version</p>
+                  <p class="text-sm text-white">{{ selectedMonitor.game_server_data.version }}</p>
+                </div>
+                <div v-if="selectedMonitor.game_server_data.name">
+                  <p class="text-xs text-gray-500">Server Name</p>
+                  <p class="text-sm text-white truncate">{{ selectedMonitor.game_server_data.name }}</p>
+                </div>
+                <div v-if="selectedMonitor.game_server_data.game">
+                  <p class="text-xs text-gray-500">Spiel</p>
+                  <p class="text-sm text-white">{{ selectedMonitor.game_server_data.game }}</p>
+                </div>
+                <div v-if="selectedMonitor.game_server_data.motd">
+                  <p class="text-xs text-gray-500">MOTD</p>
+                  <p class="text-sm text-white truncate">{{ selectedMonitor.game_server_data.motd }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SSL Certificate Info -->
+            <div v-if="selectedMonitor.type === 'ssl' && selectedMonitor.game_server_data" class="bg-dark-700 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">SSL Zertifikat</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Common Name</p>
+                  <p class="text-sm text-white">{{ selectedMonitor.game_server_data.common_name }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Aussteller</p>
+                  <p class="text-sm text-white">{{ selectedMonitor.game_server_data.issuer }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Gültig bis</p>
+                  <p class="text-sm" :class="selectedMonitor.game_server_data.days_until_expiry < 14 ? 'text-yellow-400' : 'text-white'">
+                    {{ selectedMonitor.game_server_data.valid_to }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Tage verbleibend</p>
+                  <p class="text-lg font-bold" :class="selectedMonitor.game_server_data.days_until_expiry < 14 ? 'text-yellow-400' : 'text-green-400'">
+                    {{ selectedMonitor.game_server_data.days_until_expiry }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Stats -->
             <div class="grid grid-cols-3 gap-4">
               <div v-for="(stat, period) in selectedMonitor.stats" :key="period" class="bg-dark-700 rounded-lg p-3">
                 <p class="text-sm text-gray-400">{{ period }}</p>
                 <p class="text-xl font-bold text-white">{{ stat.percentage }}%</p>
-                <p class="text-xs text-gray-500">Ø {{ stat.avg_response_time }}ms</p>
+                <p class="text-xs text-gray-500">Ø {{ stat.avg_response_time || '-' }}ms</p>
               </div>
             </div>
 

@@ -40,7 +40,9 @@ class AuthController
         $result = $this->authService->register($registerRequest);
 
         // Log the registration
-        $this->auditLogger->logRegister($result['user']['id'], $request);
+        if (isset($result['user']['id'])) {
+            $this->auditLogger->logRegister((string) $result['user']['id'], $request);
+        }
 
         return JsonResponse::created($result, 'Registration successful');
     }
@@ -63,8 +65,10 @@ class AuthController
 
         $result = $this->authService->login($loginRequest);
 
-        // Log the login
-        $this->auditLogger->logLogin($result['user']['id'], $request);
+        // Only log successful logins (when user data is returned, not 2FA prompt)
+        if (isset($result['user']['id'])) {
+            $this->auditLogger->logLogin((string) $result['user']['id'], $request);
+        }
 
         return JsonResponse::success($result, 'Login successful');
     }
@@ -92,7 +96,9 @@ class AuthController
         $this->authService->logout($userId, $refreshToken);
 
         // Log the logout
-        $this->auditLogger->logLogout($userId, $request);
+        if ($userId) {
+            $this->auditLogger->logLogout((string) $userId, $request);
+        }
 
         return JsonResponse::success(null, 'Logged out successfully');
     }
@@ -166,7 +172,9 @@ class AuthController
         $result = $this->authService->verify2FA($userId, $code);
 
         // Log 2FA enabled
-        $this->auditLogger->log2FAEnabled($userId, $request);
+        if ($userId) {
+            $this->auditLogger->log2FAEnabled((string) $userId, $request);
+        }
 
         return JsonResponse::success($result, '2FA enabled successfully');
     }
@@ -184,7 +192,9 @@ class AuthController
         $this->authService->disable2FA($userId, $code);
 
         // Log 2FA disabled
-        $this->auditLogger->log2FADisabled($userId, $request);
+        if ($userId) {
+            $this->auditLogger->log2FADisabled((string) $userId, $request);
+        }
 
         return JsonResponse::success(null, '2FA disabled successfully');
     }

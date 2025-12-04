@@ -65,15 +65,18 @@ RUN if [ -f "composer.json" ]; then \
         composer dump-autoload --optimize; \
     fi
 
-# Create storage directories and add www-data to docker group for Docker socket access
+# Create storage directories
 RUN mkdir -p storage/logs storage/cache storage/uploads \
     && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && addgroup www-data docker 2>/dev/null || true
+    && chmod -R 755 /var/www/html/storage
 
 # Copy PHP configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-custom.conf
+
+# Copy and setup entrypoint script for Docker socket permissions
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Expose port
 EXPOSE 9000
@@ -82,4 +85,5 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD php-fpm-healthcheck || exit 1
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]

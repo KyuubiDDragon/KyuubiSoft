@@ -203,6 +203,17 @@ const outputStats = computed(() => {
     bytes: new TextEncoder().encode(text).length,
   }
 })
+
+// Example texts (defined here to avoid template parsing issues)
+const examples = {
+  emoji: 'Hallo Welt! 🌍',
+  url: 'https://example.com/path?q=test&lang=de',
+  html: '<script>alert("XSS")</' + 'script>',
+}
+
+function setExample(type) {
+  input.value = examples[type]
+}
 </script>
 
 <template>
@@ -295,19 +306,19 @@ const outputStats = computed(() => {
     <div class="flex flex-wrap gap-2">
       <span class="text-xs text-gray-500">Beispiele:</span>
       <button
-        @click="input = 'Hallo Welt! 🌍'"
+        @click="setExample('emoji')"
         class="text-xs text-primary-400 hover:text-primary-300"
       >
         Text mit Emoji
       </button>
       <button
-        @click="input = 'https://example.com/path?q=test&lang=de'"
+        @click="setExample('url')"
         class="text-xs text-primary-400 hover:text-primary-300"
       >
         URL
       </button>
       <button
-        @click="input = '<script>alert(\"XSS\")</script>'"
+        @click="setExample('html')"
         class="text-xs text-primary-400 hover:text-primary-300"
       >
         HTML

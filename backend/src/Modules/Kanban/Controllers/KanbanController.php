@@ -1285,7 +1285,7 @@ class KanbanController
 
         $isCompleted = !$item['is_completed'];
         $this->db->update('kanban_checklist_items', [
-            'is_completed' => $isCompleted,
+            'is_completed' => $isCompleted ? 1 : 0,
             'completed_at' => $isCompleted ? date('Y-m-d H:i:s') : null,
             'completed_by' => $isCompleted ? $userId : null,
             'updated_at' => date('Y-m-d H:i:s'),

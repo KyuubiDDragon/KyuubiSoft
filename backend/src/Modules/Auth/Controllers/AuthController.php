@@ -7,6 +7,7 @@ namespace App\Modules\Auth\Controllers;
 use App\Core\Exceptions\AuthException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\AuditLogger;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Auth\DTOs\LoginRequest;
 use App\Modules\Auth\DTOs\RegisterRequest;
@@ -16,7 +17,8 @@ use Psr\Http\Message\ServerRequestInterface;
 class AuthController
 {
     public function __construct(
-        private readonly AuthService $authService
+        private readonly AuthService $authService,
+        private readonly AuditLogger $auditLogger
     ) {}
 
     public function register(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -36,6 +38,9 @@ class AuthController
         }
 
         $result = $this->authService->register($registerRequest);
+
+        // Log the registration
+        $this->auditLogger->logRegister($result['user']['id'], $request);
 
         return JsonResponse::created($result, 'Registration successful');
     }
@@ -57,6 +62,9 @@ class AuthController
         }
 
         $result = $this->authService->login($loginRequest);
+
+        // Log the login
+        $this->auditLogger->logLogin($result['user']['id'], $request);
 
         return JsonResponse::success($result, 'Login successful');
     }
@@ -82,6 +90,9 @@ class AuthController
         $refreshToken = $data['refresh_token'] ?? null;
 
         $this->authService->logout($userId, $refreshToken);
+
+        // Log the logout
+        $this->auditLogger->logLogout($userId, $request);
 
         return JsonResponse::success(null, 'Logged out successfully');
     }
@@ -154,6 +165,9 @@ class AuthController
 
         $result = $this->authService->verify2FA($userId, $code);
 
+        // Log 2FA enabled
+        $this->auditLogger->log2FAEnabled($userId, $request);
+
         return JsonResponse::success($result, '2FA enabled successfully');
     }
 
@@ -168,6 +182,9 @@ class AuthController
         }
 
         $this->authService->disable2FA($userId, $code);
+
+        // Log 2FA disabled
+        $this->auditLogger->log2FADisabled($userId, $request);
 
         return JsonResponse::success(null, '2FA disabled successfully');
     }

@@ -7,6 +7,7 @@ namespace App\Modules\UptimeMonitor\Controllers;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Modules\UptimeMonitor\Checkers\CheckerFactory;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -22,11 +23,46 @@ class UptimeMonitorController
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
 
-        $monitors = $this->db->fetchAllAssociative(
-            'SELECT * FROM uptime_monitors WHERE user_id = ? ORDER BY name',
-            [$userId]
-        );
+        // Build query with optional filters
+        $sql = 'SELECT um.*, p.name as project_name, p.color as project_color, uf.name as folder_name, uf.color as folder_color
+                FROM uptime_monitors um
+                LEFT JOIN projects p ON um.project_id = p.id
+                LEFT JOIN uptime_folders uf ON um.folder_id = uf.id
+                WHERE um.user_id = ?';
+        $queryParams = [$userId];
+
+        // Filter by project
+        if (!empty($params['project_id'])) {
+            $sql .= ' AND um.project_id = ?';
+            $queryParams[] = $params['project_id'];
+        }
+
+        // Filter by folder
+        if (!empty($params['folder_id'])) {
+            $sql .= ' AND um.folder_id = ?';
+            $queryParams[] = $params['folder_id'];
+        } elseif (isset($params['folder_id']) && $params['folder_id'] === '') {
+            // Unfiled monitors only
+            $sql .= ' AND um.folder_id IS NULL';
+        }
+
+        // Filter by type
+        if (!empty($params['type'])) {
+            $sql .= ' AND um.type = ?';
+            $queryParams[] = $params['type'];
+        }
+
+        // Filter by status
+        if (!empty($params['status'])) {
+            $sql .= ' AND um.current_status = ?';
+            $queryParams[] = $params['status'];
+        }
+
+        $sql .= ' ORDER BY uf.position, uf.name, um.name';
+
+        $monitors = $this->db->fetchAllAssociative($sql, $queryParams);
 
         // Add recent checks for each monitor and cast booleans
         foreach ($monitors as &$monitor) {
@@ -34,14 +70,42 @@ class UptimeMonitorController
             $monitor['is_paused'] = (bool) $monitor['is_paused'];
             $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
             $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
+            $monitor['game_server_data'] = $monitor['game_server_data'] ? json_decode($monitor['game_server_data'], true) : null;
             $monitor['recent_checks'] = $this->db->fetchAllAssociative(
-                'SELECT status, response_time, checked_at FROM uptime_checks
+                'SELECT status, response_time, checked_at, check_data FROM uptime_checks
                  WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT 30',
                 [$monitor['id']]
             );
+            // Decode check_data JSON
+            foreach ($monitor['recent_checks'] as &$check) {
+                $check['check_data'] = $check['check_data'] ? json_decode($check['check_data'], true) : null;
+            }
         }
 
-        return JsonResponse::success(['items' => $monitors]);
+        // Get folders
+        $folders = $this->db->fetchAllAssociative(
+            'SELECT uf.*, COUNT(um.id) as monitor_count
+             FROM uptime_folders uf
+             LEFT JOIN uptime_monitors um ON uf.id = um.folder_id
+             WHERE uf.user_id = ?
+             GROUP BY uf.id
+             ORDER BY uf.position, uf.name',
+            [$userId]
+        );
+
+        foreach ($folders as &$folder) {
+            $folder['is_collapsed'] = (bool) $folder['is_collapsed'];
+        }
+
+        return JsonResponse::success([
+            'items' => $monitors,
+            'folders' => $folders,
+        ]);
+    }
+
+    public function getTypes(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        return JsonResponse::success(CheckerFactory::getSupportedTypes());
     }
 
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -49,38 +113,66 @@ class UptimeMonitorController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
-        if (empty($data['name']) || empty($data['url'])) {
-            throw new ValidationException('Name and URL are required');
+        if (empty($data['name'])) {
+            throw new ValidationException('Name is required');
         }
 
-        $url = filter_var($data['url'], FILTER_VALIDATE_URL);
-        if (!$url) {
-            throw new ValidationException('Invalid URL format');
+        $type = $data['type'] ?? 'https';
+        $typeInfo = CheckerFactory::getSupportedTypes()[$type] ?? null;
+
+        if (!$typeInfo) {
+            throw new ValidationException('Invalid monitor type');
         }
+
+        // Validate required fields based on type
+        $needsUrl = in_array($type, ['http', 'https']);
+        $needsHostname = !$needsUrl;
+
+        if ($needsUrl && empty($data['url'])) {
+            throw new ValidationException('URL is required for HTTP/HTTPS monitors');
+        }
+
+        if ($needsHostname && empty($data['hostname']) && empty($data['url'])) {
+            throw new ValidationException('Hostname is required');
+        }
+
+        // Extract hostname from URL if not provided
+        $hostname = $data['hostname'] ?? null;
+        if (!$hostname && !empty($data['url'])) {
+            $hostname = parse_url($data['url'], PHP_URL_HOST);
+        }
+
+        // Get default port for type
+        $port = $data['port'] ?? CheckerFactory::getDefaultPort($type);
 
         $id = Uuid::uuid4()->toString();
 
-        $this->db->insert('uptime_monitors', [
+        $insertData = [
             'id' => $id,
             'user_id' => $userId,
+            'project_id' => !empty($data['project_id']) ? $data['project_id'] : null,
+            'folder_id' => !empty($data['folder_id']) ? $data['folder_id'] : null,
             'name' => $data['name'],
-            'url' => $url,
-            'type' => $data['type'] ?? 'https',
+            'url' => $data['url'] ?? ($hostname ? "tcp://{$hostname}:{$port}" : null),
+            'hostname' => $hostname,
+            'port' => $port,
+            'type' => $type,
             'check_interval' => $data['check_interval'] ?? 300,
             'timeout' => $data['timeout'] ?? 30,
             'expected_status_code' => $data['expected_status_code'] ?? 200,
             'expected_keyword' => $data['expected_keyword'] ?? null,
+            'dns_record_type' => $data['dns_record_type'] ?? 'A',
+            'ssl_expiry_warn_days' => $data['ssl_expiry_warn_days'] ?? 14,
             'notify_on_down' => !empty($data['notify_on_down']) ? 1 : 0,
             'notify_on_recovery' => !empty($data['notify_on_recovery']) ? 1 : 0,
             'is_active' => 1,
             'current_status' => 'pending',
-        ]);
+        ];
+
+        $this->db->insert('uptime_monitors', $insertData);
 
         $monitor = $this->db->fetchAssociative('SELECT * FROM uptime_monitors WHERE id = ?', [$id]);
-        $monitor['is_active'] = (bool) $monitor['is_active'];
-        $monitor['is_paused'] = (bool) $monitor['is_paused'];
-        $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
-        $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
+        $this->castMonitorBooleans($monitor);
 
         return JsonResponse::created($monitor, 'Monitor created');
     }
@@ -100,17 +192,18 @@ class UptimeMonitorController
             throw new NotFoundException('Monitor not found');
         }
 
-        // Cast booleans
-        $monitor['is_active'] = (bool) $monitor['is_active'];
-        $monitor['is_paused'] = (bool) $monitor['is_paused'];
-        $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
-        $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
+        $this->castMonitorBooleans($monitor);
+        $monitor['game_server_data'] = $monitor['game_server_data'] ? json_decode($monitor['game_server_data'], true) : null;
 
-        // Get recent checks
+        // Get recent checks with extended data
         $monitor['recent_checks'] = $this->db->fetchAllAssociative(
             'SELECT * FROM uptime_checks WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT 100',
             [$id]
         );
+
+        foreach ($monitor['recent_checks'] as &$check) {
+            $check['check_data'] = $check['check_data'] ? json_decode($check['check_data'], true) : null;
+        }
 
         // Get incidents
         $incidents = $this->db->fetchAllAssociative(
@@ -128,6 +221,9 @@ class UptimeMonitorController
             '7d' => $this->calculateUptime($id, '-7 days'),
             '30d' => $this->calculateUptime($id, '-30 days'),
         ];
+
+        // Add type metadata
+        $monitor['type_info'] = CheckerFactory::getSupportedTypes()[$monitor['type']] ?? null;
 
         return JsonResponse::success($monitor);
     }
@@ -151,11 +247,23 @@ class UptimeMonitorController
         $updates = [];
         $params = [];
 
-        $fields = ['name', 'url', 'type', 'check_interval', 'timeout', 'expected_status_code', 'expected_keyword'];
+        $fields = [
+            'name', 'url', 'hostname', 'port', 'type', 'check_interval', 'timeout',
+            'expected_status_code', 'expected_keyword', 'dns_record_type', 'ssl_expiry_warn_days'
+        ];
         foreach ($fields as $field) {
             if (isset($data[$field])) {
                 $updates[] = "{$field} = ?";
                 $params[] = $data[$field];
+            }
+        }
+
+        // Handle nullable fields (project_id, folder_id)
+        $nullableFields = ['project_id', 'folder_id'];
+        foreach ($nullableFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[] = "{$field} = ?";
+                $params[] = !empty($data[$field]) ? $data[$field] : null;
             }
         }
 
@@ -232,8 +340,14 @@ class UptimeMonitorController
             [$userId]
         );
 
+        // Count by type
+        $byType = $this->db->fetchAllAssociative(
+            'SELECT type, COUNT(*) as count FROM uptime_monitors WHERE user_id = ? GROUP BY type',
+            [$userId]
+        );
+
         $recentIncidents = $this->db->fetchAllAssociative(
-            'SELECT ui.*, um.name as monitor_name
+            'SELECT ui.*, um.name as monitor_name, um.type as monitor_type
              FROM uptime_incidents ui
              JOIN uptime_monitors um ON ui.monitor_id = um.id
              WHERE um.user_id = ?
@@ -243,59 +357,25 @@ class UptimeMonitorController
 
         return JsonResponse::success([
             'totals' => $totals,
+            'by_type' => $byType,
             'recent_incidents' => $recentIncidents,
         ]);
     }
 
     public function performCheck(array $monitor): array
     {
-        $startTime = microtime(true);
-        $status = 'down';
-        $statusCode = null;
-        $errorMessage = null;
-        $responseTime = null;
+        $type = $monitor['type'] ?? 'https';
 
         try {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $monitor['url'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => (int) $monitor['timeout'],
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 5,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_NOBODY => false,
-            ]);
-
-            $body = curl_exec($ch);
-            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
-            if (curl_errno($ch)) {
-                $errorMessage = curl_error($ch);
-            } else {
-                // Check status code
-                $expectedStatus = (int) $monitor['expected_status_code'];
-                if ($statusCode === $expectedStatus || ($expectedStatus === 200 && $statusCode >= 200 && $statusCode < 300)) {
-                    // Check keyword if specified
-                    if (!empty($monitor['expected_keyword'])) {
-                        if (stripos($body, $monitor['expected_keyword']) !== false) {
-                            $status = 'up';
-                        } else {
-                            $errorMessage = 'Expected keyword not found';
-                        }
-                    } else {
-                        $status = 'up';
-                    }
-                } else {
-                    $errorMessage = "Unexpected status code: {$statusCode}";
-                }
-            }
-
-            curl_close($ch);
+            $checker = CheckerFactory::getChecker($type);
+            $result = $checker->check($monitor);
         } catch (\Exception $e) {
-            $errorMessage = $e->getMessage();
-            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+            // Fallback if checker fails
+            return [
+                'status' => 'down',
+                'response_time' => 0,
+                'error_message' => $e->getMessage(),
+            ];
         }
 
         // Record check
@@ -303,20 +383,26 @@ class UptimeMonitorController
         $this->db->insert('uptime_checks', [
             'id' => $checkId,
             'monitor_id' => $monitor['id'],
-            'status' => $status,
-            'response_time' => $responseTime,
-            'status_code' => $statusCode,
-            'error_message' => $errorMessage,
+            'status' => $result->status,
+            'response_time' => $result->responseTime,
+            'status_code' => $result->statusCode,
+            'error_message' => $result->errorMessage,
+            'check_data' => $result->data ? json_encode($result->data) : null,
         ]);
 
         // Update monitor status
         $previousStatus = $monitor['current_status'];
         $updates = [
-            'current_status' => $status,
+            'current_status' => $result->status,
             'last_check_at' => date('Y-m-d H:i:s'),
         ];
 
-        if ($status === 'up') {
+        // Store game server data if available
+        if ($result->data && CheckerFactory::isGameServer($type)) {
+            $updates['game_server_data'] = json_encode($result->data);
+        }
+
+        if ($result->isUp()) {
             $updates['last_up_at'] = date('Y-m-d H:i:s');
 
             // Close incident if any
@@ -337,7 +423,7 @@ class UptimeMonitorController
                     'id' => Uuid::uuid4()->toString(),
                     'monitor_id' => $monitor['id'],
                     'started_at' => date('Y-m-d H:i:s'),
-                    'cause' => $errorMessage,
+                    'cause' => $result->errorMessage,
                 ]);
             }
         }
@@ -348,12 +434,7 @@ class UptimeMonitorController
 
         $this->db->update('uptime_monitors', $updates, ['id' => $monitor['id']]);
 
-        return [
-            'status' => $status,
-            'response_time' => $responseTime,
-            'status_code' => $statusCode,
-            'error_message' => $errorMessage,
-        ];
+        return $result->toArray();
     }
 
     private function calculateUptime(string $monitorId, string $period): array
@@ -380,5 +461,186 @@ class UptimeMonitorController
             'percentage' => $percentage,
             'avg_response_time' => $stats['avg_response_time'] ? round((float) $stats['avg_response_time']) : null,
         ];
+    }
+
+    private function castMonitorBooleans(array &$monitor): void
+    {
+        $monitor['is_active'] = (bool) $monitor['is_active'];
+        $monitor['is_paused'] = (bool) $monitor['is_paused'];
+        $monitor['notify_on_down'] = (bool) $monitor['notify_on_down'];
+        $monitor['notify_on_recovery'] = (bool) $monitor['notify_on_recovery'];
+    }
+
+    // ==================== Folder Operations ====================
+
+    public function getFolders(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $folders = $this->db->fetchAllAssociative(
+            'SELECT uf.*, COUNT(um.id) as monitor_count
+             FROM uptime_folders uf
+             LEFT JOIN uptime_monitors um ON uf.id = um.folder_id
+             WHERE uf.user_id = ?
+             GROUP BY uf.id
+             ORDER BY uf.position, uf.name',
+            [$userId]
+        );
+
+        foreach ($folders as &$folder) {
+            $folder['is_collapsed'] = (bool) $folder['is_collapsed'];
+        }
+
+        return JsonResponse::success(['items' => $folders]);
+    }
+
+    public function createFolder(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody();
+
+        if (empty($data['name'])) {
+            throw new ValidationException('Folder name is required');
+        }
+
+        // Get max position
+        $maxPos = $this->db->fetchOne(
+            'SELECT MAX(position) FROM uptime_folders WHERE user_id = ?',
+            [$userId]
+        );
+
+        $id = Uuid::uuid4()->toString();
+
+        $this->db->insert('uptime_folders', [
+            'id' => $id,
+            'user_id' => $userId,
+            'name' => $data['name'],
+            'color' => $data['color'] ?? '#6366F1',
+            'icon' => $data['icon'] ?? 'folder',
+            'position' => ($maxPos ?? 0) + 1,
+        ]);
+
+        $folder = $this->db->fetchAssociative('SELECT * FROM uptime_folders WHERE id = ?', [$id]);
+        $folder['is_collapsed'] = (bool) $folder['is_collapsed'];
+        $folder['monitor_count'] = 0;
+
+        return JsonResponse::created($folder, 'Folder created');
+    }
+
+    public function updateFolder(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+        $data = $request->getParsedBody();
+
+        $folder = $this->db->fetchAssociative(
+            'SELECT * FROM uptime_folders WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+
+        if (!$folder) {
+            throw new NotFoundException('Folder not found');
+        }
+
+        $updates = [];
+        $params = [];
+
+        $fields = ['name', 'color', 'icon', 'position'];
+        foreach ($fields as $field) {
+            if (isset($data[$field])) {
+                $updates[] = "{$field} = ?";
+                $params[] = $data[$field];
+            }
+        }
+
+        if (isset($data['is_collapsed'])) {
+            $updates[] = 'is_collapsed = ?';
+            $params[] = $data['is_collapsed'] ? 1 : 0;
+        }
+
+        if (!empty($updates)) {
+            $params[] = $id;
+            $this->db->executeStatement(
+                'UPDATE uptime_folders SET ' . implode(', ', $updates) . ' WHERE id = ?',
+                $params
+            );
+        }
+
+        return JsonResponse::success(null, 'Folder updated');
+    }
+
+    public function deleteFolder(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $folder = $this->db->fetchAssociative(
+            'SELECT * FROM uptime_folders WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+
+        if (!$folder) {
+            throw new NotFoundException('Folder not found');
+        }
+
+        // Monitors will have folder_id set to NULL due to ON DELETE SET NULL
+        $this->db->delete('uptime_folders', ['id' => $id]);
+
+        return JsonResponse::success(null, 'Folder deleted');
+    }
+
+    public function reorderFolders(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody();
+
+        if (empty($data['order']) || !is_array($data['order'])) {
+            throw new ValidationException('Order array is required');
+        }
+
+        foreach ($data['order'] as $position => $folderId) {
+            $this->db->executeStatement(
+                'UPDATE uptime_folders SET position = ? WHERE id = ? AND user_id = ?',
+                [$position, $folderId, $userId]
+            );
+        }
+
+        return JsonResponse::success(null, 'Folders reordered');
+    }
+
+    public function moveMonitorsToFolder(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody();
+
+        if (empty($data['monitor_ids']) || !is_array($data['monitor_ids'])) {
+            throw new ValidationException('Monitor IDs array is required');
+        }
+
+        $folderId = !empty($data['folder_id']) ? $data['folder_id'] : null;
+
+        // Verify folder belongs to user if specified
+        if ($folderId) {
+            $folder = $this->db->fetchAssociative(
+                'SELECT id FROM uptime_folders WHERE id = ? AND user_id = ?',
+                [$folderId, $userId]
+            );
+            if (!$folder) {
+                throw new NotFoundException('Folder not found');
+            }
+        }
+
+        // Update all monitors
+        $placeholders = implode(',', array_fill(0, count($data['monitor_ids']), '?'));
+        $params = array_merge([$folderId], $data['monitor_ids'], [$userId]);
+
+        $this->db->executeStatement(
+            "UPDATE uptime_monitors SET folder_id = ? WHERE id IN ({$placeholders}) AND user_id = ?",
+            $params
+        );
+
+        return JsonResponse::success(null, 'Monitors moved');
     }
 }

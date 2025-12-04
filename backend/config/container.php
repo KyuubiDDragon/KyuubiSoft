@@ -6,12 +6,15 @@ use App\Core\Database\Connection;
 use App\Core\Security\JwtManager;
 use App\Core\Security\PasswordHasher;
 use App\Core\Security\RbacManager;
+use App\Core\Services\AuditLogger;
 use App\Core\Services\CacheService;
 use App\Core\Services\LoggerService;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Services\AuthService;
+use App\Modules\System\Controllers\SystemController;
 use Doctrine\DBAL\Connection as DBALConnection;
 use Monolog\Logger;
 use Predis\Client as RedisClient;
@@ -103,5 +106,37 @@ return [
     // Project Access Service
     ProjectAccessService::class => function (ContainerInterface $c): ProjectAccessService {
         return new ProjectAccessService($c->get(DBALConnection::class));
+    },
+
+    // Audit Logger
+    AuditLogger::class => function (ContainerInterface $c): AuditLogger {
+        return new AuditLogger($c->get(DBALConnection::class));
+    },
+
+    // Auth Controller
+    AuthController::class => function (ContainerInterface $c): AuthController {
+        return new AuthController(
+            $c->get(AuthService::class),
+            $c->get(AuditLogger::class)
+        );
+    },
+
+    // System Controller
+    SystemController::class => function (ContainerInterface $c): SystemController {
+        // Try to get Redis, but allow failure (optional dependency)
+        $redis = null;
+        try {
+            $redis = $c->get(RedisClient::class);
+            // Test connection
+            $redis->ping();
+        } catch (\Exception $e) {
+            $redis = null;
+        }
+
+        return new SystemController(
+            $c->get(DBALConnection::class),
+            $c->get(RefreshTokenRepository::class),
+            $redis
+        );
     },
 ];

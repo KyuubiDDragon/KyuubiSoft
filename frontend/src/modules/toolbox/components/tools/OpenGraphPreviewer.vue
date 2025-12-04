@@ -20,11 +20,19 @@ async function analyze() {
       params: { url: url.value.trim() },
     })
 
-    if (response.data.data) {
+    console.log('Open Graph response:', response.data)
+
+    // Handle the response - data is nested under response.data.data
+    if (response.data && response.data.data) {
       result.value = response.data.data
+    } else if (response.data && !response.data.success) {
+      error.value = response.data.error || response.data.message || 'Unbekannter Fehler'
+    } else {
+      error.value = 'Keine Daten erhalten'
     }
   } catch (e) {
-    error.value = e.response?.data?.error || e.message || 'Open Graph Analyse fehlgeschlagen'
+    console.error('Open Graph error:', e)
+    error.value = e.response?.data?.error || e.response?.data?.message || e.message || 'Open Graph Analyse fehlgeschlagen'
   }
 
   isLoading.value = false
@@ -48,6 +56,15 @@ const ogImage = computed(() => {
 const twitterCardType = computed(() => {
   if (!result.value?.twitter?.card) return 'summary'
   return result.value.twitter.card
+})
+
+const hostname = computed(() => {
+  if (!result.value?.url) return ''
+  try {
+    return new URL(result.value.url).hostname
+  } catch {
+    return result.value.url
+  }
 })
 
 const tabs = [
@@ -132,7 +149,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
           </div>
           <div class="p-4 bg-gray-100">
             <div class="text-xs text-gray-500 uppercase tracking-wide">
-              {{ new URL(result.url).hostname }}
+              {{ hostname }}
             </div>
             <h3 class="text-gray-900 font-semibold mt-1 line-clamp-2">
               {{ ogTitle }}
@@ -172,7 +189,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
               </div>
               <div class="flex-1 min-w-0">
                 <div class="text-gray-500 text-xs">
-                  {{ new URL(result.url).hostname }}
+                  {{ hostname }}
                 </div>
                 <h3 class="text-white font-medium line-clamp-1">
                   {{ result.twitter?.title || ogTitle }}

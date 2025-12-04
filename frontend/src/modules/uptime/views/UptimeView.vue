@@ -19,21 +19,39 @@ import {
   ShieldCheckIcon,
   CubeIcon,
   UsersIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FunnelIcon,
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
 
 // State
 const monitors = ref([])
+const folders = ref([])
+const projects = ref([])
 const monitorTypes = ref({})
 const stats = ref(null)
 const isLoading = ref(true)
 const showModal = ref(false)
 const showDetailModal = ref(false)
+const showFolderModal = ref(false)
 const editingMonitor = ref(null)
+const editingFolder = ref(null)
 const selectedMonitor = ref(null)
 const checkingId = ref(null)
+const selectedMonitorIds = ref([])
 let refreshInterval = null
+
+// Filters
+const filters = ref({
+  project_id: '',
+  folder_id: null, // null = all, '' = unfiled, uuid = specific folder
+  type: '',
+  status: '',
+})
 
 // Form
 const form = ref({
@@ -50,6 +68,13 @@ const form = ref({
   ssl_expiry_warn_days: 14,
   notify_on_down: true,
   notify_on_recovery: true,
+  project_id: '',
+  folder_id: '',
+})
+
+const folderForm = ref({
+  name: '',
+  color: '#6366F1',
 })
 
 // Type icons mapping
@@ -77,6 +102,11 @@ const intervalOptions = [
 
 const dnsRecordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']
 
+const folderColors = [
+  '#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F97316',
+  '#EAB308', '#22C55E', '#14B8A6', '#06B6D4', '#3B82F6',
+]
+
 // Computed
 const upCount = computed(() => monitors.value.filter(m => m.current_status === 'up').length)
 const downCount = computed(() => monitors.value.filter(m => m.current_status === 'down').length)
@@ -91,7 +121,39 @@ const showPortField = computed(() => !['http', 'https', 'ping', 'dns'].includes(
 const showHttpFields = computed(() => ['http', 'https'].includes(form.value.type))
 const showDnsFields = computed(() => form.value.type === 'dns')
 const showSslFields = computed(() => form.value.type === 'ssl')
-const isGameServer = computed(() => currentTypeInfo.value.game_server === true)
+
+// Group monitors by folder
+const groupedMonitors = computed(() => {
+  const groups = {}
+
+  // Add folder groups
+  folders.value.forEach(folder => {
+    groups[folder.id] = {
+      folder,
+      monitors: [],
+      isCollapsed: folder.is_collapsed,
+    }
+  })
+
+  // Add unfiled group
+  groups['unfiled'] = {
+    folder: null,
+    monitors: [],
+    isCollapsed: false,
+  }
+
+  // Distribute monitors
+  monitors.value.forEach(monitor => {
+    const folderId = monitor.folder_id || 'unfiled'
+    if (groups[folderId]) {
+      groups[folderId].monitors.push(monitor)
+    } else {
+      groups['unfiled'].monitors.push(monitor)
+    }
+  })
+
+  return groups
+})
 
 // Watch type changes to set default port
 watch(() => form.value.type, (newType) => {
@@ -101,9 +163,14 @@ watch(() => form.value.type, (newType) => {
   }
 })
 
+// Watch filters
+watch(filters, () => {
+  loadData()
+}, { deep: true })
+
 // API Calls
 onMounted(async () => {
-  await loadData()
+  await Promise.all([loadData(), loadProjects()])
   refreshInterval = setInterval(loadData, 60000)
 })
 
@@ -114,18 +181,34 @@ onUnmounted(() => {
 async function loadData() {
   isLoading.value = monitors.value.length === 0
   try {
+    const params = new URLSearchParams()
+    if (filters.value.project_id) params.append('project_id', filters.value.project_id)
+    if (filters.value.folder_id !== null) params.append('folder_id', filters.value.folder_id)
+    if (filters.value.type) params.append('type', filters.value.type)
+    if (filters.value.status) params.append('status', filters.value.status)
+
     const [monitorsRes, statsRes, typesRes] = await Promise.all([
-      api.get('/api/v1/uptime'),
+      api.get(`/api/v1/uptime?${params.toString()}`),
       api.get('/api/v1/uptime/stats'),
       api.get('/api/v1/uptime/types'),
     ])
     monitors.value = monitorsRes.data.data?.items || []
+    folders.value = monitorsRes.data.data?.folders || []
     stats.value = statsRes.data.data
     monitorTypes.value = typesRes.data.data || {}
   } catch (error) {
     uiStore.showError('Fehler beim Laden')
   } finally {
     isLoading.value = false
+  }
+}
+
+async function loadProjects() {
+  try {
+    const response = await api.get('/api/v1/projects')
+    projects.value = response.data.data?.items || []
+  } catch (error) {
+    console.error('Failed to load projects')
   }
 }
 
@@ -212,6 +295,66 @@ async function openDetail(monitor) {
   }
 }
 
+// Folder operations
+async function saveFolder() {
+  if (!folderForm.value.name.trim()) {
+    uiStore.showError('Ordnername ist erforderlich')
+    return
+  }
+
+  try {
+    if (editingFolder.value) {
+      await api.put(`/api/v1/uptime/folders/${editingFolder.value.id}`, folderForm.value)
+      uiStore.showSuccess('Ordner aktualisiert')
+    } else {
+      await api.post('/api/v1/uptime/folders', folderForm.value)
+      uiStore.showSuccess('Ordner erstellt')
+    }
+    await loadData()
+    showFolderModal.value = false
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern')
+  }
+}
+
+async function deleteFolder(folder) {
+  if (!confirm(`Ordner "${folder.name}" löschen? Monitore werden nicht gelöscht.`)) return
+
+  try {
+    await api.delete(`/api/v1/uptime/folders/${folder.id}`)
+    await loadData()
+    uiStore.showSuccess('Ordner gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function toggleFolderCollapse(folder) {
+  folder.is_collapsed = !folder.is_collapsed
+  try {
+    await api.put(`/api/v1/uptime/folders/${folder.id}`, {
+      is_collapsed: folder.is_collapsed,
+    })
+  } catch (error) {
+    // Revert on error
+    folder.is_collapsed = !folder.is_collapsed
+  }
+}
+
+async function moveToFolder(monitorIds, folderId) {
+  try {
+    await api.post('/api/v1/uptime/move-to-folder', {
+      monitor_ids: monitorIds,
+      folder_id: folderId || null,
+    })
+    await loadData()
+    selectedMonitorIds.value = []
+    uiStore.showSuccess('Monitore verschoben')
+  } catch (error) {
+    uiStore.showError('Fehler beim Verschieben')
+  }
+}
+
 // Modal
 function openCreateModal() {
   editingMonitor.value = null
@@ -229,6 +372,8 @@ function openCreateModal() {
     ssl_expiry_warn_days: 14,
     notify_on_down: true,
     notify_on_recovery: true,
+    project_id: filters.value.project_id || '',
+    folder_id: typeof filters.value.folder_id === 'string' && filters.value.folder_id ? filters.value.folder_id : '',
   }
   showModal.value = true
 }
@@ -249,8 +394,19 @@ function openEditModal(monitor) {
     ssl_expiry_warn_days: monitor.ssl_expiry_warn_days || 14,
     notify_on_down: monitor.notify_on_down,
     notify_on_recovery: monitor.notify_on_recovery,
+    project_id: monitor.project_id || '',
+    folder_id: monitor.folder_id || '',
   }
   showModal.value = true
+}
+
+function openFolderModal(folder = null) {
+  editingFolder.value = folder
+  folderForm.value = {
+    name: folder?.name || '',
+    color: folder?.color || '#6366F1',
+  }
+  showFolderModal.value = true
 }
 
 function formatDate(dateStr) {
@@ -299,6 +455,15 @@ function formatGameServerInfo(monitor) {
   }
   return null
 }
+
+function toggleMonitorSelection(monitorId) {
+  const index = selectedMonitorIds.value.indexOf(monitorId)
+  if (index === -1) {
+    selectedMonitorIds.value.push(monitorId)
+  } else {
+    selectedMonitorIds.value.splice(index, 1)
+  }
+}
 </script>
 
 <template>
@@ -309,10 +474,51 @@ function formatGameServerInfo(monitor) {
         <h1 class="text-2xl font-bold text-white">Uptime Monitor</h1>
         <p class="text-gray-400 mt-1">Überwache Websites, Server und Game-Server</p>
       </div>
-      <button @click="openCreateModal" class="btn-primary">
-        <PlusIcon class="w-5 h-5 mr-2" />
-        Neuer Monitor
-      </button>
+      <div class="flex gap-2">
+        <button @click="openFolderModal()" class="btn-secondary">
+          <FolderPlusIcon class="w-5 h-5 mr-2" />
+          Ordner
+        </button>
+        <button @click="openCreateModal" class="btn-primary">
+          <PlusIcon class="w-5 h-5 mr-2" />
+          Neuer Monitor
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <FunnelIcon class="w-4 h-4 text-gray-400" />
+        <span class="text-sm text-gray-400">Filter</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <select v-model="filters.project_id" class="input text-sm">
+          <option value="">Alle Projekte</option>
+          <option v-for="project in projects" :key="project.id" :value="project.id">
+            {{ project.name }}
+          </option>
+        </select>
+        <select v-model="filters.folder_id" class="input text-sm">
+          <option :value="null">Alle Ordner</option>
+          <option value="">Ohne Ordner</option>
+          <option v-for="folder in folders" :key="folder.id" :value="folder.id">
+            {{ folder.name }}
+          </option>
+        </select>
+        <select v-model="filters.type" class="input text-sm">
+          <option value="">Alle Typen</option>
+          <option v-for="(info, type) in monitorTypes" :key="type" :value="type">
+            {{ info.name }}
+          </option>
+        </select>
+        <select v-model="filters.status" class="input text-sm">
+          <option value="">Alle Status</option>
+          <option value="up">Online</option>
+          <option value="down">Offline</option>
+          <option value="pending">Ausstehend</option>
+        </select>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -352,14 +558,31 @@ function formatGameServerInfo(monitor) {
       </div>
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-            <ClockIcon class="w-5 h-5 text-yellow-400" />
+          <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+            <FolderIcon class="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <p class="text-2xl font-bold text-white">{{ stats?.recent_incidents?.length || 0 }}</p>
-            <p class="text-sm text-gray-400">Letzte Incidents</p>
+            <p class="text-2xl font-bold text-white">{{ folders.length }}</p>
+            <p class="text-sm text-gray-400">Ordner</p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Bulk actions -->
+    <div v-if="selectedMonitorIds.length > 0" class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-4 flex items-center justify-between">
+      <span class="text-primary-400">{{ selectedMonitorIds.length }} Monitor(e) ausgewählt</span>
+      <div class="flex items-center gap-2">
+        <select @change="moveToFolder(selectedMonitorIds, $event.target.value); $event.target.value = ''" class="input text-sm w-48">
+          <option value="">In Ordner verschieben...</option>
+          <option :value="null">Ohne Ordner</option>
+          <option v-for="folder in folders" :key="folder.id" :value="folder.id">
+            {{ folder.name }}
+          </option>
+        </select>
+        <button @click="selectedMonitorIds = []" class="text-gray-400 hover:text-white">
+          <XMarkIcon class="w-5 h-5" />
+        </button>
       </div>
     </div>
 
@@ -369,7 +592,7 @@ function formatGameServerInfo(monitor) {
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="monitors.length === 0" class="card p-12 text-center">
+    <div v-else-if="monitors.length === 0 && folders.length === 0" class="card p-12 text-center">
       <SignalIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
       <h3 class="text-lg font-medium text-white mb-2">Keine Monitore</h3>
       <p class="text-gray-400 mb-6">Erstelle deinen ersten Monitor</p>
@@ -379,100 +602,165 @@ function formatGameServerInfo(monitor) {
       </button>
     </div>
 
-    <!-- Monitors List -->
-    <div v-else class="space-y-3">
-      <div
-        v-for="monitor in monitors"
-        :key="monitor.id"
-        class="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-colors group"
-      >
-        <div class="flex items-center gap-4">
-          <!-- Status indicator -->
+    <!-- Monitors by folder -->
+    <div v-else class="space-y-4">
+      <!-- Folders with monitors -->
+      <template v-for="(group, folderId) in groupedMonitors" :key="folderId">
+        <div v-if="group.monitors.length > 0 || group.folder" class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+          <!-- Folder header -->
           <div
-            class="w-3 h-3 rounded-full animate-pulse"
-            :class="getStatusBg(monitor.current_status)"
-          ></div>
-
-          <!-- Type icon -->
-          <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center">
-            <component :is="getTypeIcon(monitor.type)" class="w-4 h-4 text-gray-400" />
-          </div>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-0 cursor-pointer" @click="openDetail(monitor)">
+            v-if="group.folder"
+            class="flex items-center justify-between px-4 py-3 bg-dark-750 border-b border-dark-700 cursor-pointer hover:bg-dark-700 transition-colors"
+            @click="toggleFolderCollapse(group.folder)"
+          >
+            <div class="flex items-center gap-3">
+              <component
+                :is="group.isCollapsed ? ChevronRightIcon : ChevronDownIcon"
+                class="w-4 h-4 text-gray-400"
+              />
+              <div
+                class="w-3 h-3 rounded-full"
+                :style="{ backgroundColor: group.folder.color }"
+              ></div>
+              <span class="font-medium text-white">{{ group.folder.name }}</span>
+              <span class="text-sm text-gray-500">({{ group.monitors.length }})</span>
+            </div>
             <div class="flex items-center gap-2">
-              <h3 class="font-medium text-white">{{ monitor.name }}</h3>
-              <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
-                {{ getTypeName(monitor.type) }}
-              </span>
-              <span v-if="monitor.is_paused" class="px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
-                Pausiert
-              </span>
-            </div>
-            <div class="flex items-center gap-3 text-sm text-gray-500">
-              <span class="truncate">{{ monitor.hostname || monitor.url }}</span>
-              <span v-if="monitor.port" class="text-gray-600">:{{ monitor.port }}</span>
-              <span v-if="formatGameServerInfo(monitor)" class="text-primary-400">
-                {{ formatGameServerInfo(monitor) }}
-              </span>
+              <button
+                @click.stop="openFolderModal(group.folder)"
+                class="p-1 text-gray-400 hover:text-white"
+              >
+                <PencilIcon class="w-4 h-4" />
+              </button>
+              <button
+                @click.stop="deleteFolder(group.folder)"
+                class="p-1 text-gray-400 hover:text-red-400"
+              >
+                <TrashIcon class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          <!-- Uptime bars (last 30 checks) -->
-          <div class="hidden md:flex gap-0.5">
+          <!-- Unfiled header -->
+          <div
+            v-else
+            class="flex items-center px-4 py-3 bg-dark-750 border-b border-dark-700"
+          >
+            <FolderIcon class="w-4 h-4 text-gray-500 mr-2" />
+            <span class="text-gray-400">Ohne Ordner</span>
+            <span class="text-sm text-gray-500 ml-2">({{ group.monitors.length }})</span>
+          </div>
+
+          <!-- Monitors list -->
+          <div v-show="!group.isCollapsed" class="divide-y divide-dark-700">
             <div
-              v-for="(check, i) in (monitor.recent_checks || []).slice(0, 30)"
-              :key="i"
-              class="w-1.5 h-6 rounded-sm"
-              :class="check.status === 'up' ? 'bg-green-500' : 'bg-red-500'"
-              :title="`${check.status} - ${check.response_time}ms`"
-            ></div>
-          </div>
+              v-for="monitor in group.monitors"
+              :key="monitor.id"
+              class="flex items-center gap-4 p-4 hover:bg-dark-750 transition-colors group"
+            >
+              <!-- Checkbox -->
+              <input
+                type="checkbox"
+                :checked="selectedMonitorIds.includes(monitor.id)"
+                @change="toggleMonitorSelection(monitor.id)"
+                class="checkbox"
+              />
 
-          <!-- Uptime percentage -->
-          <div class="text-right">
-            <p class="text-lg font-bold" :class="getStatusColor(monitor.current_status)">
-              {{ monitor.uptime_percentage }}%
-            </p>
-            <p class="text-xs text-gray-500">Uptime</p>
-          </div>
+              <!-- Status indicator -->
+              <div
+                class="w-3 h-3 rounded-full animate-pulse"
+                :class="getStatusBg(monitor.current_status)"
+              ></div>
 
-          <!-- Actions -->
-          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              @click="checkNow(monitor)"
-              :disabled="checkingId === monitor.id"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
-              title="Jetzt prüfen"
-            >
-              <ArrowPathIcon class="w-5 h-5" :class="{ 'animate-spin': checkingId === monitor.id }" />
-            </button>
-            <button
-              @click="togglePause(monitor)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
-              :title="monitor.is_paused ? 'Fortsetzen' : 'Pausieren'"
-            >
-              <PlayIcon v-if="monitor.is_paused" class="w-5 h-5" />
-              <PauseIcon v-else class="w-5 h-5" />
-            </button>
-            <button
-              @click="openEditModal(monitor)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
-            >
-              <PencilIcon class="w-5 h-5" />
-            </button>
-            <button
-              @click="deleteMonitor(monitor)"
-              class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
-            >
-              <TrashIcon class="w-5 h-5" />
-            </button>
+              <!-- Type icon -->
+              <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center">
+                <component :is="getTypeIcon(monitor.type)" class="w-4 h-4 text-gray-400" />
+              </div>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0 cursor-pointer" @click="openDetail(monitor)">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-medium text-white">{{ monitor.name }}</h3>
+                  <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
+                    {{ getTypeName(monitor.type) }}
+                  </span>
+                  <span
+                    v-if="monitor.project_name"
+                    class="px-2 py-0.5 text-xs rounded"
+                    :style="{ backgroundColor: monitor.project_color + '20', color: monitor.project_color }"
+                  >
+                    {{ monitor.project_name }}
+                  </span>
+                  <span v-if="monitor.is_paused" class="px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
+                    Pausiert
+                  </span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-gray-500">
+                  <span class="truncate">{{ monitor.hostname || monitor.url }}</span>
+                  <span v-if="monitor.port" class="text-gray-600">:{{ monitor.port }}</span>
+                  <span v-if="formatGameServerInfo(monitor)" class="text-primary-400">
+                    {{ formatGameServerInfo(monitor) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Uptime bars -->
+              <div class="hidden md:flex gap-0.5">
+                <div
+                  v-for="(check, i) in (monitor.recent_checks || []).slice(0, 30)"
+                  :key="i"
+                  class="w-1.5 h-6 rounded-sm"
+                  :class="check.status === 'up' ? 'bg-green-500' : 'bg-red-500'"
+                  :title="`${check.status} - ${check.response_time}ms`"
+                ></div>
+              </div>
+
+              <!-- Uptime percentage -->
+              <div class="text-right">
+                <p class="text-lg font-bold" :class="getStatusColor(monitor.current_status)">
+                  {{ monitor.uptime_percentage }}%
+                </p>
+                <p class="text-xs text-gray-500">Uptime</p>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  @click="checkNow(monitor)"
+                  :disabled="checkingId === monitor.id"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  title="Jetzt prüfen"
+                >
+                  <ArrowPathIcon class="w-5 h-5" :class="{ 'animate-spin': checkingId === monitor.id }" />
+                </button>
+                <button
+                  @click="togglePause(monitor)"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  :title="monitor.is_paused ? 'Fortsetzen' : 'Pausieren'"
+                >
+                  <PlayIcon v-if="monitor.is_paused" class="w-5 h-5" />
+                  <PauseIcon v-else class="w-5 h-5" />
+                </button>
+                <button
+                  @click="openEditModal(monitor)"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                >
+                  <PencilIcon class="w-5 h-5" />
+                </button>
+                <button
+                  @click="deleteMonitor(monitor)"
+                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+                >
+                  <TrashIcon class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
 
-    <!-- Create/Edit Modal -->
+    <!-- Create/Edit Monitor Modal -->
     <Teleport to="body">
       <div
         v-if="showModal"
@@ -494,6 +782,28 @@ function formatGameServerInfo(monitor) {
             <div>
               <label class="label">Name *</label>
               <input v-model="form.name" type="text" class="input" placeholder="Mein Server" required />
+            </div>
+
+            <!-- Project & Folder -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">Projekt</label>
+                <select v-model="form.project_id" class="input">
+                  <option value="">Kein Projekt</option>
+                  <option v-for="project in projects" :key="project.id" :value="project.id">
+                    {{ project.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Ordner</label>
+                <select v-model="form.folder_id" class="input">
+                  <option value="">Kein Ordner</option>
+                  <option v-for="folder in folders" :key="folder.id" :value="folder.id">
+                    {{ folder.name }}
+                  </option>
+                </select>
+              </div>
             </div>
 
             <!-- Type Selection -->
@@ -605,6 +915,57 @@ function formatGameServerInfo(monitor) {
               </button>
               <button type="submit" class="btn-primary flex-1">
                 {{ editingMonitor ? 'Speichern' : 'Erstellen' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Folder Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showFolderModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        @click.self="showFolderModal = false"
+      >
+        <div class="bg-dark-800 rounded-xl w-full max-w-sm border border-dark-700">
+          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-white">
+              {{ editingFolder ? 'Ordner bearbeiten' : 'Neuer Ordner' }}
+            </h2>
+            <button @click="showFolderModal = false" class="text-gray-400 hover:text-white">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="saveFolder" class="p-4 space-y-4">
+            <div>
+              <label class="label">Name *</label>
+              <input v-model="folderForm.name" type="text" class="input" placeholder="Mein Ordner" required />
+            </div>
+
+            <div>
+              <label class="label">Farbe</label>
+              <div class="flex gap-2 flex-wrap">
+                <button
+                  v-for="color in folderColors"
+                  :key="color"
+                  type="button"
+                  @click="folderForm.color = color"
+                  class="w-8 h-8 rounded-lg transition-transform"
+                  :class="{ 'ring-2 ring-white scale-110': folderForm.color === color }"
+                  :style="{ backgroundColor: color }"
+                ></button>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button type="button" @click="showFolderModal = false" class="btn-secondary flex-1">
+                Abbrechen
+              </button>
+              <button type="submit" class="btn-primary flex-1">
+                {{ editingFolder ? 'Speichern' : 'Erstellen' }}
               </button>
             </div>
           </form>

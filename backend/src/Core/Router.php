@@ -238,6 +238,12 @@ class Router
                 $protected->post('/uptime', [UptimeMonitorController::class, 'create']);
                 $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes']);
                 $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats']);
+                $protected->get('/uptime/folders', [UptimeMonitorController::class, 'getFolders']);
+                $protected->post('/uptime/folders', [UptimeMonitorController::class, 'createFolder']);
+                $protected->put('/uptime/folders/reorder', [UptimeMonitorController::class, 'reorderFolders']);
+                $protected->put('/uptime/folders/{id}', [UptimeMonitorController::class, 'updateFolder']);
+                $protected->delete('/uptime/folders/{id}', [UptimeMonitorController::class, 'deleteFolder']);
+                $protected->post('/uptime/move-to-folder', [UptimeMonitorController::class, 'moveMonitorsToFolder']);
                 $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show']);
                 $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update']);
                 $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete']);

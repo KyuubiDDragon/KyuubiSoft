@@ -104,11 +104,12 @@ async function selectHost(host) {
 async function checkDockerStatus() {
   try {
     const response = await api.get('/api/v1/docker/status', { params: getHostParams() })
-    dockerAvailable.value = response.data.available
-    dockerVersion.value = response.data.version || ''
-    currentHostName.value = response.data.host_name || currentHostName.value
-    if (!response.data.available) {
-      error.value = response.data.error || 'Docker is not available'
+    const data = response.data.data || response.data
+    dockerAvailable.value = data.available
+    dockerVersion.value = data.version || ''
+    currentHostName.value = data.host_name || currentHostName.value
+    if (!data.available) {
+      error.value = data.error || 'Docker is not available'
     }
   } catch (e) {
     dockerAvailable.value = false
@@ -119,7 +120,8 @@ async function checkDockerStatus() {
 async function loadContainers() {
   try {
     const response = await api.get('/api/v1/docker/containers', { params: { all: 'true', ...getHostParams() } })
-    containers.value = response.data.containers || []
+    const data = response.data.data || response.data
+    containers.value = data.containers || []
   } catch (e) {
     console.error('Failed to load containers:', e)
   }
@@ -128,7 +130,8 @@ async function loadContainers() {
 async function loadImages() {
   try {
     const response = await api.get('/api/v1/docker/images', { params: getHostParams() })
-    images.value = response.data.images || []
+    const data = response.data.data || response.data
+    images.value = data.images || []
   } catch (e) {
     console.error('Failed to load images:', e)
   }
@@ -137,7 +140,8 @@ async function loadImages() {
 async function loadNetworks() {
   try {
     const response = await api.get('/api/v1/docker/networks', { params: getHostParams() })
-    networks.value = response.data.networks || []
+    const data = response.data.data || response.data
+    networks.value = data.networks || []
   } catch (e) {
     console.error('Failed to load networks:', e)
   }
@@ -146,7 +150,8 @@ async function loadNetworks() {
 async function loadVolumes() {
   try {
     const response = await api.get('/api/v1/docker/volumes', { params: getHostParams() })
-    volumes.value = response.data.volumes || []
+    const data = response.data.data || response.data
+    volumes.value = data.volumes || []
   } catch (e) {
     console.error('Failed to load volumes:', e)
   }
@@ -155,7 +160,7 @@ async function loadVolumes() {
 async function loadSystemInfo() {
   try {
     const response = await api.get('/api/v1/docker/system', { params: getHostParams() })
-    systemInfo.value = response.data
+    systemInfo.value = response.data.data || response.data
   } catch (e) {
     console.error('Failed to load system info:', e)
   }
@@ -220,13 +225,14 @@ async function showContainerDetails(container) {
       api.get(`/api/v1/docker/containers/${container.id}`, { params: getHostParams() }),
       api.get(`/api/v1/docker/containers/${container.id}/logs`, { params: { tail: 100, ...getHostParams() } }),
     ])
-    containerDetails.value = detailsRes.data
-    containerLogs.value = logsRes.data.logs || ''
+    containerDetails.value = detailsRes.data.data || detailsRes.data
+    const logsData = logsRes.data.data || logsRes.data
+    containerLogs.value = logsData.logs || ''
 
     // Only load stats if container is running
     if (container.state === 'running') {
       const statsRes = await api.get(`/api/v1/docker/containers/${container.id}/stats`, { params: getHostParams() })
-      containerStats.value = statsRes.data
+      containerStats.value = statsRes.data.data || statsRes.data
     }
   } catch (e) {
     console.error('Failed to load container details:', e)
@@ -239,7 +245,8 @@ async function refreshLogs() {
   if (!selectedContainer.value) return
   try {
     const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/logs`, { params: { tail: 100, ...getHostParams() } })
-    containerLogs.value = response.data.logs || ''
+    const data = response.data.data || response.data
+    containerLogs.value = data.logs || ''
   } catch (e) {
     console.error('Failed to refresh logs:', e)
   }
@@ -249,7 +256,7 @@ async function refreshStats() {
   if (!selectedContainer.value || selectedContainer.value.state !== 'running') return
   try {
     const response = await api.get(`/api/v1/docker/containers/${selectedContainer.value.id}/stats`, { params: getHostParams() })
-    containerStats.value = response.data
+    containerStats.value = response.data.data || response.data
   } catch (e) {
     console.error('Failed to refresh stats:', e)
   }

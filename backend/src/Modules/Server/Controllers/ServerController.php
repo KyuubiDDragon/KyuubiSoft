@@ -10,6 +10,128 @@ use Psr\Http\Message\ServerRequestInterface;
 class ServerController
 {
     // ========================================================================
+    // Host Command Execution Helpers
+    // ========================================================================
+
+    /**
+     * Check if we're running inside a Docker container
+     */
+    private function isInContainer(): bool
+    {
+        // Check for .dockerenv file
+        if (file_exists('/.dockerenv')) {
+            return true;
+        }
+
+        // Check cgroup
+        if (file_exists('/proc/1/cgroup')) {
+            $cgroup = file_get_contents('/proc/1/cgroup');
+            if (strpos($cgroup, 'docker') !== false || strpos($cgroup, 'kubepods') !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Execute a command on the host system
+     * When running in a container, uses Docker to execute on host
+     */
+    private function execOnHost(string $command, bool $needsPrivileged = false): string
+    {
+        if (!$this->isInContainer()) {
+            // Running directly on host
+            return shell_exec($command . ' 2>&1') ?: '';
+        }
+
+        // Running in container - execute via Docker on host
+        // We need to use nsenter or docker run with host namespaces
+        $dockerSocket = '/var/run/docker.sock';
+
+        if (!file_exists($dockerSocket)) {
+            return "Error: Docker socket not available for host access";
+        }
+
+        // Use a privileged Alpine container with host namespaces
+        $privileged = $needsPrivileged ? '--privileged' : '';
+        $escapedCmd = escapeshellarg($command);
+
+        // For commands that need host PID/network/etc namespaces
+        $dockerCmd = "docker run --rm $privileged " .
+                     "--pid=host " .
+                     "--network=host " .
+                     "-v /:/host:ro " .
+                     "-v /var/run/docker.sock:/var/run/docker.sock " .
+                     "alpine:latest sh -c 'chroot /host sh -c $escapedCmd' 2>&1";
+
+        return shell_exec($dockerCmd) ?: '';
+    }
+
+    /**
+     * Execute a command on host that needs write access
+     */
+    private function execOnHostWithWrite(string $command): string
+    {
+        if (!$this->isInContainer()) {
+            return shell_exec($command . ' 2>&1') ?: '';
+        }
+
+        $dockerSocket = '/var/run/docker.sock';
+
+        if (!file_exists($dockerSocket)) {
+            return "Error: Docker socket not available for host access";
+        }
+
+        $escapedCmd = escapeshellarg($command);
+
+        // Use privileged container with read-write host mount
+        $dockerCmd = "docker run --rm --privileged " .
+                     "--pid=host " .
+                     "--network=host " .
+                     "-v /:/host " .
+                     "alpine:latest sh -c 'chroot /host sh -c $escapedCmd' 2>&1";
+
+        return shell_exec($dockerCmd) ?: '';
+    }
+
+    /**
+     * Read a file from the host
+     */
+    private function readHostFile(string $path): ?string
+    {
+        if (!$this->isInContainer()) {
+            return file_exists($path) ? file_get_contents($path) : null;
+        }
+
+        $escapedPath = escapeshellarg($path);
+        $result = shell_exec("docker run --rm -v /:/host:ro alpine:latest cat /host$escapedPath 2>&1");
+
+        if ($result && strpos($result, 'No such file') === false && strpos($result, "can't open") === false) {
+            return $result;
+        }
+
+        return null;
+    }
+
+    /**
+     * Write content to a file on the host
+     */
+    private function writeHostFile(string $path, string $content): bool
+    {
+        if (!$this->isInContainer()) {
+            return file_put_contents($path, $content) !== false;
+        }
+
+        $escapedPath = escapeshellarg("/host$path");
+        $encodedContent = base64_encode($content);
+
+        $result = shell_exec("docker run --rm -v /:/host alpine:latest sh -c 'echo $encodedContent | base64 -d > $escapedPath' 2>&1");
+
+        return strpos($result, 'error') === false && strpos($result, 'denied') === false;
+    }
+
+    // ========================================================================
     // Crontab Management
     // ========================================================================
 
@@ -19,13 +141,27 @@ class ServerController
     public function listCrontabs(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
-            $output = shell_exec('crontab -l 2>&1');
+            $output = $this->execOnHost('crontab -l');
 
-            if (strpos($output, 'no crontab') !== false) {
-                return JsonResponse::success([
-                    'crontabs' => [],
-                    'raw' => '',
-                ]);
+            if (strpos($output, 'no crontab') !== false || strpos($output, 'must be suid') !== false) {
+                // Try reading crontab file directly from host
+                $user = trim($this->execOnHost('whoami'));
+                $cronFile = $this->readHostFile("/var/spool/cron/crontabs/$user");
+
+                if ($cronFile === null) {
+                    // Also try /var/spool/cron/$user (different distros)
+                    $cronFile = $this->readHostFile("/var/spool/cron/$user");
+                }
+
+                if ($cronFile === null) {
+                    return JsonResponse::success([
+                        'crontabs' => [],
+                        'raw' => '',
+                        'note' => 'No crontab found or access denied',
+                    ]);
+                }
+
+                $output = $cronFile;
             }
 
             $lines = explode("\n", trim($output));
@@ -168,18 +304,22 @@ class ServerController
 
         try {
             // Get current crontab
-            $current = shell_exec('crontab -l 2>/dev/null') ?: '';
+            $current = $this->execOnHost('crontab -l');
+            if (strpos($current, 'no crontab') !== false || strpos($current, 'must be suid') !== false) {
+                $current = '';
+            }
 
             // Add new entry
             $newLine = "$schedule $command";
             $newCrontab = trim($current) . "\n" . $newLine . "\n";
 
-            // Write new crontab
-            $tempFile = tempnam(sys_get_temp_dir(), 'cron');
-            file_put_contents($tempFile, $newCrontab);
+            // Write new crontab via host execution
+            $encodedContent = base64_encode($newCrontab);
+            $result = $this->execOnHostWithWrite("echo '$encodedContent' | base64 -d | crontab -");
 
-            $result = shell_exec("crontab $tempFile 2>&1");
-            unlink($tempFile);
+            if (strpos($result, 'error') !== false || strpos($result, 'denied') !== false) {
+                return JsonResponse::error('Failed to install crontab: ' . $result, 500);
+            }
 
             return JsonResponse::success([
                 'message' => 'Crontab entry added successfully',
@@ -203,14 +343,12 @@ class ServerController
         }
 
         try {
-            $tempFile = tempnam(sys_get_temp_dir(), 'cron');
-            file_put_contents($tempFile, $content);
+            // Write new crontab via host execution
+            $encodedContent = base64_encode($content);
+            $result = $this->execOnHostWithWrite("echo '$encodedContent' | base64 -d | crontab -");
 
-            $result = shell_exec("crontab $tempFile 2>&1");
-            unlink($tempFile);
-
-            if (strpos($result, 'error') !== false) {
-                return JsonResponse::error('Invalid crontab syntax: ' . $result, 400);
+            if (strpos($result, 'error') !== false || strpos($result, 'denied') !== false) {
+                return JsonResponse::error('Invalid crontab syntax or permission denied: ' . $result, 400);
             }
 
             return JsonResponse::success(['message' => 'Crontab updated successfully']);
@@ -232,7 +370,11 @@ class ServerController
         }
 
         try {
-            $current = shell_exec('crontab -l 2>/dev/null') ?: '';
+            $current = $this->execOnHost('crontab -l');
+            if (strpos($current, 'no crontab') !== false || strpos($current, 'must be suid') !== false) {
+                throw new ValidationException('No crontab exists');
+            }
+
             $lines = explode("\n", $current);
 
             if (!isset($lines[$lineNumber - 1])) {
@@ -242,10 +384,13 @@ class ServerController
             unset($lines[$lineNumber - 1]);
             $newCrontab = implode("\n", $lines);
 
-            $tempFile = tempnam(sys_get_temp_dir(), 'cron');
-            file_put_contents($tempFile, $newCrontab);
-            shell_exec("crontab $tempFile 2>&1");
-            unlink($tempFile);
+            // Write new crontab via host execution
+            $encodedContent = base64_encode($newCrontab);
+            $result = $this->execOnHostWithWrite("echo '$encodedContent' | base64 -d | crontab -");
+
+            if (strpos($result, 'error') !== false || strpos($result, 'denied') !== false) {
+                return JsonResponse::error('Failed to update crontab: ' . $result, 500);
+            }
 
             return JsonResponse::success(['message' => 'Crontab entry deleted']);
         } catch (\Exception $e) {
@@ -293,13 +438,14 @@ class ServerController
         $filter = $params['filter'] ?? null; // php, node, python, etc.
 
         try {
-            // Get process list with details
+            // Get process list with details from host
             $cmd = "ps aux --sort=-%mem";
             if ($filter) {
-                $cmd .= " | grep -i " . escapeshellarg($filter) . " | grep -v grep";
+                $escapedFilter = escapeshellarg($filter);
+                $cmd .= " | grep -i $escapedFilter | grep -v grep";
             }
 
-            $output = shell_exec($cmd . " 2>&1");
+            $output = $this->execOnHost($cmd);
             $lines = array_filter(explode("\n", trim($output)));
 
             $processes = [];
@@ -348,16 +494,27 @@ class ServerController
     private function getPhpFpmStatus(): ?array
     {
         try {
-            // Check if PHP-FPM is running
-            $output = shell_exec("systemctl is-active php*-fpm 2>/dev/null") ?: '';
+            // Check if PHP-FPM is running on host
+            $output = $this->execOnHost("systemctl is-active php*-fpm");
             $isActive = trim($output) === 'active';
 
             if (!$isActive) {
+                // Also check for php-fpm without systemctl
+                $poolStatus = $this->execOnHost("ps aux | grep 'php-fpm' | grep -v grep | wc -l");
+                $workers = (int) trim($poolStatus);
+
+                if ($workers > 0) {
+                    return [
+                        'active' => true,
+                        'workers' => $workers,
+                    ];
+                }
+
                 return null;
             }
 
             // Try to get PHP-FPM pool status
-            $poolStatus = shell_exec("ps aux | grep 'php-fpm' | grep -v grep | wc -l");
+            $poolStatus = $this->execOnHost("ps aux | grep 'php-fpm' | grep -v grep | wc -l");
 
             return [
                 'active' => $isActive,
@@ -388,27 +545,27 @@ class ServerController
         }
 
         try {
-            // Security: Don't allow killing system processes
-            $processInfo = shell_exec("ps -p $pid -o user= 2>/dev/null");
+            // Security: Don't allow killing system processes (check on host)
+            $processInfo = $this->execOnHost("ps -p $pid -o user=");
             $processUser = trim($processInfo);
 
-            $currentUser = trim(shell_exec('whoami'));
+            $currentUser = trim($this->execOnHost('whoami'));
 
             if ($processUser !== $currentUser && $currentUser !== 'root') {
                 return JsonResponse::error('Permission denied: Cannot kill process owned by another user', 403);
             }
 
-            $result = shell_exec("kill -$signal $pid 2>&1");
+            $result = $this->execOnHostWithWrite("kill -$signal $pid");
 
             // Check if process still exists
             sleep(1);
-            $exists = shell_exec("ps -p $pid 2>/dev/null");
+            $exists = $this->execOnHost("ps -p $pid");
 
             return JsonResponse::success([
                 'message' => 'Signal sent to process',
                 'pid' => $pid,
                 'signal' => $signal,
-                'terminated' => empty(trim($exists)),
+                'terminated' => empty(trim($exists)) || strpos($exists, 'PID') === false,
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to kill process: ' . $e->getMessage(), 500);
@@ -430,7 +587,7 @@ class ServerController
         try {
             $services = [];
 
-            // Get service list based on type
+            // Get service list based on type from host
             switch ($type) {
                 case 'running':
                     $cmd = "systemctl list-units --type=service --state=running --no-pager --no-legend";
@@ -445,7 +602,18 @@ class ServerController
                     $cmd = "systemctl list-units --type=service --all --no-pager --no-legend";
             }
 
-            $output = shell_exec("$cmd 2>&1");
+            $output = $this->execOnHost($cmd);
+
+            // Check if systemctl is available on host
+            if (strpos($output, 'not found') !== false || strpos($output, 'command not found') !== false) {
+                return JsonResponse::success([
+                    'services' => [],
+                    'total' => 0,
+                    'common' => [],
+                    'note' => 'systemd not available on this host',
+                ]);
+            }
+
             $lines = array_filter(explode("\n", trim($output)));
 
             foreach ($lines as $line) {
@@ -491,9 +659,9 @@ class ServerController
         $status = [];
 
         foreach ($commonServices as $service) {
-            $isActive = trim(shell_exec("systemctl is-active $service 2>/dev/null")) === 'active';
-            $isEnabled = trim(shell_exec("systemctl is-enabled $service 2>/dev/null")) === 'enabled';
-            $exists = !empty(trim(shell_exec("systemctl cat $service 2>/dev/null")));
+            $isActive = trim($this->execOnHost("systemctl is-active $service")) === 'active';
+            $isEnabled = trim($this->execOnHost("systemctl is-enabled $service")) === 'enabled';
+            $exists = !empty(trim($this->execOnHost("systemctl cat $service")));
 
             if ($exists) {
                 $status[] = [
@@ -520,12 +688,12 @@ class ServerController
         }
 
         try {
-            $status = shell_exec("systemctl status $service --no-pager 2>&1");
-            $isActive = trim(shell_exec("systemctl is-active $service 2>/dev/null")) === 'active';
-            $isEnabled = trim(shell_exec("systemctl is-enabled $service 2>/dev/null")) === 'enabled';
+            $status = $this->execOnHost("systemctl status $service --no-pager");
+            $isActive = trim($this->execOnHost("systemctl is-active $service")) === 'active';
+            $isEnabled = trim($this->execOnHost("systemctl is-enabled $service")) === 'enabled';
 
-            // Get recent logs
-            $logs = shell_exec("journalctl -u $service -n 50 --no-pager 2>&1");
+            // Get recent logs from host
+            $logs = $this->execOnHost("journalctl -u $service -n 50 --no-pager");
 
             return JsonResponse::success([
                 'service' => $service,
@@ -558,18 +726,19 @@ class ServerController
         }
 
         try {
-            // Check if we have permission (need sudo for most service operations)
-            $canSudo = !empty(trim(shell_exec("sudo -n true 2>/dev/null && echo yes")));
+            // Check if we have permission on host (need sudo for most service operations)
+            $canSudo = !empty(trim($this->execOnHostWithWrite("sudo -n true && echo yes")));
 
             if (!$canSudo) {
-                return JsonResponse::error('Insufficient permissions. Sudo access required.', 403);
+                // Try without sudo on host (might be running as root)
+                $output = $this->execOnHostWithWrite("systemctl $action $service");
+            } else {
+                $output = $this->execOnHostWithWrite("sudo systemctl $action $service");
             }
 
-            $output = shell_exec("sudo systemctl $action $service 2>&1");
-
-            // Get new status
-            $isActive = trim(shell_exec("systemctl is-active $service 2>/dev/null")) === 'active';
-            $isEnabled = trim(shell_exec("systemctl is-enabled $service 2>/dev/null")) === 'enabled';
+            // Get new status from host
+            $isActive = trim($this->execOnHost("systemctl is-active $service")) === 'active';
+            $isEnabled = trim($this->execOnHost("systemctl is-enabled $service")) === 'enabled';
 
             return JsonResponse::success([
                 'message' => "Service $action completed",
@@ -594,15 +763,21 @@ class ServerController
     public function getSystemInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
-            // Uptime
-            $uptime = trim(shell_exec('uptime -p 2>/dev/null')) ?: 'unknown';
-            $uptimeSince = trim(shell_exec('uptime -s 2>/dev/null')) ?: 'unknown';
+            // Uptime from host
+            $uptime = trim($this->execOnHost('uptime -p')) ?: 'unknown';
+            $uptimeSince = trim($this->execOnHost('uptime -s')) ?: 'unknown';
 
-            // Load average
-            $loadAvg = sys_getloadavg();
+            // Load average from host
+            $loadOutput = $this->execOnHost("cat /proc/loadavg");
+            $loadParts = explode(' ', trim($loadOutput));
+            $loadAvg = [
+                (float) ($loadParts[0] ?? 0),
+                (float) ($loadParts[1] ?? 0),
+                (float) ($loadParts[2] ?? 0),
+            ];
 
-            // Memory
-            $memInfo = shell_exec('free -b 2>/dev/null');
+            // Memory from host
+            $memInfo = $this->execOnHost('free -b');
             $memLines = explode("\n", $memInfo);
             $memParts = preg_split('/\s+/', trim($memLines[1] ?? ''));
 
@@ -610,19 +785,21 @@ class ServerController
             $memUsed = (int) ($memParts[2] ?? 0);
             $memFree = (int) ($memParts[3] ?? 0);
 
-            // Disk
-            $diskTotal = disk_total_space('/');
-            $diskFree = disk_free_space('/');
-            $diskUsed = $diskTotal - $diskFree;
+            // Disk from host
+            $diskInfo = $this->execOnHost("df -B1 / | tail -1");
+            $diskParts = preg_split('/\s+/', trim($diskInfo));
+            $diskTotal = (int) ($diskParts[1] ?? 0);
+            $diskUsed = (int) ($diskParts[2] ?? 0);
+            $diskFree = (int) ($diskParts[3] ?? 0);
 
-            // CPU info
-            $cpuInfo = shell_exec("lscpu 2>/dev/null | grep 'Model name' | cut -d':' -f2");
-            $cpuCores = (int) trim(shell_exec("nproc 2>/dev/null"));
+            // CPU info from host
+            $cpuInfo = $this->execOnHost("lscpu | grep 'Model name' | cut -d':' -f2");
+            $cpuCores = (int) trim($this->execOnHost("nproc"));
 
-            // OS info
-            $osInfo = shell_exec("cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'\"' -f2");
-            $kernel = trim(shell_exec('uname -r 2>/dev/null'));
-            $hostname = gethostname();
+            // OS info from host
+            $osInfo = $this->execOnHost("cat /etc/os-release | grep PRETTY_NAME | cut -d'\"' -f2");
+            $kernel = trim($this->execOnHost('uname -r'));
+            $hostname = trim($this->execOnHost('hostname'));
 
             return JsonResponse::success([
                 'hostname' => $hostname,

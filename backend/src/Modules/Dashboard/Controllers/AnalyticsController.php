@@ -32,22 +32,38 @@ class AnalyticsController
         return JsonResponse::success($stats);
     }
 
-    public function getTaskCompletionStats(string $userId, int $days): array
+    public function getTaskCompletionStats(string $userId, int $days, ?string $projectId = null): array
     {
+        $projectFilter = $projectId ? ' AND l.project_id = ?' : '';
+
         // Daily completed tasks
+        $dailyParams = [$userId, $days];
+        $dailyTypes = [\PDO::PARAM_STR, \PDO::PARAM_INT];
+        if ($projectId) {
+            $dailyParams[] = $projectId;
+            $dailyTypes[] = \PDO::PARAM_STR;
+        }
+
         $dailyCompleted = $this->db->fetchAllAssociative(
             "SELECT DATE(li.updated_at) as date, COUNT(*) as count
              FROM list_items li
              JOIN lists l ON li.list_id = l.id
              WHERE l.user_id = ? AND li.is_completed = TRUE
-               AND li.updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+               AND li.updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY){$projectFilter}
              GROUP BY DATE(li.updated_at)
              ORDER BY date",
-            [$userId, $days],
-            [\PDO::PARAM_STR, \PDO::PARAM_INT]
+            $dailyParams,
+            $dailyTypes
         );
 
         // Total stats
+        $totalsParams = [$days, $userId];
+        $totalsTypes = [\PDO::PARAM_INT, \PDO::PARAM_STR];
+        if ($projectId) {
+            $totalsParams[] = $projectId;
+            $totalsTypes[] = \PDO::PARAM_STR;
+        }
+
         $totals = $this->db->fetchAssociative(
             "SELECT
                 COUNT(*) as total_tasks,
@@ -55,9 +71,9 @@ class AnalyticsController
                 SUM(CASE WHEN is_completed = TRUE AND li.updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY) THEN 1 ELSE 0 END) as completed_period
              FROM list_items li
              JOIN lists l ON li.list_id = l.id
-             WHERE l.user_id = ?",
-            [$days, $userId],
-            [\PDO::PARAM_INT, \PDO::PARAM_STR]
+             WHERE l.user_id = ?{$projectFilter}",
+            $totalsParams,
+            $totalsTypes
         );
 
         // Average per day
@@ -272,22 +288,23 @@ class AnalyticsController
         $userId = $request->getAttribute('user_id');
         $queryParams = $request->getQueryParams();
         $widgetType = $queryParams['type'] ?? null;
+        $projectId = $queryParams['project_id'] ?? null;
 
         if (!$widgetType) {
             return JsonResponse::error('Widget type required', 400);
         }
 
         $data = match ($widgetType) {
-            'quick_stats' => $this->getQuickStatsData($userId),
-            'recent_tasks' => $this->getRecentTasksData($userId),
-            'recent_documents' => $this->getRecentDocumentsData($userId),
+            'quick_stats' => $this->getQuickStatsData($userId, $projectId),
+            'recent_tasks' => $this->getRecentTasksData($userId, $projectId),
+            'recent_documents' => $this->getRecentDocumentsData($userId, $projectId),
             'uptime_status' => $this->getUptimeStatusData($userId),
-            'time_tracking_today' => $this->getTimeTrackingTodayData($userId),
-            'kanban_summary' => $this->getKanbanSummaryData($userId),
-            'productivity_chart' => $this->getProductivityChartData($userId),
-            'calendar_preview' => $this->getCalendarPreviewData($userId),
+            'time_tracking_today' => $this->getTimeTrackingTodayData($userId, $projectId),
+            'kanban_summary' => $this->getKanbanSummaryData($userId, $projectId),
+            'productivity_chart' => $this->getProductivityChartData($userId, $projectId),
+            'calendar_preview' => $this->getCalendarPreviewData($userId, $projectId),
             'quick_notes' => $this->getQuickNotesData($userId),
-            'recent_activity' => $this->getRecentActivityData($userId),
+            'recent_activity' => $this->getRecentActivityData($userId, $projectId),
             default => null,
         };
 
@@ -298,46 +315,64 @@ class AnalyticsController
         return JsonResponse::success($data);
     }
 
-    private function getQuickStatsData(string $userId): array
+    private function getQuickStatsData(string $userId, ?string $projectId = null): array
     {
+        $projectFilter = $projectId ? ' AND project_id = ?' : '';
+        $kbProjectFilter = $projectId ? ' AND kb.project_id = ?' : '';
+        $params = $projectId ? [$userId, $projectId] : [$userId];
+
         return [
             'lists' => (int) $this->db->fetchOne(
-                'SELECT COUNT(*) FROM lists WHERE user_id = ? AND is_archived = FALSE',
-                [$userId]
+                "SELECT COUNT(*) FROM lists WHERE user_id = ? AND is_archived = FALSE{$projectFilter}",
+                $params
             ),
             'open_tasks' => (int) $this->db->fetchOne(
-                'SELECT COUNT(*) FROM list_items li JOIN lists l ON li.list_id = l.id WHERE l.user_id = ? AND li.is_completed = FALSE',
-                [$userId]
+                "SELECT COUNT(*) FROM list_items li JOIN lists l ON li.list_id = l.id WHERE l.user_id = ? AND li.is_completed = FALSE" . ($projectId ? ' AND l.project_id = ?' : ''),
+                $params
             ),
             'documents' => (int) $this->db->fetchOne(
-                'SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE',
-                [$userId]
+                "SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = FALSE{$projectFilter}",
+                $params
             ),
             'kanban_cards' => (int) $this->db->fetchOne(
-                'SELECT COUNT(*) FROM kanban_cards kc JOIN kanban_columns col ON kc.column_id = col.id JOIN kanban_boards kb ON col.board_id = kb.id WHERE kb.user_id = ?',
-                [$userId]
+                "SELECT COUNT(*) FROM kanban_cards kc JOIN kanban_columns col ON kc.column_id = col.id JOIN kanban_boards kb ON col.board_id = kb.id WHERE kb.user_id = ?{$kbProjectFilter}",
+                $params
             ),
         ];
     }
 
-    private function getRecentTasksData(string $userId): array
+    private function getRecentTasksData(string $userId, ?string $projectId = null): array
     {
+        $params = [$userId];
+        $projectFilter = '';
+        if ($projectId) {
+            $projectFilter = ' AND l.project_id = ?';
+            $params[] = $projectId;
+        }
+
         return $this->db->fetchAllAssociative(
             "SELECT li.id, li.content, li.is_completed, li.due_date, l.title as list_title, l.color
              FROM list_items li
              JOIN lists l ON li.list_id = l.id
-             WHERE l.user_id = ? AND li.is_completed = FALSE
+             WHERE l.user_id = ? AND li.is_completed = FALSE{$projectFilter}
              ORDER BY li.due_date ASC, li.created_at DESC
              LIMIT 10",
-            [$userId]
+            $params
         );
     }
 
-    private function getRecentDocumentsData(string $userId): array
+    private function getRecentDocumentsData(string $userId, ?string $projectId = null): array
     {
+        $params = [$userId];
+        $projectFilter = '';
+        if ($projectId) {
+            $projectFilter = ' AND project_id = ?';
+            $params[] = $projectId;
+        }
+
         return $this->db->fetchAllAssociative(
-            'SELECT id, title, format, updated_at FROM documents WHERE user_id = ? AND is_archived = FALSE ORDER BY updated_at DESC LIMIT 5',
-            [$userId]
+            "SELECT id, title, format, updated_at FROM documents WHERE user_id = ? AND is_archived = FALSE{$projectFilter} ORDER BY updated_at DESC LIMIT 5",
+            $params
         );
     }
 
@@ -354,25 +389,39 @@ class AnalyticsController
         );
     }
 
-    private function getTimeTrackingTodayData(string $userId): array
+    private function getTimeTrackingTodayData(string $userId, ?string $projectId = null): array
     {
+        $params = [$userId];
+        $projectFilter = '';
+        if ($projectId) {
+            $projectFilter = ' AND project_id = ?';
+            $params[] = $projectId;
+        }
+
         $today = $this->db->fetchAssociative(
             "SELECT
                 SUM(TIMESTAMPDIFF(MINUTE, start_time, COALESCE(end_time, NOW()))) as total_minutes,
                 COUNT(*) as entry_count
              FROM time_entries
-             WHERE user_id = ? AND DATE(start_time) = CURDATE()",
-            [$userId]
+             WHERE user_id = ? AND DATE(start_time) = CURDATE(){$projectFilter}",
+            $params
         );
+
+        $runningParams = [$userId];
+        $runningProjectFilter = '';
+        if ($projectId) {
+            $runningProjectFilter = ' AND te.project_id = ?';
+            $runningParams[] = $projectId;
+        }
 
         $running = $this->db->fetchAssociative(
             "SELECT te.*, p.name as project_name, p.color as project_color
              FROM time_entries te
              LEFT JOIN projects p ON te.project_id = p.id
-             WHERE te.user_id = ? AND te.end_time IS NULL
+             WHERE te.user_id = ? AND te.end_time IS NULL{$runningProjectFilter}
              ORDER BY te.start_time DESC
              LIMIT 1",
-            [$userId]
+            $runningParams
         );
 
         return [
@@ -382,27 +431,41 @@ class AnalyticsController
         ];
     }
 
-    private function getKanbanSummaryData(string $userId): array
+    private function getKanbanSummaryData(string $userId, ?string $projectId = null): array
     {
+        $boardsParams = [$userId];
+        $boardsProjectFilter = '';
+        if ($projectId) {
+            $boardsProjectFilter = ' AND kb.project_id = ?';
+            $boardsParams[] = $projectId;
+        }
+
         $boards = $this->db->fetchAllAssociative(
             "SELECT kb.id, kb.title,
                     (SELECT COUNT(*) FROM kanban_cards kc JOIN kanban_columns col ON kc.column_id = col.id WHERE col.board_id = kb.id) as card_count
              FROM kanban_boards kb
-             WHERE kb.user_id = ? AND kb.is_archived = FALSE
+             WHERE kb.user_id = ? AND kb.is_archived = FALSE{$boardsProjectFilter}
              ORDER BY kb.updated_at DESC
              LIMIT 5",
-            [$userId]
+            $boardsParams
         );
+
+        $dueSoonParams = [$userId];
+        $dueSoonProjectFilter = '';
+        if ($projectId) {
+            $dueSoonProjectFilter = ' AND kb.project_id = ?';
+            $dueSoonParams[] = $projectId;
+        }
 
         $dueSoon = $this->db->fetchAllAssociative(
             "SELECT kc.id, kc.title, kc.due_date, kb.id as board_id, kb.title as board_title
              FROM kanban_cards kc
              JOIN kanban_columns col ON kc.column_id = col.id
              JOIN kanban_boards kb ON col.board_id = kb.id
-             WHERE kb.user_id = ? AND kc.due_date IS NOT NULL AND kc.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+             WHERE kb.user_id = ? AND kc.due_date IS NOT NULL AND kc.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY){$dueSoonProjectFilter}
              ORDER BY kc.due_date ASC
              LIMIT 5",
-            [$userId]
+            $dueSoonParams
         );
 
         return [
@@ -411,42 +474,63 @@ class AnalyticsController
         ];
     }
 
-    private function getProductivityChartData(string $userId): array
+    private function getProductivityChartData(string $userId, ?string $projectId = null): array
     {
-        return $this->getTaskCompletionStats($userId, 14);
+        return $this->getTaskCompletionStats($userId, 14, $projectId);
     }
 
-    private function getCalendarPreviewData(string $userId): array
+    private function getCalendarPreviewData(string $userId, ?string $projectId = null): array
     {
         $startOfWeek = date('Y-m-d', strtotime('monday this week'));
         $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
 
         // Custom calendar events
+        $eventsParams = [$userId, $startOfWeek, $endOfWeek . ' 23:59:59'];
+        $eventsProjectFilter = '';
+        if ($projectId) {
+            $eventsProjectFilter = ' AND project_id = ?';
+            $eventsParams[] = $projectId;
+        }
+
         $events = $this->db->fetchAllAssociative(
             "SELECT id, title, start_date, end_date, all_day, color, 'event' as source_type
              FROM calendar_events
-             WHERE user_id = ? AND start_date >= ? AND start_date <= ?
+             WHERE user_id = ? AND start_date >= ? AND start_date <= ?{$eventsProjectFilter}
              ORDER BY start_date",
-            [$userId, $startOfWeek, $endOfWeek . ' 23:59:59']
+            $eventsParams
         );
 
         // Kanban due dates
+        $kanbanParams = [$userId, $startOfWeek, $endOfWeek];
+        $kanbanProjectFilter = '';
+        if ($projectId) {
+            $kanbanProjectFilter = ' AND kb.project_id = ?';
+            $kanbanParams[] = $projectId;
+        }
+
         $kanbanDue = $this->db->fetchAllAssociative(
             "SELECT kc.id, kc.title, kc.due_date as start_date, NULL as end_date, TRUE as all_day, 'red' as color, 'kanban' as source_type
              FROM kanban_cards kc
              JOIN kanban_columns col ON kc.column_id = col.id
              JOIN kanban_boards kb ON col.board_id = kb.id
-             WHERE kb.user_id = ? AND kc.due_date >= ? AND kc.due_date <= ?",
-            [$userId, $startOfWeek, $endOfWeek]
+             WHERE kb.user_id = ? AND kc.due_date >= ? AND kc.due_date <= ?{$kanbanProjectFilter}",
+            $kanbanParams
         );
 
         // List item due dates
+        $tasksParams = [$userId, $startOfWeek, $endOfWeek];
+        $tasksProjectFilter = '';
+        if ($projectId) {
+            $tasksProjectFilter = ' AND l.project_id = ?';
+            $tasksParams[] = $projectId;
+        }
+
         $tasksDue = $this->db->fetchAllAssociative(
             "SELECT li.id, li.content as title, li.due_date as start_date, NULL as end_date, TRUE as all_day, 'blue' as color, 'task' as source_type
              FROM list_items li
              JOIN lists l ON li.list_id = l.id
-             WHERE l.user_id = ? AND li.due_date >= ? AND li.due_date <= ? AND li.is_completed = FALSE",
-            [$userId, $startOfWeek, $endOfWeek]
+             WHERE l.user_id = ? AND li.due_date >= ? AND li.due_date <= ? AND li.is_completed = FALSE{$tasksProjectFilter}",
+            $tasksParams
         );
 
         return array_merge($events, $kanbanDue, $tasksDue);
@@ -460,8 +544,11 @@ class AnalyticsController
         );
     }
 
-    private function getRecentActivityData(string $userId): array
+    private function getRecentActivityData(string $userId, ?string $projectId = null): array
     {
+        // Note: audit_logs may not have project_id, so this is a simple filter
+        // For now, we return all activity regardless of project filter
+        // as audit logs typically don't have project association
         return $this->db->fetchAllAssociative(
             'SELECT action, entity_type, entity_id, details, created_at
              FROM audit_logs

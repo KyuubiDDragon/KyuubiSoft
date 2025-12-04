@@ -69,9 +69,11 @@ async function fetchAvailableWidgets() {
 
 async function fetchWidgetData(widgetType) {
   try {
-    const response = await api.get('/api/v1/analytics/widget-data', {
-      params: { type: widgetType }
-    })
+    const params = { type: widgetType }
+    if (projectStore.selectedProjectId) {
+      params.project_id = projectStore.selectedProjectId
+    }
+    const response = await api.get('/api/v1/analytics/widget-data', { params })
     widgetData.value[widgetType] = response.data.data
   } catch (error) {
     console.error(`Failed to fetch data for ${widgetType}:`, error)

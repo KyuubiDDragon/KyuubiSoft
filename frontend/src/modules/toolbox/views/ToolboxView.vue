@@ -16,6 +16,10 @@ import MarkdownPreview from '../components/tools/MarkdownPreview.vue'
 import UuidGenerator from '../components/tools/UuidGenerator.vue'
 import TextCaseConverter from '../components/tools/TextCaseConverter.vue'
 import EncodingTool from '../components/tools/EncodingTool.vue'
+import SqlFormatter from '../components/tools/SqlFormatter.vue'
+import CsvJsonConverter from '../components/tools/CsvJsonConverter.vue'
+import MockDataGenerator from '../components/tools/MockDataGenerator.vue'
+import GitignoreGenerator from '../components/tools/GitignoreGenerator.vue'
 
 // Tool Components - Media
 import QrCodeGenerator from '../components/tools/QrCodeGenerator.vue'
@@ -65,8 +69,8 @@ const toolCategories = [
       },
       {
         id: 'jwt-decoder',
-        name: 'JWT Decoder',
-        description: 'JWT Tokens dekodieren und analysieren',
+        name: 'JWT Tool',
+        description: 'JWT Tokens dekodieren, analysieren und generieren',
         icon: '🔐',
         component: JwtDecoder,
       },
@@ -139,6 +143,34 @@ const toolCategories = [
         description: 'Base64, URL, HTML, Hex kodieren/dekodieren',
         icon: '🔄',
         component: EncodingTool,
+      },
+      {
+        id: 'sql-formatter',
+        name: 'SQL Formatter',
+        description: 'SQL-Abfragen formatieren und strukturieren',
+        icon: '🗃️',
+        component: SqlFormatter,
+      },
+      {
+        id: 'csv-json-converter',
+        name: 'CSV/JSON Converter',
+        description: 'CSV und JSON bidirektional konvertieren',
+        icon: '📊',
+        component: CsvJsonConverter,
+      },
+      {
+        id: 'mock-data-generator',
+        name: 'Mock Data Generator',
+        description: 'Testdaten generieren (Namen, E-Mails, etc.)',
+        icon: '🎲',
+        component: MockDataGenerator,
+      },
+      {
+        id: 'gitignore-generator',
+        name: '.gitignore Generator',
+        description: 'Gitignore Dateien für verschiedene Projekte erstellen',
+        icon: '📁',
+        component: GitignoreGenerator,
       },
     ],
   },

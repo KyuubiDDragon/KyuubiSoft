@@ -157,16 +157,8 @@ class ServerController
                 $lineNumber++;
                 $line = trim($line);
 
-                if (empty($line)) continue;
-
-                // Check if comment
-                if (str_starts_with($line, '#')) {
-                    $crontabs[] = [
-                        'line' => $lineNumber,
-                        'type' => 'comment',
-                        'raw' => $line,
-                        'enabled' => false,
-                    ];
+                // Skip empty lines and comments
+                if (empty($line) || str_starts_with($line, '#')) {
                     continue;
                 }
 

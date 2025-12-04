@@ -47,7 +47,6 @@ const phpFpmStatus = ref(null)
 
 // Services
 const services = ref([])
-const commonServices = ref([])
 const customServices = ref([])
 const serviceFilter = ref('running')
 const serviceSearch = ref('')
@@ -58,6 +57,18 @@ const selectedService = ref(null)
 const serviceStatus = ref(null)
 const serviceLogs = ref('')
 const importantServicesExpanded = ref(true)
+
+// Computed filtered services (filters as you type)
+const filteredServices = computed(() => {
+  if (!serviceSearch.value) {
+    return services.value
+  }
+  const searchLower = serviceSearch.value.toLowerCase()
+  return services.value.filter(service =>
+    service.name.toLowerCase().includes(searchLower) ||
+    (service.description && service.description.toLowerCase().includes(searchLower))
+  )
+})
 
 // Auto-refresh
 let refreshInterval = null
@@ -114,13 +125,9 @@ async function loadProcesses() {
 async function loadServices() {
   try {
     const params = { type: serviceFilter.value }
-    if (serviceSearch.value) {
-      params.search = serviceSearch.value
-    }
     const response = await api.get('/api/v1/server/services', { params })
     const data = response.data.data
     services.value = data.services || []
-    commonServices.value = data.common || []
   } catch (e) {
     console.error('Failed to load services:', e)
   }
@@ -375,8 +382,8 @@ function toggleAutoRefresh() {
 
     <!-- Services Tab -->
     <div v-if="activeTab === 'overview'" class="space-y-6">
-      <!-- Important Services Section (Collapsible) -->
-      <div v-if="commonServices.length > 0 || customServices.length > 0" class="card">
+      <!-- Important Services Section (Collapsible) - Only user's custom services -->
+      <div class="card">
         <!-- Header with toggle -->
         <div
           class="flex items-center justify-between p-4 cursor-pointer hover:bg-dark-700/50 transition-colors"
@@ -388,7 +395,7 @@ function toggleAutoRefresh() {
               class="w-5 h-5 text-gray-400"
             />
             <h3 class="text-lg font-medium text-white">Wichtige Services</h3>
-            <span class="text-sm text-gray-500">({{ commonServices.length + customServices.length }})</span>
+            <span class="text-sm text-gray-500">({{ customServices.length }})</span>
           </div>
           <button
             @click.stop="showAddServiceModal = true"
@@ -402,56 +409,17 @@ function toggleAutoRefresh() {
 
         <!-- Collapsible content -->
         <div v-show="importantServicesExpanded" class="p-4 pt-0">
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <!-- System common services -->
-            <div
-              v-for="service in commonServices"
-              :key="'common-' + service.name"
-              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between"
-            >
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-3 h-3 rounded-full"
-                  :class="service.active ? 'bg-green-400' : 'bg-red-400'"
-                ></div>
-                <div>
-                  <p class="font-medium text-white">{{ service.name }}</p>
-                  <p class="text-xs text-gray-500">{{ service.enabled ? 'Aktiviert' : 'Deaktiviert' }}</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  v-if="!service.active"
-                  @click="controlService(service.name, 'start')"
-                  class="btn-icon text-green-400 hover:bg-green-500/20"
-                  title="Starten"
-                >
-                  <PlayIcon class="w-4 h-4" />
-                </button>
-                <button
-                  v-if="service.active"
-                  @click="controlService(service.name, 'restart')"
-                  class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                  title="Neustarten"
-                >
-                  <ArrowPathIcon class="w-4 h-4" />
-                </button>
-                <button
-                  v-if="service.active"
-                  @click="controlService(service.name, 'stop')"
-                  class="btn-icon text-red-400 hover:bg-red-500/20"
-                  title="Stoppen"
-                >
-                  <StopIcon class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Custom user services -->
+          <div v-if="customServices.length === 0" class="text-center text-gray-500 py-8">
+            <Cog6ToothIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Keine wichtigen Services hinterlegt</p>
+            <p class="text-sm mt-1">Klicke auf "Hinzufuegen" um Services zu deiner Liste hinzuzufuegen</p>
+          </div>
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Custom user services only -->
             <div
               v-for="service in customServices"
-              :key="'custom-' + service.name"
-              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between border border-primary-500/30"
+              :key="service.name"
+              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between"
             >
               <div class="flex items-center gap-3">
                 <div
@@ -510,18 +478,13 @@ function toggleAutoRefresh() {
           <option value="failed">Fehlgeschlagen</option>
           <option value="enabled">Aktiviert</option>
         </select>
-        <div class="flex items-center gap-2">
-          <input
-            v-model="serviceSearch"
-            type="text"
-            class="input w-48"
-            placeholder="Suche..."
-            @keyup.enter="loadServices"
-          />
-          <button @click="loadServices" class="btn-secondary">
-            <ArrowPathIcon class="w-4 h-4" />
-          </button>
-        </div>
+        <input
+          v-model="serviceSearch"
+          type="text"
+          class="input w-48"
+          placeholder="Suche..."
+        />
+        <span class="text-sm text-gray-500">{{ filteredServices.length }} von {{ services.length }}</span>
       </div>
 
       <!-- Services Table -->
@@ -537,7 +500,7 @@ function toggleAutoRefresh() {
           </thead>
           <tbody>
             <tr
-              v-for="service in services"
+              v-for="service in filteredServices"
               :key="service.name"
               class="border-t border-dark-600 hover:bg-dark-700"
             >

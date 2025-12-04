@@ -46,6 +46,8 @@ services:
   backend:
     image: ghcr.io/kyuubiddragon/kyuubisoft-backend:latest
     container_name: kyuubisoft_backend
+    group_add:
+      - "${DOCKER_GID:-999}"
     volumes:
       - backend_storage:/var/www/html/storage
       - /var/run/docker.sock:/var/run/docker.sock

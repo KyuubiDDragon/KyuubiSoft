@@ -46,6 +46,12 @@ class DockerController
             $hosts = $this->hostRepository->findByUser($userId);
         }
 
+        // Auto-create default local host if user has no hosts configured
+        if (empty($hosts)) {
+            $defaultHost = $this->hostRepository->createDefaultForUser($userId);
+            $hosts = [$defaultHost];
+        }
+
         return JsonResponse::success(['hosts' => $hosts]);
     }
 

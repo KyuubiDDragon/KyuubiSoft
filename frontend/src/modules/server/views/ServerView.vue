@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -174,10 +174,32 @@ async function removeCustomService(serviceName) {
 async function refreshAll() {
   loading.value = true
   try {
+    // Load system info first (lightweight)
+    await loadSystemInfo()
+
+    // Load data for current tab only
+    switch (activeTab.value) {
+      case 'overview':
+        await Promise.all([loadServices(), loadCustomServices()])
+        break
+      case 'crontabs':
+        await loadCrontabs()
+        break
+      case 'processes':
+        await loadProcesses()
+        break
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// Initial load - just system info and current tab data
+async function initialLoad() {
+  loading.value = true
+  try {
     await Promise.all([
       loadSystemInfo(),
-      loadCrontabs(),
-      loadProcesses(),
       loadServices(),
       loadCustomServices(),
     ])
@@ -288,7 +310,7 @@ async function controlService(service, action) {
 
 // Lifecycle
 onMounted(async () => {
-  await refreshAll()
+  await initialLoad()
 })
 
 onUnmounted(() => {
@@ -297,15 +319,48 @@ onUnmounted(() => {
   }
 })
 
+// Smart auto-refresh - only refresh data relevant to current tab
+function refreshCurrentTab() {
+  switch (activeTab.value) {
+    case 'overview':
+      loadServices()
+      loadCustomServices()
+      break
+    case 'crontabs':
+      loadCrontabs()
+      break
+    case 'processes':
+      loadProcesses()
+      break
+  }
+  // Always refresh system info (lightweight)
+  loadSystemInfo()
+}
+
 // Watch auto-refresh toggle
 function toggleAutoRefresh() {
   if (autoRefresh.value) {
-    refreshInterval = setInterval(refreshAll, 10000)
+    refreshInterval = setInterval(refreshCurrentTab, 10000)
   } else if (refreshInterval) {
     clearInterval(refreshInterval)
     refreshInterval = null
   }
 }
+
+// Watch tab changes to load data on demand
+watch(activeTab, (newTab) => {
+  switch (newTab) {
+    case 'overview':
+      if (services.value.length === 0) loadServices()
+      break
+    case 'crontabs':
+      if (crontabs.value.length === 0) loadCrontabs()
+      break
+    case 'processes':
+      loadProcesses() // Always refresh processes
+      break
+  }
+})
 </script>
 
 <template>

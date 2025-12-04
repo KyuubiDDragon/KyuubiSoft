@@ -19,6 +19,8 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   EyeIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
@@ -46,12 +48,16 @@ const phpFpmStatus = ref(null)
 // Services
 const services = ref([])
 const commonServices = ref([])
+const customServices = ref([])
 const serviceFilter = ref('running')
 const serviceSearch = ref('')
 const showServiceModal = ref(false)
+const showAddServiceModal = ref(false)
+const newServiceName = ref('')
 const selectedService = ref(null)
 const serviceStatus = ref(null)
 const serviceLogs = ref('')
+const importantServicesExpanded = ref(true)
 
 // Auto-refresh
 let refreshInterval = null
@@ -120,6 +126,44 @@ async function loadServices() {
   }
 }
 
+async function loadCustomServices() {
+  try {
+    const response = await api.get('/api/v1/server/services/custom')
+    customServices.value = response.data.data.services || []
+  } catch (e) {
+    console.error('Failed to load custom services:', e)
+  }
+}
+
+async function addCustomService() {
+  if (!newServiceName.value.trim()) {
+    uiStore.showError('Service-Name ist erforderlich')
+    return
+  }
+
+  try {
+    await api.post('/api/v1/server/services/custom', { name: newServiceName.value.trim() })
+    uiStore.showSuccess('Service hinzugefügt')
+    showAddServiceModal.value = false
+    newServiceName.value = ''
+    await loadCustomServices()
+  } catch (e) {
+    uiStore.showError(e.response?.data?.message || 'Fehler beim Hinzufügen')
+  }
+}
+
+async function removeCustomService(serviceName) {
+  if (!confirm(`Service "${serviceName}" wirklich aus der Liste entfernen?`)) return
+
+  try {
+    await api.delete(`/api/v1/server/services/custom/${encodeURIComponent(serviceName)}`)
+    uiStore.showSuccess('Service entfernt')
+    await loadCustomServices()
+  } catch (e) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
 async function refreshAll() {
   loading.value = true
   try {
@@ -128,6 +172,7 @@ async function refreshAll() {
       loadCrontabs(),
       loadProcesses(),
       loadServices(),
+      loadCustomServices(),
     ])
   } finally {
     loading.value = false
@@ -330,50 +375,127 @@ function toggleAutoRefresh() {
 
     <!-- Services Tab -->
     <div v-if="activeTab === 'overview'" class="space-y-6">
-      <!-- Common Services Quick Actions -->
-      <div v-if="commonServices.length > 0">
-        <h3 class="text-lg font-medium text-white mb-4">Wichtige Services</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div
-            v-for="service in commonServices"
-            :key="service.name"
-            class="card p-4 flex items-center justify-between"
+      <!-- Important Services Section (Collapsible) -->
+      <div v-if="commonServices.length > 0 || customServices.length > 0" class="card">
+        <!-- Header with toggle -->
+        <div
+          class="flex items-center justify-between p-4 cursor-pointer hover:bg-dark-700/50 transition-colors"
+          @click="importantServicesExpanded = !importantServicesExpanded"
+        >
+          <div class="flex items-center gap-3">
+            <component
+              :is="importantServicesExpanded ? ChevronDownIcon : ChevronUpIcon"
+              class="w-5 h-5 text-gray-400"
+            />
+            <h3 class="text-lg font-medium text-white">Wichtige Services</h3>
+            <span class="text-sm text-gray-500">({{ commonServices.length + customServices.length }})</span>
+          </div>
+          <button
+            @click.stop="showAddServiceModal = true"
+            class="btn-secondary text-sm"
+            title="Service hinzufuegen"
           >
-            <div class="flex items-center gap-3">
-              <div
-                class="w-3 h-3 rounded-full"
-                :class="service.active ? 'bg-green-400' : 'bg-red-400'"
-              ></div>
-              <div>
-                <p class="font-medium text-white">{{ service.name }}</p>
-                <p class="text-xs text-gray-500">{{ service.enabled ? 'Aktiviert' : 'Deaktiviert' }}</p>
+            <PlusIcon class="w-4 h-4 mr-1" />
+            Hinzufuegen
+          </button>
+        </div>
+
+        <!-- Collapsible content -->
+        <div v-show="importantServicesExpanded" class="p-4 pt-0">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- System common services -->
+            <div
+              v-for="service in commonServices"
+              :key="'common-' + service.name"
+              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-3 h-3 rounded-full"
+                  :class="service.active ? 'bg-green-400' : 'bg-red-400'"
+                ></div>
+                <div>
+                  <p class="font-medium text-white">{{ service.name }}</p>
+                  <p class="text-xs text-gray-500">{{ service.enabled ? 'Aktiviert' : 'Deaktiviert' }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="!service.active"
+                  @click="controlService(service.name, 'start')"
+                  class="btn-icon text-green-400 hover:bg-green-500/20"
+                  title="Starten"
+                >
+                  <PlayIcon class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="service.active"
+                  @click="controlService(service.name, 'restart')"
+                  class="btn-icon text-blue-400 hover:bg-blue-500/20"
+                  title="Neustarten"
+                >
+                  <ArrowPathIcon class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="service.active"
+                  @click="controlService(service.name, 'stop')"
+                  class="btn-icon text-red-400 hover:bg-red-500/20"
+                  title="Stoppen"
+                >
+                  <StopIcon class="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <div class="flex items-center gap-1">
-              <button
-                v-if="!service.active"
-                @click="controlService(service.name, 'start')"
-                class="btn-icon text-green-400 hover:bg-green-500/20"
-                title="Starten"
-              >
-                <PlayIcon class="w-4 h-4" />
-              </button>
-              <button
-                v-if="service.active"
-                @click="controlService(service.name, 'restart')"
-                class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                title="Neustarten"
-              >
-                <ArrowPathIcon class="w-4 h-4" />
-              </button>
-              <button
-                v-if="service.active"
-                @click="controlService(service.name, 'stop')"
-                class="btn-icon text-red-400 hover:bg-red-500/20"
-                title="Stoppen"
-              >
-                <StopIcon class="w-4 h-4" />
-              </button>
+
+            <!-- Custom user services -->
+            <div
+              v-for="service in customServices"
+              :key="'custom-' + service.name"
+              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between border border-primary-500/30"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-3 h-3 rounded-full"
+                  :class="service.active ? 'bg-green-400' : 'bg-red-400'"
+                ></div>
+                <div>
+                  <p class="font-medium text-white">{{ service.name }}</p>
+                  <p class="text-xs text-gray-500">{{ service.enabled ? 'Aktiviert' : 'Deaktiviert' }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="!service.active"
+                  @click="controlService(service.name, 'start')"
+                  class="btn-icon text-green-400 hover:bg-green-500/20"
+                  title="Starten"
+                >
+                  <PlayIcon class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="service.active"
+                  @click="controlService(service.name, 'restart')"
+                  class="btn-icon text-blue-400 hover:bg-blue-500/20"
+                  title="Neustarten"
+                >
+                  <ArrowPathIcon class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="service.active"
+                  @click="controlService(service.name, 'stop')"
+                  class="btn-icon text-red-400 hover:bg-red-500/20"
+                  title="Stoppen"
+                >
+                  <StopIcon class="w-4 h-4" />
+                </button>
+                <button
+                  @click="removeCustomService(service.name)"
+                  class="btn-icon text-gray-400 hover:text-red-400 hover:bg-red-500/20"
+                  title="Aus Liste entfernen"
+                >
+                  <TrashIcon class="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -737,6 +859,46 @@ function toggleAutoRefresh() {
               Schließen
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Add Custom Service Modal -->
+      <div
+        v-if="showAddServiceModal"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <h2 class="text-lg font-semibold text-white">Service hinzufuegen</h2>
+            <button @click="showAddServiceModal = false" class="btn-icon">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="addCustomService" class="p-4 space-y-4">
+            <div>
+              <label class="label">Service-Name</label>
+              <input
+                v-model="newServiceName"
+                type="text"
+                class="input"
+                placeholder="z.B. mysql, postgresql, redis..."
+                autofocus
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Der exakte systemd Service-Name (ohne .service)
+              </p>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button type="button" @click="showAddServiceModal = false" class="btn-secondary flex-1">
+                Abbrechen
+              </button>
+              <button type="submit" class="btn-primary flex-1">
+                Hinzufuegen
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </Teleport>

@@ -435,6 +435,9 @@ class Router
                 $protected->get('/server/services', [ServerController::class, 'listServices']);
                 $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus']);
                 $protected->post('/server/services/control', [ServerController::class, 'controlService']);
+                $protected->get('/server/services/custom', [ServerController::class, 'getCustomServices']);
+                $protected->post('/server/services/custom', [ServerController::class, 'addCustomService']);
+                $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService']);
 
             })->add(AuthMiddleware::class);
         });

@@ -4,11 +4,16 @@ namespace App\Modules\Server\Controllers;
 
 use App\Core\Http\JsonResponse;
 use App\Core\Exceptions\ValidationException;
+use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 class ServerController
 {
+    public function __construct(
+        private readonly Connection $db
+    ) {}
     // ========================================================================
     // Host Command Execution Helpers
     // ========================================================================
@@ -38,7 +43,7 @@ class ServerController
      * Execute a command on the host system
      * When running in a container, uses Docker to execute on host
      */
-    private function execOnHost(string $command, bool $needsPrivileged = false): string
+    private function execOnHost(string $command): string
     {
         if (!$this->isInContainer()) {
             // Running directly on host
@@ -52,50 +57,27 @@ class ServerController
             return "Error: Docker socket not available for host access";
         }
 
-        // Use nsenter to run commands in host namespaces
-        // This is more reliable than chroot
-        $privileged = $needsPrivileged ? '--privileged' : '';
-
         // Escape the command properly for shell
         $escapedCmd = str_replace("'", "'\\''", $command);
 
-        // Use nsenter with all host namespaces for proper access
-        $dockerCmd = "docker run --rm $privileged " .
+        // Use privileged container with host PID and run command via chroot
+        // This is more compatible than nsenter which requires namespace access
+        $dockerCmd = "docker run --rm --privileged " .
                      "--pid=host " .
                      "--network=host " .
-                     "--ipc=host " .
-                     "-v /:/host:ro " .
-                     "alpine:latest nsenter -t 1 -m -u -n -i sh -c '$escapedCmd' 2>&1";
+                     "-v /:/host " .
+                     "alpine:latest chroot /host sh -c '$escapedCmd' 2>&1";
 
         return shell_exec($dockerCmd) ?: '';
     }
 
     /**
      * Execute a command on host that needs write access
+     * Note: This is the same as execOnHost since we always use privileged mode with chroot
      */
     private function execOnHostWithWrite(string $command): string
     {
-        if (!$this->isInContainer()) {
-            return shell_exec($command . ' 2>&1') ?: '';
-        }
-
-        $dockerSocket = '/var/run/docker.sock';
-
-        if (!file_exists($dockerSocket)) {
-            return "Error: Docker socket not available for host access";
-        }
-
-        // Escape the command properly for shell
-        $escapedCmd = str_replace("'", "'\\''", $command);
-
-        // Use privileged container with nsenter for write operations
-        $dockerCmd = "docker run --rm --privileged " .
-                     "--pid=host " .
-                     "--network=host " .
-                     "--ipc=host " .
-                     "alpine:latest nsenter -t 1 -m -u -n -i sh -c '$escapedCmd' 2>&1";
-
-        return shell_exec($dockerCmd) ?: '';
+        return $this->execOnHost($command);
     }
 
     /**
@@ -869,5 +851,131 @@ class ServerController
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
         return round($bytes / 1073741824, 1) . ' GB';
+    }
+
+    // ========================================================================
+    // Custom Important Services
+    // ========================================================================
+
+    /**
+     * Get user's custom important services list
+     */
+    public function getCustomServices(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $setting = $this->db->fetchOne(
+            "SELECT `value` FROM user_settings WHERE user_id = ? AND `key` = 'custom_important_services'",
+            [$userId]
+        );
+
+        $services = $setting ? json_decode($setting, true) : [];
+
+        // Get status of each custom service
+        $servicesWithStatus = [];
+        foreach ($services as $serviceName) {
+            $isActive = trim($this->execOnHost("systemctl is-active '$serviceName' 2>&1")) === 'active';
+            $isEnabled = trim($this->execOnHost("systemctl is-enabled '$serviceName' 2>&1")) === 'enabled';
+            $exists = !empty(trim($this->execOnHost("systemctl cat '$serviceName' 2>&1"))) &&
+                      strpos($this->execOnHost("systemctl cat '$serviceName' 2>&1"), 'No files found') === false;
+
+            if ($exists) {
+                $servicesWithStatus[] = [
+                    'name' => $serviceName,
+                    'active' => $isActive,
+                    'enabled' => $isEnabled,
+                    'custom' => true,
+                ];
+            }
+        }
+
+        return JsonResponse::success([
+            'services' => $servicesWithStatus,
+            'names' => $services,
+        ]);
+    }
+
+    /**
+     * Add a custom important service
+     */
+    public function addCustomService(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $body = $request->getParsedBody();
+
+        $serviceName = trim($body['name'] ?? '');
+
+        if (empty($serviceName) || !preg_match('/^[a-zA-Z0-9_@.-]+$/', $serviceName)) {
+            throw new ValidationException('Valid service name is required');
+        }
+
+        // Check if service exists on host
+        $exists = $this->execOnHost("systemctl cat '$serviceName' 2>&1");
+        if (strpos($exists, 'No files found') !== false || strpos($exists, 'not found') !== false) {
+            throw new ValidationException("Service '$serviceName' not found on system");
+        }
+
+        // Get current list
+        $setting = $this->db->fetchOne(
+            "SELECT `value` FROM user_settings WHERE user_id = ? AND `key` = 'custom_important_services'",
+            [$userId]
+        );
+
+        $services = $setting ? json_decode($setting, true) : [];
+
+        // Add if not already in list
+        if (!in_array($serviceName, $services)) {
+            $services[] = $serviceName;
+
+            // Save using upsert
+            $this->db->executeStatement(
+                "INSERT INTO user_settings (user_id, `key`, `value`)
+                 VALUES (?, 'custom_important_services', ?)
+                 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                [$userId, json_encode($services)]
+            );
+        }
+
+        return JsonResponse::success([
+            'message' => "Service '$serviceName' added to important services",
+            'services' => $services,
+        ]);
+    }
+
+    /**
+     * Remove a custom important service
+     */
+    public function removeCustomService(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $serviceName = RouteContext::fromRequest($request)->getRoute()->getArgument('name');
+
+        if (empty($serviceName)) {
+            throw new ValidationException('Service name is required');
+        }
+
+        // Get current list
+        $setting = $this->db->fetchOne(
+            "SELECT `value` FROM user_settings WHERE user_id = ? AND `key` = 'custom_important_services'",
+            [$userId]
+        );
+
+        $services = $setting ? json_decode($setting, true) : [];
+
+        // Remove from list
+        $services = array_values(array_filter($services, fn($s) => $s !== $serviceName));
+
+        // Save
+        $this->db->executeStatement(
+            "INSERT INTO user_settings (user_id, `key`, `value`)
+             VALUES (?, 'custom_important_services', ?)
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+            [$userId, json_encode($services)]
+        );
+
+        return JsonResponse::success([
+            'message' => "Service '$serviceName' removed from important services",
+            'services' => $services,
+        ]);
     }
 }

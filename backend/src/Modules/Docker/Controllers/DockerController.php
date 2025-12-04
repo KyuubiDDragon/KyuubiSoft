@@ -1059,6 +1059,30 @@ class DockerController
 
             $writable = !$fromPortainer && file_exists($composePath) && is_writable($composePath);
 
+            // Also fetch .env file
+            $envContent = null;
+            $envPath = $workingDir . '/.env';
+            $envSource = null;
+
+            // For Portainer-managed stacks, try to get env from Portainer first
+            if ($fromPortainer && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
+                $portainerStackId = $this->getPortainerStackId($host, $stackName, $userId);
+                if ($portainerStackId) {
+                    $envContent = $this->fetchPortainerStackEnv($host, $portainerStackId);
+                    if ($envContent) {
+                        $envSource = 'portainer';
+                    }
+                }
+            }
+
+            // If no env from Portainer, try filesystem
+            if ($envContent === null) {
+                $envContent = $this->readHostFile($host, $envPath);
+                if ($envContent !== null) {
+                    $envSource = 'filesystem';
+                }
+            }
+
             return JsonResponse::success([
                 'stack' => $stackName,
                 'path' => $fromPortainer ? 'portainer://' . $stackName : $composePath,
@@ -1067,6 +1091,8 @@ class DockerController
                 'readable' => true,
                 'writable' => $writable,
                 'source' => $fromPortainer ? 'portainer' : 'filesystem',
+                'env_content' => $envContent,
+                'env_source' => $envSource,
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to get compose file: ' . $e->getMessage(), 500);
@@ -1661,14 +1687,34 @@ class DockerController
             }
 
             // Read .env file if exists
+            $envContent = null;
             $envPath = $workingDir . '/.env';
-            $envContent = $this->readHostFile($host, $envPath);
-            if ($envContent !== null) {
-                $backupData['files'][] = [
-                    'name' => '.env',
-                    'path' => $envPath,
-                    'content' => $envContent,
-                ];
+
+            // For Portainer-managed stacks, try to get env from Portainer first
+            if ($isPortainerPath && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
+                $portainerStackId = $this->getPortainerStackId($host, $stackName, $userId);
+                if ($portainerStackId) {
+                    $envContent = $this->fetchPortainerStackEnv($host, $portainerStackId);
+                    if ($envContent) {
+                        $backupData['files'][] = [
+                            'name' => '.env',
+                            'path' => 'portainer://' . $stackName . '/.env',
+                            'content' => $envContent,
+                        ];
+                    }
+                }
+            }
+
+            // If no env from Portainer, try filesystem
+            if ($envContent === null) {
+                $envContent = $this->readHostFile($host, $envPath);
+                if ($envContent !== null) {
+                    $backupData['files'][] = [
+                        'name' => '.env',
+                        'path' => $envPath,
+                        'content' => $envContent,
+                    ];
+                }
             }
 
             if (empty($backupData['files'])) {
@@ -2253,6 +2299,85 @@ class DockerController
 
         $data = json_decode($response, true);
         return $data['StackFileContent'] ?? '';
+    }
+
+    /**
+     * Fetch stack environment variables from Portainer API
+     */
+    private function fetchPortainerStackEnv(array $host, int $stackId): ?string
+    {
+        $url = $host['portainer_url'] . '/api/stacks/' . $stackId;
+        $token = $host['portainer_api_token'];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'X-API-Key: ' . $token,
+            ],
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error || $httpCode !== 200) {
+            return null;
+        }
+
+        $data = json_decode($response, true);
+        $envVars = $data['Env'] ?? [];
+
+        if (empty($envVars)) {
+            return null;
+        }
+
+        // Convert Portainer env format to .env format
+        $envContent = '';
+        foreach ($envVars as $env) {
+            $name = $env['name'] ?? '';
+            $value = $env['value'] ?? '';
+            if ($name) {
+                // Escape values with special characters
+                if (preg_match('/[\s"\'$`\\\\]/', $value)) {
+                    $value = '"' . str_replace(['\\', '"', '$', '`'], ['\\\\', '\\"', '\\$', '\\`'], $value) . '"';
+                }
+                $envContent .= "$name=$value\n";
+            }
+        }
+
+        return $envContent ?: null;
+    }
+
+    /**
+     * Get Portainer stack ID by name
+     */
+    private function getPortainerStackId(array $host, string $stackName, string $userId): ?int
+    {
+        // First check if we have a mapping
+        $mapping = $this->hostRepository->getStackPortainerMapping($userId, $host['id'] ?? null, $stackName);
+        if ($mapping) {
+            return (int) $mapping['portainer_stack_id'];
+        }
+
+        // Try to find stack by name in Portainer
+        try {
+            $stacks = $this->fetchPortainerStacks($host);
+            foreach ($stacks as $stack) {
+                if (strtolower($stack['name']) === strtolower($stackName)) {
+                    // Auto-link for future use
+                    $this->hostRepository->linkStackToPortainer($userId, $host['id'] ?? null, $stackName, $stack['id']);
+                    return $stack['id'];
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+
+        return null;
     }
 
     /**

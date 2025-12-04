@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useUiStore } from '@/stores/ui'
 import api from '@/core/api/axios'
 import {
   ArrowPathIcon,
@@ -21,6 +22,17 @@ import {
   ComputerDesktopIcon,
   Cog6ToothIcon,
   RectangleStackIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  CodeBracketIcon,
+  ClipboardDocumentIcon,
+  PlusIcon,
+  CloudArrowUpIcon,
+  ArchiveBoxIcon,
+  TrashIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 
 // State
@@ -52,8 +64,46 @@ const selectedContainer = ref(null)
 const containerDetails = ref(null)
 const containerLogs = ref('')
 const containerStats = ref(null)
+const containerEnvVars = ref([])
 const detailsTab = ref('info')
 const loadingDetails = ref(false)
+const showSensitiveEnvVars = ref(false)
+
+// Compose File Modal
+const showComposeModal = ref(false)
+const composeStackName = ref('')
+const composeFile = ref(null)
+const composeContent = ref('')
+const loadingCompose = ref(false)
+const savingCompose = ref(false)
+
+// Quick Deploy Modal
+const showQuickDeployModal = ref(false)
+const quickDeployForm = ref({
+  image: '',
+  name: '',
+  ports: '',
+  env: '',
+  volumes: '',
+  network: '',
+  restart: 'unless-stopped',
+})
+const deploying = ref(false)
+
+// Stack Deploy Modal
+const showStackDeployModal = ref(false)
+const stackDeployForm = ref({
+  name: '',
+  compose: '',
+  env: '',
+})
+const deployingStack = ref(false)
+
+// Backups
+const backups = ref([])
+const loadingBackups = ref(false)
+const showBackupModal = ref(false)
+const selectedBackup = ref(null)
 
 // Auto-refresh
 let refreshInterval = null
@@ -238,15 +288,20 @@ async function showContainerDetails(container) {
   containerDetails.value = null
   containerLogs.value = ''
   containerStats.value = null
+  containerEnvVars.value = []
+  showSensitiveEnvVars.value = false
 
   try {
-    const [detailsRes, logsRes] = await Promise.all([
+    const [detailsRes, logsRes, envRes] = await Promise.all([
       api.get(`/api/v1/docker/containers/${container.id}`, { params: getHostParams() }),
       api.get(`/api/v1/docker/containers/${container.id}/logs`, { params: { tail: 100, ...getHostParams() } }),
+      api.get(`/api/v1/docker/containers/${container.id}/env`, { params: getHostParams() }),
     ])
     containerDetails.value = detailsRes.data.data || detailsRes.data
     const logsData = logsRes.data.data || logsRes.data
     containerLogs.value = logsData.logs || ''
+    const envData = envRes.data.data || envRes.data
+    containerEnvVars.value = envData.env || []
 
     // Only load stats if container is running
     if (container.state === 'running') {
@@ -286,6 +341,223 @@ function closeDetails() {
   containerDetails.value = null
   containerLogs.value = ''
   containerStats.value = null
+  containerEnvVars.value = []
+}
+
+// Compose File Methods
+async function openComposeModal(stackName) {
+  composeStackName.value = stackName
+  showComposeModal.value = true
+  loadingCompose.value = true
+  composeFile.value = null
+  composeContent.value = ''
+
+  try {
+    const response = await api.get(`/api/v1/docker/stacks/${stackName}/compose`, { params: getHostParams() })
+    const data = response.data.data || response.data
+    composeFile.value = data
+    composeContent.value = data.content || ''
+  } catch (e) {
+    console.error('Failed to load compose file:', e)
+    error.value = 'Compose-Datei konnte nicht geladen werden'
+  } finally {
+    loadingCompose.value = false
+  }
+}
+
+function closeComposeModal() {
+  showComposeModal.value = false
+  composeStackName.value = ''
+  composeFile.value = null
+  composeContent.value = ''
+}
+
+async function saveComposeFile() {
+  if (!composeFile.value?.writable) return
+
+  savingCompose.value = true
+  try {
+    await api.put(`/api/v1/docker/stacks/${composeStackName.value}/compose`, {
+      content: composeContent.value,
+      path: composeFile.value.path,
+    }, { params: getHostParams() })
+
+    // Reload compose file to verify
+    const response = await api.get(`/api/v1/docker/stacks/${composeStackName.value}/compose`, { params: getHostParams() })
+    const data = response.data.data || response.data
+    composeFile.value = data
+    composeContent.value = data.content || ''
+
+    error.value = null
+    alert('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
+  } catch (e) {
+    console.error('Failed to save compose file:', e)
+    error.value = 'Compose-Datei konnte nicht gespeichert werden'
+  } finally {
+    savingCompose.value = false
+  }
+}
+
+function copyEnvValue(value) {
+  navigator.clipboard.writeText(value)
+}
+
+// Quick Deploy
+async function quickDeploy() {
+  if (!quickDeployForm.value.image) {
+    error.value = 'Image ist erforderlich'
+    return
+  }
+
+  deploying.value = true
+  try {
+    const payload = {
+      image: quickDeployForm.value.image.trim(),
+      name: quickDeployForm.value.name.trim() || undefined,
+      restart: quickDeployForm.value.restart,
+      ports: quickDeployForm.value.ports ? quickDeployForm.value.ports.split('\n').map(p => p.trim()).filter(Boolean) : [],
+      env: quickDeployForm.value.env ? quickDeployForm.value.env.split('\n').map(e => e.trim()).filter(Boolean) : [],
+      volumes: quickDeployForm.value.volumes ? quickDeployForm.value.volumes.split('\n').map(v => v.trim()).filter(Boolean) : [],
+      network: quickDeployForm.value.network.trim() || undefined,
+    }
+
+    await api.post('/api/v1/docker/run', payload, { params: getHostParams() })
+    showQuickDeployModal.value = false
+    quickDeployForm.value = { image: '', name: '', ports: '', env: '', volumes: '', network: '', restart: 'unless-stopped' }
+    await loadContainers()
+    error.value = null
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Container konnte nicht gestartet werden'
+  } finally {
+    deploying.value = false
+  }
+}
+
+// Stack Deploy
+async function deployStack() {
+  if (!stackDeployForm.value.name || !stackDeployForm.value.compose) {
+    error.value = 'Name und Compose-Inhalt sind erforderlich'
+    return
+  }
+
+  deployingStack.value = true
+  try {
+    await api.post('/api/v1/docker/stacks/deploy', {
+      name: stackDeployForm.value.name.trim(),
+      compose: stackDeployForm.value.compose,
+      env: stackDeployForm.value.env || undefined,
+    }, { params: getHostParams() })
+    showStackDeployModal.value = false
+    stackDeployForm.value = { name: '', compose: '', env: '' }
+    await loadContainers()
+    error.value = null
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Stack konnte nicht deployed werden'
+  } finally {
+    deployingStack.value = false
+  }
+}
+
+// Stack Operations
+async function stackUp(stackName) {
+  try {
+    await api.post(`/api/v1/docker/stacks/${stackName}/up`, null, { params: getHostParams() })
+    await loadContainers()
+  } catch (e) {
+    error.value = 'Stack konnte nicht gestartet werden'
+  }
+}
+
+async function stackDown(stackName) {
+  if (!confirm(`Stack "${stackName}" stoppen?`)) return
+  try {
+    await api.post(`/api/v1/docker/stacks/${stackName}/down`, null, { params: getHostParams() })
+    await loadContainers()
+  } catch (e) {
+    error.value = 'Stack konnte nicht gestoppt werden'
+  }
+}
+
+async function stackRestart(stackName) {
+  try {
+    await api.post(`/api/v1/docker/stacks/${stackName}/restart`, null, { params: getHostParams() })
+    await loadContainers()
+  } catch (e) {
+    error.value = 'Stack konnte nicht neugestartet werden'
+  }
+}
+
+// Backups
+async function loadBackups() {
+  loadingBackups.value = true
+  try {
+    const response = await api.get('/api/v1/docker/backups')
+    backups.value = response.data.data?.backups || []
+  } catch (e) {
+    console.error('Failed to load backups:', e)
+  } finally {
+    loadingBackups.value = false
+  }
+}
+
+async function backupStack(stackName) {
+  try {
+    const response = await api.post(`/api/v1/docker/stacks/${stackName}/backup`, null, { params: getHostParams() })
+    const data = response.data.data || response.data
+    alert(`Backup erstellt: ${data.backup_file}\nDateien: ${data.files?.join(', ')}`)
+    await loadBackups()
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Backup konnte nicht erstellt werden'
+  }
+}
+
+async function viewBackup(backup) {
+  try {
+    const response = await api.get(`/api/v1/docker/backups/${backup.file}`)
+    selectedBackup.value = response.data.data?.backup || null
+    showBackupModal.value = true
+  } catch (e) {
+    error.value = 'Backup konnte nicht geladen werden'
+  }
+}
+
+async function restoreBackup(backup, deploy = false) {
+  const action = deploy ? 'wiederherstellen und deployen' : 'nur wiederherstellen'
+  if (!confirm(`Backup "${backup.file}" ${action}?`)) return
+
+  try {
+    await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy })
+    if (deploy) {
+      await loadContainers()
+    }
+    showBackupModal.value = false
+    alert('Backup erfolgreich wiederhergestellt!')
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Backup konnte nicht wiederhergestellt werden'
+  }
+}
+
+async function deleteBackup(backup) {
+  if (!confirm(`Backup "${backup.file}" wirklich löschen?`)) return
+
+  try {
+    await api.delete(`/api/v1/docker/backups/${backup.file}`)
+    await loadBackups()
+    showBackupModal.value = false
+  } catch (e) {
+    error.value = 'Backup konnte nicht gelöscht werden'
+  }
+}
+
+async function removeContainer(container) {
+  if (!confirm(`Container "${container.name}" wirklich löschen?`)) return
+
+  try {
+    await api.delete(`/api/v1/docker/containers/${container.id}`, { params: { force: 'true', ...getHostParams() } })
+    await loadContainers()
+  } catch (e) {
+    error.value = 'Container konnte nicht gelöscht werden'
+  }
 }
 
 function getStateColor(state) {
@@ -299,7 +571,8 @@ function getStateColor(state) {
 }
 
 function toggleStack(stackName) {
-  expandedStacks.value[stackName] = !expandedStacks.value[stackName]
+  const currentState = expandedStacks.value[stackName] ?? true // Match default from isStackExpanded
+  expandedStacks.value[stackName] = !currentState
 }
 
 function isStackExpanded(stackName) {
@@ -341,6 +614,13 @@ onMounted(async () => {
 onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
+  }
+})
+
+// Watch for tab changes to load backups
+watch(activeTab, (newTab) => {
+  if (newTab === 'backups') {
+    loadBackups()
   }
 })
 </script>
@@ -447,7 +727,14 @@ onUnmounted(() => {
         </label>
         <button @click="refreshData" :disabled="loading" class="btn-secondary">
           <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
-          Aktualisieren
+        </button>
+        <button @click="showQuickDeployModal = true" class="btn-secondary" v-if="dockerAvailable">
+          <PlusIcon class="w-4 h-4 mr-1" />
+          Container
+        </button>
+        <button @click="showStackDeployModal = true" class="btn-primary" v-if="dockerAvailable">
+          <CloudArrowUpIcon class="w-4 h-4 mr-1" />
+          Stack Deploy
         </button>
       </div>
     </div>
@@ -584,6 +871,7 @@ onUnmounted(() => {
               { id: 'images', label: 'Images', icon: ServerIcon },
               { id: 'networks', label: 'Netzwerke', icon: GlobeAltIcon },
               { id: 'volumes', label: 'Volumes', icon: CircleStackIcon },
+              { id: 'backups', label: 'Backups', icon: ArchiveBoxIcon },
             ]"
             :key="tab.id"
             @click="activeTab = tab.id"
@@ -627,7 +915,35 @@ onUnmounted(() => {
                   </p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2" @click.stop>
+                <button
+                  @click="backupStack(stack.name)"
+                  class="btn-icon text-gray-400 hover:text-white hover:bg-dark-500"
+                  title="Backup erstellen"
+                >
+                  <ArchiveBoxIcon class="w-4 h-4" />
+                </button>
+                <button
+                  @click="openComposeModal(stack.name)"
+                  class="btn-icon text-gray-400 hover:text-white hover:bg-dark-500"
+                  title="Compose-Datei anzeigen"
+                >
+                  <CodeBracketIcon class="w-4 h-4" />
+                </button>
+                <button
+                  @click="stackRestart(stack.name)"
+                  class="btn-icon text-blue-400 hover:bg-blue-500/20"
+                  title="Stack neustarten"
+                >
+                  <ArrowPathIcon class="w-4 h-4" />
+                </button>
+                <button
+                  @click="stackDown(stack.name)"
+                  class="btn-icon text-red-400 hover:bg-red-500/20"
+                  title="Stack stoppen"
+                >
+                  <StopIcon class="w-4 h-4" />
+                </button>
                 <span
                   class="px-2 py-1 text-xs rounded-full"
                   :class="stack.running === stack.total ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'"
@@ -839,6 +1155,67 @@ onUnmounted(() => {
           </table>
         </div>
       </div>
+
+      <!-- Backups Tab -->
+      <div v-if="activeTab === 'backups'" class="space-y-4">
+        <div class="flex justify-between items-center">
+          <p class="text-gray-400 text-sm">Backups deiner Stack-Konfigurationen (.env und docker-compose)</p>
+          <button @click="loadBackups" class="btn-secondary">
+            <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loadingBackups }" />
+            Aktualisieren
+          </button>
+        </div>
+
+        <div v-if="loadingBackups" class="card p-8 text-center">
+          <ArrowPathIcon class="w-8 h-8 text-gray-400 animate-spin mx-auto" />
+        </div>
+
+        <div v-else-if="backups.length === 0" class="card p-8 text-center text-gray-400">
+          <ArchiveBoxIcon class="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>Keine Backups vorhanden</p>
+          <p class="text-sm mt-2">Erstelle Backups über das Archiv-Symbol bei deinen Stacks</p>
+        </div>
+
+        <div v-else class="space-y-2">
+          <div
+            v-for="backup in backups"
+            :key="backup.file"
+            class="card p-4 flex items-center justify-between hover:bg-dark-700 transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <ArchiveBoxIcon class="w-8 h-8 text-primary-400" />
+              <div>
+                <h4 class="font-medium text-white">{{ backup.stack_name }}</h4>
+                <p class="text-sm text-gray-400">{{ backup.backup_date }}</p>
+                <p class="text-xs text-gray-500">{{ backup.files?.join(', ') }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="viewBackup(backup)"
+                class="btn-icon text-gray-400 hover:text-white"
+                title="Anzeigen"
+              >
+                <EyeIcon class="w-4 h-4" />
+              </button>
+              <button
+                @click="restoreBackup(backup, true)"
+                class="btn-icon text-green-400 hover:bg-green-500/20"
+                title="Wiederherstellen & Deployen"
+              >
+                <ArrowUpTrayIcon class="w-4 h-4" />
+              </button>
+              <button
+                @click="deleteBackup(backup)"
+                class="btn-icon text-red-400 hover:bg-red-500/20"
+                title="Löschen"
+              >
+                <TrashIcon class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
 
     <!-- Container Details Modal -->
@@ -846,7 +1223,7 @@ onUnmounted(() => {
       <div
         v-if="selectedContainer"
         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-        @click.self="closeDetails"
+        
       >
         <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
@@ -936,17 +1313,47 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Environment -->
-              <div v-if="containerDetails.config?.env?.length">
-                <h4 class="text-sm font-medium text-gray-300 mb-2">Umgebungsvariablen</h4>
-                <div class="bg-dark-700 rounded p-2 max-h-40 overflow-auto">
-                  <div
-                    v-for="(env, i) in containerDetails.config.env.slice(0, 20)"
-                    :key="i"
-                    class="text-xs font-mono text-gray-300"
+              <!-- Environment Variables -->
+              <div v-if="containerEnvVars.length">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-sm font-medium text-gray-300">Umgebungsvariablen</h4>
+                  <button
+                    @click="showSensitiveEnvVars = !showSensitiveEnvVars"
+                    class="flex items-center gap-1 text-xs text-gray-400 hover:text-white"
                   >
-                    {{ env }}
-                  </div>
+                    <component :is="showSensitiveEnvVars ? EyeSlashIcon : EyeIcon" class="w-4 h-4" />
+                    {{ showSensitiveEnvVars ? 'Sensible Werte ausblenden' : 'Sensible Werte anzeigen' }}
+                  </button>
+                </div>
+                <div class="bg-dark-700 rounded overflow-hidden max-h-60 overflow-auto">
+                  <table class="w-full text-xs">
+                    <tbody>
+                      <tr
+                        v-for="(env, i) in containerEnvVars"
+                        :key="i"
+                        class="border-b border-dark-600 last:border-0 hover:bg-dark-600"
+                      >
+                        <td class="py-1.5 px-2 text-primary-400 font-mono whitespace-nowrap">{{ env.key }}</td>
+                        <td class="py-1.5 px-2 text-gray-300 font-mono break-all">
+                          <template v-if="env.sensitive && !showSensitiveEnvVars">
+                            <span class="text-gray-500">••••••••</span>
+                          </template>
+                          <template v-else>
+                            {{ env.value }}
+                          </template>
+                        </td>
+                        <td class="py-1.5 px-1 w-8">
+                          <button
+                            @click="copyEnvValue(env.value)"
+                            class="btn-icon p-1 text-gray-400 hover:text-white"
+                            title="Kopieren"
+                          >
+                            <ClipboardDocumentIcon class="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -994,6 +1401,275 @@ onUnmounted(() => {
                   </div>
                 </div>
               </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compose File Modal -->
+      <div
+        v-if="showComposeModal"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <div class="flex items-center gap-3">
+              <CodeBracketIcon class="w-5 h-5 text-primary-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-white">{{ composeStackName }}</h2>
+                <p class="text-sm text-gray-400 font-mono">{{ composeFile?.path || 'docker-compose.yml' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="composeFile?.writable"
+                class="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded"
+              >
+                Editierbar
+              </span>
+              <span
+                v-else-if="composeFile?.readable"
+                class="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded"
+              >
+                Nur Lesen
+              </span>
+              <button @click="closeComposeModal" class="btn-icon">
+                <XCircleIcon class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="flex-1 overflow-auto p-4">
+            <div v-if="loadingCompose" class="flex items-center justify-center py-8">
+              <ArrowPathIcon class="w-6 h-6 text-gray-400 animate-spin" />
+            </div>
+
+            <div v-else-if="!composeFile?.readable" class="text-center py-8">
+              <ExclamationTriangleIcon class="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+              <p class="text-gray-300">{{ composeFile?.message || 'Compose-Datei konnte nicht gelesen werden' }}</p>
+              <p class="text-sm text-gray-500 mt-2">Pfad: {{ composeFile?.path }}</p>
+            </div>
+
+            <div v-else>
+              <textarea
+                v-model="composeContent"
+                :readonly="!composeFile?.writable"
+                class="w-full h-96 bg-dark-900 text-gray-300 font-mono text-sm p-4 rounded-lg border border-dark-600 focus:border-primary-500 focus:outline-none resize-none"
+                :class="{ 'cursor-not-allowed opacity-75': !composeFile?.writable }"
+                spellcheck="false"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-between p-4 border-t border-dark-600">
+            <p class="text-xs text-gray-500">
+              {{ composeFile?.working_dir ? `Working Dir: ${composeFile.working_dir}` : '' }}
+            </p>
+            <div class="flex items-center gap-2">
+              <button @click="closeComposeModal" class="btn-secondary">
+                Schließen
+              </button>
+              <button
+                v-if="composeFile?.writable"
+                @click="saveComposeFile"
+                :disabled="savingCompose"
+                class="btn-primary"
+              >
+                <ArrowPathIcon v-if="savingCompose" class="w-4 h-4 animate-spin" />
+                <template v-else>Speichern</template>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Deploy Modal -->
+      <div
+        v-if="showQuickDeployModal"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <div class="flex items-center gap-3">
+              <PlusIcon class="w-5 h-5 text-primary-400" />
+              <h2 class="text-lg font-semibold text-white">Quick Deploy</h2>
+            </div>
+            <button @click="showQuickDeployModal = false" class="btn-icon">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="quickDeploy" class="p-4 space-y-4">
+            <div>
+              <label class="label">Image *</label>
+              <input v-model="quickDeployForm.image" type="text" class="input" placeholder="nginx:latest" required />
+            </div>
+
+            <div>
+              <label class="label">Container Name</label>
+              <input v-model="quickDeployForm.name" type="text" class="input" placeholder="my-container" />
+            </div>
+
+            <div>
+              <label class="label">Ports (pro Zeile: host:container)</label>
+              <textarea v-model="quickDeployForm.ports" class="input" rows="2" placeholder="8080:80&#10;443:443"></textarea>
+            </div>
+
+            <div>
+              <label class="label">Environment (pro Zeile: KEY=VALUE)</label>
+              <textarea v-model="quickDeployForm.env" class="input" rows="2" placeholder="NODE_ENV=production&#10;DEBUG=false"></textarea>
+            </div>
+
+            <div>
+              <label class="label">Volumes (pro Zeile: host:container)</label>
+              <textarea v-model="quickDeployForm.volumes" class="input" rows="2" placeholder="/data:/app/data&#10;./config:/etc/config"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">Network</label>
+                <input v-model="quickDeployForm.network" type="text" class="input" placeholder="bridge" />
+              </div>
+              <div>
+                <label class="label">Restart Policy</label>
+                <select v-model="quickDeployForm.restart" class="input">
+                  <option value="no">No</option>
+                  <option value="always">Always</option>
+                  <option value="unless-stopped">Unless Stopped</option>
+                  <option value="on-failure">On Failure</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button type="button" @click="showQuickDeployModal = false" class="btn-secondary flex-1">
+                Abbrechen
+              </button>
+              <button type="submit" :disabled="deploying" class="btn-primary flex-1">
+                <ArrowPathIcon v-if="deploying" class="w-4 h-4 animate-spin" />
+                <template v-else>
+                  <PlayIcon class="w-4 h-4 mr-1" />
+                  Starten
+                </template>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Stack Deploy Modal -->
+      <div
+        v-if="showStackDeployModal"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <div class="flex items-center gap-3">
+              <CloudArrowUpIcon class="w-5 h-5 text-primary-400" />
+              <h2 class="text-lg font-semibold text-white">Stack Deploy</h2>
+            </div>
+            <button @click="showStackDeployModal = false" class="btn-icon">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="deployStack" class="flex-1 overflow-auto p-4 space-y-4">
+            <div>
+              <label class="label">Stack Name *</label>
+              <input v-model="stackDeployForm.name" type="text" class="input" placeholder="my-stack" required />
+            </div>
+
+            <div>
+              <label class="label">docker-compose.yml *</label>
+              <textarea
+                v-model="stackDeployForm.compose"
+                class="input font-mono text-sm"
+                rows="12"
+                placeholder="version: '3.8'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - '80:80'"
+                required
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="label">.env Datei (optional)</label>
+              <textarea
+                v-model="stackDeployForm.env"
+                class="input font-mono text-sm"
+                rows="4"
+                placeholder="DB_HOST=localhost
+DB_PASSWORD=secret"
+              ></textarea>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button type="button" @click="showStackDeployModal = false" class="btn-secondary flex-1">
+                Abbrechen
+              </button>
+              <button type="submit" :disabled="deployingStack" class="btn-primary flex-1">
+                <ArrowPathIcon v-if="deployingStack" class="w-4 h-4 animate-spin" />
+                <template v-else>
+                  <CloudArrowUpIcon class="w-4 h-4 mr-1" />
+                  Deploy
+                </template>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Backup Details Modal -->
+      <div
+        v-if="showBackupModal && selectedBackup"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <div class="flex items-center gap-3">
+              <ArchiveBoxIcon class="w-5 h-5 text-primary-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-white">{{ selectedBackup.stack_name }}</h2>
+                <p class="text-sm text-gray-400">{{ selectedBackup.backup_date }}</p>
+              </div>
+            </div>
+            <button @click="showBackupModal = false" class="btn-icon">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-auto p-4 space-y-4">
+            <div v-for="file in selectedBackup.files" :key="file.name" class="space-y-2">
+              <div class="flex items-center justify-between">
+                <h4 class="font-medium text-white">{{ file.name }}</h4>
+                <span class="text-xs text-gray-500 font-mono">{{ file.path }}</span>
+              </div>
+              <pre class="bg-dark-900 p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ file.content }}</pre>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-4 border-t border-dark-600">
+            <p class="text-xs text-gray-500">Working Dir: {{ selectedBackup.working_dir }}</p>
+            <div class="flex items-center gap-2">
+              <button @click="deleteBackup(selectedBackup)" class="btn-secondary text-red-400">
+                <TrashIcon class="w-4 h-4 mr-1" />
+                Löschen
+              </button>
+              <button @click="restoreBackup(selectedBackup, false)" class="btn-secondary">
+                <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
+                Nur Dateien
+              </button>
+              <button @click="restoreBackup(selectedBackup, true)" class="btn-primary">
+                <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
+                Wiederherstellen & Deploy
+              </button>
             </div>
           </div>
         </div>

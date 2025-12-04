@@ -401,7 +401,7 @@ function getLanguageLabel(lang) {
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="closeModal"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-6 border-b border-dark-700 flex items-center justify-between">

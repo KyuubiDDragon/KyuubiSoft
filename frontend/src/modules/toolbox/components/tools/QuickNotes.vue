@@ -294,7 +294,7 @@ import { computed } from 'vue'
     <div
       v-if="showDeleteConfirm"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showDeleteConfirm = false"
+      
     >
       <div class="bg-dark-800 rounded-lg p-6 max-w-sm">
         <h3 class="text-lg font-medium text-white mb-2">Notiz löschen?</h3>

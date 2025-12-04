@@ -861,7 +861,7 @@ onMounted(() => {
     </div>
 
     <!-- Collection Modal -->
-    <div v-if="showCollectionModal" class="modal-overlay" @click.self="showCollectionModal = false">
+    <div v-if="showCollectionModal" class="modal-overlay" >
       <div class="modal max-w-md">
         <div class="modal-header">
           <h2>{{ editingCollection ? 'Collection bearbeiten' : 'Neue Collection' }}</h2>
@@ -900,7 +900,7 @@ onMounted(() => {
     </div>
 
     <!-- Environment Modal -->
-    <div v-if="showEnvironmentModal" class="modal-overlay" @click.self="showEnvironmentModal = false">
+    <div v-if="showEnvironmentModal" class="modal-overlay" >
       <div class="modal max-w-3xl">
         <div class="modal-header">
           <h2>Environments</h2>
@@ -968,7 +968,7 @@ onMounted(() => {
     </div>
 
     <!-- History Modal -->
-    <div v-if="showHistoryModal" class="modal-overlay" @click.self="showHistoryModal = false">
+    <div v-if="showHistoryModal" class="modal-overlay" >
       <div class="modal max-w-3xl">
         <div class="modal-header">
           <h2>Request Historie</h2>

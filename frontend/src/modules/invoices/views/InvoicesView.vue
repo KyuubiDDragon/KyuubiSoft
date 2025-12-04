@@ -479,7 +479,7 @@ function getStatusInfo(status) {
       <div
         v-if="showInvoiceModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showInvoiceModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -539,7 +539,7 @@ function getStatusInfo(status) {
       <div
         v-if="showClientModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showClientModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -635,7 +635,7 @@ function getStatusInfo(status) {
       <div
         v-if="showDetailModal && selectedInvoice"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showDetailModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">

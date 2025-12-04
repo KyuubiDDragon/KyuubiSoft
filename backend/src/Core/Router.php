@@ -28,6 +28,7 @@ use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use App\Modules\QuickNotes\Controllers\QuickNoteController;
 use App\Modules\Notifications\Controllers\NotificationController;
 use App\Modules\Dashboard\Controllers\WidgetController;
+use App\Modules\Server\Controllers\ServerController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
@@ -230,10 +231,16 @@ class Router
                 $protected->get('/bookmarks/tags', [BookmarkController::class, 'getTags']);
                 $protected->post('/bookmarks/tags', [BookmarkController::class, 'createTag']);
                 $protected->delete('/bookmarks/tags/{tagId}', [BookmarkController::class, 'deleteTag']);
+                $protected->get('/bookmarks/groups', [BookmarkController::class, 'getGroups']);
+                $protected->post('/bookmarks/groups', [BookmarkController::class, 'createGroup']);
+                $protected->put('/bookmarks/groups/reorder', [BookmarkController::class, 'reorderGroups']);
+                $protected->put('/bookmarks/groups/{groupId}', [BookmarkController::class, 'updateGroup']);
+                $protected->delete('/bookmarks/groups/{groupId}', [BookmarkController::class, 'deleteGroup']);
                 $protected->get('/bookmarks/{id}', [BookmarkController::class, 'show']);
                 $protected->put('/bookmarks/{id}', [BookmarkController::class, 'update']);
                 $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
+                $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
 
                 // Uptime Monitor
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index']);
@@ -383,11 +390,45 @@ class Router
                 $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer']);
                 $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs']);
                 $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats']);
+                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv']);
+
+                // Docker Stack/Compose Operations
+                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose']);
+                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose']);
+                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp']);
+                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown']);
+                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart']);
+                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack']);
+                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack']);
+
+                // Docker Deploy
+                $protected->post('/docker/run', [DockerController::class, 'runContainer']);
+                $protected->post('/docker/pull', [DockerController::class, 'pullImage']);
+                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer']);
+
+                // Docker Backups
+                $protected->get('/docker/backups', [DockerController::class, 'listBackups']);
+                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup']);
+                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup']);
+                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup']);
+
                 $protected->get('/docker/images', [DockerController::class, 'images']);
                 $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);
                 $protected->get('/docker/networks', [DockerController::class, 'networks']);
                 $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
                 $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
+
+                // Server Management
+                $protected->get('/server/info', [ServerController::class, 'getSystemInfo']);
+                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs']);
+                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab']);
+                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab']);
+                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab']);
+                $protected->get('/server/processes', [ServerController::class, 'listProcesses']);
+                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess']);
+                $protected->get('/server/services', [ServerController::class, 'listServices']);
+                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus']);
+                $protected->post('/server/services/control', [ServerController::class, 'controlService']);
 
             })->add(AuthMiddleware::class);
         });

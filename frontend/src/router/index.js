@@ -25,6 +25,7 @@ const DockerComposeView = () => import('@/modules/docker/views/DockerComposeView
 const DockerCommandView = () => import('@/modules/docker/views/DockerCommandView.vue')
 const DockerignoreView = () => import('@/modules/docker/views/DockerignoreView.vue')
 const DockerHostsView = () => import('@/modules/docker/views/DockerHostsView.vue')
+const ServerView = () => import('@/modules/server/views/ServerView.vue')
 const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
@@ -170,6 +171,12 @@ const routes = [
     path: '/docker/hosts',
     name: 'docker-hosts',
     component: DockerHostsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/server',
+    name: 'server',
+    component: ServerView,
     meta: { requiresAuth: true },
   },
   {

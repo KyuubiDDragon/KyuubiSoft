@@ -468,7 +468,7 @@ function closeTool() {
       <div
         v-if="activeTool"
         class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-        @click.self="closeTool"
+        
       >
         <div
           class="bg-dark-800 rounded-xl border border-dark-600 max-h-[90vh] flex flex-col"

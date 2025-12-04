@@ -1314,7 +1314,7 @@ onMounted(async () => {
       <div
         v-if="showBoardModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showBoardModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
@@ -1388,7 +1388,7 @@ onMounted(async () => {
       <div
         v-if="showColumnModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showColumnModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
@@ -1463,7 +1463,7 @@ onMounted(async () => {
       <div
         v-if="showCardModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showCardModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
@@ -1965,7 +1965,7 @@ onMounted(async () => {
       <div
         v-if="attachmentPreview"
         class="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
-        @click.self="closeAttachmentPreview"
+        
       >
         <div class="relative max-w-5xl max-h-[90vh] w-full">
           <button
@@ -1992,7 +1992,7 @@ onMounted(async () => {
       <div
         v-if="showTagModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showTagModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
@@ -2081,7 +2081,7 @@ onMounted(async () => {
       <div
         v-if="showLinkModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] flex items-center justify-center p-4"
-        @click.self="showLinkModal = false"
+        
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">

@@ -410,7 +410,7 @@ function goBack() {
       <div
         v-if="showCreateModal || showEditModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        @click.self="showCreateModal = false; showEditModal = false"
+        
       >
         <div class="bg-dark-800 rounded-xl p-6 w-full max-w-md border border-dark-700">
           <h2 class="text-xl font-bold text-white mb-6">

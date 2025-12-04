@@ -937,6 +937,7 @@ class DockerController
     {
         $host = $this->resolveHost($request);
         $stackName = $this->getRouteArg($request, 'name');
+        $userId = $request->getAttribute('user_id');
 
         if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
             throw new ValidationException('Invalid stack name');
@@ -962,24 +963,52 @@ class DockerController
                 return JsonResponse::error('Compose file path not found in labels', 404);
             }
 
-            // Read compose file content (only works for local host)
-            if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
-                return JsonResponse::success([
-                    'stack' => $stackName,
-                    'path' => $configFiles,
-                    'working_dir' => $workingDir,
-                    'content' => null,
-                    'readable' => false,
-                    'message' => 'Compose file can only be read on local Docker host',
-                ]);
-            }
-
             // Parse first config file path (may be comma-separated)
             $paths = explode(',', $configFiles);
             $composePath = trim($paths[0]);
 
-            // Try to read file (direct access or via docker container)
-            $content = $this->readHostFile($host, $composePath);
+            // Check if this is a Portainer-managed stack (path contains /data/compose/)
+            // If Portainer is configured, try Portainer FIRST for these stacks
+            $isPortainerPath = str_contains($composePath, '/data/compose/');
+            $fromPortainer = false;
+            $content = null;
+
+            if ($isPortainerPath && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
+                // Try Portainer first for Portainer-managed stacks
+                $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
+                if ($portainerContent) {
+                    $content = $portainerContent;
+                    $fromPortainer = true;
+                }
+            }
+
+            // Read compose file content (only works for local host)
+            if ($content === null && ($host['type'] !== 'socket' || !empty($host['tcp_host']))) {
+                // Not local and no Portainer content - try Portainer anyway as last resort
+                if (!empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
+                    $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
+                    if ($portainerContent) {
+                        $content = $portainerContent;
+                        $fromPortainer = true;
+                    }
+                }
+
+                if ($content === null) {
+                    return JsonResponse::success([
+                        'stack' => $stackName,
+                        'path' => $configFiles,
+                        'working_dir' => $workingDir,
+                        'content' => null,
+                        'readable' => false,
+                        'message' => 'Compose file can only be read on local Docker host. Configure Portainer integration to fetch from Portainer API.',
+                    ]);
+                }
+            }
+
+            // Try to read file from filesystem if not already fetched from Portainer
+            if ($content === null) {
+                $content = $this->readHostFile($host, $composePath);
+            }
 
             // If not found, try common compose filenames in working directory
             if ($content === null && $workingDir) {
@@ -1004,10 +1033,8 @@ class DockerController
                 }
             }
 
-            // If still not found, try Portainer as fallback
-            $fromPortainer = false;
-            if ($content === null) {
-                $userId = $request->getAttribute('user_id');
+            // If still not found, try Portainer as final fallback
+            if ($content === null && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
                 $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
                 if ($portainerContent) {
                     $content = $portainerContent;
@@ -1558,9 +1585,26 @@ class DockerController
                 'files' => [],
             ];
 
-            // Read compose file(s) - try direct access first, then via docker container
+            // Check if this is a Portainer-managed stack (path contains /data/compose/)
+            $firstConfigPath = $configFiles ? trim(explode(',', $configFiles)[0]) : '';
+            $isPortainerPath = str_contains($firstConfigPath, '/data/compose/');
             $foundComposeFile = false;
-            if ($configFiles) {
+
+            // If Portainer-managed stack and Portainer is configured, try Portainer FIRST
+            if ($isPortainerPath && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
+                $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
+                if ($portainerContent) {
+                    $backupData['files'][] = [
+                        'name' => 'docker-compose.yml',
+                        'path' => 'portainer://' . $stackName,
+                        'content' => $portainerContent,
+                    ];
+                    $foundComposeFile = true;
+                }
+            }
+
+            // Read compose file(s) - try direct access first, then via docker container
+            if (!$foundComposeFile && $configFiles) {
                 $paths = explode(',', $configFiles);
                 foreach ($paths as $path) {
                     $path = trim($path);
@@ -1603,8 +1647,8 @@ class DockerController
                 }
             }
 
-            // If no compose file found, try Portainer as fallback
-            if (!$foundComposeFile) {
+            // If still no compose file found, try Portainer as final fallback
+            if (!$foundComposeFile && !empty($host['portainer_url']) && !empty($host['portainer_api_token'])) {
                 $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
                 if ($portainerContent) {
                     $backupData['files'][] = [

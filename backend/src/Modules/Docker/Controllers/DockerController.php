@@ -983,14 +983,41 @@ class DockerController
             // Try to read file (direct access or via docker container)
             $content = $this->readHostFile($host, $composePath);
 
+            // If not found, try common compose filenames in working directory
+            if ($content === null && $workingDir) {
+                $commonComposeNames = [
+                    'docker-compose.yml',
+                    'docker-compose.yaml',
+                    'docker-compose.prod.yml',
+                    'docker-compose.prod.yaml',
+                    'docker-compose.production.yml',
+                    'compose.yml',
+                    'compose.yaml',
+                ];
+
+                foreach ($commonComposeNames as $filename) {
+                    $altPath = $workingDir . '/' . $filename;
+                    $altContent = $this->readHostFile($host, $altPath);
+                    if ($altContent !== null) {
+                        $content = $altContent;
+                        $composePath = $altPath;
+                        break;
+                    }
+                }
+            }
+
             if ($content === null) {
+                // List available files in the directory for debugging
+                $availableFiles = $this->listHostDirectory($host, $workingDir);
+
                 return JsonResponse::success([
                     'stack' => $stackName,
                     'path' => $composePath,
                     'working_dir' => $workingDir,
                     'content' => null,
                     'readable' => false,
-                    'message' => 'Compose file not found or not readable at path',
+                    'available_files' => $availableFiles,
+                    'message' => 'Compose file not found at path. See available_files for files in directory.',
                 ]);
             }
 
@@ -1522,6 +1549,7 @@ class DockerController
             ];
 
             // Read compose file(s) - try direct access first, then via docker container
+            $foundComposeFile = false;
             if ($configFiles) {
                 $paths = explode(',', $configFiles);
                 foreach ($paths as $path) {
@@ -1533,6 +1561,34 @@ class DockerController
                             'path' => $path,
                             'content' => $content,
                         ];
+                        $foundComposeFile = true;
+                    }
+                }
+            }
+
+            // If no compose file found from labels, try common filenames in working directory
+            if (!$foundComposeFile && $workingDir) {
+                $commonComposeNames = [
+                    'docker-compose.yml',
+                    'docker-compose.yaml',
+                    'docker-compose.prod.yml',
+                    'docker-compose.prod.yaml',
+                    'docker-compose.production.yml',
+                    'compose.yml',
+                    'compose.yaml',
+                ];
+
+                foreach ($commonComposeNames as $filename) {
+                    $path = $workingDir . '/' . $filename;
+                    $content = $this->readHostFile($host, $path);
+                    if ($content !== null) {
+                        $backupData['files'][] = [
+                            'name' => $filename,
+                            'path' => $path,
+                            'content' => $content,
+                        ];
+                        $foundComposeFile = true;
+                        break; // Only take first found
                     }
                 }
             }
@@ -1549,7 +1605,12 @@ class DockerController
             }
 
             if (empty($backupData['files'])) {
-                return JsonResponse::error('No files could be read for backup. Check file permissions.', 404);
+                // List available files for debugging
+                $availableFiles = $this->listHostDirectory($host, $workingDir);
+                return JsonResponse::error(
+                    'No files could be read for backup. Available files in directory: ' . implode(', ', $availableFiles ?: ['(empty or inaccessible)']),
+                    404
+                );
             }
 
             // Save backup to user's backup directory
@@ -1590,12 +1651,40 @@ class DockerController
             // Use alpine container to read file from host
             $output = $this->execDockerOnHost(
                 $host,
-                "run --rm -v {$escapedDir}:{$escapedDir}:ro alpine cat {$escapedPath} 2>/dev/null"
+                "run --rm -v {$escapedDir}:{$escapedDir}:ro alpine cat {$escapedPath}"
             );
 
             return $output !== '' ? $output : null;
         } catch (\Exception $e) {
             return null;
+        }
+    }
+
+    /**
+     * List files in a host directory
+     */
+    private function listHostDirectory(array $host, string $path): array
+    {
+        // Try direct access first
+        if (is_dir($path) && is_readable($path)) {
+            return array_values(array_filter(scandir($path), fn($f) => $f !== '.' && $f !== '..'));
+        }
+
+        // Fall back to listing via docker container
+        try {
+            $escapedDir = escapeshellarg($path);
+            $output = $this->execDockerOnHost(
+                $host,
+                "run --rm -v {$escapedDir}:{$escapedDir}:ro alpine ls -1 {$escapedDir} 2>/dev/null"
+            );
+
+            if ($output === '') {
+                return [];
+            }
+
+            return array_filter(explode("\n", trim($output)));
+        } catch (\Exception $e) {
+            return [];
         }
     }
 

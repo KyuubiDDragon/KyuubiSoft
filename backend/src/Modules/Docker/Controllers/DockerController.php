@@ -322,6 +322,7 @@ class DockerController
         $host = $this->resolveHost($request);
         $params = $request->getQueryParams();
         $all = ($params['all'] ?? 'true') === 'true';
+        $grouped = ($params['grouped'] ?? 'false') === 'true';
 
         try {
             $format = '{{json .}}';
@@ -334,8 +335,13 @@ class DockerController
             foreach ($lines as $line) {
                 $container = json_decode($line, true);
                 if ($container) {
+                    $containerId = $container['ID'] ?? '';
+
+                    // Get labels for stack/project detection
+                    $labels = $this->getContainerLabels($host, $containerId);
+
                     $containers[] = [
-                        'id' => $container['ID'] ?? '',
+                        'id' => $containerId,
                         'name' => ltrim($container['Names'] ?? '', '/'),
                         'image' => $container['Image'] ?? '',
                         'status' => $container['Status'] ?? '',
@@ -343,8 +349,44 @@ class DockerController
                         'ports' => $container['Ports'] ?? '',
                         'created' => $container['CreatedAt'] ?? '',
                         'size' => $container['Size'] ?? '',
+                        'stack' => $labels['com.docker.compose.project'] ?? null,
+                        'service' => $labels['com.docker.compose.service'] ?? null,
+                        'labels' => $labels,
                     ];
                 }
+            }
+
+            // Group by stack if requested
+            if ($grouped) {
+                $stacks = [];
+                $standalone = [];
+
+                foreach ($containers as $container) {
+                    if ($container['stack']) {
+                        if (!isset($stacks[$container['stack']])) {
+                            $stacks[$container['stack']] = [
+                                'name' => $container['stack'],
+                                'containers' => [],
+                                'running' => 0,
+                                'total' => 0,
+                            ];
+                        }
+                        $stacks[$container['stack']]['containers'][] = $container;
+                        $stacks[$container['stack']]['total']++;
+                        if ($container['state'] === 'running') {
+                            $stacks[$container['stack']]['running']++;
+                        }
+                    } else {
+                        $standalone[] = $container;
+                    }
+                }
+
+                return JsonResponse::success([
+                    'stacks' => array_values($stacks),
+                    'standalone' => $standalone,
+                    'host_id' => $host['id'] ?? null,
+                    'host_name' => $host['name'] ?? 'Lokal',
+                ]);
             }
 
             return JsonResponse::success([
@@ -354,6 +396,20 @@ class DockerController
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list containers: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get container labels
+     */
+    private function getContainerLabels(array $host, string $containerId): array
+    {
+        try {
+            $output = $this->execDockerOnHost($host, "inspect --format '{{json .Config.Labels}}' $containerId");
+            $labels = json_decode(trim($output), true);
+            return is_array($labels) ? $labels : [];
+        } catch (\Exception $e) {
+            return [];
         }
     }
 

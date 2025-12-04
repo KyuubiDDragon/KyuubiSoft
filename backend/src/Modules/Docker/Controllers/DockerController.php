@@ -980,19 +980,21 @@ class DockerController
             $paths = explode(',', $configFiles);
             $composePath = trim($paths[0]);
 
-            if (!file_exists($composePath)) {
+            // Try to read file (direct access or via docker container)
+            $content = $this->readHostFile($host, $composePath);
+
+            if ($content === null) {
                 return JsonResponse::success([
                     'stack' => $stackName,
                     'path' => $composePath,
                     'working_dir' => $workingDir,
                     'content' => null,
                     'readable' => false,
-                    'message' => 'Compose file not found at path',
+                    'message' => 'Compose file not found or not readable at path',
                 ]);
             }
 
-            $content = file_get_contents($composePath);
-            $writable = is_writable($composePath);
+            $writable = file_exists($composePath) && is_writable($composePath);
 
             return JsonResponse::success([
                 'stack' => $stackName,
@@ -1049,20 +1051,18 @@ class DockerController
                 return JsonResponse::error('Path does not match stack compose file', 403);
             }
 
-            if (!is_writable($path)) {
+            // Try to backup and write (direct or via docker)
+            $backupPath = $path . '.backup.' . date('YmdHis');
+            $backupSuccess = $this->copyHostFile($host, $path, $backupPath);
+            $writeSuccess = $this->writeHostFile($host, $path, $content);
+
+            if (!$writeSuccess) {
                 return JsonResponse::error('Compose file is not writable', 403);
             }
 
-            // Backup original file
-            $backupPath = $path . '.backup.' . date('YmdHis');
-            copy($path, $backupPath);
-
-            // Write new content
-            file_put_contents($path, $content);
-
             return JsonResponse::success([
                 'message' => 'Compose file updated successfully',
-                'backup' => $backupPath,
+                'backup' => $backupSuccess ? $backupPath : null,
                 'note' => 'Run "docker compose up -d" to apply changes',
             ]);
         } catch (\Exception $e) {
@@ -1497,14 +1497,7 @@ class DockerController
         }
 
         try {
-            // Find stack working directory
-            $workingDir = $this->getStackWorkingDir($host, $stackName);
-
-            if (!$workingDir || !is_dir($workingDir)) {
-                return JsonResponse::error('Stack working directory not found', 404);
-            }
-
-            // Get compose file path from labels
+            // Get compose file path from labels first
             $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
             $containerIds = array_filter(explode("\n", trim($output)));
 
@@ -1513,7 +1506,12 @@ class DockerController
             }
 
             $labels = $this->getContainerLabels($host, $containerIds[0]);
+            $workingDir = $labels['com.docker.compose.project.working_dir'] ?? null;
             $configFiles = $labels['com.docker.compose.project.config_files'] ?? null;
+
+            if (!$workingDir) {
+                return JsonResponse::error('Stack working directory not found in container labels', 404);
+            }
 
             // Prepare backup data
             $backupData = [
@@ -1523,16 +1521,17 @@ class DockerController
                 'files' => [],
             ];
 
-            // Read compose file(s)
+            // Read compose file(s) - try direct access first, then via docker container
             if ($configFiles) {
                 $paths = explode(',', $configFiles);
                 foreach ($paths as $path) {
                     $path = trim($path);
-                    if (file_exists($path)) {
+                    $content = $this->readHostFile($host, $path);
+                    if ($content !== null) {
                         $backupData['files'][] = [
                             'name' => basename($path),
                             'path' => $path,
-                            'content' => file_get_contents($path),
+                            'content' => $content,
                         ];
                     }
                 }
@@ -1540,12 +1539,17 @@ class DockerController
 
             // Read .env file if exists
             $envPath = $workingDir . '/.env';
-            if (file_exists($envPath)) {
+            $envContent = $this->readHostFile($host, $envPath);
+            if ($envContent !== null) {
                 $backupData['files'][] = [
                     'name' => '.env',
                     'path' => $envPath,
-                    'content' => file_get_contents($envPath),
+                    'content' => $envContent,
                 ];
+            }
+
+            if (empty($backupData['files'])) {
+                return JsonResponse::error('No files could be read for backup. Check file permissions.', 404);
             }
 
             // Save backup to user's backup directory
@@ -1563,6 +1567,95 @@ class DockerController
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to create backup: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Read a file from the host filesystem
+     * Tries direct access first, then falls back to reading via docker container
+     */
+    private function readHostFile(array $host, string $path): ?string
+    {
+        // Try direct access first
+        if (file_exists($path) && is_readable($path)) {
+            return file_get_contents($path);
+        }
+
+        // Fall back to reading via docker container
+        try {
+            $escapedPath = escapeshellarg($path);
+            $parentDir = dirname($path);
+            $escapedDir = escapeshellarg($parentDir);
+
+            // Use alpine container to read file from host
+            $output = $this->execDockerOnHost(
+                $host,
+                "run --rm -v {$escapedDir}:{$escapedDir}:ro alpine cat {$escapedPath} 2>/dev/null"
+            );
+
+            return $output !== '' ? $output : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Write a file to the host filesystem
+     * Tries direct access first, then falls back to writing via docker container
+     */
+    private function writeHostFile(array $host, string $path, string $content): bool
+    {
+        // Try direct access first
+        if (file_exists($path) && is_writable($path)) {
+            return file_put_contents($path, $content) !== false;
+        }
+
+        // Fall back to writing via docker container
+        try {
+            $parentDir = dirname($path);
+            $escapedDir = escapeshellarg($parentDir);
+            $escapedPath = escapeshellarg($path);
+            $escapedContent = base64_encode($content);
+
+            // Use alpine container to write file to host
+            $this->execDockerOnHost(
+                $host,
+                "run --rm -v {$escapedDir}:{$escapedDir} alpine sh -c 'echo {$escapedContent} | base64 -d > {$escapedPath}'"
+            );
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Copy a file on the host filesystem
+     * Tries direct access first, then falls back to copying via docker container
+     */
+    private function copyHostFile(array $host, string $source, string $dest): bool
+    {
+        // Try direct access first
+        if (file_exists($source) && is_readable($source)) {
+            return copy($source, $dest);
+        }
+
+        // Fall back to copying via docker container
+        try {
+            $parentDir = dirname($source);
+            $escapedDir = escapeshellarg($parentDir);
+            $escapedSource = escapeshellarg($source);
+            $escapedDest = escapeshellarg($dest);
+
+            // Use alpine container to copy file on host
+            $this->execDockerOnHost(
+                $host,
+                "run --rm -v {$escapedDir}:{$escapedDir} alpine cp {$escapedSource} {$escapedDest}"
+            );
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
         }
     }
 

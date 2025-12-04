@@ -230,10 +230,16 @@ class Router
                 $protected->get('/bookmarks/tags', [BookmarkController::class, 'getTags']);
                 $protected->post('/bookmarks/tags', [BookmarkController::class, 'createTag']);
                 $protected->delete('/bookmarks/tags/{tagId}', [BookmarkController::class, 'deleteTag']);
+                $protected->get('/bookmarks/groups', [BookmarkController::class, 'getGroups']);
+                $protected->post('/bookmarks/groups', [BookmarkController::class, 'createGroup']);
+                $protected->put('/bookmarks/groups/reorder', [BookmarkController::class, 'reorderGroups']);
+                $protected->put('/bookmarks/groups/{groupId}', [BookmarkController::class, 'updateGroup']);
+                $protected->delete('/bookmarks/groups/{groupId}', [BookmarkController::class, 'deleteGroup']);
                 $protected->get('/bookmarks/{id}', [BookmarkController::class, 'show']);
                 $protected->put('/bookmarks/{id}', [BookmarkController::class, 'update']);
                 $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
+                $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
 
                 // Uptime Monitor
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index']);

@@ -334,27 +334,28 @@ class WebhookController
 
     private function sendWebhook(array $webhook, string $event, array $payload): array
     {
-        $ch = curl_init($webhook['url']);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'User-Agent: KyuubiSoft/1.0',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-        ]);
+        $headers = [
+            'Content-Type: application/json',
+            'User-Agent: KyuubiSoft/1.0',
+        ];
 
         // Add HMAC signature for custom webhooks
         if ($webhook['type'] === 'custom' && !empty($webhook['secret'])) {
             $signature = hash_hmac('sha256', json_encode($payload), $webhook['secret']);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'User-Agent: KyuubiSoft/1.0',
-                'X-Signature: ' . $signature,
-            ]);
+            $headers[] = 'X-Signature: ' . $signature;
         }
+
+        $ch = curl_init($webhook['url']);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_FOLLOWLOCATION => true,
+        ]);
 
         $responseBody = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);

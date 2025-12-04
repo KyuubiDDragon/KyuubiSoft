@@ -208,7 +208,24 @@ function isActive(href) {
   if (href === '/') {
     return route.path === '/'
   }
-  return route.path.startsWith(href)
+  // Exact match for routes that have sub-routes
+  // e.g., /docker should not be active when on /docker/hosts
+  if (route.path === href) {
+    return true
+  }
+  // For routes with children, only match if it's a deeper subpath
+  // e.g., /docker/containers/123 should match /docker
+  // but /docker/hosts should NOT match /docker
+  const hrefSegments = href.split('/').filter(Boolean)
+  const pathSegments = route.path.split('/').filter(Boolean)
+
+  // If the href has the same number of segments or more, require exact match
+  if (pathSegments.length <= hrefSegments.length) {
+    return route.path === href
+  }
+
+  // Check if all href segments match the beginning of the path
+  return hrefSegments.every((segment, index) => pathSegments[index] === segment)
 }
 
 function navigateTo(href) {

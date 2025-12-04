@@ -20,6 +20,10 @@ import SqlFormatter from '../components/tools/SqlFormatter.vue'
 import CsvJsonConverter from '../components/tools/CsvJsonConverter.vue'
 import MockDataGenerator from '../components/tools/MockDataGenerator.vue'
 import GitignoreGenerator from '../components/tools/GitignoreGenerator.vue'
+import DockerfileGenerator from '../components/tools/DockerfileGenerator.vue'
+import DockerComposeBuilder from '../components/tools/DockerComposeBuilder.vue'
+import DockerCommandBuilder from '../components/tools/DockerCommandBuilder.vue'
+import DockerignoreGenerator from '../components/tools/DockerignoreGenerator.vue'
 
 // Tool Components - Media
 import QrCodeGenerator from '../components/tools/QrCodeGenerator.vue'
@@ -171,6 +175,48 @@ const toolCategories = [
         description: 'Gitignore Dateien für verschiedene Projekte erstellen',
         icon: '📁',
         component: GitignoreGenerator,
+      },
+    ],
+  },
+  {
+    id: 'docker',
+    name: 'Docker Tools',
+    icon: '🐳',
+    tools: [
+      {
+        id: 'docker-manager',
+        name: 'Docker Manager',
+        description: 'Container, Images, Volumes verwalten',
+        icon: '📦',
+        route: '/docker',
+      },
+      {
+        id: 'dockerfile-generator',
+        name: 'Dockerfile Generator',
+        description: 'Dockerfiles für verschiedene Sprachen erstellen',
+        icon: '📄',
+        component: DockerfileGenerator,
+      },
+      {
+        id: 'docker-compose-builder',
+        name: 'Docker Compose Builder',
+        description: 'docker-compose.yml visuell erstellen',
+        icon: '🔧',
+        component: DockerComposeBuilder,
+      },
+      {
+        id: 'docker-command-builder',
+        name: 'Docker Command Builder',
+        description: 'docker run Befehle zusammenstellen',
+        icon: '⚙️',
+        component: DockerCommandBuilder,
+      },
+      {
+        id: 'dockerignore-generator',
+        name: '.dockerignore Generator',
+        description: 'Dockerignore Dateien generieren',
+        icon: '🚫',
+        component: DockerignoreGenerator,
       },
     ],
   },

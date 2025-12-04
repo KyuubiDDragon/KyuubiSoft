@@ -19,6 +19,7 @@ const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
 const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
 const YouTubeDownloaderView = () => import('@/modules/youtube-downloader/views/YouTubeDownloaderView.vue')
 const ToolboxView = () => import('@/modules/toolbox/views/ToolboxView.vue')
+const DockerView = () => import('@/modules/docker/views/DockerView.vue')
 const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
@@ -128,6 +129,12 @@ const routes = [
     path: '/toolbox',
     name: 'toolbox',
     component: ToolboxView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker',
+    name: 'docker',
+    component: DockerView,
     meta: { requiresAuth: true },
   },
   {

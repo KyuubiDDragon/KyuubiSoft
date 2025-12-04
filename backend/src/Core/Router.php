@@ -31,6 +31,7 @@ use App\Modules\Dashboard\Controllers\WidgetController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
+use App\Modules\Docker\Controllers\DockerController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -363,6 +364,21 @@ class Router
                 $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup']);
                 $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders']);
                 $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph']);
+
+                // Docker Management
+                $protected->get('/docker/status', [DockerController::class, 'status']);
+                $protected->get('/docker/containers', [DockerController::class, 'containers']);
+                $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails']);
+                $protected->post('/docker/containers/{id}/start', [DockerController::class, 'startContainer']);
+                $protected->post('/docker/containers/{id}/stop', [DockerController::class, 'stopContainer']);
+                $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer']);
+                $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs']);
+                $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats']);
+                $protected->get('/docker/images', [DockerController::class, 'images']);
+                $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);
+                $protected->get('/docker/networks', [DockerController::class, 'networks']);
+                $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
+                $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
 
             })->add(AuthMiddleware::class);
         });

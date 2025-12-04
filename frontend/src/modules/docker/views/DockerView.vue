@@ -290,12 +290,74 @@ onUnmounted(() => {
     </div>
 
     <!-- Docker Not Available Warning -->
-    <div v-if="dockerAvailable === false" class="card p-6 border-red-500/30 bg-red-900/10">
-      <div class="flex items-start gap-4">
-        <ExclamationTriangleIcon class="w-8 h-8 text-red-400 flex-shrink-0" />
-        <div>
-          <h3 class="text-lg font-semibold text-red-400">Docker nicht verfügbar</h3>
-          <p class="text-gray-400 mt-1">{{ error || 'Der Docker-Daemon ist nicht erreichbar. Stelle sicher, dass Docker installiert und gestartet ist.' }}</p>
+    <div v-if="dockerAvailable === false" class="space-y-6">
+      <div class="card p-6 border-yellow-500/30 bg-yellow-900/10">
+        <div class="flex items-start gap-4">
+          <ExclamationTriangleIcon class="w-8 h-8 text-yellow-400 flex-shrink-0" />
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-yellow-400">Docker-Daemon nicht erreichbar</h3>
+            <p class="text-gray-400 mt-1">{{ error || 'Der Docker-Daemon ist nicht erreichbar.' }}</p>
+
+            <div class="mt-4 p-4 bg-dark-800 rounded-lg">
+              <p class="text-sm text-gray-300 font-medium mb-2">Mögliche Lösungen:</p>
+              <ul class="text-sm text-gray-400 space-y-1 list-disc list-inside">
+                <li>Prüfe ob Docker installiert ist: <code class="bg-dark-700 px-1 rounded">docker --version</code></li>
+                <li>Starte den Docker-Daemon: <code class="bg-dark-700 px-1 rounded">sudo systemctl start docker</code></li>
+                <li>Prüfe Berechtigungen: <code class="bg-dark-700 px-1 rounded">sudo usermod -aG docker $USER</code></li>
+                <li>Bei Docker Desktop: Stelle sicher, dass die Anwendung läuft</li>
+              </ul>
+            </div>
+
+            <button @click="checkDockerStatus" class="btn-secondary mt-4">
+              <ArrowPathIcon class="w-4 h-4" />
+              Erneut prüfen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generator Tools (work without Docker) -->
+      <div>
+        <h2 class="text-lg font-semibold text-white mb-4">Docker Generator-Tools</h2>
+        <p class="text-gray-400 text-sm mb-4">Diese Tools funktionieren auch ohne laufenden Docker-Daemon:</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📄</span>
+              <div>
+                <h3 class="font-medium text-white group-hover:text-primary-400">Dockerfile Generator</h3>
+                <p class="text-xs text-gray-400">Dockerfiles erstellen</p>
+              </div>
+            </div>
+          </a>
+          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🔧</span>
+              <div>
+                <h3 class="font-medium text-white group-hover:text-primary-400">Compose Builder</h3>
+                <p class="text-xs text-gray-400">docker-compose.yml erstellen</p>
+              </div>
+            </div>
+          </a>
+          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">⚙️</span>
+              <div>
+                <h3 class="font-medium text-white group-hover:text-primary-400">Command Builder</h3>
+                <p class="text-xs text-gray-400">docker run Befehle</p>
+              </div>
+            </div>
+          </a>
+          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🚫</span>
+              <div>
+                <h3 class="font-medium text-white group-hover:text-primary-400">.dockerignore</h3>
+                <p class="text-xs text-gray-400">Ignore-Dateien generieren</p>
+              </div>
+            </div>
+          </a>
         </div>
       </div>
     </div>

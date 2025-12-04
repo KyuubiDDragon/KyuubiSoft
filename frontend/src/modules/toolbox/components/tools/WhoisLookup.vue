@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import api from '@/core/api/axios'
 
 const domain = ref('')
 const isLoading = ref(false)
@@ -13,88 +14,19 @@ async function lookup() {
   error.value = ''
   result.value = null
 
-  // Clean domain input
-  let cleanDomain = domain.value.trim()
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/^www\./, '')
-
   try {
-    // Use a public WHOIS API
-    const response = await fetch(`https://whois.freeaiapi.xyz/?name=${encodeURIComponent(cleanDomain)}`)
+    const response = await api.get('/api/v1/tools/whois', {
+      params: { domain: domain.value.trim() },
+    })
 
-    if (!response.ok) {
-      throw new Error('WHOIS-Abfrage fehlgeschlagen')
-    }
-
-    const data = await response.json()
-
-    if (data.error) {
-      throw new Error(data.error)
-    }
-
-    result.value = {
-      domain: cleanDomain,
-      raw: data.whois || data,
-      parsed: parseWhois(data.whois || JSON.stringify(data)),
-      queriedAt: new Date().toISOString(),
+    if (response.data.data) {
+      result.value = response.data.data
     }
   } catch (e) {
-    // Fallback message
-    error.value = 'WHOIS-Abfrage fehlgeschlagen. Aufgrund von CORS-Einschränkungen funktioniert WHOIS nur eingeschränkt im Browser. Für vollständige Ergebnisse verwende bitte ein Terminal mit `whois ' + cleanDomain + '`'
+    error.value = e.response?.data?.error || e.message || 'WHOIS-Abfrage fehlgeschlagen'
   }
 
   isLoading.value = false
-}
-
-function parseWhois(rawData) {
-  // Simple parser for common WHOIS fields
-  const lines = rawData.split('\n')
-  const parsed = {}
-
-  const fieldMappings = {
-    'domain name': 'domainName',
-    'registrar': 'registrar',
-    'registrar whois server': 'whoisServer',
-    'creation date': 'createdDate',
-    'updated date': 'updatedDate',
-    'registry expiry date': 'expiryDate',
-    'expiration date': 'expiryDate',
-    'registrar registration expiration date': 'expiryDate',
-    'name server': 'nameServers',
-    'nserver': 'nameServers',
-    'status': 'status',
-    'domain status': 'status',
-    'registrant name': 'registrantName',
-    'registrant organization': 'registrantOrg',
-    'registrant country': 'registrantCountry',
-    'admin name': 'adminName',
-    'admin email': 'adminEmail',
-    'tech name': 'techName',
-    'tech email': 'techEmail',
-  }
-
-  for (const line of lines) {
-    const colonIndex = line.indexOf(':')
-    if (colonIndex === -1) continue
-
-    const key = line.substring(0, colonIndex).trim().toLowerCase()
-    const value = line.substring(colonIndex + 1).trim()
-
-    if (!value) continue
-
-    const mappedKey = fieldMappings[key]
-    if (mappedKey) {
-      if (mappedKey === 'nameServers' || mappedKey === 'status') {
-        if (!parsed[mappedKey]) parsed[mappedKey] = []
-        parsed[mappedKey].push(value)
-      } else if (!parsed[mappedKey]) {
-        parsed[mappedKey] = value
-      }
-    }
-  }
-
-  return parsed
 }
 
 function formatDate(dateStr) {
@@ -164,7 +96,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
     </div>
 
     <!-- Error -->
-    <div v-if="error" class="p-4 bg-yellow-900/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm">
+    <div v-if="error" class="p-4 bg-red-900/30 border border-red-500/30 rounded-lg text-red-400 text-sm">
       {{ error }}
     </div>
 
@@ -243,6 +175,11 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
               {{ status.split(' ')[0] }}
             </span>
           </div>
+        </div>
+
+        <div v-if="result.parsed.dnssec" class="p-3 bg-dark-700 rounded-lg">
+          <span class="text-xs text-gray-500">DNSSEC</span>
+          <div class="text-white">{{ result.parsed.dnssec }}</div>
         </div>
       </div>
 

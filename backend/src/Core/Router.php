@@ -30,6 +30,7 @@ use App\Modules\Notifications\Controllers\NotificationController;
 use App\Modules\Dashboard\Controllers\WidgetController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
+use App\Modules\Tools\Controllers\ToolsController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -351,6 +352,15 @@ class Router
                     ->add(new PermissionMiddleware('settings.system.write'));
                 $protected->post('/system/terminate-sessions', [SystemController::class, 'terminateSessions'])
                     ->add(new PermissionMiddleware('settings.system.write'));
+
+                // Tools (Network utilities)
+                $protected->get('/tools/whois', [ToolsController::class, 'whois']);
+                $protected->get('/tools/ssl-check', [ToolsController::class, 'sslCheck']);
+                $protected->get('/tools/dns', [ToolsController::class, 'dnsLookup']);
+                $protected->get('/tools/ping', [ToolsController::class, 'ping']);
+                $protected->get('/tools/port-check', [ToolsController::class, 'portCheck']);
+                $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders']);
+                $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup']);
 
             })->add(AuthMiddleware::class);
         });

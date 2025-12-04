@@ -1,7 +1,9 @@
 <script setup>
 import { ref } from 'vue'
+import api from '@/core/api/axios'
 
 const domain = ref('')
+const port = ref(443)
 const isLoading = ref(false)
 const result = ref(null)
 const error = ref('')
@@ -13,41 +15,19 @@ async function checkSSL() {
   error.value = ''
   result.value = null
 
-  // Clean domain input
-  let cleanDomain = domain.value.trim()
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/:\d+$/, '')
-
   try {
-    // Use a public API to check SSL
-    const response = await fetch(`https://ssl-checker.io/api/v1/check/${cleanDomain}`)
+    const response = await api.get('/api/v1/tools/ssl-check', {
+      params: {
+        domain: domain.value.trim(),
+        port: port.value,
+      },
+    })
 
-    if (!response.ok) {
-      throw new Error('Konnte SSL-Informationen nicht abrufen')
+    if (response.data.data) {
+      result.value = response.data.data
     }
-
-    const data = await response.json()
-    result.value = data
   } catch (e) {
-    // Fallback: Try to get basic info via fetch
-    try {
-      // We can at least check if the site is reachable via HTTPS
-      const testUrl = `https://${cleanDomain}`
-      const testResponse = await fetch(testUrl, {
-        method: 'HEAD',
-        mode: 'no-cors',
-      })
-
-      result.value = {
-        domain: cleanDomain,
-        valid: true,
-        note: 'HTTPS erreichbar (Details benötigen Server-Side Check)',
-        checkedAt: new Date().toISOString(),
-      }
-    } catch (fetchError) {
-      error.value = 'SSL-Prüfung fehlgeschlagen. Domain möglicherweise nicht erreichbar oder CORS-Einschränkungen.'
-    }
+    error.value = e.response?.data?.error || e.message || 'SSL-Prüfung fehlgeschlagen'
   }
 
   isLoading.value = false
@@ -65,17 +45,8 @@ function formatDate(dateStr) {
   })
 }
 
-function getDaysUntilExpiry(dateStr) {
-  if (!dateStr) return null
-  const expiry = new Date(dateStr)
-  const now = new Date()
-  const diff = expiry - now
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
-}
-
-function getExpiryStatus(dateStr) {
-  const days = getDaysUntilExpiry(dateStr)
-  if (days === null) return { class: 'text-gray-400', text: 'Unbekannt' }
+function getExpiryStatus(days) {
+  if (days === null || days === undefined) return { class: 'text-gray-400', text: 'Unbekannt' }
   if (days < 0) return { class: 'text-red-500', text: 'Abgelaufen' }
   if (days < 7) return { class: 'text-red-400', text: `${days} Tage (Kritisch)` }
   if (days < 30) return { class: 'text-yellow-400', text: `${days} Tage (Warnung)` }
@@ -101,6 +72,14 @@ const quickDomains = [
         class="input flex-1"
         placeholder="example.com"
       />
+      <input
+        v-model.number="port"
+        type="number"
+        min="1"
+        max="65535"
+        class="input w-24"
+        placeholder="Port"
+      />
       <button
         @click="checkSSL"
         :disabled="isLoading || !domain.trim()"
@@ -116,11 +95,16 @@ const quickDomains = [
       <button
         v-for="d in quickDomains"
         :key="d"
-        @click="domain = d; checkSSL()"
+        @click="domain = d; port = 443; checkSSL()"
         class="text-xs text-primary-400 hover:text-primary-300"
       >
         {{ d }}
       </button>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="isLoading" class="text-center py-8 text-gray-400">
+      Prüfe SSL-Zertifikat...
     </div>
 
     <!-- Error -->
@@ -139,7 +123,7 @@ const quickDomains = [
           {{ result.valid ? '🔒' : '⚠️' }}
         </div>
         <div>
-          <h3 class="text-lg font-medium text-white">{{ result.domain || domain }}</h3>
+          <h3 class="text-lg font-medium text-white">{{ result.domain }}:{{ result.port }}</h3>
           <p :class="result.valid ? 'text-green-400' : 'text-red-400'">
             {{ result.valid ? 'SSL-Zertifikat gültig' : 'SSL-Problem erkannt' }}
           </p>
@@ -148,48 +132,68 @@ const quickDomains = [
 
       <!-- Certificate Details -->
       <div class="grid grid-cols-2 gap-3" v-if="result.certificate">
-        <div class="p-3 bg-dark-700 rounded-lg">
-          <span class="text-xs text-gray-500">Aussteller</span>
-          <div class="text-white">{{ result.certificate.issuer || '-' }}</div>
+        <div class="p-3 bg-dark-700 rounded-lg col-span-2">
+          <span class="text-xs text-gray-500">Common Name</span>
+          <div class="text-white font-mono">{{ result.certificate.commonName }}</div>
         </div>
+
+        <div class="p-3 bg-dark-700 rounded-lg col-span-2">
+          <span class="text-xs text-gray-500">Aussteller</span>
+          <div class="text-white">{{ result.certificate.issuer }}</div>
+        </div>
+
         <div class="p-3 bg-dark-700 rounded-lg">
           <span class="text-xs text-gray-500">Gültig ab</span>
-          <div class="text-white">{{ formatDate(result.certificate.valid_from) }}</div>
+          <div class="text-white">{{ formatDate(result.certificate.validFrom) }}</div>
         </div>
+
         <div class="p-3 bg-dark-700 rounded-lg">
           <span class="text-xs text-gray-500">Gültig bis</span>
-          <div class="text-white">{{ formatDate(result.certificate.valid_to) }}</div>
+          <div class="text-white">{{ formatDate(result.certificate.validTo) }}</div>
         </div>
+
         <div class="p-3 bg-dark-700 rounded-lg">
           <span class="text-xs text-gray-500">Verbleibende Zeit</span>
-          <div :class="getExpiryStatus(result.certificate.valid_to).class">
-            {{ getExpiryStatus(result.certificate.valid_to).text }}
+          <div :class="getExpiryStatus(result.certificate.daysUntilExpiry).class">
+            {{ getExpiryStatus(result.certificate.daysUntilExpiry).text }}
+          </div>
+        </div>
+
+        <div class="p-3 bg-dark-700 rounded-lg">
+          <span class="text-xs text-gray-500">Signatur-Algorithmus</span>
+          <div class="text-white text-sm">{{ result.certificate.signatureAlgorithm || '-' }}</div>
+        </div>
+
+        <div v-if="result.certificate.serialNumber" class="p-3 bg-dark-700 rounded-lg col-span-2">
+          <span class="text-xs text-gray-500">Seriennummer</span>
+          <div class="text-sm text-gray-300 font-mono break-all">{{ result.certificate.serialNumber }}</div>
+        </div>
+
+        <div v-if="result.certificate.san?.length" class="p-3 bg-dark-700 rounded-lg col-span-2">
+          <span class="text-xs text-gray-500">Alternative Namen (SAN)</span>
+          <div class="flex flex-wrap gap-1 mt-1">
+            <span
+              v-for="name in result.certificate.san"
+              :key="name"
+              class="px-2 py-0.5 text-xs bg-dark-600 text-gray-300 rounded font-mono"
+            >
+              {{ name }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Additional info if available -->
-      <div v-if="result.certificate?.subject" class="p-3 bg-dark-800 rounded-lg">
-        <span class="text-xs text-gray-500">Subject</span>
-        <div class="text-sm text-gray-300 font-mono">{{ result.certificate.subject }}</div>
+      <!-- Warnings -->
+      <div v-if="result.certificate?.isExpired" class="p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-sm text-red-400">
+        Das Zertifikat ist abgelaufen!
       </div>
 
-      <div v-if="result.certificate?.san" class="p-3 bg-dark-800 rounded-lg">
-        <span class="text-xs text-gray-500">Alternative Namen (SAN)</span>
-        <div class="flex flex-wrap gap-1 mt-1">
-          <span
-            v-for="name in (Array.isArray(result.certificate.san) ? result.certificate.san : [result.certificate.san])"
-            :key="name"
-            class="px-2 py-0.5 text-xs bg-dark-600 text-gray-300 rounded"
-          >
-            {{ name }}
-          </span>
-        </div>
+      <div v-if="result.certificate?.isNotYetValid" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
+        Das Zertifikat ist noch nicht gültig!
       </div>
 
-      <!-- Note for limited results -->
-      <div v-if="result.note" class="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg text-sm text-blue-400">
-        {{ result.note }}
+      <div v-if="result.certificate?.daysUntilExpiry > 0 && result.certificate?.daysUntilExpiry < 30" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
+        Das Zertifikat läuft in weniger als 30 Tagen ab. Erneuerung empfohlen!
       </div>
     </div>
 
@@ -197,7 +201,6 @@ const quickDomains = [
     <div class="text-xs text-gray-500 space-y-1">
       <p class="font-medium">Hinweis:</p>
       <p>Dieser Check prüft das SSL/TLS-Zertifikat einer Domain auf Gültigkeit und zeigt Details wie Aussteller und Ablaufdatum an.</p>
-      <p>Für detaillierte Analysen empfehlen wir Tools wie SSL Labs oder Qualys.</p>
     </div>
   </div>
 </template>

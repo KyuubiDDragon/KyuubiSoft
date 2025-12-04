@@ -46,24 +46,26 @@ class ServerController
         }
 
         // Running in container - execute via Docker on host
-        // We need to use nsenter or docker run with host namespaces
         $dockerSocket = '/var/run/docker.sock';
 
         if (!file_exists($dockerSocket)) {
             return "Error: Docker socket not available for host access";
         }
 
-        // Use a privileged Alpine container with host namespaces
+        // Use nsenter to run commands in host namespaces
+        // This is more reliable than chroot
         $privileged = $needsPrivileged ? '--privileged' : '';
-        $escapedCmd = escapeshellarg($command);
 
-        // For commands that need host PID/network/etc namespaces
+        // Escape the command properly for shell
+        $escapedCmd = str_replace("'", "'\\''", $command);
+
+        // Use nsenter with all host namespaces for proper access
         $dockerCmd = "docker run --rm $privileged " .
                      "--pid=host " .
                      "--network=host " .
+                     "--ipc=host " .
                      "-v /:/host:ro " .
-                     "-v /var/run/docker.sock:/var/run/docker.sock " .
-                     "alpine:latest sh -c 'chroot /host sh -c $escapedCmd' 2>&1";
+                     "alpine:latest nsenter -t 1 -m -u -n -i sh -c '$escapedCmd' 2>&1";
 
         return shell_exec($dockerCmd) ?: '';
     }
@@ -83,14 +85,15 @@ class ServerController
             return "Error: Docker socket not available for host access";
         }
 
-        $escapedCmd = escapeshellarg($command);
+        // Escape the command properly for shell
+        $escapedCmd = str_replace("'", "'\\''", $command);
 
-        // Use privileged container with read-write host mount
+        // Use privileged container with nsenter for write operations
         $dockerCmd = "docker run --rm --privileged " .
                      "--pid=host " .
                      "--network=host " .
-                     "-v /:/host " .
-                     "alpine:latest sh -c 'chroot /host sh -c $escapedCmd' 2>&1";
+                     "--ipc=host " .
+                     "alpine:latest nsenter -t 1 -m -u -n -i sh -c '$escapedCmd' 2>&1";
 
         return shell_exec($dockerCmd) ?: '';
     }
@@ -104,8 +107,8 @@ class ServerController
             return file_exists($path) ? file_get_contents($path) : null;
         }
 
-        $escapedPath = escapeshellarg($path);
-        $result = shell_exec("docker run --rm -v /:/host:ro alpine:latest cat /host$escapedPath 2>&1");
+        $escapedPath = str_replace("'", "'\\''", $path);
+        $result = $this->execOnHost("cat '$escapedPath'");
 
         if ($result && strpos($result, 'No such file') === false && strpos($result, "can't open") === false) {
             return $result;
@@ -123,10 +126,10 @@ class ServerController
             return file_put_contents($path, $content) !== false;
         }
 
-        $escapedPath = escapeshellarg("/host$path");
+        $escapedPath = str_replace("'", "'\\''", $path);
         $encodedContent = base64_encode($content);
 
-        $result = shell_exec("docker run --rm -v /:/host alpine:latest sh -c 'echo $encodedContent | base64 -d > $escapedPath' 2>&1");
+        $result = $this->execOnHostWithWrite("echo '$encodedContent' | base64 -d > '$escapedPath'");
 
         return strpos($result, 'error') === false && strpos($result, 'denied') === false;
     }
@@ -583,6 +586,7 @@ class ServerController
     {
         $params = $request->getQueryParams();
         $type = $params['type'] ?? 'all'; // all, running, failed, enabled
+        $search = $params['search'] ?? null;
 
         try {
             $services = [];
@@ -615,12 +619,22 @@ class ServerController
             }
 
             $lines = array_filter(explode("\n", trim($output)));
+            $searchLower = $search ? strtolower($search) : null;
 
             foreach ($lines as $line) {
                 $parts = preg_split('/\s+/', trim($line), 5);
 
                 if (count($parts) >= 4) {
                     $name = str_replace('.service', '', $parts[0]);
+
+                    // Apply search filter
+                    if ($searchLower) {
+                        $nameLower = strtolower($name);
+                        $descLower = strtolower($parts[4] ?? '');
+                        if (strpos($nameLower, $searchLower) === false && strpos($descLower, $searchLower) === false) {
+                            continue;
+                        }
+                    }
 
                     $services[] = [
                         'name' => $name,
@@ -688,12 +702,24 @@ class ServerController
         }
 
         try {
-            $status = $this->execOnHost("systemctl status $service --no-pager");
-            $isActive = trim($this->execOnHost("systemctl is-active $service")) === 'active';
-            $isEnabled = trim($this->execOnHost("systemctl is-enabled $service")) === 'enabled';
+            // Escape service name for shell
+            $escapedService = str_replace("'", "'\\''", $service);
+
+            $status = $this->execOnHost("systemctl status '$escapedService' --no-pager 2>&1");
+
+            // Check if systemctl is available
+            if (strpos($status, 'not found') !== false || strpos($status, 'command not found') !== false) {
+                return JsonResponse::error('systemd not available on this host', 400);
+            }
+
+            $isActiveOutput = trim($this->execOnHost("systemctl is-active '$escapedService' 2>&1"));
+            $isActive = $isActiveOutput === 'active';
+
+            $isEnabledOutput = trim($this->execOnHost("systemctl is-enabled '$escapedService' 2>&1"));
+            $isEnabled = $isEnabledOutput === 'enabled';
 
             // Get recent logs from host
-            $logs = $this->execOnHost("journalctl -u $service -n 50 --no-pager");
+            $logs = $this->execOnHost("journalctl -u '$escapedService' -n 50 --no-pager 2>&1");
 
             return JsonResponse::success([
                 'service' => $service,

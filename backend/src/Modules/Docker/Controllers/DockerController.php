@@ -1006,6 +1006,17 @@ class DockerController
                 }
             }
 
+            // If still not found, try Portainer as fallback
+            $fromPortainer = false;
+            if ($content === null) {
+                $userId = $request->getAttribute('user_id');
+                $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
+                if ($portainerContent) {
+                    $content = $portainerContent;
+                    $fromPortainer = true;
+                }
+            }
+
             if ($content === null) {
                 // List available files in the directory for debugging
                 $availableFiles = $this->listHostDirectory($host, $workingDir);
@@ -1017,19 +1028,20 @@ class DockerController
                     'content' => null,
                     'readable' => false,
                     'available_files' => $availableFiles,
-                    'message' => 'Compose file not found at path. See available_files for files in directory.',
+                    'message' => 'Compose file not found. Configure Portainer integration to fetch from Portainer API.',
                 ]);
             }
 
-            $writable = file_exists($composePath) && is_writable($composePath);
+            $writable = !$fromPortainer && file_exists($composePath) && is_writable($composePath);
 
             return JsonResponse::success([
                 'stack' => $stackName,
-                'path' => $composePath,
+                'path' => $fromPortainer ? 'portainer://' . $stackName : $composePath,
                 'working_dir' => $workingDir,
                 'content' => $content,
                 'readable' => true,
                 'writable' => $writable,
+                'source' => $fromPortainer ? 'portainer' : 'filesystem',
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to get compose file: ' . $e->getMessage(), 500);
@@ -1593,6 +1605,19 @@ class DockerController
                 }
             }
 
+            // If no compose file found, try Portainer as fallback
+            if (!$foundComposeFile) {
+                $portainerContent = $this->getComposeFromPortainer($host, $stackName, $userId);
+                if ($portainerContent) {
+                    $backupData['files'][] = [
+                        'name' => 'docker-compose.yml',
+                        'path' => 'portainer://' . $stackName,
+                        'content' => $portainerContent,
+                    ];
+                    $foundComposeFile = true;
+                }
+            }
+
             // Read .env file if exists
             $envPath = $workingDir . '/.env';
             $envContent = $this->readHostFile($host, $envPath);
@@ -1608,7 +1633,7 @@ class DockerController
                 // List available files for debugging
                 $availableFiles = $this->listHostDirectory($host, $workingDir);
                 return JsonResponse::error(
-                    'No files could be read for backup. Available files in directory: ' . implode(', ', $availableFiles ?: ['(empty or inaccessible)']),
+                    'No files could be read for backup. Configure Portainer integration to fetch compose files from Portainer API. Available files in directory: ' . implode(', ', $availableFiles ?: ['(empty or inaccessible)']),
                     404
                 );
             }
@@ -1955,5 +1980,270 @@ class DockerController
             is_dir($path) ? $this->removeDirectory($path) : unlink($path);
         }
         rmdir($dir);
+    }
+
+    // ========================================================================
+    // Portainer Integration
+    // ========================================================================
+
+    /**
+     * Update Portainer configuration for a Docker host
+     */
+    public function updatePortainerConfig(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $this->getRouteArg($request, 'id');
+
+        $body = json_decode((string)$request->getBody(), true);
+        $portainerUrl = trim($body['portainer_url'] ?? '', '/');
+        $portainerToken = $body['portainer_api_token'] ?? null;
+        $portainerEndpointId = $body['portainer_endpoint_id'] ?? null;
+
+        try {
+            $host = $this->hostRepository->findById($hostId, $userId);
+            if (!$host) {
+                return JsonResponse::error('Docker host not found', 404);
+            }
+
+            // Test connection if URL and token provided
+            if ($portainerUrl && $portainerToken) {
+                $testResult = $this->testPortainerConnection($portainerUrl, $portainerToken);
+                if (!$testResult['success']) {
+                    return JsonResponse::error('Portainer connection failed: ' . $testResult['error'], 400);
+                }
+            }
+
+            $this->hostRepository->updatePortainerConfig($hostId, $portainerUrl, $portainerToken, $portainerEndpointId);
+
+            return JsonResponse::success(['message' => 'Portainer configuration updated']);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to update Portainer config: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * List stacks from Portainer
+     */
+    public function listPortainerStacks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+
+        if (empty($host['portainer_url']) || empty($host['portainer_api_token'])) {
+            return JsonResponse::error('Portainer not configured for this host', 400);
+        }
+
+        try {
+            $stacks = $this->fetchPortainerStacks($host);
+            return JsonResponse::success(['stacks' => $stacks]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to fetch Portainer stacks: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get stack file from Portainer
+     */
+    public function getPortainerStackFile(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackId = $this->getRouteArg($request, 'stackId');
+
+        if (empty($host['portainer_url']) || empty($host['portainer_api_token'])) {
+            return JsonResponse::error('Portainer not configured for this host', 400);
+        }
+
+        try {
+            $content = $this->fetchPortainerStackFile($host, (int)$stackId);
+            return JsonResponse::success([
+                'stack_id' => $stackId,
+                'content' => $content,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to fetch stack file: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Link a Docker stack to a Portainer stack ID
+     */
+    public function linkStackToPortainer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $host = $this->resolveHost($request);
+
+        $body = json_decode((string)$request->getBody(), true);
+        $stackName = $body['stack_name'] ?? null;
+        $portainerStackId = $body['portainer_stack_id'] ?? null;
+
+        if (!$stackName || !$portainerStackId) {
+            throw new ValidationException('stack_name and portainer_stack_id are required');
+        }
+
+        try {
+            $this->hostRepository->linkStackToPortainer(
+                $userId,
+                $host['id'] ?? null,
+                $stackName,
+                (int)$portainerStackId
+            );
+
+            return JsonResponse::success(['message' => 'Stack linked to Portainer']);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to link stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Test Portainer connection
+     */
+    private function testPortainerConnection(string $url, string $token): array
+    {
+        try {
+            $ch = curl_init($url . '/api/status');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'X-API-Key: ' . $token,
+                ],
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                return ['success' => false, 'error' => $error];
+            }
+
+            if ($httpCode !== 200) {
+                return ['success' => false, 'error' => 'HTTP ' . $httpCode];
+            }
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Fetch stacks from Portainer API
+     */
+    private function fetchPortainerStacks(array $host): array
+    {
+        $url = $host['portainer_url'] . '/api/stacks';
+        $token = $host['portainer_api_token'];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'X-API-Key: ' . $token,
+            ],
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \RuntimeException('Curl error: ' . $error);
+        }
+
+        if ($httpCode !== 200) {
+            throw new \RuntimeException('Portainer API returned HTTP ' . $httpCode);
+        }
+
+        $stacks = json_decode($response, true);
+        if (!is_array($stacks)) {
+            throw new \RuntimeException('Invalid response from Portainer');
+        }
+
+        // Filter by endpoint if configured
+        if (!empty($host['portainer_endpoint_id'])) {
+            $stacks = array_filter($stacks, fn($s) => ($s['EndpointId'] ?? null) == $host['portainer_endpoint_id']);
+        }
+
+        return array_map(fn($s) => [
+            'id' => $s['Id'],
+            'name' => $s['Name'],
+            'type' => $s['Type'] ?? 1,
+            'status' => $s['Status'] ?? 0,
+            'endpoint_id' => $s['EndpointId'] ?? null,
+        ], array_values($stacks));
+    }
+
+    /**
+     * Fetch stack file content from Portainer API
+     */
+    private function fetchPortainerStackFile(array $host, int $stackId): string
+    {
+        $url = $host['portainer_url'] . '/api/stacks/' . $stackId . '/file';
+        $token = $host['portainer_api_token'];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'X-API-Key: ' . $token,
+            ],
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \RuntimeException('Curl error: ' . $error);
+        }
+
+        if ($httpCode !== 200) {
+            throw new \RuntimeException('Portainer API returned HTTP ' . $httpCode);
+        }
+
+        $data = json_decode($response, true);
+        return $data['StackFileContent'] ?? '';
+    }
+
+    /**
+     * Try to get stack compose content from Portainer as fallback
+     */
+    private function getComposeFromPortainer(array $host, string $stackName, string $userId): ?string
+    {
+        if (empty($host['portainer_url']) || empty($host['portainer_api_token'])) {
+            return null;
+        }
+
+        try {
+            // First check if we have a mapping
+            $mapping = $this->hostRepository->getStackPortainerMapping($userId, $host['id'] ?? null, $stackName);
+
+            if ($mapping) {
+                return $this->fetchPortainerStackFile($host, (int)$mapping['portainer_stack_id']);
+            }
+
+            // Try to find stack by name in Portainer
+            $stacks = $this->fetchPortainerStacks($host);
+            foreach ($stacks as $stack) {
+                if (strtolower($stack['name']) === strtolower($stackName)) {
+                    // Auto-link for future use
+                    $this->hostRepository->linkStackToPortainer($userId, $host['id'] ?? null, $stackName, $stack['id']);
+                    return $this->fetchPortainerStackFile($host, $stack['id']);
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            // Silently fail, this is just a fallback
+            return null;
+        }
     }
 }

@@ -418,6 +418,12 @@ class Router
                 $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
                 $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
 
+                // Portainer Integration
+                $protected->put('/docker/hosts/{id}/portainer', [DockerController::class, 'updatePortainerConfig']);
+                $protected->get('/docker/portainer/stacks', [DockerController::class, 'listPortainerStacks']);
+                $protected->get('/docker/portainer/stacks/{stackId}/file', [DockerController::class, 'getPortainerStackFile']);
+                $protected->post('/docker/portainer/link', [DockerController::class, 'linkStackToPortainer']);
+
                 // Server Management
                 $protected->get('/server/info', [ServerController::class, 'getSystemInfo']);
                 $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs']);

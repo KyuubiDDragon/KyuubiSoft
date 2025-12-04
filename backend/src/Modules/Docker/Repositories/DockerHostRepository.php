@@ -12,15 +12,20 @@ class DockerHostRepository
         private readonly Connection $db
     ) {}
 
-    public function findById(string $id): ?array
+    public function findById(string $id, ?string $userId = null): ?array
     {
-        $result = $this->db->fetchAssociative(
-            'SELECT dh.*, p.name as project_name, p.color as project_color
-             FROM docker_hosts dh
-             LEFT JOIN projects p ON dh.project_id = p.id
-             WHERE dh.id = ?',
-            [$id]
-        );
+        $sql = 'SELECT dh.*, p.name as project_name, p.color as project_color
+                FROM docker_hosts dh
+                LEFT JOIN projects p ON dh.project_id = p.id
+                WHERE dh.id = ?';
+        $params = [$id];
+
+        if ($userId !== null) {
+            $sql .= ' AND dh.user_id = ?';
+            $params[] = $userId;
+        }
+
+        $result = $this->db->fetchAssociative($sql, $params);
 
         return $result ?: null;
     }
@@ -171,6 +176,71 @@ class DockerHostRepository
             mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
             mt_rand(0, 0xffff)
+        );
+    }
+
+    // ========================================================================
+    // Portainer Integration
+    // ========================================================================
+
+    public function updatePortainerConfig(string $hostId, ?string $url, ?string $token, ?int $endpointId): bool
+    {
+        return $this->db->update('docker_hosts', [
+            'portainer_url' => $url ?: null,
+            'portainer_api_token' => $token ?: null,
+            'portainer_endpoint_id' => $endpointId,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $hostId]) > 0;
+    }
+
+    public function linkStackToPortainer(string $userId, ?string $hostId, string $stackName, int $portainerStackId): bool
+    {
+        // Check if mapping exists
+        $existing = $this->db->fetchAssociative(
+            'SELECT id FROM docker_stack_portainer_map WHERE user_id = ? AND (docker_host_id = ? OR (docker_host_id IS NULL AND ? IS NULL)) AND stack_name = ?',
+            [$userId, $hostId, $hostId, $stackName]
+        );
+
+        if ($existing) {
+            return $this->db->update('docker_stack_portainer_map', [
+                'portainer_stack_id' => $portainerStackId,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], ['id' => $existing['id']]) > 0;
+        }
+
+        return $this->db->insert('docker_stack_portainer_map', [
+            'id' => $this->generateUuid(),
+            'user_id' => $userId,
+            'docker_host_id' => $hostId,
+            'stack_name' => $stackName,
+            'portainer_stack_id' => $portainerStackId,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]) > 0;
+    }
+
+    public function getStackPortainerMapping(string $userId, ?string $hostId, string $stackName): ?array
+    {
+        $result = $this->db->fetchAssociative(
+            'SELECT * FROM docker_stack_portainer_map WHERE user_id = ? AND (docker_host_id = ? OR (docker_host_id IS NULL AND ? IS NULL)) AND stack_name = ?',
+            [$userId, $hostId, $hostId, $stackName]
+        );
+
+        return $result ?: null;
+    }
+
+    public function getStackPortainerMappings(string $userId, ?string $hostId = null): array
+    {
+        if ($hostId) {
+            return $this->db->fetchAllAssociative(
+                'SELECT * FROM docker_stack_portainer_map WHERE user_id = ? AND docker_host_id = ?',
+                [$userId, $hostId]
+            );
+        }
+
+        return $this->db->fetchAllAssociative(
+            'SELECT * FROM docker_stack_portainer_map WHERE user_id = ?',
+            [$userId]
         );
     }
 }

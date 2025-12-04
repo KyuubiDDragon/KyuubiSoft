@@ -927,4 +927,205 @@ class DockerController
             mt_rand(0, 0xffff)
         );
     }
+
+    // ========================================================================
+    // Stack / Compose Methods
+    // ========================================================================
+
+    /**
+     * Get compose file for a stack
+     */
+    public function getStackCompose(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        try {
+            // Find a container in the stack to get compose file path
+            $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
+            $containerIds = array_filter(explode("\n", trim($output)));
+
+            if (empty($containerIds)) {
+                return JsonResponse::error('Stack not found', 404);
+            }
+
+            // Get labels from first container
+            $containerId = $containerIds[0];
+            $labels = $this->getContainerLabels($host, $containerId);
+
+            $configFiles = $labels['com.docker.compose.project.config_files'] ?? null;
+            $workingDir = $labels['com.docker.compose.project.working_dir'] ?? null;
+
+            if (!$configFiles) {
+                return JsonResponse::error('Compose file path not found in labels', 404);
+            }
+
+            // Read compose file content (only works for local host)
+            if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
+                return JsonResponse::success([
+                    'stack' => $stackName,
+                    'path' => $configFiles,
+                    'working_dir' => $workingDir,
+                    'content' => null,
+                    'readable' => false,
+                    'message' => 'Compose file can only be read on local Docker host',
+                ]);
+            }
+
+            // Parse first config file path (may be comma-separated)
+            $paths = explode(',', $configFiles);
+            $composePath = trim($paths[0]);
+
+            if (!file_exists($composePath)) {
+                return JsonResponse::success([
+                    'stack' => $stackName,
+                    'path' => $composePath,
+                    'working_dir' => $workingDir,
+                    'content' => null,
+                    'readable' => false,
+                    'message' => 'Compose file not found at path',
+                ]);
+            }
+
+            $content = file_get_contents($composePath);
+            $writable = is_writable($composePath);
+
+            return JsonResponse::success([
+                'stack' => $stackName,
+                'path' => $composePath,
+                'working_dir' => $workingDir,
+                'content' => $content,
+                'readable' => true,
+                'writable' => $writable,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to get compose file: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Update compose file for a stack
+     */
+    public function updateStackCompose(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        // Only allow on local host
+        if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
+            return JsonResponse::error('Compose file can only be updated on local Docker host', 403);
+        }
+
+        $body = json_decode((string)$request->getBody(), true);
+        $content = $body['content'] ?? null;
+        $path = $body['path'] ?? null;
+
+        if (empty($content) || empty($path)) {
+            throw new ValidationException('Content and path are required');
+        }
+
+        // Validate path is the actual compose file for this stack
+        try {
+            $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
+            $containerIds = array_filter(explode("\n", trim($output)));
+
+            if (empty($containerIds)) {
+                return JsonResponse::error('Stack not found', 404);
+            }
+
+            $labels = $this->getContainerLabels($host, $containerIds[0]);
+            $configFiles = $labels['com.docker.compose.project.config_files'] ?? '';
+            $paths = array_map('trim', explode(',', $configFiles));
+
+            if (!in_array($path, $paths)) {
+                return JsonResponse::error('Path does not match stack compose file', 403);
+            }
+
+            if (!is_writable($path)) {
+                return JsonResponse::error('Compose file is not writable', 403);
+            }
+
+            // Backup original file
+            $backupPath = $path . '.backup.' . date('YmdHis');
+            copy($path, $backupPath);
+
+            // Write new content
+            file_put_contents($path, $content);
+
+            return JsonResponse::success([
+                'message' => 'Compose file updated successfully',
+                'backup' => $backupPath,
+                'note' => 'Run "docker compose up -d" to apply changes',
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to update compose file: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get environment variables for a container (parsed)
+     */
+    public function getContainerEnv(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $containerId = $this->getRouteArg($request, 'id');
+
+        if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
+            throw new ValidationException('Invalid container ID');
+        }
+
+        try {
+            $output = $this->execDockerOnHost($host, "inspect --format '{{json .Config.Env}}' $containerId");
+            $envArray = json_decode(trim($output), true) ?? [];
+
+            // Parse KEY=VALUE format into structured array
+            $envVars = [];
+            foreach ($envArray as $env) {
+                $pos = strpos($env, '=');
+                if ($pos !== false) {
+                    $key = substr($env, 0, $pos);
+                    $value = substr($env, $pos + 1);
+                    $envVars[] = [
+                        'key' => $key,
+                        'value' => $value,
+                        'sensitive' => $this->isSensitiveEnvVar($key),
+                    ];
+                }
+            }
+
+            return JsonResponse::success([
+                'container_id' => $containerId,
+                'env' => $envVars,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to get environment variables: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Check if environment variable name suggests sensitive data
+     */
+    private function isSensitiveEnvVar(string $key): bool
+    {
+        $sensitivePatterns = [
+            'PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'CREDENTIAL',
+            'API_KEY', 'APIKEY', 'AUTH', 'PRIVATE', 'CERT',
+        ];
+
+        $keyUpper = strtoupper($key);
+        foreach ($sensitivePatterns as $pattern) {
+            if (strpos($keyUpper, $pattern) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

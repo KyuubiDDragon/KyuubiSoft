@@ -383,6 +383,12 @@ class Router
                 $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer']);
                 $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs']);
                 $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats']);
+                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv']);
+
+                // Docker Stack/Compose Operations
+                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose']);
+                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose']);
+
                 $protected->get('/docker/images', [DockerController::class, 'images']);
                 $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);
                 $protected->get('/docker/networks', [DockerController::class, 'networks']);

@@ -21,6 +21,10 @@ import {
   ComputerDesktopIcon,
   Cog6ToothIcon,
   RectangleStackIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  CodeBracketIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/vue/24/outline'
 
 // State
@@ -52,8 +56,18 @@ const selectedContainer = ref(null)
 const containerDetails = ref(null)
 const containerLogs = ref('')
 const containerStats = ref(null)
+const containerEnvVars = ref([])
 const detailsTab = ref('info')
 const loadingDetails = ref(false)
+const showSensitiveEnvVars = ref(false)
+
+// Compose File Modal
+const showComposeModal = ref(false)
+const composeStackName = ref('')
+const composeFile = ref(null)
+const composeContent = ref('')
+const loadingCompose = ref(false)
+const savingCompose = ref(false)
 
 // Auto-refresh
 let refreshInterval = null
@@ -238,15 +252,20 @@ async function showContainerDetails(container) {
   containerDetails.value = null
   containerLogs.value = ''
   containerStats.value = null
+  containerEnvVars.value = []
+  showSensitiveEnvVars.value = false
 
   try {
-    const [detailsRes, logsRes] = await Promise.all([
+    const [detailsRes, logsRes, envRes] = await Promise.all([
       api.get(`/api/v1/docker/containers/${container.id}`, { params: getHostParams() }),
       api.get(`/api/v1/docker/containers/${container.id}/logs`, { params: { tail: 100, ...getHostParams() } }),
+      api.get(`/api/v1/docker/containers/${container.id}/env`, { params: getHostParams() }),
     ])
     containerDetails.value = detailsRes.data.data || detailsRes.data
     const logsData = logsRes.data.data || logsRes.data
     containerLogs.value = logsData.logs || ''
+    const envData = envRes.data.data || envRes.data
+    containerEnvVars.value = envData.env || []
 
     // Only load stats if container is running
     if (container.state === 'running') {
@@ -286,6 +305,65 @@ function closeDetails() {
   containerDetails.value = null
   containerLogs.value = ''
   containerStats.value = null
+  containerEnvVars.value = []
+}
+
+// Compose File Methods
+async function openComposeModal(stackName) {
+  composeStackName.value = stackName
+  showComposeModal.value = true
+  loadingCompose.value = true
+  composeFile.value = null
+  composeContent.value = ''
+
+  try {
+    const response = await api.get(`/api/v1/docker/stacks/${stackName}/compose`, { params: getHostParams() })
+    const data = response.data.data || response.data
+    composeFile.value = data
+    composeContent.value = data.content || ''
+  } catch (e) {
+    console.error('Failed to load compose file:', e)
+    error.value = 'Compose-Datei konnte nicht geladen werden'
+  } finally {
+    loadingCompose.value = false
+  }
+}
+
+function closeComposeModal() {
+  showComposeModal.value = false
+  composeStackName.value = ''
+  composeFile.value = null
+  composeContent.value = ''
+}
+
+async function saveComposeFile() {
+  if (!composeFile.value?.writable) return
+
+  savingCompose.value = true
+  try {
+    await api.put(`/api/v1/docker/stacks/${composeStackName.value}/compose`, {
+      content: composeContent.value,
+      path: composeFile.value.path,
+    }, { params: getHostParams() })
+
+    // Reload compose file to verify
+    const response = await api.get(`/api/v1/docker/stacks/${composeStackName.value}/compose`, { params: getHostParams() })
+    const data = response.data.data || response.data
+    composeFile.value = data
+    composeContent.value = data.content || ''
+
+    error.value = null
+    alert('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
+  } catch (e) {
+    console.error('Failed to save compose file:', e)
+    error.value = 'Compose-Datei konnte nicht gespeichert werden'
+  } finally {
+    savingCompose.value = false
+  }
+}
+
+function copyEnvValue(value) {
+  navigator.clipboard.writeText(value)
 }
 
 function getStateColor(state) {
@@ -628,7 +706,14 @@ onUnmounted(() => {
                   </p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2" @click.stop>
+                <button
+                  @click="openComposeModal(stack.name)"
+                  class="btn-icon text-gray-400 hover:text-white hover:bg-dark-500"
+                  title="Compose-Datei anzeigen"
+                >
+                  <CodeBracketIcon class="w-4 h-4" />
+                </button>
                 <span
                   class="px-2 py-1 text-xs rounded-full"
                   :class="stack.running === stack.total ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'"
@@ -937,17 +1022,47 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Environment -->
-              <div v-if="containerDetails.config?.env?.length">
-                <h4 class="text-sm font-medium text-gray-300 mb-2">Umgebungsvariablen</h4>
-                <div class="bg-dark-700 rounded p-2 max-h-40 overflow-auto">
-                  <div
-                    v-for="(env, i) in containerDetails.config.env.slice(0, 20)"
-                    :key="i"
-                    class="text-xs font-mono text-gray-300"
+              <!-- Environment Variables -->
+              <div v-if="containerEnvVars.length">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-sm font-medium text-gray-300">Umgebungsvariablen</h4>
+                  <button
+                    @click="showSensitiveEnvVars = !showSensitiveEnvVars"
+                    class="flex items-center gap-1 text-xs text-gray-400 hover:text-white"
                   >
-                    {{ env }}
-                  </div>
+                    <component :is="showSensitiveEnvVars ? EyeSlashIcon : EyeIcon" class="w-4 h-4" />
+                    {{ showSensitiveEnvVars ? 'Sensible Werte ausblenden' : 'Sensible Werte anzeigen' }}
+                  </button>
+                </div>
+                <div class="bg-dark-700 rounded overflow-hidden max-h-60 overflow-auto">
+                  <table class="w-full text-xs">
+                    <tbody>
+                      <tr
+                        v-for="(env, i) in containerEnvVars"
+                        :key="i"
+                        class="border-b border-dark-600 last:border-0 hover:bg-dark-600"
+                      >
+                        <td class="py-1.5 px-2 text-primary-400 font-mono whitespace-nowrap">{{ env.key }}</td>
+                        <td class="py-1.5 px-2 text-gray-300 font-mono break-all">
+                          <template v-if="env.sensitive && !showSensitiveEnvVars">
+                            <span class="text-gray-500">••••••••</span>
+                          </template>
+                          <template v-else>
+                            {{ env.value }}
+                          </template>
+                        </td>
+                        <td class="py-1.5 px-1 w-8">
+                          <button
+                            @click="copyEnvValue(env.value)"
+                            class="btn-icon p-1 text-gray-400 hover:text-white"
+                            title="Kopieren"
+                          >
+                            <ClipboardDocumentIcon class="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -995,6 +1110,87 @@ onUnmounted(() => {
                   </div>
                 </div>
               </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compose File Modal -->
+      <div
+        v-if="showComposeModal"
+        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        @click.self="closeComposeModal"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <div class="flex items-center gap-3">
+              <CodeBracketIcon class="w-5 h-5 text-primary-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-white">{{ composeStackName }}</h2>
+                <p class="text-sm text-gray-400 font-mono">{{ composeFile?.path || 'docker-compose.yml' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="composeFile?.writable"
+                class="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded"
+              >
+                Editierbar
+              </span>
+              <span
+                v-else-if="composeFile?.readable"
+                class="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded"
+              >
+                Nur Lesen
+              </span>
+              <button @click="closeComposeModal" class="btn-icon">
+                <XCircleIcon class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="flex-1 overflow-auto p-4">
+            <div v-if="loadingCompose" class="flex items-center justify-center py-8">
+              <ArrowPathIcon class="w-6 h-6 text-gray-400 animate-spin" />
+            </div>
+
+            <div v-else-if="!composeFile?.readable" class="text-center py-8">
+              <ExclamationTriangleIcon class="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+              <p class="text-gray-300">{{ composeFile?.message || 'Compose-Datei konnte nicht gelesen werden' }}</p>
+              <p class="text-sm text-gray-500 mt-2">Pfad: {{ composeFile?.path }}</p>
+            </div>
+
+            <div v-else>
+              <textarea
+                v-model="composeContent"
+                :readonly="!composeFile?.writable"
+                class="w-full h-96 bg-dark-900 text-gray-300 font-mono text-sm p-4 rounded-lg border border-dark-600 focus:border-primary-500 focus:outline-none resize-none"
+                :class="{ 'cursor-not-allowed opacity-75': !composeFile?.writable }"
+                spellcheck="false"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-between p-4 border-t border-dark-600">
+            <p class="text-xs text-gray-500">
+              {{ composeFile?.working_dir ? `Working Dir: ${composeFile.working_dir}` : '' }}
+            </p>
+            <div class="flex items-center gap-2">
+              <button @click="closeComposeModal" class="btn-secondary">
+                Schließen
+              </button>
+              <button
+                v-if="composeFile?.writable"
+                @click="saveComposeFile"
+                :disabled="savingCompose"
+                class="btn-primary"
+              >
+                <ArrowPathIcon v-if="savingCompose" class="w-4 h-4 animate-spin" />
+                <template v-else>Speichern</template>
+              </button>
             </div>
           </div>
         </div>

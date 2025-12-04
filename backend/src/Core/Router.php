@@ -365,7 +365,16 @@ class Router
                 $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders']);
                 $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph']);
 
-                // Docker Management
+                // Docker Host Management
+                $protected->get('/docker/hosts', [DockerController::class, 'listHosts']);
+                $protected->post('/docker/hosts', [DockerController::class, 'createHost']);
+                $protected->get('/docker/hosts/{id}', [DockerController::class, 'getHost']);
+                $protected->put('/docker/hosts/{id}', [DockerController::class, 'updateHost']);
+                $protected->delete('/docker/hosts/{id}', [DockerController::class, 'deleteHost']);
+                $protected->post('/docker/hosts/{id}/default', [DockerController::class, 'setDefaultHost']);
+                $protected->post('/docker/hosts/{id}/test', [DockerController::class, 'testHostConnection']);
+
+                // Docker Operations (with optional ?host_id= parameter)
                 $protected->get('/docker/status', [DockerController::class, 'status']);
                 $protected->get('/docker/containers', [DockerController::class, 'containers']);
                 $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails']);

@@ -6,45 +6,316 @@ namespace App\Modules\Docker\Controllers;
 
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Modules\Docker\Repositories\DockerHostRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class DockerController
 {
+    public function __construct(
+        private readonly DockerHostRepository $hostRepository
+    ) {}
+
+    // ========================================================================
+    // Docker Host Management
+    // ========================================================================
+
     /**
-     * Check if Docker is available
+     * List all Docker hosts for the current user
+     */
+    public function listHosts(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $grouped = ($params['grouped'] ?? 'false') === 'true';
+
+        if ($grouped) {
+            $hosts = $this->hostRepository->findByUserGroupedByProject($userId);
+        } else {
+            $hosts = $this->hostRepository->findByUser($userId);
+        }
+
+        return JsonResponse::success(['hosts' => $hosts]);
+    }
+
+    /**
+     * Get a single Docker host
+     */
+    public function getHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $args['id'] ?? '';
+
+        if (empty($hostId)) {
+            throw new ValidationException('Host ID is required');
+        }
+
+        $host = $this->hostRepository->findById($hostId);
+
+        if (!$host || $host['user_id'] !== $userId) {
+            return JsonResponse::error('Docker host not found', 404);
+        }
+
+        return JsonResponse::success(['host' => $host]);
+    }
+
+    /**
+     * Create a new Docker host
+     */
+    public function createHost(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody();
+
+        // Validate required fields
+        if (empty($data['name'])) {
+            throw new ValidationException('Name is required');
+        }
+
+        $type = $data['type'] ?? 'socket';
+        if (!in_array($type, ['socket', 'tcp'])) {
+            throw new ValidationException('Invalid host type. Must be "socket" or "tcp"');
+        }
+
+        if ($type === 'tcp' && empty($data['tcp_host'])) {
+            throw new ValidationException('TCP host is required for TCP connections');
+        }
+
+        $id = $this->generateUuid();
+        $hostData = [
+            'id' => $id,
+            'user_id' => $userId,
+            'project_id' => $data['project_id'] ?? null,
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'type' => $type,
+            'socket_path' => $type === 'socket' ? ($data['socket_path'] ?? '/var/run/docker.sock') : null,
+            'tcp_host' => $type === 'tcp' ? $data['tcp_host'] : null,
+            'tcp_port' => $type === 'tcp' ? (int) ($data['tcp_port'] ?? 2375) : null,
+            'tls_enabled' => (int) ($data['tls_enabled'] ?? 0),
+            'tls_ca_cert' => $data['tls_ca_cert'] ?? null,
+            'tls_cert' => $data['tls_cert'] ?? null,
+            'tls_key' => $data['tls_key'] ?? null,
+            'is_active' => 1,
+            'is_default' => 0,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $host = $this->hostRepository->create($hostData);
+
+        return JsonResponse::success(['host' => $host], 201);
+    }
+
+    /**
+     * Update a Docker host
+     */
+    public function updateHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $args['id'] ?? '';
+        $data = $request->getParsedBody();
+
+        if (empty($hostId)) {
+            throw new ValidationException('Host ID is required');
+        }
+
+        $host = $this->hostRepository->findById($hostId);
+
+        if (!$host || $host['user_id'] !== $userId) {
+            return JsonResponse::error('Docker host not found', 404);
+        }
+
+        $updateData = [];
+
+        if (isset($data['name'])) {
+            $updateData['name'] = $data['name'];
+        }
+        if (isset($data['description'])) {
+            $updateData['description'] = $data['description'];
+        }
+        if (isset($data['project_id'])) {
+            $updateData['project_id'] = $data['project_id'] ?: null;
+        }
+        if (isset($data['type'])) {
+            if (!in_array($data['type'], ['socket', 'tcp'])) {
+                throw new ValidationException('Invalid host type');
+            }
+            $updateData['type'] = $data['type'];
+        }
+        if (isset($data['socket_path'])) {
+            $updateData['socket_path'] = $data['socket_path'];
+        }
+        if (isset($data['tcp_host'])) {
+            $updateData['tcp_host'] = $data['tcp_host'];
+        }
+        if (isset($data['tcp_port'])) {
+            $updateData['tcp_port'] = (int) $data['tcp_port'];
+        }
+        if (isset($data['tls_enabled'])) {
+            $updateData['tls_enabled'] = (int) $data['tls_enabled'];
+        }
+        if (isset($data['tls_ca_cert'])) {
+            $updateData['tls_ca_cert'] = $data['tls_ca_cert'];
+        }
+        if (isset($data['tls_cert'])) {
+            $updateData['tls_cert'] = $data['tls_cert'];
+        }
+        if (isset($data['tls_key'])) {
+            $updateData['tls_key'] = $data['tls_key'];
+        }
+        if (isset($data['is_active'])) {
+            $updateData['is_active'] = (int) $data['is_active'];
+        }
+
+        if (!empty($updateData)) {
+            $this->hostRepository->update($hostId, $updateData);
+        }
+
+        $updatedHost = $this->hostRepository->findById($hostId);
+
+        return JsonResponse::success(['host' => $updatedHost]);
+    }
+
+    /**
+     * Delete a Docker host
+     */
+    public function deleteHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $args['id'] ?? '';
+
+        if (empty($hostId)) {
+            throw new ValidationException('Host ID is required');
+        }
+
+        $host = $this->hostRepository->findById($hostId);
+
+        if (!$host || $host['user_id'] !== $userId) {
+            return JsonResponse::error('Docker host not found', 404);
+        }
+
+        $this->hostRepository->delete($hostId);
+
+        return JsonResponse::success(['message' => 'Docker host deleted successfully']);
+    }
+
+    /**
+     * Set a Docker host as default
+     */
+    public function setDefaultHost(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $args['id'] ?? '';
+
+        if (empty($hostId)) {
+            throw new ValidationException('Host ID is required');
+        }
+
+        $host = $this->hostRepository->findById($hostId);
+
+        if (!$host || $host['user_id'] !== $userId) {
+            return JsonResponse::error('Docker host not found', 404);
+        }
+
+        $this->hostRepository->setDefault($userId, $hostId);
+
+        return JsonResponse::success(['message' => 'Default host updated successfully']);
+    }
+
+    /**
+     * Test connection to a Docker host
+     */
+    public function testHostConnection(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $hostId = $args['id'] ?? '';
+
+        if (empty($hostId)) {
+            throw new ValidationException('Host ID is required');
+        }
+
+        $host = $this->hostRepository->findById($hostId);
+
+        if (!$host || $host['user_id'] !== $userId) {
+            return JsonResponse::error('Docker host not found', 404);
+        }
+
+        try {
+            $output = $this->execDockerOnHost($host, 'version --format json');
+            $version = json_decode($output, true);
+
+            $infoOutput = $this->execDockerOnHost($host, 'info --format json');
+            $info = json_decode($infoOutput, true);
+
+            $connectionInfo = [
+                'version' => $version['Client']['Version'] ?? $version['Version'] ?? 'unknown',
+                'api_version' => $version['Client']['ApiVersion'] ?? $version['ApiVersion'] ?? 'unknown',
+                'containers' => $info['Containers'] ?? 0,
+                'images' => $info['Images'] ?? 0,
+            ];
+
+            $this->hostRepository->updateConnectionStatus($hostId, 'connected', null, $connectionInfo);
+
+            return JsonResponse::success([
+                'connected' => true,
+                'info' => $connectionInfo,
+            ]);
+        } catch (\Exception $e) {
+            $this->hostRepository->updateConnectionStatus($hostId, 'error', $e->getMessage());
+
+            return JsonResponse::success([
+                'connected' => false,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // ========================================================================
+    // Docker Operations (with host selection)
+    // ========================================================================
+
+    /**
+     * Check if Docker is available on a host
      */
     public function status(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
+
         try {
-            $output = $this->execDocker('version --format json');
+            $output = $this->execDockerOnHost($host, 'version --format json');
             $version = json_decode($output, true);
 
             return JsonResponse::success([
                 'available' => true,
+                'host_id' => $host['id'] ?? null,
+                'host_name' => $host['name'] ?? 'Lokal',
                 'version' => $version['Client']['Version'] ?? $version['Version'] ?? 'unknown',
                 'apiVersion' => $version['Client']['ApiVersion'] ?? $version['ApiVersion'] ?? 'unknown',
             ]);
         } catch (\Exception $e) {
             return JsonResponse::success([
                 'available' => false,
+                'host_id' => $host['id'] ?? null,
+                'host_name' => $host['name'] ?? 'Lokal',
                 'error' => $e->getMessage(),
             ]);
         }
     }
 
     /**
-     * List all containers
+     * List all containers on a host
      */
     public function containers(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $params = $request->getQueryParams();
         $all = ($params['all'] ?? 'true') === 'true';
 
         try {
             $format = '{{json .}}';
             $cmd = $all ? "ps -a --format '$format'" : "ps --format '$format'";
-            $output = $this->execDocker($cmd);
+            $output = $this->execDockerOnHost($host, $cmd);
 
             $containers = [];
             $lines = array_filter(explode("\n", trim($output)));
@@ -65,7 +336,11 @@ class DockerController
                 }
             }
 
-            return JsonResponse::success(['containers' => $containers]);
+            return JsonResponse::success([
+                'containers' => $containers,
+                'host_id' => $host['id'] ?? null,
+                'host_name' => $host['name'] ?? 'Lokal',
+            ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list containers: ' . $e->getMessage(), 500);
         }
@@ -76,19 +351,19 @@ class DockerController
      */
     public function containerDetails(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
 
         if (empty($containerId)) {
             throw new ValidationException('Container ID is required');
         }
 
-        // Validate container ID format (alphanumeric)
         if (!preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
             throw new ValidationException('Invalid container ID format');
         }
 
         try {
-            $output = $this->execDocker("inspect $containerId");
+            $output = $this->execDockerOnHost($host, "inspect $containerId");
             $details = json_decode($output, true);
 
             if (empty($details) || !isset($details[0])) {
@@ -132,6 +407,7 @@ class DockerController
                     ];
                 }, $container['Mounts'] ?? []),
                 'restartPolicy' => $container['HostConfig']['RestartPolicy'] ?? [],
+                'host_id' => $host['id'] ?? null,
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to get container details: ' . $e->getMessage(), 500);
@@ -143,6 +419,7 @@ class DockerController
      */
     public function startContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
@@ -150,7 +427,7 @@ class DockerController
         }
 
         try {
-            $this->execDocker("start $containerId");
+            $this->execDockerOnHost($host, "start $containerId");
             return JsonResponse::success(['message' => 'Container started successfully']);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to start container: ' . $e->getMessage(), 500);
@@ -162,6 +439,7 @@ class DockerController
      */
     public function stopContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
@@ -169,7 +447,7 @@ class DockerController
         }
 
         try {
-            $this->execDocker("stop $containerId");
+            $this->execDockerOnHost($host, "stop $containerId");
             return JsonResponse::success(['message' => 'Container stopped successfully']);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to stop container: ' . $e->getMessage(), 500);
@@ -181,6 +459,7 @@ class DockerController
      */
     public function restartContainer(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
@@ -188,7 +467,7 @@ class DockerController
         }
 
         try {
-            $this->execDocker("restart $containerId");
+            $this->execDockerOnHost($host, "restart $containerId");
             return JsonResponse::success(['message' => 'Container restarted successfully']);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to restart container: ' . $e->getMessage(), 500);
@@ -200,6 +479,7 @@ class DockerController
      */
     public function containerLogs(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
         $params = $request->getQueryParams();
         $tail = min((int) ($params['tail'] ?? 100), 1000);
@@ -216,7 +496,7 @@ class DockerController
             }
             $cmd .= " $containerId 2>&1";
 
-            $output = $this->execDocker($cmd);
+            $output = $this->execDockerOnHost($host, $cmd);
 
             return JsonResponse::success([
                 'logs' => $output,
@@ -232,6 +512,7 @@ class DockerController
      */
     public function containerStats(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $containerId = $args['id'] ?? '';
 
         if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
@@ -239,7 +520,7 @@ class DockerController
         }
 
         try {
-            $output = $this->execDocker("stats --no-stream --format '{{json .}}' $containerId");
+            $output = $this->execDockerOnHost($host, "stats --no-stream --format '{{json .}}' $containerId");
             $stats = json_decode(trim($output), true);
 
             if (!$stats) {
@@ -272,8 +553,10 @@ class DockerController
      */
     public function images(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
+
         try {
-            $output = $this->execDocker("images --format '{{json .}}'");
+            $output = $this->execDockerOnHost($host, "images --format '{{json .}}'");
 
             $images = [];
             $lines = array_filter(explode("\n", trim($output)));
@@ -291,7 +574,10 @@ class DockerController
                 }
             }
 
-            return JsonResponse::success(['images' => $images]);
+            return JsonResponse::success([
+                'images' => $images,
+                'host_id' => $host['id'] ?? null,
+            ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list images: ' . $e->getMessage(), 500);
         }
@@ -302,19 +588,19 @@ class DockerController
      */
     public function imageDetails(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $host = $this->resolveHost($request);
         $imageId = $args['id'] ?? '';
 
         if (empty($imageId)) {
             throw new ValidationException('Image ID is required');
         }
 
-        // Allow image names like nginx:latest, sha256:abc123, etc.
         if (!preg_match('/^[a-zA-Z0-9_\/:.-]+$/', $imageId)) {
             throw new ValidationException('Invalid image ID format');
         }
 
         try {
-            $output = $this->execDocker("inspect $imageId");
+            $output = $this->execDockerOnHost($host, "inspect $imageId");
             $details = json_decode($output, true);
 
             if (empty($details) || !isset($details[0])) {
@@ -353,8 +639,10 @@ class DockerController
      */
     public function networks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
+
         try {
-            $output = $this->execDocker("network ls --format '{{json .}}'");
+            $output = $this->execDockerOnHost($host, "network ls --format '{{json .}}'");
 
             $networks = [];
             $lines = array_filter(explode("\n", trim($output)));
@@ -371,7 +659,10 @@ class DockerController
                 }
             }
 
-            return JsonResponse::success(['networks' => $networks]);
+            return JsonResponse::success([
+                'networks' => $networks,
+                'host_id' => $host['id'] ?? null,
+            ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list networks: ' . $e->getMessage(), 500);
         }
@@ -382,8 +673,10 @@ class DockerController
      */
     public function volumes(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
+
         try {
-            $output = $this->execDocker("volume ls --format '{{json .}}'");
+            $output = $this->execDockerOnHost($host, "volume ls --format '{{json .}}'");
 
             $volumes = [];
             $lines = array_filter(explode("\n", trim($output)));
@@ -400,7 +693,10 @@ class DockerController
                 }
             }
 
-            return JsonResponse::success(['volumes' => $volumes]);
+            return JsonResponse::success([
+                'volumes' => $volumes,
+                'host_id' => $host['id'] ?? null,
+            ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list volumes: ' . $e->getMessage(), 500);
         }
@@ -411,11 +707,13 @@ class DockerController
      */
     public function systemInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $host = $this->resolveHost($request);
+
         try {
-            $output = $this->execDocker('system df --format json');
+            $output = $this->execDockerOnHost($host, 'system df --format json');
             $df = json_decode($output, true);
 
-            $infoOutput = $this->execDocker('info --format json');
+            $infoOutput = $this->execDockerOnHost($host, 'info --format json');
             $info = json_decode($infoOutput, true);
 
             return JsonResponse::success([
@@ -433,19 +731,88 @@ class DockerController
                 'cpus' => $info['NCPU'] ?? 0,
                 'memory' => $info['MemTotal'] ?? 0,
                 'diskUsage' => $df,
+                'host_id' => $host['id'] ?? null,
+                'host_name' => $host['name'] ?? 'Lokal',
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to get system info: ' . $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Execute a Docker command safely
-     */
-    private function execDocker(string $command): string
-    {
-        $fullCommand = "docker $command 2>&1";
+    // ========================================================================
+    // Helper Methods
+    // ========================================================================
 
+    /**
+     * Resolve which Docker host to use from request
+     */
+    private function resolveHost(ServerRequestInterface $request): array
+    {
+        $params = $request->getQueryParams();
+        $hostId = $params['host_id'] ?? null;
+        $userId = $request->getAttribute('user_id');
+
+        // If specific host requested
+        if ($hostId) {
+            $host = $this->hostRepository->findById($hostId);
+            if ($host && $host['user_id'] === $userId && $host['is_active']) {
+                return $host;
+            }
+        }
+
+        // Try to get default host
+        $defaultHost = $this->hostRepository->findDefault($userId);
+        if ($defaultHost) {
+            return $defaultHost;
+        }
+
+        // Fall back to local socket (no host configured)
+        return [
+            'id' => null,
+            'name' => 'Lokal',
+            'type' => 'socket',
+            'socket_path' => '/var/run/docker.sock',
+            'tcp_host' => null,
+            'tcp_port' => null,
+            'tls_enabled' => false,
+        ];
+    }
+
+    /**
+     * Execute a Docker command on a specific host
+     */
+    private function execDockerOnHost(array $host, string $command): string
+    {
+        $dockerCmd = 'docker';
+
+        // Build host connection argument
+        if ($host['type'] === 'tcp' && !empty($host['tcp_host'])) {
+            $port = $host['tcp_port'] ?? 2375;
+            $protocol = $host['tls_enabled'] ? 'tcp' : 'tcp';
+            $dockerCmd .= " -H {$protocol}://{$host['tcp_host']}:{$port}";
+
+            // Add TLS options if enabled
+            if ($host['tls_enabled']) {
+                $dockerCmd .= ' --tls';
+                if (!empty($host['tls_ca_cert'])) {
+                    $caPath = $this->writeTempCert($host['tls_ca_cert'], 'ca');
+                    $dockerCmd .= " --tlscacert=$caPath";
+                }
+                if (!empty($host['tls_cert'])) {
+                    $certPath = $this->writeTempCert($host['tls_cert'], 'cert');
+                    $dockerCmd .= " --tlscert=$certPath";
+                }
+                if (!empty($host['tls_key'])) {
+                    $keyPath = $this->writeTempCert($host['tls_key'], 'key');
+                    $dockerCmd .= " --tlskey=$keyPath";
+                }
+            }
+        } elseif (!empty($host['socket_path']) && $host['socket_path'] !== '/var/run/docker.sock') {
+            $socketPath = escapeshellarg($host['socket_path']);
+            $dockerCmd .= " -H unix://$socketPath";
+        }
+
+        $fullCommand = "$dockerCmd $command 2>&1";
         $output = shell_exec($fullCommand);
 
         if ($output === null) {
@@ -455,10 +822,42 @@ class DockerController
         // Check for common error patterns
         if (str_contains($output, 'Cannot connect to the Docker daemon') ||
             str_contains($output, 'permission denied') ||
-            str_contains($output, 'command not found')) {
+            str_contains($output, 'command not found') ||
+            str_contains($output, 'connection refused')) {
             throw new \RuntimeException(trim($output));
         }
 
         return $output;
+    }
+
+    /**
+     * Write TLS certificate to temporary file
+     */
+    private function writeTempCert(string $content, string $prefix): string
+    {
+        $path = sys_get_temp_dir() . "/docker_{$prefix}_" . md5($content) . '.pem';
+        if (!file_exists($path)) {
+            file_put_contents($path, $content);
+            chmod($path, 0600);
+        }
+        return $path;
+    }
+
+    /**
+     * Generate UUID
+     */
+    private function generateUuid(): string
+    {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff)
+        );
     }
 }

@@ -139,6 +139,7 @@ const allNavigationGroups = [
     icon: CubeIcon,
     children: [
       { name: 'Container Manager', href: '/docker', icon: ServerIcon },
+      { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon },
       { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon },
       { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon },
       { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon },

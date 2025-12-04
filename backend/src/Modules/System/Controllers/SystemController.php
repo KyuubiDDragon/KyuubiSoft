@@ -7,16 +7,16 @@ namespace App\Modules\System\Controllers;
 use App\Core\Http\JsonResponse;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use Doctrine\DBAL\Connection;
+use Predis\Client as RedisClient;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Redis;
 
 class SystemController
 {
     public function __construct(
         private readonly Connection $db,
         private readonly RefreshTokenRepository $refreshTokenRepository,
-        private readonly ?Redis $redis = null
+        private readonly ?RedisClient $redis = null
     ) {}
 
     public function getInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -25,11 +25,11 @@ class SystemController
         $mysqlVersion = $this->db->fetchOne('SELECT VERSION()') ?: 'Unknown';
 
         // Check Redis status
-        $redisStatus = 'Disconnected';
+        $redisStatus = 'Not configured';
         if ($this->redis !== null) {
             try {
-                $this->redis->ping();
-                $redisStatus = 'Connected';
+                $pong = $this->redis->ping();
+                $redisStatus = ($pong === 'PONG' || $pong === true) ? 'Connected' : 'Disconnected';
             } catch (\Exception $e) {
                 $redisStatus = 'Error: ' . $e->getMessage();
             }
@@ -130,25 +130,69 @@ class SystemController
 
     public function clearCache(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        if ($this->redis === null) {
-            return JsonResponse::error('Redis is not configured', 503);
+        $cleared = [];
+
+        // Clear Redis cache if available
+        if ($this->redis !== null) {
+            try {
+                $this->redis->flushdb();
+                $cleared[] = 'Redis';
+            } catch (\Exception $e) {
+                // Redis failed, continue with other caches
+            }
         }
 
-        try {
-            $this->redis->flushDB();
+        // Clear OPCache if available
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+            $cleared[] = 'OPCache';
+        }
 
-            // Log the action
-            $this->logAction(
-                $request->getAttribute('user_id'),
-                'cache.clear',
-                'system',
-                null,
-                $request
-            );
+        // Clear any file-based caches
+        $cacheDir = dirname(__DIR__, 4) . '/var/cache';
+        if (is_dir($cacheDir)) {
+            $this->clearDirectory($cacheDir);
+            $cleared[] = 'File Cache';
+        }
 
-            return JsonResponse::success(null, 'Cache cleared successfully');
-        } catch (\Exception $e) {
-            return JsonResponse::error('Failed to clear cache: ' . $e->getMessage(), 500);
+        // Log the action
+        $this->logAction(
+            $request->getAttribute('user_id'),
+            'cache.clear',
+            'system',
+            null,
+            $request,
+            null,
+            ['cleared' => $cleared]
+        );
+
+        if (empty($cleared)) {
+            return JsonResponse::success(null, 'No caches configured');
+        }
+
+        return JsonResponse::success(
+            ['cleared' => $cleared],
+            'Cache cleared: ' . implode(', ', $cleared)
+        );
+    }
+
+    private function clearDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                @rmdir($file->getRealPath());
+            } else {
+                @unlink($file->getRealPath());
+            }
         }
     }
 

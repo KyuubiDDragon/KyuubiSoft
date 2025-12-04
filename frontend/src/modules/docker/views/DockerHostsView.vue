@@ -36,7 +36,12 @@ const form = ref({
   tls_ca_cert: '',
   tls_cert: '',
   tls_key: '',
+  portainer_url: '',
+  portainer_api_token: '',
+  portainer_endpoint_id: '',
 })
+
+const savingPortainer = ref(false)
 
 const groupedHosts = computed(() => {
   const grouped = {
@@ -103,6 +108,9 @@ function openCreateModal() {
     tls_ca_cert: '',
     tls_cert: '',
     tls_key: '',
+    portainer_url: '',
+    portainer_api_token: '',
+    portainer_endpoint_id: '',
   }
   showModal.value = true
 }
@@ -122,8 +130,30 @@ function openEditModal(host) {
     tls_ca_cert: host.tls_ca_cert || '',
     tls_cert: host.tls_cert || '',
     tls_key: host.tls_key || '',
+    portainer_url: host.portainer_url || '',
+    portainer_api_token: host.portainer_api_token || '',
+    portainer_endpoint_id: host.portainer_endpoint_id || '',
   }
   showModal.value = true
+}
+
+async function savePortainerConfig() {
+  if (!form.value.id) return
+
+  savingPortainer.value = true
+  try {
+    await api.put(`/api/v1/docker/hosts/${form.value.id}/portainer`, {
+      portainer_url: form.value.portainer_url || null,
+      portainer_api_token: form.value.portainer_api_token || null,
+      portainer_endpoint_id: form.value.portainer_endpoint_id ? parseInt(form.value.portainer_endpoint_id) : null,
+    })
+    await fetchHosts()
+  } catch (error) {
+    console.error('Failed to save Portainer config:', error)
+    alert(error.response?.data?.error || 'Failed to save Portainer configuration')
+  } finally {
+    savingPortainer.value = false
+  }
 }
 
 async function saveHost() {
@@ -543,6 +573,55 @@ onMounted(() => {
                   </div>
                 </template>
               </template>
+
+              <!-- Portainer Integration (only in edit mode) -->
+              <div v-if="editMode" class="border-t border-dark-600 pt-4 mt-4">
+                <h4 class="text-sm font-medium text-white mb-3">Portainer Integration (Optional)</h4>
+                <p class="text-xs text-gray-400 mb-3">
+                  Konfiguriere Portainer, um Compose-Dateien direkt von der Portainer API zu laden, wenn sie nicht im Dateisystem verfügbar sind.
+                </p>
+                <div class="grid grid-cols-1 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Portainer URL</label>
+                    <input
+                      v-model="form.portainer_url"
+                      type="url"
+                      class="input w-full"
+                      placeholder="https://portainer.example.com"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">API Token</label>
+                    <input
+                      v-model="form.portainer_api_token"
+                      type="password"
+                      class="input w-full"
+                      placeholder="ptr_xxxxxxxxxxxxx"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Erstelle einen API Token in Portainer unter Account Settings → Access Tokens</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Endpoint ID (Optional)</label>
+                    <input
+                      v-model="form.portainer_endpoint_id"
+                      type="number"
+                      class="input w-full"
+                      placeholder="1"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Nur nötig wenn mehrere Endpoints in Portainer konfiguriert sind</p>
+                  </div>
+                  <div class="flex justify-end">
+                    <button
+                      type="button"
+                      @click="savePortainerConfig"
+                      :disabled="savingPortainer"
+                      class="btn btn-secondary text-sm"
+                    >
+                      {{ savingPortainer ? 'Speichern...' : 'Portainer speichern' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <!-- Actions -->
               <div class="flex justify-end gap-3 pt-4">

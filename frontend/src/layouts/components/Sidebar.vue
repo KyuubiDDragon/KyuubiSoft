@@ -129,7 +129,20 @@ const allNavigationGroups = [
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },
-      { name: 'Docker', href: '/docker', icon: CubeIcon },
+    ],
+  },
+
+  // Docker
+  {
+    id: 'docker',
+    name: 'Docker',
+    icon: CubeIcon,
+    children: [
+      { name: 'Container Manager', href: '/docker', icon: ServerIcon },
+      { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon },
+      { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon },
+      { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon },
+      { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon },
     ],
   },
 

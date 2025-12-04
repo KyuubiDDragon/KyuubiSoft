@@ -126,6 +126,7 @@ const allNavigationGroups = [
     icon: CommandLineIcon,
     children: [
       { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
+      { name: 'Server', href: '/server', icon: CommandLineIcon },
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },

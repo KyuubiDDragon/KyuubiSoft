@@ -28,6 +28,7 @@ use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use App\Modules\QuickNotes\Controllers\QuickNoteController;
 use App\Modules\Notifications\Controllers\NotificationController;
 use App\Modules\Dashboard\Controllers\WidgetController;
+use App\Modules\Server\Controllers\ServerController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
@@ -416,6 +417,18 @@ class Router
                 $protected->get('/docker/networks', [DockerController::class, 'networks']);
                 $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
                 $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
+
+                // Server Management
+                $protected->get('/server/info', [ServerController::class, 'getSystemInfo']);
+                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs']);
+                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab']);
+                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab']);
+                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab']);
+                $protected->get('/server/processes', [ServerController::class, 'listProcesses']);
+                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess']);
+                $protected->get('/server/services', [ServerController::class, 'listServices']);
+                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus']);
+                $protected->post('/server/services/control', [ServerController::class, 'controlService']);
 
             })->add(AuthMiddleware::class);
         });

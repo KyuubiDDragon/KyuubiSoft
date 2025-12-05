@@ -157,16 +157,8 @@ class ServerController
                 $lineNumber++;
                 $line = trim($line);
 
-                if (empty($line)) continue;
-
-                // Check if comment
-                if (str_starts_with($line, '#')) {
-                    $crontabs[] = [
-                        'line' => $lineNumber,
-                        'type' => 'comment',
-                        'raw' => $line,
-                        'enabled' => false,
-                    ];
+                // Skip empty lines and comments
+                if (empty($line) || str_starts_with($line, '#')) {
                     continue;
                 }
 
@@ -421,14 +413,16 @@ class ServerController
     {
         $params = $request->getQueryParams();
         $filter = $params['filter'] ?? null; // php, node, python, etc.
+        $limit = min((int) ($params['limit'] ?? 100), 500); // Default 100, max 500
 
         try {
-            // Get process list with details from host
+            // Get process list with details from host - limit output for performance
             $cmd = "ps aux --sort=-%mem";
             if ($filter) {
                 $escapedFilter = escapeshellarg($filter);
                 $cmd .= " | grep -i $escapedFilter | grep -v grep";
             }
+            $cmd .= " | head -n " . ($limit + 1); // +1 for header
 
             $output = $this->execOnHost($cmd);
             $lines = array_filter(explode("\n", trim($output)));
@@ -628,48 +622,15 @@ class ServerController
                 }
             }
 
-            // Get common services status
-            $commonServices = $this->getCommonServicesStatus();
-
             return JsonResponse::success([
                 'services' => $services,
                 'total' => count($services),
-                'common' => $commonServices,
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to list services: ' . $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Get status of common services
-     */
-    private function getCommonServicesStatus(): array
-    {
-        $commonServices = [
-            'nginx', 'apache2', 'httpd', 'mysql', 'mariadb', 'postgresql',
-            'redis', 'memcached', 'docker', 'php-fpm', 'php8.2-fpm', 'php8.1-fpm',
-            'ssh', 'sshd', 'cron', 'fail2ban', 'ufw', 'supervisor'
-        ];
-
-        $status = [];
-
-        foreach ($commonServices as $service) {
-            $isActive = trim($this->execOnHost("systemctl is-active $service")) === 'active';
-            $isEnabled = trim($this->execOnHost("systemctl is-enabled $service")) === 'enabled';
-            $exists = !empty(trim($this->execOnHost("systemctl cat $service")));
-
-            if ($exists) {
-                $status[] = [
-                    'name' => $service,
-                    'active' => $isActive,
-                    'enabled' => $isEnabled,
-                ];
-            }
-        }
-
-        return $status;
-    }
 
     /**
      * Get detailed service status
@@ -871,22 +832,43 @@ class ServerController
 
         $services = $setting ? json_decode($setting, true) : [];
 
-        // Get status of each custom service
-        $servicesWithStatus = [];
-        foreach ($services as $serviceName) {
-            $isActive = trim($this->execOnHost("systemctl is-active '$serviceName' 2>&1")) === 'active';
-            $isEnabled = trim($this->execOnHost("systemctl is-enabled '$serviceName' 2>&1")) === 'enabled';
-            $exists = !empty(trim($this->execOnHost("systemctl cat '$serviceName' 2>&1"))) &&
-                      strpos($this->execOnHost("systemctl cat '$serviceName' 2>&1"), 'No files found') === false;
+        if (empty($services)) {
+            return JsonResponse::success([
+                'services' => [],
+                'names' => [],
+            ]);
+        }
 
-            if ($exists) {
-                $servicesWithStatus[] = [
-                    'name' => $serviceName,
-                    'active' => $isActive,
-                    'enabled' => $isEnabled,
-                    'custom' => true,
-                ];
+        // Batch check all services at once for better performance
+        $serviceList = implode(' ', array_map(fn($s) => escapeshellarg($s), $services));
+
+        // Get active status for all services in one command
+        $activeOutput = trim($this->execOnHost("systemctl is-active $serviceList 2>/dev/null"));
+        $activeStates = explode("\n", $activeOutput);
+
+        // Get enabled status for all services in one command
+        $enabledOutput = trim($this->execOnHost("systemctl is-enabled $serviceList 2>/dev/null"));
+        $enabledStates = explode("\n", $enabledOutput);
+
+        // Build result
+        $servicesWithStatus = [];
+        foreach ($services as $index => $serviceName) {
+            $activeState = $activeStates[$index] ?? 'unknown';
+            $enabledState = $enabledStates[$index] ?? 'unknown';
+
+            // Skip services that don't exist (returns 'inactive' for is-active on non-existent)
+            // We check if enabled returns something like 'enabled', 'disabled', or 'static'
+            $validStates = ['enabled', 'disabled', 'static', 'masked', 'linked'];
+            if (!in_array($enabledState, $validStates) && $activeState === 'inactive') {
+                continue;
             }
+
+            $servicesWithStatus[] = [
+                'name' => $serviceName,
+                'active' => $activeState === 'active',
+                'enabled' => $enabledState === 'enabled',
+                'custom' => true,
+            ];
         }
 
         return JsonResponse::success([

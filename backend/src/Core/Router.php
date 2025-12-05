@@ -485,6 +485,12 @@ class Router
             // Public Document View (no auth required)
             $group->get('/documents/public/{token}', [DocumentController::class, 'showPublic']);
             $group->post('/documents/public/{token}', [DocumentController::class, 'showPublic']);
+
+            // Collaborative Editing (no auth required)
+            $group->post('/documents/public/{token}/join', [DocumentController::class, 'joinEditSession']);
+            $group->post('/documents/public/{token}/update', [DocumentController::class, 'updatePublicContent']);
+            $group->get('/documents/public/{token}/poll', [DocumentController::class, 'pollChanges']);
+            $group->post('/documents/public/{token}/leave', [DocumentController::class, 'leaveEditSession']);
         });
     }
 }

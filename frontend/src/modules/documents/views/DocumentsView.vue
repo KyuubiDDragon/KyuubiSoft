@@ -10,7 +10,15 @@ import {
   ClockIcon,
   CodeBracketIcon,
   DocumentIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  ShareIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
+  GlobeAltIcon,
+  LockClosedIcon,
+  EyeIcon,
+  UsersIcon,
+  PencilSquareIcon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -37,6 +45,21 @@ const isLoading = ref(true)
 const isEditing = ref(false)
 const showCreateModal = ref(false)
 const editContent = ref('')
+
+// Share state
+const showShareModal = ref(false)
+const shareDoc = ref(null)
+const shareForm = reactive({
+  password: '',
+  expires_in_days: null,
+  can_edit: false
+})
+const shareInfo = ref(null)
+const isLoadingShare = ref(false)
+
+// View tabs
+const activeTab = ref('all') // 'all' or 'shared'
+const sharedDocuments = ref([])
 
 // Form für neues Dokument
 const docForm = reactive({
@@ -98,15 +121,6 @@ function getFormatLabel(format) {
 }
 
 // API Calls
-onMounted(async () => {
-  await loadDocuments()
-
-  // Check for ?open=id query parameter from Dashboard
-  const openId = route.query.open
-  if (openId) {
-    await selectDocument(openId)
-  }
-})
 
 async function loadDocuments() {
   isLoading.value = true
@@ -222,6 +236,116 @@ function formatDate(dateString) {
     minute: '2-digit'
   })
 }
+
+// Share functions
+async function openShareModal(doc, event) {
+  if (event) event.stopPropagation()
+  shareDoc.value = doc
+  shareForm.password = ''
+  shareForm.expires_in_days = null
+  shareForm.can_edit = false
+  shareInfo.value = null
+  showShareModal.value = true
+
+  // Load current share info if shared
+  if (doc.is_public) {
+    await loadShareInfo(doc.id)
+  }
+}
+
+async function loadShareInfo(docId) {
+  isLoadingShare.value = true
+  try {
+    const response = await api.get(`/api/v1/documents/${docId}/public`)
+    shareInfo.value = response.data.data
+  } catch (error) {
+    console.error('Error loading share info:', error)
+  } finally {
+    isLoadingShare.value = false
+  }
+}
+
+async function enableShare() {
+  isLoadingShare.value = true
+  try {
+    const response = await api.post(`/api/v1/documents/${shareDoc.value.id}/public`, {
+      password: shareForm.password || null,
+      expires_in_days: shareForm.expires_in_days || null,
+      can_edit: shareForm.can_edit
+    })
+    shareInfo.value = response.data.data
+
+    // Update document in list
+    const docIndex = documents.value.findIndex(d => d.id === shareDoc.value.id)
+    if (docIndex !== -1) {
+      documents.value[docIndex].is_public = true
+      documents.value[docIndex].public_token = shareInfo.value.token
+    }
+
+    uiStore.showSuccess('Dokument freigegeben')
+    await loadSharedDocuments()
+  } catch (error) {
+    uiStore.showError('Fehler beim Freigeben')
+  } finally {
+    isLoadingShare.value = false
+  }
+}
+
+async function disableShare() {
+  if (!confirm('Freigabe wirklich deaktivieren?')) return
+
+  isLoadingShare.value = true
+  try {
+    await api.delete(`/api/v1/documents/${shareDoc.value.id}/public`)
+    shareInfo.value = null
+
+    // Update document in list
+    const docIndex = documents.value.findIndex(d => d.id === shareDoc.value.id)
+    if (docIndex !== -1) {
+      documents.value[docIndex].is_public = false
+      documents.value[docIndex].public_token = null
+    }
+
+    showShareModal.value = false
+    uiStore.showSuccess('Freigabe deaktiviert')
+    await loadSharedDocuments()
+  } catch (error) {
+    uiStore.showError('Fehler beim Deaktivieren')
+  } finally {
+    isLoadingShare.value = false
+  }
+}
+
+function getPublicUrl(token) {
+  return `${window.location.origin}/doc/${token}`
+}
+
+function copyPublicUrl() {
+  if (!shareInfo.value?.token) return
+  navigator.clipboard.writeText(getPublicUrl(shareInfo.value.token))
+  uiStore.showSuccess('Link kopiert!')
+}
+
+async function loadSharedDocuments() {
+  try {
+    const response = await api.get('/api/v1/documents', { params: { shared: true } })
+    sharedDocuments.value = (response.data.data?.items || []).filter(d => d.is_public)
+  } catch (error) {
+    console.error('Error loading shared documents:', error)
+  }
+}
+
+// Load shared documents on mount
+onMounted(async () => {
+  await loadDocuments()
+  await loadSharedDocuments()
+
+  // Check for ?open=id query parameter from Dashboard
+  const openId = route.query.open
+  if (openId) {
+    await selectDocument(openId)
+  }
+})
 </script>
 
 <template>
@@ -264,6 +388,10 @@ function formatDate(dateString) {
           <!-- Spreadsheet auto-saves -->
           <button v-else @click="updateDocument" class="btn-primary">
             Speichern
+          </button>
+          <button @click="openShareModal(selectedDoc)" class="btn-secondary">
+            <ShareIcon class="w-5 h-5 mr-2" />
+            Teilen
           </button>
           <button @click="deleteDocument(selectedDoc.id)" class="btn-secondary text-red-400">
             <TrashIcon class="w-5 h-5" />
@@ -357,8 +485,33 @@ function formatDate(dateString) {
 
     <!-- Documents List -->
     <template v-else>
+      <!-- Tabs -->
+      <div class="flex gap-4 border-b border-dark-700 mb-6">
+        <button
+          @click="activeTab = 'all'"
+          class="pb-3 px-1 text-sm font-medium transition-colors border-b-2"
+          :class="activeTab === 'all'
+            ? 'text-primary-400 border-primary-400'
+            : 'text-gray-400 border-transparent hover:text-gray-300'"
+        >
+          Alle Dokumente
+          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-dark-700">{{ documents.length }}</span>
+        </button>
+        <button
+          @click="activeTab = 'shared'"
+          class="pb-3 px-1 text-sm font-medium transition-colors border-b-2"
+          :class="activeTab === 'shared'
+            ? 'text-primary-400 border-primary-400'
+            : 'text-gray-400 border-transparent hover:text-gray-300'"
+        >
+          <GlobeAltIcon class="w-4 h-4 inline mr-1" />
+          Geteilte Dokumente
+          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-dark-700">{{ sharedDocuments.length }}</span>
+        </button>
+      </div>
+
       <!-- Empty state -->
-      <div v-if="documents.length === 0" class="card p-12 text-center">
+      <div v-if="activeTab === 'all' && documents.length === 0" class="card p-12 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
         <h3 class="text-lg font-medium text-white mb-2">Keine Dokumente vorhanden</h3>
         <p class="text-gray-400 mb-6">Erstelle dein erstes Dokument.</p>
@@ -368,8 +521,8 @@ function formatDate(dateString) {
         </button>
       </div>
 
-      <!-- Documents grid -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- All Documents grid -->
+      <div v-else-if="activeTab === 'all'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="doc in documents"
           :key="doc.id"
@@ -377,8 +530,11 @@ function formatDate(dateString) {
           class="card-hover p-6 cursor-pointer group"
         >
           <div class="flex items-start justify-between">
-            <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center relative">
               <component :is="getFormatIcon(doc.format)" class="w-5 h-5 text-primary-400" />
+              <div v-if="doc.is_public" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                <GlobeAltIcon class="w-2.5 h-2.5 text-white" />
+              </div>
             </div>
             <span class="badge badge-primary">{{ getFormatLabel(doc.format) }}</span>
           </div>
@@ -386,7 +542,14 @@ function formatDate(dateString) {
           <p class="text-gray-500 text-sm mt-2">
             Geändert: {{ formatDate(doc.updated_at) }}
           </p>
-          <div class="flex items-center justify-end mt-4">
+          <div class="flex items-center justify-end mt-4 gap-2">
+            <button
+              @click.stop="openShareModal(doc, $event)"
+              class="opacity-0 group-hover:opacity-100 p-2 text-primary-400 hover:bg-primary-400/10 rounded-lg transition-all"
+              :title="doc.is_public ? 'Freigabe bearbeiten' : 'Teilen'"
+            >
+              <ShareIcon class="w-4 h-4" />
+            </button>
             <button
               @click.stop="deleteDocument(doc.id)"
               class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
@@ -396,6 +559,65 @@ function formatDate(dateString) {
           </div>
         </div>
       </div>
+
+      <!-- Shared Documents grid -->
+      <template v-else-if="activeTab === 'shared'">
+        <div v-if="sharedDocuments.length === 0" class="card p-12 text-center">
+          <GlobeAltIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+          <h3 class="text-lg font-medium text-white mb-2">Keine geteilten Dokumente</h3>
+          <p class="text-gray-400">Teile ein Dokument um es hier zu sehen.</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="doc in sharedDocuments"
+            :key="doc.id"
+            class="card p-6 group"
+          >
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 rounded-lg bg-green-600/20 flex items-center justify-center">
+                <GlobeAltIcon class="w-5 h-5 text-green-400" />
+              </div>
+              <div class="flex items-center gap-2">
+                <span v-if="doc.public_password" class="badge bg-yellow-500/20 text-yellow-400">
+                  <LockClosedIcon class="w-3 h-3 mr-1" />
+                  Passwort
+                </span>
+                <span class="badge badge-primary">{{ getFormatLabel(doc.format) }}</span>
+              </div>
+            </div>
+            <h3 class="text-lg font-medium text-white mt-4">{{ doc.title }}</h3>
+            <p class="text-gray-500 text-sm mt-2">
+              <EyeIcon class="w-4 h-4 inline mr-1" />
+              {{ doc.public_view_count || 0 }} Aufrufe
+            </p>
+            <p v-if="doc.public_expires_at" class="text-gray-500 text-sm mt-1">
+              Läuft ab: {{ formatDate(doc.public_expires_at) }}
+            </p>
+            <div class="flex items-center gap-2 mt-4">
+              <button
+                @click="navigator.clipboard.writeText(getPublicUrl(doc.public_token)); uiStore.showSuccess('Link kopiert!')"
+                class="flex-1 btn-secondary py-2 text-sm"
+              >
+                <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
+                Link kopieren
+              </button>
+              <button
+                @click="selectDocument(doc.id)"
+                class="btn-secondary py-2 text-sm"
+              >
+                Öffnen
+              </button>
+              <button
+                @click="openShareModal(doc)"
+                class="btn-secondary py-2 text-sm"
+              >
+                <PencilIcon class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </template>
 
     <!-- Create Modal -->
@@ -453,6 +675,183 @@ function formatDate(dateString) {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Share Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showShareModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="showShareModal = false"
+      >
+        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
+              <ShareIcon class="w-5 h-5 text-primary-400" />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-white">Dokument teilen</h2>
+              <p class="text-gray-400 text-sm">{{ shareDoc?.title }}</p>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="isLoadingShare" class="flex justify-center py-8">
+            <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <!-- Share Info (when already shared) -->
+          <div v-else-if="shareInfo" class="space-y-4">
+            <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+              <div class="flex items-center gap-2 text-green-400 mb-2">
+                <GlobeAltIcon class="w-5 h-5" />
+                <span class="font-medium">Dokument ist öffentlich</span>
+              </div>
+              <div class="flex items-center gap-4 text-gray-400 text-sm">
+                <span class="flex items-center gap-1">
+                  <EyeIcon class="w-4 h-4" />
+                  {{ shareInfo.view_count || 0 }} Aufrufe
+                </span>
+                <span v-if="shareInfo.can_edit" class="flex items-center gap-1 text-blue-400">
+                  <PencilSquareIcon class="w-4 h-4" />
+                  Bearbeiten erlaubt
+                </span>
+                <span v-if="shareInfo.active_editors > 0" class="flex items-center gap-1 text-yellow-400">
+                  <UsersIcon class="w-4 h-4" />
+                  {{ shareInfo.active_editors }} aktive Bearbeiter
+                </span>
+              </div>
+            </div>
+
+            <!-- Public URL -->
+            <div>
+              <label class="label">Öffentlicher Link</label>
+              <div class="flex gap-2">
+                <input
+                  :value="getPublicUrl(shareInfo.token)"
+                  readonly
+                  class="input flex-1 text-sm"
+                />
+                <button @click="copyPublicUrl" class="btn-primary">
+                  <ClipboardDocumentIcon class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="space-y-2 text-sm text-gray-400">
+              <p v-if="shareInfo.has_password" class="flex items-center gap-2">
+                <LockClosedIcon class="w-4 h-4 text-yellow-400" />
+                Passwortgeschützt
+              </p>
+              <p v-if="shareInfo.can_edit" class="flex items-center gap-2">
+                <PencilSquareIcon class="w-4 h-4 text-blue-400" />
+                Kollaboratives Bearbeiten aktiviert
+              </p>
+              <p v-if="shareInfo.expires_at">
+                Läuft ab: {{ formatDate(shareInfo.expires_at) }}
+              </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-4 border-t border-dark-700">
+              <button
+                @click="disableShare"
+                class="btn-secondary flex-1 text-red-400"
+                :disabled="isLoadingShare"
+              >
+                Freigabe deaktivieren
+              </button>
+              <button
+                @click="showShareModal = false"
+                class="btn-primary flex-1"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+
+          <!-- Share Form (when not shared) -->
+          <div v-else class="space-y-4">
+            <p class="text-gray-400">
+              Erstelle einen öffentlichen Link zu diesem Dokument.
+            </p>
+
+            <!-- Access Mode -->
+            <div>
+              <label class="label">Zugriffsmodus</label>
+              <div class="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  type="button"
+                  @click="shareForm.can_edit = false"
+                  class="p-3 rounded-lg border-2 transition-all text-left"
+                  :class="!shareForm.can_edit
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <EyeIcon class="w-5 h-5 text-primary-400 mb-1" />
+                  <p class="font-medium text-white text-sm">Nur Lesen</p>
+                  <p class="text-xs text-gray-400">Besucher können nur ansehen</p>
+                </button>
+                <button
+                  type="button"
+                  @click="shareForm.can_edit = true"
+                  class="p-3 rounded-lg border-2 transition-all text-left"
+                  :class="shareForm.can_edit
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <PencilSquareIcon class="w-5 h-5 text-blue-400 mb-1" />
+                  <p class="font-medium text-white text-sm">Bearbeiten</p>
+                  <p class="text-xs text-gray-400">Kollaboratives Arbeiten</p>
+                </button>
+              </div>
+              <p v-if="shareForm.can_edit" class="text-xs text-blue-400 mt-2 flex items-center gap-1">
+                <UsersIcon class="w-3 h-3" />
+                Mehrere Personen können gleichzeitig bearbeiten - Änderungen werden synchronisiert.
+              </p>
+            </div>
+
+            <div>
+              <label class="label">Passwort (optional)</label>
+              <input
+                v-model="shareForm.password"
+                type="password"
+                class="input"
+                placeholder="Leer lassen für keinen Schutz"
+              />
+            </div>
+
+            <div>
+              <label class="label">Gültigkeitsdauer (optional)</label>
+              <select v-model="shareForm.expires_in_days" class="input">
+                <option :value="null">Unbegrenzt</option>
+                <option :value="1">1 Tag</option>
+                <option :value="7">7 Tage</option>
+                <option :value="30">30 Tage</option>
+                <option :value="90">90 Tage</option>
+              </select>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+              <button
+                @click="showShareModal = false"
+                class="btn-secondary flex-1"
+              >
+                Abbrechen
+              </button>
+              <button
+                @click="enableShare"
+                class="btn-primary flex-1"
+                :disabled="isLoadingShare"
+              >
+                <LinkIcon class="w-5 h-5 mr-2" />
+                Link erstellen
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>

@@ -379,6 +379,8 @@ class DocumentController
             'is_public' => 1,
             'public_token' => $token,
             'public_view_count' => 0,
+            'public_can_edit' => !empty($data['can_edit']) ? 1 : 0,
+            'content_version' => 1,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -390,7 +392,9 @@ class DocumentController
         }
 
         // Optional expiration
-        if (!empty($data['expires_at'])) {
+        if (!empty($data['expires_in_days'])) {
+            $updateData['public_expires_at'] = date('Y-m-d H:i:s', strtotime('+' . (int)$data['expires_in_days'] . ' days'));
+        } elseif (!empty($data['expires_at'])) {
             $updateData['public_expires_at'] = $data['expires_at'];
         } else {
             $updateData['public_expires_at'] = null;
@@ -399,8 +403,9 @@ class DocumentController
         $this->db->update('documents', $updateData, ['id' => $docId]);
 
         return JsonResponse::success([
-            'public_token' => $token,
+            'token' => $token,
             'public_url' => '/doc/' . $token,
+            'can_edit' => (bool) $updateData['public_can_edit'],
         ], 'Public sharing enabled');
     }
 
@@ -415,11 +420,22 @@ class DocumentController
             throw new ForbiddenException('Only the owner can manage public sharing');
         }
 
+        // Clean up edit sessions
+        $this->db->executeStatement(
+            'DELETE FROM document_edit_sessions WHERE document_id = ?',
+            [$docId]
+        );
+        $this->db->executeStatement(
+            'DELETE FROM document_changes WHERE document_id = ?',
+            [$docId]
+        );
+
         $this->db->update('documents', [
             'is_public' => 0,
             'public_token' => null,
             'public_password' => null,
             'public_expires_at' => null,
+            'public_can_edit' => 0,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $docId]);
 
@@ -437,13 +453,21 @@ class DocumentController
             throw new ForbiddenException('Only the owner can view public share info');
         }
 
+        // Get active editors count
+        $activeEditors = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM document_edit_sessions WHERE document_id = ? AND last_activity > ?',
+            [$docId, date('Y-m-d H:i:s', strtotime('-5 minutes'))]
+        );
+
         return JsonResponse::success([
             'is_public' => (bool) $doc['is_public'],
-            'public_token' => $doc['public_token'],
+            'token' => $doc['public_token'],
             'public_url' => $doc['public_token'] ? '/doc/' . $doc['public_token'] : null,
             'has_password' => !empty($doc['public_password']),
             'expires_at' => $doc['public_expires_at'],
-            'view_count' => (int) $doc['public_view_count'],
+            'view_count' => (int) ($doc['public_view_count'] ?? 0),
+            'can_edit' => (bool) ($doc['public_can_edit'] ?? 0),
+            'active_editors' => $activeEditors,
         ]);
     }
 
@@ -487,10 +511,239 @@ class DocumentController
             [$doc['id']]
         );
 
+        // Get active editors if collaborative editing is enabled
+        $activeEditors = [];
+        if ($doc['public_can_edit'] ?? false) {
+            $activeEditors = $this->db->fetchAllAssociative(
+                'SELECT session_token, editor_name, is_owner, last_activity
+                 FROM document_edit_sessions
+                 WHERE document_id = ? AND last_activity > ?',
+                [$doc['id'], date('Y-m-d H:i:s', strtotime('-2 minutes'))]
+            );
+        }
+
         // Remove sensitive data
+        $docId = $doc['id'];
         unset($doc['user_id'], $doc['public_password'], $doc['folder_id']);
 
-        return JsonResponse::success($doc);
+        return JsonResponse::success([
+            ...$doc,
+            'can_edit' => (bool) ($doc['public_can_edit'] ?? 0),
+            'content_version' => (int) ($doc['content_version'] ?? 1),
+            'active_editors' => $activeEditors,
+        ]);
+    }
+
+    // ========================================================================
+    // Collaborative Editing (Public)
+    // ========================================================================
+
+    // Join editing session
+    public function joinEditSession(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getParsedBody() ?? [];
+
+        $doc = $this->getPublicEditableDocument($token, $data);
+
+        // Generate session token for this editor
+        $sessionToken = bin2hex(random_bytes(16));
+        $editorName = $data['editor_name'] ?? 'Anonym';
+
+        $this->db->insert('document_edit_sessions', [
+            'id' => Uuid::uuid4()->toString(),
+            'document_id' => $doc['id'],
+            'session_token' => $sessionToken,
+            'editor_name' => substr($editorName, 0, 255),
+            'is_owner' => 0,
+            'last_activity' => date('Y-m-d H:i:s'),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Get all active editors
+        $activeEditors = $this->db->fetchAllAssociative(
+            'SELECT session_token, editor_name, is_owner, last_activity
+             FROM document_edit_sessions
+             WHERE document_id = ? AND last_activity > ?',
+            [$doc['id'], date('Y-m-d H:i:s', strtotime('-2 minutes'))]
+        );
+
+        return JsonResponse::success([
+            'session_token' => $sessionToken,
+            'content' => $doc['content'],
+            'content_version' => (int) ($doc['content_version'] ?? 1),
+            'active_editors' => $activeEditors,
+        ]);
+    }
+
+    // Update content (collaborative)
+    public function updatePublicContent(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getParsedBody() ?? [];
+
+        $doc = $this->getPublicEditableDocument($token, $data);
+
+        $sessionToken = $data['session_token'] ?? null;
+        $content = $data['content'] ?? null;
+        $expectedVersion = $data['version'] ?? null;
+
+        if (!$sessionToken || $content === null) {
+            throw new ValidationException('Session token and content are required');
+        }
+
+        // Verify session
+        $session = $this->db->fetchAssociative(
+            'SELECT * FROM document_edit_sessions WHERE document_id = ? AND session_token = ?',
+            [$doc['id'], $sessionToken]
+        );
+
+        if (!$session) {
+            throw new ForbiddenException('Invalid or expired session');
+        }
+
+        // Check version for conflict detection
+        $currentVersion = (int) ($doc['content_version'] ?? 1);
+        if ($expectedVersion !== null && $expectedVersion !== $currentVersion) {
+            // Version conflict - return current content
+            return JsonResponse::error('Version conflict', 409, [
+                'conflict' => true,
+                'current_content' => $doc['content'],
+                'current_version' => $currentVersion,
+            ]);
+        }
+
+        // Update document
+        $newVersion = $currentVersion + 1;
+        $this->db->update('documents', [
+            'content' => $content,
+            'content_version' => $newVersion,
+            'last_edited_by' => $session['id'],
+            'last_edited_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $doc['id']]);
+
+        // Log the change
+        $this->db->insert('document_changes', [
+            'id' => Uuid::uuid4()->toString(),
+            'document_id' => $doc['id'],
+            'session_token' => $sessionToken,
+            'change_type' => 'content',
+            'change_data' => json_encode(['content' => $content]),
+            'version' => $newVersion,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Update session activity
+        $this->db->update('document_edit_sessions', [
+            'last_activity' => date('Y-m-d H:i:s'),
+        ], ['session_token' => $sessionToken]);
+
+        return JsonResponse::success([
+            'version' => $newVersion,
+            'saved_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    // Poll for changes (long polling alternative to WebSocket)
+    public function pollChanges(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getQueryParams();
+
+        $doc = $this->db->fetchAssociative(
+            'SELECT * FROM documents WHERE public_token = ? AND is_public = 1 AND public_can_edit = 1',
+            [$token]
+        );
+
+        if (!$doc) {
+            throw new NotFoundException('Document not found or not editable');
+        }
+
+        $sessionToken = $data['session_token'] ?? null;
+        $lastVersion = (int) ($data['last_version'] ?? 0);
+
+        // Update session activity
+        if ($sessionToken) {
+            $this->db->update('document_edit_sessions', [
+                'last_activity' => date('Y-m-d H:i:s'),
+            ], ['session_token' => $sessionToken, 'document_id' => $doc['id']]);
+        }
+
+        // Clean up old sessions (older than 5 minutes)
+        $this->db->executeStatement(
+            'DELETE FROM document_edit_sessions WHERE document_id = ? AND last_activity < ?',
+            [$doc['id'], date('Y-m-d H:i:s', strtotime('-5 minutes'))]
+        );
+
+        // Get active editors
+        $activeEditors = $this->db->fetchAllAssociative(
+            'SELECT session_token, editor_name, is_owner, last_activity
+             FROM document_edit_sessions
+             WHERE document_id = ? AND last_activity > ?',
+            [$doc['id'], date('Y-m-d H:i:s', strtotime('-2 minutes'))]
+        );
+
+        $currentVersion = (int) ($doc['content_version'] ?? 1);
+
+        // Check if content changed
+        $hasChanges = $currentVersion > $lastVersion;
+
+        return JsonResponse::success([
+            'has_changes' => $hasChanges,
+            'version' => $currentVersion,
+            'content' => $hasChanges ? $doc['content'] : null,
+            'active_editors' => $activeEditors,
+        ]);
+    }
+
+    // Leave editing session
+    public function leaveEditSession(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getParsedBody() ?? [];
+
+        $sessionToken = $data['session_token'] ?? null;
+
+        if ($sessionToken) {
+            $this->db->executeStatement(
+                'DELETE FROM document_edit_sessions WHERE session_token = ?',
+                [$sessionToken]
+            );
+        }
+
+        return JsonResponse::success(null, 'Session ended');
+    }
+
+    private function getPublicEditableDocument(string $token, array $data): array
+    {
+        $doc = $this->db->fetchAssociative(
+            'SELECT * FROM documents WHERE public_token = ? AND is_public = 1',
+            [$token]
+        );
+
+        if (!$doc) {
+            throw new NotFoundException('Document not found or not publicly shared');
+        }
+
+        if (!($doc['public_can_edit'] ?? false)) {
+            throw new ForbiddenException('This document is read-only');
+        }
+
+        // Check expiration
+        if ($doc['public_expires_at'] && strtotime($doc['public_expires_at']) < time()) {
+            throw new ForbiddenException('This shared link has expired');
+        }
+
+        // Check password if set
+        if (!empty($doc['public_password'])) {
+            $providedPassword = $data['password'] ?? null;
+            if (!$providedPassword || !password_verify($providedPassword, $doc['public_password'])) {
+                throw new ForbiddenException('Invalid password');
+            }
+        }
+
+        return $doc;
     }
 
     private function createVersion(string $docId, string $content, string $userId, ?string $summary = null): void

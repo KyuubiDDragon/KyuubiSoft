@@ -276,6 +276,27 @@ class DockerController
         }
 
         try {
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $version = $this->fetchPortainerDockerVersion($host);
+                $info = $this->fetchPortainerDockerInfo($host);
+
+                $connectionInfo = [
+                    'version' => $version['Version'] ?? 'unknown',
+                    'api_version' => $version['ApiVersion'] ?? 'unknown',
+                    'containers' => $info['Containers'] ?? 0,
+                    'images' => $info['Images'] ?? 0,
+                ];
+
+                $this->hostRepository->updateConnectionStatus($hostId, 'connected', null, $connectionInfo);
+
+                return JsonResponse::success([
+                    'connected' => true,
+                    'info' => $connectionInfo,
+                    'portainer_mode' => true,
+                ]);
+            }
+
             $output = $this->execDockerOnHost($host, 'version --format json');
             $version = json_decode($output, true);
 

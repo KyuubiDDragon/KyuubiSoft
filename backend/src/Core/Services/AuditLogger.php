@@ -86,6 +86,14 @@ class AuditLogger
         $this->log($userId, '2fa.disabled', 'user', $userId, $request);
     }
 
+    /**
+     * Log sensitive operation 2FA verification
+     */
+    public function logSensitiveOperation(string $userId, string $operation, ServerRequestInterface $request): void
+    {
+        $this->log($userId, '2fa.sensitive_operation', 'user', $userId, $request, null, ['operation' => $operation]);
+    }
+
     private function getClientIp(ServerRequestInterface $request): ?string
     {
         $serverParams = $request->getServerParams();

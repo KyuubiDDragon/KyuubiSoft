@@ -7,6 +7,7 @@ namespace App\Modules\Docker\Controllers;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Modules\Docker\Repositories\DockerHostRepository;
+use App\Modules\Auth\Services\AuthService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Routing\RouteContext;
@@ -14,7 +15,8 @@ use Slim\Routing\RouteContext;
 class DockerController
 {
     public function __construct(
-        private readonly DockerHostRepository $hostRepository
+        private readonly DockerHostRepository $hostRepository,
+        private readonly AuthService $authService
     ) {}
 
     /**
@@ -118,6 +120,12 @@ class DockerController
             'portainer_api_token' => $data['portainer_api_token'] ?? null,
             'portainer_endpoint_id' => isset($data['portainer_endpoint_id']) ? (int) $data['portainer_endpoint_id'] : null,
             'portainer_only' => (int) ($data['portainer_only'] ?? 0),
+            'ssh_enabled' => (int) ($data['ssh_enabled'] ?? 0),
+            'ssh_host' => $data['ssh_host'] ?? null,
+            'ssh_port' => (int) ($data['ssh_port'] ?? 22),
+            'ssh_user' => $data['ssh_user'] ?? null,
+            'ssh_password' => !empty($data['ssh_password']) ? $this->encryptCredential($data['ssh_password']) : null,
+            'ssh_private_key' => !empty($data['ssh_private_key']) ? $this->encryptCredential($data['ssh_private_key']) : null,
             'is_active' => 1,
             'is_default' => 0,
             'created_at' => date('Y-m-d H:i:s'),
@@ -197,6 +205,24 @@ class DockerController
         }
         if (isset($data['portainer_only'])) {
             $updateData['portainer_only'] = (int) $data['portainer_only'];
+        }
+        if (isset($data['ssh_enabled'])) {
+            $updateData['ssh_enabled'] = (int) $data['ssh_enabled'];
+        }
+        if (isset($data['ssh_host'])) {
+            $updateData['ssh_host'] = $data['ssh_host'] ?: null;
+        }
+        if (isset($data['ssh_port'])) {
+            $updateData['ssh_port'] = (int) ($data['ssh_port'] ?: 22);
+        }
+        if (isset($data['ssh_user'])) {
+            $updateData['ssh_user'] = $data['ssh_user'] ?: null;
+        }
+        if (!empty($data['ssh_password'])) {
+            $updateData['ssh_password'] = $this->encryptCredential($data['ssh_password']);
+        }
+        if (!empty($data['ssh_private_key'])) {
+            $updateData['ssh_private_key'] = $this->encryptCredential($data['ssh_private_key']);
         }
         if (isset($data['is_active'])) {
             $updateData['is_active'] = (int) $data['is_active'];
@@ -1664,7 +1690,7 @@ class DockerController
         try {
             // For Portainer-only mode, get everything from Portainer API
             if ($isPortainerOnly) {
-                return $this->backupStackFromPortainer($host, $stackName, $userId);
+                return $this->backupStackFromPortainer($host, $stackName, $userId, $request);
             }
 
             // Get compose file path from labels first
@@ -2523,33 +2549,60 @@ class DockerController
     /**
      * Backup stack from Portainer API (for Portainer-only mode)
      */
-    private function backupStackFromPortainer(array $host, string $stackName, string $userId): ResponseInterface
+    private function backupStackFromPortainer(array $host, string $stackName, string $userId, ServerRequestInterface $request): ResponseInterface
     {
-        // Get stack info from Portainer
-        $stacks = $this->fetchPortainerStacks($host);
-        $portainerStack = null;
+        // First check if we have a mapping to a Portainer stack
+        $mapping = $this->hostRepository->getStackPortainerMapping($userId, $host['id'] ?? null, $stackName);
+        $portainerStackId = null;
 
-        foreach ($stacks as $stack) {
-            if (strtolower($stack['name']) === strtolower($stackName)) {
-                $portainerStack = $stack;
-                break;
+        if ($mapping) {
+            $portainerStackId = (int)$mapping['portainer_stack_id'];
+        } else {
+            // Try to find stack by name in Portainer
+            $stacks = $this->fetchPortainerStacks($host);
+            foreach ($stacks as $stack) {
+                if (strtolower($stack['name']) === strtolower($stackName)) {
+                    $portainerStackId = $stack['id'];
+                    // Auto-link for future use
+                    $this->hostRepository->linkStackToPortainer($userId, $host['id'] ?? null, $stackName, $stack['id']);
+                    break;
+                }
             }
         }
 
-        if (!$portainerStack) {
-            return JsonResponse::error("Stack '$stackName' not found in Portainer", 404);
+        // If no Portainer stack found, check if containers exist (docker-compose created stack)
+        if (!$portainerStackId) {
+            // Check if containers with this compose project exist
+            $containers = $this->portainerDockerRequest($host, '/containers/json?all=true&filters=' . urlencode(json_encode([
+                'label' => ["com.docker.compose.project=$stackName"]
+            ])));
+
+            if (!empty($containers)) {
+                // Stack exists but wasn't created through Portainer - try SSH fallback
+                if ($this->isSSHEnabled($host)) {
+                    // SSH operations require 2FA verification
+                    return $this->backupStackViaSSH($host, $stackName, $userId, $containers, $request);
+                }
+
+                return JsonResponse::error(
+                    "Stack '$stackName' wurde nicht über Portainer erstellt. " .
+                    "Für Backups: Aktiviere SSH-Zugang in den Host-Einstellungen oder " .
+                    "erstelle den Stack neu über Portainer.",
+                    400
+                );
+            }
+
+            return JsonResponse::error("Stack '$stackName' nicht gefunden", 404);
         }
 
-        $stackId = $portainerStack['id'];
-
         // Get compose file content
-        $composeContent = $this->fetchPortainerStackFile($host, $stackId);
+        $composeContent = $this->fetchPortainerStackFile($host, $portainerStackId);
         if (!$composeContent) {
-            return JsonResponse::error('Could not fetch compose file from Portainer', 500);
+            return JsonResponse::error('Compose-Datei konnte nicht von Portainer geladen werden', 500);
         }
 
         // Get env vars
-        $envContent = $this->fetchPortainerStackEnv($host, $stackId);
+        $envContent = $this->fetchPortainerStackEnv($host, $portainerStackId);
 
         // Prepare backup data
         $backupData = [
@@ -2593,6 +2646,144 @@ class DockerController
             'backup_file' => $backupFile,
             'files' => array_map(fn($f) => $f['name'], $backupData['files']),
             'source' => 'portainer',
+        ]);
+    }
+
+    /**
+     * Backup stack via SSH (for docker-compose created stacks on Portainer-only hosts)
+     * Requires 2FA verification for security
+     */
+    private function backupStackViaSSH(array $host, string $stackName, string $userId, array $containers, ServerRequestInterface $request): ResponseInterface
+    {
+        // SSH operations require 2FA verification
+        $params = $request->getQueryParams();
+        $body = $request->getParsedBody() ?? [];
+        $sensitiveToken = $params['sensitive_token'] ?? $body['sensitive_token'] ?? null;
+
+        if (empty($sensitiveToken)) {
+            return JsonResponse::error(
+                '2FA-Verifizierung erforderlich für SSH-Zugriff. Bitte bestätige mit deinem 2FA-Code.',
+                428,  // 428 Precondition Required
+                ['requires_2fa' => true, 'operation' => 'ssh_backup']
+            );
+        }
+
+        // Verify the sensitive token
+        if (!$this->authService->verifySensitiveToken($userId, $sensitiveToken, 'ssh_backup')) {
+            return JsonResponse::error(
+                'Ungültiger oder abgelaufener 2FA-Token. Bitte erneut verifizieren.',
+                401,
+                ['requires_2fa' => true, 'operation' => 'ssh_backup']
+            );
+        }
+
+        // Get working directory from container labels
+        $workingDir = null;
+        $configFiles = null;
+
+        if (!empty($containers[0]['Labels'])) {
+            $labels = $containers[0]['Labels'];
+            $workingDir = $labels['com.docker.compose.project.working_dir'] ?? null;
+            $configFiles = $labels['com.docker.compose.project.config_files'] ?? null;
+        }
+
+        if (!$workingDir) {
+            return JsonResponse::error(
+                "Working directory für Stack '$stackName' konnte nicht ermittelt werden.",
+                400
+            );
+        }
+
+        $backupData = [
+            'stack_name' => $stackName,
+            'working_dir' => $workingDir,
+            'backup_date' => date('Y-m-d H:i:s'),
+            'user_id' => $userId,
+            'host_id' => $host['id'] ?? null,
+            'host_name' => $host['name'] ?? 'SSH',
+            'files' => [],
+        ];
+
+        $foundComposeFile = false;
+
+        // Try to read compose files from config_files label
+        if ($configFiles) {
+            $paths = explode(',', $configFiles);
+            foreach ($paths as $path) {
+                $path = trim($path);
+                $content = $this->readFileViaSSH($host, $path);
+                if ($content !== null) {
+                    $backupData['files'][] = [
+                        'name' => basename($path),
+                        'path' => $path,
+                        'content' => $content,
+                    ];
+                    $foundComposeFile = true;
+                }
+            }
+        }
+
+        // If no compose file found from labels, try common filenames
+        if (!$foundComposeFile) {
+            $commonComposeNames = [
+                'docker-compose.yml',
+                'docker-compose.yaml',
+                'docker-compose.prod.yml',
+                'docker-compose.prod.yaml',
+                'compose.yml',
+                'compose.yaml',
+            ];
+
+            foreach ($commonComposeNames as $filename) {
+                $path = $workingDir . '/' . $filename;
+                $content = $this->readFileViaSSH($host, $path);
+                if ($content !== null) {
+                    $backupData['files'][] = [
+                        'name' => $filename,
+                        'path' => $path,
+                        'content' => $content,
+                    ];
+                    $foundComposeFile = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$foundComposeFile) {
+            return JsonResponse::error(
+                "Compose-Datei konnte nicht via SSH gelesen werden. " .
+                "Prüfe die SSH-Zugangsdaten und Dateiberechtigungen.",
+                500
+            );
+        }
+
+        // Try to read .env file
+        $envPath = $workingDir . '/.env';
+        $envContent = $this->readFileViaSSH($host, $envPath);
+        if ($envContent !== null) {
+            $backupData['files'][] = [
+                'name' => '.env',
+                'path' => $envPath,
+                'content' => $envContent,
+            ];
+        }
+
+        // Save backup file
+        $backupDir = __DIR__ . '/../../../../storage/docker/backups/' . $userId;
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+
+        $backupFile = $stackName . '_' . date('Y-m-d_H-i-s') . '.json';
+        $backupPath = $backupDir . '/' . $backupFile;
+
+        file_put_contents($backupPath, json_encode($backupData, JSON_PRETTY_PRINT));
+
+        return JsonResponse::success([
+            'message' => 'Backup created successfully via SSH',
+            'backup_file' => $backupFile,
+            'files' => array_map(fn($f) => $f['name'], $backupData['files']),
+            'source' => 'ssh',
         ]);
     }
 
@@ -2793,5 +2984,206 @@ class DockerController
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
         return round($bytes / 1073741824, 2) . ' GB';
+    }
+
+    // ========================================================================
+    // SSH Access - Read files from remote hosts via SSH
+    // ========================================================================
+
+    /**
+     * Encrypt a credential for storage
+     */
+    private function encryptCredential(string $value): string
+    {
+        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $iv = random_bytes(16);
+        $encrypted = openssl_encrypt($value, 'aes-256-cbc', $key, 0, $iv);
+        return base64_encode($iv . $encrypted);
+    }
+
+    /**
+     * Decrypt a stored credential
+     */
+    private function decryptCredential(string $encrypted): string
+    {
+        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $data = base64_decode($encrypted);
+        $iv = substr($data, 0, 16);
+        $encrypted = substr($data, 16);
+        return openssl_decrypt($encrypted, 'aes-256-cbc', $key, 0, $iv);
+    }
+
+    /**
+     * Check if SSH is enabled and configured for a host
+     */
+    private function isSSHEnabled(array $host): bool
+    {
+        return !empty($host['ssh_enabled']) &&
+               !empty($host['ssh_host']) &&
+               !empty($host['ssh_user']) &&
+               (!empty($host['ssh_password']) || !empty($host['ssh_private_key']));
+    }
+
+    /**
+     * Read a file from remote host via SSH
+     */
+    private function readFileViaSSH(array $host, string $path): ?string
+    {
+        if (!$this->isSSHEnabled($host)) {
+            return null;
+        }
+
+        $sshHost = $host['ssh_host'];
+        $sshPort = $host['ssh_port'] ?? 22;
+        $sshUser = $host['ssh_user'];
+
+        // Try to connect via SSH2
+        if (!function_exists('ssh2_connect')) {
+            // Fallback to shell command if ssh2 extension not available
+            return $this->readFileViaSSHCommand($host, $path);
+        }
+
+        try {
+            $connection = @ssh2_connect($sshHost, $sshPort);
+            if (!$connection) {
+                return null;
+            }
+
+            // Authenticate
+            $authenticated = false;
+            if (!empty($host['ssh_private_key'])) {
+                $privateKey = $this->decryptCredential($host['ssh_private_key']);
+                // Write key to temp file
+                $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+                file_put_contents($keyFile, $privateKey);
+                chmod($keyFile, 0600);
+                $authenticated = @ssh2_auth_pubkey_file($connection, $sshUser, null, $keyFile);
+                unlink($keyFile);
+            }
+
+            if (!$authenticated && !empty($host['ssh_password'])) {
+                $password = $this->decryptCredential($host['ssh_password']);
+                $authenticated = @ssh2_auth_password($connection, $sshUser, $password);
+            }
+
+            if (!$authenticated) {
+                return null;
+            }
+
+            // Execute command to read file
+            $stream = ssh2_exec($connection, "cat " . escapeshellarg($path) . " 2>/dev/null");
+            if (!$stream) {
+                return null;
+            }
+
+            stream_set_blocking($stream, true);
+            $content = stream_get_contents($stream);
+            fclose($stream);
+
+            return $content ?: null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Read file via SSH shell command (fallback when ssh2 extension not available)
+     */
+    private function readFileViaSSHCommand(array $host, string $path): ?string
+    {
+        $sshHost = $host['ssh_host'];
+        $sshPort = $host['ssh_port'] ?? 22;
+        $sshUser = $host['ssh_user'];
+
+        // Create temp file for key if using private key
+        $keyFile = null;
+        $sshOptions = [
+            '-o StrictHostKeyChecking=no',
+            '-o UserKnownHostsFile=/dev/null',
+            '-o ConnectTimeout=10',
+            "-p {$sshPort}",
+        ];
+
+        if (!empty($host['ssh_private_key'])) {
+            $privateKey = $this->decryptCredential($host['ssh_private_key']);
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+            $sshOptions[] = "-i " . escapeshellarg($keyFile);
+        }
+
+        $sshOptionsStr = implode(' ', $sshOptions);
+        $command = "ssh {$sshOptionsStr} " . escapeshellarg("{$sshUser}@{$sshHost}") . " " .
+                   escapeshellarg("cat " . escapeshellarg($path));
+
+        // Use sshpass for password authentication
+        if (!empty($host['ssh_password']) && empty($host['ssh_private_key'])) {
+            $password = $this->decryptCredential($host['ssh_password']);
+            $command = "sshpass -p " . escapeshellarg($password) . " " . $command;
+        }
+
+        $output = null;
+        $returnCode = 0;
+        exec($command . " 2>/dev/null", $output, $returnCode);
+
+        // Cleanup key file
+        if ($keyFile && file_exists($keyFile)) {
+            unlink($keyFile);
+        }
+
+        if ($returnCode !== 0) {
+            return null;
+        }
+
+        return implode("\n", $output) ?: null;
+    }
+
+    /**
+     * List directory contents via SSH
+     */
+    private function listDirectoryViaSSH(array $host, string $path): array
+    {
+        if (!$this->isSSHEnabled($host)) {
+            return [];
+        }
+
+        $sshHost = $host['ssh_host'];
+        $sshPort = $host['ssh_port'] ?? 22;
+        $sshUser = $host['ssh_user'];
+
+        $sshOptions = [
+            '-o StrictHostKeyChecking=no',
+            '-o UserKnownHostsFile=/dev/null',
+            '-o ConnectTimeout=10',
+            "-p {$sshPort}",
+        ];
+
+        $keyFile = null;
+        if (!empty($host['ssh_private_key'])) {
+            $privateKey = $this->decryptCredential($host['ssh_private_key']);
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+            $sshOptions[] = "-i " . escapeshellarg($keyFile);
+        }
+
+        $sshOptionsStr = implode(' ', $sshOptions);
+        $command = "ssh {$sshOptionsStr} " . escapeshellarg("{$sshUser}@{$sshHost}") . " " .
+                   escapeshellarg("ls -la " . escapeshellarg($path));
+
+        if (!empty($host['ssh_password']) && empty($host['ssh_private_key'])) {
+            $password = $this->decryptCredential($host['ssh_password']);
+            $command = "sshpass -p " . escapeshellarg($password) . " " . $command;
+        }
+
+        $output = null;
+        $returnCode = 0;
+        exec($command . " 2>/dev/null", $output, $returnCode);
+
+        if ($keyFile && file_exists($keyFile)) {
+            unlink($keyFile);
+        }
+
+        return $output ?: [];
     }
 }

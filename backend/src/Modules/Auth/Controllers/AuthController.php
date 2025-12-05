@@ -198,4 +198,29 @@ class AuthController
 
         return JsonResponse::success(null, '2FA disabled successfully');
     }
+
+    /**
+     * Verify 2FA code for sensitive operations
+     * Returns a temporary token valid for 5 minutes
+     */
+    public function verifySensitiveOperation(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+        $code = $data['code'] ?? '';
+        $operation = $data['operation'] ?? 'sensitive';
+
+        if (empty($code)) {
+            throw new ValidationException('Verification code is required');
+        }
+
+        $result = $this->authService->verifySensitiveOperation($userId, $code, $operation);
+
+        // Log sensitive operation verification
+        if ($userId) {
+            $this->auditLogger->logSensitiveOperation((string) $userId, $operation, $request);
+        }
+
+        return JsonResponse::success($result, '2FA verified for sensitive operation');
+    }
 }

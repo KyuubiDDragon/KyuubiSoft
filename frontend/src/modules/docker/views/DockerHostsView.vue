@@ -43,6 +43,12 @@ const form = ref({
   portainer_api_token: '',
   portainer_endpoint_id: '',
   portainer_only: false,
+  ssh_enabled: false,
+  ssh_host: '',
+  ssh_port: 22,
+  ssh_user: '',
+  ssh_password: '',
+  ssh_private_key: '',
 })
 
 const savingPortainer = ref(false)
@@ -118,6 +124,12 @@ function openCreateModal() {
     portainer_api_token: '',
     portainer_endpoint_id: '',
     portainer_only: false,
+    ssh_enabled: false,
+    ssh_host: '',
+    ssh_port: 22,
+    ssh_user: '',
+    ssh_password: '',
+    ssh_private_key: '',
   }
   showModal.value = true
 }
@@ -141,6 +153,12 @@ function openEditModal(host) {
     portainer_api_token: host.portainer_api_token || '',
     portainer_endpoint_id: host.portainer_endpoint_id || '',
     portainer_only: !!host.portainer_only,
+    ssh_enabled: !!host.ssh_enabled,
+    ssh_host: host.ssh_host || '',
+    ssh_port: host.ssh_port || 22,
+    ssh_user: host.ssh_user || '',
+    ssh_password: '',
+    ssh_private_key: '',
   }
   showModal.value = true
 }
@@ -175,6 +193,12 @@ async function saveHost() {
       portainer_api_token: form.value.portainer_api_token || null,
       portainer_endpoint_id: form.value.portainer_endpoint_id ? parseInt(form.value.portainer_endpoint_id) : null,
       portainer_only: form.value.portainer_only ? 1 : 0,
+      ssh_enabled: form.value.ssh_enabled ? 1 : 0,
+      ssh_host: form.value.ssh_host || null,
+      ssh_port: form.value.ssh_port || 22,
+      ssh_user: form.value.ssh_user || null,
+      ssh_password: form.value.ssh_password || null,
+      ssh_private_key: form.value.ssh_private_key || null,
     }
 
     if (form.value.type === 'socket') {
@@ -652,6 +676,77 @@ watch(() => projectStore.selectedProjectId, () => {
                       {{ savingPortainer ? 'Speichern...' : 'Portainer speichern' }}
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <!-- SSH Access (only in edit mode) -->
+              <div v-if="editMode" class="border-t border-dark-600 pt-4 mt-4">
+                <h4 class="text-sm font-medium text-white mb-3">SSH-Zugang (Optional)</h4>
+                <p class="text-xs text-gray-400 mb-3">
+                  SSH-Zugang für das Lesen von Compose-Dateien auf Remote-Servern. Ermöglicht Backups für nicht über Portainer erstellte Stacks.
+                </p>
+                <div class="grid grid-cols-1 gap-3">
+                  <div class="flex items-center gap-3">
+                    <input
+                      v-model="form.ssh_enabled"
+                      type="checkbox"
+                      id="ssh_enabled"
+                      class="rounded bg-dark-600 border-dark-500 text-primary-500 focus:ring-primary-500"
+                    />
+                    <label for="ssh_enabled" class="text-sm text-gray-300">
+                      SSH-Zugang aktivieren
+                    </label>
+                  </div>
+
+                  <template v-if="form.ssh_enabled">
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Host</label>
+                        <input
+                          v-model="form.ssh_host"
+                          type="text"
+                          class="input w-full"
+                          placeholder="192.168.1.100 oder hostname"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Port</label>
+                        <input
+                          v-model.number="form.ssh_port"
+                          type="number"
+                          class="input w-full"
+                          placeholder="22"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">Benutzername</label>
+                      <input
+                        v-model="form.ssh_user"
+                        type="text"
+                        class="input w-full"
+                        placeholder="root"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">Passwort</label>
+                      <input
+                        v-model="form.ssh_password"
+                        type="password"
+                        class="input w-full"
+                        placeholder="Optional wenn Private Key verwendet wird"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">Private Key (alternativ zum Passwort)</label>
+                      <textarea
+                        v-model="form.ssh_private_key"
+                        class="input w-full h-24 text-xs font-mono"
+                        placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                      ></textarea>
+                      <p class="text-xs text-gray-500 mt-1">Falls kein Passwort verwendet wird, hier den Private Key einfügen</p>
+                    </div>
+                  </template>
                 </div>
               </div>
 

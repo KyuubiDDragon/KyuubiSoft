@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
+import { useProjectStore } from '@/stores/project'
 import {
   ServerStackIcon,
   PlusIcon,
@@ -15,6 +16,8 @@ import {
   FolderIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
+
+const projectStore = useProjectStore()
 
 const hosts = ref([])
 const projects = ref([])
@@ -76,7 +79,9 @@ const groupedHosts = computed(() => {
 async function fetchHosts() {
   loading.value = true
   try {
-    const response = await api.get('/api/v1/docker/hosts')
+    // Filter hosts by selected project
+    const params = projectStore.getProjectFilter()
+    const response = await api.get('/api/v1/docker/hosts', { params })
     hosts.value = response.data.data.hosts
   } catch (error) {
     console.error('Failed to fetch Docker hosts:', error)
@@ -268,6 +273,11 @@ function getStatusIcon(status) {
 onMounted(() => {
   fetchHosts()
   fetchProjects()
+})
+
+// Watch for project changes to reload hosts
+watch(() => projectStore.selectedProjectId, () => {
+  fetchHosts()
 })
 </script>
 

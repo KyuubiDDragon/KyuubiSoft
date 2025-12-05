@@ -114,6 +114,10 @@ class DockerController
             'tls_ca' => $data['tls_ca'] ?? null,
             'tls_cert' => $data['tls_cert'] ?? null,
             'tls_key' => $data['tls_key'] ?? null,
+            'portainer_url' => $data['portainer_url'] ?? null,
+            'portainer_api_token' => $data['portainer_api_token'] ?? null,
+            'portainer_endpoint_id' => isset($data['portainer_endpoint_id']) ? (int) $data['portainer_endpoint_id'] : null,
+            'portainer_only' => (int) ($data['portainer_only'] ?? 0),
             'is_active' => 1,
             'is_default' => 0,
             'created_at' => date('Y-m-d H:i:s'),
@@ -122,7 +126,7 @@ class DockerController
 
         $host = $this->hostRepository->create($hostData);
 
-        return JsonResponse::success(['host' => $host], 201);
+        return JsonResponse::success(['host' => $host], 'Host created', 201);
     }
 
     /**
@@ -181,6 +185,18 @@ class DockerController
         }
         if (isset($data['tls_key'])) {
             $updateData['tls_key'] = $data['tls_key'];
+        }
+        if (isset($data['portainer_url'])) {
+            $updateData['portainer_url'] = $data['portainer_url'] ?: null;
+        }
+        if (isset($data['portainer_api_token'])) {
+            $updateData['portainer_api_token'] = $data['portainer_api_token'] ?: null;
+        }
+        if (isset($data['portainer_endpoint_id'])) {
+            $updateData['portainer_endpoint_id'] = $data['portainer_endpoint_id'] ? (int) $data['portainer_endpoint_id'] : null;
+        }
+        if (isset($data['portainer_only'])) {
+            $updateData['portainer_only'] = (int) $data['portainer_only'];
         }
         if (isset($data['is_active'])) {
             $updateData['is_active'] = (int) $data['is_active'];
@@ -301,6 +317,19 @@ class DockerController
         $host = $this->resolveHost($request);
 
         try {
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $version = $this->fetchPortainerDockerVersion($host);
+                return JsonResponse::success([
+                    'available' => true,
+                    'host_id' => $host['id'] ?? null,
+                    'host_name' => $host['name'] ?? 'Lokal',
+                    'version' => $version['Version'] ?? 'unknown',
+                    'apiVersion' => $version['ApiVersion'] ?? 'unknown',
+                    'portainer_mode' => true,
+                ]);
+            }
+
             $output = $this->execDockerOnHost($host, 'version --format json');
             $version = json_decode($output, true);
 
@@ -310,6 +339,7 @@ class DockerController
                 'host_name' => $host['name'] ?? 'Lokal',
                 'version' => $version['Client']['Version'] ?? $version['Version'] ?? 'unknown',
                 'apiVersion' => $version['Client']['ApiVersion'] ?? $version['ApiVersion'] ?? 'unknown',
+                'portainer_mode' => false,
             ]);
         } catch (\Exception $e) {
             return JsonResponse::success([
@@ -332,34 +362,39 @@ class DockerController
         $grouped = ($params['grouped'] ?? 'false') === 'true';
 
         try {
-            $format = '{{json .}}';
-            $cmd = $all ? "ps -a --format '$format'" : "ps --format '$format'";
-            $output = $this->execDockerOnHost($host, $cmd);
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $containers = $this->fetchPortainerContainers($host, $all);
+            } else {
+                $format = '{{json .}}';
+                $cmd = $all ? "ps -a --format '$format'" : "ps --format '$format'";
+                $output = $this->execDockerOnHost($host, $cmd);
 
-            $containers = [];
-            $lines = array_filter(explode("\n", trim($output)));
+                $containers = [];
+                $lines = array_filter(explode("\n", trim($output)));
 
-            foreach ($lines as $line) {
-                $container = json_decode($line, true);
-                if ($container) {
-                    $containerId = $container['ID'] ?? '';
+                foreach ($lines as $line) {
+                    $container = json_decode($line, true);
+                    if ($container) {
+                        $containerId = $container['ID'] ?? '';
 
-                    // Get labels for stack/project detection
-                    $labels = $this->getContainerLabels($host, $containerId);
+                        // Get labels for stack/project detection
+                        $labels = $this->getContainerLabels($host, $containerId);
 
-                    $containers[] = [
-                        'id' => $containerId,
-                        'name' => ltrim($container['Names'] ?? '', '/'),
-                        'image' => $container['Image'] ?? '',
-                        'status' => $container['Status'] ?? '',
-                        'state' => $container['State'] ?? '',
-                        'ports' => $container['Ports'] ?? '',
-                        'created' => $container['CreatedAt'] ?? '',
-                        'size' => $container['Size'] ?? '',
-                        'stack' => $labels['com.docker.compose.project'] ?? null,
-                        'service' => $labels['com.docker.compose.service'] ?? null,
-                        'labels' => $labels,
-                    ];
+                        $containers[] = [
+                            'id' => $containerId,
+                            'name' => ltrim($container['Names'] ?? '', '/'),
+                            'image' => $container['Image'] ?? '',
+                            'status' => $container['Status'] ?? '',
+                            'state' => $container['State'] ?? '',
+                            'ports' => $container['Ports'] ?? '',
+                            'created' => $container['CreatedAt'] ?? '',
+                            'size' => $container['Size'] ?? '',
+                            'stack' => $labels['com.docker.compose.project'] ?? null,
+                            'service' => $labels['com.docker.compose.service'] ?? null,
+                            'labels' => $labels,
+                        ];
+                    }
                 }
             }
 
@@ -630,21 +665,26 @@ class DockerController
         $host = $this->resolveHost($request);
 
         try {
-            $output = $this->execDockerOnHost($host, "images --format '{{json .}}'");
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $images = $this->fetchPortainerImages($host);
+            } else {
+                $output = $this->execDockerOnHost($host, "images --format '{{json .}}'");
 
-            $images = [];
-            $lines = array_filter(explode("\n", trim($output)));
+                $images = [];
+                $lines = array_filter(explode("\n", trim($output)));
 
-            foreach ($lines as $line) {
-                $image = json_decode($line, true);
-                if ($image) {
-                    $images[] = [
-                        'id' => $image['ID'] ?? '',
-                        'repository' => $image['Repository'] ?? '',
-                        'tag' => $image['Tag'] ?? '',
-                        'created' => $image['CreatedAt'] ?? $image['CreatedSince'] ?? '',
-                        'size' => $image['Size'] ?? '',
-                    ];
+                foreach ($lines as $line) {
+                    $image = json_decode($line, true);
+                    if ($image) {
+                        $images[] = [
+                            'id' => $image['ID'] ?? '',
+                            'repository' => $image['Repository'] ?? '',
+                            'tag' => $image['Tag'] ?? '',
+                            'created' => $image['CreatedAt'] ?? $image['CreatedSince'] ?? '',
+                            'size' => $image['Size'] ?? '',
+                        ];
+                    }
                 }
             }
 
@@ -716,20 +756,25 @@ class DockerController
         $host = $this->resolveHost($request);
 
         try {
-            $output = $this->execDockerOnHost($host, "network ls --format '{{json .}}'");
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $networks = $this->fetchPortainerNetworks($host);
+            } else {
+                $output = $this->execDockerOnHost($host, "network ls --format '{{json .}}'");
 
-            $networks = [];
-            $lines = array_filter(explode("\n", trim($output)));
+                $networks = [];
+                $lines = array_filter(explode("\n", trim($output)));
 
-            foreach ($lines as $line) {
-                $network = json_decode($line, true);
-                if ($network) {
-                    $networks[] = [
-                        'id' => $network['ID'] ?? '',
-                        'name' => $network['Name'] ?? '',
-                        'driver' => $network['Driver'] ?? '',
-                        'scope' => $network['Scope'] ?? '',
-                    ];
+                foreach ($lines as $line) {
+                    $network = json_decode($line, true);
+                    if ($network) {
+                        $networks[] = [
+                            'id' => $network['ID'] ?? '',
+                            'name' => $network['Name'] ?? '',
+                            'driver' => $network['Driver'] ?? '',
+                            'scope' => $network['Scope'] ?? '',
+                        ];
+                    }
                 }
             }
 
@@ -750,20 +795,25 @@ class DockerController
         $host = $this->resolveHost($request);
 
         try {
-            $output = $this->execDockerOnHost($host, "volume ls --format '{{json .}}'");
+            // Use Portainer API if portainer_only mode is enabled
+            if ($this->isPortainerOnlyMode($host)) {
+                $volumes = $this->fetchPortainerVolumes($host);
+            } else {
+                $output = $this->execDockerOnHost($host, "volume ls --format '{{json .}}'");
 
-            $volumes = [];
-            $lines = array_filter(explode("\n", trim($output)));
+                $volumes = [];
+                $lines = array_filter(explode("\n", trim($output)));
 
-            foreach ($lines as $line) {
-                $volume = json_decode($line, true);
-                if ($volume) {
-                    $volumes[] = [
-                        'name' => $volume['Name'] ?? '',
-                        'driver' => $volume['Driver'] ?? '',
-                        'mountpoint' => $volume['Mountpoint'] ?? '',
-                        'scope' => $volume['Scope'] ?? '',
-                    ];
+                foreach ($lines as $line) {
+                    $volume = json_decode($line, true);
+                    if ($volume) {
+                        $volumes[] = [
+                            'name' => $volume['Name'] ?? '',
+                            'driver' => $volume['Driver'] ?? '',
+                            'mountpoint' => $volume['Mountpoint'] ?? '',
+                            'scope' => $volume['Scope'] ?? '',
+                        ];
+                    }
                 }
             }
 
@@ -2413,5 +2463,204 @@ class DockerController
             // Silently fail, this is just a fallback
             return null;
         }
+    }
+
+    // ========================================================================
+    // Portainer-Only Mode - Fetch Docker data via Portainer API
+    // ========================================================================
+
+    /**
+     * Check if host should use Portainer-only mode
+     */
+    private function isPortainerOnlyMode(array $host): bool
+    {
+        return !empty($host['portainer_only']) &&
+               !empty($host['portainer_url']) &&
+               !empty($host['portainer_api_token']) &&
+               !empty($host['portainer_endpoint_id']);
+    }
+
+    /**
+     * Make a request to Portainer Docker API
+     */
+    private function portainerDockerRequest(array $host, string $endpoint, string $method = 'GET', ?array $data = null): array
+    {
+        $endpointId = $host['portainer_endpoint_id'];
+        $url = rtrim($host['portainer_url'], '/') . "/api/endpoints/{$endpointId}/docker" . $endpoint;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'X-API-Key: ' . $host['portainer_api_token'],
+                'Content-Type: application/json',
+            ],
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        if ($method === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            if ($data) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            }
+        } elseif ($method !== 'GET') {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+            if ($data) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            }
+        }
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \RuntimeException("Portainer API error: $error");
+        }
+
+        if ($httpCode >= 400) {
+            throw new \RuntimeException("Portainer API returned HTTP $httpCode");
+        }
+
+        return json_decode($response, true) ?: [];
+    }
+
+    /**
+     * Fetch containers from Portainer API
+     */
+    private function fetchPortainerContainers(array $host, bool $all = true): array
+    {
+        $query = $all ? '?all=true' : '';
+        $containers = $this->portainerDockerRequest($host, "/containers/json{$query}");
+
+        return array_map(function ($c) {
+            $name = $c['Names'][0] ?? '';
+            $labels = $c['Labels'] ?? [];
+
+            return [
+                'id' => substr($c['Id'] ?? '', 0, 12),
+                'name' => ltrim($name, '/'),
+                'image' => $c['Image'] ?? '',
+                'status' => $c['Status'] ?? '',
+                'state' => strtolower($c['State'] ?? ''),
+                'ports' => $this->formatPortainerPorts($c['Ports'] ?? []),
+                'created' => date('Y-m-d H:i:s', $c['Created'] ?? 0),
+                'size' => '',
+                'stack' => $labels['com.docker.compose.project'] ?? null,
+                'service' => $labels['com.docker.compose.service'] ?? null,
+                'labels' => $labels,
+            ];
+        }, $containers);
+    }
+
+    /**
+     * Format ports from Portainer API response
+     */
+    private function formatPortainerPorts(array $ports): string
+    {
+        $formatted = [];
+        foreach ($ports as $port) {
+            $public = $port['PublicPort'] ?? null;
+            $private = $port['PrivatePort'] ?? null;
+            $type = $port['Type'] ?? 'tcp';
+
+            if ($public && $private) {
+                $formatted[] = "{$public}->{$private}/{$type}";
+            } elseif ($private) {
+                $formatted[] = "{$private}/{$type}";
+            }
+        }
+        return implode(', ', $formatted);
+    }
+
+    /**
+     * Fetch images from Portainer API
+     */
+    private function fetchPortainerImages(array $host): array
+    {
+        $images = $this->portainerDockerRequest($host, '/images/json');
+
+        return array_map(function ($img) {
+            $repoTags = $img['RepoTags'] ?? ['<none>:<none>'];
+            $tag = $repoTags[0] ?? '<none>:<none>';
+            [$repo, $tagName] = explode(':', $tag) + ['', 'latest'];
+
+            return [
+                'id' => substr($img['Id'] ?? '', 7, 12),
+                'repository' => $repo,
+                'tag' => $tagName,
+                'created' => date('Y-m-d H:i:s', $img['Created'] ?? 0),
+                'size' => $this->formatBytes($img['Size'] ?? 0),
+                'sizeBytes' => $img['Size'] ?? 0,
+            ];
+        }, $images);
+    }
+
+    /**
+     * Fetch networks from Portainer API
+     */
+    private function fetchPortainerNetworks(array $host): array
+    {
+        $networks = $this->portainerDockerRequest($host, '/networks');
+
+        return array_map(function ($net) {
+            return [
+                'id' => substr($net['Id'] ?? '', 0, 12),
+                'name' => $net['Name'] ?? '',
+                'driver' => $net['Driver'] ?? '',
+                'scope' => $net['Scope'] ?? '',
+                'internal' => $net['Internal'] ?? false,
+                'containers' => count($net['Containers'] ?? []),
+            ];
+        }, $networks);
+    }
+
+    /**
+     * Fetch volumes from Portainer API
+     */
+    private function fetchPortainerVolumes(array $host): array
+    {
+        $response = $this->portainerDockerRequest($host, '/volumes');
+        $volumes = $response['Volumes'] ?? [];
+
+        return array_map(function ($vol) {
+            return [
+                'name' => $vol['Name'] ?? '',
+                'driver' => $vol['Driver'] ?? '',
+                'mountpoint' => $vol['Mountpoint'] ?? '',
+                'scope' => $vol['Scope'] ?? '',
+                'created' => $vol['CreatedAt'] ?? '',
+            ];
+        }, $volumes);
+    }
+
+    /**
+     * Fetch Docker info from Portainer API
+     */
+    private function fetchPortainerDockerInfo(array $host): array
+    {
+        return $this->portainerDockerRequest($host, '/info');
+    }
+
+    /**
+     * Fetch Docker version from Portainer API
+     */
+    private function fetchPortainerDockerVersion(array $host): array
+    {
+        return $this->portainerDockerRequest($host, '/version');
+    }
+
+    /**
+     * Format bytes to human readable
+     */
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes < 1024) return $bytes . ' B';
+        if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
+        if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
+        return round($bytes / 1073741824, 2) . ' GB';
     }
 }

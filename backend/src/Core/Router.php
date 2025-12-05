@@ -446,7 +446,6 @@ class Router
                 $protected->get('/tickets', [TicketController::class, 'index']);
                 $protected->get('/tickets/stats', [TicketController::class, 'stats']);
                 $protected->post('/tickets', [TicketController::class, 'create']);
-                $protected->get('/tickets/categories', [TicketController::class, 'getCategories']);
                 $protected->get('/tickets/{id}', [TicketController::class, 'show']);
                 $protected->put('/tickets/{id}', [TicketController::class, 'update']);
                 $protected->delete('/tickets/{id}', [TicketController::class, 'delete']);
@@ -465,10 +464,10 @@ class Router
             })->add(AuthMiddleware::class);
 
             // Public Ticket Routes (no auth required)
+            $group->get('/tickets/categories', [TicketController::class, 'getCategories']);
             $group->post('/tickets/public', [TicketController::class, 'createPublic']);
             $group->get('/tickets/public/{code}', [TicketController::class, 'showPublic']);
             $group->post('/tickets/public/{code}/comments', [TicketController::class, 'addPublicComment']);
-            $group->get('/tickets/public/categories', [TicketController::class, 'getCategories']);
         });
     }
 }

@@ -16,7 +16,9 @@ import {
   ClipboardDocumentIcon,
   GlobeAltIcon,
   LockClosedIcon,
-  EyeIcon
+  EyeIcon,
+  UsersIcon,
+  PencilSquareIcon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -49,7 +51,8 @@ const showShareModal = ref(false)
 const shareDoc = ref(null)
 const shareForm = reactive({
   password: '',
-  expires_in_days: null
+  expires_in_days: null,
+  can_edit: false
 })
 const shareInfo = ref(null)
 const isLoadingShare = ref(false)
@@ -240,6 +243,7 @@ async function openShareModal(doc, event) {
   shareDoc.value = doc
   shareForm.password = ''
   shareForm.expires_in_days = null
+  shareForm.can_edit = false
   shareInfo.value = null
   showShareModal.value = true
 
@@ -266,7 +270,8 @@ async function enableShare() {
   try {
     const response = await api.post(`/api/v1/documents/${shareDoc.value.id}/public`, {
       password: shareForm.password || null,
-      expires_in_days: shareForm.expires_in_days || null
+      expires_in_days: shareForm.expires_in_days || null,
+      can_edit: shareForm.can_edit
     })
     shareInfo.value = response.data.data
 
@@ -704,10 +709,20 @@ onMounted(async () => {
                 <GlobeAltIcon class="w-5 h-5" />
                 <span class="font-medium">Dokument ist öffentlich</span>
               </div>
-              <p class="text-gray-400 text-sm">
-                <EyeIcon class="w-4 h-4 inline mr-1" />
-                {{ shareInfo.view_count || 0 }} Aufrufe
-              </p>
+              <div class="flex items-center gap-4 text-gray-400 text-sm">
+                <span class="flex items-center gap-1">
+                  <EyeIcon class="w-4 h-4" />
+                  {{ shareInfo.view_count || 0 }} Aufrufe
+                </span>
+                <span v-if="shareInfo.can_edit" class="flex items-center gap-1 text-blue-400">
+                  <PencilSquareIcon class="w-4 h-4" />
+                  Bearbeiten erlaubt
+                </span>
+                <span v-if="shareInfo.active_editors > 0" class="flex items-center gap-1 text-yellow-400">
+                  <UsersIcon class="w-4 h-4" />
+                  {{ shareInfo.active_editors }} aktive Bearbeiter
+                </span>
+              </div>
             </div>
 
             <!-- Public URL -->
@@ -730,6 +745,10 @@ onMounted(async () => {
               <p v-if="shareInfo.has_password" class="flex items-center gap-2">
                 <LockClosedIcon class="w-4 h-4 text-yellow-400" />
                 Passwortgeschützt
+              </p>
+              <p v-if="shareInfo.can_edit" class="flex items-center gap-2">
+                <PencilSquareIcon class="w-4 h-4 text-blue-400" />
+                Kollaboratives Bearbeiten aktiviert
               </p>
               <p v-if="shareInfo.expires_at">
                 Läuft ab: {{ formatDate(shareInfo.expires_at) }}
@@ -757,8 +776,43 @@ onMounted(async () => {
           <!-- Share Form (when not shared) -->
           <div v-else class="space-y-4">
             <p class="text-gray-400">
-              Erstelle einen öffentlichen Link zu diesem Dokument. Jeder mit dem Link kann es ansehen.
+              Erstelle einen öffentlichen Link zu diesem Dokument.
             </p>
+
+            <!-- Access Mode -->
+            <div>
+              <label class="label">Zugriffsmodus</label>
+              <div class="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  type="button"
+                  @click="shareForm.can_edit = false"
+                  class="p-3 rounded-lg border-2 transition-all text-left"
+                  :class="!shareForm.can_edit
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <EyeIcon class="w-5 h-5 text-primary-400 mb-1" />
+                  <p class="font-medium text-white text-sm">Nur Lesen</p>
+                  <p class="text-xs text-gray-400">Besucher können nur ansehen</p>
+                </button>
+                <button
+                  type="button"
+                  @click="shareForm.can_edit = true"
+                  class="p-3 rounded-lg border-2 transition-all text-left"
+                  :class="shareForm.can_edit
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <PencilSquareIcon class="w-5 h-5 text-blue-400 mb-1" />
+                  <p class="font-medium text-white text-sm">Bearbeiten</p>
+                  <p class="text-xs text-gray-400">Kollaboratives Arbeiten</p>
+                </button>
+              </div>
+              <p v-if="shareForm.can_edit" class="text-xs text-blue-400 mt-2 flex items-center gap-1">
+                <UsersIcon class="w-3 h-3" />
+                Mehrere Personen können gleichzeitig bearbeiten - Änderungen werden synchronisiert.
+              </p>
+            </div>
 
             <div>
               <label class="label">Passwort (optional)</label>

@@ -1680,6 +1680,9 @@ class DockerController
                 'stack_name' => $stackName,
                 'working_dir' => $workingDir,
                 'backup_date' => date('Y-m-d H:i:s'),
+                'user_id' => $userId,
+                'host_id' => $host['id'] ?? null,
+                'host_name' => $host['name'] ?? 'Lokal',
                 'files' => [],
             ];
 
@@ -1941,12 +1944,23 @@ class DockerController
         $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
         $stackName = $params['stack'] ?? null;
+        $hostId = $params['host_id'] ?? null;
+
+        if (empty($userId)) {
+            return JsonResponse::error('Unauthorized', 401);
+        }
 
         try {
             $backupsDir = $this->getBackupsDirectory($userId);
-            $backups = [];
 
+            // Ensure we're only looking at this user's directory
+            if (!is_dir($backupsDir)) {
+                return JsonResponse::success(['backups' => []]);
+            }
+
+            $backups = [];
             $files = glob($backupsDir . '/*.json');
+
             foreach ($files as $file) {
                 $fileName = basename($file);
 
@@ -1956,9 +1970,21 @@ class DockerController
                 }
 
                 $data = json_decode(file_get_contents($file), true);
+
+                // Verify user_id in backup data matches (extra safety check)
+                if (isset($data['user_id']) && $data['user_id'] !== $userId) {
+                    continue;
+                }
+
+                // Filter by host_id if provided
+                if ($hostId && isset($data['host_id']) && $data['host_id'] !== $hostId) {
+                    continue;
+                }
+
                 $backups[] = [
                     'file' => $fileName,
                     'stack_name' => $data['stack_name'] ?? 'unknown',
+                    'host_id' => $data['host_id'] ?? null,
                     'backup_date' => $data['backup_date'] ?? null,
                     'files_count' => count($data['files'] ?? []),
                     'files' => array_map(fn($f) => $f['name'], $data['files'] ?? []),

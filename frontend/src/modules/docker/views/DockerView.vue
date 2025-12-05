@@ -499,7 +499,8 @@ async function stackRestart(stackName) {
 async function loadBackups() {
   loadingBackups.value = true
   try {
-    const response = await api.get('/api/v1/docker/backups')
+    // Filter backups by selected host
+    const response = await api.get('/api/v1/docker/backups', { params: getHostParams() })
     backups.value = response.data.data?.backups || []
   } catch (e) {
     console.error('Failed to load backups:', e)
@@ -521,7 +522,7 @@ async function backupStack(stackName) {
 
 async function viewBackup(backup) {
   try {
-    const response = await api.get(`/api/v1/docker/backups/${backup.file}`)
+    const response = await api.get(`/api/v1/docker/backups/${backup.file}`, { params: getHostParams() })
     selectedBackup.value = response.data.data?.backup || null
     showBackupModal.value = true
   } catch (e) {
@@ -534,7 +535,7 @@ async function restoreBackup(backup, deploy = false) {
   if (!confirm(`Backup "${backup.file}" ${action}?`)) return
 
   try {
-    await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy })
+    await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy, ...getHostParams() })
     if (deploy) {
       await loadContainers()
     }
@@ -549,7 +550,7 @@ async function deleteBackup(backup) {
   if (!confirm(`Backup "${backup.file}" wirklich löschen?`)) return
 
   try {
-    await api.delete(`/api/v1/docker/backups/${backup.file}`)
+    await api.delete(`/api/v1/docker/backups/${backup.file}`, { params: getHostParams() })
     await loadBackups()
     showBackupModal.value = false
   } catch (e) {

@@ -336,6 +336,43 @@ class AuthService
         $this->userRepository->deleteBackupCodes($userId);
     }
 
+    /**
+     * Verify 2FA for sensitive operations and return a temporary token
+     */
+    public function verifySensitiveOperation(string $userId, string $code, string $operation = 'sensitive'): array
+    {
+        $user = $this->userRepository->findById($userId);
+
+        if (empty($user['two_factor_secret'])) {
+            throw new AuthException('2FA ist nicht aktiviert. Bitte aktiviere 2FA in den Sicherheitseinstellungen.');
+        }
+
+        if (!$this->verify2FACode($user['two_factor_secret'], $code)) {
+            throw new AuthException('Ungültiger 2FA-Code');
+        }
+
+        // Generate a temporary token valid for 5 minutes
+        $sensitiveToken = bin2hex(random_bytes(32));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+
+        // Store the token (we'll use the existing token infrastructure)
+        $this->userRepository->storeSensitiveOperationToken($userId, $sensitiveToken, $operation, $expiresAt);
+
+        return [
+            'sensitive_token' => $sensitiveToken,
+            'expires_at' => $expiresAt,
+            'operation' => $operation,
+        ];
+    }
+
+    /**
+     * Verify a sensitive operation token
+     */
+    public function verifySensitiveToken(string $userId, string $token, string $operation = 'sensitive'): bool
+    {
+        return $this->userRepository->verifySensitiveOperationToken($userId, $token, $operation);
+    }
+
     private function sanitizeUser(array $user): array
     {
         // Add two_factor_enabled flag before removing secret

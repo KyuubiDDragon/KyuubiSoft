@@ -108,6 +108,13 @@ const loadingBackups = ref(false)
 const showBackupModal = ref(false)
 const selectedBackup = ref(null)
 
+// 2FA Verification Modal (for SSH operations)
+const show2FAModal = ref(false)
+const twoFactorCode = ref('')
+const pending2FAOperation = ref(null)
+const verifying2FA = ref(false)
+const twoFactorError = ref('')
+
 // Auto-refresh
 let refreshInterval = null
 const autoRefresh = ref(true)
@@ -509,15 +516,79 @@ async function loadBackups() {
   }
 }
 
-async function backupStack(stackName) {
+async function backupStack(stackName, sensitiveToken = null) {
   try {
-    const response = await api.post(`/api/v1/docker/stacks/${stackName}/backup`, null, { params: getHostParams() })
+    const params = { ...getHostParams() }
+    if (sensitiveToken) {
+      params.sensitive_token = sensitiveToken
+    }
+    const response = await api.post(`/api/v1/docker/stacks/${stackName}/backup`, null, { params })
     const data = response.data.data || response.data
     alert(`Backup erstellt: ${data.backup_file}\nDateien: ${data.files?.join(', ')}`)
     await loadBackups()
   } catch (e) {
+    // Check if 2FA verification is required (status 428)
+    if (e.response?.status === 428 && e.response?.data?.data?.requires_2fa) {
+      // Store the pending operation and show 2FA modal
+      pending2FAOperation.value = {
+        type: 'backup',
+        stackName,
+        operation: e.response?.data?.data?.operation || 'ssh_backup'
+      }
+      twoFactorCode.value = ''
+      twoFactorError.value = ''
+      show2FAModal.value = true
+      return
+    }
     error.value = e.response?.data?.message || 'Backup konnte nicht erstellt werden'
   }
+}
+
+// 2FA Verification for sensitive operations
+async function verify2FAAndRetry() {
+  if (!twoFactorCode.value || twoFactorCode.value.length < 6) {
+    twoFactorError.value = 'Bitte gib einen gültigen 6-stelligen Code ein'
+    return
+  }
+
+  verifying2FA.value = true
+  twoFactorError.value = ''
+
+  try {
+    // Verify 2FA and get sensitive token
+    const response = await api.post('/api/v1/auth/2fa/verify-sensitive', {
+      code: twoFactorCode.value,
+      operation: pending2FAOperation.value?.operation || 'ssh_backup'
+    })
+
+    const sensitiveToken = response.data.data?.sensitive_token
+    if (!sensitiveToken) {
+      throw new Error('Kein Token erhalten')
+    }
+
+    // Close modal
+    show2FAModal.value = false
+
+    // Retry the original operation with the token
+    if (pending2FAOperation.value?.type === 'backup') {
+      await backupStack(pending2FAOperation.value.stackName, sensitiveToken)
+    }
+
+    // Clear pending operation
+    pending2FAOperation.value = null
+    twoFactorCode.value = ''
+  } catch (e) {
+    twoFactorError.value = e.response?.data?.message || 'Verifizierung fehlgeschlagen'
+  } finally {
+    verifying2FA.value = false
+  }
+}
+
+function cancel2FA() {
+  show2FAModal.value = false
+  pending2FAOperation.value = null
+  twoFactorCode.value = ''
+  twoFactorError.value = ''
 }
 
 async function viewBackup(backup) {
@@ -1694,6 +1765,71 @@ DB_PASSWORD=secret"
                 <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
                 Wiederherstellen & Deploy
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 2FA Verification Modal -->
+    <Teleport to="body">
+      <div v-if="show2FAModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/70" @click="cancel2FA"></div>
+        <div class="relative bg-dark-700 rounded-xl shadow-xl w-full max-w-md">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-white">2FA-Verifizierung erforderlich</h3>
+                <p class="text-sm text-gray-400">SSH-Zugriff erfordert zusätzliche Sicherheit</p>
+              </div>
+            </div>
+
+            <p class="text-gray-300 mb-4">
+              Um auf den Remote-Server per SSH zuzugreifen, bestätige bitte mit deinem 2FA-Code.
+            </p>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">2FA-Code</label>
+                <input
+                  v-model="twoFactorCode"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="6"
+                  class="input w-full text-center text-2xl tracking-widest font-mono"
+                  placeholder="000000"
+                  @keyup.enter="verify2FAAndRetry"
+                  autofocus
+                />
+              </div>
+
+              <div v-if="twoFactorError" class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <p class="text-sm text-red-400">{{ twoFactorError }}</p>
+              </div>
+
+              <div class="flex gap-3">
+                <button
+                  @click="cancel2FA"
+                  class="btn-secondary flex-1"
+                  :disabled="verifying2FA"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  @click="verify2FAAndRetry"
+                  class="btn-primary flex-1"
+                  :disabled="verifying2FA || twoFactorCode.length < 6"
+                >
+                  <ArrowPathIcon v-if="verifying2FA" class="w-4 h-4 mr-2 animate-spin" />
+                  {{ verifying2FA ? 'Verifiziere...' : 'Bestätigen' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>

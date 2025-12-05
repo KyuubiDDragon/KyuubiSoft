@@ -7,6 +7,7 @@ namespace App\Modules\Docker\Controllers;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Modules\Docker\Repositories\DockerHostRepository;
+use App\Modules\Auth\Services\AuthService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Routing\RouteContext;
@@ -14,7 +15,8 @@ use Slim\Routing\RouteContext;
 class DockerController
 {
     public function __construct(
-        private readonly DockerHostRepository $hostRepository
+        private readonly DockerHostRepository $hostRepository,
+        private readonly AuthService $authService
     ) {}
 
     /**
@@ -1688,7 +1690,7 @@ class DockerController
         try {
             // For Portainer-only mode, get everything from Portainer API
             if ($isPortainerOnly) {
-                return $this->backupStackFromPortainer($host, $stackName, $userId);
+                return $this->backupStackFromPortainer($host, $stackName, $userId, $request);
             }
 
             // Get compose file path from labels first
@@ -2547,7 +2549,7 @@ class DockerController
     /**
      * Backup stack from Portainer API (for Portainer-only mode)
      */
-    private function backupStackFromPortainer(array $host, string $stackName, string $userId): ResponseInterface
+    private function backupStackFromPortainer(array $host, string $stackName, string $userId, ServerRequestInterface $request): ResponseInterface
     {
         // First check if we have a mapping to a Portainer stack
         $mapping = $this->hostRepository->getStackPortainerMapping($userId, $host['id'] ?? null, $stackName);
@@ -2578,7 +2580,8 @@ class DockerController
             if (!empty($containers)) {
                 // Stack exists but wasn't created through Portainer - try SSH fallback
                 if ($this->isSSHEnabled($host)) {
-                    return $this->backupStackViaSSH($host, $stackName, $userId, $containers);
+                    // SSH operations require 2FA verification
+                    return $this->backupStackViaSSH($host, $stackName, $userId, $containers, $request);
                 }
 
                 return JsonResponse::error(
@@ -2648,9 +2651,32 @@ class DockerController
 
     /**
      * Backup stack via SSH (for docker-compose created stacks on Portainer-only hosts)
+     * Requires 2FA verification for security
      */
-    private function backupStackViaSSH(array $host, string $stackName, string $userId, array $containers): ResponseInterface
+    private function backupStackViaSSH(array $host, string $stackName, string $userId, array $containers, ServerRequestInterface $request): ResponseInterface
     {
+        // SSH operations require 2FA verification
+        $params = $request->getQueryParams();
+        $body = $request->getParsedBody() ?? [];
+        $sensitiveToken = $params['sensitive_token'] ?? $body['sensitive_token'] ?? null;
+
+        if (empty($sensitiveToken)) {
+            return JsonResponse::error(
+                '2FA-Verifizierung erforderlich für SSH-Zugriff. Bitte bestätige mit deinem 2FA-Code.',
+                428,  // 428 Precondition Required
+                ['requires_2fa' => true, 'operation' => 'ssh_backup']
+            );
+        }
+
+        // Verify the sensitive token
+        if (!$this->authService->verifySensitiveToken($userId, $sensitiveToken, 'ssh_backup')) {
+            return JsonResponse::error(
+                'Ungültiger oder abgelaufener 2FA-Token. Bitte erneut verifizieren.',
+                401,
+                ['requires_2fa' => true, 'operation' => 'ssh_backup']
+            );
+        }
+
         // Get working directory from container labels
         $workingDir = null;
         $configFiles = null;

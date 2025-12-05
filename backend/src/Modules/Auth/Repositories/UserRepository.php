@@ -139,4 +139,54 @@ class UserRepository
     {
         return (int) $this->db->fetchOne('SELECT COUNT(*) FROM users');
     }
+
+    /**
+     * Store a sensitive operation token for 2FA verification
+     */
+    public function storeSensitiveOperationToken(string $userId, string $token, string $operation, string $expiresAt): void
+    {
+        // Delete any existing tokens for this user and operation
+        $this->db->executeStatement(
+            'DELETE FROM sensitive_operation_tokens WHERE user_id = ? AND operation = ?',
+            [$userId, $operation]
+        );
+
+        $this->db->insert('sensitive_operation_tokens', [
+            'user_id' => $userId,
+            'token' => hash('sha256', $token),
+            'operation' => $operation,
+            'expires_at' => $expiresAt,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Verify and consume a sensitive operation token
+     */
+    public function verifySensitiveOperationToken(string $userId, string $token, string $operation): bool
+    {
+        // Clean up expired tokens
+        $this->db->executeStatement(
+            'DELETE FROM sensitive_operation_tokens WHERE expires_at < ?',
+            [date('Y-m-d H:i:s')]
+        );
+
+        $hashedToken = hash('sha256', $token);
+
+        $result = $this->db->fetchAssociative(
+            'SELECT * FROM sensitive_operation_tokens WHERE user_id = ? AND token = ? AND operation = ? AND expires_at > ?',
+            [$userId, $hashedToken, $operation, date('Y-m-d H:i:s')]
+        );
+
+        if ($result) {
+            // Token is single-use, delete after verification
+            $this->db->delete('sensitive_operation_tokens', [
+                'user_id' => $userId,
+                'token' => $hashedToken,
+            ]);
+            return true;
+        }
+
+        return false;
+    }
 }

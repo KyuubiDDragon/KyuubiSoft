@@ -75,6 +75,7 @@ class Router
                 $protected->post('/auth/2fa/enable', [AuthController::class, 'enable2FA']);
                 $protected->post('/auth/2fa/verify', [AuthController::class, 'verify2FA']);
                 $protected->delete('/auth/2fa/disable', [AuthController::class, 'disable2FA']);
+                $protected->post('/auth/2fa/verify-sensitive', [AuthController::class, 'verifySensitiveOperation']);
 
                 // Dashboard
                 $protected->get('/dashboard', [DashboardController::class, 'index']);

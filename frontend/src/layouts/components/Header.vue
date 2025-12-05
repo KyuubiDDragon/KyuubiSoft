@@ -10,7 +10,17 @@ import {
   SunIcon,
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
+  Bars3Icon,
 } from '@heroicons/vue/24/outline'
+
+const props = defineProps({
+  isMobile: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['toggle-sidebar'])
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -39,7 +49,16 @@ function goToSettings() {
 </script>
 
 <template>
-  <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-6">
+  <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-4 lg:px-6">
+    <!-- Mobile menu button -->
+    <button
+      v-if="isMobile"
+      @click="$emit('toggle-sidebar')"
+      class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors mr-2"
+    >
+      <Bars3Icon class="w-6 h-6" />
+    </button>
+
     <!-- Global Search -->
     <div class="flex-1">
       <GlobalSearch />

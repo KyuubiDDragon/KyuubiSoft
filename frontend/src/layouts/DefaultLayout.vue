@@ -1,22 +1,64 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
 import QuickNotes from '@/components/QuickNotes.vue'
 
 const uiStore = useUiStore()
+const isMobile = ref(false)
+const mobileSidebarOpen = ref(false)
 
-const mainClass = computed(() => ({
-  'ml-64': !uiStore.sidebarCollapsed,
-  'ml-20': uiStore.sidebarCollapsed,
-}))
+// Check if mobile on mount and window resize
+function checkMobile() {
+  isMobile.value = window.innerWidth < 1024 // lg breakpoint
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
+const mainClass = computed(() => {
+  // On mobile, no margin - full width
+  if (isMobile.value) {
+    return {}
+  }
+  // On desktop, apply sidebar margin
+  return {
+    'ml-64': !uiStore.sidebarCollapsed,
+    'ml-20': uiStore.sidebarCollapsed,
+  }
+})
+
+function toggleMobileSidebar() {
+  mobileSidebarOpen.value = !mobileSidebarOpen.value
+}
+
+function closeMobileSidebar() {
+  mobileSidebarOpen.value = false
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-dark-900">
+    <!-- Mobile sidebar overlay -->
+    <div
+      v-if="isMobile && mobileSidebarOpen"
+      class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+      @click="closeMobileSidebar"
+    ></div>
+
     <!-- Sidebar -->
-    <Sidebar />
+    <Sidebar
+      :is-mobile="isMobile"
+      :mobile-open="mobileSidebarOpen"
+      @close="closeMobileSidebar"
+    />
 
     <!-- Main content -->
     <div
@@ -24,10 +66,13 @@ const mainClass = computed(() => ({
       :class="mainClass"
     >
       <!-- Header -->
-      <Header />
+      <Header
+        :is-mobile="isMobile"
+        @toggle-sidebar="toggleMobileSidebar"
+      />
 
       <!-- Page content -->
-      <main class="p-6">
+      <main class="p-4 lg:p-6">
         <slot />
       </main>
     </div>

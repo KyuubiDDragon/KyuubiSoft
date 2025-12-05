@@ -1,6 +1,5 @@
 import { ref, onUnmounted, computed } from 'vue'
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'y-websocket'
 
 /**
  * Composable for real-time collaboration using Yjs
@@ -19,6 +18,7 @@ export function useCollaboration(roomName, options = {}) {
   const isSynced = ref(false)
   const connectionError = ref(null)
   const connectedUsers = ref([])
+  const isAvailable = ref(false)
 
   // Yjs instances
   let ydoc = null
@@ -28,62 +28,85 @@ export function useCollaboration(roomName, options = {}) {
   /**
    * Initialize collaboration connection
    */
-  function connect() {
+  async function connect() {
     if (provider) {
       console.warn('Already connected to collaboration server')
-      return { ydoc, provider, awareness }
+      return { ydoc, provider, awareness, isAvailable: isAvailable.value }
     }
 
     // Create Yjs document
     ydoc = new Y.Doc()
 
-    // Connect to WebSocket server
-    provider = new WebsocketProvider(serverUrl, roomName, ydoc, {
-      connect: true,
-      awareness: true,
-    })
+    try {
+      // Dynamically import y-websocket to catch import errors
+      const { WebsocketProvider } = await import('y-websocket')
 
-    awareness = provider.awareness
+      // Connect to WebSocket server
+      provider = new WebsocketProvider(serverUrl, roomName, ydoc, {
+        connect: true,
+      })
 
-    // Set local user state
-    awareness.setLocalStateField('user', {
-      name: userName,
-      color: userColor,
-    })
+      awareness = provider.awareness
 
-    // Connection status handlers
-    provider.on('status', ({ status }) => {
-      isConnected.value = status === 'connected'
-      if (status === 'disconnected') {
-        connectionError.value = 'Verbindung zum Server verloren'
-      } else {
-        connectionError.value = null
-      }
-    })
+      // Set local user state
+      awareness.setLocalStateField('user', {
+        name: userName,
+        color: userColor,
+      })
 
-    provider.on('sync', (synced) => {
-      isSynced.value = synced
-    })
+      // Connection status handlers
+      provider.on('status', ({ status }) => {
+        isConnected.value = status === 'connected'
+        if (status === 'connected') {
+          isAvailable.value = true
+          connectionError.value = null
+        } else if (status === 'disconnected') {
+          connectionError.value = 'Verbindung zum Server verloren'
+        }
+      })
 
-    provider.on('connection-error', (error) => {
-      connectionError.value = 'Verbindungsfehler: ' + error.message
-      console.error('WebSocket connection error:', error)
-    })
+      provider.on('sync', (synced) => {
+        isSynced.value = synced
+      })
 
-    // Track connected users via awareness
-    awareness.on('change', () => {
-      const states = Array.from(awareness.getStates().entries())
-      connectedUsers.value = states
-        .filter(([_, state]) => state.user)
-        .map(([clientId, state]) => ({
-          clientId,
-          name: state.user.name,
-          color: state.user.color,
-          isCurrentUser: clientId === awareness.clientID,
-        }))
-    })
+      provider.on('connection-error', (error) => {
+        connectionError.value = 'Echtzeit-Bearbeitung nicht verfügbar. Server ist nicht erreichbar.'
+        console.error('WebSocket connection error:', error)
+      })
 
-    return { ydoc, provider, awareness }
+      // Handle WebSocket close events
+      provider.on('connection-close', (event) => {
+        if (!isAvailable.value) {
+          connectionError.value = 'Collaboration-Server nicht erreichbar. Lokale Bearbeitung möglich.'
+        }
+      })
+
+      // Track connected users via awareness
+      awareness.on('change', () => {
+        const states = Array.from(awareness.getStates().entries())
+        connectedUsers.value = states
+          .filter(([_, state]) => state.user)
+          .map(([clientId, state]) => ({
+            clientId,
+            name: state.user.name,
+            color: state.user.color,
+            isCurrentUser: clientId === awareness.clientID,
+          }))
+      })
+
+      // Set a timeout to detect if connection is not working
+      setTimeout(() => {
+        if (!isConnected.value && !connectionError.value) {
+          connectionError.value = 'Verbindung zum Collaboration-Server dauert länger als erwartet...'
+        }
+      }, 5000)
+
+      return { ydoc, provider, awareness, isAvailable: true }
+    } catch (error) {
+      console.error('Failed to initialize collaboration:', error)
+      connectionError.value = 'Collaboration konnte nicht initialisiert werden: ' + error.message
+      return { ydoc, provider: null, awareness: null, isAvailable: false }
+    }
   }
 
   /**
@@ -148,6 +171,7 @@ export function useCollaboration(roomName, options = {}) {
     isSynced,
     connectionError,
     connectedUsers,
+    isAvailable,
 
     // Methods
     connect,

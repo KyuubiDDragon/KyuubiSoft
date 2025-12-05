@@ -39,6 +39,8 @@ const isEditing = ref(false)
 const editorName = ref('')
 const showNameModal = ref(false)
 const userColor = ref(getRandomColor())
+const collaborationAvailable = ref(false)
+const isConnecting = ref(false)
 
 // Collaboration
 let collaboration = null
@@ -146,7 +148,7 @@ function startEditing() {
 }
 
 // Join collaborative session
-function joinCollaborativeSession() {
+async function joinCollaborativeSession() {
   if (!editorName.value.trim()) {
     editorName.value = 'Anonym'
   }
@@ -162,25 +164,38 @@ function joinCollaborativeSession() {
     userColor: userColor.value,
   })
 
-  const result = collaboration.connect()
-  ydoc = result.ydoc
-  provider = result.provider
-
-  // Get the correct Yjs type based on document format
-  if (document.value.format === 'code' || document.value.format === 'markdown') {
-    ytext = collaboration.getText('monaco')
-
-    // Initialize with existing content if document has content and ytext is empty
-    if (document.value.content && ytext.toString() === '') {
-      ytext.insert(0, document.value.content)
-    }
-  } else {
-    // For richtext, we use XML fragment (handled by TipTap collaboration extension)
-    ytext = null
-  }
-
-  isEditing.value = true
+  isConnecting.value = true
   showNameModal.value = false
+
+  try {
+    const result = await collaboration.connect()
+    ydoc = result.ydoc
+    provider = result.provider
+    collaborationAvailable.value = result.isAvailable && result.provider !== null
+
+    // Get the correct Yjs type based on document format
+    if (document.value.format === 'code' || document.value.format === 'markdown') {
+      if (collaborationAvailable.value) {
+        ytext = collaboration.getText('monaco')
+
+        // Initialize with existing content if document has content and ytext is empty
+        if (document.value.content && ytext.toString() === '') {
+          ytext.insert(0, document.value.content)
+        }
+      }
+    } else {
+      // For richtext, we use XML fragment (handled by TipTap collaboration extension)
+      ytext = null
+    }
+
+    isEditing.value = true
+  } catch (error) {
+    console.error('Failed to join collaborative session:', error)
+    collaborationAvailable.value = false
+    isEditing.value = true // Still allow editing, just not collaboratively
+  } finally {
+    isConnecting.value = false
+  }
 }
 
 // Leave collaborative session
@@ -193,6 +208,8 @@ function leaveSession() {
   provider = null
   ytext = null
   isEditing.value = false
+  collaborationAvailable.value = false
+  isConnecting.value = false
 }
 
 // Cancel editing
@@ -335,13 +352,19 @@ onUnmounted(() => {
             <div v-if="isEditing" class="flex-shrink-0 flex items-center gap-3">
               <!-- Connection status -->
               <div class="flex items-center gap-2 text-sm">
-                <span v-if="isConnected" class="text-green-400 flex items-center gap-1">
-                  <SignalIcon class="w-4 h-4" />
-                  Verbunden
-                </span>
-                <span v-else class="text-yellow-400 flex items-center gap-1">
+                <template v-if="collaborationAvailable">
+                  <span v-if="isConnected" class="text-green-400 flex items-center gap-1">
+                    <SignalIcon class="w-4 h-4" />
+                    Echtzeit aktiv
+                  </span>
+                  <span v-else class="text-yellow-400 flex items-center gap-1">
+                    <SignalSlashIcon class="w-4 h-4" />
+                    Verbinde...
+                  </span>
+                </template>
+                <span v-else class="text-orange-400 flex items-center gap-1">
                   <SignalSlashIcon class="w-4 h-4" />
-                  Verbinde...
+                  Lokale Bearbeitung
                 </span>
               </div>
               <button
@@ -354,7 +377,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Connected users -->
-          <div v-if="isEditing && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-dark-700">
+          <div v-if="isEditing && collaborationAvailable && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-dark-700">
             <div class="flex items-center gap-2 text-sm text-gray-400">
               <UsersIcon class="w-4 h-4" />
               <span>Live-Bearbeiter:</span>
@@ -378,19 +401,32 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Connecting indicator -->
+        <div v-if="isConnecting" class="bg-dark-800 border border-dark-700 rounded-xl p-8 text-center">
+          <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p class="text-gray-400">Verbinde mit Collaboration-Server...</p>
+        </div>
+
         <!-- Content -->
-        <div class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+        <div v-else class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
           <!-- Rich Text -->
           <template v-if="document.format === 'richtext' || !document.format">
-            <!-- Collaborative editor when editing -->
+            <!-- Collaborative editor when editing and collaboration is available -->
             <CollaborativeTipTapEditor
-              v-if="isEditing && ydoc && provider"
+              v-if="isEditing && collaborationAvailable && ydoc && provider"
               :ydoc="ydoc"
               :provider="provider"
               :userName="editorName"
               :userColor="userColor"
               :editable="true"
               placeholder="Beginne hier zu schreiben..."
+            />
+            <!-- Fallback TipTap editor when editing but collaboration is not available -->
+            <TipTapEditor
+              v-else-if="isEditing && !collaborationAvailable"
+              :model-value="document.content"
+              :editable="true"
+              placeholder="Collaboration nicht verfügbar. Lokale Bearbeitung aktiv..."
             />
             <!-- Regular view when not editing -->
             <div
@@ -402,12 +438,11 @@ onUnmounted(() => {
 
           <!-- Markdown -->
           <template v-else-if="document.format === 'markdown'">
-            <!-- For markdown, we'll use a simple textarea with live preview -->
-            <div v-if="isEditing && ydoc && provider" class="grid grid-cols-1 lg:grid-cols-2">
+            <!-- For markdown with collaboration -->
+            <div v-if="isEditing && collaborationAvailable && ydoc && provider && ytext" class="grid grid-cols-1 lg:grid-cols-2">
               <div class="border-r border-dark-700">
                 <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown (Echtzeit-Bearbeitung)</div>
                 <CollaborativeMonacoEditor
-                  v-if="ytext"
                   :ydoc="ydoc"
                   :provider="provider"
                   :ytext="ytext"
@@ -424,6 +459,25 @@ onUnmounted(() => {
                 ></div>
               </div>
             </div>
+            <!-- Fallback Monaco editor when collaboration not available -->
+            <div v-else-if="isEditing && !collaborationAvailable" class="grid grid-cols-1 lg:grid-cols-2">
+              <div class="border-r border-dark-700">
+                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown (Lokale Bearbeitung)</div>
+                <MonacoEditor
+                  :model-value="document.content"
+                  :read-only="false"
+                  language="markdown"
+                  height="600px"
+                />
+              </div>
+              <div>
+                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Vorschau</div>
+                <div
+                  class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
+                  v-html="renderMarkdown(document.content)"
+                ></div>
+              </div>
+            </div>
             <div
               v-else
               class="p-8 prose prose-invert max-w-none"
@@ -434,11 +488,18 @@ onUnmounted(() => {
           <!-- Code -->
           <div v-else-if="document.format === 'code'">
             <CollaborativeMonacoEditor
-              v-if="isEditing && ydoc && provider && ytext"
+              v-if="isEditing && collaborationAvailable && ydoc && provider && ytext"
               :ydoc="ydoc"
               :provider="provider"
               :ytext="ytext"
               :readOnly="false"
+              height="600px"
+            />
+            <!-- Fallback Monaco editor when collaboration not available -->
+            <MonacoEditor
+              v-else-if="isEditing && !collaborationAvailable"
+              :model-value="document.content"
+              :read-only="false"
               height="600px"
             />
             <MonacoEditor

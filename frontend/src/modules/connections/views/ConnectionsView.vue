@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -26,6 +26,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
+const router = useRouter()
 const uiStore = useUiStore()
 
 // State
@@ -442,6 +443,14 @@ function formatDate(dateString) {
 
         <!-- Actions -->
         <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            v-if="conn.type === 'ssh' || conn.type === 'sftp'"
+            @click="router.push(`/connections/${conn.id}/terminal`)"
+            class="flex-1 btn-primary py-2 text-sm"
+          >
+            <CommandLineIcon class="w-4 h-4 mr-1" />
+            Terminal
+          </button>
           <button
             @click="showCredentials(conn)"
             class="flex-1 btn-secondary py-2 text-sm"

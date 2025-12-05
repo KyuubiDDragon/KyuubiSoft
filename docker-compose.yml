@@ -17,7 +17,6 @@ services:
       - ./backend/public:/var/www/backend/public:ro
     depends_on:
       - backend
-      - collaboration
     networks:
       - kyuubisoft_network
     restart: unless-stopped

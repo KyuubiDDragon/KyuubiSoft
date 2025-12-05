@@ -356,6 +356,143 @@ class DocumentController
         return JsonResponse::success(null, 'Share removed successfully');
     }
 
+    // ========================================================================
+    // Public Sharing
+    // ========================================================================
+
+    public function enablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Only owner can manage public sharing
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        // Generate unique token
+        $token = bin2hex(random_bytes(16));
+
+        $updateData = [
+            'is_public' => 1,
+            'public_token' => $token,
+            'public_view_count' => 0,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        // Optional password protection
+        if (!empty($data['password'])) {
+            $updateData['public_password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        } else {
+            $updateData['public_password'] = null;
+        }
+
+        // Optional expiration
+        if (!empty($data['expires_at'])) {
+            $updateData['public_expires_at'] = $data['expires_at'];
+        } else {
+            $updateData['public_expires_at'] = null;
+        }
+
+        $this->db->update('documents', $updateData, ['id' => $docId]);
+
+        return JsonResponse::success([
+            'public_token' => $token,
+            'public_url' => '/doc/' . $token,
+        ], 'Public sharing enabled');
+    }
+
+    public function disablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can manage public sharing
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        $this->db->update('documents', [
+            'is_public' => 0,
+            'public_token' => null,
+            'public_password' => null,
+            'public_expires_at' => null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $docId]);
+
+        return JsonResponse::success(null, 'Public sharing disabled');
+    }
+
+    public function getPublicShareInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can view share info
+        $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
+        if (!$doc || $doc['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can view public share info');
+        }
+
+        return JsonResponse::success([
+            'is_public' => (bool) $doc['is_public'],
+            'public_token' => $doc['public_token'],
+            'public_url' => $doc['public_token'] ? '/doc/' . $doc['public_token'] : null,
+            'has_password' => !empty($doc['public_password']),
+            'expires_at' => $doc['public_expires_at'],
+            'view_count' => (int) $doc['public_view_count'],
+        ]);
+    }
+
+    // Public view (no auth required)
+    public function showPublic(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getParsedBody() ?? [];
+
+        $doc = $this->db->fetchAssociative(
+            'SELECT d.*, u.username as owner_name
+             FROM documents d
+             LEFT JOIN users u ON d.user_id = u.id
+             WHERE d.public_token = ? AND d.is_public = 1',
+            [$token]
+        );
+
+        if (!$doc) {
+            throw new NotFoundException('Document not found or not publicly shared');
+        }
+
+        // Check expiration
+        if ($doc['public_expires_at'] && strtotime($doc['public_expires_at']) < time()) {
+            throw new ForbiddenException('This shared link has expired');
+        }
+
+        // Check password if set
+        if (!empty($doc['public_password'])) {
+            $providedPassword = $data['password'] ?? $request->getQueryParams()['password'] ?? null;
+            if (!$providedPassword) {
+                return JsonResponse::error('Password required', 401, ['requires_password' => true]);
+            }
+            if (!password_verify($providedPassword, $doc['public_password'])) {
+                return JsonResponse::error('Invalid password', 401, ['requires_password' => true]);
+            }
+        }
+
+        // Increment view count
+        $this->db->executeStatement(
+            'UPDATE documents SET public_view_count = public_view_count + 1 WHERE id = ?',
+            [$doc['id']]
+        );
+
+        // Remove sensitive data
+        unset($doc['user_id'], $doc['public_password'], $doc['folder_id']);
+
+        return JsonResponse::success($doc);
+    }
+
     private function createVersion(string $docId, string $content, string $userId, ?string $summary = null): void
     {
         $lastVersion = (int) $this->db->fetchOne(

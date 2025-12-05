@@ -33,6 +33,8 @@ use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
 use App\Modules\Docker\Controllers\DockerController;
+use App\Modules\Tickets\Controllers\TicketController;
+use App\Modules\Tickets\Controllers\TicketCategoryController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -440,7 +442,33 @@ class Router
                 $protected->post('/server/services/custom', [ServerController::class, 'addCustomService']);
                 $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService']);
 
+                // Tickets
+                $protected->get('/tickets', [TicketController::class, 'index']);
+                $protected->get('/tickets/stats', [TicketController::class, 'stats']);
+                $protected->post('/tickets', [TicketController::class, 'create']);
+                $protected->get('/tickets/categories', [TicketController::class, 'getCategories']);
+                $protected->get('/tickets/{id}', [TicketController::class, 'show']);
+                $protected->put('/tickets/{id}', [TicketController::class, 'update']);
+                $protected->delete('/tickets/{id}', [TicketController::class, 'delete']);
+                $protected->post('/tickets/{id}/status', [TicketController::class, 'updateStatus']);
+                $protected->post('/tickets/{id}/assign', [TicketController::class, 'assign']);
+                $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment']);
+
+                // Ticket Categories (Admin)
+                $protected->get('/admin/tickets/categories', [TicketCategoryController::class, 'index']);
+                $protected->post('/admin/tickets/categories', [TicketCategoryController::class, 'create']);
+                $protected->get('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'show']);
+                $protected->put('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'update']);
+                $protected->delete('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'delete']);
+                $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder']);
+
             })->add(AuthMiddleware::class);
+
+            // Public Ticket Routes (no auth required)
+            $group->post('/tickets/public', [TicketController::class, 'createPublic']);
+            $group->get('/tickets/public/{code}', [TicketController::class, 'showPublic']);
+            $group->post('/tickets/public/{code}/comments', [TicketController::class, 'addPublicComment']);
+            $group->get('/tickets/public/categories', [TicketController::class, 'getCategories']);
         });
     }
 }

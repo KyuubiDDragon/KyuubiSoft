@@ -35,6 +35,19 @@ import {
   TagIcon,
 } from '@heroicons/vue/24/outline'
 
+const props = defineProps({
+  isMobile: {
+    type: Boolean,
+    default: false
+  },
+  mobileOpen: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['close'])
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -212,10 +225,21 @@ function isGroupActive(group) {
   return group.children.some(child => isActive(child.href))
 }
 
-const sidebarClass = computed(() => ({
-  'w-64': !uiStore.sidebarCollapsed,
-  'w-20': uiStore.sidebarCollapsed,
-}))
+const sidebarClass = computed(() => {
+  // On mobile, use full width sidebar that slides in/out
+  if (props.isMobile) {
+    return {
+      'w-64': true,
+      '-translate-x-full': !props.mobileOpen,
+      'translate-x-0': props.mobileOpen,
+    }
+  }
+  // On desktop, use collapsible sidebar
+  return {
+    'w-64': !uiStore.sidebarCollapsed,
+    'w-20': uiStore.sidebarCollapsed,
+  }
+})
 
 // Collect all navigation hrefs for sibling detection
 const allNavigationHrefs = computed(() => {
@@ -265,6 +289,10 @@ function isActive(href) {
 
 function navigateTo(href) {
   router.push(href)
+  // Close mobile sidebar after navigation
+  if (props.isMobile) {
+    emit('close')
+  }
 }
 </script>
 
@@ -282,7 +310,7 @@ function navigateTo(href) {
           class="w-10 h-10"
         />
         <h1
-          v-if="!uiStore.sidebarCollapsed"
+          v-if="isMobile || !uiStore.sidebarCollapsed"
           class="text-xl font-bold text-gradient"
         >
           KyuubiSoft
@@ -291,7 +319,7 @@ function navigateTo(href) {
 
       <!-- Project Selector -->
       <div class="px-3 py-3 border-b border-dark-700">
-        <div v-if="!uiStore.sidebarCollapsed" class="relative">
+        <div v-if="isMobile || !uiStore.sidebarCollapsed" class="relative">
           <button
             @click="showProjectDropdown = !showProjectDropdown"
             class="w-full flex items-center justify-between px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
@@ -350,8 +378,8 @@ function navigateTo(href) {
           ></div>
         </div>
 
-        <!-- Collapsed: Just show icon with color indicator -->
-        <div v-else class="flex justify-center">
+        <!-- Collapsed: Just show icon with color indicator (desktop only) -->
+        <div v-else-if="!isMobile" class="flex justify-center">
           <button
             @click="showProjectDropdown = !showProjectDropdown"
             class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors relative"
@@ -382,7 +410,7 @@ function navigateTo(href) {
             ]"
           >
             <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-            <span v-if="!uiStore.sidebarCollapsed" class="font-medium">
+            <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium">
               {{ group.name }}
             </span>
           </button>
@@ -391,7 +419,7 @@ function navigateTo(href) {
           <div v-else class="space-y-1">
             <!-- Group header -->
             <button
-              @click="uiStore.sidebarCollapsed ? null : toggleGroup(group.id)"
+              @click="(isMobile || !uiStore.sidebarCollapsed) ? toggleGroup(group.id) : null"
               class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200"
               :class="[
                 isGroupActive(group)
@@ -401,12 +429,12 @@ function navigateTo(href) {
             >
               <div class="flex items-center gap-3">
                 <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-                <span v-if="!uiStore.sidebarCollapsed" class="font-medium text-sm">
+                <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm">
                   {{ group.name }}
                 </span>
               </div>
               <ChevronDownIcon
-                v-if="!uiStore.sidebarCollapsed"
+                v-if="isMobile || !uiStore.sidebarCollapsed"
                 class="w-4 h-4 transition-transform duration-200"
                 :class="{ 'rotate-180': isGroupExpanded(group.id) }"
               />
@@ -414,7 +442,7 @@ function navigateTo(href) {
 
             <!-- Children (expanded view) -->
             <div
-              v-if="!uiStore.sidebarCollapsed && isGroupExpanded(group.id)"
+              v-if="(isMobile || !uiStore.sidebarCollapsed) && isGroupExpanded(group.id)"
               class="ml-4 pl-4 border-l border-dark-600 space-y-1"
             >
               <button
@@ -433,9 +461,9 @@ function navigateTo(href) {
               </button>
             </div>
 
-            <!-- Collapsed view: Show tooltip/dropdown on hover -->
+            <!-- Collapsed view: Show tooltip/dropdown on hover (desktop only) -->
             <div
-              v-if="uiStore.sidebarCollapsed"
+              v-if="!isMobile && uiStore.sidebarCollapsed"
               class="group relative"
             >
               <div
@@ -469,7 +497,7 @@ function navigateTo(href) {
       <!-- User section -->
       <div class="p-4 border-t border-dark-700">
         <div
-          v-if="!uiStore.sidebarCollapsed"
+          v-if="isMobile || !uiStore.sidebarCollapsed"
           class="flex items-center gap-3"
         >
           <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
@@ -487,7 +515,7 @@ function navigateTo(href) {
           </div>
         </div>
         <div
-          v-else
+          v-else-if="!isMobile"
           class="flex justify-center"
         >
           <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
@@ -498,8 +526,9 @@ function navigateTo(href) {
         </div>
       </div>
 
-      <!-- Collapse button -->
+      <!-- Collapse button (desktop only) -->
       <button
+        v-if="!isMobile"
         @click="uiStore.toggleSidebarCollapse"
         class="absolute -right-3 top-20 w-6 h-6 bg-dark-700 border border-dark-600 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
       >
@@ -511,6 +540,15 @@ function navigateTo(href) {
           v-else
           class="w-4 h-4"
         />
+      </button>
+
+      <!-- Close button (mobile only) -->
+      <button
+        v-if="isMobile"
+        @click="$emit('close')"
+        class="absolute top-4 right-4 w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
+      >
+        <XMarkIcon class="w-5 h-5" />
       </button>
     </div>
   </aside>

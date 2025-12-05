@@ -328,8 +328,9 @@ function copyPublicUrl() {
 
 async function loadSharedDocuments() {
   try {
-    const response = await api.get('/api/v1/documents', { params: { shared: true } })
-    sharedDocuments.value = (response.data.data?.items || []).filter(d => d.is_public)
+    const response = await api.get('/api/v1/documents', { params: { include_shared: '1' } })
+    // Show documents that are either shared with user (shared_permission) or public (is_public)
+    sharedDocuments.value = (response.data.data?.items || []).filter(d => d.shared_permission || d.is_public)
   } catch (error) {
     console.error('Error loading shared documents:', error)
   }

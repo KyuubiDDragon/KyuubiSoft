@@ -125,26 +125,6 @@ services:
     restart: unless-stopped
 
   # ===================
-  # Collaboration Server (Yjs WebSocket)
-  # ===================
-  # TODO: Enable after building and pushing the image to ghcr.io
-  # collaboration:
-  #   image: ghcr.io/kyuubiddragon/kyuubisoft-collaboration:latest
-  #   container_name: kyuubisoft_collaboration
-  #   environment:
-  #     PORT: 1234
-  #     HOST: 0.0.0.0
-  #   networks:
-  #     - kyuubisoft_network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:1234/health"]
-  #     interval: 30s
-  #     timeout: 3s
-  #     retries: 3
-  #     start_period: 10s
-
-  # ===================
   # Uptime Scheduler
   # ===================
   scheduler:

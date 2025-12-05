@@ -30,6 +30,10 @@ const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
+const TicketsView = () => import('@/modules/tickets/views/TicketsView.vue')
+const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.vue')
+const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategoriesView.vue')
+const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
 
 const routes = [
   // Auth routes
@@ -204,6 +208,40 @@ const routes = [
     name: 'system',
     component: SystemView,
     meta: { requiresAuth: true, roles: ['owner'] },
+  },
+
+  // Ticket routes
+  {
+    path: '/tickets',
+    name: 'tickets',
+    component: TicketsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/tickets/categories',
+    name: 'ticket-categories',
+    component: TicketCategoriesView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/tickets/:id',
+    name: 'ticket-detail',
+    component: TicketDetailView,
+    meta: { requiresAuth: true },
+  },
+
+  // Public ticket routes (no auth)
+  {
+    path: '/support',
+    name: 'public-tickets',
+    component: PublicTicketView,
+    meta: { layout: 'auth', guest: true },
+  },
+  {
+    path: '/support/:code',
+    name: 'public-ticket-view',
+    component: PublicTicketView,
+    meta: { layout: 'auth', guest: true },
   },
 
   // Catch all

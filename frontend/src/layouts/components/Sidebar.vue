@@ -31,6 +31,8 @@ import {
   CommandLineIcon,
   CalendarIcon,
   CubeIcon,
+  TicketIcon,
+  TagIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -145,6 +147,17 @@ const allNavigationGroups = [
       { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon },
       { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon },
       { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon },
+    ],
+  },
+
+  // Support
+  {
+    id: 'support',
+    name: 'Support',
+    icon: TicketIcon,
+    children: [
+      { name: 'Tickets', href: '/tickets', icon: TicketIcon },
+      { name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, roles: ['owner', 'admin'] },
     ],
   },
 

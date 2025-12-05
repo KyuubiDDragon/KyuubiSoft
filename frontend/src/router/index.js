@@ -252,12 +252,12 @@ const routes = [
     meta: { layout: 'auth', guest: true },
   },
 
-  // Public document view (no auth)
+  // Public document view (accessible to everyone - logged in or not)
   {
     path: '/doc/:token',
     name: 'public-document',
     component: PublicDocumentView,
-    meta: { layout: 'auth', guest: true },
+    meta: { layout: 'auth' },
   },
 
   // Catch all

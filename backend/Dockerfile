@@ -18,6 +18,9 @@ RUN apk add --no-cache \
     py3-pip \
     ffmpeg \
     docker-cli \
+    openssh-client \
+    sshpass \
+    libssh2-dev \
     $PHPIZE_DEPS
 
 # Install yt-dlp
@@ -40,6 +43,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Install Redis extension
 RUN pecl install redis-6.0.2 \
     && docker-php-ext-enable redis
+
+# Install SSH2 extension for SSH terminal functionality
+RUN pecl install ssh2-1.4.1 \
+    && docker-php-ext-enable ssh2
 
 # Install php-fpm-healthcheck
 RUN curl -o /usr/local/bin/php-fpm-healthcheck https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \

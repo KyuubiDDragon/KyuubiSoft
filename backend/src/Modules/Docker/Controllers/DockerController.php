@@ -2525,31 +2525,53 @@ class DockerController
      */
     private function backupStackFromPortainer(array $host, string $stackName, string $userId): ResponseInterface
     {
-        // Get stack info from Portainer
-        $stacks = $this->fetchPortainerStacks($host);
-        $portainerStack = null;
+        // First check if we have a mapping to a Portainer stack
+        $mapping = $this->hostRepository->getStackPortainerMapping($userId, $host['id'] ?? null, $stackName);
+        $portainerStackId = null;
 
-        foreach ($stacks as $stack) {
-            if (strtolower($stack['name']) === strtolower($stackName)) {
-                $portainerStack = $stack;
-                break;
+        if ($mapping) {
+            $portainerStackId = (int)$mapping['portainer_stack_id'];
+        } else {
+            // Try to find stack by name in Portainer
+            $stacks = $this->fetchPortainerStacks($host);
+            foreach ($stacks as $stack) {
+                if (strtolower($stack['name']) === strtolower($stackName)) {
+                    $portainerStackId = $stack['id'];
+                    // Auto-link for future use
+                    $this->hostRepository->linkStackToPortainer($userId, $host['id'] ?? null, $stackName, $stack['id']);
+                    break;
+                }
             }
         }
 
-        if (!$portainerStack) {
-            return JsonResponse::error("Stack '$stackName' not found in Portainer", 404);
+        // If no Portainer stack found, check if containers exist (docker-compose created stack)
+        if (!$portainerStackId) {
+            // Check if containers with this compose project exist
+            $containers = $this->portainerDockerRequest($host, '/containers/json?all=true&filters=' . urlencode(json_encode([
+                'label' => ["com.docker.compose.project=$stackName"]
+            ])));
+
+            if (!empty($containers)) {
+                // Stack exists but wasn't created through Portainer - can't backup
+                return JsonResponse::error(
+                    "Stack '$stackName' wurde nicht über Portainer erstellt. " .
+                    "Backup ist nur für Portainer-verwaltete Stacks möglich. " .
+                    "Bitte erstelle den Stack neu über Portainer, um Backups zu ermöglichen.",
+                    400
+                );
+            }
+
+            return JsonResponse::error("Stack '$stackName' nicht gefunden", 404);
         }
 
-        $stackId = $portainerStack['id'];
-
         // Get compose file content
-        $composeContent = $this->fetchPortainerStackFile($host, $stackId);
+        $composeContent = $this->fetchPortainerStackFile($host, $portainerStackId);
         if (!$composeContent) {
-            return JsonResponse::error('Could not fetch compose file from Portainer', 500);
+            return JsonResponse::error('Compose-Datei konnte nicht von Portainer geladen werden', 500);
         }
 
         // Get env vars
-        $envContent = $this->fetchPortainerStackEnv($host, $stackId);
+        $envContent = $this->fetchPortainerStackEnv($host, $portainerStackId);
 
         // Prepare backup data
         $backupData = [

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
 import {
   ArrowPathIcon,
@@ -34,6 +35,8 @@ import {
   ArrowUpTrayIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
+
+const projectStore = useProjectStore()
 
 // State
 const activeTab = ref('containers')
@@ -126,14 +129,19 @@ function getHostParams() {
 // Methods
 async function loadHosts() {
   try {
-    const response = await api.get('/api/v1/docker/hosts')
+    // Filter hosts by selected project
+    const params = projectStore.getProjectFilter()
+    const response = await api.get('/api/v1/docker/hosts', { params })
     dockerHosts.value = response.data.data.hosts || []
 
-    // Find default host
-    const defaultHost = dockerHosts.value.find(h => h.is_default)
+    // Find default host or first available
+    const defaultHost = dockerHosts.value.find(h => h.is_default) || dockerHosts.value[0]
     if (defaultHost) {
       selectedHostId.value = defaultHost.id
       currentHostName.value = defaultHost.name
+    } else {
+      selectedHostId.value = null
+      currentHostName.value = 'Kein Host'
     }
   } catch (e) {
     console.error('Failed to load Docker hosts:', e)
@@ -621,6 +629,14 @@ onUnmounted(() => {
 watch(activeTab, (newTab) => {
   if (newTab === 'backups') {
     loadBackups()
+  }
+})
+
+// Watch for project changes to reload hosts
+watch(() => projectStore.selectedProjectId, async () => {
+  await loadHosts()
+  if (selectedHostId.value) {
+    await loadContainers()
   }
 })
 </script>

@@ -39,6 +39,7 @@ const form = ref({
   portainer_url: '',
   portainer_api_token: '',
   portainer_endpoint_id: '',
+  portainer_only: false,
 })
 
 const savingPortainer = ref(false)
@@ -111,6 +112,7 @@ function openCreateModal() {
     portainer_url: '',
     portainer_api_token: '',
     portainer_endpoint_id: '',
+    portainer_only: false,
   }
   showModal.value = true
 }
@@ -133,6 +135,7 @@ function openEditModal(host) {
     portainer_url: host.portainer_url || '',
     portainer_api_token: host.portainer_api_token || '',
     portainer_endpoint_id: host.portainer_endpoint_id || '',
+    portainer_only: !!host.portainer_only,
   }
   showModal.value = true
 }
@@ -163,6 +166,10 @@ async function saveHost() {
       description: form.value.description || null,
       project_id: form.value.project_id || null,
       type: form.value.type,
+      portainer_url: form.value.portainer_url || null,
+      portainer_api_token: form.value.portainer_api_token || null,
+      portainer_endpoint_id: form.value.portainer_endpoint_id ? parseInt(form.value.portainer_endpoint_id) : null,
+      portainer_only: form.value.portainer_only ? 1 : 0,
     }
 
     if (form.value.type === 'socket') {
@@ -601,14 +608,29 @@ onMounted(() => {
                     <p class="text-xs text-gray-500 mt-1">Erstelle einen API Token in Portainer unter Account Settings → Access Tokens</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Endpoint ID (Optional)</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Endpoint ID</label>
                     <input
                       v-model="form.portainer_endpoint_id"
                       type="number"
                       class="input w-full"
                       placeholder="1"
                     />
-                    <p class="text-xs text-gray-500 mt-1">Nur nötig wenn mehrere Endpoints in Portainer konfiguriert sind</p>
+                    <p class="text-xs text-gray-500 mt-1">Die Endpoint ID findest du in Portainer unter Environments</p>
+                  </div>
+                  <div class="bg-dark-700 rounded-lg p-4 border border-primary-500/30">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <input
+                        v-model="form.portainer_only"
+                        type="checkbox"
+                        class="w-5 h-5 rounded border-gray-600 bg-dark-800 text-primary-500 focus:ring-primary-500"
+                      />
+                      <div>
+                        <span class="text-sm font-medium text-white">Nur Portainer API verwenden</span>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                          Alle Docker-Daten werden über Portainer geladen. Kein lokaler Docker-Socket nötig.
+                        </p>
+                      </div>
+                    </label>
                   </div>
                   <div class="flex justify-end">
                     <button

@@ -62,10 +62,10 @@ const priorityOptions = [
   { value: 'urgent', label: 'Dringend', color: 'bg-red-500' },
 ]
 
-// Fetch categories
+// Fetch categories (public endpoint)
 async function fetchCategories() {
   try {
-    const response = await api.get('/api/v1/tickets/categories')
+    const response = await api.get('/api/v1/public/ticket-categories')
     categories.value = response.data.data.categories || []
   } catch (err) {
     console.error('Error fetching categories:', err)

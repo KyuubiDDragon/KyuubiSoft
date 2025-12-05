@@ -445,12 +445,13 @@ class Router
                 // Tickets
                 $protected->get('/tickets', [TicketController::class, 'index']);
                 $protected->get('/tickets/stats', [TicketController::class, 'stats']);
+                $protected->get('/tickets/categories', [TicketController::class, 'getCategories']);
                 $protected->post('/tickets', [TicketController::class, 'create']);
                 $protected->get('/tickets/{id}', [TicketController::class, 'show']);
                 $protected->put('/tickets/{id}', [TicketController::class, 'update']);
                 $protected->delete('/tickets/{id}', [TicketController::class, 'delete']);
-                $protected->post('/tickets/{id}/status', [TicketController::class, 'updateStatus']);
-                $protected->post('/tickets/{id}/assign', [TicketController::class, 'assign']);
+                $protected->put('/tickets/{id}/status', [TicketController::class, 'updateStatus']);
+                $protected->put('/tickets/{id}/assign', [TicketController::class, 'assign']);
                 $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment']);
 
                 // Ticket Categories (Admin)
@@ -464,7 +465,7 @@ class Router
             })->add(AuthMiddleware::class);
 
             // Public Ticket Routes (no auth required)
-            $group->get('/tickets/categories', [TicketController::class, 'getCategories']);
+            $group->get('/public/ticket-categories', [TicketController::class, 'getCategories']);
             $group->post('/tickets/public', [TicketController::class, 'createPublic']);
             $group->get('/tickets/public/{code}', [TicketController::class, 'showPublic']);
             $group->post('/tickets/public/{code}/comments', [TicketController::class, 'addPublicComment']);

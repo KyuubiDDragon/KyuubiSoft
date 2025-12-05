@@ -111,7 +111,7 @@ class DockerController
             'tcp_host' => $type === 'tcp' ? $data['tcp_host'] : null,
             'tcp_port' => $type === 'tcp' ? (int) ($data['tcp_port'] ?? 2375) : null,
             'tls_enabled' => (int) ($data['tls_enabled'] ?? 0),
-            'tls_ca_cert' => $data['tls_ca_cert'] ?? null,
+            'tls_ca' => $data['tls_ca'] ?? null,
             'tls_cert' => $data['tls_cert'] ?? null,
             'tls_key' => $data['tls_key'] ?? null,
             'is_active' => 1,
@@ -173,8 +173,8 @@ class DockerController
         if (isset($data['tls_enabled'])) {
             $updateData['tls_enabled'] = (int) $data['tls_enabled'];
         }
-        if (isset($data['tls_ca_cert'])) {
-            $updateData['tls_ca_cert'] = $data['tls_ca_cert'];
+        if (isset($data['tls_ca'])) {
+            $updateData['tls_ca'] = $data['tls_ca'];
         }
         if (isset($data['tls_cert'])) {
             $updateData['tls_cert'] = $data['tls_cert'];
@@ -860,8 +860,8 @@ class DockerController
             // Add TLS options if enabled
             if ($host['tls_enabled']) {
                 $dockerCmd .= ' --tls';
-                if (!empty($host['tls_ca_cert'])) {
-                    $caPath = $this->writeTempCert($host['tls_ca_cert'], 'ca');
+                if (!empty($host['tls_ca'])) {
+                    $caPath = $this->writeTempCert($host['tls_ca'], 'ca');
                     $dockerCmd .= " --tlscacert=$caPath";
                 }
                 if (!empty($host['tls_cert'])) {

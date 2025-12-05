@@ -633,6 +633,13 @@ watch(activeTab, (newTab) => {
   }
 })
 
+// Watch for host changes to reload backups if on backups tab
+watch(selectedHostId, () => {
+  if (activeTab.value === 'backups') {
+    loadBackups()
+  }
+})
+
 // Watch for project changes to reload hosts
 watch(() => projectStore.selectedProjectId, async () => {
   await loadHosts()

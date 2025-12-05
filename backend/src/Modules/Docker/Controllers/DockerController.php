@@ -1653,12 +1653,20 @@ class DockerController
             throw new ValidationException('Invalid stack name');
         }
 
-        // Only allow on local host
-        if ($host['type'] !== 'socket' || !empty($host['tcp_host'])) {
-            return JsonResponse::error('Backup only available on local Docker host', 403);
+        // Check if this is Portainer-only mode
+        $isPortainerOnly = $this->isPortainerOnlyMode($host);
+
+        // Only allow on local host OR Portainer-only mode
+        if (!$isPortainerOnly && ($host['type'] !== 'socket' || !empty($host['tcp_host']))) {
+            return JsonResponse::error('Backup only available on local Docker host or Portainer-only hosts', 403);
         }
 
         try {
+            // For Portainer-only mode, get everything from Portainer API
+            if ($isPortainerOnly) {
+                return $this->backupStackFromPortainer($host, $stackName, $userId);
+            }
+
             // Get compose file path from labels first
             $output = $this->execDockerOnHost($host, "ps -a --filter 'label=com.docker.compose.project=$stackName' --format '{{.ID}}'");
             $containerIds = array_filter(explode("\n", trim($output)));
@@ -2510,6 +2518,82 @@ class DockerController
             // Silently fail, this is just a fallback
             return null;
         }
+    }
+
+    /**
+     * Backup stack from Portainer API (for Portainer-only mode)
+     */
+    private function backupStackFromPortainer(array $host, string $stackName, string $userId): ResponseInterface
+    {
+        // Get stack info from Portainer
+        $stacks = $this->fetchPortainerStacks($host);
+        $portainerStack = null;
+
+        foreach ($stacks as $stack) {
+            if (strtolower($stack['name']) === strtolower($stackName)) {
+                $portainerStack = $stack;
+                break;
+            }
+        }
+
+        if (!$portainerStack) {
+            return JsonResponse::error("Stack '$stackName' not found in Portainer", 404);
+        }
+
+        $stackId = $portainerStack['id'];
+
+        // Get compose file content
+        $composeContent = $this->fetchPortainerStackFile($host, $stackId);
+        if (!$composeContent) {
+            return JsonResponse::error('Could not fetch compose file from Portainer', 500);
+        }
+
+        // Get env vars
+        $envContent = $this->fetchPortainerStackEnv($host, $stackId);
+
+        // Prepare backup data
+        $backupData = [
+            'stack_name' => $stackName,
+            'working_dir' => 'portainer://' . $stackName,
+            'backup_date' => date('Y-m-d H:i:s'),
+            'user_id' => $userId,
+            'host_id' => $host['id'] ?? null,
+            'host_name' => $host['name'] ?? 'Portainer',
+            'files' => [
+                [
+                    'name' => 'docker-compose.yml',
+                    'path' => 'portainer://' . $stackName,
+                    'content' => $composeContent,
+                ],
+            ],
+        ];
+
+        // Add env file if present
+        if ($envContent) {
+            $backupData['files'][] = [
+                'name' => '.env',
+                'path' => 'portainer://' . $stackName . '/.env',
+                'content' => $envContent,
+            ];
+        }
+
+        // Save backup file
+        $backupDir = __DIR__ . '/../../../../storage/docker/backups/' . $userId;
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+
+        $backupFile = $stackName . '_' . date('Y-m-d_H-i-s') . '.json';
+        $backupPath = $backupDir . '/' . $backupFile;
+
+        file_put_contents($backupPath, json_encode($backupData, JSON_PRETTY_PRINT));
+
+        return JsonResponse::success([
+            'message' => 'Backup created successfully from Portainer',
+            'backup_file' => $backupFile,
+            'files' => array_map(fn($f) => $f['name'], $backupData['files']),
+            'source' => 'portainer',
+        ]);
     }
 
     // ========================================================================

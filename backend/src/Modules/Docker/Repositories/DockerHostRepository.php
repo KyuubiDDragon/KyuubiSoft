@@ -39,7 +39,8 @@ class DockerHostRepository
         $params = [$userId];
 
         if ($projectId !== null) {
-            $sql .= ' AND dh.project_id = ?';
+            // Show hosts for specific project OR hosts without any project (global hosts)
+            $sql .= ' AND (dh.project_id = ? OR dh.project_id IS NULL)';
             $params[] = $projectId;
         }
 

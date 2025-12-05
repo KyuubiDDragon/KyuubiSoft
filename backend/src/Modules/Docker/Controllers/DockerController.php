@@ -39,15 +39,16 @@ class DockerController
         $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
         $grouped = ($params['grouped'] ?? 'false') === 'true';
+        $projectId = $params['project_id'] ?? null;
 
         if ($grouped) {
             $hosts = $this->hostRepository->findByUserGroupedByProject($userId);
         } else {
-            $hosts = $this->hostRepository->findByUser($userId);
+            $hosts = $this->hostRepository->findByUser($userId, $projectId);
         }
 
         // Auto-create default local host if user has no hosts configured
-        if (empty($hosts)) {
+        if (empty($hosts) && !$projectId) {
             $defaultHost = $this->hostRepository->createDefaultForUser($userId);
             $hosts = [$defaultHost];
         }

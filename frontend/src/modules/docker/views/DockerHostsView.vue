@@ -33,7 +33,7 @@ const form = ref({
   tcp_host: '',
   tcp_port: 2375,
   tls_enabled: false,
-  tls_ca_cert: '',
+  tls_ca: '',
   tls_cert: '',
   tls_key: '',
   portainer_url: '',
@@ -105,7 +105,7 @@ function openCreateModal() {
     tcp_host: '',
     tcp_port: 2375,
     tls_enabled: false,
-    tls_ca_cert: '',
+    tls_ca: '',
     tls_cert: '',
     tls_key: '',
     portainer_url: '',
@@ -127,7 +127,7 @@ function openEditModal(host) {
     tcp_host: host.tcp_host || '',
     tcp_port: host.tcp_port || 2375,
     tls_enabled: !!host.tls_enabled,
-    tls_ca_cert: host.tls_ca_cert || '',
+    tls_ca: host.tls_ca || '',
     tls_cert: host.tls_cert || '',
     tls_key: host.tls_key || '',
     portainer_url: host.portainer_url || '',
@@ -172,7 +172,7 @@ async function saveHost() {
       data.tcp_port = form.value.tcp_port
       data.tls_enabled = form.value.tls_enabled ? 1 : 0
       if (form.value.tls_enabled) {
-        data.tls_ca_cert = form.value.tls_ca_cert
+        data.tls_ca = form.value.tls_ca
         data.tls_cert = form.value.tls_cert
         data.tls_key = form.value.tls_key
       }
@@ -550,7 +550,7 @@ onMounted(() => {
                   <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">CA Zertifikat</label>
                     <textarea
-                      v-model="form.tls_ca_cert"
+                      v-model="form.tls_ca"
                       class="input w-full h-20 text-xs font-mono"
                       placeholder="-----BEGIN CERTIFICATE-----"
                     ></textarea>

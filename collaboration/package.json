@@ -1,0 +1,17 @@
+{
+  "name": "kyuubisoft-collaboration",
+  "version": "1.0.0",
+  "description": "Real-time collaboration server for KyuubiSoft documents",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2",
+    "y-websocket": "^1.5.0",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.10",
+    "lib0": "^0.2.88"
+  }
+}

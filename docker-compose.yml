@@ -17,6 +17,7 @@ services:
       - ./backend/public:/var/www/backend/public:ro
     depends_on:
       - backend
+      - collaboration
     networks:
       - kyuubisoft_network
     restart: unless-stopped
@@ -127,6 +128,29 @@ services:
     networks:
       - kyuubisoft_network
     restart: unless-stopped
+
+  # ===================
+  # Collaboration Server (Yjs WebSocket)
+  # ===================
+  collaboration:
+    build:
+      context: ./collaboration
+      dockerfile: Dockerfile
+    container_name: kyuubisoft_collaboration
+    ports:
+      - "${COLLAB_PORT:-1234}:1234"
+    environment:
+      PORT: 1234
+      HOST: 0.0.0.0
+    networks:
+      - kyuubisoft_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:1234/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   # ===================
   # phpMyAdmin (Development)

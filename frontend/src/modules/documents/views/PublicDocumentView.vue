@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted, defineAsyncComponent, watch } from 'vue'
+import { ref, onMounted, onUnmounted, defineAsyncComponent, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
+import { useCollaboration } from '@/composables/useCollaboration'
 import {
   DocumentTextIcon,
   LockClosedIcon,
@@ -11,13 +12,15 @@ import {
   UserIcon,
   UsersIcon,
   PencilSquareIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
+  SignalIcon,
+  SignalSlashIcon,
 } from '@heroicons/vue/24/outline'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 
-// Lazy load heavy editors for code
+// Lazy load heavy editors
 const MonacoEditor = defineAsyncComponent(() => import('@/components/MonacoEditor.vue'))
+const CollaborativeTipTapEditor = defineAsyncComponent(() => import('@/components/CollaborativeTipTapEditor.vue'))
+const CollaborativeMonacoEditor = defineAsyncComponent(() => import('@/components/CollaborativeMonacoEditor.vue'))
 
 const route = useRoute()
 
@@ -33,18 +36,31 @@ const storedPassword = ref(null)
 // Collaborative editing state
 const canEdit = ref(false)
 const isEditing = ref(false)
-const sessionToken = ref(null)
 const editorName = ref('')
 const showNameModal = ref(false)
-const activeEditors = ref([])
-const editContent = ref('')
-const contentVersion = ref(1)
-const isSaving = ref(false)
-const lastSaved = ref(null)
-const hasUnsavedChanges = ref(false)
-const syncError = ref('')
-let pollInterval = null
-let saveTimeout = null
+const userColor = ref(getRandomColor())
+
+// Collaboration
+let collaboration = null
+let ydoc = null
+let provider = null
+let ytext = null
+
+// Computed for showing connected users
+const connectedUsers = computed(() => {
+  if (!collaboration) return []
+  return collaboration.connectedUsers.value
+})
+
+const isConnected = computed(() => {
+  if (!collaboration) return false
+  return collaboration.isConnected.value
+})
+
+const connectionError = computed(() => {
+  if (!collaboration) return null
+  return collaboration.connectionError.value
+})
 
 // Simple Markdown to HTML conversion
 function renderMarkdown(content) {
@@ -91,9 +107,6 @@ async function fetchDocument(password = null) {
 
     document.value = response.data.data
     canEdit.value = response.data.data.can_edit || false
-    contentVersion.value = response.data.data.content_version || 1
-    activeEditors.value = response.data.data.active_editors || []
-    editContent.value = response.data.data.content || ''
     requiresPassword.value = false
   } catch (err) {
     if (err.response?.status === 401 && err.response?.data?.data?.requires_password) {
@@ -132,8 +145,8 @@ function startEditing() {
   showNameModal.value = true
 }
 
-// Join edit session
-async function joinEditSession() {
+// Join collaborative session
+function joinCollaborativeSession() {
   if (!editorName.value.trim()) {
     editorName.value = 'Anonym'
   }
@@ -141,141 +154,44 @@ async function joinEditSession() {
   // Store name for future use
   localStorage.setItem('kyuubisoft_editor_name', editorName.value)
 
-  try {
-    const token = route.params.token
-    const response = await api.post(`/api/v1/documents/public/${token}/join`, {
-      editor_name: editorName.value,
-      password: storedPassword.value
-    })
+  const token = route.params.token
 
-    sessionToken.value = response.data.data.session_token
-    editContent.value = response.data.data.content || ''
-    contentVersion.value = response.data.data.content_version || 1
-    activeEditors.value = response.data.data.active_editors || []
-    isEditing.value = true
-    showNameModal.value = false
+  // Initialize collaboration
+  collaboration = useCollaboration(token, {
+    userName: editorName.value,
+    userColor: userColor.value,
+  })
 
-    // Start polling for changes
-    startPolling()
-  } catch (err) {
-    error.value = 'Fehler beim Beitreten der Bearbeitungssitzung'
-  }
-}
+  const result = collaboration.connect()
+  ydoc = result.ydoc
+  provider = result.provider
 
-// Start polling for changes
-function startPolling() {
-  if (pollInterval) clearInterval(pollInterval)
+  // Get the correct Yjs type based on document format
+  if (document.value.format === 'code' || document.value.format === 'markdown') {
+    ytext = collaboration.getText('monaco')
 
-  pollInterval = setInterval(async () => {
-    if (!sessionToken.value) return
-
-    try {
-      const token = route.params.token
-      const response = await api.get(`/api/v1/documents/public/${token}/poll`, {
-        params: {
-          session_token: sessionToken.value,
-          last_version: contentVersion.value
-        }
-      })
-
-      const data = response.data.data
-      activeEditors.value = data.active_editors || []
-
-      // If there are changes and we don't have unsaved local changes, update content
-      if (data.has_changes && !hasUnsavedChanges.value) {
-        editContent.value = data.content
-        contentVersion.value = data.version
-        document.value.content = data.content
-      } else if (data.has_changes && hasUnsavedChanges.value) {
-        // Conflict - show warning
-        syncError.value = 'Andere Benutzer haben Änderungen vorgenommen. Speichere deine Änderungen, um sie zusammenzuführen.'
-      }
-    } catch (err) {
-      console.error('Poll error:', err)
+    // Initialize with existing content if document has content and ytext is empty
+    if (document.value.content && ytext.toString() === '') {
+      ytext.insert(0, document.value.content)
     }
-  }, 3000) // Poll every 3 seconds
-}
-
-// Stop polling
-function stopPolling() {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-}
-
-// Save content
-async function saveContent() {
-  if (!sessionToken.value || isSaving.value) return
-
-  isSaving.value = true
-  syncError.value = ''
-
-  try {
-    const token = route.params.token
-    const response = await api.post(`/api/v1/documents/public/${token}/update`, {
-      session_token: sessionToken.value,
-      content: editContent.value,
-      version: contentVersion.value,
-      password: storedPassword.value
-    })
-
-    contentVersion.value = response.data.data.version
-    lastSaved.value = new Date()
-    hasUnsavedChanges.value = false
-    document.value.content = editContent.value
-  } catch (err) {
-    if (err.response?.status === 409) {
-      // Version conflict
-      syncError.value = 'Konflikt: Das Dokument wurde von jemand anderem geändert. Lade die Seite neu.'
-      // Update to latest version
-      const conflictData = err.response.data.data
-      if (conflictData) {
-        contentVersion.value = conflictData.current_version
-      }
-    } else {
-      syncError.value = 'Fehler beim Speichern'
-    }
-  } finally {
-    isSaving.value = false
-  }
-}
-
-// Auto-save with debounce
-function onContentChange(newContent) {
-  editContent.value = newContent
-  hasUnsavedChanges.value = true
-
-  // Clear previous timeout
-  if (saveTimeout) clearTimeout(saveTimeout)
-
-  // Auto-save after 2 seconds of inactivity
-  saveTimeout = setTimeout(() => {
-    saveContent()
-  }, 2000)
-}
-
-// Leave edit session
-async function leaveEditSession() {
-  // Save any pending changes
-  if (hasUnsavedChanges.value) {
-    await saveContent()
+  } else {
+    // For richtext, we use XML fragment (handled by TipTap collaboration extension)
+    ytext = null
   }
 
-  stopPolling()
+  isEditing.value = true
+  showNameModal.value = false
+}
 
-  if (sessionToken.value) {
-    try {
-      const token = route.params.token
-      await api.post(`/api/v1/documents/public/${token}/leave`, {
-        session_token: sessionToken.value
-      })
-    } catch (err) {
-      console.error('Error leaving session:', err)
-    }
+// Leave collaborative session
+function leaveSession() {
+  if (collaboration) {
+    collaboration.disconnect()
+    collaboration = null
   }
-
-  sessionToken.value = null
+  ydoc = null
+  provider = null
+  ytext = null
   isEditing.value = false
 }
 
@@ -307,26 +223,33 @@ function getFormatLabel(format) {
   return labels[format] || format
 }
 
-// Watch for content changes in editing mode
-watch(editContent, () => {
-  if (isEditing.value) {
-    hasUnsavedChanges.value = true
-  }
-})
+// Get random color for cursor
+function getRandomColor() {
+  const colors = [
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // violet
+    '#ec4899', // pink
+    '#06b6d4', // cyan
+    '#f97316', // orange
+  ]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
 
 onMounted(() => {
   fetchDocument()
 })
 
 onUnmounted(() => {
-  leaveEditSession()
-  if (saveTimeout) clearTimeout(saveTimeout)
+  leaveSession()
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-900 py-8 px-4">
-    <div class="max-w-4xl mx-auto">
+  <div class="min-h-screen bg-dark-900 py-8 px-4 lg:px-8">
+    <div class="max-w-7xl mx-auto">
       <!-- Loading -->
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
@@ -410,28 +333,19 @@ onUnmounted(() => {
 
             <!-- Editing controls -->
             <div v-if="isEditing" class="flex-shrink-0 flex items-center gap-3">
+              <!-- Connection status -->
               <div class="flex items-center gap-2 text-sm">
-                <span v-if="isSaving" class="text-yellow-400 flex items-center gap-1">
-                  <ArrowPathIcon class="w-4 h-4 animate-spin" />
-                  Speichern...
+                <span v-if="isConnected" class="text-green-400 flex items-center gap-1">
+                  <SignalIcon class="w-4 h-4" />
+                  Verbunden
                 </span>
-                <span v-else-if="hasUnsavedChanges" class="text-yellow-400">
-                  Ungespeicherte Änderungen
-                </span>
-                <span v-else-if="lastSaved" class="text-green-400 flex items-center gap-1">
-                  <CheckCircleIcon class="w-4 h-4" />
-                  Gespeichert
+                <span v-else class="text-yellow-400 flex items-center gap-1">
+                  <SignalSlashIcon class="w-4 h-4" />
+                  Verbinde...
                 </span>
               </div>
               <button
-                @click="saveContent"
-                :disabled="isSaving || !hasUnsavedChanges"
-                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50"
-              >
-                Speichern
-              </button>
-              <button
-                @click="leaveEditSession"
+                @click="leaveSession"
                 class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
               >
                 Beenden
@@ -439,42 +353,46 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Active editors -->
-          <div v-if="activeEditors.length > 0" class="mt-4 pt-4 border-t border-dark-700">
+          <!-- Connected users -->
+          <div v-if="isEditing && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-dark-700">
             <div class="flex items-center gap-2 text-sm text-gray-400">
               <UsersIcon class="w-4 h-4" />
-              <span>Aktive Bearbeiter:</span>
+              <span>Live-Bearbeiter:</span>
               <div class="flex items-center gap-2">
                 <span
-                  v-for="editor in activeEditors"
-                  :key="editor.session_token"
-                  class="px-2 py-0.5 bg-dark-700 rounded text-gray-300"
-                  :class="{ 'bg-blue-600/20 text-blue-400': editor.session_token === sessionToken }"
+                  v-for="user in connectedUsers"
+                  :key="user.clientId"
+                  class="px-2 py-0.5 rounded text-white text-xs"
+                  :style="{ backgroundColor: user.color + '40', borderColor: user.color, borderWidth: '1px' }"
                 >
-                  {{ editor.editor_name }}
-                  <span v-if="editor.session_token === sessionToken" class="text-xs">(Du)</span>
+                  {{ user.name }}
+                  <span v-if="user.isCurrentUser" class="opacity-60">(Du)</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Sync error -->
-          <div v-if="syncError" class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-            {{ syncError }}
+          <!-- Connection error -->
+          <div v-if="connectionError" class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            {{ connectionError }}
           </div>
         </div>
 
         <!-- Content -->
         <div class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
-          <!-- Rich Text - Editing -->
+          <!-- Rich Text -->
           <template v-if="document.format === 'richtext' || !document.format">
-            <TipTapEditor
-              v-if="isEditing"
-              :model-value="editContent"
-              @update:model-value="onContentChange"
+            <!-- Collaborative editor when editing -->
+            <CollaborativeTipTapEditor
+              v-if="isEditing && ydoc && provider"
+              :ydoc="ydoc"
+              :provider="provider"
+              :userName="editorName"
+              :userColor="userColor"
               :editable="true"
               placeholder="Beginne hier zu schreiben..."
             />
+            <!-- Regular view when not editing -->
             <div
               v-else
               class="p-8 prose prose-invert max-w-none"
@@ -482,23 +400,27 @@ onUnmounted(() => {
             ></div>
           </template>
 
-          <!-- Markdown - Editing -->
+          <!-- Markdown -->
           <template v-else-if="document.format === 'markdown'">
-            <div v-if="isEditing" class="grid grid-cols-1 lg:grid-cols-2">
+            <!-- For markdown, we'll use a simple textarea with live preview -->
+            <div v-if="isEditing && ydoc && provider" class="grid grid-cols-1 lg:grid-cols-2">
               <div class="border-r border-dark-700">
-                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown</div>
-                <textarea
-                  :value="editContent"
-                  @input="onContentChange($event.target.value)"
-                  class="w-full h-[600px] bg-transparent p-4 text-white font-mono text-sm resize-none focus:outline-none"
-                  placeholder="Schreibe hier deinen Markdown-Text..."
-                ></textarea>
+                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown (Echtzeit-Bearbeitung)</div>
+                <CollaborativeMonacoEditor
+                  v-if="ytext"
+                  :ydoc="ydoc"
+                  :provider="provider"
+                  :ytext="ytext"
+                  language="markdown"
+                  :readOnly="false"
+                  height="600px"
+                />
               </div>
               <div>
                 <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-                  v-html="renderMarkdown(editContent)"
+                  v-html="renderMarkdown(ytext ? ytext.toString() : document.content)"
                 ></div>
               </div>
             </div>
@@ -511,10 +433,18 @@ onUnmounted(() => {
 
           <!-- Code -->
           <div v-else-if="document.format === 'code'">
+            <CollaborativeMonacoEditor
+              v-if="isEditing && ydoc && provider && ytext"
+              :ydoc="ydoc"
+              :provider="provider"
+              :ytext="ytext"
+              :readOnly="false"
+              height="600px"
+            />
             <MonacoEditor
-              :model-value="isEditing ? editContent : document.content"
-              @update:model-value="onContentChange"
-              :read-only="!isEditing"
+              v-else
+              :model-value="document.content"
+              :read-only="true"
               height="600px"
             />
           </div>
@@ -552,8 +482,8 @@ onUnmounted(() => {
               <PencilSquareIcon class="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-white">Bearbeitung starten</h2>
-              <p class="text-gray-400 text-sm">Wie möchtest du genannt werden?</p>
+              <h2 class="text-xl font-bold text-white">Live-Bearbeitung starten</h2>
+              <p class="text-gray-400 text-sm">Bearbeite das Dokument in Echtzeit mit anderen</p>
             </div>
           </div>
 
@@ -565,12 +495,26 @@ onUnmounted(() => {
                 type="text"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                 placeholder="z.B. Max Mustermann"
-                @keydown.enter="joinEditSession"
+                @keydown.enter="joinCollaborativeSession"
               />
-              <p class="text-xs text-gray-500 mt-1">Andere Bearbeiter sehen diesen Namen</p>
+              <p class="text-xs text-gray-500 mt-1">Andere Bearbeiter sehen diesen Namen und deinen Cursor</p>
             </div>
 
-            <div class="flex gap-3">
+            <div class="flex items-center gap-3">
+              <label class="block text-sm text-gray-400">Deine Farbe:</label>
+              <div class="flex gap-2">
+                <button
+                  v-for="color in ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']"
+                  :key="color"
+                  @click="userColor = color"
+                  class="w-6 h-6 rounded-full transition-transform"
+                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800 scale-110': userColor === color }"
+                  :style="{ backgroundColor: color }"
+                ></button>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
               <button
                 @click="cancelEditing"
                 class="flex-1 px-4 py-3 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
@@ -578,10 +522,10 @@ onUnmounted(() => {
                 Abbrechen
               </button>
               <button
-                @click="joinEditSession"
+                @click="joinCollaborativeSession"
                 class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
               >
-                Bearbeitung starten
+                Beitreten
               </button>
             </div>
           </div>

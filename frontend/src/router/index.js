@@ -34,6 +34,8 @@ const TicketsView = () => import('@/modules/tickets/views/TicketsView.vue')
 const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.vue')
 const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategoriesView.vue')
 const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
+const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
+const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 
 const routes = [
   // Auth routes
@@ -73,6 +75,12 @@ const routes = [
     path: '/connections',
     name: 'connections',
     component: ConnectionsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/connections/:id/terminal',
+    name: 'ssh-terminal',
+    component: SSHTerminalView,
     meta: { requiresAuth: true },
   },
   {
@@ -241,6 +249,14 @@ const routes = [
     path: '/support/:code',
     name: 'public-ticket-view',
     component: PublicTicketView,
+    meta: { layout: 'auth', guest: true },
+  },
+
+  // Public document view (no auth)
+  {
+    path: '/doc/:token',
+    name: 'public-document',
+    component: PublicDocumentView,
     meta: { layout: 'auth', guest: true },
   },
 

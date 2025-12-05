@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Modules\Auth\Services\AuthService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,7 +20,8 @@ class ConnectionController
     private string $encryptionKey;
 
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly AuthService $authService
     ) {
         $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
     }
@@ -425,5 +427,319 @@ class ConnectionController
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);
         return openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+    }
+
+    // ========================================================================
+    // SSH Terminal with 2FA
+    // ========================================================================
+
+    public function executeCommand(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Verify 2FA token
+        $sensitiveToken = $data['sensitive_token'] ?? null;
+        if (empty($sensitiveToken)) {
+            return JsonResponse::error(
+                '2FA-Verifizierung erforderlich für SSH-Zugriff',
+                428,
+                ['requires_2fa' => true, 'operation' => 'ssh_terminal']
+            );
+        }
+
+        if (!$this->authService->verifySensitiveToken($userId, $sensitiveToken, 'ssh_terminal')) {
+            return JsonResponse::error('Ungültiger oder abgelaufener 2FA-Token', 401);
+        }
+
+        $connection = $this->getConnectionForUser($connectionId, $userId);
+
+        if ($connection['type'] !== 'ssh' && $connection['type'] !== 'sftp') {
+            throw new ValidationException('This connection does not support SSH commands');
+        }
+
+        $command = $data['command'] ?? null;
+        if (empty($command)) {
+            throw new ValidationException('Command is required');
+        }
+
+        // Get credentials
+        $password = $connection['password_encrypted'] ? $this->decrypt($connection['password_encrypted']) : null;
+        $privateKey = $connection['private_key_encrypted'] ? $this->decrypt($connection['private_key_encrypted']) : null;
+
+        // Execute command via SSH
+        $result = $this->executeSSHCommand(
+            $connection['host'],
+            (int) $connection['port'],
+            $connection['username'],
+            $password,
+            $privateKey,
+            $command
+        );
+
+        // Log the command execution
+        $this->db->insert('connection_ssh_logs', [
+            'id' => Uuid::uuid4()->toString(),
+            'connection_id' => $connectionId,
+            'user_id' => $userId,
+            'command' => $command,
+            'output' => $result['output'],
+            'exit_code' => $result['exit_code'],
+            'executed_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Update last_used_at
+        $this->db->update('connections', [
+            'last_used_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $connectionId]);
+
+        return JsonResponse::success($result);
+    }
+
+    private function executeSSHCommand(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        // Try php-ssh2 extension first
+        if (function_exists('ssh2_connect')) {
+            return $this->executeSSHCommandViaSsh2($host, $port, $username, $password, $privateKey, $command);
+        }
+
+        // Fallback to shell command
+        return $this->executeSSHCommandViaShell($host, $port, $username, $password, $privateKey, $command);
+    }
+
+    private function executeSSHCommandViaSsh2(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        $connection = @ssh2_connect($host, $port);
+        if (!$connection) {
+            return ['success' => false, 'output' => "Failed to connect to {$host}:{$port}", 'exit_code' => -1];
+        }
+
+        $authenticated = false;
+
+        if ($privateKey) {
+            // Write key to temp file
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+
+            $authenticated = @ssh2_auth_pubkey_file($connection, $username, $keyFile . '.pub', $keyFile);
+            unlink($keyFile);
+        }
+
+        if (!$authenticated && $password) {
+            $authenticated = @ssh2_auth_password($connection, $username, $password);
+        }
+
+        if (!$authenticated) {
+            return ['success' => false, 'output' => 'SSH authentication failed', 'exit_code' => -1];
+        }
+
+        $stream = ssh2_exec($connection, $command);
+        if (!$stream) {
+            return ['success' => false, 'output' => 'Failed to execute command', 'exit_code' => -1];
+        }
+
+        stream_set_blocking($stream, true);
+        $output = stream_get_contents($stream);
+
+        // Get stderr
+        $stderr = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
+        stream_set_blocking($stderr, true);
+        $errorOutput = stream_get_contents($stderr);
+
+        fclose($stream);
+        fclose($stderr);
+
+        $fullOutput = $output;
+        if ($errorOutput) {
+            $fullOutput .= "\n" . $errorOutput;
+        }
+
+        return [
+            'success' => true,
+            'output' => $fullOutput,
+            'exit_code' => 0,
+        ];
+    }
+
+    private function executeSSHCommandViaShell(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        $sshArgs = [
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            '-o', 'BatchMode=yes',
+            '-o', 'ConnectTimeout=10',
+            '-p', (string) $port,
+        ];
+
+        if ($privateKey) {
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+            $sshArgs[] = '-i';
+            $sshArgs[] = $keyFile;
+        }
+
+        $sshCommand = 'ssh ' . implode(' ', array_map('escapeshellarg', $sshArgs)) . ' '
+            . escapeshellarg("{$username}@{$host}") . ' '
+            . escapeshellarg($command);
+
+        if ($password && !$privateKey) {
+            $sshCommand = "sshpass -p " . escapeshellarg($password) . " " . $sshCommand;
+        }
+
+        $output = [];
+        $exitCode = 0;
+        exec($sshCommand . ' 2>&1', $output, $exitCode);
+
+        if (isset($keyFile)) {
+            unlink($keyFile);
+        }
+
+        return [
+            'success' => $exitCode === 0,
+            'output' => implode("\n", $output),
+            'exit_code' => $exitCode,
+        ];
+    }
+
+    // Get command history
+    public function getCommandHistory(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $this->getConnectionForUser($connectionId, $userId);
+
+        $logs = $this->db->fetchAllAssociative(
+            'SELECT id, command, exit_code, executed_at
+             FROM connection_ssh_logs
+             WHERE connection_id = ? AND user_id = ?
+             ORDER BY executed_at DESC
+             LIMIT 50',
+            [$connectionId, $userId]
+        );
+
+        return JsonResponse::success(['items' => $logs]);
+    }
+
+    // ========================================================================
+    // Command Presets
+    // ========================================================================
+
+    public function getCommandPresets(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $this->getConnectionForUser($connectionId, $userId);
+
+        $presets = $this->db->fetchAllAssociative(
+            'SELECT * FROM connection_command_presets
+             WHERE connection_id = ?
+             ORDER BY sort_order, name',
+            [$connectionId]
+        );
+
+        return JsonResponse::success(['items' => $presets]);
+    }
+
+    public function createCommandPreset(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getConnectionForUser($connectionId, $userId);
+
+        if (empty($data['name']) || empty($data['command'])) {
+            throw new ValidationException('Name and command are required');
+        }
+
+        $presetId = Uuid::uuid4()->toString();
+
+        $this->db->insert('connection_command_presets', [
+            'id' => $presetId,
+            'connection_id' => $connectionId,
+            'name' => $data['name'],
+            'command' => $data['command'],
+            'description' => $data['description'] ?? null,
+            'is_dangerous' => !empty($data['is_dangerous']) ? 1 : 0,
+            'sort_order' => (int) ($data['sort_order'] ?? 0),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $preset = $this->db->fetchAssociative('SELECT * FROM connection_command_presets WHERE id = ?', [$presetId]);
+
+        return JsonResponse::created($preset, 'Command preset created');
+    }
+
+    public function updateCommandPreset(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $connectionId = $route->getArgument('id');
+        $presetId = $route->getArgument('presetId');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getConnectionForUser($connectionId, $userId);
+
+        $preset = $this->db->fetchAssociative(
+            'SELECT * FROM connection_command_presets WHERE id = ? AND connection_id = ?',
+            [$presetId, $connectionId]
+        );
+
+        if (!$preset) {
+            throw new NotFoundException('Command preset not found');
+        }
+
+        $updateData = ['updated_at' => date('Y-m-d H:i:s')];
+        $allowedFields = ['name', 'command', 'description', 'is_dangerous', 'sort_order'];
+
+        foreach ($allowedFields as $field) {
+            if (isset($data[$field])) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+
+        $this->db->update('connection_command_presets', $updateData, ['id' => $presetId]);
+
+        $updated = $this->db->fetchAssociative('SELECT * FROM connection_command_presets WHERE id = ?', [$presetId]);
+
+        return JsonResponse::success($updated, 'Command preset updated');
+    }
+
+    public function deleteCommandPreset(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $connectionId = $route->getArgument('id');
+        $presetId = $route->getArgument('presetId');
+
+        $this->getConnectionForUser($connectionId, $userId);
+
+        $this->db->delete('connection_command_presets', ['id' => $presetId, 'connection_id' => $connectionId]);
+
+        return JsonResponse::success(null, 'Command preset deleted');
     }
 }

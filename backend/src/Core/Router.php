@@ -121,6 +121,10 @@ class Router
                 $protected->get('/documents/{id}/shares', [DocumentController::class, 'getShares']);
                 $protected->post('/documents/{id}/shares', [DocumentController::class, 'addShare']);
                 $protected->delete('/documents/{id}/shares/{userId}', [DocumentController::class, 'removeShare']);
+                // Public sharing management
+                $protected->get('/documents/{id}/public', [DocumentController::class, 'getPublicShareInfo']);
+                $protected->post('/documents/{id}/public', [DocumentController::class, 'enablePublicShare']);
+                $protected->delete('/documents/{id}/public', [DocumentController::class, 'disablePublicShare']);
 
                 // Connections
                 $protected->get('/connections', [ConnectionController::class, 'index']);
@@ -133,6 +137,14 @@ class Router
                 $protected->delete('/connections/{id}', [ConnectionController::class, 'delete']);
                 $protected->get('/connections/{id}/credentials', [ConnectionController::class, 'getCredentials']);
                 $protected->post('/connections/{id}/used', [ConnectionController::class, 'markUsed']);
+                // SSH Terminal
+                $protected->post('/connections/{id}/execute', [ConnectionController::class, 'executeCommand']);
+                $protected->get('/connections/{id}/history', [ConnectionController::class, 'getCommandHistory']);
+                // Command Presets
+                $protected->get('/connections/{id}/presets', [ConnectionController::class, 'getCommandPresets']);
+                $protected->post('/connections/{id}/presets', [ConnectionController::class, 'createCommandPreset']);
+                $protected->put('/connections/{id}/presets/{presetId}', [ConnectionController::class, 'updateCommandPreset']);
+                $protected->delete('/connections/{id}/presets/{presetId}', [ConnectionController::class, 'deleteCommandPreset']);
 
                 // Snippets
                 $protected->get('/snippets', [SnippetController::class, 'index']);
@@ -469,6 +481,10 @@ class Router
             $group->post('/tickets/public', [TicketController::class, 'createPublic']);
             $group->get('/tickets/public/{code}', [TicketController::class, 'showPublic']);
             $group->post('/tickets/public/{code}/comments', [TicketController::class, 'addPublicComment']);
+
+            // Public Document View (no auth required)
+            $group->get('/documents/public/{token}', [DocumentController::class, 'showPublic']);
+            $group->post('/documents/public/{token}', [DocumentController::class, 'showPublic']);
         });
     }
 }

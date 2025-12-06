@@ -257,7 +257,7 @@ const routes = [
     path: '/doc/:token',
     name: 'public-document',
     component: PublicDocumentView,
-    meta: { layout: 'auth' },
+    meta: { layout: 'public' },
   },
 
   // Catch all

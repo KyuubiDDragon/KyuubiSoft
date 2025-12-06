@@ -27,10 +27,15 @@ const processQueue = (error, token = null) => {
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
+    // Don't send auth header for public API routes
+    const publicApiPaths = ['/documents/public/', '/tickets/public/']
+    const isPublicApi = publicApiPaths.some(path => config.url?.includes(path))
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (!isPublicApi) {
+      const token = localStorage.getItem('access_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
 
     return config
@@ -46,8 +51,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
+    // Check if we're on a public page that doesn't require authentication
+    const publicPaths = ['/doc/', '/ticket/public/']
+    const isPublicPage = publicPaths.some(path => window.location.pathname.includes(path))
+
     // If 401 and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // On public pages, don't try to refresh or redirect - just return the error
+      if (isPublicPage) {
+        return Promise.reject(error)
+      }
+
       // If we're already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

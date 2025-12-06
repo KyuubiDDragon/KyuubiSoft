@@ -2655,12 +2655,12 @@ class DockerController
      */
     private function backupStackViaSSH(array $host, string $stackName, string $userId, array $containers, ServerRequestInterface $request): ResponseInterface
     {
-        // SSH operations require 2FA verification
+        // SSH operations require 2FA verification - accepts both 6-digit 2FA codes and sensitive tokens
         $params = $request->getQueryParams();
         $body = $request->getParsedBody() ?? [];
-        $sensitiveToken = $params['sensitive_token'] ?? $body['sensitive_token'] ?? null;
+        $tokenOrCode = $params['sensitive_token'] ?? $body['sensitive_token'] ?? $params['code'] ?? $body['code'] ?? null;
 
-        if (empty($sensitiveToken)) {
+        if (empty($tokenOrCode)) {
             return JsonResponse::error(
                 '2FA-Verifizierung erforderlich für SSH-Zugriff. Bitte bestätige mit deinem 2FA-Code.',
                 428,  // 428 Precondition Required
@@ -2668,8 +2668,8 @@ class DockerController
             );
         }
 
-        // Verify the sensitive token
-        if (!$this->authService->verifySensitiveToken($userId, $sensitiveToken, 'ssh_backup')) {
+        // Verify the 2FA code or sensitive token
+        if (!$this->authService->verifyTokenOrCode($userId, $tokenOrCode, 'ssh_backup')) {
             return JsonResponse::error(
                 'Ungültiger oder abgelaufener 2FA-Token. Bitte erneut verifizieren.',
                 401,

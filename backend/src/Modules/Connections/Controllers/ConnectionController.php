@@ -439,9 +439,9 @@ class ConnectionController
         $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
-        // Verify 2FA token
-        $sensitiveToken = $data['sensitive_token'] ?? null;
-        if (empty($sensitiveToken)) {
+        // Verify 2FA token or code - accepts both 6-digit 2FA codes and sensitive tokens
+        $tokenOrCode = $data['sensitive_token'] ?? $data['code'] ?? null;
+        if (empty($tokenOrCode)) {
             return JsonResponse::error(
                 '2FA-Verifizierung erforderlich für SSH-Zugriff',
                 428,
@@ -449,7 +449,7 @@ class ConnectionController
             );
         }
 
-        if (!$this->authService->verifySensitiveToken($userId, $sensitiveToken, 'ssh_terminal')) {
+        if (!$this->authService->verifyTokenOrCode($userId, $tokenOrCode, 'ssh_terminal')) {
             return JsonResponse::error('Ungültiger oder abgelaufener 2FA-Token', 401);
         }
 

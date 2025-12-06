@@ -37,10 +37,28 @@ const storedPassword = ref(null)
 const canEdit = ref(false)
 const isEditing = ref(false)
 const editorName = ref('')
-const showNameModal = ref(false)
 const userColor = ref(getRandomColor())
 const collaborationAvailable = ref(false)
 const isConnecting = ref(false)
+const localContent = ref('') // Track local content for saving
+const isSaving = ref(false)
+
+// Duck name parts for random name generation
+const duckAdjectives = [
+  'Feuerwehr', 'Geröstete', 'Fliegende', 'Tanzende', 'Singende', 'Schnelle',
+  'Mutige', 'Schlaue', 'Coole', 'Ninja', 'Pirat', 'Astronaut', 'Detektiv',
+  'Zauberer', 'Ritter', 'Wikinger', 'Samurai', 'Cowboy', 'Superhelden',
+  'Rockstar', 'DJ', 'Koch', 'Kapitän', 'Professor', 'Doktor', 'Agent',
+  'Turbo', 'Mega', 'Ultra', 'Super', 'Hyper', 'Power', 'Laser', 'Pixel',
+  'Goldene', 'Silberne', 'Diamant', 'Kristall', 'Regenbogen', 'Blitz',
+  'Donner', 'Sturm', 'Nebel', 'Schatten', 'Licht', 'Feuer', 'Eis', 'Elektro'
+]
+
+// Generate random duck name
+function getRandomDuckName() {
+  const adjective = duckAdjectives[Math.floor(Math.random() * duckAdjectives.length)]
+  return `${adjective} Ente`
+}
 
 // Collaboration
 let collaboration = null
@@ -137,24 +155,19 @@ function submitPassword() {
   fetchDocument(passwordInput.value)
 }
 
-// Start editing - show name modal
+// Start editing - automatically join with duck name
 function startEditing() {
-  // Try to get stored name from localStorage
-  const storedName = localStorage.getItem('kyuubisoft_editor_name')
-  if (storedName) {
-    editorName.value = storedName
-  }
-  showNameModal.value = true
+  // Generate a random duck name
+  editorName.value = getRandomDuckName()
+  // Start the collaborative session directly
+  joinCollaborativeSession()
 }
 
 // Join collaborative session
 async function joinCollaborativeSession() {
   if (!editorName.value.trim()) {
-    editorName.value = 'Anonym'
+    editorName.value = getRandomDuckName()
   }
-
-  // Store name for future use
-  localStorage.setItem('kyuubisoft_editor_name', editorName.value)
 
   const token = route.params.token
 
@@ -165,7 +178,6 @@ async function joinCollaborativeSession() {
   })
 
   isConnecting.value = true
-  showNameModal.value = false
 
   try {
     const result = await collaboration.connect()
@@ -198,8 +210,54 @@ async function joinCollaborativeSession() {
   }
 }
 
+// Save document content to backend
+async function saveDocument() {
+  if (!document.value || isSaving.value) return
+
+  // Get current content based on format
+  let content = ''
+  if (ytext) {
+    content = ytext.toString()
+  } else if (ydoc) {
+    // For richtext, get the XML fragment content
+    const xmlFragment = ydoc.getXmlFragment('prosemirror')
+    // Convert to string - this is a simplified version
+    // The actual content is synced via Yjs, we need to get HTML from TipTap
+    content = document.value.content // fallback to original for now
+  }
+
+  // If we have local content tracked, use that
+  if (localContent.value) {
+    content = localContent.value
+  }
+
+  // Don't save if content hasn't changed
+  if (content === document.value.content) {
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    const token = route.params.token
+    await api.post(`/api/v1/documents/public/${token}/update`, {
+      content: content,
+      password: storedPassword.value
+    })
+    document.value.content = content
+    console.log('Dokument gespeichert')
+  } catch (error) {
+    console.error('Fehler beim Speichern:', error)
+  } finally {
+    isSaving.value = false
+  }
+}
+
 // Leave collaborative session
-function leaveSession() {
+async function leaveSession() {
+  // Save before leaving
+  await saveDocument()
+
   if (collaboration) {
     collaboration.disconnect()
     collaboration = null
@@ -212,10 +270,6 @@ function leaveSession() {
   isConnecting.value = false
 }
 
-// Cancel editing
-function cancelEditing() {
-  showNameModal.value = false
-}
 
 // Format date
 function formatDate(dateStr) {
@@ -530,68 +584,5 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Name Input Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showNameModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        @click.self="cancelEditing"
-      >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-md border border-dark-700">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
-              <PencilSquareIcon class="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-white">Live-Bearbeitung starten</h2>
-              <p class="text-gray-400 text-sm">Bearbeite das Dokument in Echtzeit mit anderen</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm text-gray-400 mb-2">Dein Name</label>
-              <input
-                v-model="editorName"
-                type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                placeholder="z.B. Max Mustermann"
-                @keydown.enter="joinCollaborativeSession"
-              />
-              <p class="text-xs text-gray-500 mt-1">Andere Bearbeiter sehen diesen Namen und deinen Cursor</p>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <label class="block text-sm text-gray-400">Deine Farbe:</label>
-              <div class="flex gap-2">
-                <button
-                  v-for="color in ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']"
-                  :key="color"
-                  @click="userColor = color"
-                  class="w-6 h-6 rounded-full transition-transform"
-                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800 scale-110': userColor === color }"
-                  :style="{ backgroundColor: color }"
-                ></button>
-              </div>
-            </div>
-
-            <div class="flex gap-3 pt-2">
-              <button
-                @click="cancelEditing"
-                class="flex-1 px-4 py-3 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
-              >
-                Abbrechen
-              </button>
-              <button
-                @click="joinCollaborativeSession"
-                class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-              >
-                Beitreten
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>

@@ -142,11 +142,7 @@ async function saveUser() {
     await loadUsers()
   } catch (err) {
     console.error('Save error:', err)
-    if (err.response?.data?.message) {
-      formErrors.value.general = err.response.data.message
-    } else {
-      formErrors.value.general = 'Fehler beim Speichern'
-    }
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Speichern'
   } finally {
     isSaving.value = false
   }
@@ -162,7 +158,7 @@ async function deleteUser() {
     await loadUsers()
   } catch (err) {
     console.error('Delete error:', err)
-    formErrors.value.general = err.response?.data?.message || 'Fehler beim Löschen'
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Löschen'
   } finally {
     isSaving.value = false
   }

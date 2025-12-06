@@ -145,7 +145,7 @@ async function fetchDocument(password = null) {
     canEdit.value = response.data.data.can_edit || false
     requiresPassword.value = false
   } catch (err) {
-    if (err.response?.status === 401 && err.response?.data?.data?.requires_password) {
+    if (err.response?.status === 401 && err.response?.data?.errors?.requires_password) {
       requiresPassword.value = true
       if (password) {
         passwordError.value = 'Falsches Passwort'
@@ -600,9 +600,8 @@ onUnmounted(() => {
           <!-- Spreadsheet -->
           <div v-else-if="document.format === 'spreadsheet'">
             <UniverSheet
-              v-model="document.content"
-              :read-only="!isEditing"
-              @change="onSpreadsheetChange"
+              :model-value="document.content"
+              :read-only="true"
             />
           </div>
 

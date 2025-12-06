@@ -15,36 +15,44 @@ class ICalService
      */
     public function fetchAndParse(string $url, ?string $username = null, ?string $password = null): array
     {
-        $context = null;
+        $ch = curl_init();
 
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT => 'KyuubiSoft Calendar Sync/1.0',
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/calendar, application/calendar+json, */*',
+            ],
+        ]);
+
+        // Add basic auth if credentials provided
         if ($username && $password) {
-            $auth = base64_encode("$username:$password");
-            $context = stream_context_create([
-                'http' => [
-                    'header' => "Authorization: Basic $auth\r\n",
-                    'timeout' => 30,
-                ],
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
-            ]);
-        } else {
-            $context = stream_context_create([
-                'http' => [
-                    'timeout' => 30,
-                ],
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
-            ]);
+            curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         }
 
-        $content = @file_get_contents($url, false, $context);
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
 
-        if ($content === false) {
-            throw new \RuntimeException('Failed to fetch calendar from URL');
+        if ($content === false || !empty($error)) {
+            throw new \RuntimeException('Failed to fetch calendar: ' . ($error ?: 'Unknown error'));
+        }
+
+        if ($httpCode >= 400) {
+            throw new \RuntimeException("Failed to fetch calendar: HTTP $httpCode");
+        }
+
+        if (empty($content)) {
+            throw new \RuntimeException('Failed to fetch calendar: Empty response');
         }
 
         return $this->parse($content);

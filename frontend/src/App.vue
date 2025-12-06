@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import PublicLayout from '@/layouts/PublicLayout.vue'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt.vue'
 
 const route = useRoute()
@@ -16,6 +17,9 @@ const isAppReady = ref(false)
 const layout = computed(() => {
   if (route.meta.layout === 'auth') {
     return AuthLayout
+  }
+  if (route.meta.layout === 'public') {
+    return PublicLayout
   }
   return DefaultLayout
 })

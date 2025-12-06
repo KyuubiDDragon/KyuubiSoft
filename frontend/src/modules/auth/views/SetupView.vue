@@ -35,11 +35,11 @@ const passwordStrength = reactive({
 })
 
 function checkPasswordStrength(password) {
-  passwordStrength.hasMinLength = password.length >= 8
+  passwordStrength.hasMinLength = password.length >= 12
   passwordStrength.hasUppercase = /[A-Z]/.test(password)
   passwordStrength.hasLowercase = /[a-z]/.test(password)
   passwordStrength.hasNumber = /[0-9]/.test(password)
-  passwordStrength.hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  passwordStrength.hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
 }
 
 function watchPassword() {
@@ -81,8 +81,16 @@ async function handleSubmit() {
 
   if (!form.password) {
     errors.value.password = 'Passwort ist erforderlich'
-  } else if (form.password.length < 8) {
-    errors.value.password = 'Passwort muss mindestens 8 Zeichen lang sein'
+  } else if (form.password.length < 12) {
+    errors.value.password = 'Passwort muss mindestens 12 Zeichen lang sein'
+  } else if (!/[A-Z]/.test(form.password)) {
+    errors.value.password = 'Passwort muss mindestens einen Großbuchstaben enthalten'
+  } else if (!/[a-z]/.test(form.password)) {
+    errors.value.password = 'Passwort muss mindestens einen Kleinbuchstaben enthalten'
+  } else if (!/[0-9]/.test(form.password)) {
+    errors.value.password = 'Passwort muss mindestens eine Zahl enthalten'
+  } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password)) {
+    errors.value.password = 'Passwort muss mindestens ein Sonderzeichen enthalten'
   }
 
   if (form.password !== form.confirm_password) {
@@ -229,7 +237,7 @@ async function handleSubmit() {
           <!-- Password strength indicators -->
           <div v-if="form.password" class="mt-2 grid grid-cols-2 gap-1 text-xs">
             <div :class="passwordStrength.hasMinLength ? 'text-green-500' : 'text-gray-500'">
-              {{ passwordStrength.hasMinLength ? '✓' : '○' }} Mind. 8 Zeichen
+              {{ passwordStrength.hasMinLength ? '✓' : '○' }} Mind. 12 Zeichen
             </div>
             <div :class="passwordStrength.hasUppercase ? 'text-green-500' : 'text-gray-500'">
               {{ passwordStrength.hasUppercase ? '✓' : '○' }} Großbuchstabe
@@ -239,6 +247,9 @@ async function handleSubmit() {
             </div>
             <div :class="passwordStrength.hasNumber ? 'text-green-500' : 'text-gray-500'">
               {{ passwordStrength.hasNumber ? '✓' : '○' }} Zahl
+            </div>
+            <div :class="passwordStrength.hasSpecial ? 'text-green-500' : 'text-gray-500'" class="col-span-2">
+              {{ passwordStrength.hasSpecial ? '✓' : '○' }} Sonderzeichen (!@#$%^&*...)
             </div>
           </div>
         </div>

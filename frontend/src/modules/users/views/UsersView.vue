@@ -402,7 +402,7 @@ function canDeleteUser(user) {
                 v-model="formData.password"
                 type="password"
                 class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                placeholder="Mindestens 8 Zeichen"
+                placeholder="Mindestens 12 Zeichen"
               />
             </div>
 

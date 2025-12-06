@@ -13,6 +13,7 @@ use App\Core\Security\RbacManager;
 use App\Modules\Auth\Repositories\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Ramsey\Uuid\Uuid;
 use Slim\Routing\RouteContext;
 
 class UserController
@@ -391,12 +392,16 @@ class UserController
         }
 
         // Create user
-        $userId = $this->userRepository->create([
+        $userId = Uuid::uuid4()->toString();
+        $this->userRepository->create([
+            'id' => $userId,
             'email' => $email,
             'username' => $username,
             'password_hash' => $this->passwordHasher->hash($password),
             'is_verified' => true, // Admin-created users are auto-verified
             'is_active' => true,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
         // Assign roles

@@ -12,6 +12,7 @@ use App\Modules\Auth\Repositories\UserRepository;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Ramsey\Uuid\Uuid;
 
 /**
  * Setup Controller - Handles initial system setup (first run wizard)
@@ -81,12 +82,16 @@ class SetupController
         }
 
         // Create the first user
-        $userId = $this->userRepository->create([
+        $userId = Uuid::uuid4()->toString();
+        $this->userRepository->create([
+            'id' => $userId,
             'email' => $email,
             'username' => $username,
             'password_hash' => $this->passwordHasher->hash($password),
             'is_verified' => true,
             'is_active' => true,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
         // Assign the owner role

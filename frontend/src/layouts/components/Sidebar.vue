@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useFeatureStore } from '@/stores/features'
 import {
   HomeIcon,
   ListBulletIcon,
@@ -53,12 +54,14 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const featureStore = useFeatureStore()
 
 const showProjectDropdown = ref(false)
 const expandedGroups = ref([]) // Only expand groups with active routes
 
-// Load projects on mount
-onMounted(() => {
+// Load projects and features on mount
+onMounted(async () => {
+  await featureStore.loadFeatures()
   projectStore.loadProjects()
   // Expand group containing current route
   expandGroupForCurrentRoute()
@@ -141,10 +144,10 @@ const allNavigationGroups = [
     icon: CommandLineIcon,
     children: [
       { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
-      { name: 'Server', href: '/server', icon: CommandLineIcon },
+      { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server' },
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
-      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon },
-      { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon },
+      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime' },
+      { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
     ],
   },
 
@@ -153,6 +156,7 @@ const allNavigationGroups = [
     id: 'docker',
     name: 'Docker',
     icon: CubeIcon,
+    feature: 'docker', // Whole group requires docker feature
     children: [
       { name: 'Container Manager', href: '/docker', icon: ServerIcon },
       { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon },
@@ -168,6 +172,7 @@ const allNavigationGroups = [
     id: 'support',
     name: 'Support',
     icon: TicketIcon,
+    feature: 'tickets',
     children: [
       { name: 'Tickets', href: '/tickets', icon: TicketIcon },
       { name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, roles: ['owner', 'admin'] },
@@ -179,6 +184,7 @@ const allNavigationGroups = [
     id: 'business',
     name: 'Business',
     icon: CurrencyDollarIcon,
+    feature: 'invoices',
     children: [
       { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon },
     ],
@@ -197,8 +203,13 @@ const allNavigationGroups = [
   },
 ]
 
-// Filter navigation based on user permissions
+// Filter navigation based on user permissions and features
 function filterItem(item) {
+  // Check feature flag first
+  if (item.feature && !featureStore.isEnabled(item.feature)) {
+    return false
+  }
+  // Check role/permission
   if (!item.roles && !item.permission) return true
   if (item.roles) return item.roles.some(role => authStore.hasRole(role))
   if (item.permission) return authStore.hasPermission(item.permission)
@@ -208,6 +219,10 @@ function filterItem(item) {
 const navigationGroups = computed(() => {
   return allNavigationGroups
     .map(group => {
+      // Check group-level feature flag first
+      if (group.feature && !featureStore.isEnabled(group.feature)) {
+        return null
+      }
       if (group.children) {
         const filteredChildren = group.children.filter(filterItem)
         // Hide group if no children are visible

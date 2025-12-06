@@ -8,6 +8,7 @@ use App\Core\Security\PasswordHasher;
 use App\Core\Security\RbacManager;
 use App\Core\Services\AuditLogger;
 use App\Core\Services\CacheService;
+use App\Core\Services\FeatureService;
 use App\Core\Services\ICalService;
 use App\Core\Services\LoggerService;
 use App\Core\Services\ProjectAccessService;
@@ -16,6 +17,7 @@ use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Calendar\Controllers\ExternalCalendarController;
+use App\Modules\System\Controllers\FeaturesController;
 use App\Modules\System\Controllers\SystemController;
 use Doctrine\DBAL\Connection as DBALConnection;
 use Monolog\Logger;
@@ -152,6 +154,18 @@ return [
         return new ExternalCalendarController(
             $c->get(DBALConnection::class),
             $c->get(ICalService::class)
+        );
+    },
+
+    // Feature Service
+    FeatureService::class => function (ContainerInterface $c): FeatureService {
+        return new FeatureService();
+    },
+
+    // Features Controller
+    FeaturesController::class => function (ContainerInterface $c): FeaturesController {
+        return new FeaturesController(
+            $c->get(FeatureService::class)
         );
     },
 ];

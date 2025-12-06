@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Core\Middleware\AuthMiddleware;
+use App\Core\Middleware\FeatureMiddleware;
 use App\Core\Middleware\PermissionMiddleware;
+use App\Modules\System\Controllers\FeaturesController;
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Users\Controllers\UserController;
 use App\Modules\Lists\Controllers\ListController;
@@ -58,6 +60,9 @@ class Router
 
         // API v1 routes
         $this->app->group('/api/v1', function (RouteCollectorProxy $group) {
+            // Public features endpoint (for frontend to check available features)
+            $group->get('/features', [FeaturesController::class, 'getFeatures']);
+
             // Public auth routes
             $group->group('/auth', function (RouteCollectorProxy $auth) {
                 $auth->post('/register', [AuthController::class, 'register']);
@@ -385,83 +390,144 @@ class Router
                 $protected->post('/system/terminate-sessions', [SystemController::class, 'terminateSessions'])
                     ->add(new PermissionMiddleware('settings.system.write'));
 
-                // Tools (Network utilities)
-                $protected->get('/tools/whois', [ToolsController::class, 'whois']);
-                $protected->get('/tools/ssl-check', [ToolsController::class, 'sslCheck']);
-                $protected->get('/tools/dns', [ToolsController::class, 'dnsLookup']);
-                $protected->get('/tools/ping', [ToolsController::class, 'ping']);
-                $protected->get('/tools/port-check', [ToolsController::class, 'portCheck']);
-                $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders']);
-                $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup']);
-                $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders']);
-                $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph']);
+                // Tools (Network utilities) - protected by feature flags
+                $protected->get('/tools/whois', [ToolsController::class, 'whois'])
+                    ->add(new FeatureMiddleware('tools', null, 'whois'));
+                $protected->get('/tools/ssl-check', [ToolsController::class, 'sslCheck'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/dns', [ToolsController::class, 'dnsLookup'])
+                    ->add(new FeatureMiddleware('tools', null, 'dns'));
+                $protected->get('/tools/ping', [ToolsController::class, 'ping'])
+                    ->add(new FeatureMiddleware('tools', null, 'ping'));
+                $protected->get('/tools/port-check', [ToolsController::class, 'portCheck'])
+                    ->add(new FeatureMiddleware('tools', null, 'port_check'));
+                $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph'])
+                    ->add(new FeatureMiddleware('tools'));
 
-                // Docker Host Management
-                $protected->get('/docker/hosts', [DockerController::class, 'listHosts']);
-                $protected->post('/docker/hosts', [DockerController::class, 'createHost']);
-                $protected->get('/docker/hosts/{id}', [DockerController::class, 'getHost']);
-                $protected->put('/docker/hosts/{id}', [DockerController::class, 'updateHost']);
-                $protected->delete('/docker/hosts/{id}', [DockerController::class, 'deleteHost']);
-                $protected->post('/docker/hosts/{id}/default', [DockerController::class, 'setDefaultHost']);
-                $protected->post('/docker/hosts/{id}/test', [DockerController::class, 'testHostConnection']);
+                // Docker Host Management - requires at least 'own' mode
+                $protected->get('/docker/hosts', [DockerController::class, 'listHosts'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/hosts', [DockerController::class, 'createHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'own_hosts'));
+                $protected->get('/docker/hosts/{id}', [DockerController::class, 'getHost'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->put('/docker/hosts/{id}', [DockerController::class, 'updateHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'own_hosts'));
+                $protected->delete('/docker/hosts/{id}', [DockerController::class, 'deleteHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'own_hosts'));
+                $protected->post('/docker/hosts/{id}/default', [DockerController::class, 'setDefaultHost'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/hosts/{id}/test', [DockerController::class, 'testHostConnection'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Operations (with optional ?host_id= parameter)
-                $protected->get('/docker/status', [DockerController::class, 'status']);
-                $protected->get('/docker/containers', [DockerController::class, 'containers']);
-                $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails']);
-                $protected->post('/docker/containers/{id}/start', [DockerController::class, 'startContainer']);
-                $protected->post('/docker/containers/{id}/stop', [DockerController::class, 'stopContainer']);
-                $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer']);
-                $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs']);
-                $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats']);
-                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv']);
+                $protected->get('/docker/status', [DockerController::class, 'status'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/containers', [DockerController::class, 'containers'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/containers/{id}/start', [DockerController::class, 'startContainer'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/containers/{id}/stop', [DockerController::class, 'stopContainer'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Stack/Compose Operations
-                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose']);
-                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose']);
-                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp']);
-                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown']);
-                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart']);
-                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack']);
-                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack']);
+                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Deploy
-                $protected->post('/docker/run', [DockerController::class, 'runContainer']);
-                $protected->post('/docker/pull', [DockerController::class, 'pullImage']);
-                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer']);
+                $protected->post('/docker/run', [DockerController::class, 'runContainer'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/pull', [DockerController::class, 'pullImage'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Backups
-                $protected->get('/docker/backups', [DockerController::class, 'listBackups']);
-                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup']);
-                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup']);
-                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup']);
+                $protected->get('/docker/backups', [DockerController::class, 'listBackups'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup'])
+                    ->add(new FeatureMiddleware('docker'));
 
-                $protected->get('/docker/images', [DockerController::class, 'images']);
-                $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);
-                $protected->get('/docker/networks', [DockerController::class, 'networks']);
-                $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
-                $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
+                $protected->get('/docker/images', [DockerController::class, 'images'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/networks', [DockerController::class, 'networks'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/volumes', [DockerController::class, 'volumes'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/system', [DockerController::class, 'systemInfo'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Portainer Integration
-                $protected->put('/docker/hosts/{id}/portainer', [DockerController::class, 'updatePortainerConfig']);
-                $protected->get('/docker/portainer/stacks', [DockerController::class, 'listPortainerStacks']);
-                $protected->get('/docker/portainer/stacks/{stackId}/file', [DockerController::class, 'getPortainerStackFile']);
-                $protected->post('/docker/portainer/link', [DockerController::class, 'linkStackToPortainer']);
+                $protected->put('/docker/hosts/{id}/portainer', [DockerController::class, 'updatePortainerConfig'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/portainer/stacks', [DockerController::class, 'listPortainerStacks'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/portainer/stacks/{stackId}/file', [DockerController::class, 'getPortainerStackFile'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/portainer/link', [DockerController::class, 'linkStackToPortainer'])
+                    ->add(new FeatureMiddleware('docker'));
 
-                // Server Management
-                $protected->get('/server/info', [ServerController::class, 'getSystemInfo']);
-                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs']);
-                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab']);
-                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab']);
-                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab']);
-                $protected->get('/server/processes', [ServerController::class, 'listProcesses']);
-                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess']);
-                $protected->get('/server/services', [ServerController::class, 'listServices']);
-                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus']);
-                $protected->post('/server/services/control', [ServerController::class, 'controlService']);
-                $protected->get('/server/services/custom', [ServerController::class, 'getCustomServices']);
-                $protected->post('/server/services/custom', [ServerController::class, 'addCustomService']);
-                $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService']);
+                // Server Management - protected by feature flags
+                $protected->get('/server/info', [ServerController::class, 'getSystemInfo'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/server/processes', [ServerController::class, 'listProcesses'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/server/services', [ServerController::class, 'listServices'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/server/services/control', [ServerController::class, 'controlService'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/server/services/custom', [ServerController::class, 'getCustomServices'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/server/services/custom', [ServerController::class, 'addCustomService'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService'])
+                    ->add(new FeatureMiddleware('server'));
 
                 // Tickets
                 $protected->get('/tickets', [TicketController::class, 'index']);

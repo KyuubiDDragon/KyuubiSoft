@@ -29,7 +29,8 @@ onMounted(async () => {
   await authStore.initialize()
 
   // If not authenticated and on a protected route, redirect first
-  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false && route.meta.layout !== 'auth') {
+  // Skip redirect for auth layout (login/register) and public layout (public documents, etc.)
+  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false && route.meta.layout !== 'auth' && route.meta.layout !== 'public') {
     await router.replace({ name: 'login', query: { redirect: route.fullPath } })
   }
 

@@ -336,8 +336,12 @@ function getFormatLabel(format) {
   return labels[format] || format
 }
 
-onMounted(() => {
-  fetchDocument()
+onMounted(async () => {
+  await fetchDocument()
+  // Auto-start editing if editing is allowed
+  if (canEdit.value) {
+    startEditing()
+  }
 })
 
 onUnmounted(() => {
@@ -449,10 +453,12 @@ onUnmounted(() => {
                 </span>
               </div>
               <button
-                @click="leaveSession"
-                class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
+                @click="saveDocument"
+                :disabled="isSaving"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                Beenden
+                <span v-if="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                {{ isSaving ? 'Speichert...' : 'Speichern' }}
               </button>
             </div>
           </div>

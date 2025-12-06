@@ -70,7 +70,7 @@ class DocumentController
         // Get own documents and shared documents
         if ($includeShared && !$isRestricted) {
             $sql = 'SELECT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
-                        u.username as owner_name, ds.permission as shared_permission,
+                        d.is_public, d.public_token, u.username as owner_name, ds.permission as shared_permission,
                         CASE WHEN d.user_id = ? THEN 1 ELSE 0 END as is_owner
                  FROM documents d
                  LEFT JOIN document_shares ds ON d.id = ds.document_id AND ds.user_id = ?
@@ -93,7 +93,7 @@ class DocumentController
         } else {
             // For restricted users or when not including shared
             $sql = 'SELECT DISTINCT d.id, d.user_id, d.folder_id, d.title, d.format, d.is_archived, d.created_at, d.updated_at,
-                        CASE WHEN d.user_id = ? THEN 1 ELSE 0 END as is_owner
+                        d.is_public, d.public_token, CASE WHEN d.user_id = ? THEN 1 ELSE 0 END as is_owner
                  FROM documents d' . $projectJoin . '
                  WHERE d.is_archived = FALSE
                  ORDER BY d.updated_at DESC

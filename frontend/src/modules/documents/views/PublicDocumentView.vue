@@ -21,6 +21,7 @@ import TipTapEditor from '@/components/TipTapEditor.vue'
 const MonacoEditor = defineAsyncComponent(() => import('@/components/MonacoEditor.vue'))
 const CollaborativeTipTapEditor = defineAsyncComponent(() => import('@/components/CollaborativeTipTapEditor.vue'))
 const CollaborativeMonacoEditor = defineAsyncComponent(() => import('@/components/CollaborativeMonacoEditor.vue'))
+const UniverSheet = defineAsyncComponent(() => import('@/components/UniverSheet.vue'))
 
 const route = useRoute()
 
@@ -144,7 +145,7 @@ async function fetchDocument(password = null) {
     canEdit.value = response.data.data.can_edit || false
     requiresPassword.value = false
   } catch (err) {
-    if (err.response?.status === 401 && err.response?.data?.data?.requires_password) {
+    if (err.response?.status === 401 && err.response?.data?.errors?.requires_password) {
       requiresPassword.value = true
       if (password) {
         passwordError.value = 'Falsches Passwort'
@@ -581,11 +582,12 @@ onUnmounted(() => {
             />
           </div>
 
-          <!-- Spreadsheet - simplified view -->
-          <div v-else-if="document.format === 'spreadsheet'" class="p-8">
-            <p class="text-gray-400 text-center">
-              Tabellenansicht ist in der öffentlichen Ansicht nicht verfügbar.
-            </p>
+          <!-- Spreadsheet -->
+          <div v-else-if="document.format === 'spreadsheet'">
+            <UniverSheet
+              :model-value="document.content"
+              :read-only="true"
+            />
           </div>
 
           <!-- Empty -->

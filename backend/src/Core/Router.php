@@ -38,6 +38,7 @@ use App\Modules\Tools\Controllers\ToolsController;
 use App\Modules\Docker\Controllers\DockerController;
 use App\Modules\Tickets\Controllers\TicketController;
 use App\Modules\Tickets\Controllers\TicketCategoryController;
+use App\Modules\Setup\Controllers\SetupController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -75,6 +76,12 @@ class Router
             // Public YouTube file download (filename is unique/random ID)
             $group->get('/youtube/file/{filename}', [YouTubeController::class, 'serveFile']);
 
+            // Setup routes (public - needed before any user exists)
+            $group->group('/setup', function (RouteCollectorProxy $setup) {
+                $setup->get('/status', [SetupController::class, 'checkStatus']);
+                $setup->post('/complete', [SetupController::class, 'complete']);
+            });
+
             // Protected routes
             $group->group('', function (RouteCollectorProxy $protected) {
                 // Auth (protected)
@@ -95,6 +102,8 @@ class Router
                 // Users
                 $protected->get('/users', [UserController::class, 'index'])
                     ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/users', [UserController::class, 'create'])
+                    ->add(new PermissionMiddleware('users.write'));
                 $protected->get('/users/{id}', [UserController::class, 'show']);
                 $protected->put('/users/{id}', [UserController::class, 'update']);
                 $protected->delete('/users/{id}', [UserController::class, 'delete'])
@@ -102,6 +111,20 @@ class Router
                 $protected->get('/users/me/profile', [UserController::class, 'profile']);
                 $protected->put('/users/me/profile', [UserController::class, 'updateProfile']);
                 $protected->put('/users/me/password', [UserController::class, 'updatePassword']);
+
+                // User Role Management
+                $protected->get('/users/{id}/roles', [UserController::class, 'getUserRoles'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/users/{id}/roles', [UserController::class, 'assignRole'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->delete('/users/{id}/roles/{role}', [UserController::class, 'removeRole'])
+                    ->add(new PermissionMiddleware('users.write'));
+
+                // Roles & Permissions (Admin)
+                $protected->get('/admin/roles', [UserController::class, 'getRoles'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->get('/admin/permissions', [UserController::class, 'getPermissions'])
+                    ->add(new PermissionMiddleware('users.read'));
 
                 // Lists
                 $protected->get('/lists', [ListController::class, 'index']);

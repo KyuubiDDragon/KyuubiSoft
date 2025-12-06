@@ -1,9 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/core/api/axios'
+
+// Setup status cache
+let setupChecked = false
+let setupRequired = false
 
 // Lazy load views
 const LoginView = () => import('@/modules/auth/views/LoginView.vue')
 const RegisterView = () => import('@/modules/auth/views/RegisterView.vue')
+const SetupView = () => import('@/modules/auth/views/SetupView.vue')
 const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
@@ -50,6 +56,12 @@ const routes = [
     name: 'register',
     component: RegisterView,
     meta: { layout: 'auth', guest: true },
+  },
+  {
+    path: '/setup',
+    name: 'setup',
+    component: SetupView,
+    meta: { layout: 'auth', guest: true, isSetup: true },
   },
 
   // Protected routes
@@ -276,6 +288,29 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
+  // Check setup status once on first navigation (except for setup page itself)
+  if (!setupChecked && !to.meta.isSetup) {
+    try {
+      const response = await api.get('/api/v1/setup/status')
+      setupRequired = response.data.data.setup_required
+      setupChecked = true
+
+      // If setup is required, redirect to setup wizard
+      if (setupRequired) {
+        return next({ name: 'setup' })
+      }
+    } catch (error) {
+      console.error('Failed to check setup status:', error)
+      // Continue anyway, the setup page will handle errors
+      setupChecked = true
+    }
+  }
+
+  // If going to setup but setup not required, redirect to login
+  if (to.meta.isSetup && setupChecked && !setupRequired) {
+    return next({ name: 'login' })
+  }
+
   // Public routes that don't need any auth checks
   const isPublicRoute = to.meta.layout === 'public' || to.meta.guest
 
@@ -322,5 +357,10 @@ router.beforeEach(async (to, from, next) => {
 
   next()
 })
+
+// Function to mark setup as complete (called from SetupView after successful setup)
+export function markSetupComplete() {
+  setupRequired = false
+}
 
 export default router

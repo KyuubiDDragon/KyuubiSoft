@@ -13,6 +13,7 @@ use App\Core\Services\ICalService;
 use App\Core\Services\LoggerService;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Auth\Controllers\AuthController;
+use App\Modules\Setup\Controllers\SetupController;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Services\AuthService;
@@ -166,6 +167,16 @@ return [
     FeaturesController::class => function (ContainerInterface $c): FeaturesController {
         return new FeaturesController(
             $c->get(FeatureService::class)
+        );
+    },
+
+    // Setup Controller
+    SetupController::class => function (ContainerInterface $c): SetupController {
+        return new SetupController(
+            $c->get(DBALConnection::class),
+            $c->get(UserRepository::class),
+            $c->get(PasswordHasher::class),
+            $c->get(RbacManager::class)
         );
     },
 ];

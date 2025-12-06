@@ -52,7 +52,7 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPaths = ['/doc/', '/ticket/public/']
+    const publicPaths = ['/doc/', '/ticket/public/', '/support']
     const isPublicPage = publicPaths.some(path => window.location.pathname.includes(path))
 
     // If 401 and not already retried
@@ -115,24 +115,24 @@ api.interceptors.response.use(
           // Refresh failed, process queue with error
           processQueue(refreshError, null)
 
-          // Clear tokens and redirect to login
+          // Clear tokens and redirect to login (but not on public pages)
           localStorage.removeItem('access_token')
           localStorage.removeItem('refresh_token')
 
-          // Only redirect if not already on login page
-          if (!window.location.pathname.includes('/login')) {
+          // Only redirect if not on login page or public pages
+          if (!window.location.pathname.includes('/login') && !isPublicPage) {
             window.location.href = '/login'
           }
 
           return Promise.reject(refreshError)
         }
       } else {
-        // No refresh token - reset flag and redirect
+        // No refresh token - reset flag and redirect (but not on public pages)
         isRefreshing = false
 
         localStorage.removeItem('access_token')
 
-        if (!window.location.pathname.includes('/login')) {
+        if (!window.location.pathname.includes('/login') && !isPublicPage) {
           window.location.href = '/login'
         }
 

@@ -31,6 +31,7 @@ use App\Modules\Dashboard\Controllers\WidgetController;
 use App\Modules\Server\Controllers\ServerController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
+use App\Modules\Calendar\Controllers\ExternalCalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
 use App\Modules\Docker\Controllers\DockerController;
 use App\Modules\Tickets\Controllers\TicketController;
@@ -355,6 +356,14 @@ class Router
                 $protected->post('/calendar/events', [CalendarController::class, 'createEvent']);
                 $protected->put('/calendar/events/{id}', [CalendarController::class, 'updateEvent']);
                 $protected->delete('/calendar/events/{id}', [CalendarController::class, 'deleteEvent']);
+
+                // External Calendars
+                $protected->get('/calendar/external', [ExternalCalendarController::class, 'index']);
+                $protected->post('/calendar/external', [ExternalCalendarController::class, 'create']);
+                $protected->get('/calendar/external/events', [ExternalCalendarController::class, 'getEvents']);
+                $protected->put('/calendar/external/{id}', [ExternalCalendarController::class, 'update']);
+                $protected->delete('/calendar/external/{id}', [ExternalCalendarController::class, 'delete']);
+                $protected->post('/calendar/external/{id}/sync', [ExternalCalendarController::class, 'sync']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

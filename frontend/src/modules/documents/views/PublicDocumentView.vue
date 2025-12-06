@@ -336,7 +336,18 @@ function getFormatLabel(format) {
   return labels[format] || format
 }
 
+// Handle page refresh/close - disconnect immediately to avoid ghost clients
+function handleBeforeUnload() {
+  if (collaboration) {
+    collaboration.disconnect()
+  }
+  stopAutoSave()
+}
+
 onMounted(async () => {
+  // Add beforeunload listener to clean up on refresh
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
   await fetchDocument()
   // Auto-start editing if editing is allowed
   if (canEdit.value) {
@@ -345,6 +356,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Remove beforeunload listener
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   leaveSession()
 })
 </script>
@@ -465,10 +478,10 @@ onUnmounted(() => {
 
           <!-- Connected users -->
           <div v-if="isEditing && collaborationAvailable && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-dark-700">
-            <div class="flex items-center gap-2 text-sm text-gray-400">
-              <UsersIcon class="w-4 h-4" />
-              <span>Live-Bearbeiter:</span>
-              <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 text-sm text-gray-400">
+              <UsersIcon class="w-4 h-4 flex-shrink-0" />
+              <span class="flex-shrink-0">Live-Bearbeiter:</span>
+              <div class="flex flex-wrap items-center gap-2">
                 <span
                   v-for="user in connectedUsers"
                   :key="user.clientId"

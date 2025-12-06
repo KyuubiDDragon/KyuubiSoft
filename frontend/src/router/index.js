@@ -276,7 +276,19 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  // Wait for auth initialization
+  // Public routes that don't need any auth checks
+  const isPublicRoute = to.meta.layout === 'public' || to.meta.guest
+
+  // For public routes, skip auth initialization entirely and proceed immediately
+  if (isPublicRoute) {
+    // Still mark as initialized so the app doesn't hang
+    if (!authStore.isInitialized) {
+      authStore.isInitialized = true
+    }
+    return next()
+  }
+
+  // Wait for auth initialization (only for non-public routes)
   if (!authStore.isInitialized) {
     await authStore.initialize()
   }

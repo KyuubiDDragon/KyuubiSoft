@@ -24,6 +24,8 @@ export function useCollaboration(roomName, options = {}) {
   let ydoc = null
   let provider = null
   let awareness = null
+  let connectionAttempts = 0
+  const MAX_CONNECTION_ATTEMPTS = 3
 
   /**
    * Initialize collaboration connection
@@ -41,9 +43,10 @@ export function useCollaboration(roomName, options = {}) {
       // Dynamically import y-websocket to catch import errors
       const { WebsocketProvider } = await import('y-websocket')
 
-      // Connect to WebSocket server
+      // Connect to WebSocket server with limited retries
       provider = new WebsocketProvider(serverUrl, roomName, ydoc, {
         connect: true,
+        maxBackoffTime: 10000, // Max 10 seconds between retries
       })
 
       awareness = provider.awareness
@@ -60,8 +63,12 @@ export function useCollaboration(roomName, options = {}) {
         if (status === 'connected') {
           isAvailable.value = true
           connectionError.value = null
+          connectionAttempts = 0 // Reset on successful connection
         } else if (status === 'disconnected') {
-          connectionError.value = 'Verbindung zum Server verloren'
+          if (isAvailable.value) {
+            // Only show error if we were connected before
+            connectionError.value = 'Verbindung zum Server verloren'
+          }
         }
       })
 
@@ -70,14 +77,27 @@ export function useCollaboration(roomName, options = {}) {
       })
 
       provider.on('connection-error', (error) => {
-        connectionError.value = 'Echtzeit-Bearbeitung nicht verfügbar. Server ist nicht erreichbar.'
-        console.error('WebSocket connection error:', error)
+        connectionAttempts++
+        console.warn(`WebSocket connection error (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})`)
+
+        if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS) {
+          // Stop trying to reconnect after max attempts
+          connectionError.value = 'Collaboration-Server nicht erreichbar. Lokale Bearbeitung aktiv.'
+          if (provider) {
+            provider.disconnect()
+          }
+          isAvailable.value = false
+        }
       })
 
       // Handle WebSocket close events
       provider.on('connection-close', (event) => {
-        if (!isAvailable.value) {
+        connectionAttempts++
+        if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS && !isAvailable.value) {
           connectionError.value = 'Collaboration-Server nicht erreichbar. Lokale Bearbeitung möglich.'
+          if (provider) {
+            provider.disconnect()
+          }
         }
       })
 

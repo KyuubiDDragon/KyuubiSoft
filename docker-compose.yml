@@ -63,8 +63,8 @@ services:
   mysql:
     image: mysql:8.0
     container_name: kyuubisoft_mysql
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
+    # KEIN Port-Mapping in Production - nur intern erreichbar
+    # Für lokale Entwicklung: docker exec -it kyuubisoft_mysql mysql -u root -p
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
@@ -93,8 +93,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: kyuubisoft_redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # KEIN Port-Mapping - nur intern im Docker-Netzwerk erreichbar
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru

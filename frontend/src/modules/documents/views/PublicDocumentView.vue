@@ -24,28 +24,7 @@ const CollaborativeMonacoEditor = defineAsyncComponent(() => import('@/component
 
 const route = useRoute()
 
-// State
-const document = ref(null)
-const loading = ref(true)
-const error = ref('')
-const requiresPassword = ref(false)
-const passwordInput = ref('')
-const passwordError = ref('')
-const storedPassword = ref(null)
-
-// Collaborative editing state
-const canEdit = ref(false)
-const isEditing = ref(false)
-const editorName = ref('')
-const userColor = ref(getRandomColor())
-const collaborationAvailable = ref(false)
-const isConnecting = ref(false)
-const localContent = ref('') // Track local content for saving
-const isSaving = ref(false)
-let autoSaveInterval = null
-const AUTO_SAVE_INTERVAL = 30000 // Auto-save every 30 seconds
-
-// Duck name parts for random name generation
+// Duck name parts for random name generation (must be before refs that use it)
 const duckAdjectives = [
   'Feuerwehr', 'Geröstete', 'Fliegende', 'Tanzende', 'Singende', 'Schnelle',
   'Mutige', 'Schlaue', 'Coole', 'Ninja', 'Pirat', 'Astronaut', 'Detektiv',
@@ -61,6 +40,42 @@ function getRandomDuckName() {
   const adjective = duckAdjectives[Math.floor(Math.random() * duckAdjectives.length)]
   return `${adjective} Ente`
 }
+
+// Get random color for cursor
+function getRandomColor() {
+  const colors = [
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // violet
+    '#ec4899', // pink
+    '#06b6d4', // cyan
+    '#f97316', // orange
+  ]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
+
+// State
+const document = ref(null)
+const loading = ref(true)
+const error = ref('')
+const requiresPassword = ref(false)
+const passwordInput = ref('')
+const passwordError = ref('')
+const storedPassword = ref(null)
+
+// Collaborative editing state
+const canEdit = ref(false)
+const isEditing = ref(false)
+const editorName = ref(getRandomDuckName()) // Generate duck name immediately on page load
+const userColor = ref(getRandomColor())
+const collaborationAvailable = ref(false)
+const isConnecting = ref(false)
+const localContent = ref('') // Track local content for saving
+const isSaving = ref(false)
+let autoSaveInterval = null
+const AUTO_SAVE_INTERVAL = 30000 // Auto-save every 30 seconds
 
 // Collaboration
 let collaboration = null
@@ -319,21 +334,6 @@ function getFormatLabel(format) {
     spreadsheet: 'Tabelle',
   }
   return labels[format] || format
-}
-
-// Get random color for cursor
-function getRandomColor() {
-  const colors = [
-    '#3b82f6', // blue
-    '#10b981', // green
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#8b5cf6', // violet
-    '#ec4899', // pink
-    '#06b6d4', // cyan
-    '#f97316', // orange
-  ]
-  return colors[Math.floor(Math.random() * colors.length)]
 }
 
 onMounted(() => {

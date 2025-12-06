@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Core\Middleware\AuthMiddleware;
+use App\Core\Middleware\FeatureMiddleware;
 use App\Core\Middleware\PermissionMiddleware;
+use App\Modules\System\Controllers\FeaturesController;
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Users\Controllers\UserController;
 use App\Modules\Lists\Controllers\ListController;
@@ -31,10 +33,12 @@ use App\Modules\Dashboard\Controllers\WidgetController;
 use App\Modules\Server\Controllers\ServerController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
 use App\Modules\Calendar\Controllers\CalendarController;
+use App\Modules\Calendar\Controllers\ExternalCalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
 use App\Modules\Docker\Controllers\DockerController;
 use App\Modules\Tickets\Controllers\TicketController;
 use App\Modules\Tickets\Controllers\TicketCategoryController;
+use App\Modules\Setup\Controllers\SetupController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -57,6 +61,9 @@ class Router
 
         // API v1 routes
         $this->app->group('/api/v1', function (RouteCollectorProxy $group) {
+            // Public features endpoint (for frontend to check available features)
+            $group->get('/features', [FeaturesController::class, 'getFeatures']);
+
             // Public auth routes
             $group->group('/auth', function (RouteCollectorProxy $auth) {
                 $auth->post('/register', [AuthController::class, 'register']);
@@ -68,6 +75,12 @@ class Router
 
             // Public YouTube file download (filename is unique/random ID)
             $group->get('/youtube/file/{filename}', [YouTubeController::class, 'serveFile']);
+
+            // Setup routes (public - needed before any user exists)
+            $group->group('/setup', function (RouteCollectorProxy $setup) {
+                $setup->get('/status', [SetupController::class, 'checkStatus']);
+                $setup->post('/complete', [SetupController::class, 'complete']);
+            });
 
             // Protected routes
             $group->group('', function (RouteCollectorProxy $protected) {
@@ -89,6 +102,8 @@ class Router
                 // Users
                 $protected->get('/users', [UserController::class, 'index'])
                     ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/users', [UserController::class, 'create'])
+                    ->add(new PermissionMiddleware('users.write'));
                 $protected->get('/users/{id}', [UserController::class, 'show']);
                 $protected->put('/users/{id}', [UserController::class, 'update']);
                 $protected->delete('/users/{id}', [UserController::class, 'delete'])
@@ -96,6 +111,20 @@ class Router
                 $protected->get('/users/me/profile', [UserController::class, 'profile']);
                 $protected->put('/users/me/profile', [UserController::class, 'updateProfile']);
                 $protected->put('/users/me/password', [UserController::class, 'updatePassword']);
+
+                // User Role Management
+                $protected->get('/users/{id}/roles', [UserController::class, 'getUserRoles'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/users/{id}/roles', [UserController::class, 'assignRole'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->delete('/users/{id}/roles/{role}', [UserController::class, 'removeRole'])
+                    ->add(new PermissionMiddleware('users.write'));
+
+                // Roles & Permissions (Admin)
+                $protected->get('/admin/roles', [UserController::class, 'getRoles'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->get('/admin/permissions', [UserController::class, 'getPermissions'])
+                    ->add(new PermissionMiddleware('users.read'));
 
                 // Lists
                 $protected->get('/lists', [ListController::class, 'index']);
@@ -257,68 +286,115 @@ class Router
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
                 $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
 
-                // Uptime Monitor
-                $protected->get('/uptime', [UptimeMonitorController::class, 'index']);
-                $protected->post('/uptime', [UptimeMonitorController::class, 'create']);
-                $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes']);
-                $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats']);
-                $protected->get('/uptime/folders', [UptimeMonitorController::class, 'getFolders']);
-                $protected->post('/uptime/folders', [UptimeMonitorController::class, 'createFolder']);
-                $protected->put('/uptime/folders/reorder', [UptimeMonitorController::class, 'reorderFolders']);
-                $protected->put('/uptime/folders/{id}', [UptimeMonitorController::class, 'updateFolder']);
-                $protected->delete('/uptime/folders/{id}', [UptimeMonitorController::class, 'deleteFolder']);
-                $protected->post('/uptime/move-to-folder', [UptimeMonitorController::class, 'moveMonitorsToFolder']);
-                $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show']);
-                $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update']);
-                $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete']);
-                $protected->post('/uptime/{id}/check', [UptimeMonitorController::class, 'check']);
+                // Uptime Monitor - protected by feature flags
+                $protected->get('/uptime', [UptimeMonitorController::class, 'index'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->post('/uptime', [UptimeMonitorController::class, 'create'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->get('/uptime/folders', [UptimeMonitorController::class, 'getFolders'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->post('/uptime/folders', [UptimeMonitorController::class, 'createFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->put('/uptime/folders/reorder', [UptimeMonitorController::class, 'reorderFolders'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->put('/uptime/folders/{id}', [UptimeMonitorController::class, 'updateFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->delete('/uptime/folders/{id}', [UptimeMonitorController::class, 'deleteFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->post('/uptime/move-to-folder', [UptimeMonitorController::class, 'moveMonitorsToFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->post('/uptime/{id}/check', [UptimeMonitorController::class, 'check'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
 
-                // Invoices - Clients
-                $protected->get('/clients', [InvoiceController::class, 'getClients']);
-                $protected->post('/clients', [InvoiceController::class, 'createClient']);
-                $protected->put('/clients/{id}', [InvoiceController::class, 'updateClient']);
-                $protected->delete('/clients/{id}', [InvoiceController::class, 'deleteClient']);
+                // Invoices - Clients - protected by feature flags
+                $protected->get('/clients', [InvoiceController::class, 'getClients'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/clients', [InvoiceController::class, 'createClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->put('/clients/{id}', [InvoiceController::class, 'updateClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/clients/{id}', [InvoiceController::class, 'deleteClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
 
-                // Invoices
-                $protected->get('/invoices', [InvoiceController::class, 'index']);
-                $protected->post('/invoices', [InvoiceController::class, 'create']);
-                $protected->get('/invoices/stats', [InvoiceController::class, 'getStats']);
-                $protected->post('/invoices/from-time', [InvoiceController::class, 'createFromTimeEntries']);
-                $protected->get('/invoices/{id}', [InvoiceController::class, 'show']);
-                $protected->put('/invoices/{id}', [InvoiceController::class, 'update']);
-                $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete']);
-                $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem']);
-                $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem']);
-                $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem']);
+                // Invoices - protected by feature flags
+                $protected->get('/invoices', [InvoiceController::class, 'index'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/invoices', [InvoiceController::class, 'create'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->get('/invoices/stats', [InvoiceController::class, 'getStats'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/invoices/from-time', [InvoiceController::class, 'createFromTimeEntries'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->get('/invoices/{id}', [InvoiceController::class, 'show'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->put('/invoices/{id}', [InvoiceController::class, 'update'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
+                $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
 
-                // API Tester - Collections
-                $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections']);
-                $protected->post('/api-tester/collections', [ApiTesterController::class, 'createCollection']);
-                $protected->put('/api-tester/collections/{id}', [ApiTesterController::class, 'updateCollection']);
-                $protected->delete('/api-tester/collections/{id}', [ApiTesterController::class, 'deleteCollection']);
+                // API Tester - Collections - protected by feature flags
+                $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/collections', [ApiTesterController::class, 'createCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/collections/{id}', [ApiTesterController::class, 'updateCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/collections/{id}', [ApiTesterController::class, 'deleteCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // API Tester - Environments
-                $protected->get('/api-tester/environments', [ApiTesterController::class, 'getEnvironments']);
-                $protected->post('/api-tester/environments', [ApiTesterController::class, 'createEnvironment']);
-                $protected->put('/api-tester/environments/{id}', [ApiTesterController::class, 'updateEnvironment']);
-                $protected->delete('/api-tester/environments/{id}', [ApiTesterController::class, 'deleteEnvironment']);
+                // API Tester - Environments - protected by feature flags
+                $protected->get('/api-tester/environments', [ApiTesterController::class, 'getEnvironments'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/environments', [ApiTesterController::class, 'createEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/environments/{id}', [ApiTesterController::class, 'updateEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/environments/{id}', [ApiTesterController::class, 'deleteEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // API Tester - Requests
-                $protected->get('/api-tester/requests', [ApiTesterController::class, 'getRequests']);
-                $protected->post('/api-tester/requests', [ApiTesterController::class, 'createRequest']);
-                $protected->put('/api-tester/requests/{id}', [ApiTesterController::class, 'updateRequest']);
-                $protected->delete('/api-tester/requests/{id}', [ApiTesterController::class, 'deleteRequest']);
-                $protected->post('/api-tester/execute', [ApiTesterController::class, 'executeRequest']);
+                // API Tester - Requests - protected by feature flags
+                $protected->get('/api-tester/requests', [ApiTesterController::class, 'getRequests'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/requests', [ApiTesterController::class, 'createRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/requests/{id}', [ApiTesterController::class, 'updateRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/requests/{id}', [ApiTesterController::class, 'deleteRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/execute', [ApiTesterController::class, 'executeRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'execute'));
 
-                // API Tester - History
-                $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory']);
-                $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem']);
-                $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory']);
+                // API Tester - History - protected by feature flags
+                $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // YouTube Downloader
-                $protected->post('/youtube/info', [YouTubeController::class, 'getInfo']);
-                $protected->post('/youtube/download', [YouTubeController::class, 'download']);
-                $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup']);
+                // YouTube Downloader - protected by feature flags
+                $protected->post('/youtube/info', [YouTubeController::class, 'getInfo'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
+                $protected->post('/youtube/download', [YouTubeController::class, 'download'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
+                $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
 
                 // Quick Notes
                 $protected->get('/quick-notes', [QuickNoteController::class, 'index']);
@@ -356,6 +432,14 @@ class Router
                 $protected->put('/calendar/events/{id}', [CalendarController::class, 'updateEvent']);
                 $protected->delete('/calendar/events/{id}', [CalendarController::class, 'deleteEvent']);
 
+                // External Calendars
+                $protected->get('/calendar/external', [ExternalCalendarController::class, 'index']);
+                $protected->post('/calendar/external', [ExternalCalendarController::class, 'create']);
+                $protected->get('/calendar/external/events', [ExternalCalendarController::class, 'getEvents']);
+                $protected->put('/calendar/external/{id}', [ExternalCalendarController::class, 'update']);
+                $protected->delete('/calendar/external/{id}', [ExternalCalendarController::class, 'delete']);
+                $protected->post('/calendar/external/{id}/sync', [ExternalCalendarController::class, 'sync']);
+
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);
                 $protected->put('/settings/user', [SettingsController::class, 'updateUserSettings']);
@@ -376,103 +460,181 @@ class Router
                 $protected->post('/system/terminate-sessions', [SystemController::class, 'terminateSessions'])
                     ->add(new PermissionMiddleware('settings.system.write'));
 
-                // Tools (Network utilities)
-                $protected->get('/tools/whois', [ToolsController::class, 'whois']);
-                $protected->get('/tools/ssl-check', [ToolsController::class, 'sslCheck']);
-                $protected->get('/tools/dns', [ToolsController::class, 'dnsLookup']);
-                $protected->get('/tools/ping', [ToolsController::class, 'ping']);
-                $protected->get('/tools/port-check', [ToolsController::class, 'portCheck']);
-                $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders']);
-                $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup']);
-                $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders']);
-                $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph']);
+                // Tools (Network utilities) - protected by feature flags
+                $protected->get('/tools/whois', [ToolsController::class, 'whois'])
+                    ->add(new FeatureMiddleware('tools', null, 'whois'));
+                $protected->get('/tools/ssl-check', [ToolsController::class, 'sslCheck'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/dns', [ToolsController::class, 'dnsLookup'])
+                    ->add(new FeatureMiddleware('tools', null, 'dns'));
+                $protected->get('/tools/ping', [ToolsController::class, 'ping'])
+                    ->add(new FeatureMiddleware('tools', null, 'ping'));
+                $protected->get('/tools/port-check', [ToolsController::class, 'portCheck'])
+                    ->add(new FeatureMiddleware('tools', null, 'port_check'));
+                $protected->get('/tools/http-headers', [ToolsController::class, 'httpHeaders'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/ip-lookup', [ToolsController::class, 'ipLookup'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/security-headers', [ToolsController::class, 'securityHeaders'])
+                    ->add(new FeatureMiddleware('tools'));
+                $protected->get('/tools/open-graph', [ToolsController::class, 'openGraph'])
+                    ->add(new FeatureMiddleware('tools'));
 
-                // Docker Host Management
-                $protected->get('/docker/hosts', [DockerController::class, 'listHosts']);
-                $protected->post('/docker/hosts', [DockerController::class, 'createHost']);
-                $protected->get('/docker/hosts/{id}', [DockerController::class, 'getHost']);
-                $protected->put('/docker/hosts/{id}', [DockerController::class, 'updateHost']);
-                $protected->delete('/docker/hosts/{id}', [DockerController::class, 'deleteHost']);
-                $protected->post('/docker/hosts/{id}/default', [DockerController::class, 'setDefaultHost']);
-                $protected->post('/docker/hosts/{id}/test', [DockerController::class, 'testHostConnection']);
+                // Docker Host Management - requires at least 'own' mode
+                $protected->get('/docker/hosts', [DockerController::class, 'listHosts'])
+                    ->add(new FeatureMiddleware('docker', null, 'view'));
+                $protected->post('/docker/hosts', [DockerController::class, 'createHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'hosts_manage'));
+                $protected->get('/docker/hosts/{id}', [DockerController::class, 'getHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'view'));
+                $protected->put('/docker/hosts/{id}', [DockerController::class, 'updateHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'hosts_manage'));
+                $protected->delete('/docker/hosts/{id}', [DockerController::class, 'deleteHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'hosts_manage'));
+                $protected->post('/docker/hosts/{id}/default', [DockerController::class, 'setDefaultHost'])
+                    ->add(new FeatureMiddleware('docker', null, 'view'));
+                $protected->post('/docker/hosts/{id}/test', [DockerController::class, 'testHostConnection'])
+                    ->add(new FeatureMiddleware('docker', null, 'view'));
 
                 // Docker Operations (with optional ?host_id= parameter)
-                $protected->get('/docker/status', [DockerController::class, 'status']);
-                $protected->get('/docker/containers', [DockerController::class, 'containers']);
-                $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails']);
-                $protected->post('/docker/containers/{id}/start', [DockerController::class, 'startContainer']);
-                $protected->post('/docker/containers/{id}/stop', [DockerController::class, 'stopContainer']);
-                $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer']);
-                $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs']);
-                $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats']);
-                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv']);
+                $protected->get('/docker/status', [DockerController::class, 'status'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers', [DockerController::class, 'containers'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers/{id}', [DockerController::class, 'containerDetails'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->post('/docker/containers/{id}/start', [DockerController::class, 'startContainer'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->post('/docker/containers/{id}/stop', [DockerController::class, 'stopContainer'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->post('/docker/containers/{id}/restart', [DockerController::class, 'restartContainer'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
 
                 // Docker Stack/Compose Operations
-                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose']);
-                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose']);
-                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp']);
-                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown']);
-                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart']);
-                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack']);
-                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack']);
+                $protected->get('/docker/stacks/{name}/compose', [DockerController::class, 'getStackCompose'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->put('/docker/stacks/{name}/compose', [DockerController::class, 'updateStackCompose'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/up', [DockerController::class, 'stackUp'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/down', [DockerController::class, 'stackDown'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Deploy
-                $protected->post('/docker/run', [DockerController::class, 'runContainer']);
-                $protected->post('/docker/pull', [DockerController::class, 'pullImage']);
-                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer']);
+                $protected->post('/docker/run', [DockerController::class, 'runContainer'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/pull', [DockerController::class, 'pullImage'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->delete('/docker/containers/{id}', [DockerController::class, 'removeContainer'])
+                    ->add(new FeatureMiddleware('docker'));
 
                 // Docker Backups
-                $protected->get('/docker/backups', [DockerController::class, 'listBackups']);
-                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup']);
-                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup']);
-                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup']);
+                $protected->get('/docker/backups', [DockerController::class, 'listBackups'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/docker/backups/{file}', [DockerController::class, 'getBackup'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/backups/{file}/restore', [DockerController::class, 'restoreBackup'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->delete('/docker/backups/{file}', [DockerController::class, 'deleteBackup'])
+                    ->add(new FeatureMiddleware('docker'));
 
-                $protected->get('/docker/images', [DockerController::class, 'images']);
-                $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails']);
-                $protected->get('/docker/networks', [DockerController::class, 'networks']);
-                $protected->get('/docker/volumes', [DockerController::class, 'volumes']);
-                $protected->get('/docker/system', [DockerController::class, 'systemInfo']);
+                $protected->get('/docker/images', [DockerController::class, 'images'])
+                    ->add(new FeatureMiddleware('docker', null, 'images'));
+                $protected->get('/docker/images/{id}', [DockerController::class, 'imageDetails'])
+                    ->add(new FeatureMiddleware('docker', null, 'images'));
+                $protected->get('/docker/networks', [DockerController::class, 'networks'])
+                    ->add(new FeatureMiddleware('docker', null, 'networks'));
+                $protected->get('/docker/volumes', [DockerController::class, 'volumes'])
+                    ->add(new FeatureMiddleware('docker', null, 'volumes'));
+                $protected->get('/docker/system', [DockerController::class, 'systemInfo'])
+                    ->add(new FeatureMiddleware('docker', null, 'system_socket'));
 
                 // Portainer Integration
-                $protected->put('/docker/hosts/{id}/portainer', [DockerController::class, 'updatePortainerConfig']);
-                $protected->get('/docker/portainer/stacks', [DockerController::class, 'listPortainerStacks']);
-                $protected->get('/docker/portainer/stacks/{stackId}/file', [DockerController::class, 'getPortainerStackFile']);
-                $protected->post('/docker/portainer/link', [DockerController::class, 'linkStackToPortainer']);
+                $protected->put('/docker/hosts/{id}/portainer', [DockerController::class, 'updatePortainerConfig'])
+                    ->add(new FeatureMiddleware('docker', null, 'portainer'));
+                $protected->get('/docker/portainer/stacks', [DockerController::class, 'listPortainerStacks'])
+                    ->add(new FeatureMiddleware('docker', null, 'portainer'));
+                $protected->get('/docker/portainer/stacks/{stackId}/file', [DockerController::class, 'getPortainerStackFile'])
+                    ->add(new FeatureMiddleware('docker', null, 'portainer'));
+                $protected->post('/docker/portainer/link', [DockerController::class, 'linkStackToPortainer'])
+                    ->add(new FeatureMiddleware('docker', null, 'portainer'));
 
-                // Server Management
-                $protected->get('/server/info', [ServerController::class, 'getSystemInfo']);
-                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs']);
-                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab']);
-                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab']);
-                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab']);
-                $protected->get('/server/processes', [ServerController::class, 'listProcesses']);
-                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess']);
-                $protected->get('/server/services', [ServerController::class, 'listServices']);
-                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus']);
-                $protected->post('/server/services/control', [ServerController::class, 'controlService']);
-                $protected->get('/server/services/custom', [ServerController::class, 'getCustomServices']);
-                $protected->post('/server/services/custom', [ServerController::class, 'addCustomService']);
-                $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService']);
+                // Server Management - protected by feature flags
+                // Note: localhost sub-feature required for local server access
+                $protected->get('/server/info', [ServerController::class, 'getSystemInfo'])
+                    ->add(new FeatureMiddleware('server', null, 'view'));
+                $protected->get('/server/crontabs', [ServerController::class, 'listCrontabs'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->post('/server/crontabs', [ServerController::class, 'addCrontab'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->put('/server/crontabs', [ServerController::class, 'updateCrontab'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->delete('/server/crontabs', [ServerController::class, 'deleteCrontab'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->get('/server/processes', [ServerController::class, 'listProcesses'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->post('/server/processes/kill', [ServerController::class, 'killProcess'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->get('/server/services', [ServerController::class, 'listServices'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->get('/server/services/status', [ServerController::class, 'getServiceStatus'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->post('/server/services/control', [ServerController::class, 'controlService'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->get('/server/services/custom', [ServerController::class, 'getCustomServices'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->post('/server/services/custom', [ServerController::class, 'addCustomService'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
+                $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService'])
+                    ->add(new FeatureMiddleware('server', null, 'manage'));
 
-                // Tickets
-                $protected->get('/tickets', [TicketController::class, 'index']);
-                $protected->get('/tickets/stats', [TicketController::class, 'stats']);
-                $protected->get('/tickets/categories', [TicketController::class, 'getCategories']);
-                $protected->post('/tickets', [TicketController::class, 'create']);
-                $protected->get('/tickets/{id}', [TicketController::class, 'show']);
-                $protected->put('/tickets/{id}', [TicketController::class, 'update']);
-                $protected->delete('/tickets/{id}', [TicketController::class, 'delete']);
-                $protected->put('/tickets/{id}/status', [TicketController::class, 'updateStatus']);
-                $protected->put('/tickets/{id}/assign', [TicketController::class, 'assign']);
-                $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment']);
+                // Tickets - protected by feature flags
+                $protected->get('/tickets', [TicketController::class, 'index'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->get('/tickets/stats', [TicketController::class, 'stats'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->get('/tickets/categories', [TicketController::class, 'getCategories'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->post('/tickets', [TicketController::class, 'create'])
+                    ->add(new FeatureMiddleware('tickets', null, 'create'));
+                $protected->get('/tickets/{id}', [TicketController::class, 'show'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->put('/tickets/{id}', [TicketController::class, 'update'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->delete('/tickets/{id}', [TicketController::class, 'delete'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/tickets/{id}/status', [TicketController::class, 'updateStatus'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/tickets/{id}/assign', [TicketController::class, 'assign'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment'])
+                    ->add(new FeatureMiddleware('tickets', null, 'create'));
 
-                // Ticket Categories (Admin)
-                $protected->get('/admin/tickets/categories', [TicketCategoryController::class, 'index']);
-                $protected->post('/admin/tickets/categories', [TicketCategoryController::class, 'create']);
-                $protected->get('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'show']);
-                $protected->put('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'update']);
-                $protected->delete('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'delete']);
-                $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder']);
+                // Ticket Categories (Admin) - protected by feature flags
+                $protected->get('/admin/tickets/categories', [TicketCategoryController::class, 'index'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/admin/tickets/categories', [TicketCategoryController::class, 'create'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->get('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'show'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'update'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->delete('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'delete'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
 
             })->add(AuthMiddleware::class);
 

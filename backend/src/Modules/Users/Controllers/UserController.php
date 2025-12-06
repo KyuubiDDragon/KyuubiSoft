@@ -13,6 +13,7 @@ use App\Core\Security\RbacManager;
 use App\Modules\Auth\Repositories\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Ramsey\Uuid\Uuid;
 use Slim\Routing\RouteContext;
 
 class UserController
@@ -212,5 +213,210 @@ class UserController
         ]);
 
         return JsonResponse::success(null, 'Password updated successfully');
+    }
+
+    // ============================================
+    // Role Management
+    // ============================================
+
+    /**
+     * Get all available roles
+     */
+    public function getRoles(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $roles = $this->rbacManager->getAllRoles();
+        return JsonResponse::success($roles);
+    }
+
+    /**
+     * Get all available permissions
+     */
+    public function getPermissions(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $permissions = $this->rbacManager->getAllPermissions();
+
+        // Group by module
+        $grouped = [];
+        foreach ($permissions as $permission) {
+            $module = $permission['module'] ?? 'general';
+            if (!isset($grouped[$module])) {
+                $grouped[$module] = [];
+            }
+            $grouped[$module][] = $permission;
+        }
+
+        return JsonResponse::success([
+            'permissions' => $permissions,
+            'grouped' => $grouped,
+        ]);
+    }
+
+    /**
+     * Get roles for a specific user
+     */
+    public function getUserRoles(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        $roles = $this->rbacManager->getUserRoles($userId);
+
+        return JsonResponse::success(['roles' => $roles]);
+    }
+
+    /**
+     * Assign a role to a user
+     */
+    public function assignRole(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $roleName = $data['role'] ?? '';
+
+        if (empty($roleName)) {
+            throw new ValidationException('Role name is required');
+        }
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Prevent assigning owner role unless current user is owner
+        if ($roleName === 'owner' && !$this->rbacManager->hasRole($currentUserId, 'owner')) {
+            throw new ForbiddenException('Only owners can assign the owner role');
+        }
+
+        // Check hierarchy - can only assign roles lower than your own
+        $currentUserRoles = $this->rbacManager->getUserRoles($currentUserId);
+        if (!in_array('owner', $currentUserRoles)) {
+            $allRoles = $this->rbacManager->getAllRoles();
+            $roleHierarchy = array_column($allRoles, 'hierarchy_level', 'name');
+
+            $currentMaxLevel = 0;
+            foreach ($currentUserRoles as $role) {
+                if (isset($roleHierarchy[$role]) && $roleHierarchy[$role] > $currentMaxLevel) {
+                    $currentMaxLevel = $roleHierarchy[$role];
+                }
+            }
+
+            $targetLevel = $roleHierarchy[$roleName] ?? 0;
+            if ($targetLevel >= $currentMaxLevel) {
+                throw new ForbiddenException('Cannot assign a role with equal or higher privileges than your own');
+            }
+        }
+
+        $success = $this->rbacManager->assignRole($userId, $roleName, $currentUserId);
+
+        if (!$success) {
+            throw new ValidationException('Failed to assign role. Role may not exist.');
+        }
+
+        $newRoles = $this->rbacManager->getUserRoles($userId);
+
+        return JsonResponse::success(['roles' => $newRoles], 'Role assigned successfully');
+    }
+
+    /**
+     * Remove a role from a user
+     */
+    public function removeRole(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $roleName = RouteContext::fromRequest($request)->getRoute()->getArgument('role');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Cannot remove own owner role
+        if ($userId === $currentUserId && $roleName === 'owner') {
+            throw new ForbiddenException('Cannot remove your own owner role');
+        }
+
+        // Only owners can remove owner role from others
+        if ($roleName === 'owner' && !$this->rbacManager->hasRole($currentUserId, 'owner')) {
+            throw new ForbiddenException('Only owners can remove the owner role');
+        }
+
+        $success = $this->rbacManager->removeRole($userId, $roleName);
+
+        if (!$success) {
+            throw new ValidationException('Failed to remove role');
+        }
+
+        $newRoles = $this->rbacManager->getUserRoles($userId);
+
+        return JsonResponse::success(['roles' => $newRoles], 'Role removed successfully');
+    }
+
+    /**
+     * Create a new user (admin only)
+     */
+    public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+
+        $email = trim($data['email'] ?? '');
+        $username = trim($data['username'] ?? '');
+        $password = $data['password'] ?? '';
+        $roles = $data['roles'] ?? ['user'];
+
+        if (empty($email) || empty($username) || empty($password)) {
+            throw new ValidationException('Email, username and password are required');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new ValidationException('Invalid email address');
+        }
+
+        // Check if email already exists
+        $existingUser = $this->userRepository->findByEmail($email);
+        if ($existingUser) {
+            throw new ValidationException('Email already registered');
+        }
+
+        // Validate password
+        $passwordErrors = $this->passwordHasher->validateStrength($password);
+        if (!empty($passwordErrors)) {
+            throw new ValidationException(implode(', ', $passwordErrors));
+        }
+
+        // Create user
+        $userId = Uuid::uuid4()->toString();
+        $this->userRepository->create([
+            'id' => $userId,
+            'email' => $email,
+            'username' => $username,
+            'password_hash' => $this->passwordHasher->hash($password),
+            'is_verified' => true, // Admin-created users are auto-verified
+            'is_active' => true,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Assign roles
+        foreach ($roles as $roleName) {
+            // Skip owner role if current user is not owner
+            if ($roleName === 'owner' && !$this->rbacManager->hasRole($currentUserId, 'owner')) {
+                continue;
+            }
+            $this->rbacManager->assignRole($userId, $roleName, $currentUserId);
+        }
+
+        $user = $this->userRepository->findById($userId);
+        unset($user['password_hash']);
+        $user['roles'] = $this->rbacManager->getUserRoles($userId);
+
+        return JsonResponse::success($user, 'User created successfully');
     }
 }

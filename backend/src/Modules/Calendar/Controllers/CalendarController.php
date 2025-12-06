@@ -26,7 +26,7 @@ class CalendarController
 
         $start = $queryParams['start'] ?? date('Y-m-01');
         $end = $queryParams['end'] ?? date('Y-m-t');
-        $sources = isset($queryParams['sources']) ? explode(',', $queryParams['sources']) : ['events', 'kanban', 'tasks', 'time'];
+        $sources = isset($queryParams['sources']) ? explode(',', $queryParams['sources']) : ['events', 'kanban', 'tasks', 'time', 'external'];
 
         $events = [];
 
@@ -84,6 +84,32 @@ class CalendarController
                 [$userId, $start, $end]
             );
             $events = array_merge($events, $timeEntries);
+        }
+
+        // External calendar events
+        if (in_array('external', $sources)) {
+            $externalEvents = $this->db->fetchAllAssociative(
+                "SELECT
+                    ece.id,
+                    ece.title,
+                    ece.description,
+                    ece.start_date,
+                    ece.end_date,
+                    ece.all_day,
+                    ec.color,
+                    'external' as source_type,
+                    ec.id as source_id,
+                    ec.name as calendar_name
+                 FROM external_calendar_events ece
+                 JOIN external_calendars ec ON ece.calendar_id = ec.id
+                 WHERE ec.user_id = ?
+                   AND ec.is_visible = 1
+                   AND ((ece.start_date >= ? AND ece.start_date <= ?)
+                        OR (ece.end_date >= ? AND ece.end_date <= ?)
+                        OR (ece.start_date <= ? AND ece.end_date >= ?))",
+                [$userId, $start, $end . ' 23:59:59', $start, $end . ' 23:59:59', $start, $end]
+            );
+            $events = array_merge($events, $externalEvents);
         }
 
         // Sort by start date

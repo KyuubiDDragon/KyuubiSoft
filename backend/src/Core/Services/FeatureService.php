@@ -4,38 +4,52 @@ declare(strict_types=1);
 
 namespace App\Core\Services;
 
+use App\Core\Security\RbacManager;
+
 /**
  * Feature Service - Manages feature flags for multi-instance deployments
  *
+ * Two-layer access control:
+ * 1. Instance-Level (ENV): What features exist on this instance?
+ * 2. User-Level (Permissions): What can this user access within instance limits?
+ *
  * Each feature can have different modes:
- * - false/disabled: Feature completely disabled
- * - true/full: Full access to feature
- * - "own": Limited access (e.g., Docker: only own hosts, not system socket)
- * - "limited": Partial access with restrictions
+ * - disabled: Feature completely disabled on this instance
+ * - portainer_only: (Docker) Only Portainer connections allowed
+ * - own: Limited access (e.g., Docker: only own hosts, Server: only SSH connections)
+ * - limited: Partial access with restrictions (e.g., Tools: no SSH terminal)
+ * - full: Full access to feature
  */
 class FeatureService
 {
     // Feature definitions with their possible modes
     private const FEATURES = [
         'docker' => [
-            'modes' => ['disabled', 'own', 'full'],
+            'modes' => ['disabled', 'portainer_only', 'own', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_DOCKER',
             'description' => 'Docker container management',
-            'restrictions' => [
-                'disabled' => 'Docker module completely hidden',
-                'own' => 'Can add own Docker hosts, no access to system Docker socket',
-                'full' => 'Full Docker access including system socket',
+            'subFeatures' => [
+                'view' => ['portainer_only', 'own', 'full'],
+                'hosts_manage' => ['own', 'full'],
+                'containers' => ['own', 'full'],
+                'images' => ['own', 'full'],
+                'volumes' => ['own', 'full'],
+                'networks' => ['own', 'full'],
+                'system_socket' => ['full'],
+                'portainer' => ['portainer_only', 'own', 'full'],
             ],
         ],
         'server' => [
-            'modes' => ['disabled', 'full'],
+            'modes' => ['disabled', 'own', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_SERVER',
             'description' => 'Server monitoring and management',
-            'restrictions' => [
-                'disabled' => 'Server module completely hidden',
-                'full' => 'Full server access',
+            'subFeatures' => [
+                'view' => ['own', 'full'],
+                'manage' => ['own', 'full'],
+                'terminal' => ['own', 'full'],
+                'localhost' => ['full'],
             ],
         ],
         'tools' => [
@@ -43,10 +57,18 @@ class FeatureService
             'default' => 'full',
             'env' => 'FEATURE_TOOLS',
             'description' => 'Network tools (ping, DNS, SSH, etc.)',
-            'restrictions' => [
-                'disabled' => 'Tools module completely hidden',
-                'limited' => 'Only safe tools (ping, DNS lookup), no SSH',
-                'full' => 'All tools including SSH',
+            'subFeatures' => [
+                'ping' => ['limited', 'full'],
+                'dns' => ['limited', 'full'],
+                'whois' => ['limited', 'full'],
+                'traceroute' => ['limited', 'full'],
+                'ssl_check' => ['limited', 'full'],
+                'http_headers' => ['limited', 'full'],
+                'ip_lookup' => ['limited', 'full'],
+                'security_headers' => ['limited', 'full'],
+                'open_graph' => ['limited', 'full'],
+                'port_check' => ['full'],
+                'ssh' => ['full'],
             ],
         ],
         'uptime' => [
@@ -54,38 +76,81 @@ class FeatureService
             'default' => 'full',
             'env' => 'FEATURE_UPTIME',
             'description' => 'Uptime monitoring',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+            ],
         ],
         'invoices' => [
             'modes' => ['disabled', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_INVOICES',
             'description' => 'Invoice management',
+            'subFeatures' => [
+                'view' => ['full'],
+                'create' => ['full'],
+                'edit' => ['full'],
+                'delete' => ['full'],
+            ],
         ],
         'tickets' => [
             'modes' => ['disabled', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_TICKETS',
             'description' => 'Ticket system',
+            'subFeatures' => [
+                'view' => ['full'],
+                'create' => ['full'],
+                'manage' => ['full'],
+            ],
         ],
         'api_tester' => [
-            'modes' => ['disabled', 'full'],
+            'modes' => ['disabled', 'limited', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_API_TESTER',
             'description' => 'API testing tool',
+            'subFeatures' => [
+                'view' => ['limited', 'full'],
+                'execute' => ['limited', 'full'],
+                'auth_headers' => ['full'],
+            ],
         ],
         'youtube' => [
             'modes' => ['disabled', 'full'],
             'default' => 'full',
             'env' => 'FEATURE_YOUTUBE',
             'description' => 'YouTube downloader',
+            'subFeatures' => [
+                'use' => ['full'],
+            ],
+        ],
+        'passwords' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_PASSWORDS',
+            'description' => 'Password manager',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+            ],
         ],
     ];
 
     private array $featureCache = [];
+    private ?RbacManager $rbac = null;
 
-    public function __construct()
+    public function __construct(?RbacManager $rbac = null)
     {
+        $this->rbac = $rbac;
         $this->loadFeatures();
+    }
+
+    /**
+     * Set the RBAC manager (for dependency injection)
+     */
+    public function setRbacManager(RbacManager $rbac): void
+    {
+        $this->rbac = $rbac;
     }
 
     /**
@@ -103,7 +168,7 @@ class FeatureService
             } elseif ($envValue === 'true' || $envValue === '1' || $envValue === 'full') {
                 $this->featureCache[$feature] = 'full';
             } else {
-                // Custom mode (e.g., 'own', 'limited')
+                // Custom mode (e.g., 'own', 'limited', 'portainer_only')
                 $this->featureCache[$feature] = in_array($envValue, $config['modes'])
                     ? $envValue
                     : $config['default'];
@@ -112,11 +177,19 @@ class FeatureService
     }
 
     /**
-     * Check if a feature is enabled (any mode except disabled)
+     * Get the current mode of a feature (Instance-Level)
+     */
+    public function getMode(string $feature): string
+    {
+        return $this->featureCache[$feature] ?? 'disabled';
+    }
+
+    /**
+     * Check if a feature is enabled on this instance (any mode except disabled)
      */
     public function isEnabled(string $feature): bool
     {
-        return ($this->featureCache[$feature] ?? 'disabled') !== 'disabled';
+        return $this->getMode($feature) !== 'disabled';
     }
 
     /**
@@ -124,11 +197,11 @@ class FeatureService
      */
     public function hasMode(string $feature, string $mode): bool
     {
-        return ($this->featureCache[$feature] ?? 'disabled') === $mode;
+        return $this->getMode($feature) === $mode;
     }
 
     /**
-     * Check if feature has full access
+     * Check if feature has full access on instance level
      */
     public function hasFull(string $feature): bool
     {
@@ -136,11 +209,66 @@ class FeatureService
     }
 
     /**
-     * Get the current mode of a feature
+     * Check if a sub-feature is allowed by the current instance mode
      */
-    public function getMode(string $feature): string
+    public function isSubFeatureAllowed(string $feature, string $subFeature): bool
     {
-        return $this->featureCache[$feature] ?? 'disabled';
+        $mode = $this->getMode($feature);
+
+        if ($mode === 'disabled') {
+            return false;
+        }
+
+        $config = self::FEATURES[$feature] ?? null;
+        if (!$config || !isset($config['subFeatures'][$subFeature])) {
+            // Unknown sub-feature, default to requiring full mode
+            return $mode === 'full';
+        }
+
+        return in_array($mode, $config['subFeatures'][$subFeature]);
+    }
+
+    /**
+     * Check specific sub-feature access (Instance-Level only)
+     * Use canAccess() for combined Instance + Permission check
+     */
+    public function checkAccess(string $feature, string $subFeature): bool
+    {
+        return $this->isSubFeatureAllowed($feature, $subFeature);
+    }
+
+    /**
+     * Combined access check: Instance-Level AND User Permission
+     *
+     * @param string $feature The feature name (e.g., 'docker')
+     * @param string $userId The user ID to check permissions for
+     * @param string|null $subFeature Optional sub-feature (e.g., 'system_socket')
+     * @return bool
+     */
+    public function canAccess(string $feature, string $userId, ?string $subFeature = null): bool
+    {
+        // 1. Instance-Level Check
+        if (!$this->isEnabled($feature)) {
+            return false;
+        }
+
+        // 2. Sub-Feature Mode Check (if specified)
+        if ($subFeature !== null && !$this->isSubFeatureAllowed($feature, $subFeature)) {
+            return false;
+        }
+
+        // 3. Permission Check (if RBAC manager is available)
+        if ($this->rbac !== null) {
+            $permission = $subFeature
+                ? "{$feature}.{$subFeature}"
+                : "{$feature}.view";
+
+            if (!$this->rbac->hasPermission($userId, $permission)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -152,11 +280,23 @@ class FeatureService
 
         foreach (self::FEATURES as $feature => $config) {
             $currentMode = $this->featureCache[$feature] ?? 'disabled';
+
+            // Calculate restricted sub-features based on current mode
+            $restricted = [];
+            if (isset($config['subFeatures'])) {
+                foreach ($config['subFeatures'] as $subFeature => $allowedModes) {
+                    if (!in_array($currentMode, $allowedModes)) {
+                        $restricted[] = $subFeature;
+                    }
+                }
+            }
+
             $result[$feature] = [
                 'enabled' => $currentMode !== 'disabled',
                 'mode' => $currentMode,
                 'description' => $config['description'],
                 'availableModes' => $config['modes'],
+                'restricted' => $restricted,
             ];
         }
 
@@ -180,38 +320,32 @@ class FeatureService
     }
 
     /**
-     * Check specific sub-feature access
-     * e.g., checkAccess('docker', 'system_socket') checks if docker has full mode
+     * Get the permission name for a feature/sub-feature
      */
-    public function checkAccess(string $feature, string $subFeature): bool
+    public function getPermissionName(string $feature, ?string $subFeature = null): string
     {
+        return $subFeature ? "{$feature}.{$subFeature}" : "{$feature}.view";
+    }
+
+    /**
+     * Get all required permissions for a feature based on current instance mode
+     */
+    public function getAvailablePermissions(string $feature): array
+    {
+        $config = self::FEATURES[$feature] ?? null;
+        if (!$config || !isset($config['subFeatures'])) {
+            return [];
+        }
+
         $mode = $this->getMode($feature);
+        $permissions = [];
 
-        if ($mode === 'disabled') {
-            return false;
+        foreach ($config['subFeatures'] as $subFeature => $allowedModes) {
+            if (in_array($mode, $allowedModes)) {
+                $permissions[] = "{$feature}.{$subFeature}";
+            }
         }
 
-        if ($mode === 'full') {
-            return true;
-        }
-
-        // Feature-specific sub-feature checks
-        return match ($feature) {
-            'docker' => match ($subFeature) {
-                'system_socket' => $mode === 'full',
-                'own_hosts' => in_array($mode, ['own', 'full']),
-                'view' => in_array($mode, ['own', 'full']),
-                default => false,
-            },
-            'tools' => match ($subFeature) {
-                'ssh' => $mode === 'full',
-                'ping' => in_array($mode, ['limited', 'full']),
-                'dns' => in_array($mode, ['limited', 'full']),
-                'whois' => in_array($mode, ['limited', 'full']),
-                'port_check' => $mode === 'full',
-                default => false,
-            },
-            default => $mode === 'full',
-        };
+        return $permissions;
     }
 }

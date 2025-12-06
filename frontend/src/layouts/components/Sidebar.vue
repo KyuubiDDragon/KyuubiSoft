@@ -205,15 +205,29 @@ const allNavigationGroups = [
 
 // Filter navigation based on user permissions and features
 function filterItem(item) {
-  // Check feature flag first
+  // Check feature flag first (Instance-Level)
   if (item.feature && !featureStore.isEnabled(item.feature)) {
     return false
   }
-  // Check role/permission
-  if (!item.roles && !item.permission) return true
-  if (item.roles) return item.roles.some(role => authStore.hasRole(role))
-  if (item.permission) return authStore.hasPermission(item.permission)
-  return false
+
+  // Check feature permission (User-Level) - combines with instance check
+  // If item has a feature, also check if user has permission for it
+  if (item.feature && item.checkPermission !== false) {
+    const permission = item.featurePermission || `${item.feature}.view`
+    if (!authStore.hasPermission(permission)) {
+      return false
+    }
+  }
+
+  // Check explicit role/permission requirements
+  if (item.roles && !item.roles.some(role => authStore.hasRole(role))) {
+    return false
+  }
+  if (item.permission && !authStore.hasPermission(item.permission)) {
+    return false
+  }
+
+  return true
 }
 
 const navigationGroups = computed(() => {

@@ -263,68 +263,115 @@ class Router
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
                 $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
 
-                // Uptime Monitor
-                $protected->get('/uptime', [UptimeMonitorController::class, 'index']);
-                $protected->post('/uptime', [UptimeMonitorController::class, 'create']);
-                $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes']);
-                $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats']);
-                $protected->get('/uptime/folders', [UptimeMonitorController::class, 'getFolders']);
-                $protected->post('/uptime/folders', [UptimeMonitorController::class, 'createFolder']);
-                $protected->put('/uptime/folders/reorder', [UptimeMonitorController::class, 'reorderFolders']);
-                $protected->put('/uptime/folders/{id}', [UptimeMonitorController::class, 'updateFolder']);
-                $protected->delete('/uptime/folders/{id}', [UptimeMonitorController::class, 'deleteFolder']);
-                $protected->post('/uptime/move-to-folder', [UptimeMonitorController::class, 'moveMonitorsToFolder']);
-                $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show']);
-                $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update']);
-                $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete']);
-                $protected->post('/uptime/{id}/check', [UptimeMonitorController::class, 'check']);
+                // Uptime Monitor - protected by feature flags
+                $protected->get('/uptime', [UptimeMonitorController::class, 'index'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->post('/uptime', [UptimeMonitorController::class, 'create'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->get('/uptime/types', [UptimeMonitorController::class, 'getTypes'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->get('/uptime/stats', [UptimeMonitorController::class, 'getStats'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->get('/uptime/folders', [UptimeMonitorController::class, 'getFolders'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->post('/uptime/folders', [UptimeMonitorController::class, 'createFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->put('/uptime/folders/reorder', [UptimeMonitorController::class, 'reorderFolders'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->put('/uptime/folders/{id}', [UptimeMonitorController::class, 'updateFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->delete('/uptime/folders/{id}', [UptimeMonitorController::class, 'deleteFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->post('/uptime/move-to-folder', [UptimeMonitorController::class, 'moveMonitorsToFolder'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->get('/uptime/{id}', [UptimeMonitorController::class, 'show'])
+                    ->add(new FeatureMiddleware('uptime', null, 'view'));
+                $protected->put('/uptime/{id}', [UptimeMonitorController::class, 'update'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->delete('/uptime/{id}', [UptimeMonitorController::class, 'delete'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
+                $protected->post('/uptime/{id}/check', [UptimeMonitorController::class, 'check'])
+                    ->add(new FeatureMiddleware('uptime', null, 'manage'));
 
-                // Invoices - Clients
-                $protected->get('/clients', [InvoiceController::class, 'getClients']);
-                $protected->post('/clients', [InvoiceController::class, 'createClient']);
-                $protected->put('/clients/{id}', [InvoiceController::class, 'updateClient']);
-                $protected->delete('/clients/{id}', [InvoiceController::class, 'deleteClient']);
+                // Invoices - Clients - protected by feature flags
+                $protected->get('/clients', [InvoiceController::class, 'getClients'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/clients', [InvoiceController::class, 'createClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->put('/clients/{id}', [InvoiceController::class, 'updateClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/clients/{id}', [InvoiceController::class, 'deleteClient'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
 
-                // Invoices
-                $protected->get('/invoices', [InvoiceController::class, 'index']);
-                $protected->post('/invoices', [InvoiceController::class, 'create']);
-                $protected->get('/invoices/stats', [InvoiceController::class, 'getStats']);
-                $protected->post('/invoices/from-time', [InvoiceController::class, 'createFromTimeEntries']);
-                $protected->get('/invoices/{id}', [InvoiceController::class, 'show']);
-                $protected->put('/invoices/{id}', [InvoiceController::class, 'update']);
-                $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete']);
-                $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem']);
-                $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem']);
-                $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem']);
+                // Invoices - protected by feature flags
+                $protected->get('/invoices', [InvoiceController::class, 'index'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/invoices', [InvoiceController::class, 'create'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->get('/invoices/stats', [InvoiceController::class, 'getStats'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/invoices/from-time', [InvoiceController::class, 'createFromTimeEntries'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->get('/invoices/{id}', [InvoiceController::class, 'show'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->put('/invoices/{id}', [InvoiceController::class, 'update'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
+                $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
 
-                // API Tester - Collections
-                $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections']);
-                $protected->post('/api-tester/collections', [ApiTesterController::class, 'createCollection']);
-                $protected->put('/api-tester/collections/{id}', [ApiTesterController::class, 'updateCollection']);
-                $protected->delete('/api-tester/collections/{id}', [ApiTesterController::class, 'deleteCollection']);
+                // API Tester - Collections - protected by feature flags
+                $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/collections', [ApiTesterController::class, 'createCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/collections/{id}', [ApiTesterController::class, 'updateCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/collections/{id}', [ApiTesterController::class, 'deleteCollection'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // API Tester - Environments
-                $protected->get('/api-tester/environments', [ApiTesterController::class, 'getEnvironments']);
-                $protected->post('/api-tester/environments', [ApiTesterController::class, 'createEnvironment']);
-                $protected->put('/api-tester/environments/{id}', [ApiTesterController::class, 'updateEnvironment']);
-                $protected->delete('/api-tester/environments/{id}', [ApiTesterController::class, 'deleteEnvironment']);
+                // API Tester - Environments - protected by feature flags
+                $protected->get('/api-tester/environments', [ApiTesterController::class, 'getEnvironments'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/environments', [ApiTesterController::class, 'createEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/environments/{id}', [ApiTesterController::class, 'updateEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/environments/{id}', [ApiTesterController::class, 'deleteEnvironment'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // API Tester - Requests
-                $protected->get('/api-tester/requests', [ApiTesterController::class, 'getRequests']);
-                $protected->post('/api-tester/requests', [ApiTesterController::class, 'createRequest']);
-                $protected->put('/api-tester/requests/{id}', [ApiTesterController::class, 'updateRequest']);
-                $protected->delete('/api-tester/requests/{id}', [ApiTesterController::class, 'deleteRequest']);
-                $protected->post('/api-tester/execute', [ApiTesterController::class, 'executeRequest']);
+                // API Tester - Requests - protected by feature flags
+                $protected->get('/api-tester/requests', [ApiTesterController::class, 'getRequests'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/requests', [ApiTesterController::class, 'createRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->put('/api-tester/requests/{id}', [ApiTesterController::class, 'updateRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/requests/{id}', [ApiTesterController::class, 'deleteRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->post('/api-tester/execute', [ApiTesterController::class, 'executeRequest'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'execute'));
 
-                // API Tester - History
-                $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory']);
-                $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem']);
-                $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory']);
+                // API Tester - History - protected by feature flags
+                $protected->get('/api-tester/history', [ApiTesterController::class, 'getHistory'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->get('/api-tester/history/{id}', [ApiTesterController::class, 'getHistoryItem'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
+                $protected->delete('/api-tester/history', [ApiTesterController::class, 'clearHistory'])
+                    ->add(new FeatureMiddleware('api_tester', null, 'view'));
 
-                // YouTube Downloader
-                $protected->post('/youtube/info', [YouTubeController::class, 'getInfo']);
-                $protected->post('/youtube/download', [YouTubeController::class, 'download']);
-                $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup']);
+                // YouTube Downloader - protected by feature flags
+                $protected->post('/youtube/info', [YouTubeController::class, 'getInfo'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
+                $protected->post('/youtube/download', [YouTubeController::class, 'download'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
+                $protected->post('/youtube/cleanup', [YouTubeController::class, 'cleanup'])
+                    ->add(new FeatureMiddleware('youtube', null, 'use'));
 
                 // Quick Notes
                 $protected->get('/quick-notes', [QuickNoteController::class, 'index']);
@@ -530,25 +577,41 @@ class Router
                 $protected->delete('/server/services/custom/{name}', [ServerController::class, 'removeCustomService'])
                     ->add(new FeatureMiddleware('server', null, 'manage'));
 
-                // Tickets
-                $protected->get('/tickets', [TicketController::class, 'index']);
-                $protected->get('/tickets/stats', [TicketController::class, 'stats']);
-                $protected->get('/tickets/categories', [TicketController::class, 'getCategories']);
-                $protected->post('/tickets', [TicketController::class, 'create']);
-                $protected->get('/tickets/{id}', [TicketController::class, 'show']);
-                $protected->put('/tickets/{id}', [TicketController::class, 'update']);
-                $protected->delete('/tickets/{id}', [TicketController::class, 'delete']);
-                $protected->put('/tickets/{id}/status', [TicketController::class, 'updateStatus']);
-                $protected->put('/tickets/{id}/assign', [TicketController::class, 'assign']);
-                $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment']);
+                // Tickets - protected by feature flags
+                $protected->get('/tickets', [TicketController::class, 'index'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->get('/tickets/stats', [TicketController::class, 'stats'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->get('/tickets/categories', [TicketController::class, 'getCategories'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->post('/tickets', [TicketController::class, 'create'])
+                    ->add(new FeatureMiddleware('tickets', null, 'create'));
+                $protected->get('/tickets/{id}', [TicketController::class, 'show'])
+                    ->add(new FeatureMiddleware('tickets', null, 'view'));
+                $protected->put('/tickets/{id}', [TicketController::class, 'update'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->delete('/tickets/{id}', [TicketController::class, 'delete'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/tickets/{id}/status', [TicketController::class, 'updateStatus'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/tickets/{id}/assign', [TicketController::class, 'assign'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/tickets/{id}/comments', [TicketController::class, 'addComment'])
+                    ->add(new FeatureMiddleware('tickets', null, 'create'));
 
-                // Ticket Categories (Admin)
-                $protected->get('/admin/tickets/categories', [TicketCategoryController::class, 'index']);
-                $protected->post('/admin/tickets/categories', [TicketCategoryController::class, 'create']);
-                $protected->get('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'show']);
-                $protected->put('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'update']);
-                $protected->delete('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'delete']);
-                $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder']);
+                // Ticket Categories (Admin) - protected by feature flags
+                $protected->get('/admin/tickets/categories', [TicketCategoryController::class, 'index'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/admin/tickets/categories', [TicketCategoryController::class, 'create'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->get('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'show'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->put('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'update'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->delete('/admin/tickets/categories/{id}', [TicketCategoryController::class, 'delete'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
+                $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder'])
+                    ->add(new FeatureMiddleware('tickets', null, 'manage'));
 
             })->add(AuthMiddleware::class);
 

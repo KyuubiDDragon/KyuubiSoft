@@ -24,13 +24,24 @@ const layout = computed(() => {
   return DefaultLayout
 })
 
+// Check if current path is a public page (doesn't need auth)
+function isPublicPage() {
+  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register']
+  return publicPaths.some(path => window.location.pathname.includes(path))
+}
+
 // Initialize auth state before showing app
 onMounted(async () => {
+  // Skip all auth logic for public pages
+  if (isPublicPage()) {
+    isAppReady.value = true
+    return
+  }
+
   await authStore.initialize()
 
-  // If not authenticated and on a protected route, redirect first
-  // Skip redirect for auth layout (login/register) and public layout (public documents, etc.)
-  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false && route.meta.layout !== 'auth' && route.meta.layout !== 'public') {
+  // If not authenticated and on a protected route, redirect to login
+  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false) {
     await router.replace({ name: 'login', query: { redirect: route.fullPath } })
   }
 

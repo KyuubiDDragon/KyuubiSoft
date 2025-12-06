@@ -130,6 +130,8 @@ services:
   collaboration:
     image: ghcr.io/kyuubiddragon/kyuubisoft-collaboration:latest
     container_name: kyuubisoft_collaboration
+    ports:
+      - "8091:1234"
     environment:
       PORT: 1234
       HOST: 0.0.0.0

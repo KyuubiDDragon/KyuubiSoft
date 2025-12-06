@@ -373,6 +373,36 @@ class AuthService
         return $this->userRepository->verifySensitiveOperationToken($userId, $token, $operation);
     }
 
+    /**
+     * Verify 2FA code directly without creating a sensitive token
+     * Used when accepting both 2FA codes and sensitive tokens
+     */
+    public function verify2FACodeDirect(string $userId, string $code): bool
+    {
+        $user = $this->userRepository->findById($userId);
+
+        if (empty($user['two_factor_secret'])) {
+            return false;
+        }
+
+        return $this->verify2FACode($user['two_factor_secret'], $code);
+    }
+
+    /**
+     * Verify either a 2FA code or a sensitive token
+     * Automatically detects the type based on format
+     */
+    public function verifyTokenOrCode(string $userId, string $tokenOrCode, string $operation = 'sensitive'): bool
+    {
+        // Check if it's a 6-digit 2FA code
+        if (preg_match('/^\d{6}$/', $tokenOrCode)) {
+            return $this->verify2FACodeDirect($userId, $tokenOrCode);
+        }
+
+        // Otherwise treat it as a sensitive token
+        return $this->verifySensitiveToken($userId, $tokenOrCode, $operation);
+    }
+
     private function sanitizeUser(array $user): array
     {
         // Add two_factor_enabled flag before removing secret

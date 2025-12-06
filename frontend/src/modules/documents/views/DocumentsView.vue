@@ -597,6 +597,7 @@ onMounted(async () => {
             </p>
             <div class="flex items-center gap-2 mt-4">
               <button
+                v-if="doc.public_token"
                 @click="navigator.clipboard.writeText(getPublicUrl(doc.public_token)); uiStore.showSuccess('Link kopiert!')"
                 class="flex-1 btn-secondary py-2 text-sm"
               >
@@ -605,11 +606,12 @@ onMounted(async () => {
               </button>
               <button
                 @click="selectDocument(doc.id)"
-                class="btn-secondary py-2 text-sm"
+                class="flex-1 btn-secondary py-2 text-sm"
               >
                 Öffnen
               </button>
               <button
+                v-if="doc.is_owner"
                 @click="openShareModal(doc)"
                 class="btn-secondary py-2 text-sm"
               >

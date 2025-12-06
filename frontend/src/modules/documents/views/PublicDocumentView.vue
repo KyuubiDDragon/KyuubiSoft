@@ -42,6 +42,8 @@ const collaborationAvailable = ref(false)
 const isConnecting = ref(false)
 const localContent = ref('') // Track local content for saving
 const isSaving = ref(false)
+let autoSaveInterval = null
+const AUTO_SAVE_INTERVAL = 30000 // Auto-save every 30 seconds
 
 // Duck name parts for random name generation
 const duckAdjectives = [
@@ -201,12 +203,34 @@ async function joinCollaborativeSession() {
     }
 
     isEditing.value = true
+
+    // Start auto-save interval
+    startAutoSave()
   } catch (error) {
     console.error('Failed to join collaborative session:', error)
     collaborationAvailable.value = false
     isEditing.value = true // Still allow editing, just not collaboratively
+    startAutoSave() // Also auto-save in local mode
   } finally {
     isConnecting.value = false
+  }
+}
+
+// Start auto-save interval
+function startAutoSave() {
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval)
+  }
+  autoSaveInterval = setInterval(() => {
+    saveDocument()
+  }, AUTO_SAVE_INTERVAL)
+}
+
+// Stop auto-save interval
+function stopAutoSave() {
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval)
+    autoSaveInterval = null
   }
 }
 
@@ -255,6 +279,9 @@ async function saveDocument() {
 
 // Leave collaborative session
 async function leaveSession() {
+  // Stop auto-save
+  stopAutoSave()
+
   // Save before leaving
   await saveDocument()
 

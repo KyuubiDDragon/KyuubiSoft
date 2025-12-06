@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useAuthStore } from '@/stores/auth'
-import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
 const users = ref([])
 const roles = ref([])
+const projects = ref([])
 const isLoading = ref(true)
 const error = ref(null)
 
@@ -23,13 +24,23 @@ const formData = ref({
   username: '',
   password: '',
   is_active: true,
+  require_2fa: false,
   restricted_to_projects: false,
+  allowed_project_ids: [],
   selectedRoles: []
 })
 const formErrors = ref({})
 
+// Helper to convert DB value to boolean
+function toBool(value) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  if (typeof value === 'string') return value === '1' || value === 'true'
+  return false
+}
+
 onMounted(async () => {
-  await Promise.all([loadUsers(), loadRoles()])
+  await Promise.all([loadUsers(), loadRoles(), loadProjects()])
 })
 
 async function loadUsers() {
@@ -56,6 +67,15 @@ async function loadRoles() {
   }
 }
 
+async function loadProjects() {
+  try {
+    const response = await api.get('/api/v1/projects')
+    projects.value = response.data.data?.items || response.data.data || []
+  } catch (err) {
+    console.error('Failed to load projects:', err)
+  }
+}
+
 function openCreateModal() {
   isEditing.value = false
   selectedUser.value = null
@@ -64,7 +84,9 @@ function openCreateModal() {
     username: '',
     password: '',
     is_active: true,
+    require_2fa: false,
     restricted_to_projects: false,
+    allowed_project_ids: [],
     selectedRoles: ['user']
   }
   formErrors.value = {}
@@ -74,12 +96,27 @@ function openCreateModal() {
 function openEditModal(user) {
   isEditing.value = true
   selectedUser.value = user
+
+  // Parse allowed_project_ids from JSON if needed
+  let allowedProjects = []
+  if (user.allowed_project_ids) {
+    try {
+      allowedProjects = typeof user.allowed_project_ids === 'string'
+        ? JSON.parse(user.allowed_project_ids)
+        : user.allowed_project_ids
+    } catch (e) {
+      allowedProjects = []
+    }
+  }
+
   formData.value = {
     email: user.email,
     username: user.username,
     password: '',
-    is_active: user.is_active,
-    restricted_to_projects: user.restricted_to_projects || false,
+    is_active: toBool(user.is_active),
+    require_2fa: toBool(user.require_2fa),
+    restricted_to_projects: toBool(user.restricted_to_projects),
+    allowed_project_ids: allowedProjects || [],
     selectedRoles: [...(user.roles || [])]
   }
   formErrors.value = {}
@@ -88,6 +125,7 @@ function openEditModal(user) {
 
 function openDeleteModal(user) {
   selectedUser.value = user
+  formErrors.value = {}
   showDeleteModal.value = true
 }
 
@@ -108,7 +146,9 @@ async function saveUser() {
         email: formData.value.email,
         username: formData.value.username,
         is_active: formData.value.is_active,
-        restricted_to_projects: formData.value.restricted_to_projects
+        require_2fa: formData.value.require_2fa,
+        restricted_to_projects: formData.value.restricted_to_projects,
+        allowed_project_ids: formData.value.restricted_to_projects ? formData.value.allowed_project_ids : []
       })
 
       // Update roles - first get current roles, then add/remove as needed
@@ -164,15 +204,12 @@ async function deleteUser() {
   }
 }
 
-async function toggleProjectRestriction(user) {
-  try {
-    const newValue = !user.restricted_to_projects
-    await api.put(`/api/v1/users/${user.id}`, {
-      restricted_to_projects: newValue
-    })
-    user.restricted_to_projects = newValue
-  } catch (err) {
-    console.error('Failed to toggle restriction:', err)
+function toggleProjectSelection(projectId) {
+  const index = formData.value.allowed_project_ids.indexOf(projectId)
+  if (index > -1) {
+    formData.value.allowed_project_ids.splice(index, 1)
+  } else {
+    formData.value.allowed_project_ids.push(projectId)
   }
 }
 
@@ -256,7 +293,7 @@ function canDeleteUser(user) {
               Status
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-              Projektzugriff
+              2FA
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
               Registriert
@@ -277,6 +314,9 @@ function canDeleteUser(user) {
                 </div>
                 <div class="ml-4">
                   <div class="text-sm font-medium text-white">{{ user.username }}</div>
+                  <div v-if="toBool(user.restricted_to_projects)" class="text-xs text-orange-400">
+                    Eingeschränkter Zugriff
+                  </div>
                 </div>
               </div>
             </td>
@@ -299,22 +339,26 @@ function canDeleteUser(user) {
             <td class="px-6 py-4 whitespace-nowrap">
               <span
                 class="px-2 py-1 text-xs font-medium rounded-full"
-                :class="user.is_active ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'"
+                :class="toBool(user.is_active) ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'"
               >
-                {{ user.is_active ? 'Aktiv' : 'Inaktiv' }}
+                {{ toBool(user.is_active) ? 'Aktiv' : 'Inaktiv' }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <button
-                @click="toggleProjectRestriction(user)"
-                class="px-2 py-1 text-xs font-medium rounded-full transition-colors"
-                :class="user.restricted_to_projects
-                  ? 'bg-orange-900 text-orange-300 hover:bg-orange-800'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
-                :title="user.restricted_to_projects ? 'Nur geteilte Projekte' : 'Voller Zugriff'"
-              >
-                {{ user.restricted_to_projects ? 'Eingeschränkt' : 'Voller Zugriff' }}
-              </button>
+              <div class="flex items-center gap-1">
+                <ShieldCheckIcon
+                  v-if="user.two_factor_secret"
+                  class="w-5 h-5 text-green-400"
+                  title="2FA aktiviert"
+                />
+                <span
+                  v-if="toBool(user.require_2fa) && !user.two_factor_secret"
+                  class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-900 text-yellow-300"
+                >
+                  Erforderlich
+                </span>
+                <span v-else-if="!user.two_factor_secret" class="text-gray-500 text-sm">-</span>
+              </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
               {{ new Date(user.created_at).toLocaleDateString('de-DE') }}
@@ -424,25 +468,72 @@ function canDeleteUser(user) {
               </div>
             </div>
 
-            <!-- Status -->
-            <div class="flex items-center gap-4">
-              <label class="flex items-center gap-2 cursor-pointer">
+            <!-- Divider -->
+            <hr class="border-dark-600" />
+
+            <!-- Status Checkboxes -->
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer">
                 <input
                   v-model="formData.is_active"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-sm text-gray-300">Aktiv</span>
+                <div>
+                  <span class="text-sm font-medium text-gray-300">Aktiv</span>
+                  <p class="text-xs text-gray-500">Benutzer kann sich einloggen</p>
+                </div>
               </label>
 
-              <label class="flex items-center gap-2 cursor-pointer">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input
+                  v-model="formData.require_2fa"
+                  type="checkbox"
+                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                />
+                <div>
+                  <span class="text-sm font-medium text-gray-300">2FA erforderlich</span>
+                  <p class="text-xs text-gray-500">Benutzer muss 2FA beim nächsten Login einrichten</p>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer">
                 <input
                   v-model="formData.restricted_to_projects"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-sm text-gray-300">Auf Projekte einschränken</span>
+                <div>
+                  <span class="text-sm font-medium text-gray-300">Auf Projekte einschränken</span>
+                  <p class="text-xs text-gray-500">Benutzer sieht nur ausgewählte Projekte</p>
+                </div>
               </label>
+            </div>
+
+            <!-- Project Selection (only when restricted) -->
+            <div v-if="formData.restricted_to_projects" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">Erlaubte Projekte</label>
+              <div v-if="projects.length === 0" class="text-sm text-gray-500">
+                Keine Projekte vorhanden
+              </div>
+              <div v-else class="max-h-48 overflow-y-auto bg-dark-700 rounded-lg p-2 space-y-1">
+                <label
+                  v-for="project in projects"
+                  :key="project.id"
+                  class="flex items-center gap-2 p-2 rounded hover:bg-dark-600 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="formData.allowed_project_ids.includes(project.id)"
+                    @change="toggleProjectSelection(project.id)"
+                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span class="text-sm text-gray-300">{{ project.name }}</span>
+                </label>
+              </div>
+              <p v-if="formData.allowed_project_ids.length === 0" class="text-xs text-orange-400">
+                Keine Projekte ausgewählt - Benutzer hat keinen Zugriff
+              </p>
             </div>
           </div>
 

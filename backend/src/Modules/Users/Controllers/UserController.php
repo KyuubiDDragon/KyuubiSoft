@@ -87,18 +87,33 @@ class UserController
         $selfFields = ['username', 'avatar_url'];
 
         // Additional fields for admins
-        $adminFields = ['email', 'is_active', 'is_verified', 'restricted_to_projects'];
+        $adminFields = ['email', 'is_active', 'is_verified', 'restricted_to_projects', 'require_2fa', 'allowed_project_ids'];
+
+        // Boolean fields that need conversion
+        $booleanFields = ['is_active', 'is_verified', 'restricted_to_projects', 'require_2fa'];
 
         foreach ($selfFields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
             }
         }
 
         if ($userId !== $currentUserId || $this->rbacManager->hasPermission($currentUserId, 'users.write')) {
             foreach ($adminFields as $field) {
-                if (isset($data[$field])) {
-                    $updateData[$field] = $data[$field];
+                if (array_key_exists($field, $data)) {
+                    $value = $data[$field];
+
+                    // Convert booleans to integers for MySQL
+                    if (in_array($field, $booleanFields)) {
+                        $value = $value ? 1 : 0;
+                    }
+
+                    // Handle allowed_project_ids as JSON
+                    if ($field === 'allowed_project_ids') {
+                        $value = is_array($value) ? json_encode($value) : $value;
+                    }
+
+                    $updateData[$field] = $value;
                 }
             }
         }
@@ -111,6 +126,9 @@ class UserController
 
         $updatedUser = $this->userRepository->findById($userId);
         unset($updatedUser['password_hash'], $updatedUser['two_factor_secret']);
+
+        // Add roles to response
+        $updatedUser['roles'] = $this->rbacManager->getUserRoles($userId);
 
         return JsonResponse::success($updatedUser, 'User updated successfully');
     }

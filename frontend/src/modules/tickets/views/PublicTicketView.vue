@@ -225,7 +225,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-dark-900 py-12 px-4">
-    <div class="max-w-2xl mx-auto">
+    <div class="w-full max-w-7xl mx-auto">
       <!-- Logo/Header -->
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">

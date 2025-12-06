@@ -153,13 +153,20 @@ onBeforeUnmount(() => {
   }
 })
 
-// Watch for language changes
+// Watch for language changes from dropdown
 watch(selectedLanguage, (newLang) => {
   if (editor.value && monaco.value) {
     const model = editor.value.getModel()
     monaco.value.editor.setModelLanguage(model, newLang)
   }
 })
+
+// Watch for language changes from props
+watch(() => props.language, (newLang) => {
+  if (newLang && newLang !== selectedLanguage.value) {
+    selectedLanguage.value = newLang
+  }
+}, { immediate: false })
 
 watch(() => props.readOnly, (readOnly) => {
   if (editor.value) {

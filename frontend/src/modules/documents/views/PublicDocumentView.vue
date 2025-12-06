@@ -264,6 +264,15 @@ async function saveDocument() {
   }
 }
 
+// Handle spreadsheet changes
+function onSpreadsheetChange(content) {
+  if (!collaborationAvailable.value) {
+    localContent.value = content
+    // Auto-save for non-collaborative mode
+    saveDocument()
+  }
+}
+
 // Leave collaborative session
 async function leaveSession() {
   // In non-collaborative mode, save before leaving
@@ -499,6 +508,7 @@ onUnmounted(() => {
               :model-value="document.content"
               :editable="true"
               placeholder="Collaboration nicht verfügbar. Lokale Bearbeitung aktiv..."
+              @update:model-value="(val) => { localContent = val; document.content = val }"
             />
             <!-- Regular view when not editing -->
             <div
@@ -540,13 +550,14 @@ onUnmounted(() => {
                   :read-only="false"
                   language="markdown"
                   height="600px"
+                  @update:model-value="(val) => { localContent = val; document.content = val }"
                 />
               </div>
               <div>
                 <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-                  v-html="renderMarkdown(document.content)"
+                  v-html="renderMarkdown(localContent || document.content)"
                 ></div>
               </div>
             </div>
@@ -564,6 +575,7 @@ onUnmounted(() => {
               :ydoc="ydoc"
               :provider="provider"
               :ytext="ytext"
+              :language="document.code_language || 'javascript'"
               :readOnly="false"
               height="600px"
             />
@@ -571,12 +583,15 @@ onUnmounted(() => {
             <MonacoEditor
               v-else-if="isEditing && !collaborationAvailable"
               :model-value="document.content"
+              :language="document.code_language || 'javascript'"
               :read-only="false"
               height="600px"
+              @update:model-value="(val) => { localContent = val; document.content = val }"
             />
             <MonacoEditor
               v-else
               :model-value="document.content"
+              :language="document.code_language || 'javascript'"
               :read-only="true"
               height="600px"
             />

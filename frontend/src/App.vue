@@ -15,12 +15,23 @@ const uiStore = useUiStore()
 const isAppReady = ref(false)
 
 const layout = computed(() => {
+  // Check route meta first
   if (route.meta.layout === 'auth') {
     return AuthLayout
   }
   if (route.meta.layout === 'public') {
     return PublicLayout
   }
+
+  // Fallback: check URL path directly (for initial load before route resolves)
+  const path = window.location.pathname
+  if (path.includes('/login') || path.includes('/register')) {
+    return AuthLayout
+  }
+  if (path.includes('/doc/') || path.includes('/support') || path.includes('/ticket/public/')) {
+    return PublicLayout
+  }
+
   return DefaultLayout
 })
 

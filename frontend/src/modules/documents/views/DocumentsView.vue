@@ -330,10 +330,27 @@ async function loadSharedDocuments() {
   try {
     const response = await api.get('/api/v1/documents', { params: { include_shared: '1' } })
     // Show documents that are either shared with user (shared_permission) or public (is_public)
-    sharedDocuments.value = (response.data.data?.items || []).filter(d => d.shared_permission || d.is_public)
+    // Note: is_public comes as "0" or "1" string from backend, need to convert
+    sharedDocuments.value = (response.data.data?.items || []).filter(d =>
+      d.shared_permission || (d.is_public && d.is_public !== '0' && d.is_public !== 0)
+    )
   } catch (error) {
     console.error('Error loading shared documents:', error)
   }
+}
+
+// Copy public URL to clipboard
+function copyDocumentLink(token) {
+  if (!token) {
+    uiStore.showError('Kein öffentlicher Link vorhanden')
+    return
+  }
+  const url = getPublicUrl(token)
+  navigator.clipboard.writeText(url).then(() => {
+    uiStore.showSuccess('Link kopiert!')
+  }).catch(() => {
+    uiStore.showError('Link konnte nicht kopiert werden')
+  })
 }
 
 // Load shared documents on mount
@@ -598,7 +615,7 @@ onMounted(async () => {
             <div class="flex items-center gap-2 mt-4">
               <button
                 v-if="doc.public_token"
-                @click="navigator.clipboard.writeText(getPublicUrl(doc.public_token)); uiStore.showSuccess('Link kopiert!')"
+                @click="copyDocumentLink(doc.public_token)"
                 class="flex-1 btn-secondary py-2 text-sm"
               >
                 <ClipboardDocumentIcon class="w-4 h-4 mr-1" />

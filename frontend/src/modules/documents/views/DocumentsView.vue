@@ -36,6 +36,7 @@ const projectStore = useProjectStore()
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
   loadDocuments()
+  loadSharedDocuments()
 })
 
 // State
@@ -328,7 +329,12 @@ function copyPublicUrl() {
 
 async function loadSharedDocuments() {
   try {
-    const response = await api.get('/api/v1/documents', { params: { include_shared: '1' } })
+    const params = { include_shared: '1' }
+    // Apply project filter if a project is selected
+    if (projectStore.selectedProjectId) {
+      params.project_id = projectStore.selectedProjectId
+    }
+    const response = await api.get('/api/v1/documents', { params })
     // Show documents that are either shared with user (shared_permission) or public (is_public)
     // Note: is_public comes as "0" or "1" string from backend, need to convert
     sharedDocuments.value = (response.data.data?.items || []).filter(d =>

@@ -20,6 +20,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ArrowPathIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -33,6 +35,7 @@ const categories = ref([])
 const loading = ref(true)
 const showCreateModal = ref(false)
 const showFilterPanel = ref(false)
+const showPublicLinkModal = ref(false)
 const stats = ref(null)
 
 // Pagination
@@ -124,7 +127,8 @@ async function fetchCategories() {
 async function fetchStats() {
   try {
     const response = await api.get('/api/v1/tickets/stats')
-    stats.value = response.data.data
+    // Use all_stats if available, otherwise fall back to my_stats
+    stats.value = response.data.data.all_stats || response.data.data.my_stats || response.data.data
   } catch (error) {
     console.error('Error fetching stats:', error)
   }
@@ -249,6 +253,33 @@ const activeFiltersCount = computed(() => {
   return Object.values(filters.value).filter(v => v !== '').length
 })
 
+// Public ticket URL
+const publicTicketUrl = computed(() => {
+  return `${window.location.origin}/support`
+})
+
+// Copy public link to clipboard
+async function copyPublicLink() {
+  try {
+    await navigator.clipboard.writeText(publicTicketUrl.value)
+    uiStore.showSuccess('Link in die Zwischenablage kopiert!')
+  } catch (error) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea')
+    textArea.value = publicTicketUrl.value
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    uiStore.showSuccess('Link in die Zwischenablage kopiert!')
+  }
+}
+
+// Open public ticket page in new tab
+function openPublicTicketPage() {
+  window.open(publicTicketUrl.value, '_blank')
+}
+
 onMounted(() => {
   fetchTickets()
   fetchCategories()
@@ -265,6 +296,14 @@ onMounted(() => {
         <p class="text-gray-400 text-sm mt-1">Support-Anfragen verwalten</p>
       </div>
       <div class="flex items-center gap-3">
+        <button
+          @click="showPublicLinkModal = true"
+          class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          title="Öffentlichen Support-Link teilen"
+        >
+          <LinkIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">Öffentlicher Link</span>
+        </button>
         <button
           @click="showFilterPanel = !showFilterPanel"
           class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
@@ -594,6 +633,80 @@ onMounted(() => {
               class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
             >
               Ticket erstellen
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Public Link Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showPublicLinkModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">Öffentlicher Support-Link</h2>
+            <button
+              @click="showPublicLinkModal = false"
+              class="p-1 text-gray-400 hover:text-white rounded"
+            >
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <p class="text-gray-400 text-sm">
+              Teilen Sie diesen Link mit Ihren Kunden, damit diese Support-Tickets erstellen können, ohne sich anzumelden.
+            </p>
+
+            <div class="flex items-center gap-2">
+              <input
+                :value="publicTicketUrl"
+                readonly
+                class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none"
+              />
+              <button
+                @click="copyPublicLink"
+                class="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+                title="Link kopieren"
+              >
+                <ClipboardDocumentIcon class="w-5 h-5" />
+              </button>
+            </div>
+
+            <div class="bg-dark-700/50 border border-dark-600 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-white mb-2">So funktioniert es:</h4>
+              <ul class="text-sm text-gray-400 space-y-1">
+                <li>1. Kunden öffnen den Link</li>
+                <li>2. Geben Name, E-Mail und Anliegen ein</li>
+                <li>3. Erhalten einen Zugriffscode zum Verfolgen</li>
+                <li>4. Tickets erscheinen hier in Ihrer Übersicht</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+            <button
+              @click="showPublicLinkModal = false"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              Schließen
+            </button>
+            <button
+              @click="openPublicTicketPage"
+              class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors flex items-center gap-2"
+            >
+              <LinkIcon class="w-4 h-4" />
+              Seite öffnen
+            </button>
+            <button
+              @click="copyPublicLink"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
+            >
+              <ClipboardDocumentIcon class="w-4 h-4" />
+              Link kopieren
             </button>
           </div>
         </div>

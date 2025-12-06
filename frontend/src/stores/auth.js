@@ -39,6 +39,16 @@ export const useAuthStore = defineStore('auth', () => {
   async function initialize() {
     if (isInitialized.value) return
 
+    // Check if we're on a public page - don't try to authenticate
+    const publicPaths = ['/doc/', '/ticket/public/', '/support']
+    const isPublicPage = publicPaths.some(path => window.location.pathname.includes(path))
+
+    // On public pages, just mark as initialized without trying to authenticate
+    if (isPublicPage) {
+      isInitialized.value = true
+      return
+    }
+
     const storedToken = localStorage.getItem('access_token')
     const storedRefresh = localStorage.getItem('refresh_token')
 

@@ -715,6 +715,59 @@ class DocumentController
         return JsonResponse::success(null, 'Session ended');
     }
 
+    // Sync from collaboration server (internal API)
+    public function syncFromCollaboration(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        // Verify this is an internal request from the collaboration server
+        $internalHeader = $request->getHeaderLine('X-Internal-Request');
+        if ($internalHeader !== 'collaboration-server') {
+            throw new ForbiddenException('Internal API only');
+        }
+
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = $request->getParsedBody() ?? [];
+
+        $doc = $this->db->fetchAssociative(
+            'SELECT * FROM documents WHERE public_token = ? AND is_public = 1',
+            [$token]
+        );
+
+        if (!$doc) {
+            throw new NotFoundException('Document not found');
+        }
+
+        $content = $data['content'] ?? null;
+
+        if ($content === null) {
+            throw new ValidationException('Content is required');
+        }
+
+        // Update document content
+        $newVersion = ((int) ($doc['content_version'] ?? 1)) + 1;
+
+        $this->db->update('documents', [
+            'content' => $content,
+            'content_version' => $newVersion,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $doc['id']]);
+
+        // Create version entry for history
+        $this->db->insert('document_versions', [
+            'id' => Uuid::uuid4()->toString(),
+            'document_id' => $doc['id'],
+            'content' => $content,
+            'version_number' => $newVersion,
+            'change_summary' => 'Collaborative editing session',
+            'created_by' => $doc['user_id'],
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return JsonResponse::success([
+            'version' => $newVersion,
+            'synced_at' => date('Y-m-d H:i:s'),
+        ], 'Document synced');
+    }
+
     private function getPublicEditableDocument(string $token, array $data): array
     {
         $doc = $this->db->fetchAssociative(

@@ -12,8 +12,143 @@ const messageAwareness = 1;
 // Document storage
 const docs = new Map();
 
+// Redis client (set from server.js)
+let redis = null;
+
+// Debounce timers for Redis saves
+const saveTimers = new Map();
+const SAVE_DEBOUNCE_MS = 2000; // Save to Redis 2 seconds after last change
+
+// Backend API URL for syncing to database
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://backend:9000';
+
 // Garbage collect inactive documents after 1 hour
 const gcTimeout = 60 * 60 * 1000;
+
+/**
+ * Set Redis client
+ */
+const setRedis = (redisClient) => {
+  redis = redisClient;
+};
+
+/**
+ * Save document state to Redis
+ */
+const saveToRedis = async (docName, doc) => {
+  if (!redis) {
+    console.warn('Redis not available, skipping save');
+    return;
+  }
+
+  try {
+    // Get the text content based on document type
+    const ytext = doc.getText('monaco');
+    const content = ytext.toString();
+
+    // Also get XML fragment for rich text
+    const xmlFragment = doc.getXmlFragment('prosemirror');
+
+    // Store both formats
+    const data = {
+      content: content,
+      xmlContent: xmlFragment.toString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await redis.set(`collab:doc:${docName}`, JSON.stringify(data));
+    await redis.expire(`collab:doc:${docName}`, 86400); // Expire after 24 hours
+
+    console.log(`[${new Date().toISOString()}] Saved to Redis: ${docName}`);
+  } catch (err) {
+    console.error('Error saving to Redis:', err);
+  }
+};
+
+/**
+ * Schedule a debounced save to Redis
+ */
+const scheduleSave = (docName, doc) => {
+  // Clear existing timer
+  if (saveTimers.has(docName)) {
+    clearTimeout(saveTimers.get(docName));
+  }
+
+  // Set new timer
+  saveTimers.set(docName, setTimeout(() => {
+    saveToRedis(docName, doc);
+    saveTimers.delete(docName);
+  }, SAVE_DEBOUNCE_MS));
+};
+
+/**
+ * Sync document from Redis to database via Backend API
+ */
+const syncToDatabase = async (docName) => {
+  if (!redis) {
+    console.warn('Redis not available, skipping database sync');
+    return;
+  }
+
+  try {
+    const data = await redis.get(`collab:doc:${docName}`);
+    if (!data) {
+      console.log(`[${new Date().toISOString()}] No Redis data for: ${docName}`);
+      return;
+    }
+
+    const parsed = JSON.parse(data);
+
+    // Call backend API to save to database
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/documents/public/${docName}/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Request': 'collaboration-server'
+      },
+      body: JSON.stringify({
+        content: parsed.content,
+        xmlContent: parsed.xmlContent
+      })
+    });
+
+    if (response.ok) {
+      console.log(`[${new Date().toISOString()}] Synced to database: ${docName}`);
+      // Delete from Redis after successful sync
+      await redis.del(`collab:doc:${docName}`);
+    } else {
+      console.error(`Failed to sync to database: ${response.status}`);
+    }
+  } catch (err) {
+    console.error('Error syncing to database:', err);
+  }
+};
+
+/**
+ * Load document state from Redis if available
+ */
+const loadFromRedis = async (docName, doc) => {
+  if (!redis) return false;
+
+  try {
+    const data = await redis.get(`collab:doc:${docName}`);
+    if (data) {
+      const parsed = JSON.parse(data);
+
+      // Apply text content if document is empty
+      const ytext = doc.getText('monaco');
+      if (ytext.toString() === '' && parsed.content) {
+        ytext.insert(0, parsed.content);
+      }
+
+      console.log(`[${new Date().toISOString()}] Loaded from Redis: ${docName}`);
+      return true;
+    }
+  } catch (err) {
+    console.error('Error loading from Redis:', err);
+  }
+  return false;
+};
 
 /**
  * Get or create a Y.Doc for the given document name
@@ -25,6 +160,9 @@ const getYDoc = (docName) => {
     doc.conns = new Map();
     doc.awareness = new awarenessProtocol.Awareness(doc);
     doc.awareness.setLocalState(null);
+
+    // Try to load from Redis
+    loadFromRedis(docName, doc);
 
     // Listen for document updates
     doc.on('update', (update, origin) => {
@@ -39,6 +177,9 @@ const getYDoc = (docName) => {
           conn.send(message);
         }
       });
+
+      // Schedule save to Redis (debounced)
+      scheduleSave(docName, doc);
     });
 
     // Listen for awareness updates
@@ -66,9 +207,16 @@ const getYDoc = (docName) => {
       if (doc.gcTimer) {
         clearTimeout(doc.gcTimer);
       }
-      doc.gcTimer = setTimeout(() => {
+      doc.gcTimer = setTimeout(async () => {
         if (doc.conns.size === 0) {
           console.log(`[${new Date().toISOString()}] Garbage collecting document: ${docName}`);
+
+          // Save to Redis one last time before GC
+          await saveToRedis(docName, doc);
+
+          // Sync to database
+          await syncToDatabase(docName);
+
           docs.delete(docName);
           doc.destroy();
         }
@@ -158,7 +306,7 @@ const setupWSConnection = (conn, req, { docName }) => {
     messageHandler(conn, doc, new Uint8Array(message));
   });
 
-  conn.on('close', () => {
+  conn.on('close', async () => {
     console.log(`[${new Date().toISOString()}] Connection closed for document: ${docName}`);
 
     // Remove awareness state for this connection
@@ -173,6 +321,8 @@ const setupWSConnection = (conn, req, { docName }) => {
 
     // Start garbage collection timer if no connections
     if (doc.conns.size === 0) {
+      // Save immediately when last user leaves
+      await saveToRedis(docName, doc);
       doc.resetGcTimer();
     }
   });
@@ -185,5 +335,8 @@ const setupWSConnection = (conn, req, { docName }) => {
 module.exports = {
   setupWSConnection,
   getYDoc,
-  docs
+  docs,
+  setRedis,
+  saveToRedis,
+  syncToDatabase
 };

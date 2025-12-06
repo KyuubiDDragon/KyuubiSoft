@@ -135,6 +135,11 @@ services:
     environment:
       PORT: 1234
       HOST: 0.0.0.0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BACKEND_API_URL: http://backend:9000
+    depends_on:
+      - redis
     networks:
       - kyuubisoft_network
     restart: unless-stopped

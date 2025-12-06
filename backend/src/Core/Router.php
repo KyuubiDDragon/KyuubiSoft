@@ -491,6 +491,9 @@ class Router
             $group->post('/documents/public/{token}/update', [DocumentController::class, 'updatePublicContent']);
             $group->get('/documents/public/{token}/poll', [DocumentController::class, 'pollChanges']);
             $group->post('/documents/public/{token}/leave', [DocumentController::class, 'leaveEditSession']);
+
+            // Internal sync from collaboration server
+            $group->post('/documents/public/{token}/sync', [DocumentController::class, 'syncFromCollaboration']);
         });
     }
 }

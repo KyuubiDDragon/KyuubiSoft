@@ -72,10 +72,8 @@ const editorName = ref(getRandomDuckName()) // Generate duck name immediately on
 const userColor = ref(getRandomColor())
 const collaborationAvailable = ref(false)
 const isConnecting = ref(false)
-const localContent = ref('') // Track local content for saving
+const localContent = ref('') // Track local content for saving (only for non-collaborative mode)
 const isSaving = ref(false)
-let autoSaveInterval = null
-const AUTO_SAVE_INTERVAL = 30000 // Auto-save every 30 seconds
 
 // Collaboration
 let collaboration = null
@@ -219,56 +217,29 @@ async function joinCollaborativeSession() {
 
     isEditing.value = true
 
-    // Start auto-save interval
-    startAutoSave()
+    // In collaborative mode, saving happens automatically via the collaboration server
+    // No need for frontend auto-save
   } catch (error) {
     console.error('Failed to join collaborative session:', error)
     collaborationAvailable.value = false
     isEditing.value = true // Still allow editing, just not collaboratively
-    startAutoSave() // Also auto-save in local mode
   } finally {
     isConnecting.value = false
   }
 }
 
-// Start auto-save interval
-function startAutoSave() {
-  if (autoSaveInterval) {
-    clearInterval(autoSaveInterval)
-  }
-  autoSaveInterval = setInterval(() => {
-    saveDocument()
-  }, AUTO_SAVE_INTERVAL)
-}
-
-// Stop auto-save interval
-function stopAutoSave() {
-  if (autoSaveInterval) {
-    clearInterval(autoSaveInterval)
-    autoSaveInterval = null
-  }
-}
-
-// Save document content to backend
+// Save document content to backend (only for non-collaborative mode fallback)
 async function saveDocument() {
+  // In collaborative mode, saving is handled by the collaboration server via Redis
+  if (collaborationAvailable.value) {
+    console.log('Automatisch über Collaboration-Server gespeichert')
+    return
+  }
+
   if (!document.value || isSaving.value) return
 
-  // Get current content based on format
-  let content = ''
-  if (ytext) {
-    content = ytext.toString()
-  } else if (ydoc) {
-    // For richtext, get the XML fragment content
-    const xmlFragment = ydoc.getXmlFragment('prosemirror')
-    // Convert to string - this is a simplified version
-    // The actual content is synced via Yjs, we need to get HTML from TipTap
-    content = document.value.content // fallback to original for now
-  }
-
-  // If we have local content tracked, use that
-  if (localContent.value) {
-    content = localContent.value
-  }
+  // Get local content for non-collaborative mode
+  let content = localContent.value || document.value.content
 
   // Don't save if content hasn't changed
   if (content === document.value.content) {
@@ -294,11 +265,10 @@ async function saveDocument() {
 
 // Leave collaborative session
 async function leaveSession() {
-  // Stop auto-save
-  stopAutoSave()
-
-  // Save before leaving
-  await saveDocument()
+  // In non-collaborative mode, save before leaving
+  if (!collaborationAvailable.value) {
+    await saveDocument()
+  }
 
   if (collaboration) {
     collaboration.disconnect()
@@ -341,7 +311,6 @@ function handleBeforeUnload() {
   if (collaboration) {
     collaboration.disconnect()
   }
-  stopAutoSave()
 }
 
 onMounted(async () => {
@@ -453,26 +422,28 @@ onUnmounted(() => {
                 <template v-if="collaborationAvailable">
                   <span v-if="isConnected" class="text-green-400 flex items-center gap-1">
                     <SignalIcon class="w-4 h-4" />
-                    Echtzeit aktiv
+                    Automatisch gespeichert
                   </span>
                   <span v-else class="text-yellow-400 flex items-center gap-1">
                     <SignalSlashIcon class="w-4 h-4" />
                     Verbinde...
                   </span>
                 </template>
-                <span v-else class="text-orange-400 flex items-center gap-1">
-                  <SignalSlashIcon class="w-4 h-4" />
-                  Lokale Bearbeitung
-                </span>
+                <template v-else>
+                  <span class="text-orange-400 flex items-center gap-1">
+                    <SignalSlashIcon class="w-4 h-4" />
+                    Lokale Bearbeitung
+                  </span>
+                  <button
+                    @click="saveDocument"
+                    :disabled="isSaving"
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <span v-if="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    {{ isSaving ? 'Speichert...' : 'Speichern' }}
+                  </button>
+                </template>
               </div>
-              <button
-                @click="saveDocument"
-                :disabled="isSaving"
-                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                <span v-if="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isSaving ? 'Speichert...' : 'Speichern' }}
-              </button>
             </div>
           </div>
 

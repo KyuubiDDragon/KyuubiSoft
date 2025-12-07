@@ -611,7 +611,7 @@ onMounted(() => {
         v-if="showStatusModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">Status ändern</h2>
             <button @click="showStatusModal = false" class="p-1 text-gray-400 hover:text-white rounded">
@@ -666,7 +666,7 @@ onMounted(() => {
         v-if="showAssignModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">Ticket zuweisen</h2>
             <button @click="showAssignModal = false" class="p-1 text-gray-400 hover:text-white rounded">

@@ -20,6 +20,8 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   ListBulletIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/vue/24/outline'
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
@@ -55,7 +57,10 @@ const newFeedForm = ref({
 const selectedArticle = ref(null)
 
 // View mode
-const viewMode = ref('grid') // 'grid' or 'list'
+const viewMode = ref('list') // 'grid' or 'list'
+
+// Expanded articles (for list view)
+const expandedArticles = ref(new Set())
 
 // Category icons
 const categoryIcons = {
@@ -203,6 +208,21 @@ function openArticle(item) {
 
 function openExternalLink(url) {
   window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function toggleExpanded(item) {
+  markAsRead(item)
+  if (expandedArticles.value.has(item.id)) {
+    expandedArticles.value.delete(item.id)
+  } else {
+    expandedArticles.value.add(item.id)
+  }
+  // Trigger reactivity
+  expandedArticles.value = new Set(expandedArticles.value)
+}
+
+function isExpanded(item) {
+  return expandedArticles.value.has(item.id)
 }
 
 function formatDate(dateStr) {
@@ -432,33 +452,55 @@ onMounted(async () => {
       <div
         v-for="item in newsItems"
         :key="item.id"
-        @click="openArticle(item)"
-        class="card-hover p-5 cursor-pointer group"
-        :class="{ 'opacity-60': item.is_read == 1 }"
+        class="card p-5"
+        :class="{ 'opacity-60': item.is_read == 1 && !isExpanded(item) }"
       >
+        <!-- Header row -->
         <div class="flex gap-5">
           <!-- Image (optional) -->
-          <div v-if="item.image_url" class="flex-shrink-0 w-48 h-32 rounded-lg overflow-hidden">
+          <div v-if="item.image_url && !isExpanded(item)" class="flex-shrink-0 w-48 h-32 rounded-lg overflow-hidden">
             <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
           </div>
 
           <!-- Content -->
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-4 mb-2">
-              <h3 class="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors">
+              <h3
+                @click="toggleExpanded(item)"
+                class="text-lg font-semibold text-white hover:text-primary-400 transition-colors cursor-pointer"
+              >
                 {{ item.title }}
               </h3>
-              <button
-                @click.stop="toggleSaved(item)"
-                class="p-1.5 rounded hover:bg-dark-600 flex-shrink-0"
-                :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
-              >
-                <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
-                <BookmarkIcon v-else class="w-5 h-5" />
-              </button>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button
+                  @click="toggleSaved(item)"
+                  class="p-1.5 rounded hover:bg-dark-600"
+                  :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
+                  title="Speichern"
+                >
+                  <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
+                  <BookmarkIcon v-else class="w-5 h-5" />
+                </button>
+                <button
+                  @click="openExternalLink(item.url)"
+                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  title="Original öffnen"
+                >
+                  <ArrowTopRightOnSquareIcon class="w-5 h-5" />
+                </button>
+                <button
+                  @click="toggleExpanded(item)"
+                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  :title="isExpanded(item) ? 'Einklappen' : 'Aufklappen'"
+                >
+                  <ChevronUpIcon v-if="isExpanded(item)" class="w-5 h-5" />
+                  <ChevronDownIcon v-else class="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <p class="text-gray-400 mb-3 line-clamp-4">
+            <!-- Collapsed: Short preview -->
+            <p v-if="!isExpanded(item)" class="text-gray-400 mb-3 line-clamp-3">
               {{ stripHtml(item.description || item.content) }}
             </p>
 
@@ -473,6 +515,41 @@ onMounted(async () => {
               </div>
               <span v-if="item.author" class="text-gray-600">{{ item.author }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Expanded content -->
+        <div v-if="isExpanded(item)" class="mt-6 pt-6 border-t border-dark-700">
+          <!-- Large image when expanded -->
+          <img
+            v-if="item.image_url"
+            :src="item.image_url"
+            :alt="item.title"
+            class="w-full max-h-96 object-cover rounded-lg mb-6"
+          />
+
+          <!-- Full content -->
+          <div
+            class="prose prose-invert prose-sm max-w-none text-gray-300"
+            v-html="item.content || item.description || 'Kein Inhalt verfügbar'"
+          ></div>
+
+          <!-- Action buttons -->
+          <div class="mt-6 pt-4 border-t border-dark-700 flex justify-between items-center">
+            <button
+              @click="toggleExpanded(item)"
+              class="text-gray-400 hover:text-white flex items-center gap-2"
+            >
+              <ChevronUpIcon class="w-4 h-4" />
+              Einklappen
+            </button>
+            <button
+              @click="openExternalLink(item.url)"
+              class="btn-primary"
+            >
+              <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
+              Originalartikel öffnen
+            </button>
           </div>
         </div>
       </div>

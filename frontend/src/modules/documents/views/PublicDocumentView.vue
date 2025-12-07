@@ -57,6 +57,26 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)]
 }
 
+// Helper function to wait for Yjs sync
+function waitForSync(provider, timeout = 2000) {
+  return new Promise((resolve) => {
+    // If already synced, resolve immediately
+    if (provider.synced) {
+      resolve(true)
+      return
+    }
+
+    const timeoutId = setTimeout(() => {
+      resolve(false) // Timeout reached, continue anyway
+    }, timeout)
+
+    provider.once('sync', (synced) => {
+      clearTimeout(timeoutId)
+      resolve(synced)
+    })
+  })
+}
+
 // State
 const document = ref(null)
 const loading = ref(true)
@@ -166,12 +186,17 @@ async function fetchDocument(password = null) {
 }
 
 // Submit password
-function submitPassword() {
+async function submitPassword() {
   if (!passwordInput.value.trim()) {
     passwordError.value = 'Bitte Passwort eingeben'
     return
   }
-  fetchDocument(passwordInput.value)
+  await fetchDocument(passwordInput.value)
+
+  // Auto-start editing after successful password verification
+  if (canEdit.value && !requiresPassword.value && !error.value) {
+    startEditing()
+  }
 }
 
 // Start editing - automatically join with duck name
@@ -190,13 +215,15 @@ async function joinCollaborativeSession() {
 
   const token = route.params.token
 
+  // Set isEditing immediately to prevent button flash
+  isEditing.value = true
+  isConnecting.value = true
+
   // Initialize collaboration
   collaboration = useCollaboration(token, {
     userName: editorName.value,
     userColor: userColor.value,
   })
-
-  isConnecting.value = true
 
   try {
     const result = await collaboration.connect()
@@ -207,6 +234,9 @@ async function joinCollaborativeSession() {
     // Get the correct Yjs type based on document format
     if (document.value.format === 'code' || document.value.format === 'markdown') {
       if (collaborationAvailable.value) {
+        // Wait for initial sync before checking content
+        await waitForSync(provider, 2000)
+
         ytext = collaboration.getText('monaco')
 
         // Initialize with existing content if document has content and ytext is empty
@@ -215,18 +245,20 @@ async function joinCollaborativeSession() {
         }
       }
     } else {
-      // For richtext, we use XML fragment (handled by TipTap collaboration extension)
+      // For richtext, wait for initial sync before proceeding
+      // This ensures we know the true state of the Yjs document before creating the editor
+      if (collaborationAvailable.value) {
+        await waitForSync(provider, 2000) // Wait up to 2 seconds for initial sync
+      }
       ytext = null
     }
-
-    isEditing.value = true
 
     // In collaborative mode, saving happens automatically via the collaboration server
     // No need for frontend auto-save
   } catch (error) {
     console.error('Failed to join collaborative session:', error)
     collaborationAvailable.value = false
-    isEditing.value = true // Still allow editing, just not collaboratively
+    // isEditing was already set to true at the start, keep editing even without collaboration
   } finally {
     isConnecting.value = false
   }

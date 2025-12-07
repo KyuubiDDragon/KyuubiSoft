@@ -11,6 +11,11 @@ import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import Highlight from '@tiptap/extension-highlight'
+import Subscript from '@tiptap/extension-subscript'
+import Superscript from '@tiptap/extension-superscript'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import { common, createLowlight } from 'lowlight'
@@ -112,6 +117,22 @@ const editor = useEditor({
         class: 'bg-dark-700 rounded-lg p-4 my-2 overflow-x-auto',
       },
     }),
+    TaskList.configure({
+      HTMLAttributes: {
+        class: 'task-list',
+      },
+    }),
+    TaskItem.configure({
+      nested: true,
+      HTMLAttributes: {
+        class: 'task-item',
+      },
+    }),
+    Highlight.configure({
+      multicolor: true,
+    }),
+    Subscript,
+    Superscript,
     // Yjs collaboration - use 'prosemirror' fragment to match collaboration server
     Collaboration.configure({
       document: props.ydoc,
@@ -554,5 +575,48 @@ defineExpose({
   top: -1.4em;
   user-select: none;
   white-space: nowrap;
+}
+
+/* Task List (Checkboxes) */
+.tiptap-content .ProseMirror ul[data-type="taskList"] {
+  @apply list-none ml-0 pl-0;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li {
+  @apply flex items-start gap-2 mb-2;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label {
+  @apply flex items-center justify-center w-5 h-5 mt-0.5 flex-shrink-0;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  @apply w-4 h-4 rounded border-2 border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  @apply bg-primary-600 border-primary-600;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > div {
+  @apply flex-1;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  @apply line-through text-gray-500;
+}
+
+/* Highlight */
+.tiptap-content .ProseMirror mark {
+  @apply bg-yellow-500/40 px-0.5 rounded;
+}
+
+/* Subscript/Superscript */
+.tiptap-content .ProseMirror sub {
+  @apply text-xs;
+}
+
+.tiptap-content .ProseMirror sup {
+  @apply text-xs;
 }
 </style>

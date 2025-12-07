@@ -154,7 +154,8 @@ class NewsController
         $params = [$userId, $userId];
 
         if ($category) {
-            $sql .= " AND ni.article_category = ?";
+            $sql .= " AND (ni.article_category = ? OR (ni.article_category IS NULL AND f.category = ?))";
+            $params[] = $category;
             $params[] = $category;
         }
 
@@ -186,7 +187,8 @@ class NewsController
         $countParams = [$userId, $userId];
 
         if ($category) {
-            $countSql .= " AND ni.article_category = ?";
+            $countSql .= " AND (ni.article_category = ? OR (ni.article_category IS NULL AND f.category = ?))";
+            $countParams[] = $category;
             $countParams[] = $category;
         }
         if ($feedId) {

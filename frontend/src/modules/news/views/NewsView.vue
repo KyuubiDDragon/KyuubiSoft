@@ -65,7 +65,7 @@ const newFeedForm = ref({
 const selectedArticle = ref(null)
 
 // View mode
-const viewMode = ref('list') // 'grid' or 'list'
+const viewMode = ref('grid') // 'grid' or 'list'
 
 // Expanded articles (for list view)
 const expandedArticles = ref(new Set())

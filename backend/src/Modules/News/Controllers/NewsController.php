@@ -154,7 +154,7 @@ class NewsController
         $params = [$userId, $userId];
 
         if ($category) {
-            $sql .= " AND f.category = ?";
+            $sql .= " AND ni.article_category = ?";
             $params[] = $category;
         }
 
@@ -186,7 +186,7 @@ class NewsController
         $countParams = [$userId, $userId];
 
         if ($category) {
-            $countSql .= " AND f.category = ?";
+            $countSql .= " AND ni.article_category = ?";
             $countParams[] = $category;
         }
         if ($feedId) {
@@ -392,6 +392,201 @@ class NewsController
         return JsonResponse::success(['unread_count' => $count]);
     }
 
+    /**
+     * Fetch full article content from original URL
+     */
+    public function fetchFullContent(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $itemId = RouteContext::fromRequest($request)->getRoute()->getArgument('itemId');
+
+        // Get item
+        $item = $this->db->fetchAssociative(
+            'SELECT * FROM news_items WHERE id = ?',
+            [$itemId]
+        );
+
+        if (!$item) {
+            throw new NotFoundException('Article not found');
+        }
+
+        // Check if we already have full content cached
+        if (!empty($item['full_content'])) {
+            return JsonResponse::success([
+                'content' => $item['full_content'],
+                'cached' => true,
+            ]);
+        }
+
+        // Fetch the article from the original URL
+        try {
+            $fullContent = $this->extractArticleContent($item['url']);
+
+            // Cache it in the database
+            if (!empty($fullContent)) {
+                $this->db->update('news_items', [
+                    'full_content' => $fullContent,
+                ], ['id' => $itemId]);
+            }
+
+            return JsonResponse::success([
+                'content' => $fullContent ?: $item['content'] ?: $item['description'],
+                'cached' => false,
+            ]);
+        } catch (\Exception $e) {
+            // Return existing content on error
+            return JsonResponse::success([
+                'content' => $item['content'] ?: $item['description'],
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Extract article content from a webpage
+     */
+    private function extractArticleContent(string $url): ?string
+    {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language: de,en-US;q=0.7,en;q=0.3',
+            ],
+        ]);
+
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($html === false || $httpCode >= 400) {
+            return null;
+        }
+
+        // Parse HTML
+        libxml_use_internal_errors(true);
+        $doc = new \DOMDocument();
+        @$doc->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($doc);
+
+        // Try to find article content using common selectors
+        $contentSelectors = [
+            // Common article containers
+            "//article",
+            "//*[contains(@class, 'article-content')]",
+            "//*[contains(@class, 'article__content')]",
+            "//*[contains(@class, 'article-body')]",
+            "//*[contains(@class, 'post-content')]",
+            "//*[contains(@class, 'entry-content')]",
+            "//*[contains(@class, 'content-body')]",
+            "//*[contains(@class, 'story-body')]",
+            "//*[contains(@itemprop, 'articleBody')]",
+            "//*[@id='article-body']",
+            "//*[@id='content']",
+            "//main",
+            // Heise specific
+            "//*[contains(@class, 'article__body')]",
+            "//*[contains(@class, 'a-article-content')]",
+            // Golem specific
+            "//*[contains(@class, 'formatted')]",
+            // Generic
+            "//*[contains(@class, 'text')]//p/..",
+        ];
+
+        $content = null;
+        foreach ($contentSelectors as $selector) {
+            $nodes = $xpath->query($selector);
+            if ($nodes && $nodes->length > 0) {
+                // Get the node with the most text content
+                $bestNode = null;
+                $bestLength = 0;
+                foreach ($nodes as $node) {
+                    $text = trim($node->textContent);
+                    if (mb_strlen($text) > $bestLength) {
+                        $bestLength = mb_strlen($text);
+                        $bestNode = $node;
+                    }
+                }
+                if ($bestNode && $bestLength > 200) {
+                    $content = $doc->saveHTML($bestNode);
+                    break;
+                }
+            }
+        }
+
+        if (!$content) {
+            // Fallback: get all paragraphs
+            $paragraphs = $xpath->query('//p');
+            $texts = [];
+            foreach ($paragraphs as $p) {
+                $text = trim($p->textContent);
+                if (mb_strlen($text) > 50) {
+                    $texts[] = '<p>' . htmlspecialchars($text) . '</p>';
+                }
+            }
+            if (count($texts) > 2) {
+                $content = implode("\n", $texts);
+            }
+        }
+
+        if (!$content) {
+            return null;
+        }
+
+        // Clean up the content
+        $content = $this->cleanArticleHtml($content);
+
+        return $content;
+    }
+
+    /**
+     * Clean up extracted article HTML
+     */
+    private function cleanArticleHtml(string $html): string
+    {
+        // Remove scripts, styles, comments, ads, etc.
+        $html = preg_replace('/<script[^>]*>.*?<\/script>/is', '', $html);
+        $html = preg_replace('/<style[^>]*>.*?<\/style>/is', '', $html);
+        $html = preg_replace('/<!--.*?-->/s', '', $html);
+        $html = preg_replace('/<nav[^>]*>.*?<\/nav>/is', '', $html);
+        $html = preg_replace('/<aside[^>]*>.*?<\/aside>/is', '', $html);
+        $html = preg_replace('/<footer[^>]*>.*?<\/footer>/is', '', $html);
+        $html = preg_replace('/<header[^>]*>.*?<\/header>/is', '', $html);
+        $html = preg_replace('/<form[^>]*>.*?<\/form>/is', '', $html);
+        $html = preg_replace('/<iframe[^>]*>.*?<\/iframe>/is', '', $html);
+        $html = preg_replace('/<noscript[^>]*>.*?<\/noscript>/is', '', $html);
+
+        // Remove common ad/social/related content classes
+        $html = preg_replace('/<[^>]*(advertisement|social|share|related|sidebar|comment|newsletter|subscribe|promo)[^>]*>.*?<\/[^>]+>/is', '', $html);
+
+        // Remove empty tags
+        $html = preg_replace('/<(\w+)[^>]*>\s*<\/\1>/i', '', $html);
+
+        // Remove excessive whitespace
+        $html = preg_replace('/\s+/', ' ', $html);
+        $html = preg_replace('/>\s+</', '><', $html);
+
+        // Only keep safe tags
+        $html = strip_tags($html, '<p><br><a><strong><b><em><i><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><code><pre><img><figure><figcaption>');
+
+        // Limit length
+        if (mb_strlen($html) > 50000) {
+            $html = mb_substr($html, 0, 50000) . '...';
+        }
+
+        return trim($html);
+    }
+
     // ==================== Helper Methods ====================
 
     private function getCategories(): array
@@ -402,6 +597,13 @@ class NewsController
             'general' => ['name' => 'Allgemein', 'icon' => 'newspaper'],
             'dev' => ['name' => 'Development', 'icon' => 'code'],
             'security' => ['name' => 'Security', 'icon' => 'shield'],
+            'hardware' => ['name' => 'Hardware', 'icon' => 'chip'],
+            'software' => ['name' => 'Software', 'icon' => 'window'],
+            'mobile' => ['name' => 'Mobile', 'icon' => 'smartphone'],
+            'ai' => ['name' => 'KI / AI', 'icon' => 'brain'],
+            'science' => ['name' => 'Wissenschaft', 'icon' => 'beaker'],
+            'entertainment' => ['name' => 'Entertainment', 'icon' => 'film'],
+            'business' => ['name' => 'Business', 'icon' => 'briefcase'],
             'other' => ['name' => 'Sonstiges', 'icon' => 'folder'],
         ];
     }
@@ -441,12 +643,19 @@ class NewsController
             );
 
             if (!$exists) {
+                $title = mb_substr($item['title'] ?? 'No title', 0, 500);
+                $description = $item['description'] ?? null;
+
+                // Determine article category based on content
+                $articleCategory = $this->categorizeArticle($title, $description, $feed['category']);
+
                 $this->db->insert('news_items', [
                     'id' => Uuid::uuid4()->toString(),
                     'feed_id' => $feed['id'],
+                    'article_category' => $articleCategory,
                     'guid' => $guid,
-                    'title' => mb_substr($item['title'] ?? 'No title', 0, 500),
-                    'description' => $item['description'] ?? null,
+                    'title' => $title,
+                    'description' => $description,
                     'content' => $item['content'] ?? null,
                     'url' => $item['link'] ?? '',
                     'image_url' => $item['image'] ?? null,
@@ -650,5 +859,158 @@ class NewsController
         }
 
         return trim($html);
+    }
+
+    /**
+     * Categorize an article based on its title and description
+     */
+    private function categorizeArticle(string $title, ?string $description, string $feedCategory): string
+    {
+        $text = mb_strtolower($title . ' ' . ($description ?? ''));
+
+        // Define keyword patterns for each category (priority order matters)
+        $categoryKeywords = [
+            'gaming' => [
+                // Spiele-Namen und Gaming-Begriffe
+                'playstation', 'xbox', 'nintendo', 'switch', 'steam', 'epic games',
+                'videospiel', 'videogame', 'game pass', 'gaming', 'gamer',
+                'esport', 'e-sport', 'twitch', 'streamer',
+                'fps', 'mmorpg', 'rpg', 'battle royale', 'multiplayer',
+                'fortnite', 'minecraft', 'valorant', 'league of legends', 'lol',
+                'call of duty', 'cod', 'gta', 'grand theft auto', 'zelda', 'mario',
+                'elden ring', 'dark souls', 'diablo', 'world of warcraft', 'wow',
+                'cyberpunk', 'witcher', 'assassin\'s creed', 'fifa', 'ea sports',
+                'ubisoft', 'activision', 'blizzard', 'bethesda', 'rockstar',
+                'spieler', 'zocken', 'zockt', 'gameplay', 'lets play',
+                'dlc', 'addon', 'patch notes', 'season pass',
+                'konsole', 'controller', 'playstation 5', 'ps5', 'ps4', 'xbox series',
+            ],
+            'ai' => [
+                'künstliche intelligenz', 'artificial intelligence', 'ki-', ' ki ',
+                'machine learning', 'maschinelles lernen', 'deep learning',
+                'chatgpt', 'gpt-4', 'gpt-5', 'openai', 'anthropic', 'claude',
+                'llm', 'large language model', 'sprachmodell',
+                'midjourney', 'dall-e', 'stable diffusion', 'bildgenerator',
+                'neural network', 'neuronales netz', 'transformer',
+                'copilot', 'github copilot', 'gemini', 'bard',
+                'chatbot', 'ai-', ' ai ', 'generative ai', 'generative ki',
+            ],
+            'security' => [
+                'sicherheit', 'security', 'hack', 'hacker', 'cyberattack',
+                'malware', 'ransomware', 'virus', 'trojaner', 'phishing',
+                'datenschutz', 'privacy', 'verschlüsselung', 'encryption',
+                'passwort', 'password', 'authentifizierung', 'authentication',
+                'sicherheitslücke', 'vulnerability', 'exploit', 'zero-day',
+                'firewall', 'vpn', 'ssl', 'tls', 'https',
+                'cyberangriff', 'datenleck', 'data breach', 'leak',
+                'bsi', 'cert', 'cve', 'patch', 'sicherheitsupdate',
+            ],
+            'dev' => [
+                'programmier', 'programming', 'developer', 'entwickler',
+                'javascript', 'typescript', 'python', 'java ', 'kotlin', 'swift',
+                'rust', 'golang', ' go ', 'c++', 'c#', 'php', 'ruby',
+                'react', 'vue', 'angular', 'svelte', 'node.js', 'nodejs', 'deno',
+                'framework', 'library', 'bibliothek', 'sdk', 'api',
+                'github', 'gitlab', 'git ', 'repository', 'open source', 'opensource',
+                'docker', 'kubernetes', 'container', 'devops', 'ci/cd',
+                'code', 'coding', 'software entwicklung', 'softwareentwicklung',
+                'ide', 'visual studio', 'vscode', 'jetbrains', 'intellij',
+                'bug', 'debug', 'refactoring', 'deployment', 'backend', 'frontend',
+            ],
+            'hardware' => [
+                'prozessor', 'cpu', 'gpu', 'grafikkarte', 'graphics card',
+                'nvidia', 'geforce', 'rtx', 'radeon', 'amd', 'intel', 'ryzen',
+                'mainboard', 'motherboard', 'ram', 'arbeitsspeicher', 'ddr5', 'ddr4',
+                'ssd', 'nvme', 'festplatte', 'hard drive', 'storage',
+                'netzteil', 'power supply', 'gehäuse', 'case', 'kühler', 'cooling',
+                'monitor', 'display', 'bildschirm', 'oled', 'lcd', '4k', '8k',
+                'tastatur', 'keyboard', 'maus', 'mouse', 'headset', 'peripherie',
+                'benchmark', 'test', 'review', 'hardware',
+                'pc-bau', 'pc build', 'zusammenbau',
+            ],
+            'mobile' => [
+                'smartphone', 'handy', 'mobiltelefon', 'mobile phone',
+                'iphone', 'ipad', 'apple watch', 'airpods', 'ios',
+                'android', 'samsung galaxy', 'pixel', 'oneplus', 'xiaomi',
+                'tablet', 'smartwatch', 'wearable',
+                'app store', 'play store', 'mobile app', 'mobile game',
+                '5g', 'mobilfunk', 'roaming', 'esim', 'sim-karte',
+            ],
+            'software' => [
+                'software', 'programm', 'anwendung', 'application',
+                'windows', 'macos', 'linux', 'ubuntu', 'debian', 'fedora',
+                'chrome', 'firefox', 'safari', 'edge', 'browser',
+                'office', 'word', 'excel', 'powerpoint', 'outlook',
+                'photoshop', 'adobe', 'creative cloud', 'figma',
+                'update', 'version', 'release', 'download',
+                'app', 'tool', 'utility', 'freeware', 'shareware',
+            ],
+            'science' => [
+                'wissenschaft', 'science', 'forschung', 'research',
+                'studie', 'study', 'experiment', 'labor', 'laboratory',
+                'physik', 'physics', 'chemie', 'chemistry', 'biologie', 'biology',
+                'weltraum', 'space', 'nasa', 'esa', 'spacex', 'rakete', 'rocket',
+                'mars', 'mond', 'moon', 'satellit', 'satellite', 'astronomie',
+                'klimawandel', 'climate', 'umwelt', 'environment',
+                'medizin', 'medicine', 'gesundheit', 'health', 'impfstoff', 'vaccine',
+            ],
+            'entertainment' => [
+                'film', 'movie', 'kino', 'cinema', 'netflix', 'disney+', 'prime video',
+                'serie', 'series', 'staffel', 'season', 'streaming',
+                'musik', 'music', 'spotify', 'apple music', 'konzert', 'concert',
+                'youtube', 'tiktok', 'instagram', 'social media',
+                'promi', 'celebrity', 'star', 'influencer',
+                'trailer', 'review', 'kritik', 'bewertung',
+            ],
+            'business' => [
+                'unternehmen', 'company', 'firma', 'konzern', 'corporation',
+                'aktie', 'stock', 'börse', 'market', 'investment', 'investition',
+                'startup', 'gründer', 'founder', 'ceo', 'geschäftsführer',
+                'umsatz', 'revenue', 'gewinn', 'profit', 'verlust', 'loss',
+                'übernahme', 'acquisition', 'merger', 'fusion',
+                'quartal', 'quarter', 'bilanz', 'earnings', 'jahresbericht',
+            ],
+            'tech' => [
+                // General tech terms (fallback before 'other')
+                'technologie', 'technology', 'tech', 'digital', 'internet',
+                'cloud', 'server', 'netzwerk', 'network', 'wlan', 'wifi',
+                'smart home', 'iot', 'internet of things',
+                'elektro', 'electric', 'akku', 'battery', 'laden', 'charging',
+                'innovation', 'zukunft', 'future', 'trend',
+            ],
+        ];
+
+        // Check each category's keywords
+        $scores = [];
+        foreach ($categoryKeywords as $category => $keywords) {
+            $score = 0;
+            foreach ($keywords as $keyword) {
+                if (mb_strpos($text, $keyword) !== false) {
+                    // Title matches count more
+                    if (mb_strpos(mb_strtolower($title), $keyword) !== false) {
+                        $score += 3;
+                    } else {
+                        $score += 1;
+                    }
+                }
+            }
+            if ($score > 0) {
+                $scores[$category] = $score;
+            }
+        }
+
+        // If we found matching keywords, return the highest scoring category
+        if (!empty($scores)) {
+            arsort($scores);
+            return array_key_first($scores);
+        }
+
+        // Fallback to feed category if valid
+        $validCategories = ['tech', 'gaming', 'general', 'dev', 'security', 'hardware', 'software', 'mobile', 'ai', 'science', 'entertainment', 'business', 'other'];
+        if (in_array($feedCategory, $validCategories)) {
+            return $feedCategory;
+        }
+
+        return 'other';
     }
 }

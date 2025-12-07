@@ -18,6 +18,18 @@ import {
   ClockIcon,
   FunnelIcon,
   Cog6ToothIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  SparklesIcon,
+  BeakerIcon,
+  FilmIcon,
+  BriefcaseIcon,
+  WrenchScrewdriverIcon,
+  PlayIcon,
 } from '@heroicons/vue/24/outline'
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
@@ -52,13 +64,28 @@ const newFeedForm = ref({
 // Article modal
 const selectedArticle = ref(null)
 
+// View mode
+const viewMode = ref('list') // 'grid' or 'list'
+
+// Expanded articles (for list view)
+const expandedArticles = ref(new Set())
+const loadingFullContent = ref(new Set())
+const fullContentCache = ref({})
+
 // Category icons
 const categoryIcons = {
   tech: CpuChipIcon,
-  gaming: NewspaperIcon,
+  gaming: PlayIcon,
   general: GlobeAltIcon,
   dev: CodeBracketIcon,
   security: ShieldCheckIcon,
+  hardware: WrenchScrewdriverIcon,
+  software: ComputerDesktopIcon,
+  mobile: DevicePhoneMobileIcon,
+  ai: SparklesIcon,
+  science: BeakerIcon,
+  entertainment: FilmIcon,
+  business: BriefcaseIcon,
   other: FolderIcon,
 }
 
@@ -69,6 +96,13 @@ const categoryNames = {
   general: 'Allgemein',
   dev: 'Development',
   security: 'Security',
+  hardware: 'Hardware',
+  software: 'Software',
+  mobile: 'Mobile',
+  ai: 'KI / AI',
+  science: 'Wissenschaft',
+  entertainment: 'Entertainment',
+  business: 'Business',
   other: 'Sonstiges',
 }
 
@@ -200,6 +234,52 @@ function openExternalLink(url) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
+async function toggleExpanded(item) {
+  markAsRead(item)
+  if (expandedArticles.value.has(item.id)) {
+    expandedArticles.value.delete(item.id)
+  } else {
+    expandedArticles.value.add(item.id)
+    // Fetch full content if not cached
+    if (!fullContentCache.value[item.id]) {
+      await fetchFullContent(item)
+    }
+  }
+  // Trigger reactivity
+  expandedArticles.value = new Set(expandedArticles.value)
+}
+
+async function fetchFullContent(item) {
+  if (loadingFullContent.value.has(item.id)) return
+
+  loadingFullContent.value.add(item.id)
+  loadingFullContent.value = new Set(loadingFullContent.value)
+
+  try {
+    const response = await api.get(`/api/v1/news/items/${item.id}/full-content`)
+    fullContentCache.value[item.id] = response.data.data.content
+  } catch (error) {
+    console.error('Error fetching full content:', error)
+    // Use existing content as fallback
+    fullContentCache.value[item.id] = item.content || item.description
+  } finally {
+    loadingFullContent.value.delete(item.id)
+    loadingFullContent.value = new Set(loadingFullContent.value)
+  }
+}
+
+function isExpanded(item) {
+  return expandedArticles.value.has(item.id)
+}
+
+function isLoadingContent(item) {
+  return loadingFullContent.value.has(item.id)
+}
+
+function getFullContent(item) {
+  return fullContentCache.value[item.id] || item.content || item.description || 'Kein Inhalt verfügbar'
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -220,9 +300,20 @@ function formatDate(dateStr) {
   })
 }
 
-function stripHtml(html) {
+function stripHtml(html, maxLength = 500) {
   if (!html) return ''
-  return html.replace(/<[^>]*>/g, '').substring(0, 200)
+  // Remove HTML tags and decode common entities
+  let text = html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
 // Watch filters
@@ -326,6 +417,24 @@ onMounted(async () => {
         <BookmarkIcon class="w-4 h-4" />
         Gespeichert
       </button>
+
+      <!-- View Toggle -->
+      <div class="flex items-center gap-1 ml-2 bg-dark-800 rounded-lg p-1">
+        <button
+          @click="viewMode = 'grid'"
+          class="p-1.5 rounded transition-colors"
+          :class="viewMode === 'grid' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+        >
+          <Squares2X2Icon class="w-4 h-4" />
+        </button>
+        <button
+          @click="viewMode = 'list'"
+          class="p-1.5 rounded transition-colors"
+          :class="viewMode === 'list' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+        >
+          <ListBulletIcon class="w-4 h-4" />
+        </button>
+      </div>
     </div>
 
     <!-- No Subscriptions -->
@@ -344,8 +453,8 @@ onMounted(async () => {
       <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <!-- News Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- News Grid View -->
+    <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div
         v-for="item in newsItems"
         :key="item.id"
@@ -375,19 +484,143 @@ onMounted(async () => {
             </button>
           </div>
 
-          <p class="text-sm text-gray-400 line-clamp-2">
+          <p class="text-sm text-gray-400 line-clamp-3">
             {{ stripHtml(item.description) }}
           </p>
 
           <div class="flex items-center justify-between text-xs text-gray-500">
             <div class="flex items-center gap-2">
-              <component :is="categoryIcons[item.feed_category]" class="w-4 h-4" />
+              <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
+              <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
               <span>{{ item.feed_name }}</span>
             </div>
             <div class="flex items-center gap-1">
               <ClockIcon class="w-3.5 h-3.5" />
               {{ formatDate(item.published_at) }}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- News List View -->
+    <div v-else class="space-y-4">
+      <div
+        v-for="item in newsItems"
+        :key="item.id"
+        class="card p-5"
+        :class="{ 'opacity-60': item.is_read == 1 && !isExpanded(item) }"
+      >
+        <!-- Header row -->
+        <div class="flex gap-5">
+          <!-- Image (optional) -->
+          <div v-if="item.image_url && !isExpanded(item)" class="flex-shrink-0 w-48 h-32 rounded-lg overflow-hidden">
+            <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-2">
+              <h3
+                @click="toggleExpanded(item)"
+                class="text-lg font-semibold text-white hover:text-primary-400 transition-colors cursor-pointer"
+              >
+                {{ item.title }}
+              </h3>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button
+                  @click="toggleSaved(item)"
+                  class="p-1.5 rounded hover:bg-dark-600"
+                  :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
+                  title="Speichern"
+                >
+                  <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
+                  <BookmarkIcon v-else class="w-5 h-5" />
+                </button>
+                <button
+                  @click="openExternalLink(item.url)"
+                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  title="Original öffnen"
+                >
+                  <ArrowTopRightOnSquareIcon class="w-5 h-5" />
+                </button>
+                <button
+                  @click="toggleExpanded(item)"
+                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  :title="isExpanded(item) ? 'Einklappen' : 'Aufklappen'"
+                >
+                  <ChevronUpIcon v-if="isExpanded(item)" class="w-5 h-5" />
+                  <ChevronDownIcon v-else class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsed: Short preview -->
+            <p v-if="!isExpanded(item)" class="text-gray-400 mb-3 line-clamp-3">
+              {{ stripHtml(item.description || item.content) }}
+            </p>
+
+            <div class="flex items-center gap-4 text-sm text-gray-500">
+              <div class="flex items-center gap-2">
+                <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
+                <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
+                <span>{{ item.feed_name }}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <ClockIcon class="w-4 h-4" />
+                {{ formatDate(item.published_at) }}
+              </div>
+              <span v-if="item.author" class="text-gray-600">{{ item.author }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expanded content -->
+        <div v-if="isExpanded(item)" class="mt-6 pt-6 border-t border-dark-700">
+          <!-- Large image when expanded -->
+          <img
+            v-if="item.image_url"
+            :src="item.image_url"
+            :alt="item.title"
+            class="w-full max-h-96 object-cover rounded-lg mb-6"
+          />
+
+          <!-- Loading indicator -->
+          <div v-if="isLoadingContent(item)" class="flex items-center justify-center py-8">
+            <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="ml-3 text-gray-400">Lade vollständigen Artikel...</span>
+          </div>
+
+          <!-- Full content -->
+          <div
+            v-else
+            class="prose prose-invert max-w-none text-gray-300
+                   prose-headings:text-white prose-headings:font-semibold
+                   prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                   prose-a:text-primary-400 prose-a:no-underline hover:prose-a:underline
+                   prose-strong:text-white prose-em:text-gray-200
+                   prose-ul:text-gray-300 prose-ol:text-gray-300
+                   prose-li:mb-1 prose-blockquote:border-primary-500
+                   prose-code:text-primary-300 prose-pre:bg-dark-900"
+            v-html="getFullContent(item)"
+          ></div>
+
+          <!-- Action buttons -->
+          <div class="mt-6 pt-4 border-t border-dark-700 flex justify-between items-center">
+            <button
+              @click="toggleExpanded(item)"
+              class="text-gray-400 hover:text-white flex items-center gap-2"
+            >
+              <ChevronUpIcon class="w-4 h-4" />
+              Einklappen
+            </button>
+            <button
+              @click="openExternalLink(item.url)"
+              class="btn-primary"
+            >
+              <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
+              Originalartikel öffnen
+            </button>
           </div>
         </div>
       </div>
@@ -536,7 +769,8 @@ onMounted(async () => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <div class="flex items-center gap-3">
-              <component :is="categoryIcons[selectedArticle.feed_category]" class="w-5 h-5 text-primary-400" />
+              <component :is="categoryIcons[selectedArticle.article_category] || categoryIcons[selectedArticle.feed_category] || categoryIcons.other" class="w-5 h-5 text-primary-400" />
+              <span class="px-2 py-1 bg-dark-700 rounded text-sm text-gray-300">{{ categoryNames[selectedArticle.article_category] || categoryNames[selectedArticle.feed_category] || 'Sonstiges' }}</span>
               <span class="text-gray-400">{{ selectedArticle.feed_name }}</span>
             </div>
             <div class="flex items-center gap-2">

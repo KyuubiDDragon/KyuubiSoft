@@ -19,7 +19,7 @@ import Superscript from '@tiptap/extension-superscript'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import { common, createLowlight } from 'lowlight'
-import { watch, onBeforeUnmount, computed } from 'vue'
+import { watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   ydoc: {
@@ -60,17 +60,18 @@ const emit = defineEmits(['update:modelValue'])
 
 const lowlight = createLowlight(common)
 
-// Check if Yjs document is empty (for initial content loading)
-// Use 'prosemirror' to match the collaboration server
-function isYjsDocumentEmpty() {
-  const fragment = props.ydoc.getXmlFragment('prosemirror')
-  return fragment.length === 0
+// Check if editor content is effectively empty (just whitespace or empty paragraphs)
+function isEditorContentEmpty(editorInstance) {
+  if (!editorInstance) return true
+  const text = editorInstance.getText()
+  return !text || text.trim() === ''
 }
+
+// Flag to track if we've already applied initial content
+let initialContentApplied = false
 
 const editor = useEditor({
   editable: props.editable,
-  // Initialize with content if Yjs doc is empty
-  content: isYjsDocumentEmpty() && props.initialContent ? props.initialContent : undefined,
   extensions: [
     StarterKit.configure({
       codeBlock: false,
@@ -169,6 +170,33 @@ watch(() => props.userName, (name) => {
     }
   }
 })
+
+// Apply initial content after editor is ready and synced
+onMounted(() => {
+  // Wait for the next tick to ensure editor is fully initialized
+  nextTick(() => {
+    // Small delay to allow Yjs sync to complete
+    setTimeout(() => {
+      applyInitialContentIfNeeded()
+    }, 300)
+  })
+})
+
+// Function to apply initial content if editor is empty
+function applyInitialContentIfNeeded() {
+  if (initialContentApplied) return
+  if (!editor.value) return
+  if (!props.initialContent) return
+
+  // Check if the editor content is effectively empty
+  if (isEditorContentEmpty(editor.value)) {
+    console.log('Editor is empty, applying initial content')
+    editor.value.commands.setContent(props.initialContent)
+    initialContentApplied = true
+  } else {
+    console.log('Editor has content, not applying initial content')
+  }
+}
 
 onBeforeUnmount(() => {
   editor.value?.destroy()

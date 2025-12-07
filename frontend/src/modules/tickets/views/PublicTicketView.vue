@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
+import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
 import {
   TicketIcon,
   MagnifyingGlassIcon,
@@ -17,6 +18,10 @@ import {
 
 const route = useRoute()
 
+// hCaptcha site key (replace with your own from hcaptcha.com)
+// Test key that always passes: 10000000-ffff-ffff-ffff-000000000001
+const hcaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001'
+
 // View mode: 'home' | 'create' | 'lookup' | 'view'
 const viewMode = ref('home')
 
@@ -27,6 +32,10 @@ const success = ref('')
 const categories = ref([])
 const ticket = ref(null)
 const comments = ref([])
+
+// Captcha
+const captchaToken = ref('')
+const hcaptchaRef = ref(null)
 
 // Lookup form
 const accessCode = ref('')
@@ -72,6 +81,27 @@ async function fetchCategories() {
   }
 }
 
+// Captcha callbacks
+function onCaptchaVerify(token) {
+  captchaToken.value = token
+}
+
+function onCaptchaExpire() {
+  captchaToken.value = ''
+}
+
+function onCaptchaError() {
+  captchaToken.value = ''
+  error.value = 'Captcha-Fehler. Bitte versuchen Sie es erneut.'
+}
+
+function resetCaptcha() {
+  captchaToken.value = ''
+  if (hcaptchaRef.value) {
+    hcaptchaRef.value.reset()
+  }
+}
+
 // Create ticket
 async function createTicket() {
   error.value = ''
@@ -93,17 +123,24 @@ async function createTicket() {
     error.value = 'Bitte beschreiben Sie Ihr Anliegen'
     return
   }
+  if (!captchaToken.value) {
+    error.value = 'Bitte bestätigen Sie, dass Sie kein Roboter sind'
+    return
+  }
 
   loading.value = true
 
   try {
-    const response = await api.post('/api/v1/tickets/public', createForm.value)
+    const response = await api.post('/api/v1/tickets/public', {
+      ...createForm.value,
+      captcha_token: captchaToken.value,
+    })
     ticket.value = response.data.data.ticket
     accessCode.value = ticket.value.access_code
     success.value = `Ihr Ticket wurde erstellt! Ihr Zugriffscode lautet: ${ticket.value.access_code}`
     viewMode.value = 'view'
 
-    // Reset form
+    // Reset form and captcha
     createForm.value = {
       guest_name: '',
       guest_email: '',
@@ -112,8 +149,10 @@ async function createTicket() {
       category_id: '',
       priority: 'normal',
     }
+    resetCaptcha()
   } catch (err) {
     error.value = err.response?.data?.message || 'Fehler beim Erstellen des Tickets'
+    resetCaptcha()
   } finally {
     loading.value = false
   }
@@ -361,9 +400,21 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- hCaptcha -->
+            <div class="flex justify-center">
+              <VueHcaptcha
+                ref="hcaptchaRef"
+                :sitekey="hcaptchaSiteKey"
+                theme="dark"
+                @verify="onCaptchaVerify"
+                @expire="onCaptchaExpire"
+                @error="onCaptchaError"
+              />
+            </div>
+
             <button
               @click="createTicket"
-              :disabled="loading"
+              :disabled="loading || !captchaToken"
               class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

@@ -367,6 +367,12 @@ class TicketController
     {
         $data = $request->getParsedBody();
 
+        // Verify hCaptcha token
+        $captchaToken = $data['captcha_token'] ?? '';
+        if (!$this->verifyCaptcha($captchaToken)) {
+            throw new ValidationException('Captcha-Verifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+        }
+
         if (empty($data['title'])) {
             throw new ValidationException('Titel ist erforderlich');
         }
@@ -577,5 +583,53 @@ class TicketController
     {
         // TODO: Check if user is staff
         return true;
+    }
+
+    /**
+     * Verify hCaptcha token
+     */
+    private function verifyCaptcha(string $token): bool
+    {
+        // Get secret key from environment
+        $secretKey = $_ENV['HCAPTCHA_SECRET_KEY'] ?? '';
+
+        // If no secret key configured, skip verification (for development)
+        // In production, you should always have a secret key set
+        if (empty($secretKey)) {
+            // For test tokens, always pass
+            if ($token === '10000000-aaaa-bbbb-cccc-000000000001') {
+                return true;
+            }
+            // No secret key configured - skip verification in dev mode
+            return !empty($token);
+        }
+
+        if (empty($token)) {
+            return false;
+        }
+
+        // Verify with hCaptcha API
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => 'https://hcaptcha.com/siteverify',
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'secret' => $secretKey,
+                'response' => $token,
+            ]),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || !$response) {
+            return false;
+        }
+
+        $result = json_decode($response, true);
+        return $result['success'] ?? false;
     }
 }

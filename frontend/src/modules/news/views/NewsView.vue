@@ -22,6 +22,14 @@ import {
   ListBulletIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  SparklesIcon,
+  BeakerIcon,
+  FilmIcon,
+  BriefcaseIcon,
+  WrenchScrewdriverIcon,
+  PlayIcon,
 } from '@heroicons/vue/24/outline'
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
@@ -67,10 +75,17 @@ const fullContentCache = ref({})
 // Category icons
 const categoryIcons = {
   tech: CpuChipIcon,
-  gaming: NewspaperIcon,
+  gaming: PlayIcon,
   general: GlobeAltIcon,
   dev: CodeBracketIcon,
   security: ShieldCheckIcon,
+  hardware: WrenchScrewdriverIcon,
+  software: ComputerDesktopIcon,
+  mobile: DevicePhoneMobileIcon,
+  ai: SparklesIcon,
+  science: BeakerIcon,
+  entertainment: FilmIcon,
+  business: BriefcaseIcon,
   other: FolderIcon,
 }
 
@@ -81,6 +96,13 @@ const categoryNames = {
   general: 'Allgemein',
   dev: 'Development',
   security: 'Security',
+  hardware: 'Hardware',
+  software: 'Software',
+  mobile: 'Mobile',
+  ai: 'KI / AI',
+  science: 'Wissenschaft',
+  entertainment: 'Entertainment',
+  business: 'Business',
   other: 'Sonstiges',
 }
 
@@ -468,7 +490,8 @@ onMounted(async () => {
 
           <div class="flex items-center justify-between text-xs text-gray-500">
             <div class="flex items-center gap-2">
-              <component :is="categoryIcons[item.feed_category]" class="w-4 h-4" />
+              <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
+              <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
               <span>{{ item.feed_name }}</span>
             </div>
             <div class="flex items-center gap-1">
@@ -539,7 +562,8 @@ onMounted(async () => {
 
             <div class="flex items-center gap-4 text-sm text-gray-500">
               <div class="flex items-center gap-2">
-                <component :is="categoryIcons[item.feed_category]" class="w-4 h-4" />
+                <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
+                <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
                 <span>{{ item.feed_name }}</span>
               </div>
               <div class="flex items-center gap-1">
@@ -745,7 +769,8 @@ onMounted(async () => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <div class="flex items-center gap-3">
-              <component :is="categoryIcons[selectedArticle.feed_category]" class="w-5 h-5 text-primary-400" />
+              <component :is="categoryIcons[selectedArticle.article_category] || categoryIcons[selectedArticle.feed_category] || categoryIcons.other" class="w-5 h-5 text-primary-400" />
+              <span class="px-2 py-1 bg-dark-700 rounded text-sm text-gray-300">{{ categoryNames[selectedArticle.article_category] || categoryNames[selectedArticle.feed_category] || 'Sonstiges' }}</span>
               <span class="text-gray-400">{{ selectedArticle.feed_name }}</span>
             </div>
             <div class="flex items-center gap-2">

@@ -67,6 +67,7 @@ const columnForm = ref({
   title: '',
   color: '#3B82F6',
   wip_limit: null,
+  is_completed: false,
 })
 
 // Card form
@@ -259,9 +260,10 @@ function openColumnModal(column = null) {
       title: column.title,
       color: column.color || '#3B82F6',
       wip_limit: column.wip_limit,
+      is_completed: column.is_completed == 1 || column.is_completed === true,
     }
   } else {
-    columnForm.value = { title: '', color: '#3B82F6', wip_limit: null }
+    columnForm.value = { title: '', color: '#3B82F6', wip_limit: null, is_completed: false }
   }
   showColumnModal.value = true
 }
@@ -1129,6 +1131,11 @@ onMounted(async () => {
                     :style="{ backgroundColor: column.color || '#3B82F6' }"
                   ></div>
                   <h3 class="font-semibold text-white">{{ column.title }}</h3>
+                  <CheckCircleIconSolid
+                    v-if="column.is_completed == 1 || column.is_completed === true"
+                    class="w-4 h-4 text-green-500"
+                    title="Abgeschlossen-Spalte"
+                  />
                   <span class="text-xs text-gray-500 bg-dark-700 px-2 py-0.5 rounded-full">
                     {{ column.cards?.length || 0 }}
                     <template v-if="column.wip_limit">/ {{ column.wip_limit }}</template>
@@ -1437,6 +1444,19 @@ onMounted(async () => {
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                 placeholder="Max. Anzahl Karten"
               />
+            </div>
+
+            <div class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg">
+              <input
+                v-model="columnForm.is_completed"
+                type="checkbox"
+                id="is_completed"
+                class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-green-500 focus:ring-green-500 focus:ring-offset-0"
+              />
+              <label for="is_completed" class="flex-1">
+                <span class="block text-sm font-medium text-gray-300">Als "Abgeschlossen" markieren</span>
+                <span class="text-xs text-gray-500">Karten in dieser Spalte gelten als erledigt und werden nicht mehr als offene Aufgaben angezeigt</span>
+              </label>
             </div>
           </div>
 

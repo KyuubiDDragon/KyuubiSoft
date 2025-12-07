@@ -256,6 +256,7 @@ class KanbanController
             'color' => $data['color'] ?? '#3B82F6',
             'position' => $maxPosition + 1,
             'wip_limit' => $data['wip_limit'] ?? null,
+            'is_completed' => !empty($data['is_completed']) ? 1 : 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
@@ -283,6 +284,11 @@ class KanbanController
             if (isset($data[$field])) {
                 $updateData[$field] = $data[$field];
             }
+        }
+
+        // Handle is_completed separately as it's a boolean
+        if (isset($data['is_completed'])) {
+            $updateData['is_completed'] = !empty($data['is_completed']) ? 1 : 0;
         }
 
         $this->db->update('kanban_columns', $updateData, ['id' => $columnId, 'board_id' => $boardId]);

@@ -257,18 +257,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
-  // Public ticket routes (no auth)
+  // Public ticket routes (no auth, no layout wrapper)
   {
     path: '/support',
     name: 'public-tickets',
     component: PublicTicketView,
-    meta: { layout: 'auth', guest: true },
+    meta: { layout: 'none', guest: true },
   },
   {
     path: '/support/:code',
     name: 'public-ticket-view',
     component: PublicTicketView,
-    meta: { layout: 'auth', guest: true },
+    meta: { layout: 'none', guest: true },
   },
 
   // Public document view (accessible to everyone - logged in or not)

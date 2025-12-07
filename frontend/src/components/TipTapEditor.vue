@@ -155,14 +155,54 @@ function insertTable() {
   editor.value.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
 }
 
+// Format HTML with proper indentation
+function formatHtml(html) {
+  if (!html) return ''
+
+  let formatted = ''
+  let indent = 0
+  const tab = '  ' // 2 spaces for indentation
+
+  // Split by tags while keeping the tags
+  const tokens = html.split(/(<[^>]+>)/g).filter(t => t.trim())
+
+  for (const token of tokens) {
+    const isTag = token.startsWith('<')
+
+    if (isTag) {
+      const isClosingTag = token.startsWith('</')
+      const isSelfClosing = token.endsWith('/>') || /^<(br|hr|img|input|meta|link)[\s>]/i.test(token)
+      const isVoidTag = /^<(br|hr|img|input|meta|link|area|base|col|embed|param|source|track|wbr)[\s/>]/i.test(token)
+
+      if (isClosingTag) {
+        indent = Math.max(0, indent - 1)
+        formatted += tab.repeat(indent) + token + '\n'
+      } else if (isSelfClosing || isVoidTag) {
+        formatted += tab.repeat(indent) + token + '\n'
+      } else {
+        formatted += tab.repeat(indent) + token + '\n'
+        indent++
+      }
+    } else {
+      // Text content
+      const trimmed = token.trim()
+      if (trimmed) {
+        formatted += tab.repeat(indent) + trimmed + '\n'
+      }
+    }
+  }
+
+  return formatted.trim()
+}
+
 function toggleCodeView() {
   if (showCodeView.value) {
     // Switching from code view to visual view - apply changes
     editor.value.commands.setContent(htmlCode.value, false)
     emit('update:modelValue', htmlCode.value)
   } else {
-    // Switching from visual to code view - get current HTML
-    htmlCode.value = editor.value.getHTML()
+    // Switching from visual to code view - get and format current HTML
+    htmlCode.value = formatHtml(editor.value.getHTML())
   }
   showCodeView.value = !showCodeView.value
 }

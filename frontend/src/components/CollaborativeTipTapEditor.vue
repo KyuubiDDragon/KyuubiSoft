@@ -44,6 +44,10 @@ const props = defineProps({
   minHeight: {
     type: String,
     default: '500px'
+  },
+  initialContent: {
+    type: String,
+    default: ''
   }
 })
 
@@ -51,8 +55,17 @@ const emit = defineEmits(['update:modelValue'])
 
 const lowlight = createLowlight(common)
 
+// Check if Yjs document is empty (for initial content loading)
+// Use 'prosemirror' to match the collaboration server
+function isYjsDocumentEmpty() {
+  const fragment = props.ydoc.getXmlFragment('prosemirror')
+  return fragment.length === 0
+}
+
 const editor = useEditor({
   editable: props.editable,
+  // Initialize with content if Yjs doc is empty
+  content: isYjsDocumentEmpty() && props.initialContent ? props.initialContent : undefined,
   extensions: [
     StarterKit.configure({
       codeBlock: false,
@@ -99,9 +112,10 @@ const editor = useEditor({
         class: 'bg-dark-700 rounded-lg p-4 my-2 overflow-x-auto',
       },
     }),
-    // Yjs collaboration
+    // Yjs collaboration - use 'prosemirror' fragment to match collaboration server
     Collaboration.configure({
       document: props.ydoc,
+      field: 'prosemirror',
     }),
     CollaborationCursor.configure({
       provider: props.provider,

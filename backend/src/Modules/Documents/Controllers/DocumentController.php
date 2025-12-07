@@ -203,14 +203,76 @@ class DocumentController
         $this->getDocumentForUser($docId, $userId);
 
         $versions = $this->db->fetchAllAssociative(
-            'SELECT id, version_number, change_summary, created_by, created_at
-             FROM document_versions
-             WHERE document_id = ?
-             ORDER BY version_number DESC',
+            'SELECT dv.id, dv.version_number, dv.change_summary, dv.created_by, dv.created_at, u.username as created_by_name
+             FROM document_versions dv
+             LEFT JOIN users u ON dv.created_by = u.id
+             WHERE dv.document_id = ?
+             ORDER BY dv.version_number DESC',
             [$docId]
         );
 
         return JsonResponse::success($versions);
+    }
+
+    public function getVersion(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $docId = $route->getArgument('id');
+        $versionId = $route->getArgument('versionId');
+
+        $this->getDocumentForUser($docId, $userId);
+
+        $version = $this->db->fetchAssociative(
+            'SELECT dv.*, u.username as created_by_name
+             FROM document_versions dv
+             LEFT JOIN users u ON dv.created_by = u.id
+             WHERE dv.id = ? AND dv.document_id = ?',
+            [$versionId, $docId]
+        );
+
+        if (!$version) {
+            throw new NotFoundException('Version not found');
+        }
+
+        return JsonResponse::success($version);
+    }
+
+    public function restoreVersion(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $docId = $route->getArgument('id');
+        $versionId = $route->getArgument('versionId');
+
+        // Require owner for restore
+        $doc = $this->getDocumentForUser($docId, $userId, true);
+
+        $version = $this->db->fetchAssociative(
+            'SELECT * FROM document_versions WHERE id = ? AND document_id = ?',
+            [$versionId, $docId]
+        );
+
+        if (!$version) {
+            throw new NotFoundException('Version not found');
+        }
+
+        // Create a new version with current content before restoring (backup)
+        $this->createVersion($docId, $doc['content'], $userId, 'Backup vor Wiederherstellung');
+
+        // Update document with restored content
+        $this->db->update('documents', [
+            'content' => $version['content'],
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $docId]);
+
+        // Create version entry for the restoration
+        $this->createVersion($docId, $version['content'], $userId, 'Wiederhergestellt von Version ' . $version['version_number']);
+
+        return JsonResponse::success([
+            'restored_version' => $version['version_number'],
+            'content' => $version['content'],
+        ], 'Version wiederhergestellt');
     }
 
     private function getDocumentForUser(string $docId, string $userId, bool $requireOwner = false): array

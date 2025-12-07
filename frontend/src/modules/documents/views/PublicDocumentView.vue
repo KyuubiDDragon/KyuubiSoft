@@ -82,6 +82,9 @@ let ydoc = null
 let provider = null
 let ytext = null
 
+// Ref for the collaborative editor to get HTML content
+const collaborativeEditorRef = ref(null)
+
 // Computed for showing connected users
 const connectedUsers = computed(() => {
   if (!collaboration) return []
@@ -278,6 +281,24 @@ async function leaveSession() {
   // In non-collaborative mode, save before leaving
   if (!collaborationAvailable.value) {
     await saveDocument()
+  } else if (collaborationAvailable.value && document.value) {
+    // In collaborative mode, save HTML content for richtext documents
+    if (document.value.format === 'richtext' || !document.value.format) {
+      // Get HTML from the collaborative editor
+      const htmlContent = collaborativeEditorRef.value?.getHTML?.() || ''
+      if (htmlContent && htmlContent !== document.value.content) {
+        try {
+          const token = route.params.token
+          await api.post(`/api/v1/documents/public/${token}/update`, {
+            content: htmlContent,
+            password: storedPassword.value
+          })
+          console.log('Richtext content saved on leave')
+        } catch (error) {
+          console.error('Error saving richtext content:', error)
+        }
+      }
+    }
   }
 
   if (collaboration) {
@@ -495,11 +516,13 @@ onUnmounted(() => {
             <!-- Collaborative editor when editing and collaboration is available -->
             <CollaborativeTipTapEditor
               v-if="isEditing && collaborationAvailable && ydoc && provider"
+              ref="collaborativeEditorRef"
               :ydoc="ydoc"
               :provider="provider"
               :userName="editorName"
               :userColor="userColor"
               :editable="true"
+              :initialContent="document.content || ''"
               placeholder="Beginne hier zu schreiben..."
             />
             <!-- Fallback TipTap editor when editing but collaboration is not available -->

@@ -147,6 +147,8 @@ class Router
                 $protected->put('/documents/{id}', [DocumentController::class, 'update']);
                 $protected->delete('/documents/{id}', [DocumentController::class, 'delete']);
                 $protected->get('/documents/{id}/versions', [DocumentController::class, 'versions']);
+                $protected->get('/documents/{id}/versions/{versionId}', [DocumentController::class, 'getVersion']);
+                $protected->post('/documents/{id}/versions/{versionId}/restore', [DocumentController::class, 'restoreVersion']);
                 $protected->get('/documents/{id}/shares', [DocumentController::class, 'getShares']);
                 $protected->post('/documents/{id}/shares', [DocumentController::class, 'addShare']);
                 $protected->delete('/documents/{id}/shares/{userId}', [DocumentController::class, 'removeShare']);

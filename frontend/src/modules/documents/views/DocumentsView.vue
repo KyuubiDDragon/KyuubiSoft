@@ -18,7 +18,9 @@ import {
   LockClosedIcon,
   EyeIcon,
   UsersIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  ArrowPathIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -57,6 +59,13 @@ const shareForm = reactive({
 })
 const shareInfo = ref(null)
 const isLoadingShare = ref(false)
+
+// Version history state
+const showVersionsModal = ref(false)
+const versions = ref([])
+const isLoadingVersions = ref(false)
+const selectedVersion = ref(null)
+const versionPreviewContent = ref('')
 
 // View tabs
 const activeTab = ref('all') // 'all' or 'shared'
@@ -345,6 +354,59 @@ async function loadSharedDocuments() {
   }
 }
 
+// Version history functions
+async function openVersionsModal() {
+  if (!selectedDoc.value) return
+  showVersionsModal.value = true
+  selectedVersion.value = null
+  versionPreviewContent.value = ''
+  await loadVersions()
+}
+
+async function loadVersions() {
+  if (!selectedDoc.value) return
+  isLoadingVersions.value = true
+  try {
+    const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions`)
+    versions.value = response.data.data || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Versionen')
+  } finally {
+    isLoadingVersions.value = false
+  }
+}
+
+async function previewVersion(version) {
+  selectedVersion.value = version
+  isLoadingVersions.value = true
+  try {
+    const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions/${version.id}`)
+    versionPreviewContent.value = response.data.data?.content || ''
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Version')
+  } finally {
+    isLoadingVersions.value = false
+  }
+}
+
+async function restoreVersion(version) {
+  if (!confirm(`Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`)) return
+
+  isLoadingVersions.value = true
+  try {
+    const response = await api.post(`/api/v1/documents/${selectedDoc.value.id}/versions/${version.id}/restore`)
+    selectedDoc.value.content = response.data.data.content
+    editContent.value = response.data.data.content
+    showVersionsModal.value = false
+    uiStore.showSuccess(`Version ${version.version_number} wiederhergestellt`)
+    await loadVersions() // Reload versions to show the new backup
+  } catch (error) {
+    uiStore.showError('Fehler beim Wiederherstellen')
+  } finally {
+    isLoadingVersions.value = false
+  }
+}
+
 // Copy public URL to clipboard
 function copyDocumentLink(token) {
   if (!token) {
@@ -412,6 +474,10 @@ onMounted(async () => {
           <!-- Spreadsheet auto-saves -->
           <button v-else @click="updateDocument" class="btn-primary">
             Speichern
+          </button>
+          <button @click="openVersionsModal" class="btn-secondary">
+            <ClockIcon class="w-5 h-5 mr-2" />
+            Versionen
           </button>
           <button @click="openShareModal(selectedDoc)" class="btn-secondary">
             <ShareIcon class="w-5 h-5 mr-2" />
@@ -876,6 +942,119 @@ onMounted(async () => {
                 <LinkIcon class="w-5 h-5 mr-2" />
                 Link erstellen
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Versions Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showVersionsModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="showVersionsModal = false"
+      >
+        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-4xl border border-dark-700 max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
+                <ClockIcon class="w-5 h-5 text-primary-400" />
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-white">Versionshistorie</h2>
+                <p class="text-gray-400 text-sm">{{ selectedDoc?.title }}</p>
+              </div>
+            </div>
+            <button @click="showVersionsModal = false" class="p-2 hover:bg-dark-700 rounded-lg">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="isLoadingVersions && !versions.length" class="flex justify-center py-12">
+            <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <!-- No versions -->
+          <div v-else-if="!versions.length" class="text-center py-12">
+            <DocumentDuplicateIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+            <p class="text-gray-400">Keine Versionen vorhanden</p>
+            <p class="text-gray-500 text-sm mt-2">Versionen werden automatisch beim Speichern erstellt.</p>
+          </div>
+
+          <!-- Versions list and preview -->
+          <div v-else class="flex gap-4 flex-1 overflow-hidden">
+            <!-- Versions list -->
+            <div class="w-1/3 flex flex-col overflow-hidden">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Versionen ({{ versions.length }})</h3>
+              <div class="space-y-2 overflow-y-auto flex-1">
+                <div
+                  v-for="version in versions"
+                  :key="version.id"
+                  @click="previewVersion(version)"
+                  class="p-3 rounded-lg border cursor-pointer transition-all"
+                  :class="selectedVersion?.id === version.id
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-600 hover:border-dark-500'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-white font-medium">Version {{ version.version_number }}</span>
+                    <span class="text-xs text-gray-500">{{ formatDate(version.created_at) }}</span>
+                  </div>
+                  <p v-if="version.change_summary" class="text-gray-400 text-sm mt-1 truncate">
+                    {{ version.change_summary }}
+                  </p>
+                  <p v-if="version.created_by_name" class="text-gray-500 text-xs mt-1">
+                    von {{ version.created_by_name }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="flex-1 flex flex-col overflow-hidden border-l border-dark-700 pl-4">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-medium text-gray-400">
+                  {{ selectedVersion ? `Vorschau - Version ${selectedVersion.version_number}` : 'Wähle eine Version' }}
+                </h3>
+                <button
+                  v-if="selectedVersion"
+                  @click="restoreVersion(selectedVersion)"
+                  class="btn-primary py-1.5 px-3 text-sm"
+                  :disabled="isLoadingVersions"
+                >
+                  <ArrowPathIcon class="w-4 h-4 mr-1" />
+                  Wiederherstellen
+                </button>
+              </div>
+
+              <!-- Loading preview -->
+              <div v-if="isLoadingVersions && selectedVersion" class="flex justify-center py-12">
+                <div class="w-6 h-6 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+
+              <!-- Preview content -->
+              <div v-else-if="selectedVersion && versionPreviewContent" class="flex-1 overflow-y-auto bg-dark-900 rounded-lg p-4">
+                <div
+                  v-if="selectedDoc?.format === 'richtext' || !selectedDoc?.format"
+                  class="prose prose-invert max-w-none text-sm"
+                  v-html="versionPreviewContent"
+                ></div>
+                <div
+                  v-else-if="selectedDoc?.format === 'markdown'"
+                  class="prose prose-invert max-w-none text-sm"
+                  v-html="renderMarkdown(versionPreviewContent)"
+                ></div>
+                <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap">{{ versionPreviewContent }}</pre>
+              </div>
+
+              <!-- No selection -->
+              <div v-else class="flex-1 flex items-center justify-center text-gray-500">
+                Klicke auf eine Version um sie anzuzeigen
+              </div>
             </div>
           </div>
         </div>

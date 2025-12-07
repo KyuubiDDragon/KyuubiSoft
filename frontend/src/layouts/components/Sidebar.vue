@@ -112,6 +112,9 @@ const allNavigationGroups = [
   // Dashboard - Standalone
   { id: 'dashboard', name: 'Dashboard', href: '/', icon: HomeIcon },
 
+  // News - Standalone
+  { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon },
+
   // Inhalte
   {
     id: 'inhalte',
@@ -122,7 +125,6 @@ const allNavigationGroups = [
       { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
-      { name: 'News', href: '/news', icon: NewspaperIcon },
     ],
   },
 

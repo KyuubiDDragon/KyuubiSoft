@@ -455,6 +455,7 @@ class Router
                 $protected->post('/news/feeds', [NewsController::class, 'addFeed']);
                 $protected->delete('/news/feeds/{feedId}', [NewsController::class, 'deleteFeed']);
                 $protected->get('/news/unread-count', [NewsController::class, 'getUnreadCount']);
+                $protected->get('/news/items/{itemId}/full-content', [NewsController::class, 'fetchFullContent']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

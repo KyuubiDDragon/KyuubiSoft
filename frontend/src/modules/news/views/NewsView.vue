@@ -61,6 +61,8 @@ const viewMode = ref('list') // 'grid' or 'list'
 
 // Expanded articles (for list view)
 const expandedArticles = ref(new Set())
+const loadingFullContent = ref(new Set())
+const fullContentCache = ref({})
 
 // Category icons
 const categoryIcons = {
@@ -210,19 +212,50 @@ function openExternalLink(url) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-function toggleExpanded(item) {
+async function toggleExpanded(item) {
   markAsRead(item)
   if (expandedArticles.value.has(item.id)) {
     expandedArticles.value.delete(item.id)
   } else {
     expandedArticles.value.add(item.id)
+    // Fetch full content if not cached
+    if (!fullContentCache.value[item.id]) {
+      await fetchFullContent(item)
+    }
   }
   // Trigger reactivity
   expandedArticles.value = new Set(expandedArticles.value)
 }
 
+async function fetchFullContent(item) {
+  if (loadingFullContent.value.has(item.id)) return
+
+  loadingFullContent.value.add(item.id)
+  loadingFullContent.value = new Set(loadingFullContent.value)
+
+  try {
+    const response = await api.get(`/api/v1/news/items/${item.id}/full-content`)
+    fullContentCache.value[item.id] = response.data.data.content
+  } catch (error) {
+    console.error('Error fetching full content:', error)
+    // Use existing content as fallback
+    fullContentCache.value[item.id] = item.content || item.description
+  } finally {
+    loadingFullContent.value.delete(item.id)
+    loadingFullContent.value = new Set(loadingFullContent.value)
+  }
+}
+
 function isExpanded(item) {
   return expandedArticles.value.has(item.id)
+}
+
+function isLoadingContent(item) {
+  return loadingFullContent.value.has(item.id)
+}
+
+function getFullContent(item) {
+  return fullContentCache.value[item.id] || item.content || item.description || 'Kein Inhalt verfügbar'
 }
 
 function formatDate(dateStr) {
@@ -528,10 +561,24 @@ onMounted(async () => {
             class="w-full max-h-96 object-cover rounded-lg mb-6"
           />
 
+          <!-- Loading indicator -->
+          <div v-if="isLoadingContent(item)" class="flex items-center justify-center py-8">
+            <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="ml-3 text-gray-400">Lade vollständigen Artikel...</span>
+          </div>
+
           <!-- Full content -->
           <div
-            class="prose prose-invert prose-sm max-w-none text-gray-300"
-            v-html="item.content || item.description || 'Kein Inhalt verfügbar'"
+            v-else
+            class="prose prose-invert max-w-none text-gray-300
+                   prose-headings:text-white prose-headings:font-semibold
+                   prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                   prose-a:text-primary-400 prose-a:no-underline hover:prose-a:underline
+                   prose-strong:text-white prose-em:text-gray-200
+                   prose-ul:text-gray-300 prose-ol:text-gray-300
+                   prose-li:mb-1 prose-blockquote:border-primary-500
+                   prose-code:text-primary-300 prose-pre:bg-dark-900"
+            v-html="getFullContent(item)"
           ></div>
 
           <!-- Action buttons -->

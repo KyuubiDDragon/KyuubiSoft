@@ -647,9 +647,10 @@ class NewsController
             if (!$exists) {
                 $title = mb_substr($item['title'] ?? 'No title', 0, 500);
                 $description = $item['description'] ?? null;
+                $url = $item['link'] ?? '';
 
-                // Determine article category based on content
-                $articleCategory = $this->categorizeArticle($title, $description, $feed['category']);
+                // Determine article category based on content and URL
+                $articleCategory = $this->categorizeArticle($title, $description, $feed['category'], $url);
 
                 $this->db->insert('news_items', [
                     'id' => Uuid::uuid4()->toString(),
@@ -659,7 +660,7 @@ class NewsController
                     'title' => $title,
                     'description' => $description,
                     'content' => $item['content'] ?? null,
-                    'url' => $item['link'] ?? '',
+                    'url' => $url,
                     'image_url' => $item['image'] ?? null,
                     'author' => $item['author'] ?? null,
                     'published_at' => $item['pubDate'] ?? date('Y-m-d H:i:s'),
@@ -864,147 +865,423 @@ class NewsController
     }
 
     /**
-     * Categorize an article based on its title and description
+     * Categorize an article based on its title, description, and URL
      */
-    private function categorizeArticle(string $title, ?string $description, string $feedCategory): string
+    private function categorizeArticle(string $title, ?string $description, string $feedCategory, ?string $url = null): string
     {
+        $titleLower = mb_strtolower($title);
         $text = mb_strtolower($title . ' ' . ($description ?? ''));
+        $urlLower = mb_strtolower($url ?? '');
 
-        // Define keyword patterns for each category (priority order matters)
-        $categoryKeywords = [
+        // URL path hints - very reliable indicators
+        $urlPatterns = [
+            'gaming' => ['/games/', '/gaming/', '/spiele/', '/esport/', '/playstation/', '/xbox/', '/nintendo/'],
+            'hardware' => ['/hardware/', '/grafikkarte/', '/cpu/', '/gpu/', '/prozessor/', '/test/', '/review/', '/benchmark/'],
+            'software' => ['/software/', '/download/', '/apps/', '/programme/'],
+            'mobile' => ['/handy/', '/smartphone/', '/mobile/', '/iphone/', '/android/', '/tablet/'],
+            'security' => ['/security/', '/sicherheit/', '/datenschutz/', '/privacy/'],
+            'dev' => ['/developer/', '/entwickler/', '/programming/', '/code/', '/github/'],
+            'ai' => ['/ki/', '/ai/', '/kuenstliche-intelligenz/', '/artificial-intelligence/', '/chatgpt/', '/machine-learning/'],
+            'science' => ['/wissenschaft/', '/science/', '/forschung/', '/weltraum/', '/space/'],
+            'entertainment' => ['/entertainment/', '/film/', '/movie/', '/serie/', '/musik/', '/streaming/'],
+            'business' => ['/business/', '/wirtschaft/', '/finanzen/', '/boerse/', '/unternehmen/'],
+        ];
+
+        // Check URL patterns first (high confidence)
+        foreach ($urlPatterns as $category => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (mb_strpos($urlLower, $pattern) !== false) {
+                    return $category;
+                }
+            }
+        }
+
+        // High-priority compound keywords (phrases that are very specific)
+        $compoundKeywords = [
             'gaming' => [
-                // Spiele-Namen und Gaming-Begriffe
-                'playstation', 'xbox', 'nintendo', 'switch', 'steam', 'epic games',
-                'videospiel', 'videogame', 'game pass', 'gaming', 'gamer',
-                'esport', 'e-sport', 'twitch', 'streamer',
-                'fps', 'mmorpg', 'rpg', 'battle royale', 'multiplayer',
-                'fortnite', 'minecraft', 'valorant', 'league of legends', 'lol',
-                'call of duty', 'cod', 'gta', 'grand theft auto', 'zelda', 'mario',
-                'elden ring', 'dark souls', 'diablo', 'world of warcraft', 'wow',
-                'cyberpunk', 'witcher', 'assassin\'s creed', 'fifa', 'ea sports',
-                'ubisoft', 'activision', 'blizzard', 'bethesda', 'rockstar',
-                'spieler', 'zocken', 'zockt', 'gameplay', 'lets play',
-                'dlc', 'addon', 'patch notes', 'season pass',
-                'konsole', 'controller', 'playstation 5', 'ps5', 'ps4', 'xbox series',
+                'game pass', 'playstation 5', 'playstation 4', 'xbox series', 'nintendo switch',
+                'epic games', 'ea sports', 'call of duty', 'grand theft auto', 'world of warcraft',
+                'league of legends', 'counter strike', 'battle royale', 'open world', 'early access',
+                'release date', 'erscheinungsdatum', 'neues spiel', 'new game', 'spiel angekündigt',
+                'gameplay trailer', 'game trailer', 'gaming pc', 'gaming laptop', 'gaming monitor',
+                'kostenlos spielen', 'free to play', 'indie game', 'aaa game', 'triple a',
             ],
             'ai' => [
-                'künstliche intelligenz', 'artificial intelligence', 'ki-', ' ki ',
-                'machine learning', 'maschinelles lernen', 'deep learning',
-                'chatgpt', 'gpt-4', 'gpt-5', 'openai', 'anthropic', 'claude',
-                'llm', 'large language model', 'sprachmodell',
-                'midjourney', 'dall-e', 'stable diffusion', 'bildgenerator',
-                'neural network', 'neuronales netz', 'transformer',
-                'copilot', 'github copilot', 'gemini', 'bard',
-                'chatbot', 'ai-', ' ai ', 'generative ai', 'generative ki',
-            ],
-            'security' => [
-                'sicherheit', 'security', 'hack', 'hacker', 'cyberattack',
-                'malware', 'ransomware', 'virus', 'trojaner', 'phishing',
-                'datenschutz', 'privacy', 'verschlüsselung', 'encryption',
-                'passwort', 'password', 'authentifizierung', 'authentication',
-                'sicherheitslücke', 'vulnerability', 'exploit', 'zero-day',
-                'firewall', 'vpn', 'ssl', 'tls', 'https',
-                'cyberangriff', 'datenleck', 'data breach', 'leak',
-                'bsi', 'cert', 'cve', 'patch', 'sicherheitsupdate',
-            ],
-            'dev' => [
-                'programmier', 'programming', 'developer', 'entwickler',
-                'javascript', 'typescript', 'python', 'java ', 'kotlin', 'swift',
-                'rust', 'golang', ' go ', 'c++', 'c#', 'php', 'ruby',
-                'react', 'vue', 'angular', 'svelte', 'node.js', 'nodejs', 'deno',
-                'framework', 'library', 'bibliothek', 'sdk', 'api',
-                'github', 'gitlab', 'git ', 'repository', 'open source', 'opensource',
-                'docker', 'kubernetes', 'container', 'devops', 'ci/cd',
-                'code', 'coding', 'software entwicklung', 'softwareentwicklung',
-                'ide', 'visual studio', 'vscode', 'jetbrains', 'intellij',
-                'bug', 'debug', 'refactoring', 'deployment', 'backend', 'frontend',
+                'künstliche intelligenz', 'artificial intelligence', 'machine learning', 'deep learning',
+                'large language model', 'generative ai', 'generative ki', 'neural network', 'neuronales netz',
+                'stable diffusion', 'text to image', 'text-to-image', 'ki-modell', 'ai model',
+                'ki-assistent', 'ai assistant', 'sprachmodell', 'language model', 'foundation model',
+                'ki-startup', 'ai startup', 'ki-forschung', 'ai research', 'ki-regulierung',
             ],
             'hardware' => [
-                'prozessor', 'cpu', 'gpu', 'grafikkarte', 'graphics card',
-                'nvidia', 'geforce', 'rtx', 'radeon', 'amd', 'intel', 'ryzen',
-                'mainboard', 'motherboard', 'ram', 'arbeitsspeicher', 'ddr5', 'ddr4',
-                'ssd', 'nvme', 'festplatte', 'hard drive', 'storage',
-                'netzteil', 'power supply', 'gehäuse', 'case', 'kühler', 'cooling',
-                'monitor', 'display', 'bildschirm', 'oled', 'lcd', '4k', '8k',
-                'tastatur', 'keyboard', 'maus', 'mouse', 'headset', 'peripherie',
-                'benchmark', 'test', 'review', 'hardware',
-                'pc-bau', 'pc build', 'zusammenbau',
+                'grafikkarte test', 'gpu test', 'cpu test', 'prozessor test', 'benchmark test',
+                'graphics card', 'power supply', 'pc build', 'pc zusammenstellen', 'gaming pc bauen',
+                'rtx 4090', 'rtx 4080', 'rtx 4070', 'rtx 5090', 'rtx 5080', 'rtx 5070',
+                'radeon rx', 'geforce rtx', 'intel core', 'amd ryzen', 'apple m1', 'apple m2', 'apple m3', 'apple m4',
+                'ddr5 ram', 'nvme ssd', 'pcie 5', 'usb-c', 'thunderbolt 4', 'wifi 7', 'wifi 6e',
             ],
             'mobile' => [
-                'smartphone', 'handy', 'mobiltelefon', 'mobile phone',
-                'iphone', 'ipad', 'apple watch', 'airpods', 'ios',
-                'android', 'samsung galaxy', 'pixel', 'oneplus', 'xiaomi',
-                'tablet', 'smartwatch', 'wearable',
-                'app store', 'play store', 'mobile app', 'mobile game',
-                '5g', 'mobilfunk', 'roaming', 'esim', 'sim-karte',
+                'iphone 15', 'iphone 16', 'iphone 14', 'galaxy s24', 'galaxy s23', 'galaxy s25',
+                'pixel 8', 'pixel 9', 'apple watch', 'samsung galaxy', 'google pixel',
+                'ios 18', 'ios 17', 'android 15', 'android 14', 'mobile app', 'smartphone test',
+                'handy test', 'tablet test', 'smartwatch test', 'foldable phone', 'falt-handy',
+            ],
+            'security' => [
+                'data breach', 'datenleck', 'sicherheitslücke', 'zero day', 'zero-day',
+                'ransomware angriff', 'ransomware attack', 'hacker angriff', 'cyber attack', 'cyberangriff',
+                'zwei-faktor', 'two-factor', '2fa', 'passwort manager', 'password manager',
+                'end-to-end', 'verschlüsselung', 'encryption', 'bsi warnt', 'cert warnt',
+            ],
+            'dev' => [
+                'open source', 'visual studio', 'vs code', 'github copilot', 'software development',
+                'web development', 'app development', 'neue version', 'new release', 'framework update',
+                'programming language', 'programmiersprache', 'code review', 'pull request', 'git repository',
             ],
             'software' => [
-                'software', 'programm', 'anwendung', 'application',
-                'windows', 'macos', 'linux', 'ubuntu', 'debian', 'fedora',
-                'chrome', 'firefox', 'safari', 'edge', 'browser',
-                'office', 'word', 'excel', 'powerpoint', 'outlook',
-                'photoshop', 'adobe', 'creative cloud', 'figma',
-                'update', 'version', 'release', 'download',
-                'app', 'tool', 'utility', 'freeware', 'shareware',
+                'windows 11', 'windows 12', 'macos sonoma', 'macos sequoia', 'linux kernel',
+                'chrome update', 'firefox update', 'browser update', 'office 365', 'microsoft 365',
+                'adobe creative', 'creative cloud', 'neue funktion', 'new feature', 'software update',
             ],
             'science' => [
-                'wissenschaft', 'science', 'forschung', 'research',
-                'studie', 'study', 'experiment', 'labor', 'laboratory',
-                'physik', 'physics', 'chemie', 'chemistry', 'biologie', 'biology',
-                'weltraum', 'space', 'nasa', 'esa', 'spacex', 'rakete', 'rocket',
-                'mars', 'mond', 'moon', 'satellit', 'satellite', 'astronomie',
-                'klimawandel', 'climate', 'umwelt', 'environment',
-                'medizin', 'medicine', 'gesundheit', 'health', 'impfstoff', 'vaccine',
+                'james webb', 'hubble teleskop', 'black hole', 'schwarzes loch', 'mars mission',
+                'moon mission', 'mondmission', 'klimawandel', 'climate change', 'erneuerbare energie',
+                'renewable energy', 'quantencomputer', 'quantum computer', 'crispr', 'gen-editing',
             ],
             'entertainment' => [
-                'film', 'movie', 'kino', 'cinema', 'netflix', 'disney+', 'prime video',
-                'serie', 'series', 'staffel', 'season', 'streaming',
-                'musik', 'music', 'spotify', 'apple music', 'konzert', 'concert',
-                'youtube', 'tiktok', 'instagram', 'social media',
-                'promi', 'celebrity', 'star', 'influencer',
-                'trailer', 'review', 'kritik', 'bewertung',
+                'neue staffel', 'new season', 'netflix serie', 'amazon prime', 'disney plus',
+                'apple tv', 'streaming dienst', 'streaming service', 'box office', 'kino start',
+                'oscar nominierung', 'grammy award', 'spotify wrapped', 'album release',
             ],
             'business' => [
-                'unternehmen', 'company', 'firma', 'konzern', 'corporation',
-                'aktie', 'stock', 'börse', 'market', 'investment', 'investition',
-                'startup', 'gründer', 'founder', 'ceo', 'geschäftsführer',
-                'umsatz', 'revenue', 'gewinn', 'profit', 'verlust', 'loss',
-                'übernahme', 'acquisition', 'merger', 'fusion',
-                'quartal', 'quarter', 'bilanz', 'earnings', 'jahresbericht',
-            ],
-            'tech' => [
-                // General tech terms (fallback before 'other')
-                'technologie', 'technology', 'tech', 'digital', 'internet',
-                'cloud', 'server', 'netzwerk', 'network', 'wlan', 'wifi',
-                'smart home', 'iot', 'internet of things',
-                'elektro', 'electric', 'akku', 'battery', 'laden', 'charging',
-                'innovation', 'zukunft', 'future', 'trend',
+                'quartalszahlen', 'quarterly earnings', 'ipo', 'börsengang', 'aktie steigt', 'aktie fällt',
+                'milliarden dollar', 'billion dollar', 'übernahme', 'acquisition', 'merger',
+                'entlassungen', 'layoffs', 'stellenabbau', 'startup funding', 'serie a', 'serie b',
             ],
         ];
 
-        // Check each category's keywords
         $scores = [];
+
+        // Check compound keywords first (worth more points)
+        foreach ($compoundKeywords as $category => $phrases) {
+            foreach ($phrases as $phrase) {
+                if (mb_strpos($text, $phrase) !== false) {
+                    $scores[$category] = ($scores[$category] ?? 0) + (mb_strpos($titleLower, $phrase) !== false ? 8 : 4);
+                }
+            }
+        }
+
+        // Single keyword patterns (expanded)
+        $categoryKeywords = [
+            'gaming' => [
+                // Platforms & Stores
+                'playstation', 'xbox', 'nintendo', 'switch', 'steam', 'gog', 'uplay', 'origin', 'battle.net',
+                // Gaming terms
+                'videospiel', 'videogame', 'gaming', 'gamer', 'zocken', 'zockt', 'gameplay', 'speedrun',
+                'esport', 'e-sport', 'twitch', 'streamer', 'lets play', 'walkthrough',
+                'fps', 'mmorpg', 'rpg', 'moba', 'roguelike', 'metroidvania', 'souls-like', 'survival',
+                'multiplayer', 'singleplayer', 'koop', 'co-op', 'pvp', 'pve',
+                // Popular games
+                'fortnite', 'minecraft', 'valorant', 'overwatch', 'apex legends', 'pubg',
+                'gta', 'zelda', 'mario', 'pokemon', 'final fantasy', 'resident evil',
+                'elden ring', 'dark souls', 'sekiro', 'bloodborne', 'armored core',
+                'diablo', 'path of exile', 'lost ark', 'destiny',
+                'cyberpunk', 'witcher', 'baldur', 'starfield', 'fallout', 'elder scrolls', 'skyrim',
+                'assassin', 'far cry', 'watch dogs', 'ghost recon',
+                'fifa', 'fc 24', 'fc 25', 'madden', 'nba 2k', 'nhl',
+                'cod', 'battlefield', 'rainbow six', 'tarkov',
+                'hogwarts legacy', 'spider-man', 'god of war', 'horizon',
+                'monster hunter', 'dragon quest', 'persona', 'fire emblem',
+                // Publishers/Developers
+                'ubisoft', 'activision', 'blizzard', 'bethesda', 'rockstar', 'ea games',
+                'cd projekt', 'fromsoftware', 'capcom', 'square enix', 'bandai namco', 'sega',
+                'nintendo', 'sony interactive', 'xbox game studios', 'valve',
+                // Hardware
+                'ps5', 'ps4', 'playstation vr', 'psvr', 'dualsense',
+                'controller', 'konsole', 'handheld', 'steam deck', 'rog ally',
+                // Terms
+                'dlc', 'addon', 'erweiterung', 'expansion', 'patch', 'season pass', 'battle pass',
+                'early access', 'beta', 'demo', 'release', 'launch', 'ankündigung',
+            ],
+            'ai' => [
+                // Companies
+                'openai', 'anthropic', 'claude', 'google deepmind', 'deepmind', 'meta ai', 'mistral',
+                'hugging face', 'huggingface', 'stability ai', 'cohere', 'inflection',
+                // Products
+                'chatgpt', 'gpt-4', 'gpt-5', 'gpt-4o', 'gpt4', 'gpt5',
+                'gemini', 'bard', 'copilot', 'bing chat', 'perplexity',
+                'dall-e', 'dalle', 'midjourney', 'stable diffusion', 'firefly', 'imagen',
+                'llama', 'mistral', 'mixtral', 'phi-3', 'claude', 'opus', 'sonnet', 'haiku',
+                'sora', 'runway', 'pika', 'kling',
+                // Terms
+                'künstliche intelligenz', 'ki-', ' ki ', 'k.i.',
+                'artificial intelligence', 'ai-', ' ai ',
+                'machine learning', 'maschinelles lernen', 'deep learning',
+                'llm', 'sprachmodell', 'transformer', 'neural', 'neuronal',
+                'chatbot', 'bot', 'assistent', 'assistant',
+                'prompt', 'prompting', 'fine-tuning', 'finetuning', 'training',
+                'halluzination', 'hallucination', 'alignment', 'rlhf',
+                'text-to-image', 'image-to-text', 'text-to-video', 'multimodal',
+                'embedding', 'vector', 'rag', 'retrieval',
+            ],
+            'security' => [
+                // Threats
+                'malware', 'ransomware', 'spyware', 'adware', 'trojaner', 'trojan', 'wurm', 'worm',
+                'virus', 'phishing', 'spam', 'scam', 'betrug', 'fraud',
+                'botnet', 'ddos', 'dos-angriff', 'brute force', 'keylogger',
+                // Vulnerabilities
+                'sicherheitslücke', 'schwachstelle', 'vulnerability', 'exploit', 'zero-day', 'cve-',
+                'bug bounty', 'penetration test', 'pentest', 'audit',
+                // Protection
+                'firewall', 'antivirus', 'virenscanner', 'vpn', 'proxy', 'tor',
+                'verschlüsselung', 'encryption', 'ssl', 'tls', 'https', 'e2e', 'end-to-end',
+                'passwort', 'password', 'passkey', 'biometrie', 'biometric',
+                'authentifizierung', 'authentication', '2fa', 'mfa', 'totp',
+                // Privacy
+                'datenschutz', 'privacy', 'dsgvo', 'gdpr', 'tracking', 'cookie', 'fingerprint',
+                // Events
+                'hack', 'hacker', 'hackerangriff', 'cyberangriff', 'cyberattack', 'angriff',
+                'datenleck', 'data breach', 'leak', 'gehackt', 'kompromittiert',
+                // Organizations
+                'bsi', 'cert', 'cisa', 'nsa', 'bka', 'interpol',
+                'kaspersky', 'norton', 'mcafee', 'bitdefender', 'avast',
+            ],
+            'hardware' => [
+                // CPUs
+                'prozessor', 'cpu', 'chip', 'soc', 'apu',
+                'intel', 'core i9', 'core i7', 'core i5', 'core i3', 'xeon', 'raptor lake', 'meteor lake', 'arrow lake',
+                'amd', 'ryzen', 'threadripper', 'epyc', 'zen 4', 'zen 5',
+                'apple silicon', 'm1', 'm2', 'm3', 'm4', 'a17', 'a18',
+                'qualcomm', 'snapdragon', 'arm', 'risc-v',
+                // GPUs
+                'gpu', 'grafikkarte', 'graphics card', 'grafikchip',
+                'nvidia', 'geforce', 'rtx', 'gtx', 'quadro', 'tesla',
+                'radeon', 'rx 7900', 'rx 7800', 'rx 7600', 'rdna',
+                'intel arc', 'xe',
+                // Memory & Storage
+                'ram', 'arbeitsspeicher', 'speicher', 'ddr4', 'ddr5', 'lpddr',
+                'ssd', 'nvme', 'pcie', 'festplatte', 'hdd', 'nas', 'raid',
+                'sd-karte', 'usb-stick', 'externe festplatte',
+                // Mainboard & PSU
+                'mainboard', 'motherboard', 'sockel', 'socket', 'bios', 'uefi',
+                'netzteil', 'power supply', 'psu', 'watt',
+                // Cooling
+                'kühler', 'cooler', 'lüfter', 'fan', 'wasserkühlung', 'aio', 'radiator',
+                // Display
+                'monitor', 'display', 'bildschirm', 'screen', 'panel',
+                'oled', 'lcd', 'ips', 'va', 'tn', 'mini-led', 'micro-led',
+                '4k', '8k', '1440p', 'qhd', 'ultrawide', '144hz', '240hz', '360hz',
+                'hdr', 'freesync', 'g-sync', 'vrr',
+                // Peripherals
+                'tastatur', 'keyboard', 'mechanisch', 'mechanical',
+                'maus', 'mouse', 'gaming maus', 'gaming mouse',
+                'headset', 'kopfhörer', 'mikrofon', 'webcam',
+                // General
+                'benchmark', 'test', 'review', 'vergleich', 'comparison',
+                'übertakten', 'overclocking', 'undervolt',
+                'gehäuse', 'case', 'pc-bau', 'build', 'zusammenbau',
+            ],
+            'mobile' => [
+                // Devices
+                'smartphone', 'handy', 'mobiltelefon', 'tablet', 'phablet',
+                'smartwatch', 'wearable', 'fitness tracker', 'smart ring',
+                'earbuds', 'airpods', 'kopfhörer', 'true wireless',
+                // Apple
+                'iphone', 'ipad', 'apple watch', 'ios', 'ipados', 'watchos',
+                'airpods', 'magsafe', 'lightning', 'airdrop', 'facetime',
+                // Android
+                'android', 'samsung', 'galaxy', 'pixel', 'oneplus', 'xiaomi', 'oppo', 'vivo',
+                'huawei', 'honor', 'motorola', 'nothing phone', 'fairphone',
+                'wear os', 'one ui', 'miui', 'coloros', 'oxygenos',
+                // Features
+                'kamera', 'camera', 'megapixel', 'mp', 'zoom', 'nachtmodus',
+                'akku', 'battery', 'schnellladen', 'fast charging', 'wireless charging',
+                'display', 'amoled', 'ltpo', 'always-on',
+                '5g', 'lte', 'mobilfunk', 'esim', 'dual-sim',
+                // Stores
+                'app store', 'play store', 'google play', 'apk',
+            ],
+            'dev' => [
+                // Languages
+                'javascript', 'typescript', 'python', 'java', 'kotlin', 'swift', 'objective-c',
+                'rust', 'golang', 'c++', 'c#', 'php', 'ruby', 'perl', 'scala', 'elixir',
+                'html', 'css', 'sql', 'graphql', 'webassembly', 'wasm',
+                // Frameworks
+                'react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt', 'remix', 'astro',
+                'node.js', 'nodejs', 'deno', 'bun', 'express', 'fastify',
+                'django', 'flask', 'fastapi', 'spring', 'laravel', 'rails',
+                'flutter', 'react native', 'ionic', 'electron', 'tauri',
+                '.net', 'dotnet', 'blazor', 'maui',
+                // Tools
+                'git', 'github', 'gitlab', 'bitbucket', 'svn',
+                'docker', 'kubernetes', 'k8s', 'podman', 'container',
+                'jenkins', 'circleci', 'github actions', 'gitlab ci', 'ci/cd', 'devops',
+                'terraform', 'ansible', 'puppet', 'chef',
+                'npm', 'yarn', 'pnpm', 'pip', 'cargo', 'maven', 'gradle',
+                // IDEs
+                'ide', 'visual studio', 'vscode', 'vs code', 'intellij', 'jetbrains',
+                'webstorm', 'pycharm', 'android studio', 'xcode', 'neovim', 'vim',
+                // Concepts
+                'api', 'rest', 'graphql', 'webhook', 'microservice', 'serverless',
+                'repository', 'commit', 'branch', 'merge', 'pull request', 'pr',
+                'bug', 'debug', 'testing', 'unit test', 'integration test',
+                'agile', 'scrum', 'kanban', 'sprint',
+                'open source', 'opensource', 'oss', 'lizenz', 'license',
+                'programmier', 'developer', 'entwickler', 'coder', 'coding',
+            ],
+            'software' => [
+                // Operating Systems
+                'windows', 'microsoft windows', 'win11', 'win10',
+                'macos', 'mac os', 'osx', 'ventura', 'sonoma', 'sequoia',
+                'linux', 'ubuntu', 'debian', 'fedora', 'arch', 'manjaro', 'mint', 'pop!_os',
+                'chromeos', 'chrome os',
+                // Browsers
+                'chrome', 'chromium', 'firefox', 'safari', 'edge', 'opera', 'vivaldi', 'brave',
+                'browser', 'webseite', 'website', 'erweiterung', 'extension', 'addon',
+                // Office
+                'office', 'word', 'excel', 'powerpoint', 'outlook', 'teams',
+                'google docs', 'google sheets', 'notion', 'obsidian', 'evernote',
+                'libreoffice', 'openoffice',
+                // Creative
+                'photoshop', 'illustrator', 'premiere', 'after effects', 'lightroom',
+                'adobe', 'creative cloud', 'cc', 'affinity', 'gimp', 'inkscape',
+                'figma', 'sketch', 'canva', 'blender', 'unity', 'unreal engine',
+                'davinci resolve', 'final cut', 'audacity', 'ableton', 'fl studio',
+                // Utilities
+                'app', 'anwendung', 'programm', 'software', 'tool', 'utility',
+                'update', 'patch', 'version', 'release', 'download', 'installer',
+                'freeware', 'shareware', 'open source',
+            ],
+            'science' => [
+                // Space
+                'weltraum', 'space', 'all', 'kosmos', 'universum', 'universe',
+                'nasa', 'esa', 'spacex', 'blue origin', 'rocket lab', 'roscosmos', 'jaxa', 'cnsa',
+                'rakete', 'rocket', 'starship', 'falcon', 'ariane', 'sls', 'new glenn',
+                'satellit', 'satellite', 'starlink', 'iss', 'raumstation', 'space station',
+                'mars', 'mond', 'moon', 'venus', 'jupiter', 'saturn', 'asteroid',
+                'teleskop', 'telescope', 'james webb', 'jwst', 'hubble', 'euclid',
+                'astronomie', 'astronomy', 'kosmologie', 'cosmology',
+                'schwarzes loch', 'black hole', 'supernova', 'exoplanet',
+                // Physics & Chemistry
+                'physik', 'physics', 'chemie', 'chemistry',
+                'quanten', 'quantum', 'teilchen', 'particle', 'atom', 'elektron', 'photon',
+                'cern', 'lhc', 'teilchenbeschleuniger', 'collider', 'fusion',
+                // Biology & Medicine
+                'biologie', 'biology', 'genetik', 'genetics', 'dna', 'rna', 'genom', 'genome',
+                'crispr', 'gentherapie', 'gene therapy', 'stammzellen', 'stem cell',
+                'medizin', 'medicine', 'klinisch', 'clinical', 'studie', 'study',
+                'impfstoff', 'vaccine', 'therapie', 'therapy', 'behandlung', 'treatment',
+                // Environment
+                'klima', 'climate', 'klimawandel', 'erderwärmung', 'global warming',
+                'umwelt', 'environment', 'nachhaltigkeit', 'sustainability',
+                'erneuerbar', 'renewable', 'solar', 'wind', 'wasserstoff', 'hydrogen',
+                'co2', 'emission', 'treibhausgas', 'greenhouse',
+                // General
+                'wissenschaft', 'science', 'forschung', 'research', 'forscher', 'researcher',
+                'experiment', 'labor', 'laboratory', 'entdeckung', 'discovery',
+                'nobelpreis', 'nobel prize',
+            ],
+            'entertainment' => [
+                // Film & TV
+                'film', 'movie', 'kino', 'cinema', 'blockbuster', 'box office',
+                'serie', 'series', 'staffel', 'season', 'episode', 'folge',
+                'trailer', 'teaser', 'premier', 'premiere', 'release',
+                // Streaming
+                'netflix', 'amazon prime', 'prime video', 'disney+', 'disney plus',
+                'apple tv', 'hbo max', 'max', 'paramount+', 'peacock', 'hulu',
+                'crunchyroll', 'anime', 'manga',
+                'streaming', 'stream', 'binge', 'on demand',
+                // Music
+                'musik', 'music', 'song', 'album', 'single', 'track',
+                'spotify', 'apple music', 'tidal', 'deezer', 'soundcloud',
+                'konzert', 'concert', 'tour', 'festival', 'live',
+                'künstler', 'artist', 'band', 'sänger', 'singer', 'rapper',
+                'grammy', 'mtv', 'billboard', 'charts',
+                // Social Media
+                'youtube', 'tiktok', 'instagram', 'facebook', 'twitter', 'x.com',
+                'reddit', 'discord', 'snapchat', 'threads', 'bluesky', 'mastodon',
+                'social media', 'soziale medien', 'creator', 'influencer', 'viral',
+                // Celebrities
+                'promi', 'celebrity', 'star', 'hollywood', 'oscar', 'emmy', 'golden globe',
+            ],
+            'business' => [
+                // Companies
+                'unternehmen', 'company', 'firma', 'konzern', 'corporation', 'inc', 'gmbh', 'ag',
+                'startup', 'start-up', 'gründer', 'founder', 'gründung',
+                // People
+                'ceo', 'cto', 'cfo', 'geschäftsführer', 'vorstand', 'board',
+                'manager', 'director', 'executive',
+                // Finance
+                'aktie', 'stock', 'share', 'börse', 'stock market', 'nasdaq', 'dax', 'dow jones',
+                'investor', 'investment', 'investition', 'venture capital', 'vc',
+                'ipo', 'börsengang', 'bewertung', 'valuation', 'unicorn',
+                // Business Events
+                'übernahme', 'acquisition', 'merger', 'fusion', 'aufkauf',
+                'partnerschaft', 'partnership', 'kooperation', 'cooperation',
+                'entlassung', 'layoff', 'stellenabbau', 'restrukturierung',
+                // Financials
+                'umsatz', 'revenue', 'gewinn', 'profit', 'verlust', 'loss', 'marge', 'margin',
+                'quartal', 'quarter', 'bilanz', 'earnings', 'jahresbericht', 'annual report',
+                'prognose', 'forecast', 'guidance', 'ausblick', 'outlook',
+                // Markets
+                'markt', 'market', 'marktanteil', 'market share', 'wettbewerb', 'competition',
+                'branche', 'industry', 'sektor', 'sector',
+            ],
+            'tech' => [
+                // General tech
+                'technologie', 'technology', 'tech', 'digital', 'innovation', 'trend',
+                // Internet & Network
+                'internet', 'web', 'online', 'cloud', 'saas', 'paas', 'iaas',
+                'server', 'hosting', 'datacenter', 'rechenzentrum',
+                'netzwerk', 'network', 'router', 'switch', 'ethernet',
+                'wlan', 'wifi', 'bluetooth', 'zigbee', 'matter',
+                // Smart Home & IoT
+                'smart home', 'smarthome', 'hausautomation', 'home automation',
+                'iot', 'internet of things', 'sensor', 'alexa', 'google home', 'siri',
+                'smart speaker', 'smart display', 'smart tv',
+                // Gadgets
+                'gadget', 'gerät', 'device', 'zubehör', 'accessory',
+                'vr', 'virtual reality', 'ar', 'augmented reality', 'mixed reality', 'xr',
+                'drohne', 'drone', 'roboter', 'robot', '3d-drucker', '3d printer',
+                // Energy
+                'elektro', 'electric', 'e-auto', 'elektroauto', 'ev',
+                'akku', 'batterie', 'battery', 'laden', 'charging', 'ladestation',
+                'solar', 'photovoltaik', 'balkonkraftwerk',
+                // Big Tech
+                'apple', 'google', 'microsoft', 'amazon', 'meta', 'facebook',
+                'alphabet', 'tesla', 'nvidia', 'intel', 'amd', 'qualcomm',
+                'samsung', 'sony', 'lg', 'huawei', 'xiaomi', 'lenovo', 'dell', 'hp', 'asus',
+            ],
+        ];
+
+        // Check single keywords
         foreach ($categoryKeywords as $category => $keywords) {
-            $score = 0;
             foreach ($keywords as $keyword) {
                 if (mb_strpos($text, $keyword) !== false) {
-                    // Title matches count more
-                    if (mb_strpos(mb_strtolower($title), $keyword) !== false) {
-                        $score += 3;
+                    // Title matches worth more
+                    if (mb_strpos($titleLower, $keyword) !== false) {
+                        $scores[$category] = ($scores[$category] ?? 0) + 3;
                     } else {
-                        $score += 1;
+                        $scores[$category] = ($scores[$category] ?? 0) + 1;
                     }
                 }
             }
-            if ($score > 0) {
-                $scores[$category] = $score;
-            }
+        }
+
+        // Apply category boost based on feed category (slight hint, not override)
+        if (!empty($feedCategory) && isset($scores[$feedCategory])) {
+            $scores[$feedCategory] += 2;
         }
 
         // If we found matching keywords, return the highest scoring category
         if (!empty($scores)) {
             arsort($scores);
-            return array_key_first($scores);
+            $topCategory = array_key_first($scores);
+            $topScore = $scores[$topCategory];
+
+            // Only return if score is meaningful (at least 2 matches or 1 strong match)
+            if ($topScore >= 3) {
+                return $topCategory;
+            }
         }
 
         // Fallback to feed category if valid

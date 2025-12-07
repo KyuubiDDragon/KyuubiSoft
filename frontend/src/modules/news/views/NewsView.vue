@@ -225,9 +225,13 @@ async function addFeed() {
   }
 }
 
-function openArticle(item) {
+async function openArticle(item) {
   markAsRead(item)
   selectedArticle.value = item
+  // Fetch full content if not cached
+  if (!fullContentCache.value[item.id]) {
+    await fetchFullContent(item)
+  }
 }
 
 function openExternalLink(url) {
@@ -812,9 +816,28 @@ onMounted(async () => {
               </span>
             </div>
 
+            <!-- Loading indicator -->
+            <div v-if="isLoadingContent(selectedArticle)" class="flex items-center justify-center py-8">
+              <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              <span class="ml-3 text-gray-400">Lade vollständigen Artikel...</span>
+            </div>
+
             <div
-              class="prose prose-invert max-w-none"
-              v-html="selectedArticle.content || selectedArticle.description"
+              v-else
+              class="prose prose-invert max-w-none text-gray-300
+                     prose-headings:text-white prose-headings:font-semibold prose-headings:mt-6 prose-headings:mb-4
+                     prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                     prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-4
+                     prose-a:text-primary-400 prose-a:no-underline hover:prose-a:underline
+                     prose-strong:text-white prose-em:text-gray-200
+                     prose-ul:text-gray-300 prose-ul:my-4 prose-ul:pl-6
+                     prose-ol:text-gray-300 prose-ol:my-4 prose-ol:pl-6
+                     prose-li:mb-2 prose-li:leading-relaxed
+                     prose-blockquote:border-l-4 prose-blockquote:border-primary-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-400
+                     prose-code:text-primary-300 prose-code:bg-dark-700 prose-code:px-1 prose-code:rounded
+                     prose-pre:bg-dark-900 prose-pre:p-4 prose-pre:rounded-lg
+                     prose-img:rounded-lg prose-img:my-4"
+              v-html="getFullContent(selectedArticle)"
             ></div>
           </div>
 

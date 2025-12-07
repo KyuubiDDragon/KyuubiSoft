@@ -18,6 +18,8 @@ import {
   ClockIcon,
   FunnelIcon,
   Cog6ToothIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
 } from '@heroicons/vue/24/outline'
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
@@ -51,6 +53,9 @@ const newFeedForm = ref({
 
 // Article modal
 const selectedArticle = ref(null)
+
+// View mode
+const viewMode = ref('grid') // 'grid' or 'list'
 
 // Category icons
 const categoryIcons = {
@@ -220,9 +225,20 @@ function formatDate(dateStr) {
   })
 }
 
-function stripHtml(html) {
+function stripHtml(html, maxLength = 500) {
   if (!html) return ''
-  return html.replace(/<[^>]*>/g, '').substring(0, 200)
+  // Remove HTML tags and decode common entities
+  let text = html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
 // Watch filters
@@ -326,6 +342,24 @@ onMounted(async () => {
         <BookmarkIcon class="w-4 h-4" />
         Gespeichert
       </button>
+
+      <!-- View Toggle -->
+      <div class="flex items-center gap-1 ml-2 bg-dark-800 rounded-lg p-1">
+        <button
+          @click="viewMode = 'grid'"
+          class="p-1.5 rounded transition-colors"
+          :class="viewMode === 'grid' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+        >
+          <Squares2X2Icon class="w-4 h-4" />
+        </button>
+        <button
+          @click="viewMode = 'list'"
+          class="p-1.5 rounded transition-colors"
+          :class="viewMode === 'list' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+        >
+          <ListBulletIcon class="w-4 h-4" />
+        </button>
+      </div>
     </div>
 
     <!-- No Subscriptions -->
@@ -344,8 +378,8 @@ onMounted(async () => {
       <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <!-- News Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- News Grid View -->
+    <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div
         v-for="item in newsItems"
         :key="item.id"
@@ -375,7 +409,7 @@ onMounted(async () => {
             </button>
           </div>
 
-          <p class="text-sm text-gray-400 line-clamp-2">
+          <p class="text-sm text-gray-400 line-clamp-3">
             {{ stripHtml(item.description) }}
           </p>
 
@@ -387,6 +421,57 @@ onMounted(async () => {
             <div class="flex items-center gap-1">
               <ClockIcon class="w-3.5 h-3.5" />
               {{ formatDate(item.published_at) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- News List View -->
+    <div v-else class="space-y-4">
+      <div
+        v-for="item in newsItems"
+        :key="item.id"
+        @click="openArticle(item)"
+        class="card-hover p-5 cursor-pointer group"
+        :class="{ 'opacity-60': item.is_read == 1 }"
+      >
+        <div class="flex gap-5">
+          <!-- Image (optional) -->
+          <div v-if="item.image_url" class="flex-shrink-0 w-48 h-32 rounded-lg overflow-hidden">
+            <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-2">
+              <h3 class="text-lg font-semibold text-white group-hover:text-primary-400 transition-colors">
+                {{ item.title }}
+              </h3>
+              <button
+                @click.stop="toggleSaved(item)"
+                class="p-1.5 rounded hover:bg-dark-600 flex-shrink-0"
+                :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
+              >
+                <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
+                <BookmarkIcon v-else class="w-5 h-5" />
+              </button>
+            </div>
+
+            <p class="text-gray-400 mb-3 line-clamp-4">
+              {{ stripHtml(item.description || item.content) }}
+            </p>
+
+            <div class="flex items-center gap-4 text-sm text-gray-500">
+              <div class="flex items-center gap-2">
+                <component :is="categoryIcons[item.feed_category]" class="w-4 h-4" />
+                <span>{{ item.feed_name }}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <ClockIcon class="w-4 h-4" />
+                {{ formatDate(item.published_at) }}
+              </div>
+              <span v-if="item.author" class="text-gray-600">{{ item.author }}</span>
             </div>
           </div>
         </div>

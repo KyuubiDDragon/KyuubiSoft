@@ -11,8 +11,16 @@ import Placeholder from '@tiptap/extension-placeholder'
 import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import Highlight from '@tiptap/extension-highlight'
+import Subscript from '@tiptap/extension-subscript'
+import Superscript from '@tiptap/extension-superscript'
 import { common, createLowlight } from 'lowlight'
-import { watch, onBeforeUnmount } from 'vue'
+import { watch, onBeforeUnmount, ref } from 'vue'
+
+const showCodeView = ref(false)
+const htmlCode = ref('')
 
 const props = defineProps({
   modelValue: {
@@ -85,6 +93,22 @@ const editor = useEditor({
         class: 'bg-dark-700 rounded-lg p-4 my-2 overflow-x-auto',
       },
     }),
+    TaskList.configure({
+      HTMLAttributes: {
+        class: 'task-list',
+      },
+    }),
+    TaskItem.configure({
+      nested: true,
+      HTMLAttributes: {
+        class: 'task-item',
+      },
+    }),
+    Highlight.configure({
+      multicolor: true,
+    }),
+    Subscript,
+    Superscript,
   ],
   onUpdate: () => {
     emit('update:modelValue', editor.value.getHTML())
@@ -129,6 +153,23 @@ function addImage() {
 
 function insertTable() {
   editor.value.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+}
+
+function toggleCodeView() {
+  if (showCodeView.value) {
+    // Switching from code view to visual view - apply changes
+    editor.value.commands.setContent(htmlCode.value, false)
+    emit('update:modelValue', htmlCode.value)
+  } else {
+    // Switching from visual to code view - get current HTML
+    htmlCode.value = editor.value.getHTML()
+  }
+  showCodeView.value = !showCodeView.value
+}
+
+function onCodeChange(event) {
+  htmlCode.value = event.target.value
+  emit('update:modelValue', htmlCode.value)
 }
 </script>
 
@@ -230,6 +271,16 @@ function insertTable() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
           </svg>
         </button>
+        <button
+          @click="editor.chain().focus().toggleTaskList().run()"
+          :class="{ 'bg-dark-500': editor.isActive('taskList') }"
+          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          title="Checkliste"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Alignment -->
@@ -297,6 +348,32 @@ function insertTable() {
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
           </svg>
+        </button>
+        <button
+          @click="editor.chain().focus().toggleHighlight().run()"
+          :class="{ 'bg-dark-500': editor.isActive('highlight') }"
+          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          title="Markieren"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+        </button>
+        <button
+          @click="editor.chain().focus().toggleSubscript().run()"
+          :class="{ 'bg-dark-500': editor.isActive('subscript') }"
+          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          title="Tiefgestellt (z.B. H₂O)"
+        >
+          X₂
+        </button>
+        <button
+          @click="editor.chain().focus().toggleSuperscript().run()"
+          :class="{ 'bg-dark-500': editor.isActive('superscript') }"
+          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          title="Hochgestellt (z.B. E=mc²)"
+        >
+          X²
         </button>
       </div>
 
@@ -373,7 +450,7 @@ function insertTable() {
       </div>
 
       <!-- Undo/Redo -->
-      <div class="flex gap-1">
+      <div class="flex gap-1 pr-2 border-r border-dark-600">
         <button
           @click="editor.chain().focus().undo().run()"
           :disabled="!editor.can().undo()"
@@ -395,15 +472,47 @@ function insertTable() {
           </svg>
         </button>
       </div>
+
+      <!-- Code View Toggle -->
+      <div class="flex gap-1 ml-auto">
+        <button
+          @click="toggleCodeView"
+          :class="{ 'bg-primary-600 text-white': showCodeView }"
+          class="p-2 hover:bg-dark-600 rounded transition-colors flex items-center gap-1"
+          title="HTML-Code bearbeiten"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+          </svg>
+          <span class="text-xs">{{ showCodeView ? 'Visual' : 'HTML' }}</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Editor Content -->
+    <!-- Editor Content (Visual Mode) -->
     <EditorContent
+      v-show="!showCodeView"
       :editor="editor"
       class="tiptap-content flex-1 overflow-hidden"
       :class="editable ? 'border-x border-b border-dark-600 rounded-b-lg' : 'border border-dark-600 rounded-lg'"
       :style="{ minHeight: props.minHeight }"
     />
+
+    <!-- Code Editor (HTML Mode) -->
+    <div
+      v-show="showCodeView"
+      class="flex-1 border-x border-b border-dark-600 rounded-b-lg overflow-hidden"
+      :style="{ minHeight: props.minHeight }"
+    >
+      <textarea
+        :value="htmlCode"
+        @input="onCodeChange"
+        class="w-full h-full p-4 bg-dark-900 text-green-400 font-mono text-sm resize-none focus:outline-none"
+        :style="{ minHeight: props.minHeight }"
+        placeholder="HTML-Code hier bearbeiten..."
+        spellcheck="false"
+      ></textarea>
+    </div>
   </div>
 </template>
 
@@ -490,5 +599,48 @@ function insertTable() {
 
 .tiptap-content .ProseMirror .selectedCell {
   @apply bg-primary-600/20;
+}
+
+/* Task List (Checkboxes) */
+.tiptap-content .ProseMirror ul[data-type="taskList"] {
+  @apply list-none ml-0 pl-0;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li {
+  @apply flex items-start gap-2 mb-2;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label {
+  @apply flex items-center justify-center w-5 h-5 mt-0.5 flex-shrink-0;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  @apply w-4 h-4 rounded border-2 border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  @apply bg-primary-600 border-primary-600;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li > div {
+  @apply flex-1;
+}
+
+.tiptap-content .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  @apply line-through text-gray-500;
+}
+
+/* Highlight */
+.tiptap-content .ProseMirror mark {
+  @apply bg-yellow-500/40 px-0.5 rounded;
+}
+
+/* Subscript/Superscript */
+.tiptap-content .ProseMirror sub {
+  @apply text-xs;
+}
+
+.tiptap-content .ProseMirror sup {
+  @apply text-xs;
 }
 </style>

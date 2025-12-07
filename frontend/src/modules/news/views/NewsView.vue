@@ -106,14 +106,35 @@ async function loadNews() {
   }
 }
 
-async function refreshFeeds() {
+async function refreshFeeds(silent = false) {
   isRefreshing.value = true
   try {
-    await api.post('/api/v1/news/refresh')
+    const response = await api.post('/api/v1/news/refresh')
+    const results = response.data.data.results || {}
     await loadNews()
-    uiStore.showSuccess('Feeds aktualisiert')
+
+    if (!silent) {
+      // Count successes and failures
+      const entries = Object.entries(results)
+      const successes = entries.filter(([_, r]) => r.success).length
+      const failures = entries.filter(([_, r]) => !r.success)
+      const totalNew = entries.reduce((sum, [_, r]) => sum + (r.new_items || 0), 0)
+
+      if (failures.length > 0) {
+        const failedNames = failures.map(([name, r]) => `${name}: ${r.error}`).join(', ')
+        uiStore.showError(`Fehler bei: ${failedNames}`)
+      } else if (totalNew > 0) {
+        uiStore.showSuccess(`${totalNew} neue Artikel geladen`)
+      } else if (successes > 0) {
+        uiStore.showSuccess('Feeds aktualisiert, keine neuen Artikel')
+      } else {
+        uiStore.showSuccess('Keine Feeds zum Aktualisieren')
+      }
+    }
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    if (!silent) {
+      uiStore.showError('Fehler beim Aktualisieren: ' + (error.response?.data?.message || error.message))
+    }
   } finally {
     isRefreshing.value = false
   }
@@ -213,6 +234,11 @@ watch([selectedCategory, selectedFeed, showOnlySaved, showOnlyUnread], () => {
 onMounted(async () => {
   await loadFeeds()
   await loadNews()
+
+  // Auto-fetch if no items and there are subscribed feeds
+  if (newsItems.value.length === 0 && subscribedFeeds.value.length > 0) {
+    await refreshFeeds(false) // Show feedback for initial load
+  }
 })
 </script>
 

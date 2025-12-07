@@ -34,6 +34,7 @@ import {
   CubeIcon,
   TicketIcon,
   TagIcon,
+  NewspaperIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -121,6 +122,7 @@ const allNavigationGroups = [
       { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
+      { name: 'News', href: '/news', icon: NewspaperIcon },
     ],
   },
 

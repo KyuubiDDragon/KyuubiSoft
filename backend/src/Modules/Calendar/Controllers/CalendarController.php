@@ -45,7 +45,7 @@ class CalendarController
             $events = array_merge($events, $customEvents);
         }
 
-        // Kanban due dates
+        // Kanban due dates (exclude cards in completed columns)
         if (in_array('kanban', $sources)) {
             $kanbanDue = $this->db->fetchAllAssociative(
                 "SELECT kc.id, kc.title, NULL as description, kc.due_date as start_date, NULL as end_date,
@@ -53,7 +53,8 @@ class CalendarController
                  FROM kanban_cards kc
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
-                 WHERE kb.user_id = ? AND kc.due_date >= ? AND kc.due_date <= ?",
+                 WHERE kb.user_id = ? AND kc.due_date >= ? AND kc.due_date <= ?
+                       AND (col.is_completed = 0 OR col.is_completed IS NULL)",
                 [$userId, $start, $end]
             );
             $events = array_merge($events, $kanbanDue);
@@ -213,13 +214,14 @@ class CalendarController
         );
         $events = array_merge($events, $customEvents);
 
-        // Kanban due dates
+        // Kanban due dates (exclude cards in completed columns)
         $kanbanDue = $this->db->fetchAllAssociative(
             "SELECT kc.id, kc.title, kc.due_date as start_date, 'kanban' as type, COALESCE(kc.color, 'orange') as color
              FROM kanban_cards kc
              JOIN kanban_columns col ON kc.column_id = col.id
              JOIN kanban_boards kb ON col.board_id = kb.id
              WHERE kb.user_id = ? AND kc.due_date >= CURDATE() AND kc.due_date <= ?
+                   AND (col.is_completed = 0 OR col.is_completed IS NULL)
              ORDER BY kc.due_date
              LIMIT 20",
             [$userId, $endDate]

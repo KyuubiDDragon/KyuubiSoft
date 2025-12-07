@@ -39,6 +39,7 @@ use App\Modules\Docker\Controllers\DockerController;
 use App\Modules\Tickets\Controllers\TicketController;
 use App\Modules\Tickets\Controllers\TicketCategoryController;
 use App\Modules\Setup\Controllers\SetupController;
+use App\Modules\News\Controllers\NewsController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -441,6 +442,19 @@ class Router
                 $protected->put('/calendar/external/{id}', [ExternalCalendarController::class, 'update']);
                 $protected->delete('/calendar/external/{id}', [ExternalCalendarController::class, 'delete']);
                 $protected->post('/calendar/external/{id}/sync', [ExternalCalendarController::class, 'sync']);
+
+                // News/RSS Feeds
+                $protected->get('/news/feeds', [NewsController::class, 'getFeeds']);
+                $protected->get('/news/subscriptions', [NewsController::class, 'getSubscriptions']);
+                $protected->post('/news/feeds/{feedId}/subscribe', [NewsController::class, 'subscribe']);
+                $protected->delete('/news/feeds/{feedId}/subscribe', [NewsController::class, 'unsubscribe']);
+                $protected->get('/news', [NewsController::class, 'getNews']);
+                $protected->post('/news/items/{itemId}/read', [NewsController::class, 'markAsRead']);
+                $protected->post('/news/items/{itemId}/save', [NewsController::class, 'toggleSaved']);
+                $protected->post('/news/refresh', [NewsController::class, 'refreshFeeds']);
+                $protected->post('/news/feeds', [NewsController::class, 'addFeed']);
+                $protected->delete('/news/feeds/{feedId}', [NewsController::class, 'deleteFeed']);
+                $protected->get('/news/unread-count', [NewsController::class, 'getUnreadCount']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);

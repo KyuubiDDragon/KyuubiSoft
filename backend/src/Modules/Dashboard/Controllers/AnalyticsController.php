@@ -355,12 +355,13 @@ class AnalyticsController
                 [$userId, $projectId]
             );
 
+            // Count only cards NOT in completed columns
             $kanbanCards = (int) $this->db->fetchOne(
                 "SELECT COUNT(*) FROM kanban_cards kc
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
                  INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = 'kanban_board'
-                 WHERE kb.user_id = ? AND pl.project_id = ?",
+                 WHERE kb.user_id = ? AND pl.project_id = ? AND (col.is_completed = 0 OR col.is_completed IS NULL)",
                 [$userId, $projectId]
             );
         } else {
@@ -381,11 +382,12 @@ class AnalyticsController
                 [$userId]
             );
 
+            // Count only cards NOT in completed columns
             $kanbanCards = (int) $this->db->fetchOne(
                 "SELECT COUNT(*) FROM kanban_cards kc
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
-                 WHERE kb.user_id = ?",
+                 WHERE kb.user_id = ? AND (col.is_completed = 0 OR col.is_completed IS NULL)",
                 [$userId]
             );
         }
@@ -519,7 +521,8 @@ class AnalyticsController
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
                  INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = 'kanban_board'
-                 WHERE kb.user_id = ? AND kc.due_date IS NOT NULL AND kc.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY) AND pl.project_id = ?
+                 WHERE kb.user_id = ? AND kc.due_date IS NOT NULL AND kc.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+                       AND pl.project_id = ? AND (col.is_completed = 0 OR col.is_completed IS NULL)
                  ORDER BY kc.due_date ASC
                  LIMIT 5",
                 [$userId, $projectId]
@@ -541,6 +544,7 @@ class AnalyticsController
                  JOIN kanban_columns col ON kc.column_id = col.id
                  JOIN kanban_boards kb ON col.board_id = kb.id
                  WHERE kb.user_id = ? AND kc.due_date IS NOT NULL AND kc.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+                       AND (col.is_completed = 0 OR col.is_completed IS NULL)
                  ORDER BY kc.due_date ASC
                  LIMIT 5",
                 [$userId]

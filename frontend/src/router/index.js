@@ -42,6 +42,7 @@ const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategor
 const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
 const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
+const NewsView = () => import('@/modules/news/views/NewsView.vue')
 
 const routes = [
   // Auth routes
@@ -207,6 +208,12 @@ const routes = [
     path: '/calendar',
     name: 'calendar',
     component: CalendarView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/news',
+    name: 'news',
+    component: NewsView,
     meta: { requiresAuth: true },
   },
   {

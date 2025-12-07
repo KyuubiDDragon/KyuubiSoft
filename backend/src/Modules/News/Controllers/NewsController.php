@@ -469,20 +469,38 @@ class NewsController
 
     private function parseFeedUrl(string $url): array
     {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 10,
-                'user_agent' => 'KyuubiSoft News Reader/1.0',
-            ],
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
+        // Use cURL for more reliable HTTP requests
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_USERAGENT => 'KyuubiSoft News Reader/1.0 (compatible; RSS/Atom reader)',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_HTTPHEADER => [
+                'Accept: application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
             ],
         ]);
 
-        $content = @file_get_contents($url, false, $context);
-        if ($content === false) {
-            throw new \Exception('Could not fetch feed');
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($content === false || !empty($error)) {
+            throw new \Exception('Could not fetch feed: ' . ($error ?: 'Unknown error'));
+        }
+
+        if ($httpCode >= 400) {
+            throw new \Exception('Feed returned HTTP ' . $httpCode);
+        }
+
+        if (empty($content)) {
+            throw new \Exception('Feed returned empty response');
         }
 
         // Suppress XML errors

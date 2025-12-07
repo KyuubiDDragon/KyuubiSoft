@@ -14,7 +14,7 @@ import {
   ShieldCheckIcon,
   CpuChipIcon,
   FolderIcon,
-  ExternalLinkIcon,
+  ArrowTopRightOnSquareIcon,
   ClockIcon,
   FunnelIcon,
   Cog6ToothIcon,
@@ -526,7 +526,7 @@ onMounted(async () => {
                 @click="openExternalLink(selectedArticle.url)"
                 class="p-2 text-gray-400 hover:text-white rounded hover:bg-dark-600"
               >
-                <ExternalLinkIcon class="w-5 h-5" />
+                <ArrowTopRightOnSquareIcon class="w-5 h-5" />
               </button>
               <button @click="selectedArticle = null" class="p-2 text-gray-400 hover:text-white rounded hover:bg-dark-600">
                 <XMarkIcon class="w-5 h-5" />
@@ -561,7 +561,7 @@ onMounted(async () => {
           <div class="p-4 border-t border-dark-700 flex justify-between">
             <button @click="selectedArticle = null" class="btn-secondary">Schließen</button>
             <button @click="openExternalLink(selectedArticle.url)" class="btn-primary">
-              <ExternalLinkIcon class="w-5 h-5 mr-2" />
+              <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
               Originalartikel öffnen
             </button>
           </div>

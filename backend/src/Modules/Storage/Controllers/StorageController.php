@@ -24,6 +24,9 @@ class StorageController
     private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'exe', 'bat', 'cmd', 'sh', 'bash', 'com', 'scr', 'pif', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'msc', 'jar'];
     private const BLOCKED_MIME_TYPES = ['application/x-php', 'application/x-httpd-php', 'application/x-executable', 'application/x-msdos-program'];
 
+    // Virus scanning settings
+    private const VIRUS_SCAN_ENABLED = true;
+
     public function __construct(
         private readonly Connection $db
     ) {}
@@ -122,6 +125,14 @@ class StorageController
         // Move file to storage
         $filePath = self::UPLOAD_DIR . $storedFilename;
         $file->moveTo($filePath);
+
+        // Scan for viruses
+        $scanResult = $this->scanForVirus($filePath);
+        if ($scanResult !== true) {
+            // Delete infected file
+            @unlink($filePath);
+            throw new ValidationException('Datei wurde als schädlich erkannt: ' . $scanResult);
+        }
 
         // Get actual MIME type from file
         $mimeType = mime_content_type($filePath) ?: $file->getClientMediaType() ?: 'application/octet-stream';
@@ -606,6 +617,90 @@ class StorageController
         fclose($stream);
 
         return $response;
+    }
+
+    /**
+     * Scan file for viruses using ClamAV
+     * Returns true if clean, or string with virus name if infected
+     */
+    private function scanForVirus(string $filePath): bool|string
+    {
+        // Skip if virus scanning is disabled
+        if (!self::VIRUS_SCAN_ENABLED) {
+            return true;
+        }
+
+        // Try clamdscan first (faster, uses daemon)
+        $clamdscan = $this->findExecutable(['clamdscan', '/usr/bin/clamdscan', '/usr/local/bin/clamdscan']);
+        if ($clamdscan) {
+            $output = [];
+            $returnCode = 0;
+            $escapedPath = escapeshellarg($filePath);
+
+            exec("{$clamdscan} --no-summary --stdout {$escapedPath} 2>&1", $output, $returnCode);
+
+            // Return codes: 0 = clean, 1 = virus found, 2 = error
+            if ($returnCode === 0) {
+                return true;
+            }
+
+            if ($returnCode === 1) {
+                // Extract virus name from output
+                $outputStr = implode(' ', $output);
+                if (preg_match('/: (.+) FOUND/', $outputStr, $matches)) {
+                    return $matches[1];
+                }
+                return 'Unbekannter Virus';
+            }
+
+            // Error with clamdscan (maybe daemon not running), try clamscan
+        }
+
+        // Fallback to clamscan (slower, standalone)
+        $clamscan = $this->findExecutable(['clamscan', '/usr/bin/clamscan', '/usr/local/bin/clamscan']);
+        if ($clamscan) {
+            $output = [];
+            $returnCode = 0;
+            $escapedPath = escapeshellarg($filePath);
+
+            exec("{$clamscan} --no-summary --stdout {$escapedPath} 2>&1", $output, $returnCode);
+
+            if ($returnCode === 0) {
+                return true;
+            }
+
+            if ($returnCode === 1) {
+                $outputStr = implode(' ', $output);
+                if (preg_match('/: (.+) FOUND/', $outputStr, $matches)) {
+                    return $matches[1];
+                }
+                return 'Unbekannter Virus';
+            }
+        }
+
+        // ClamAV not available - log warning and allow upload
+        // In production, you might want to reject uploads if ClamAV is not available
+        error_log('ClamAV not available for virus scanning - file upload allowed without scan: ' . $filePath);
+        return true;
+    }
+
+    /**
+     * Find executable in common paths
+     */
+    private function findExecutable(array $paths): ?string
+    {
+        foreach ($paths as $path) {
+            // If it's just a command name, try to find it in PATH
+            if (!str_contains($path, '/')) {
+                $result = shell_exec("which {$path} 2>/dev/null");
+                if ($result) {
+                    return trim($result);
+                }
+            } elseif (file_exists($path) && is_executable($path)) {
+                return $path;
+            }
+        }
+        return null;
     }
 
     /**

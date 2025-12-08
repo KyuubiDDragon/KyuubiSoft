@@ -166,6 +166,9 @@ class StorageController
      */
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $logFile = __DIR__ . '/../../../../storage/logs/storage-debug.log';
+        file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "show() called with id: " . ($args['id'] ?? 'none') . ", path: " . $request->getUri()->getPath() . "\n", FILE_APPEND);
+
         $userId = $request->getAttribute('user_id');
         $fileId = $args['id'];
 

@@ -1,0 +1,677 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import {
+  CloudArrowUpIcon,
+  DocumentIcon,
+  PhotoIcon,
+  FilmIcon,
+  MusicalNoteIcon,
+  ArchiveBoxIcon,
+  DocumentTextIcon,
+  TrashIcon,
+  ArrowDownTrayIcon,
+  ShareIcon,
+  PencilIcon,
+  XMarkIcon,
+  ClipboardDocumentIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  CheckIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/vue/24/outline'
+import api from '@/core/api/axios'
+import { useUiStore } from '@/stores/ui'
+
+const uiStore = useUiStore()
+
+// State
+const files = ref([])
+const isLoading = ref(true)
+const isDragging = ref(false)
+const isUploading = ref(false)
+const uploadProgress = ref(0)
+const searchQuery = ref('')
+const stats = ref({ total_files: 0, total_size: 0, active_shares: 0, total_downloads: 0 })
+
+// Share Modal State
+const showShareModal = ref(false)
+const selectedFile = ref(null)
+const shareData = ref(null)
+const shareForm = ref({
+  password: '',
+  max_downloads: null,
+  expires_at: '',
+})
+const showPassword = ref(false)
+const isShareLoading = ref(false)
+const linkCopied = ref(false)
+
+// Rename Modal State
+const showRenameModal = ref(false)
+const renameForm = ref({ name: '' })
+
+// File input ref
+const fileInput = ref(null)
+
+// Computed
+const filteredFiles = computed(() => {
+  if (!searchQuery.value) return files.value
+  const query = searchQuery.value.toLowerCase()
+  return files.value.filter(f =>
+    f.name.toLowerCase().includes(query) ||
+    f.original_filename.toLowerCase().includes(query)
+  )
+})
+
+const shareLink = computed(() => {
+  if (!shareData.value) return ''
+  return `${window.location.origin}/share/${shareData.value.share_token}`
+})
+
+// API Functions
+async function loadFiles() {
+  isLoading.value = true
+  try {
+    const response = await api.get('/api/v1/storage')
+    files.value = response.data.data.items || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Dateien')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function loadStats() {
+  try {
+    const response = await api.get('/api/v1/storage/stats')
+    stats.value = response.data.data
+  } catch (error) {
+    console.error('Error loading stats:', error)
+  }
+}
+
+async function uploadFile(file) {
+  if (!file) return
+
+  // Validate size (100MB)
+  if (file.size > 100 * 1024 * 1024) {
+    uiStore.showError('Datei zu groß (max. 100MB)')
+    return
+  }
+
+  isUploading.value = true
+  uploadProgress.value = 0
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post('/api/v1/storage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+      },
+    })
+
+    files.value.unshift(response.data.data)
+    uiStore.showSuccess('Datei erfolgreich hochgeladen')
+    loadStats()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.error || 'Upload fehlgeschlagen')
+  } finally {
+    isUploading.value = false
+    uploadProgress.value = 0
+  }
+}
+
+async function downloadFile(file) {
+  try {
+    const response = await api.get(`/api/v1/storage/${file.id}/download`, {
+      responseType: 'blob',
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', file.original_filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    uiStore.showError('Download fehlgeschlagen')
+  }
+}
+
+async function deleteFile(file) {
+  if (!confirm(`"${file.name}" wirklich löschen?`)) return
+
+  try {
+    await api.delete(`/api/v1/storage/${file.id}`)
+    files.value = files.value.filter(f => f.id !== file.id)
+    uiStore.showSuccess('Datei gelöscht')
+    loadStats()
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function openShareModal(file) {
+  selectedFile.value = file
+  showShareModal.value = true
+  isShareLoading.value = true
+  shareForm.value = { password: '', max_downloads: null, expires_at: '' }
+
+  try {
+    const response = await api.get(`/api/v1/storage/${file.id}/share`)
+    shareData.value = response.data.data
+    if (shareData.value) {
+      shareForm.value.max_downloads = shareData.value.max_downloads
+      shareForm.value.expires_at = shareData.value.expires_at
+        ? shareData.value.expires_at.slice(0, 16)
+        : ''
+    }
+  } catch (error) {
+    shareData.value = null
+  } finally {
+    isShareLoading.value = false
+  }
+}
+
+async function createOrUpdateShare() {
+  if (!selectedFile.value) return
+  isShareLoading.value = true
+
+  try {
+    const payload = {
+      password: shareForm.value.password || null,
+      max_downloads: shareForm.value.max_downloads || null,
+      expires_at: shareForm.value.expires_at || null,
+    }
+
+    const response = shareData.value
+      ? await api.put(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
+      : await api.post(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
+
+    shareData.value = response.data.data
+    uiStore.showSuccess('Freigabe gespeichert')
+
+    // Update file in list
+    const index = files.value.findIndex(f => f.id === selectedFile.value.id)
+    if (index !== -1) {
+      files.value[index].active_shares = 1
+    }
+    loadStats()
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern der Freigabe')
+  } finally {
+    isShareLoading.value = false
+  }
+}
+
+async function deleteShare() {
+  if (!selectedFile.value || !shareData.value) return
+  if (!confirm('Freigabe wirklich löschen?')) return
+
+  try {
+    await api.delete(`/api/v1/storage/${selectedFile.value.id}/share`)
+    shareData.value = null
+    uiStore.showSuccess('Freigabe gelöscht')
+
+    // Update file in list
+    const index = files.value.findIndex(f => f.id === selectedFile.value.id)
+    if (index !== -1) {
+      files.value[index].active_shares = 0
+    }
+    loadStats()
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen der Freigabe')
+  }
+}
+
+async function toggleShareActive() {
+  if (!shareData.value) return
+
+  try {
+    const response = await api.put(`/api/v1/storage/${selectedFile.value.id}/share`, {
+      is_active: !shareData.value.is_active,
+    })
+    shareData.value = response.data.data
+    uiStore.showSuccess(shareData.value.is_active ? 'Freigabe aktiviert' : 'Freigabe deaktiviert')
+  } catch (error) {
+    uiStore.showError('Fehler beim Ändern des Status')
+  }
+}
+
+function copyShareLink() {
+  if (!shareLink.value) return
+  navigator.clipboard.writeText(shareLink.value)
+  linkCopied.value = true
+  setTimeout(() => { linkCopied.value = false }, 2000)
+}
+
+function openRenameModal(file) {
+  selectedFile.value = file
+  renameForm.value.name = file.name
+  showRenameModal.value = true
+}
+
+async function renameFile() {
+  if (!selectedFile.value || !renameForm.value.name.trim()) return
+
+  try {
+    const response = await api.put(`/api/v1/storage/${selectedFile.value.id}`, {
+      name: renameForm.value.name.trim(),
+    })
+
+    const index = files.value.findIndex(f => f.id === selectedFile.value.id)
+    if (index !== -1) {
+      files.value[index] = response.data.data
+    }
+
+    showRenameModal.value = false
+    uiStore.showSuccess('Datei umbenannt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Umbenennen')
+  }
+}
+
+// Drag & Drop
+function handleDragOver(e) {
+  e.preventDefault()
+  isDragging.value = true
+}
+
+function handleDragLeave() {
+  isDragging.value = false
+}
+
+function handleDrop(e) {
+  e.preventDefault()
+  isDragging.value = false
+  const droppedFiles = e.dataTransfer.files
+  if (droppedFiles.length > 0) {
+    uploadFile(droppedFiles[0])
+  }
+}
+
+function handleFileSelect(e) {
+  const selectedFiles = e.target.files
+  if (selectedFiles.length > 0) {
+    uploadFile(selectedFiles[0])
+  }
+  e.target.value = ''
+}
+
+// Helpers
+function getFileIcon(file) {
+  const mime = file.mime_type || ''
+  if (mime.startsWith('image/')) return PhotoIcon
+  if (mime.startsWith('video/')) return FilmIcon
+  if (mime.startsWith('audio/')) return MusicalNoteIcon
+  if (mime.includes('pdf') || mime.includes('document') || mime.includes('text')) return DocumentTextIcon
+  if (mime.includes('zip') || mime.includes('archive') || mime.includes('compressed')) return ArchiveBoxIcon
+  return DocumentIcon
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// Initialize
+onMounted(() => {
+  loadFiles()
+  loadStats()
+})
+</script>
+
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Cloud Storage</h1>
+        <p class="text-gray-400 text-sm mt-1">
+          {{ stats.total_files }} Dateien · {{ formatSize(stats.total_size) }} verwendet ·
+          {{ stats.active_shares }} aktive Freigaben
+        </p>
+      </div>
+
+      <div class="flex gap-3">
+        <!-- Search -->
+        <div class="relative">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Suchen..."
+            class="pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
+        <!-- Upload Button -->
+        <button
+          @click="fileInput.click()"
+          :disabled="isUploading"
+          class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+        >
+          <CloudArrowUpIcon class="w-5 h-5" />
+          <span>Hochladen</span>
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          class="hidden"
+          @change="handleFileSelect"
+        />
+      </div>
+    </div>
+
+    <!-- Drop Zone / File List -->
+    <div
+      class="bg-dark-800 rounded-xl border-2 transition-colors"
+      :class="isDragging ? 'border-primary-500 border-dashed' : 'border-dark-700'"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <!-- Upload Progress -->
+      <div v-if="isUploading" class="p-4 border-b border-dark-700">
+        <div class="flex items-center gap-3">
+          <div class="flex-1 h-2 bg-dark-600 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary-500 transition-all duration-300"
+              :style="{ width: `${uploadProgress}%` }"
+            ></div>
+          </div>
+          <span class="text-sm text-gray-400">{{ uploadProgress }}%</span>
+        </div>
+      </div>
+
+      <!-- Drag Overlay -->
+      <div
+        v-if="isDragging"
+        class="p-12 text-center"
+      >
+        <CloudArrowUpIcon class="w-16 h-16 mx-auto text-primary-500 mb-4" />
+        <p class="text-lg text-white font-medium">Datei hier ablegen</p>
+        <p class="text-gray-400">zum Hochladen</p>
+      </div>
+
+      <!-- Loading -->
+      <div v-else-if="isLoading" class="p-12 text-center">
+        <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-gray-400 mt-4">Lade Dateien...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="files.length === 0" class="p-12 text-center">
+        <CloudArrowUpIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+        <p class="text-lg text-white font-medium">Keine Dateien vorhanden</p>
+        <p class="text-gray-400 mb-4">Lade deine erste Datei hoch oder ziehe sie hierher</p>
+        <button
+          @click="fileInput.click()"
+          class="px-4 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg text-white font-medium"
+        >
+          Datei auswählen
+        </button>
+      </div>
+
+      <!-- File List -->
+      <div v-else class="divide-y divide-dark-700">
+        <div
+          v-for="file in filteredFiles"
+          :key="file.id"
+          class="flex items-center gap-4 p-4 hover:bg-dark-700/50 transition-colors group"
+        >
+          <!-- Icon -->
+          <div class="w-10 h-10 flex items-center justify-center bg-dark-600 rounded-lg">
+            <component :is="getFileIcon(file)" class="w-5 h-5 text-primary-400" />
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <p class="text-white font-medium truncate">{{ file.name }}</p>
+            <p class="text-sm text-gray-400">
+              {{ file.original_filename }} · {{ formatSize(file.size) }} · {{ formatDate(file.created_at) }}
+            </p>
+          </div>
+
+          <!-- Share indicator -->
+          <div v-if="file.active_shares > 0" class="flex items-center gap-1 text-primary-400 text-sm">
+            <ShareIcon class="w-4 h-4" />
+            <span>Freigegeben</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              @click="openRenameModal(file)"
+              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              title="Umbenennen"
+            >
+              <PencilIcon class="w-5 h-5" />
+            </button>
+            <button
+              @click="openShareModal(file)"
+              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              title="Freigeben"
+            >
+              <ShareIcon class="w-5 h-5" />
+            </button>
+            <button
+              @click="downloadFile(file)"
+              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              title="Herunterladen"
+            >
+              <ArrowDownTrayIcon class="w-5 h-5" />
+            </button>
+            <button
+              @click="deleteFile(file)"
+              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+              title="Löschen"
+            >
+              <TrashIcon class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showShareModal"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="showShareModal = false"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <h3 class="text-lg font-semibold text-white">
+              Freigabe: {{ selectedFile?.name }}
+            </h3>
+            <button
+              @click="showShareModal = false"
+              class="p-1 hover:bg-dark-700 rounded-lg transition-colors"
+            >
+              <XMarkIcon class="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="p-4 space-y-4">
+            <!-- Share Link (if exists) -->
+            <div v-if="shareData" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">Freigabe-Link</label>
+              <div class="flex gap-2">
+                <input
+                  :value="shareLink"
+                  readonly
+                  class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm"
+                />
+                <button
+                  @click="copyShareLink"
+                  class="px-3 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
+                  :title="linkCopied ? 'Kopiert!' : 'Link kopieren'"
+                >
+                  <CheckIcon v-if="linkCopied" class="w-5 h-5 text-green-500" />
+                  <ClipboardDocumentIcon v-else class="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <!-- Stats -->
+              <div class="flex gap-4 text-sm text-gray-400">
+                <span>Downloads: {{ shareData.download_count }}</span>
+                <span v-if="shareData.max_downloads">
+                  / {{ shareData.max_downloads }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">
+                Passwort {{ shareData?.has_password ? '(bereits gesetzt)' : '(optional)' }}
+              </label>
+              <div class="relative">
+                <input
+                  v-model="shareForm.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  :placeholder="shareData?.has_password ? '••••••••' : 'Passwort eingeben...'"
+                  class="w-full px-3 py-2 pr-10 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
+                >
+                  <EyeSlashIcon v-if="showPassword" class="w-5 h-5" />
+                  <EyeIcon v-else class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Max Downloads -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">Max. Downloads (optional)</label>
+              <input
+                v-model.number="shareForm.max_downloads"
+                type="number"
+                min="1"
+                placeholder="Unbegrenzt"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
+              />
+            </div>
+
+            <!-- Expires At -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">Ablaufdatum (optional)</label>
+              <input
+                v-model="shareForm.expires_at"
+                type="datetime-local"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+              />
+            </div>
+
+            <!-- Active Toggle (if share exists) -->
+            <div v-if="shareData" class="flex items-center justify-between pt-2">
+              <span class="text-sm text-gray-300">Freigabe aktiv</span>
+              <button
+                @click="toggleShareActive"
+                class="relative w-12 h-6 rounded-full transition-colors"
+                :class="shareData.is_active ? 'bg-primary-600' : 'bg-dark-600'"
+              >
+                <span
+                  class="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"
+                  :class="shareData.is_active ? 'left-7' : 'left-1'"
+                ></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between p-4 border-t border-dark-700">
+            <button
+              v-if="shareData"
+              @click="deleteShare"
+              class="px-4 py-2 text-red-400 hover:text-red-300 font-medium transition-colors"
+            >
+              Freigabe löschen
+            </button>
+            <div v-else></div>
+
+            <div class="flex gap-2">
+              <button
+                @click="showShareModal = false"
+                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                @click="createOrUpdateShare"
+                :disabled="isShareLoading"
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+              >
+                {{ shareData ? 'Speichern' : 'Freigabe erstellen' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Rename Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showRenameModal"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="showRenameModal = false"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
+          <div class="p-4 border-b border-dark-700">
+            <h3 class="text-lg font-semibold text-white">Datei umbenennen</h3>
+          </div>
+          <div class="p-4">
+            <input
+              v-model="renameForm.name"
+              type="text"
+              placeholder="Neuer Name"
+              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
+              @keyup.enter="renameFile"
+            />
+          </div>
+          <div class="flex justify-end gap-2 p-4 border-t border-dark-700">
+            <button
+              @click="showRenameModal = false"
+              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium"
+            >
+              Abbrechen
+            </button>
+            <button
+              @click="renameFile"
+              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg text-white font-medium"
+            >
+              Umbenennen
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>

@@ -40,6 +40,7 @@ use App\Modules\Tickets\Controllers\TicketController;
 use App\Modules\Tickets\Controllers\TicketCategoryController;
 use App\Modules\Setup\Controllers\SetupController;
 use App\Modules\News\Controllers\NewsController;
+use App\Modules\Storage\Controllers\StorageController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -457,6 +458,19 @@ class Router
                 $protected->get('/news/unread-count', [NewsController::class, 'getUnreadCount']);
                 $protected->get('/news/items/{itemId}/full-content', [NewsController::class, 'fetchFullContent']);
 
+                // Cloud Storage
+                $protected->get('/storage', [StorageController::class, 'index']);
+                $protected->post('/storage/upload', [StorageController::class, 'upload']);
+                $protected->get('/storage/stats', [StorageController::class, 'stats']);
+                $protected->get('/storage/{id}', [StorageController::class, 'show']);
+                $protected->put('/storage/{id}', [StorageController::class, 'update']);
+                $protected->delete('/storage/{id}', [StorageController::class, 'delete']);
+                $protected->get('/storage/{id}/download', [StorageController::class, 'download']);
+                $protected->get('/storage/{id}/share', [StorageController::class, 'getShare']);
+                $protected->post('/storage/{id}/share', [StorageController::class, 'createShare']);
+                $protected->put('/storage/{id}/share', [StorageController::class, 'updateShare']);
+                $protected->delete('/storage/{id}/share', [StorageController::class, 'deleteShare']);
+
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);
                 $protected->put('/settings/user', [SettingsController::class, 'updateUserSettings']);
@@ -673,6 +687,11 @@ class Router
 
             // Internal sync from collaboration server
             $group->post('/documents/public/{token}/sync', [DocumentController::class, 'syncFromCollaboration']);
+
+            // Public Storage Download (no auth required)
+            $group->get('/storage/public/{token}', [StorageController::class, 'getPublicShare']);
+            $group->get('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
+            $group->post('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
         });
     }
 }

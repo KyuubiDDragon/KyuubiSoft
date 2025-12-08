@@ -43,6 +43,8 @@ const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.
 const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 const NewsView = () => import('@/modules/news/views/NewsView.vue')
+const StorageView = () => import('@/modules/storage/views/StorageView.vue')
+const PublicDownloadView = () => import('@/modules/storage/views/PublicDownloadView.vue')
 
 const routes = [
   // Auth routes
@@ -217,6 +219,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/storage',
+    name: 'storage',
+    component: StorageView,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: SettingsView,
@@ -277,6 +285,14 @@ const routes = [
     name: 'public-document',
     component: PublicDocumentView,
     meta: { layout: 'public' },
+  },
+
+  // Public storage download (accessible to everyone)
+  {
+    path: '/share/:token',
+    name: 'public-download',
+    component: PublicDownloadView,
+    meta: { layout: 'none', guest: true },
   },
 
   // Catch all

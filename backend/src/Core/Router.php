@@ -462,6 +462,7 @@ class Router
                 $protected->get('/storage', [StorageController::class, 'index']);
                 $protected->post('/storage/upload', [StorageController::class, 'upload']);
                 $protected->get('/storage/stats', [StorageController::class, 'stats']);
+                $protected->get('/storage/shares', [StorageController::class, 'listShares']);
                 $protected->get('/storage/{id}', [StorageController::class, 'show']);
                 $protected->put('/storage/{id}', [StorageController::class, 'update']);
                 $protected->delete('/storage/{id}', [StorageController::class, 'delete']);

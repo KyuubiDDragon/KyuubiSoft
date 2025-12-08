@@ -36,6 +36,8 @@ import {
   TagIcon,
   NewspaperIcon,
   CloudArrowUpIcon,
+  CloudIcon,
+  LinkIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -124,9 +126,19 @@ const allNavigationGroups = [
     children: [
       { name: 'Listen', href: '/lists', icon: ListBulletIcon },
       { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
-      { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
+    ],
+  },
+
+  // KyuubiCloud
+  {
+    id: 'kyuubicloud',
+    name: 'KyuubiCloud',
+    icon: CloudIcon,
+    children: [
+      { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon },
+      { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon },
     ],
   },
 

@@ -554,6 +554,110 @@ class StorageController
         ]);
     }
 
+    /**
+     * List all shares for the user with statistics
+     */
+    public function listShares(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $status = $params['status'] ?? 'all'; // all, active, inactive, expired
+
+        $sql = '
+            SELECT
+                s.id,
+                s.file_id,
+                s.share_token,
+                s.is_active,
+                s.has_password,
+                s.max_downloads,
+                s.download_count,
+                s.view_count,
+                s.expires_at,
+                s.created_at,
+                s.updated_at,
+                f.name as file_name,
+                f.original_filename,
+                f.size as file_size,
+                f.mime_type
+            FROM storage_shares s
+            JOIN storage_files f ON s.file_id = f.id
+            WHERE f.user_id = ?
+        ';
+
+        $queryParams = [$userId];
+
+        // Filter by status
+        if ($status === 'active') {
+            $sql .= ' AND s.is_active = 1 AND (s.expires_at IS NULL OR s.expires_at > NOW())';
+        } elseif ($status === 'inactive') {
+            $sql .= ' AND s.is_active = 0';
+        } elseif ($status === 'expired') {
+            $sql .= ' AND s.expires_at IS NOT NULL AND s.expires_at <= NOW()';
+        }
+
+        $sql .= ' ORDER BY s.created_at DESC';
+
+        $shares = $this->db->fetchAllAssociative($sql, $queryParams);
+
+        // Calculate status for each share
+        $now = new \DateTime();
+        $result = array_map(function ($share) use ($now) {
+            $expiresAt = $share['expires_at'] ? new \DateTime($share['expires_at']) : null;
+            $isExpired = $expiresAt && $expiresAt <= $now;
+            $isDownloadLimitReached = $share['max_downloads'] && $share['download_count'] >= $share['max_downloads'];
+
+            $status = 'active';
+            if (!$share['is_active']) {
+                $status = 'inactive';
+            } elseif ($isExpired) {
+                $status = 'expired';
+            } elseif ($isDownloadLimitReached) {
+                $status = 'limit_reached';
+            }
+
+            return [
+                'id' => $share['id'],
+                'file_id' => $share['file_id'],
+                'share_token' => $share['share_token'],
+                'share_url' => '/share/' . $share['share_token'],
+                'status' => $status,
+                'is_active' => (bool) $share['is_active'],
+                'has_password' => (bool) $share['has_password'],
+                'max_downloads' => $share['max_downloads'] ? (int) $share['max_downloads'] : null,
+                'download_count' => (int) $share['download_count'],
+                'view_count' => (int) $share['view_count'],
+                'expires_at' => $share['expires_at'],
+                'created_at' => $share['created_at'],
+                'file' => [
+                    'name' => $share['file_name'],
+                    'original_filename' => $share['original_filename'],
+                    'size' => (int) $share['file_size'],
+                    'mime_type' => $share['mime_type'],
+                ],
+            ];
+        }, $shares);
+
+        // Calculate summary stats
+        $totalViews = array_sum(array_column($result, 'view_count'));
+        $totalDownloads = array_sum(array_column($result, 'download_count'));
+        $activeCount = count(array_filter($result, fn($s) => $s['status'] === 'active'));
+        $inactiveCount = count(array_filter($result, fn($s) => $s['status'] === 'inactive'));
+        $expiredCount = count(array_filter($result, fn($s) => $s['status'] === 'expired'));
+
+        return JsonResponse::success([
+            'items' => $result,
+            'summary' => [
+                'total' => count($result),
+                'active' => $activeCount,
+                'inactive' => $inactiveCount,
+                'expired' => $expiredCount,
+                'total_views' => $totalViews,
+                'total_downloads' => $totalDownloads,
+            ],
+        ]);
+    }
+
     // ==================== Helper Methods ====================
 
     /**

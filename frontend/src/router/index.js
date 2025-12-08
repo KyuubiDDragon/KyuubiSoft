@@ -44,6 +44,7 @@ const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumen
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 const NewsView = () => import('@/modules/news/views/NewsView.vue')
 const StorageView = () => import('@/modules/storage/views/StorageView.vue')
+const SharesView = () => import('@/modules/storage/views/SharesView.vue')
 const PublicDownloadView = () => import('@/modules/storage/views/PublicDownloadView.vue')
 
 const routes = [
@@ -222,6 +223,12 @@ const routes = [
     path: '/storage',
     name: 'storage',
     component: StorageView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/storage/shares',
+    name: 'storage-shares',
+    component: SharesView,
     meta: { requiresAuth: true },
   },
   {

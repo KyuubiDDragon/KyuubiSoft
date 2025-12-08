@@ -252,46 +252,52 @@ class StorageController
 
         $file = $this->getFileForUser($fileId, $userId, true);
 
-        // Check if share already exists
-        $existingShare = $this->db->fetchAssociative(
-            'SELECT * FROM storage_shares WHERE file_id = ?',
-            [$fileId]
-        );
+        try {
+            // Check if share already exists
+            $existingShare = $this->db->fetchAssociative(
+                'SELECT * FROM storage_shares WHERE file_id = ?',
+                [$fileId]
+            );
 
-        $shareData = [
-            'password_hash' => !empty($data['password']) ? password_hash($data['password'], PASSWORD_ARGON2ID) : null,
-            'max_downloads' => isset($data['max_downloads']) && $data['max_downloads'] > 0 ? (int) $data['max_downloads'] : null,
-            'expires_at' => !empty($data['expires_at']) ? $data['expires_at'] : null,
-            'is_active' => 1,
-            'updated_at' => date('Y-m-d H:i:s'),
-        ];
+            $shareData = [
+                'password_hash' => !empty($data['password']) ? password_hash($data['password'], PASSWORD_ARGON2ID) : null,
+                'max_downloads' => isset($data['max_downloads']) && $data['max_downloads'] > 0 ? (int) $data['max_downloads'] : null,
+                'expires_at' => !empty($data['expires_at']) ? $data['expires_at'] : null,
+                'is_active' => 1,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
 
-        if ($existingShare) {
-            // Update existing share
-            $this->db->update('storage_shares', $shareData, ['id' => $existingShare['id']]);
-            $shareId = $existingShare['id'];
-            $shareToken = $existingShare['share_token'];
-        } else {
-            // Create new share
-            $shareId = Uuid::uuid4()->toString();
-            $shareToken = bin2hex(random_bytes(32));
+            if ($existingShare) {
+                // Update existing share
+                $this->db->update('storage_shares', $shareData, ['id' => $existingShare['id']]);
+                $shareId = $existingShare['id'];
+                $shareToken = $existingShare['share_token'];
+            } else {
+                // Create new share
+                $shareId = Uuid::uuid4()->toString();
+                $shareToken = bin2hex(random_bytes(32));
 
-            $shareData['id'] = $shareId;
-            $shareData['file_id'] = $fileId;
-            $shareData['share_token'] = $shareToken;
-            $shareData['download_count'] = 0;
-            $shareData['created_at'] = date('Y-m-d H:i:s');
+                $shareData['id'] = $shareId;
+                $shareData['file_id'] = $fileId;
+                $shareData['share_token'] = $shareToken;
+                $shareData['download_count'] = 0;
+                $shareData['created_at'] = date('Y-m-d H:i:s');
 
-            $this->db->insert('storage_shares', $shareData);
+                $this->db->insert('storage_shares', $shareData);
+            }
+
+            $share = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$shareId]);
+
+            // Don't expose password hash
+            unset($share['password_hash']);
+            $share['has_password'] = !empty($data['password']) || (!empty($existingShare) && !empty($existingShare['password_hash']) && empty($data['password']));
+
+            return JsonResponse::success($share, 'Freigabe erstellt');
+        } catch (\Throwable $e) {
+            // Log detailed error for debugging
+            error_log('Storage share creation failed: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            throw $e;
         }
-
-        $share = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$shareId]);
-
-        // Don't expose password hash
-        unset($share['password_hash']);
-        $share['has_password'] = !empty($data['password']) || (!empty($existingShare) && !empty($existingShare['password_hash']) && empty($data['password']));
-
-        return JsonResponse::success($share, 'Freigabe erstellt');
     }
 
     /**
@@ -304,17 +310,22 @@ class StorageController
 
         $file = $this->getFileForUser($fileId, $userId);
 
-        $share = $this->db->fetchAssociative(
-            'SELECT * FROM storage_shares WHERE file_id = ?',
-            [$fileId]
-        );
+        try {
+            $share = $this->db->fetchAssociative(
+                'SELECT * FROM storage_shares WHERE file_id = ?',
+                [$fileId]
+            );
 
-        if ($share) {
-            $share['has_password'] = !empty($share['password_hash']);
-            unset($share['password_hash']);
+            if ($share) {
+                $share['has_password'] = !empty($share['password_hash']);
+                unset($share['password_hash']);
+            }
+
+            return JsonResponse::success($share);
+        } catch (\Throwable $e) {
+            error_log('Storage getShare failed: ' . $e->getMessage() . ' - Table may not exist. Run migration 049.');
+            throw new ValidationException('Freigabe-Tabelle nicht verfügbar. Bitte Migration 049 ausführen.');
         }
-
-        return JsonResponse::success($share);
     }
 
     /**

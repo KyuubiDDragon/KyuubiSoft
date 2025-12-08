@@ -238,6 +238,45 @@ class StorageController
     }
 
     /**
+     * Get thumbnail/preview for image files
+     */
+    public function thumbnail(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $file = $this->getFileForUser($id, $userId);
+
+        // Only serve thumbnails for images
+        if (!str_starts_with($file['mime_type'], 'image/')) {
+            throw new NotFoundException('Keine Bildvorschau verfügbar');
+        }
+
+        $filePath = self::UPLOAD_DIR . $file['stored_filename'];
+
+        if (!file_exists($filePath)) {
+            throw new NotFoundException('Datei nicht gefunden');
+        }
+
+        $response = new Response();
+
+        // Set headers for inline display
+        $response = $response
+            ->withHeader('Content-Type', $file['mime_type'])
+            ->withHeader('Content-Length', (string) filesize($filePath))
+            ->withHeader('Cache-Control', 'private, max-age=86400')
+            ->withHeader('X-Content-Type-Options', 'nosniff');
+
+        // Stream file
+        $stream = fopen($filePath, 'rb');
+        while (!feof($stream)) {
+            $response->getBody()->write(fread($stream, 8192));
+        }
+        fclose($stream);
+
+        return $response;
+    }
+
+    /**
      * Create or update a share for a file
      */
     public function createShare(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
@@ -284,6 +323,7 @@ class StorageController
         // Don't expose password hash
         unset($share['password_hash']);
         $share['has_password'] = !empty($data['password']) || (!empty($existingShare) && !empty($existingShare['password_hash']) && empty($data['password']));
+        $share['view_count'] = (int) ($share['view_count'] ?? 0);
 
         return JsonResponse::success($share, 'Freigabe erstellt');
     }
@@ -304,6 +344,7 @@ class StorageController
 
         if ($share) {
             $share['has_password'] = !empty($share['password_hash']);
+            $share['view_count'] = (int) ($share['view_count'] ?? 0);
             unset($share['password_hash']);
         }
 
@@ -359,6 +400,7 @@ class StorageController
 
         $updatedShare = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$share['id']]);
         $updatedShare['has_password'] = !empty($updatedShare['password_hash']);
+        $updatedShare['view_count'] = (int) ($updatedShare['view_count'] ?? 0);
         unset($updatedShare['password_hash']);
 
         return JsonResponse::success($updatedShare, 'Freigabe aktualisiert');
@@ -404,6 +446,12 @@ class StorageController
             return JsonResponse::error($validationResult, 403);
         }
 
+        // Increment view count
+        $this->db->executeStatement(
+            'UPDATE storage_shares SET view_count = view_count + 1 WHERE id = ?',
+            [$share['id']]
+        );
+
         // Return public info (no sensitive data)
         return JsonResponse::success([
             'name' => $share['name'],
@@ -415,6 +463,7 @@ class StorageController
             'has_password' => !empty($share['password_hash']),
             'max_downloads' => $share['max_downloads'] ? (int) $share['max_downloads'] : null,
             'download_count' => (int) $share['download_count'],
+            'view_count' => (int) ($share['view_count'] ?? 0) + 1, // +1 because we just incremented
             'expires_at' => $share['expires_at'],
             'downloads_remaining' => $share['max_downloads']
                 ? max(0, (int) $share['max_downloads'] - (int) $share['download_count'])

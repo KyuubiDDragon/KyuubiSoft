@@ -26,6 +26,8 @@ class StorageController
 
     // Virus scanning settings
     private const VIRUS_SCAN_ENABLED = true;
+    private const CLAMAV_HOST = 'clamav';  // Docker service name
+    private const CLAMAV_PORT = 3310;      // Default clamd port
 
     public function __construct(
         private readonly Connection $db
@@ -630,7 +632,13 @@ class StorageController
             return true;
         }
 
-        // Try clamdscan first (faster, uses daemon)
+        // Try TCP connection to ClamAV container first (Docker setup)
+        $tcpResult = $this->scanViaTcp($filePath);
+        if ($tcpResult !== null) {
+            return $tcpResult;
+        }
+
+        // Fallback: Try clamdscan CLI (uses local daemon)
         $clamdscan = $this->findExecutable(['clamdscan', '/usr/bin/clamdscan', '/usr/local/bin/clamdscan']);
         if ($clamdscan) {
             $output = [];
@@ -652,11 +660,9 @@ class StorageController
                 }
                 return 'Unbekannter Virus';
             }
-
-            // Error with clamdscan (maybe daemon not running), try clamscan
         }
 
-        // Fallback to clamscan (slower, standalone)
+        // Fallback: Try clamscan CLI (slower, standalone)
         $clamscan = $this->findExecutable(['clamscan', '/usr/bin/clamscan', '/usr/local/bin/clamscan']);
         if ($clamscan) {
             $output = [];
@@ -679,9 +685,83 @@ class StorageController
         }
 
         // ClamAV not available - log warning and allow upload
-        // In production, you might want to reject uploads if ClamAV is not available
         error_log('ClamAV not available for virus scanning - file upload allowed without scan: ' . $filePath);
         return true;
+    }
+
+    /**
+     * Scan file via TCP connection to ClamAV daemon
+     * Returns true if clean, virus name if infected, null if connection failed
+     */
+    private function scanViaTcp(string $filePath): bool|string|null
+    {
+        $socket = @fsockopen(self::CLAMAV_HOST, self::CLAMAV_PORT, $errno, $errstr, 5);
+        if (!$socket) {
+            return null; // Connection failed, try fallback
+        }
+
+        try {
+            // Read file content
+            $fileContent = file_get_contents($filePath);
+            if ($fileContent === false) {
+                fclose($socket);
+                return null;
+            }
+
+            // Send INSTREAM command (stream-based scanning)
+            fwrite($socket, "zINSTREAM\0");
+
+            // Send file in chunks (max 2GB, we send in 8KB chunks)
+            $chunkSize = 8192;
+            $offset = 0;
+            $fileSize = strlen($fileContent);
+
+            while ($offset < $fileSize) {
+                $chunk = substr($fileContent, $offset, $chunkSize);
+                $chunkLen = strlen($chunk);
+
+                // Send chunk size as 4-byte big-endian integer
+                fwrite($socket, pack('N', $chunkLen));
+                fwrite($socket, $chunk);
+
+                $offset += $chunkLen;
+            }
+
+            // Send zero-length chunk to signal end of stream
+            fwrite($socket, pack('N', 0));
+
+            // Read response
+            $response = '';
+            while (!feof($socket)) {
+                $response .= fread($socket, 1024);
+            }
+
+            fclose($socket);
+
+            // Parse response
+            $response = trim($response);
+
+            if (str_contains($response, 'OK')) {
+                return true;
+            }
+
+            if (str_contains($response, 'FOUND')) {
+                // Extract virus name: "stream: VirusName FOUND"
+                if (preg_match('/stream:\s*(.+)\s*FOUND/', $response, $matches)) {
+                    return trim($matches[1]);
+                }
+                return 'Unbekannter Virus';
+            }
+
+            // Error or unexpected response
+            error_log('ClamAV unexpected response: ' . $response);
+            return null;
+
+        } catch (\Throwable $e) {
+            @fclose($socket);
+            error_log('ClamAV scan error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**

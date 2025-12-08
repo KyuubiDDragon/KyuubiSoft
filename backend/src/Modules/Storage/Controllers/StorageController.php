@@ -572,7 +572,7 @@ class StorageController
                 s.has_password,
                 s.max_downloads,
                 s.download_count,
-                s.view_count,
+                COALESCE(s.view_count, 0) as view_count,
                 s.expires_at,
                 s.created_at,
                 s.updated_at,

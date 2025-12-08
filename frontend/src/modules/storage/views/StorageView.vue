@@ -43,7 +43,7 @@ const thumbnailUrls = ref({}) // Cache for blob URLs
 // Share Modal State
 const showShareModal = ref(false)
 const selectedFile = ref(null)
-const shareData = ref(null)
+const shares = ref([]) // Array of shares for the file
 const shareForm = ref({
   password: '',
   max_downloads: null,
@@ -51,7 +51,7 @@ const shareForm = ref({
 })
 const showPassword = ref(false)
 const isShareLoading = ref(false)
-const linkCopied = ref(false)
+const copiedShareId = ref(null)
 
 // Rename Modal State
 const showRenameModal = ref(false)
@@ -74,10 +74,9 @@ const filteredFiles = computed(() => {
   )
 })
 
-const shareLink = computed(() => {
-  if (!shareData.value) return ''
-  return `${window.location.origin}/share/${shareData.value.share_token}`
-})
+function getShareLink(share) {
+  return `${window.location.origin}/share/${share.share_token}`
+}
 
 // API Functions
 async function loadFiles() {
@@ -177,21 +176,15 @@ async function openShareModal(file) {
 
   try {
     const response = await api.get(`/api/v1/storage/${file.id}/share`)
-    shareData.value = response.data.data
-    if (shareData.value) {
-      shareForm.value.max_downloads = shareData.value.max_downloads
-      shareForm.value.expires_at = shareData.value.expires_at
-        ? shareData.value.expires_at.slice(0, 16)
-        : ''
-    }
+    shares.value = response.data.data || []
   } catch (error) {
-    shareData.value = null
+    shares.value = []
   } finally {
     isShareLoading.value = false
   }
 }
 
-async function createOrUpdateShare() {
+async function createShare() {
   if (!selectedFile.value) return
   isShareLoading.value = true
 
@@ -202,39 +195,37 @@ async function createOrUpdateShare() {
       expires_at: shareForm.value.expires_at || null,
     }
 
-    const response = shareData.value
-      ? await api.put(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
-      : await api.post(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
-
-    shareData.value = response.data.data
-    uiStore.showSuccess('Freigabe gespeichert')
+    const response = await api.post(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
+    shares.value.unshift(response.data.data)
+    shareForm.value = { password: '', max_downloads: null, expires_at: '' }
+    uiStore.showSuccess('Freigabe erstellt')
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
     if (index !== -1) {
-      files.value[index].active_shares = 1
+      files.value[index].active_shares = shares.value.length
     }
     loadStats()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern der Freigabe')
+    uiStore.showError('Fehler beim Erstellen der Freigabe')
   } finally {
     isShareLoading.value = false
   }
 }
 
-async function deleteShare() {
-  if (!selectedFile.value || !shareData.value) return
+async function deleteShare(share) {
+  if (!selectedFile.value) return
   if (!confirm('Freigabe wirklich löschen?')) return
 
   try {
-    await api.delete(`/api/v1/storage/${selectedFile.value.id}/share`)
-    shareData.value = null
+    await api.delete(`/api/v1/storage/${selectedFile.value.id}/share?share_id=${share.id}`)
+    shares.value = shares.value.filter(s => s.id !== share.id)
     uiStore.showSuccess('Freigabe gelöscht')
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
     if (index !== -1) {
-      files.value[index].active_shares = 0
+      files.value[index].active_shares = shares.value.length
     }
     loadStats()
   } catch (error) {
@@ -242,25 +233,27 @@ async function deleteShare() {
   }
 }
 
-async function toggleShareActive() {
-  if (!shareData.value) return
-
+async function toggleShareActive(share) {
   try {
     const response = await api.put(`/api/v1/storage/${selectedFile.value.id}/share`, {
-      is_active: !shareData.value.is_active,
+      share_id: share.id,
+      is_active: !share.is_active,
     })
-    shareData.value = response.data.data
-    uiStore.showSuccess(shareData.value.is_active ? 'Freigabe aktiviert' : 'Freigabe deaktiviert')
+    // Update share in list
+    const index = shares.value.findIndex(s => s.id === share.id)
+    if (index !== -1) {
+      shares.value[index] = response.data.data
+    }
+    uiStore.showSuccess(response.data.data.is_active ? 'Freigabe aktiviert' : 'Freigabe deaktiviert')
   } catch (error) {
     uiStore.showError('Fehler beim Ändern des Status')
   }
 }
 
-function copyShareLink() {
-  if (!shareLink.value) return
-  navigator.clipboard.writeText(shareLink.value)
-  linkCopied.value = true
-  setTimeout(() => { linkCopied.value = false }, 2000)
+function copyShareLink(share) {
+  navigator.clipboard.writeText(getShareLink(share))
+  copiedShareId.value = share.id
+  setTimeout(() => { copiedShareId.value = null }, 2000)
 }
 
 function openRenameModal(file) {
@@ -698,11 +691,11 @@ onUnmounted(() => {
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         @click.self="showShareModal = false"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
+        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-2xl max-h-[90vh] flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h3 class="text-lg font-semibold text-white">
-              Freigabe: {{ selectedFile?.name }}
+              Freigaben: {{ selectedFile?.name }}
             </h3>
             <button
               @click="showShareModal = false"
@@ -713,123 +706,138 @@ onUnmounted(() => {
           </div>
 
           <!-- Content -->
-          <div class="p-4 space-y-4">
-            <!-- Share Link (if exists) -->
-            <div v-if="shareData" class="space-y-2">
-              <label class="block text-sm font-medium text-gray-300">Freigabe-Link</label>
-              <div class="flex gap-2">
-                <input
-                  :value="shareLink"
-                  readonly
-                  class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm"
-                />
-                <button
-                  @click="copyShareLink"
-                  class="px-3 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
-                  :title="linkCopied ? 'Kopiert!' : 'Link kopieren'"
+          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Existing Shares List -->
+            <div v-if="shares.length > 0" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-300">Bestehende Freigaben ({{ shares.length }})</label>
+              <div class="space-y-2 max-h-60 overflow-y-auto">
+                <div
+                  v-for="share in shares"
+                  :key="share.id"
+                  class="bg-dark-700 rounded-lg p-3 border border-dark-600"
                 >
-                  <CheckIcon v-if="linkCopied" class="w-5 h-5 text-green-500" />
-                  <ClipboardDocumentIcon v-else class="w-5 h-5 text-gray-400" />
-                </button>
+                  <div class="flex items-center gap-2 mb-2">
+                    <input
+                      :value="getShareLink(share)"
+                      readonly
+                      class="flex-1 px-2 py-1 bg-dark-600 border border-dark-500 rounded text-white text-xs"
+                    />
+                    <button
+                      @click="copyShareLink(share)"
+                      class="p-1.5 bg-dark-600 hover:bg-dark-500 rounded transition-colors"
+                      :title="copiedShareId === share.id ? 'Kopiert!' : 'Link kopieren'"
+                    >
+                      <CheckIcon v-if="copiedShareId === share.id" class="w-4 h-4 text-green-500" />
+                      <ClipboardDocumentIcon v-else class="w-4 h-4 text-gray-400" />
+                    </button>
+                    <button
+                      @click="toggleShareActive(share)"
+                      class="p-1.5 rounded transition-colors"
+                      :class="share.is_active ? 'bg-green-600/20 text-green-400' : 'bg-dark-600 text-gray-400'"
+                      :title="share.is_active ? 'Aktiv - Klicken zum Deaktivieren' : 'Inaktiv - Klicken zum Aktivieren'"
+                    >
+                      <CheckIcon v-if="share.is_active" class="w-4 h-4" />
+                      <XMarkIcon v-else class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="deleteShare(share)"
+                      class="p-1.5 bg-dark-600 hover:bg-red-600/30 rounded transition-colors text-gray-400 hover:text-red-400"
+                      title="Löschen"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-3 text-xs text-gray-400">
+                    <span class="flex items-center gap-1">
+                      <EyeIcon class="w-3.5 h-3.5" />
+                      {{ share.view_count }} Aufrufe
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+                      {{ share.download_count }}{{ share.max_downloads ? ` / ${share.max_downloads}` : '' }} Downloads
+                    </span>
+                    <span v-if="share.has_password" class="flex items-center gap-1 text-yellow-400">
+                      <EyeSlashIcon class="w-3.5 h-3.5" />
+                      Passwort
+                    </span>
+                    <span v-if="share.expires_at" class="text-orange-400">
+                      Läuft ab: {{ formatDate(share.expires_at) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else-if="!isShareLoading" class="text-center py-4 text-gray-400">
+              Noch keine Freigaben vorhanden
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-dark-600 pt-4">
+              <label class="block text-sm font-medium text-gray-300 mb-3">Neue Freigabe erstellen</label>
+
+              <!-- Password -->
+              <div class="space-y-2 mb-3">
+                <label class="block text-xs text-gray-400">Passwort (optional)</label>
+                <div class="relative">
+                  <input
+                    v-model="shareForm.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Passwort eingeben..."
+                    class="w-full px-3 py-2 pr-10 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
+                  >
+                    <EyeSlashIcon v-if="showPassword" class="w-4 h-4" />
+                    <EyeIcon v-else class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <!-- Stats -->
-              <div class="flex gap-4 text-sm text-gray-400">
-                <span>{{ shareData.view_count || 0 }} Aufrufe</span>
-                <span>{{ shareData.download_count || 0 }} Downloads</span>
-                <span v-if="shareData.max_downloads">
-                  (max. {{ shareData.max_downloads }})
-                </span>
+              <div class="grid grid-cols-2 gap-3">
+                <!-- Max Downloads -->
+                <div class="space-y-2">
+                  <label class="block text-xs text-gray-400">Max. Downloads</label>
+                  <input
+                    v-model.number="shareForm.max_downloads"
+                    type="number"
+                    min="1"
+                    placeholder="Unbegrenzt"
+                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 text-sm"
+                  />
+                </div>
+
+                <!-- Expires At -->
+                <div class="space-y-2">
+                  <label class="block text-xs text-gray-400">Ablaufdatum</label>
+                  <input
+                    v-model="shareForm.expires_at"
+                    type="datetime-local"
+                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm"
+                  />
+                </div>
               </div>
-            </div>
-
-            <!-- Password -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-300">
-                Passwort {{ shareData?.has_password ? '(bereits gesetzt)' : '(optional)' }}
-              </label>
-              <div class="relative">
-                <input
-                  v-model="shareForm.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  :placeholder="shareData?.has_password ? '••••••••' : 'Passwort eingeben...'"
-                  class="w-full px-3 py-2 pr-10 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
-                />
-                <button
-                  type="button"
-                  @click="showPassword = !showPassword"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
-                >
-                  <EyeSlashIcon v-if="showPassword" class="w-5 h-5" />
-                  <EyeIcon v-else class="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Max Downloads -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-300">Max. Downloads (optional)</label>
-              <input
-                v-model.number="shareForm.max_downloads"
-                type="number"
-                min="1"
-                placeholder="Unbegrenzt"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Expires At -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-300">Ablaufdatum (optional)</label>
-              <input
-                v-model="shareForm.expires_at"
-                type="datetime-local"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
-              />
-            </div>
-
-            <!-- Active Toggle (if share exists) -->
-            <div v-if="shareData" class="flex items-center justify-between pt-2">
-              <span class="text-sm text-gray-300">Freigabe aktiv</span>
-              <button
-                @click="toggleShareActive"
-                class="relative w-12 h-6 rounded-full transition-colors"
-                :class="shareData.is_active ? 'bg-primary-600' : 'bg-dark-600'"
-              >
-                <span
-                  class="absolute top-1 w-4 h-4 bg-white rounded-full transition-transform"
-                  :class="shareData.is_active ? 'left-7' : 'left-1'"
-                ></span>
-              </button>
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-between p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-2 p-4 border-t border-dark-700">
             <button
-              v-if="shareData"
-              @click="deleteShare"
-              class="px-4 py-2 text-red-400 hover:text-red-300 font-medium transition-colors"
+              @click="showShareModal = false"
+              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium transition-colors"
             >
-              Freigabe löschen
+              Schließen
             </button>
-            <div v-else></div>
-
-            <div class="flex gap-2">
-              <button
-                @click="showShareModal = false"
-                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium transition-colors"
-              >
-                Abbrechen
-              </button>
-              <button
-                @click="createOrUpdateShare"
-                :disabled="isShareLoading"
-                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
-              >
-                {{ shareData ? 'Speichern' : 'Freigabe erstellen' }}
-              </button>
-            </div>
+            <button
+              @click="createShare"
+              :disabled="isShareLoading"
+              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+            >
+              Neue Freigabe erstellen
+            </button>
           </div>
         </div>
       </div>

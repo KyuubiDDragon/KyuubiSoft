@@ -51,6 +51,15 @@ const isExpiringSoon = computed(() => {
   return hoursLeft > 0 && hoursLeft < 24
 })
 
+const isImage = computed(() => {
+  return shareInfo.value?.mime_type?.startsWith('image/')
+})
+
+const thumbnailUrl = computed(() => {
+  if (!isImage.value) return null
+  return `/api/v1/storage/public/${token.value}/thumbnail`
+})
+
 const canDownload = computed(() => {
   if (!shareInfo.value) return false
   if (shareInfo.value.downloads_remaining !== null && shareInfo.value.downloads_remaining <= 0) return false
@@ -171,8 +180,17 @@ onMounted(() => {
       <!-- Share Info -->
       <div v-else-if="shareInfo" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
         <!-- File Preview -->
-        <div class="p-8 text-center bg-gradient-to-b from-gray-700/30 to-transparent">
-          <div class="w-24 h-24 mx-auto bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-indigo-500/30">
+        <div class="p-6 text-center bg-gradient-to-b from-gray-700/30 to-transparent">
+          <!-- Image Preview -->
+          <div v-if="isImage" class="mb-4">
+            <img
+              :src="thumbnailUrl"
+              :alt="shareInfo.name"
+              class="max-w-full max-h-64 mx-auto rounded-xl shadow-lg ring-1 ring-white/10"
+            />
+          </div>
+          <!-- File Icon (for non-images) -->
+          <div v-else class="w-24 h-24 mx-auto bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-indigo-500/30">
             <component :is="fileIcon" class="w-12 h-12 text-indigo-400" />
           </div>
           <h2 class="text-xl font-semibold text-white mb-1">{{ shareInfo.name }}</h2>

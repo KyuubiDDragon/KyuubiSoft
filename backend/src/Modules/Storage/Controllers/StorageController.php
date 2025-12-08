@@ -277,7 +277,7 @@ class StorageController
     }
 
     /**
-     * Create or update a share for a file
+     * Create a new share for a file (allows multiple shares per file)
      */
     public function createShare(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
@@ -286,50 +286,43 @@ class StorageController
 
         $file = $this->getFileForUser($id, $userId, true);
 
-        // Check if share already exists
-        $existingShare = $this->db->fetchAssociative(
-            'SELECT * FROM storage_shares WHERE file_id = ?',
-            [$id]
-        );
+        // Always create a new share
+        $shareId = Uuid::uuid4()->toString();
+        $shareToken = bin2hex(random_bytes(32));
 
         $shareData = [
+            'id' => $shareId,
+            'file_id' => $id,
+            'share_token' => $shareToken,
             'password_hash' => !empty($data['password']) ? password_hash($data['password'], PASSWORD_ARGON2ID) : null,
             'max_downloads' => isset($data['max_downloads']) && $data['max_downloads'] > 0 ? (int) $data['max_downloads'] : null,
             'expires_at' => !empty($data['expires_at']) ? $data['expires_at'] : null,
             'is_active' => 1,
+            'download_count' => 0,
+            'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
-        if ($existingShare) {
-            // Update existing share
-            $this->db->update('storage_shares', $shareData, ['id' => $existingShare['id']]);
-            $shareId = $existingShare['id'];
-        } else {
-            // Create new share
-            $shareId = Uuid::uuid4()->toString();
-            $shareToken = bin2hex(random_bytes(32));
-
-            $shareData['id'] = $shareId;
-            $shareData['file_id'] = $id;
-            $shareData['share_token'] = $shareToken;
-            $shareData['download_count'] = 0;
-            $shareData['created_at'] = date('Y-m-d H:i:s');
-
-            $this->db->insert('storage_shares', $shareData);
-        }
+        $this->db->insert('storage_shares', $shareData);
 
         $share = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$shareId]);
 
-        // Don't expose password hash
-        unset($share['password_hash']);
-        $share['has_password'] = !empty($data['password']) || (!empty($existingShare) && !empty($existingShare['password_hash']) && empty($data['password']));
-        $share['view_count'] = (int) ($share['view_count'] ?? 0);
-
-        return JsonResponse::success($share, 'Freigabe erstellt');
+        return JsonResponse::success([
+            'id' => $share['id'],
+            'file_id' => $share['file_id'],
+            'share_token' => $share['share_token'],
+            'has_password' => !empty($share['password_hash']),
+            'max_downloads' => $share['max_downloads'] ? (int) $share['max_downloads'] : null,
+            'download_count' => (int) $share['download_count'],
+            'view_count' => (int) ($share['view_count'] ?? 0),
+            'expires_at' => $share['expires_at'],
+            'is_active' => (bool) $share['is_active'],
+            'created_at' => $share['created_at'],
+        ], 'Freigabe erstellt');
     }
 
     /**
-     * Get share info for a file
+     * Get all shares for a file
      */
     public function getShare(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
@@ -337,22 +330,31 @@ class StorageController
 
         $file = $this->getFileForUser($id, $userId);
 
-        $share = $this->db->fetchAssociative(
-            'SELECT * FROM storage_shares WHERE file_id = ?',
+        $shares = $this->db->fetchAllAssociative(
+            'SELECT * FROM storage_shares WHERE file_id = ? ORDER BY created_at DESC',
             [$id]
         );
 
-        if ($share) {
-            $share['has_password'] = !empty($share['password_hash']);
-            $share['view_count'] = (int) ($share['view_count'] ?? 0);
-            unset($share['password_hash']);
-        }
+        $result = array_map(function ($share) {
+            return [
+                'id' => $share['id'],
+                'file_id' => $share['file_id'],
+                'share_token' => $share['share_token'],
+                'has_password' => !empty($share['password_hash']),
+                'max_downloads' => $share['max_downloads'] ? (int) $share['max_downloads'] : null,
+                'download_count' => (int) $share['download_count'],
+                'view_count' => (int) ($share['view_count'] ?? 0),
+                'expires_at' => $share['expires_at'],
+                'is_active' => (bool) $share['is_active'],
+                'created_at' => $share['created_at'],
+            ];
+        }, $shares);
 
-        return JsonResponse::success($share);
+        return JsonResponse::success($result);
     }
 
     /**
-     * Update share settings
+     * Update share settings (requires share_id in body)
      */
     public function updateShare(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
@@ -361,10 +363,21 @@ class StorageController
 
         $file = $this->getFileForUser($id, $userId, true);
 
-        $share = $this->db->fetchAssociative(
-            'SELECT * FROM storage_shares WHERE file_id = ?',
-            [$id]
-        );
+        // Get share_id from body or use the first share for backwards compatibility
+        $shareId = $data['share_id'] ?? null;
+
+        if ($shareId) {
+            $share = $this->db->fetchAssociative(
+                'SELECT * FROM storage_shares WHERE id = ? AND file_id = ?',
+                [$shareId, $id]
+            );
+        } else {
+            // Backwards compatibility: get first share if no share_id provided
+            $share = $this->db->fetchAssociative(
+                'SELECT * FROM storage_shares WHERE file_id = ? LIMIT 1',
+                [$id]
+            );
+        }
 
         if (!$share) {
             throw new NotFoundException('Keine Freigabe gefunden');
@@ -399,23 +412,41 @@ class StorageController
         $this->db->update('storage_shares', $updates, ['id' => $share['id']]);
 
         $updatedShare = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$share['id']]);
-        $updatedShare['has_password'] = !empty($updatedShare['password_hash']);
-        $updatedShare['view_count'] = (int) ($updatedShare['view_count'] ?? 0);
-        unset($updatedShare['password_hash']);
 
-        return JsonResponse::success($updatedShare, 'Freigabe aktualisiert');
+        return JsonResponse::success([
+            'id' => $updatedShare['id'],
+            'file_id' => $updatedShare['file_id'],
+            'share_token' => $updatedShare['share_token'],
+            'has_password' => !empty($updatedShare['password_hash']),
+            'max_downloads' => $updatedShare['max_downloads'] ? (int) $updatedShare['max_downloads'] : null,
+            'download_count' => (int) $updatedShare['download_count'],
+            'view_count' => (int) ($updatedShare['view_count'] ?? 0),
+            'expires_at' => $updatedShare['expires_at'],
+            'is_active' => (bool) $updatedShare['is_active'],
+            'created_at' => $updatedShare['created_at'],
+        ], 'Freigabe aktualisiert');
     }
 
     /**
-     * Delete a share
+     * Delete a share (requires share_id in body or query)
      */
     public function deleteShare(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+        $query = $request->getQueryParams();
 
         $file = $this->getFileForUser($id, $userId, true);
 
-        $this->db->delete('storage_shares', ['file_id' => $id]);
+        $shareId = $data['share_id'] ?? $query['share_id'] ?? null;
+
+        if ($shareId) {
+            // Delete specific share
+            $this->db->delete('storage_shares', ['id' => $shareId, 'file_id' => $id]);
+        } else {
+            // Backwards compatibility: delete all shares for file
+            $this->db->delete('storage_shares', ['file_id' => $id]);
+        }
 
         return JsonResponse::success(null, 'Freigabe gelöscht');
     }
@@ -518,6 +549,49 @@ class StorageController
             'mime_type' => $share['mime_type'],
             'size' => $share['size'],
         ]);
+    }
+
+    /**
+     * Get public thumbnail/preview for shared images (no auth required)
+     */
+    public function thumbnailPublic(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
+    {
+        $share = $this->db->fetchAssociative(
+            'SELECT s.*, f.stored_filename, f.mime_type
+             FROM storage_shares s
+             JOIN storage_files f ON s.file_id = f.id
+             WHERE s.share_token = ?',
+            [$token]
+        );
+
+        if (!$share) {
+            throw new NotFoundException('Freigabe nicht gefunden');
+        }
+
+        // Validate share (but don't check password for thumbnails)
+        $validationResult = $this->validateShare($share);
+        if ($validationResult !== true) {
+            throw new ForbiddenException($validationResult);
+        }
+
+        // Only serve thumbnails for images
+        if (!str_starts_with($share['mime_type'], 'image/')) {
+            throw new NotFoundException('Keine Bildvorschau verfügbar');
+        }
+
+        $filePath = self::UPLOAD_DIR . $share['stored_filename'];
+
+        if (!file_exists($filePath)) {
+            throw new NotFoundException('Datei nicht gefunden');
+        }
+
+        $stream = fopen($filePath, 'r');
+
+        return $response
+            ->withHeader('Content-Type', $share['mime_type'])
+            ->withHeader('Content-Disposition', 'inline')
+            ->withHeader('Cache-Control', 'public, max-age=86400')
+            ->withBody(new \Slim\Psr7\Stream($stream));
     }
 
     /**

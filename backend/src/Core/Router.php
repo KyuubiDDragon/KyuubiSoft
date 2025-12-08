@@ -694,6 +694,7 @@ class Router
             $group->get('/storage/public/{token}', [StorageController::class, 'getPublicShare']);
             $group->get('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
             $group->post('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
+            $group->get('/storage/public/{token}/thumbnail', [StorageController::class, 'thumbnailPublic']);
         });
     }
 }

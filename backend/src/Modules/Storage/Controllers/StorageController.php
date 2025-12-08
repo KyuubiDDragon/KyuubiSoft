@@ -246,11 +246,21 @@ class StorageController
      */
     public function createShare(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $logFile = __DIR__ . '/../../../../storage/logs/storage-debug.log';
+        $log = function($msg) use ($logFile) {
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $msg . "\n", FILE_APPEND);
+        };
+
+        $log("createShare called");
+
         $userId = $request->getAttribute('user_id');
         $fileId = $args['id'];
         $data = $request->getParsedBody() ?? [];
 
+        $log("userId: $userId, fileId: $fileId, data: " . json_encode($data));
+
         $file = $this->getFileForUser($fileId, $userId, true);
+        $log("File found: " . $file['name']);
 
         try {
             // Check if share already exists
@@ -258,6 +268,7 @@ class StorageController
                 'SELECT * FROM storage_shares WHERE file_id = ?',
                 [$fileId]
             );
+            $log("Existing share check done: " . ($existingShare ? 'found' : 'not found'));
 
             $shareData = [
                 'password_hash' => !empty($data['password']) ? password_hash($data['password'], PASSWORD_ARGON2ID) : null,
@@ -266,12 +277,14 @@ class StorageController
                 'is_active' => 1,
                 'updated_at' => date('Y-m-d H:i:s'),
             ];
+            $log("Share data prepared");
 
             if ($existingShare) {
                 // Update existing share
                 $this->db->update('storage_shares', $shareData, ['id' => $existingShare['id']]);
                 $shareId = $existingShare['id'];
                 $shareToken = $existingShare['share_token'];
+                $log("Updated existing share: $shareId");
             } else {
                 // Create new share
                 $shareId = Uuid::uuid4()->toString();
@@ -283,19 +296,24 @@ class StorageController
                 $shareData['download_count'] = 0;
                 $shareData['created_at'] = date('Y-m-d H:i:s');
 
+                $log("About to insert new share with id: $shareId");
                 $this->db->insert('storage_shares', $shareData);
+                $log("Insert completed");
             }
 
             $share = $this->db->fetchAssociative('SELECT * FROM storage_shares WHERE id = ?', [$shareId]);
+            $log("Share fetched: " . ($share ? 'success' : 'failed'));
 
             // Don't expose password hash
             unset($share['password_hash']);
             $share['has_password'] = !empty($data['password']) || (!empty($existingShare) && !empty($existingShare['password_hash']) && empty($data['password']));
 
+            $log("Returning success");
             return JsonResponse::success($share, 'Freigabe erstellt');
         } catch (\Throwable $e) {
             // Log detailed error for debugging
-            error_log('Storage share creation failed: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            $log("ERROR: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+            $log("Stack trace: " . $e->getTraceAsString());
             throw $e;
         }
     }
@@ -305,25 +323,37 @@ class StorageController
      */
     public function getShare(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $logFile = __DIR__ . '/../../../../storage/logs/storage-debug.log';
+        $log = function($msg) use ($logFile) {
+            file_put_contents($logFile, date('[Y-m-d H:i:s] ') . $msg . "\n", FILE_APPEND);
+        };
+
+        $log("getShare called");
+
         $userId = $request->getAttribute('user_id');
         $fileId = $args['id'];
 
+        $log("userId: $userId, fileId: $fileId");
+
         $file = $this->getFileForUser($fileId, $userId);
+        $log("File found: " . $file['name']);
 
         try {
             $share = $this->db->fetchAssociative(
                 'SELECT * FROM storage_shares WHERE file_id = ?',
                 [$fileId]
             );
+            $log("Share query done: " . ($share ? 'found' : 'not found'));
 
             if ($share) {
                 $share['has_password'] = !empty($share['password_hash']);
                 unset($share['password_hash']);
             }
 
+            $log("Returning success");
             return JsonResponse::success($share);
         } catch (\Throwable $e) {
-            error_log('Storage getShare failed: ' . $e->getMessage() . ' - Table may not exist. Run migration 049.');
+            $log("ERROR in getShare: " . $e->getMessage());
             throw new ValidationException('Freigabe-Tabelle nicht verfügbar. Bitte Migration 049 ausführen.');
         }
     }

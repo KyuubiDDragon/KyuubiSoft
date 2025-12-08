@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   CloudArrowUpIcon,
   DocumentIcon,
@@ -20,6 +20,9 @@ import {
   MagnifyingGlassIcon,
   Squares2X2Icon,
   ListBulletIcon,
+  FolderIcon,
+  ChartBarIcon,
+  LinkIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -34,7 +37,8 @@ const isUploading = ref(false)
 const uploadProgress = ref(0)
 const searchQuery = ref('')
 const viewMode = ref('grid') // 'grid' or 'list'
-const stats = ref({ total_files: 0, total_size: 0, active_shares: 0, total_downloads: 0 })
+const stats = ref({ total_files: 0, total_size: 0, active_shares: 0, total_downloads: 0, total_views: 0 })
+const thumbnailUrls = ref({}) // Cache for blob URLs
 
 // Share Modal State
 const showShareModal = ref(false)
@@ -81,6 +85,8 @@ async function loadFiles() {
   try {
     const response = await api.get('/api/v1/storage')
     files.value = response.data.data.items || []
+    // Load thumbnails after files are loaded
+    loadThumbnails()
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Dateien')
   } finally {
@@ -332,8 +338,35 @@ function getFileIcon(file) {
   return DocumentIcon
 }
 
+// Load thumbnail with authentication
+async function loadThumbnail(file) {
+  if (!isImage(file) || thumbnailUrls.value[file.id]) return
+
+  try {
+    const response = await api.get(`/api/v1/storage/${file.id}/thumbnail`, {
+      responseType: 'blob'
+    })
+    const blobUrl = URL.createObjectURL(response.data)
+    thumbnailUrls.value[file.id] = blobUrl
+  } catch (error) {
+    console.error('Thumbnail load error:', error)
+  }
+}
+
+// Load all thumbnails for image files
+async function loadThumbnails() {
+  const imageFiles = files.value.filter(f => isImage(f))
+  await Promise.all(imageFiles.map(f => loadThumbnail(f)))
+}
+
+// Cleanup blob URLs on unmount
+function cleanupThumbnails() {
+  Object.values(thumbnailUrls.value).forEach(url => URL.revokeObjectURL(url))
+  thumbnailUrls.value = {}
+}
+
 function getThumbnailUrl(file) {
-  return `/api/v1/storage/${file.id}/thumbnail`
+  return thumbnailUrls.value[file.id] || null
 }
 
 function formatSize(bytes) {
@@ -360,53 +393,51 @@ onMounted(() => {
   loadFiles()
   loadStats()
 })
+
+onUnmounted(() => {
+  cleanupThumbnails()
+})
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-white">Cloud Storage</h1>
-        <p class="text-gray-400 text-sm mt-1">
-          {{ stats.total_files }} Dateien · {{ formatSize(stats.total_size) }} verwendet ·
-          {{ stats.active_shares }} aktive Freigaben
-        </p>
-      </div>
+      <h1 class="text-2xl font-bold text-white">Cloud Storage</h1>
 
-      <div class="flex gap-3">
+      <div class="flex gap-2">
         <!-- Search -->
         <div class="relative">
-          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Suchen..."
-            class="pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="pl-9 pr-3 py-1.5 text-sm bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         <!-- View Mode Toggle -->
-        <div class="flex bg-dark-700 rounded-lg p-1">
+        <div class="flex bg-dark-700 rounded-lg p-0.5">
           <button
             @click="viewMode = 'grid'"
             :class="[
-              'p-2 rounded-md transition-colors',
+              'p-1.5 rounded-md transition-colors',
               viewMode === 'grid' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
             ]"
             title="Kachelansicht"
           >
-            <Squares2X2Icon class="w-5 h-5" />
+            <Squares2X2Icon class="w-4 h-4" />
           </button>
           <button
             @click="viewMode = 'list'"
             :class="[
-              'p-2 rounded-md transition-colors',
+              'p-1.5 rounded-md transition-colors',
               viewMode === 'list' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
             ]"
             title="Listenansicht"
           >
-            <ListBulletIcon class="w-5 h-5" />
+            <ListBulletIcon class="w-4 h-4" />
           </button>
         </div>
 
@@ -414,9 +445,9 @@ onMounted(() => {
         <button
           @click="fileInput.click()"
           :disabled="isUploading"
-          class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
         >
-          <CloudArrowUpIcon class="w-5 h-5" />
+          <CloudArrowUpIcon class="w-4 h-4" />
           <span>Hochladen</span>
         </button>
         <input
@@ -425,6 +456,38 @@ onMounted(() => {
           class="hidden"
           @change="handleFileSelect"
         />
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+        <div class="flex items-center gap-2">
+          <FolderIcon class="w-5 h-5 text-primary-400" />
+          <span class="text-gray-400 text-sm">Dateien</span>
+        </div>
+        <p class="text-xl font-bold text-white mt-1">{{ stats.total_files }}</p>
+      </div>
+      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+        <div class="flex items-center gap-2">
+          <ChartBarIcon class="w-5 h-5 text-blue-400" />
+          <span class="text-gray-400 text-sm">Speicher</span>
+        </div>
+        <p class="text-xl font-bold text-white mt-1">{{ formatSize(stats.total_size) }}</p>
+      </div>
+      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+        <div class="flex items-center gap-2">
+          <LinkIcon class="w-5 h-5 text-green-400" />
+          <span class="text-gray-400 text-sm">Freigaben</span>
+        </div>
+        <p class="text-xl font-bold text-white mt-1">{{ stats.active_shares }}</p>
+      </div>
+      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+        <div class="flex items-center gap-2">
+          <ArrowDownTrayIcon class="w-5 h-5 text-orange-400" />
+          <span class="text-gray-400 text-sm">Downloads</span>
+        </div>
+        <p class="text-xl font-bold text-white mt-1">{{ stats.total_downloads || 0 }}</p>
       </div>
     </div>
 
@@ -476,12 +539,12 @@ onMounted(() => {
       </div>
 
       <!-- Grid View -->
-      <div v-else-if="viewMode === 'grid'" class="p-4">
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div v-else-if="viewMode === 'grid'" class="p-3">
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
           <div
             v-for="file in filteredFiles"
             :key="file.id"
-            class="group relative bg-dark-700 rounded-xl overflow-hidden border border-dark-600 hover:border-primary-500/50 transition-all"
+            class="group relative bg-dark-700 rounded-lg overflow-hidden border border-dark-600 hover:border-primary-500/50 transition-all"
           >
             <!-- Thumbnail / Icon -->
             <div
@@ -490,61 +553,64 @@ onMounted(() => {
             >
               <!-- Image Preview -->
               <img
-                v-if="isImage(file)"
+                v-if="isImage(file) && getThumbnailUrl(file)"
                 :src="getThumbnailUrl(file)"
                 :alt="file.name"
                 class="w-full h-full object-cover"
-                loading="lazy"
               />
+              <!-- Loading placeholder for images -->
+              <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-dark-600">
+                <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
               <!-- Icon for non-images -->
               <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
-                <component :is="getFileIcon(file)" class="w-12 h-12 text-gray-500" />
+                <component :is="getFileIcon(file)" class="w-8 h-8 text-gray-500" />
               </div>
 
               <!-- Share badge -->
               <div
                 v-if="file.active_shares > 0"
-                class="absolute top-2 right-2 p-1.5 bg-primary-600 rounded-full"
+                class="absolute top-1 right-1 p-1 bg-primary-600 rounded-full"
               >
-                <ShareIcon class="w-3 h-3 text-white" />
+                <ShareIcon class="w-2.5 h-2.5 text-white" />
               </div>
 
               <!-- Hover overlay with actions -->
-              <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                 <button
                   @click.stop="downloadFile(file)"
-                  class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  class="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
                   title="Herunterladen"
                 >
-                  <ArrowDownTrayIcon class="w-5 h-5 text-white" />
+                  <ArrowDownTrayIcon class="w-3.5 h-3.5 text-white" />
                 </button>
                 <button
                   @click.stop="openShareModal(file)"
-                  class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  class="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
                   title="Freigeben"
                 >
-                  <ShareIcon class="w-5 h-5 text-white" />
+                  <ShareIcon class="w-3.5 h-3.5 text-white" />
                 </button>
                 <button
                   @click.stop="deleteFile(file)"
-                  class="p-2 bg-white/10 hover:bg-red-500/50 rounded-lg transition-colors"
+                  class="p-1.5 bg-white/10 hover:bg-red-500/50 rounded transition-colors"
                   title="Löschen"
                 >
-                  <TrashIcon class="w-5 h-5 text-white" />
+                  <TrashIcon class="w-3.5 h-3.5 text-white" />
                 </button>
               </div>
             </div>
 
             <!-- File Info -->
-            <div class="p-3">
+            <div class="p-1.5">
               <p
-                class="text-sm font-medium text-white truncate cursor-pointer hover:text-primary-400"
+                class="text-xs font-medium text-white truncate cursor-pointer hover:text-primary-400"
                 :title="file.name"
                 @click="openRenameModal(file)"
               >
                 {{ file.name }}
               </p>
-              <p class="text-xs text-gray-500 mt-1">{{ formatSize(file.size) }}</p>
+              <p class="text-[10px] text-gray-500">{{ formatSize(file.size) }}</p>
             </div>
           </div>
         </div>
@@ -555,22 +621,24 @@ onMounted(() => {
         <div
           v-for="file in filteredFiles"
           :key="file.id"
-          class="flex items-center gap-4 p-4 hover:bg-dark-700/50 transition-colors group"
+          class="flex items-center gap-3 p-3 hover:bg-dark-700/50 transition-colors group"
         >
           <!-- Thumbnail / Icon -->
           <div
-            class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer"
+            class="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer"
             @click="openPreview(file)"
           >
             <img
-              v-if="isImage(file)"
+              v-if="isImage(file) && getThumbnailUrl(file)"
               :src="getThumbnailUrl(file)"
               :alt="file.name"
               class="w-full h-full object-cover"
-              loading="lazy"
             />
+            <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-dark-600">
+              <div class="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
             <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
-              <component :is="getFileIcon(file)" class="w-6 h-6 text-primary-400" />
+              <component :is="getFileIcon(file)" class="w-5 h-5 text-primary-400" />
             </div>
           </div>
 

@@ -48,14 +48,6 @@ class ErrorMiddleware implements MiddlewareInterface
                 'message' => $e->getMessage(),
             ]);
         } catch (Throwable $e) {
-            // Debug: Write error to file
-            $logFile = __DIR__ . '/../../../storage/logs/error-debug.log';
-            $logContent = date('[Y-m-d H:i:s] ') . "Exception: " . get_class($e) . "\n";
-            $logContent .= "Message: " . $e->getMessage() . "\n";
-            $logContent .= "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
-            $logContent .= "Trace: " . $e->getTraceAsString() . "\n\n";
-            file_put_contents($logFile, $logContent, FILE_APPEND);
-
             $this->logger?->error('Unhandled exception', [
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),

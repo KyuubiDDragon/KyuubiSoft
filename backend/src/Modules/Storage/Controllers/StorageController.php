@@ -24,6 +24,11 @@ class StorageController
     private const BLOCKED_EXTENSIONS = ['php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'exe', 'bat', 'cmd', 'sh', 'bash', 'com', 'scr', 'pif', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'msc', 'jar'];
     private const BLOCKED_MIME_TYPES = ['application/x-php', 'application/x-httpd-php', 'application/x-executable', 'application/x-msdos-program'];
 
+    // Virus scanning settings
+    private const VIRUS_SCAN_ENABLED = true;
+    private const CLAMAV_HOST = 'clamav';  // Docker service name
+    private const CLAMAV_PORT = 3310;      // Default clamd port
+
     public function __construct(
         private readonly Connection $db
     ) {}
@@ -122,6 +127,14 @@ class StorageController
         // Move file to storage
         $filePath = self::UPLOAD_DIR . $storedFilename;
         $file->moveTo($filePath);
+
+        // Scan for viruses
+        $scanResult = $this->scanForVirus($filePath);
+        if ($scanResult !== true) {
+            // Delete infected file
+            @unlink($filePath);
+            throw new ValidationException('Datei wurde als schädlich erkannt: ' . $scanResult);
+        }
 
         // Get actual MIME type from file
         $mimeType = mime_content_type($filePath) ?: $file->getClientMediaType() ?: 'application/octet-stream';
@@ -606,6 +619,168 @@ class StorageController
         fclose($stream);
 
         return $response;
+    }
+
+    /**
+     * Scan file for viruses using ClamAV
+     * Returns true if clean, or string with virus name if infected
+     */
+    private function scanForVirus(string $filePath): bool|string
+    {
+        // Skip if virus scanning is disabled
+        if (!self::VIRUS_SCAN_ENABLED) {
+            return true;
+        }
+
+        // Try TCP connection to ClamAV container first (Docker setup)
+        $tcpResult = $this->scanViaTcp($filePath);
+        if ($tcpResult !== null) {
+            return $tcpResult;
+        }
+
+        // Fallback: Try clamdscan CLI (uses local daemon)
+        $clamdscan = $this->findExecutable(['clamdscan', '/usr/bin/clamdscan', '/usr/local/bin/clamdscan']);
+        if ($clamdscan) {
+            $output = [];
+            $returnCode = 0;
+            $escapedPath = escapeshellarg($filePath);
+
+            exec("{$clamdscan} --no-summary --stdout {$escapedPath} 2>&1", $output, $returnCode);
+
+            // Return codes: 0 = clean, 1 = virus found, 2 = error
+            if ($returnCode === 0) {
+                return true;
+            }
+
+            if ($returnCode === 1) {
+                // Extract virus name from output
+                $outputStr = implode(' ', $output);
+                if (preg_match('/: (.+) FOUND/', $outputStr, $matches)) {
+                    return $matches[1];
+                }
+                return 'Unbekannter Virus';
+            }
+        }
+
+        // Fallback: Try clamscan CLI (slower, standalone)
+        $clamscan = $this->findExecutable(['clamscan', '/usr/bin/clamscan', '/usr/local/bin/clamscan']);
+        if ($clamscan) {
+            $output = [];
+            $returnCode = 0;
+            $escapedPath = escapeshellarg($filePath);
+
+            exec("{$clamscan} --no-summary --stdout {$escapedPath} 2>&1", $output, $returnCode);
+
+            if ($returnCode === 0) {
+                return true;
+            }
+
+            if ($returnCode === 1) {
+                $outputStr = implode(' ', $output);
+                if (preg_match('/: (.+) FOUND/', $outputStr, $matches)) {
+                    return $matches[1];
+                }
+                return 'Unbekannter Virus';
+            }
+        }
+
+        // ClamAV not available - log warning and allow upload
+        error_log('ClamAV not available for virus scanning - file upload allowed without scan: ' . $filePath);
+        return true;
+    }
+
+    /**
+     * Scan file via TCP connection to ClamAV daemon
+     * Returns true if clean, virus name if infected, null if connection failed
+     */
+    private function scanViaTcp(string $filePath): bool|string|null
+    {
+        $socket = @fsockopen(self::CLAMAV_HOST, self::CLAMAV_PORT, $errno, $errstr, 5);
+        if (!$socket) {
+            return null; // Connection failed, try fallback
+        }
+
+        try {
+            // Read file content
+            $fileContent = file_get_contents($filePath);
+            if ($fileContent === false) {
+                fclose($socket);
+                return null;
+            }
+
+            // Send INSTREAM command (stream-based scanning)
+            fwrite($socket, "zINSTREAM\0");
+
+            // Send file in chunks (max 2GB, we send in 8KB chunks)
+            $chunkSize = 8192;
+            $offset = 0;
+            $fileSize = strlen($fileContent);
+
+            while ($offset < $fileSize) {
+                $chunk = substr($fileContent, $offset, $chunkSize);
+                $chunkLen = strlen($chunk);
+
+                // Send chunk size as 4-byte big-endian integer
+                fwrite($socket, pack('N', $chunkLen));
+                fwrite($socket, $chunk);
+
+                $offset += $chunkLen;
+            }
+
+            // Send zero-length chunk to signal end of stream
+            fwrite($socket, pack('N', 0));
+
+            // Read response
+            $response = '';
+            while (!feof($socket)) {
+                $response .= fread($socket, 1024);
+            }
+
+            fclose($socket);
+
+            // Parse response
+            $response = trim($response);
+
+            if (str_contains($response, 'OK')) {
+                return true;
+            }
+
+            if (str_contains($response, 'FOUND')) {
+                // Extract virus name: "stream: VirusName FOUND"
+                if (preg_match('/stream:\s*(.+)\s*FOUND/', $response, $matches)) {
+                    return trim($matches[1]);
+                }
+                return 'Unbekannter Virus';
+            }
+
+            // Error or unexpected response
+            error_log('ClamAV unexpected response: ' . $response);
+            return null;
+
+        } catch (\Throwable $e) {
+            @fclose($socket);
+            error_log('ClamAV scan error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Find executable in common paths
+     */
+    private function findExecutable(array $paths): ?string
+    {
+        foreach ($paths as $path) {
+            // If it's just a command name, try to find it in PATH
+            if (!str_contains($path, '/')) {
+                $result = shell_exec("which {$path} 2>/dev/null");
+                if ($result) {
+                    return trim($result);
+                }
+            } elseif (file_exists($path) && is_executable($path)) {
+                return $path;
+            }
+        }
+        return null;
     }
 
     /**

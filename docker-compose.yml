@@ -170,6 +170,28 @@ services:
       - dev
     restart: unless-stopped
 
+  # ===================
+  # ClamAV Antivirus Scanner
+  # ===================
+  clamav:
+    image: clamav/clamav:stable
+    container_name: kyuubisoft_clamav
+    volumes:
+      - clamav_data:/var/lib/clamav
+      - ./backend/storage:/scan:ro
+    environment:
+      CLAMAV_NO_FRESHCLAMD: "false"
+      CLAMAV_NO_CLAMD: "false"
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "3"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - kyuubisoft_network
+    restart: unless-stopped
+
 networks:
   kyuubisoft_network:
     driver: bridge
@@ -180,3 +202,5 @@ volumes:
     name: kyuubisoft_mysql_data
   redis_data:
     name: kyuubisoft_redis_data
+  clamav_data:
+    name: kyuubisoft_clamav_data

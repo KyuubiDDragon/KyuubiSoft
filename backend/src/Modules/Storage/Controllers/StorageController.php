@@ -569,7 +569,7 @@ class StorageController
                 s.file_id,
                 s.share_token,
                 s.is_active,
-                s.has_password,
+                CASE WHEN s.password_hash IS NOT NULL AND s.password_hash != "" THEN 1 ELSE 0 END as has_password,
                 s.max_downloads,
                 s.download_count,
                 COALESCE(s.view_count, 0) as view_count,

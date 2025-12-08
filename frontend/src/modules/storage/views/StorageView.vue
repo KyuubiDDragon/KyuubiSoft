@@ -18,6 +18,8 @@ import {
   EyeSlashIcon,
   CheckIcon,
   MagnifyingGlassIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -31,6 +33,7 @@ const isDragging = ref(false)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 const searchQuery = ref('')
+const viewMode = ref('grid') // 'grid' or 'list'
 const stats = ref({ total_files: 0, total_size: 0, active_shares: 0, total_downloads: 0 })
 
 // Share Modal State
@@ -49,6 +52,10 @@ const linkCopied = ref(false)
 // Rename Modal State
 const showRenameModal = ref(false)
 const renameForm = ref({ name: '' })
+
+// Preview Modal State
+const showPreviewModal = ref(false)
+const previewFile = ref(null)
 
 // File input ref
 const fileInput = ref(null)
@@ -117,7 +124,7 @@ async function uploadFile(file) {
     uiStore.showSuccess('Datei erfolgreich hochgeladen')
     loadStats()
   } catch (error) {
-    uiStore.showError(error.response?.data?.error || 'Upload fehlgeschlagen')
+    uiStore.showError(error.response?.data?.message || 'Upload fehlgeschlagen')
   } finally {
     isUploading.value = false
     uploadProgress.value = 0
@@ -276,6 +283,13 @@ async function renameFile() {
   }
 }
 
+function openPreview(file) {
+  if (isImage(file)) {
+    previewFile.value = file
+    showPreviewModal.value = true
+  }
+}
+
 // Drag & Drop
 function handleDragOver(e) {
   e.preventDefault()
@@ -304,6 +318,10 @@ function handleFileSelect(e) {
 }
 
 // Helpers
+function isImage(file) {
+  return file.mime_type?.startsWith('image/')
+}
+
 function getFileIcon(file) {
   const mime = file.mime_type || ''
   if (mime.startsWith('image/')) return PhotoIcon
@@ -312,6 +330,10 @@ function getFileIcon(file) {
   if (mime.includes('pdf') || mime.includes('document') || mime.includes('text')) return DocumentTextIcon
   if (mime.includes('zip') || mime.includes('archive') || mime.includes('compressed')) return ArchiveBoxIcon
   return DocumentIcon
+}
+
+function getThumbnailUrl(file) {
+  return `/api/v1/storage/${file.id}/thumbnail`
 }
 
 function formatSize(bytes) {
@@ -364,6 +386,30 @@ onMounted(() => {
           />
         </div>
 
+        <!-- View Mode Toggle -->
+        <div class="flex bg-dark-700 rounded-lg p-1">
+          <button
+            @click="viewMode = 'grid'"
+            :class="[
+              'p-2 rounded-md transition-colors',
+              viewMode === 'grid' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
+            ]"
+            title="Kachelansicht"
+          >
+            <Squares2X2Icon class="w-5 h-5" />
+          </button>
+          <button
+            @click="viewMode = 'list'"
+            :class="[
+              'p-2 rounded-md transition-colors',
+              viewMode === 'list' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
+            ]"
+            title="Listenansicht"
+          >
+            <ListBulletIcon class="w-5 h-5" />
+          </button>
+        </div>
+
         <!-- Upload Button -->
         <button
           @click="fileInput.click()"
@@ -382,7 +428,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Drop Zone / File List -->
+    <!-- Drop Zone / File Area -->
     <div
       class="bg-dark-800 rounded-xl border-2 transition-colors"
       :class="isDragging ? 'border-primary-500 border-dashed' : 'border-dark-700'"
@@ -404,10 +450,7 @@ onMounted(() => {
       </div>
 
       <!-- Drag Overlay -->
-      <div
-        v-if="isDragging"
-        class="p-12 text-center"
-      >
+      <div v-if="isDragging" class="p-12 text-center">
         <CloudArrowUpIcon class="w-16 h-16 mx-auto text-primary-500 mb-4" />
         <p class="text-lg text-white font-medium">Datei hier ablegen</p>
         <p class="text-gray-400">zum Hochladen</p>
@@ -432,16 +475,103 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- File List -->
+      <!-- Grid View -->
+      <div v-else-if="viewMode === 'grid'" class="p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div
+            v-for="file in filteredFiles"
+            :key="file.id"
+            class="group relative bg-dark-700 rounded-xl overflow-hidden border border-dark-600 hover:border-primary-500/50 transition-all"
+          >
+            <!-- Thumbnail / Icon -->
+            <div
+              class="aspect-square relative cursor-pointer"
+              @click="openPreview(file)"
+            >
+              <!-- Image Preview -->
+              <img
+                v-if="isImage(file)"
+                :src="getThumbnailUrl(file)"
+                :alt="file.name"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <!-- Icon for non-images -->
+              <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
+                <component :is="getFileIcon(file)" class="w-12 h-12 text-gray-500" />
+              </div>
+
+              <!-- Share badge -->
+              <div
+                v-if="file.active_shares > 0"
+                class="absolute top-2 right-2 p-1.5 bg-primary-600 rounded-full"
+              >
+                <ShareIcon class="w-3 h-3 text-white" />
+              </div>
+
+              <!-- Hover overlay with actions -->
+              <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button
+                  @click.stop="downloadFile(file)"
+                  class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  title="Herunterladen"
+                >
+                  <ArrowDownTrayIcon class="w-5 h-5 text-white" />
+                </button>
+                <button
+                  @click.stop="openShareModal(file)"
+                  class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  title="Freigeben"
+                >
+                  <ShareIcon class="w-5 h-5 text-white" />
+                </button>
+                <button
+                  @click.stop="deleteFile(file)"
+                  class="p-2 bg-white/10 hover:bg-red-500/50 rounded-lg transition-colors"
+                  title="Löschen"
+                >
+                  <TrashIcon class="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <!-- File Info -->
+            <div class="p-3">
+              <p
+                class="text-sm font-medium text-white truncate cursor-pointer hover:text-primary-400"
+                :title="file.name"
+                @click="openRenameModal(file)"
+              >
+                {{ file.name }}
+              </p>
+              <p class="text-xs text-gray-500 mt-1">{{ formatSize(file.size) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
       <div v-else class="divide-y divide-dark-700">
         <div
           v-for="file in filteredFiles"
           :key="file.id"
           class="flex items-center gap-4 p-4 hover:bg-dark-700/50 transition-colors group"
         >
-          <!-- Icon -->
-          <div class="w-10 h-10 flex items-center justify-center bg-dark-600 rounded-lg">
-            <component :is="getFileIcon(file)" class="w-5 h-5 text-primary-400" />
+          <!-- Thumbnail / Icon -->
+          <div
+            class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer"
+            @click="openPreview(file)"
+          >
+            <img
+              v-if="isImage(file)"
+              :src="getThumbnailUrl(file)"
+              :alt="file.name"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
+              <component :is="getFileIcon(file)" class="w-6 h-6 text-primary-400" />
+            </div>
           </div>
 
           <!-- Info -->
@@ -537,9 +667,10 @@ onMounted(() => {
 
               <!-- Stats -->
               <div class="flex gap-4 text-sm text-gray-400">
-                <span>Downloads: {{ shareData.download_count }}</span>
+                <span>{{ shareData.view_count || 0 }} Aufrufe</span>
+                <span>{{ shareData.download_count || 0 }} Downloads</span>
                 <span v-if="shareData.max_downloads">
-                  / {{ shareData.max_downloads }}
+                  (max. {{ shareData.max_downloads }})
                 </span>
               </div>
             </div>
@@ -670,6 +801,38 @@ onMounted(() => {
               Umbenennen
             </button>
           </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Image Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showPreviewModal && previewFile"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+        @click.self="showPreviewModal = false"
+      >
+        <button
+          @click="showPreviewModal = false"
+          class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+        >
+          <XMarkIcon class="w-6 h-6 text-white" />
+        </button>
+        <img
+          :src="getThumbnailUrl(previewFile)"
+          :alt="previewFile.name"
+          class="max-w-full max-h-full object-contain rounded-lg"
+        />
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-lg">
+          <span class="text-white font-medium">{{ previewFile.name }}</span>
+          <span class="text-gray-400">{{ formatSize(previewFile.size) }}</span>
+          <button
+            @click="downloadFile(previewFile)"
+            class="flex items-center gap-2 px-3 py-1 bg-primary-600 hover:bg-primary-700 rounded-lg text-white text-sm transition-colors"
+          >
+            <ArrowDownTrayIcon class="w-4 h-4" />
+            Download
+          </button>
         </div>
       </div>
     </Teleport>

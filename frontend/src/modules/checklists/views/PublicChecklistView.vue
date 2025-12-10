@@ -18,6 +18,11 @@ import {
   HandThumbUpIcon,
   HandThumbDownIcon,
   QuestionMarkCircleIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon,
+  PhotoIcon,
+  CameraIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import axios from 'axios'
@@ -49,6 +54,15 @@ const passwordInput = ref('')
 const passwordError = ref(false)
 const storedPassword = ref(sessionStorage.getItem(`checklist_password_${route.params.token}`) || '')
 
+// Filter/Search state
+const searchQuery = ref('')
+const statusFilter = ref('all') // 'all', 'pending', 'passed', 'failed', 'uncertain'
+const showFilters = ref(false)
+
+// Image preview state
+const previewImage = ref(null)
+const uploadingEntryId = ref(null)
+
 const newEntry = ref({
   status: 'passed',
   notes: '',
@@ -64,11 +78,50 @@ const newItem = ref({
 // Computed
 const token = computed(() => route.params.token)
 
+// Filter items based on search and status
+const filteredItems = computed(() => {
+  if (!checklist.value?.items) return []
+
+  let items = checklist.value.items
+
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    items = items.filter(item =>
+      item.title.toLowerCase().includes(query) ||
+      (item.description && item.description.toLowerCase().includes(query))
+    )
+  }
+
+  // Apply status filter
+  if (statusFilter.value !== 'all') {
+    items = items.filter(item => {
+      const progress = getItemProgress(item)
+      switch (statusFilter.value) {
+        case 'pending':
+          return !progress.isComplete && item.entry_count === 0
+        case 'in_progress':
+          return !progress.isComplete && item.entry_count > 0
+        case 'passed':
+          return progress.isComplete
+        case 'failed':
+          return (item.failed_count || 0) > 0
+        case 'uncertain':
+          return (item.uncertain_count || 0) > 0
+        default:
+          return true
+      }
+    })
+  }
+
+  return items
+})
+
 const itemsByCategory = computed(() => {
   if (!checklist.value) return []
 
   const categories = checklist.value.categories || []
-  const items = checklist.value.items || []
+  const items = filteredItems.value
 
   const result = categories.map(cat => ({
     ...cat,
@@ -84,7 +137,15 @@ const itemsByCategory = computed(() => {
     })
   }
 
-  return result
+  // Only return categories that have items (after filtering)
+  return result.filter(cat => cat.items.length > 0)
+})
+
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (searchQuery.value.trim()) count++
+  if (statusFilter.value !== 'all') count++
+  return count
 })
 
 const lastSyncTimeFormatted = computed(() => {
@@ -406,6 +467,62 @@ async function deleteEntry(entry, item) {
   }
 }
 
+async function uploadEntryImage(entry, event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    alert('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    return
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Bild darf maximal 5MB groß sein')
+    return
+  }
+
+  uploadingEntryId.value = entry.id
+  const formData = new FormData()
+  formData.append('image', file)
+
+  try {
+    const response = await axios.post(
+      `/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    entry.image_path = response.data.data.image_path
+  } catch (err) {
+    alert(err.response?.data?.error || 'Fehler beim Hochladen')
+  } finally {
+    uploadingEntryId.value = null
+    // Reset file input
+    event.target.value = ''
+  }
+}
+
+async function deleteEntryImage(entry) {
+  if (!confirm('Bild wirklich löschen?')) return
+
+  try {
+    await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`)
+    entry.image_path = null
+  } catch (err) {
+    alert('Fehler beim Löschen')
+  }
+}
+
+function getImageUrl(imagePath) {
+  return `/api/v1/checklists/images/${imagePath}`
+}
+
+function openImagePreview(imagePath) {
+  previewImage.value = imagePath
+}
+
 async function addItem() {
   if (!newItem.value.title.trim()) {
     alert('Titel ist erforderlich')
@@ -469,6 +586,11 @@ function openAddItemInCategory(categoryId) {
   addItemCategoryId.value = categoryId
   newItem.value.category_id = categoryId
   showAddItemModal.value = true
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  statusFilter.value = 'all'
 }
 
 function toggleCategory(categoryId) {
@@ -677,6 +799,121 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Search & Filter Bar -->
+        <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-4 mb-6">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <!-- Search Input -->
+            <div class="relative flex-1">
+              <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Testpunkte suchen..."
+                class="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                v-if="searchQuery"
+                @click="searchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <XMarkIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Filter Toggle -->
+            <button
+              @click="showFilters = !showFilters"
+              class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors"
+              :class="activeFiltersCount > 0
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+            >
+              <FunnelIcon class="w-5 h-5" />
+              <span>Filter</span>
+              <span
+                v-if="activeFiltersCount > 0"
+                class="px-1.5 py-0.5 text-xs rounded-full bg-white/20"
+              >
+                {{ activeFiltersCount }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Filter Options -->
+          <div v-if="showFilters" class="mt-4 pt-4 border-t border-gray-700">
+            <div class="flex flex-wrap gap-2">
+              <button
+                @click="statusFilter = 'all'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                Alle
+              </button>
+              <button
+                @click="statusFilter = 'pending'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'pending'
+                  ? 'bg-gray-500 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                Offen
+              </button>
+              <button
+                @click="statusFilter = 'in_progress'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'in_progress'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                In Arbeit
+              </button>
+              <button
+                @click="statusFilter = 'passed'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'passed'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                Fertig
+              </button>
+              <button
+                @click="statusFilter = 'uncertain'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'uncertain'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                Unsicher
+              </button>
+              <button
+                @click="statusFilter = 'failed'"
+                class="px-3 py-1.5 rounded-lg text-sm transition-colors"
+                :class="statusFilter === 'failed'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+              >
+                Fehler
+              </button>
+            </div>
+            <div v-if="activeFiltersCount > 0" class="mt-3">
+              <button
+                @click="clearFilters"
+                class="text-sm text-gray-400 hover:text-white flex items-center gap-1"
+              >
+                <XMarkIcon class="w-4 h-4" />
+                Filter zurücksetzen
+              </button>
+            </div>
+          </div>
+
+          <!-- Results info -->
+          <div v-if="activeFiltersCount > 0" class="mt-3 text-sm text-gray-400">
+            {{ filteredItems.length }} von {{ checklist.items?.length || 0 }} Testpunkten
+          </div>
+        </div>
+
         <!-- Add Item Button (if allowed) -->
         <div v-if="checklist.allow_add_items" class="mb-6">
           <button
@@ -690,6 +927,24 @@ onUnmounted(() => {
 
         <!-- Items by Category -->
         <div class="space-y-4">
+          <!-- No results message -->
+          <div
+            v-if="itemsByCategory.length === 0 && activeFiltersCount > 0"
+            class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center"
+          >
+            <MagnifyingGlassIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
+            <h3 class="text-white font-medium mb-2">Keine Ergebnisse</h3>
+            <p class="text-gray-400 text-sm mb-4">
+              Für deine Filter wurden keine Testpunkte gefunden.
+            </p>
+            <button
+              @click="clearFilters"
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm transition-colors"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+
           <div
             v-for="category in itemsByCategory"
             :key="category.id || 'uncategorized'"
@@ -776,61 +1031,101 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Entries -->
-                    <div v-if="item.entries && item.entries.length > 0" class="mt-3 space-y-1.5">
+                    <div v-if="item.entries && item.entries.length > 0" class="mt-3 space-y-2">
                       <div
                         v-for="entry in item.entries"
                         :key="entry.id"
-                        class="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg text-sm transition-all duration-500"
+                        class="p-2 bg-gray-700/30 rounded-lg text-sm transition-all duration-500"
                         :class="{ 'ring-2 ring-indigo-500 ring-opacity-50 bg-indigo-900/20': isNewEntry(entry.id) }"
                       >
-                        <component
-                          :is="getStatusIcon(entry.status)"
-                          class="w-4 h-4 flex-shrink-0"
-                          :class="getStatusColor(entry.status).split(' ')[0]"
-                        />
-                        <span class="text-white font-medium">{{ entry.tester_name }}</span>
-                        <span
-                          class="px-1.5 py-0.5 rounded text-xs border"
-                          :class="getStatusColor(entry.status)"
-                        >
-                          {{ getStatusLabel(entry.status) }}
-                        </span>
-                        <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
-                        <span class="text-gray-500 text-xs flex-shrink-0">{{ formatDate(entry.created_at) }}</span>
+                        <div class="flex items-center gap-2">
+                          <component
+                            :is="getStatusIcon(entry.status)"
+                            class="w-4 h-4 flex-shrink-0"
+                            :class="getStatusColor(entry.status).split(' ')[0]"
+                          />
+                          <span class="text-white font-medium">{{ entry.tester_name }}</span>
+                          <span
+                            class="px-1.5 py-0.5 rounded text-xs border"
+                            :class="getStatusColor(entry.status)"
+                          >
+                            {{ getStatusLabel(entry.status) }}
+                          </span>
+                          <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
+                          <span class="text-gray-500 text-xs flex-shrink-0">{{ formatDate(entry.created_at) }}</span>
 
-                        <!-- Entry Actions -->
-                        <div v-if="entry.tester_name === testerName" class="flex items-center gap-1 ml-2">
-                          <button
-                            v-if="entry.status !== 'passed'"
-                            @click="updateEntryStatus(entry, 'passed')"
-                            class="p-1 hover:bg-gray-600 rounded"
-                            title="Als OK markieren"
-                          >
-                            <CheckCircleIcon class="w-4 h-4 text-green-400" />
-                          </button>
-                          <button
-                            v-if="entry.status !== 'uncertain'"
-                            @click="updateEntryStatus(entry, 'uncertain')"
-                            class="p-1 hover:bg-gray-600 rounded"
-                            title="Als Unsicher markieren"
-                          >
-                            <QuestionMarkCircleIcon class="w-4 h-4 text-yellow-400" />
-                          </button>
-                          <button
-                            v-if="entry.status !== 'failed'"
-                            @click="updateEntryStatus(entry, 'failed')"
-                            class="p-1 hover:bg-gray-600 rounded"
-                            title="Als Fehler markieren"
-                          >
-                            <XCircleIcon class="w-4 h-4 text-red-400" />
-                          </button>
-                          <button
-                            @click="deleteEntry(entry, item)"
-                            class="p-1 hover:bg-gray-600 rounded"
-                            title="Löschen"
-                          >
-                            <TrashIcon class="w-4 h-4 text-gray-400" />
-                          </button>
+                          <!-- Entry Actions -->
+                          <div v-if="entry.tester_name === testerName" class="flex items-center gap-1 ml-2">
+                            <button
+                              v-if="entry.status !== 'passed'"
+                              @click="updateEntryStatus(entry, 'passed')"
+                              class="p-1 hover:bg-gray-600 rounded"
+                              title="Als OK markieren"
+                            >
+                              <CheckCircleIcon class="w-4 h-4 text-green-400" />
+                            </button>
+                            <button
+                              v-if="entry.status !== 'uncertain'"
+                              @click="updateEntryStatus(entry, 'uncertain')"
+                              class="p-1 hover:bg-gray-600 rounded"
+                              title="Als Unsicher markieren"
+                            >
+                              <QuestionMarkCircleIcon class="w-4 h-4 text-yellow-400" />
+                            </button>
+                            <button
+                              v-if="entry.status !== 'failed'"
+                              @click="updateEntryStatus(entry, 'failed')"
+                              class="p-1 hover:bg-gray-600 rounded"
+                              title="Als Fehler markieren"
+                            >
+                              <XCircleIcon class="w-4 h-4 text-red-400" />
+                            </button>
+                            <!-- Image Upload Button -->
+                            <label
+                              class="p-1 hover:bg-gray-600 rounded cursor-pointer"
+                              :title="entry.image_path ? 'Bild ersetzen' : 'Screenshot hinzufügen'"
+                            >
+                              <CameraIcon class="w-4 h-4" :class="entry.image_path ? 'text-indigo-400' : 'text-gray-400'" />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                class="hidden"
+                                @change="uploadEntryImage(entry, $event)"
+                                :disabled="uploadingEntryId === entry.id"
+                              />
+                            </label>
+                            <button
+                              @click="deleteEntry(entry, item)"
+                              class="p-1 hover:bg-gray-600 rounded"
+                              title="Löschen"
+                            >
+                              <TrashIcon class="w-4 h-4 text-gray-400" />
+                            </button>
+                          </div>
+                        </div>
+                        <!-- Entry Image -->
+                        <div v-if="entry.image_path" class="mt-2">
+                          <div class="relative inline-block">
+                            <img
+                              :src="getImageUrl(entry.image_path)"
+                              class="max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              @click="openImagePreview(entry.image_path)"
+                              alt="Screenshot"
+                            />
+                            <button
+                              v-if="entry.tester_name === testerName"
+                              @click="deleteEntryImage(entry)"
+                              class="absolute -top-1 -right-1 p-1 bg-red-600 hover:bg-red-500 rounded-full"
+                              title="Bild löschen"
+                            >
+                              <XMarkIcon class="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                        <!-- Upload Progress -->
+                        <div v-if="uploadingEntryId === entry.id" class="mt-2 text-xs text-gray-400 flex items-center gap-2">
+                          <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          Bild wird hochgeladen...
                         </div>
                       </div>
                     </div>
@@ -1019,6 +1314,28 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+        </div>
+      </Teleport>
+
+      <!-- Image Preview Modal -->
+      <Teleport to="body">
+        <div
+          v-if="previewImage"
+          class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          @click="previewImage = null"
+        >
+          <button
+            class="absolute top-4 right-4 p-2 text-white hover:text-gray-300"
+            @click="previewImage = null"
+          >
+            <XMarkIcon class="w-8 h-8" />
+          </button>
+          <img
+            :src="getImageUrl(previewImage)"
+            class="max-w-full max-h-full object-contain rounded-lg"
+            alt="Screenshot Vorschau"
+            @click.stop
+          />
         </div>
       </Teleport>
     </div>

@@ -209,6 +209,117 @@ class SharedChecklistController
     }
 
     /**
+     * Duplicate a checklist (with all categories and items, but no entries)
+     */
+    public function duplicate(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $checklist = $this->getChecklistForUser($id, $userId);
+
+        // Create new checklist
+        $newChecklistId = Uuid::uuid4()->toString();
+        $shareToken = bin2hex(random_bytes(32));
+
+        $this->db->insert('shared_checklists', [
+            'id' => $newChecklistId,
+            'user_id' => $userId,
+            'title' => $checklist['title'] . ' (Kopie)',
+            'description' => $checklist['description'],
+            'share_token' => $shareToken,
+            'is_active' => 1,
+            'allow_anonymous' => $checklist['allow_anonymous'],
+            'require_name' => $checklist['require_name'],
+            'allow_add_items' => $checklist['allow_add_items'],
+            'allow_comments' => $checklist['allow_comments'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Copy categories with ID mapping
+        $categoryMap = [];
+        $categories = $this->db->fetchAllAssociative(
+            'SELECT * FROM shared_checklist_categories WHERE checklist_id = ? ORDER BY sort_order',
+            [$id]
+        );
+
+        foreach ($categories as $category) {
+            $newCategoryId = Uuid::uuid4()->toString();
+            $categoryMap[$category['id']] = $newCategoryId;
+
+            $this->db->insert('shared_checklist_categories', [
+                'id' => $newCategoryId,
+                'checklist_id' => $newChecklistId,
+                'name' => $category['name'],
+                'description' => $category['description'],
+                'sort_order' => $category['sort_order'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Copy items (with updated category IDs)
+        $items = $this->db->fetchAllAssociative(
+            'SELECT * FROM shared_checklist_items WHERE checklist_id = ? ORDER BY sort_order',
+            [$id]
+        );
+
+        foreach ($items as $item) {
+            $newItemId = Uuid::uuid4()->toString();
+            $newCategoryId = $item['category_id'] ? ($categoryMap[$item['category_id']] ?? null) : null;
+
+            $this->db->insert('shared_checklist_items', [
+                'id' => $newItemId,
+                'checklist_id' => $newChecklistId,
+                'category_id' => $newCategoryId,
+                'title' => $item['title'],
+                'description' => $item['description'],
+                'required_testers' => $item['required_testers'],
+                'sort_order' => $item['sort_order'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $newChecklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE id = ?',
+            [$newChecklistId]
+        );
+
+        return JsonResponse::created($newChecklist, 'Checkliste dupliziert');
+    }
+
+    /**
+     * Reset all entries for a checklist
+     */
+    public function resetEntries(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $checklist = $this->getChecklistForUser($id, $userId, true);
+
+        // Delete all entries for items in this checklist
+        $this->db->executeStatement(
+            'DELETE e FROM shared_checklist_entries e
+             INNER JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE i.checklist_id = ?',
+            [$id]
+        );
+
+        // Delete related activity log
+        $this->db->executeStatement(
+            'DELETE FROM shared_checklist_activity WHERE checklist_id = ?',
+            [$id]
+        );
+
+        // Log this action
+        $this->logActivity($id, null, null, 'Owner', 'entries_reset', [
+            'message' => 'Alle Einträge zurückgesetzt',
+        ]);
+
+        return JsonResponse::success(null, 'Alle Einträge wurden zurückgesetzt');
+    }
+
+    /**
      * Add a category to a checklist
      */
     public function addCategory(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
@@ -736,6 +847,157 @@ class SharedChecklistController
         ]);
 
         return JsonResponse::success(null, 'Eintrag gelöscht');
+    }
+
+    /**
+     * Upload an image for a checklist entry
+     */
+    public function uploadEntryImage(ServerRequestInterface $request, ResponseInterface $response, string $token, string $entryId): ResponseInterface
+    {
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        if (!$checklist['is_active']) {
+            throw new ForbiddenException('Diese Checkliste ist deaktiviert');
+        }
+
+        // Get entry and verify it belongs to this checklist
+        $entry = $this->db->fetchAssociative(
+            'SELECT e.*, i.checklist_id
+             FROM shared_checklist_entries e
+             JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE e.id = ? AND i.checklist_id = ?',
+            [$entryId, $checklist['id']]
+        );
+
+        if (!$entry) {
+            throw new NotFoundException('Eintrag nicht gefunden');
+        }
+
+        $uploadedFiles = $request->getUploadedFiles();
+        $uploadedFile = $uploadedFiles['image'] ?? null;
+
+        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            throw new ValidationException('Kein gültiges Bild hochgeladen');
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $mimeType = $uploadedFile->getClientMediaType();
+        if (!in_array($mimeType, $allowedTypes)) {
+            throw new ValidationException('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt');
+        }
+
+        // Check file size (max 5MB)
+        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
+            throw new ValidationException('Bild darf maximal 5MB groß sein');
+        }
+
+        // Generate unique filename
+        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+        $filename = 'checklist_' . $checklist['id'] . '_' . $entryId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+
+        // Ensure upload directory exists
+        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Delete old image if exists
+        if ($entry['image_path']) {
+            $oldImagePath = $uploadDir . $entry['image_path'];
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+
+        // Move uploaded file
+        $uploadedFile->moveTo($uploadDir . $filename);
+
+        // Update database
+        $this->db->update('shared_checklist_entries', [
+            'image_path' => $filename,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $entryId]);
+
+        return JsonResponse::success([
+            'image_path' => $filename,
+        ], 'Bild hochgeladen');
+    }
+
+    /**
+     * Delete an entry image
+     */
+    public function deleteEntryImage(ServerRequestInterface $request, ResponseInterface $response, string $token, string $entryId): ResponseInterface
+    {
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        // Get entry and verify it belongs to this checklist
+        $entry = $this->db->fetchAssociative(
+            'SELECT e.*, i.checklist_id
+             FROM shared_checklist_entries e
+             JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE e.id = ? AND i.checklist_id = ?',
+            [$entryId, $checklist['id']]
+        );
+
+        if (!$entry) {
+            throw new NotFoundException('Eintrag nicht gefunden');
+        }
+
+        if ($entry['image_path']) {
+            $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+            $imagePath = $uploadDir . $entry['image_path'];
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+            $this->db->update('shared_checklist_entries', [
+                'image_path' => null,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], ['id' => $entryId]);
+        }
+
+        return JsonResponse::success(null, 'Bild gelöscht');
+    }
+
+    /**
+     * Serve a checklist entry image
+     */
+    public function serveImage(ServerRequestInterface $request, ResponseInterface $response, string $filename): ResponseInterface
+    {
+        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+        $filePath = $uploadDir . basename($filename); // Use basename to prevent directory traversal
+
+        if (!file_exists($filePath)) {
+            throw new NotFoundException('Bild nicht gefunden');
+        }
+
+        // Get MIME type
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($filePath);
+
+        $response = $response
+            ->withHeader('Content-Type', $mimeType)
+            ->withHeader('Content-Length', (string) filesize($filePath))
+            ->withHeader('Cache-Control', 'public, max-age=31536000');
+
+        $response->getBody()->write(file_get_contents($filePath));
+
+        return $response;
     }
 
     /**

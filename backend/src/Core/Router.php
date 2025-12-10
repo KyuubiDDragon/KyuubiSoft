@@ -41,6 +41,7 @@ use App\Modules\Tickets\Controllers\TicketCategoryController;
 use App\Modules\Setup\Controllers\SetupController;
 use App\Modules\News\Controllers\NewsController;
 use App\Modules\Storage\Controllers\StorageController;
+use App\Modules\Checklists\Controllers\SharedChecklistController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -473,6 +474,23 @@ class Router
                 $protected->put('/storage/{id}/share', [StorageController::class, 'updateShare']);
                 $protected->delete('/storage/{id}/share', [StorageController::class, 'deleteShare']);
 
+                // Shared Checklists (Test Lists)
+                $protected->get('/checklists', [SharedChecklistController::class, 'index']);
+                $protected->post('/checklists', [SharedChecklistController::class, 'create']);
+                $protected->get('/checklists/{id}', [SharedChecklistController::class, 'show']);
+                $protected->put('/checklists/{id}', [SharedChecklistController::class, 'update']);
+                $protected->delete('/checklists/{id}', [SharedChecklistController::class, 'delete']);
+                // Checklist Categories
+                $protected->post('/checklists/{id}/categories', [SharedChecklistController::class, 'addCategory']);
+                $protected->put('/checklists/{id}/categories/{categoryId}', [SharedChecklistController::class, 'updateCategory']);
+                $protected->delete('/checklists/{id}/categories/{categoryId}', [SharedChecklistController::class, 'deleteCategory']);
+                // Checklist Items
+                $protected->post('/checklists/{id}/items', [SharedChecklistController::class, 'addItem']);
+                $protected->put('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'updateItem']);
+                $protected->delete('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'deleteItem']);
+                // Checklist Activity
+                $protected->get('/checklists/{id}/activity', [SharedChecklistController::class, 'getActivity']);
+
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);
                 $protected->put('/settings/user', [SettingsController::class, 'updateUserSettings']);
@@ -695,6 +713,13 @@ class Router
             $group->get('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
             $group->post('/storage/public/{token}/download', [StorageController::class, 'downloadPublic']);
             $group->get('/storage/public/{token}/thumbnail', [StorageController::class, 'thumbnailPublic']);
+
+            // Public Checklist Routes (no auth required)
+            $group->get('/checklists/public/{token}', [SharedChecklistController::class, 'getPublic']);
+            $group->post('/checklists/public/{token}/entries', [SharedChecklistController::class, 'addEntry']);
+            $group->put('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'updateEntry']);
+            $group->delete('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'deleteEntry']);
+            $group->post('/checklists/public/{token}/items', [SharedChecklistController::class, 'addItemPublic']);
         });
     }
 }

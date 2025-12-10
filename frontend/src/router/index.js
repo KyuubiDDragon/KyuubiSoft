@@ -46,6 +46,9 @@ const NewsView = () => import('@/modules/news/views/NewsView.vue')
 const StorageView = () => import('@/modules/storage/views/StorageView.vue')
 const SharesView = () => import('@/modules/storage/views/SharesView.vue')
 const PublicDownloadView = () => import('@/modules/storage/views/PublicDownloadView.vue')
+const ChecklistsView = () => import('@/modules/checklists/views/ChecklistsView.vue')
+const ChecklistDetailView = () => import('@/modules/checklists/views/ChecklistDetailView.vue')
+const PublicChecklistView = () => import('@/modules/checklists/views/PublicChecklistView.vue')
 
 const routes = [
   // Auth routes
@@ -232,6 +235,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/checklists',
+    name: 'checklists',
+    component: ChecklistsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/checklists/:id',
+    name: 'checklist-detail',
+    component: ChecklistDetailView,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: SettingsView,
@@ -299,6 +314,14 @@ const routes = [
     path: '/share/:token',
     name: 'public-download',
     component: PublicDownloadView,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Public checklist view (accessible to everyone)
+  {
+    path: '/checklist/:token',
+    name: 'public-checklist',
+    component: PublicChecklistView,
     meta: { layout: 'none', guest: true },
   },
 

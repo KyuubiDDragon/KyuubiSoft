@@ -38,6 +38,7 @@ import {
   CloudArrowUpIcon,
   CloudIcon,
   LinkIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -139,6 +140,7 @@ const allNavigationGroups = [
     children: [
       { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon },
       { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon },
+      { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon },
     ],
   },
 

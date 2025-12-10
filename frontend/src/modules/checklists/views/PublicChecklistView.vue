@@ -43,6 +43,12 @@ const syncError = ref(false)
 const newEntryIds = ref(new Set())
 const currentVersion = ref(null)
 
+// Password protection state
+const requiresPassword = ref(false)
+const passwordInput = ref('')
+const passwordError = ref(false)
+const storedPassword = ref(sessionStorage.getItem(`checklist_password_${route.params.token}`) || '')
+
 const newEntry = ref({
   status: 'passed',
   notes: '',
@@ -99,8 +105,23 @@ async function loadChecklist(silent = false) {
   syncError.value = false
 
   try {
-    const response = await axios.get(`/api/v1/checklists/public/${token.value}`)
+    const url = storedPassword.value
+      ? `/api/v1/checklists/public/${token.value}?password=${encodeURIComponent(storedPassword.value)}`
+      : `/api/v1/checklists/public/${token.value}`
+    const response = await axios.get(url)
     const newData = response.data.data
+
+    // Check if password is required
+    if (newData.requires_password) {
+      requiresPassword.value = true
+      isLoading.value = false
+      isSyncing.value = false
+      return
+    }
+
+    // Password was correct, store it
+    requiresPassword.value = false
+    passwordError.value = false
 
     // Detect new entries for animation
     if (checklist.value && newData.items) {
@@ -170,6 +191,26 @@ async function checkForUpdates() {
     syncError.value = false
   } catch (err) {
     syncError.value = true
+  }
+}
+
+// Submit password for protected checklist
+async function submitPassword() {
+  if (!passwordInput.value.trim()) {
+    passwordError.value = true
+    return
+  }
+
+  storedPassword.value = passwordInput.value
+  sessionStorage.setItem(`checklist_password_${token.value}`, passwordInput.value)
+  passwordError.value = false
+  await loadChecklist()
+
+  // If still requires password, the password was wrong
+  if (requiresPassword.value) {
+    passwordError.value = true
+    storedPassword.value = ''
+    sessionStorage.removeItem(`checklist_password_${token.value}`)
   }
 }
 
@@ -535,6 +576,35 @@ onUnmounted(() => {
         <ExclamationTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
         <h2 class="text-xl font-semibold text-white mb-2">Nicht verfügbar</h2>
         <p class="text-gray-400">{{ error }}</p>
+      </div>
+
+      <!-- Password Required -->
+      <div v-else-if="requiresPassword" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center max-w-md mx-auto">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-500/20 flex items-center justify-center">
+          <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ checklist?.title || 'Geschützte Checkliste' }}</h2>
+        <p class="text-gray-400 mb-6">Diese Checkliste ist passwortgeschützt</p>
+
+        <div class="space-y-4">
+          <input
+            v-model="passwordInput"
+            type="password"
+            placeholder="Passwort eingeben"
+            class="w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            :class="passwordError ? 'border-red-500' : 'border-gray-600'"
+            @keyup.enter="submitPassword"
+          />
+          <p v-if="passwordError" class="text-red-400 text-sm">Falsches Passwort</p>
+          <button
+            @click="submitPassword"
+            class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium transition-colors"
+          >
+            Entsperren
+          </button>
+        </div>
       </div>
 
       <!-- Checklist -->

@@ -50,6 +50,7 @@ const newCategory = ref({
 
 const editingItem = ref(null)
 const editingCategory = ref(null)
+const newPassword = ref('')
 
 // Computed
 const checklistId = computed(() => route.params.id)
@@ -128,16 +129,24 @@ async function loadChecklist() {
 
 async function updateSettings() {
   try {
-    const response = await api.put(`/api/v1/checklists/${checklistId.value}`, {
+    const payload = {
       title: checklist.value.title,
       description: checklist.value.description,
       is_active: checklist.value.is_active,
       require_name: checklist.value.require_name,
       allow_add_items: checklist.value.allow_add_items,
       allow_comments: checklist.value.allow_comments,
-    })
+    }
+
+    // Include password if changed (empty string to remove, or new value to set)
+    if (newPassword.value !== '' || checklist.value.has_password) {
+      payload.password = newPassword.value
+    }
+
+    const response = await api.put(`/api/v1/checklists/${checklistId.value}`, payload)
     checklist.value = { ...checklist.value, ...response.data.data }
     showSettingsModal.value = false
+    newPassword.value = ''
     uiStore.showSuccess('Einstellungen gespeichert')
   } catch (error) {
     uiStore.showError('Fehler beim Speichern')
@@ -629,6 +638,25 @@ watch(() => route.params.id, () => {
                 />
                 <span class="text-gray-300 text-sm">Kommentare/Notizen erlauben</span>
               </label>
+            </div>
+
+            <!-- Password Protection -->
+            <div class="pt-4 border-t border-dark-700">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
+                Passwortschutz
+                <span v-if="checklist.has_password" class="text-green-400 text-xs ml-2">(aktiv)</span>
+              </label>
+              <div class="flex gap-2">
+                <input
+                  v-model="newPassword"
+                  type="password"
+                  :placeholder="checklist.has_password ? 'Neues Passwort (leer = entfernen)' : 'Passwort setzen (optional)'"
+                  class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <p class="text-gray-500 text-xs mt-1">
+                {{ checklist.has_password ? 'Leer lassen um Passwort zu entfernen, oder neues Passwort eingeben' : 'Optional: Schütze die Checkliste mit einem Passwort' }}
+              </p>
             </div>
           </div>
 

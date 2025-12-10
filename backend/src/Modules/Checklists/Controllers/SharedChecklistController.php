@@ -103,7 +103,8 @@ class SharedChecklistController
             'SELECT i.*,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id) as entry_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "passed") as passed_count,
-                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "failed") as failed_count
+                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "failed") as failed_count,
+                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "uncertain") as uncertain_count
              FROM shared_checklist_items i
              WHERE i.checklist_id = ?
              ORDER BY i.sort_order',
@@ -118,6 +119,14 @@ class SharedChecklistController
             );
         }
 
+        // Cast boolean fields for proper frontend handling
+        $checklist['is_active'] = (bool) $checklist['is_active'];
+        $checklist['allow_anonymous'] = (bool) $checklist['allow_anonymous'];
+        $checklist['require_name'] = (bool) $checklist['require_name'];
+        $checklist['allow_add_items'] = (bool) $checklist['allow_add_items'];
+        $checklist['allow_comments'] = (bool) $checklist['allow_comments'];
+        $checklist['has_password'] = !empty($checklist['password_hash'] ?? null);
+        unset($checklist['password_hash']); // Don't send hash to frontend
         $checklist['categories'] = $categories;
         $checklist['items'] = $items;
 
@@ -157,6 +166,14 @@ class SharedChecklistController
         if (isset($data['allow_comments'])) {
             $updates['allow_comments'] = (int) $data['allow_comments'];
         }
+        // Handle password - empty string or null clears it, non-empty sets it
+        if (array_key_exists('password', $data)) {
+            if (empty($data['password'])) {
+                $updates['password_hash'] = null;
+            } else {
+                $updates['password_hash'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+        }
 
         $this->db->update('shared_checklists', $updates, ['id' => $id]);
 
@@ -164,6 +181,15 @@ class SharedChecklistController
             'SELECT * FROM shared_checklists WHERE id = ?',
             [$id]
         );
+
+        // Cast boolean fields for proper frontend handling
+        $updatedChecklist['is_active'] = (bool) $updatedChecklist['is_active'];
+        $updatedChecklist['allow_anonymous'] = (bool) $updatedChecklist['allow_anonymous'];
+        $updatedChecklist['require_name'] = (bool) $updatedChecklist['require_name'];
+        $updatedChecklist['allow_add_items'] = (bool) $updatedChecklist['allow_add_items'];
+        $updatedChecklist['allow_comments'] = (bool) $updatedChecklist['allow_comments'];
+        $updatedChecklist['has_password'] = !empty($updatedChecklist['password_hash']);
+        unset($updatedChecklist['password_hash']);
 
         return JsonResponse::success($updatedChecklist, 'Checkliste aktualisiert');
     }
@@ -429,6 +455,22 @@ class SharedChecklistController
 
         if (!$checklist['is_active']) {
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
+        }
+
+        // Check password protection
+        if (!empty($checklist['password_hash'])) {
+            $params = $request->getQueryParams();
+            $providedPassword = $params['password'] ?? null;
+
+            if (!$providedPassword || !password_verify($providedPassword, $checklist['password_hash'])) {
+                // Return limited info for password-protected lists
+                return JsonResponse::success([
+                    'id' => $checklist['id'],
+                    'title' => $checklist['title'],
+                    'owner_name' => $checklist['owner_name'],
+                    'requires_password' => true,
+                ]);
+            }
         }
 
         // Get categories

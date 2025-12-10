@@ -716,6 +716,8 @@ class Router
 
             // Public Checklist Routes (no auth required)
             $group->get('/checklists/public/{token}', [SharedChecklistController::class, 'getPublic']);
+            $group->get('/checklists/public/{token}/stream', [SharedChecklistController::class, 'stream']);
+            $group->get('/checklists/public/{token}/updates', [SharedChecklistController::class, 'getUpdates']);
             $group->post('/checklists/public/{token}/entries', [SharedChecklistController::class, 'addEntry']);
             $group->put('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'updateEntry']);
             $group->delete('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'deleteEntry']);

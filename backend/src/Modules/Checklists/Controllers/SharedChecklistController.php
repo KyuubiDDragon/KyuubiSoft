@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\CacheService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -16,7 +17,8 @@ use Ramsey\Uuid\Uuid;
 class SharedChecklistController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly CacheService $cache
     ) {}
 
     // ==================== Authenticated Endpoints ====================
@@ -558,6 +560,13 @@ class SharedChecklistController
             [$entryId]
         );
 
+        // Publish real-time update
+        $this->publishUpdate($token, 'entry_added', [
+            'entry' => $entry,
+            'item_id' => $data['item_id'],
+            'item_title' => $item['title'],
+        ]);
+
         return JsonResponse::created($entry, 'Testeintrag erstellt');
     }
 
@@ -629,6 +638,13 @@ class SharedChecklistController
             [$entryId]
         );
 
+        // Publish real-time update
+        $this->publishUpdate($token, 'entry_updated', [
+            'entry' => $updatedEntry,
+            'item_id' => $entry['item_id'],
+            'old_status' => $oldStatus,
+        ]);
+
         return JsonResponse::success($updatedEntry, 'Eintrag aktualisiert');
     }
 
@@ -663,6 +679,12 @@ class SharedChecklistController
 
         // Log activity
         $this->logActivity($checklist['id'], $entry['item_id'], null, $entry['tester_name'], 'entry_deleted', []);
+
+        // Publish real-time update
+        $this->publishUpdate($token, 'entry_deleted', [
+            'entry_id' => $entryId,
+            'item_id' => $entry['item_id'],
+        ]);
 
         return JsonResponse::success(null, 'Eintrag gelöscht');
     }
@@ -727,10 +749,154 @@ class SharedChecklistController
             [$itemId]
         );
 
+        // Publish real-time update
+        $this->publishUpdate($token, 'item_added', [
+            'item' => $item,
+        ]);
+
         return JsonResponse::created($item, 'Testpunkt erstellt');
     }
 
+    /**
+     * Server-Sent Events endpoint for real-time updates
+     */
+    public function stream(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
+    {
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        // Set SSE headers
+        $response = $response
+            ->withHeader('Content-Type', 'text/event-stream')
+            ->withHeader('Cache-Control', 'no-cache')
+            ->withHeader('Connection', 'keep-alive')
+            ->withHeader('X-Accel-Buffering', 'no');
+
+        // Get a fresh Redis connection for pub/sub
+        $redis = new \Predis\Client([
+            'scheme' => 'tcp',
+            'host'   => $_ENV['REDIS_HOST'] ?? 'redis',
+            'port'   => (int) ($_ENV['REDIS_PORT'] ?? 6379),
+        ]);
+
+        $channel = $this->cache->getPrefix() . 'checklist:' . $token;
+
+        // Create a streaming response body
+        $body = new \Slim\Psr7\Stream(fopen('php://temp', 'r+'));
+
+        // Subscribe to the channel
+        $pubsub = $redis->pubSubLoop();
+        $pubsub->subscribe($channel);
+
+        // Set a timeout
+        $startTime = time();
+        $timeout = 30; // 30 seconds, then reconnect
+
+        foreach ($pubsub as $message) {
+            if ($message->kind === 'message') {
+                $body->write("data: {$message->payload}\n\n");
+            }
+
+            // Check timeout
+            if (time() - $startTime > $timeout) {
+                $body->write("event: timeout\ndata: reconnect\n\n");
+                break;
+            }
+
+            // Flush output
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        }
+
+        $pubsub->unsubscribe();
+
+        return $response->withBody($body);
+    }
+
+    /**
+     * Get latest updates since a timestamp (fallback for SSE)
+     */
+    public function getUpdates(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
+    {
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        $params = $request->getQueryParams();
+        $since = $params['since'] ?? null;
+
+        // Get recent activity
+        $activities = [];
+        if ($since) {
+            $activities = $this->db->fetchAllAssociative(
+                'SELECT * FROM shared_checklist_activity
+                 WHERE checklist_id = ? AND created_at > ?
+                 ORDER BY created_at ASC',
+                [$checklist['id'], $since]
+            );
+        }
+
+        // Get current version hash (for change detection)
+        $versionHash = $this->getChecklistVersionHash($checklist['id']);
+
+        return JsonResponse::success([
+            'activities' => $activities,
+            'version' => $versionHash,
+            'timestamp' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
     // ==================== Helper Methods ====================
+
+    /**
+     * Get a version hash for change detection
+     */
+    private function getChecklistVersionHash(string $checklistId): string
+    {
+        $data = $this->db->fetchOne(
+            'SELECT CONCAT(
+                (SELECT COUNT(*) FROM shared_checklist_entries e
+                 JOIN shared_checklist_items i ON e.item_id = i.id
+                 WHERE i.checklist_id = ?),
+                "-",
+                (SELECT COALESCE(MAX(e.updated_at), "0") FROM shared_checklist_entries e
+                 JOIN shared_checklist_items i ON e.item_id = i.id
+                 WHERE i.checklist_id = ?)
+            )',
+            [$checklistId, $checklistId]
+        );
+        return md5($data ?: '0');
+    }
+
+    /**
+     * Publish an update to Redis for real-time sync
+     */
+    private function publishUpdate(string $token, string $event, array $data): void
+    {
+        try {
+            $this->cache->publish('checklist:' . $token, [
+                'event' => $event,
+                'data' => $data,
+                'timestamp' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {
+            // Log but don't fail the request
+            error_log('Failed to publish checklist update: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Get checklist with ownership check

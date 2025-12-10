@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   ClipboardDocumentListIcon,
@@ -15,7 +15,10 @@ import {
   TrashIcon,
   ArrowPathIcon,
   SignalIcon,
+  HandThumbUpIcon,
+  HandThumbDownIcon,
 } from '@heroicons/vue/24/outline'
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import axios from 'axios'
 
 const route = useRoute()
@@ -35,8 +38,8 @@ const refreshInterval = ref(null)
 const isSyncing = ref(false)
 const lastSyncTime = ref(null)
 const syncError = ref(false)
-const newEntryIds = ref(new Set()) // Track newly added entries for animation
-const lastDataHash = ref(null)
+const newEntryIds = ref(new Set())
+const currentVersion = ref(null)
 
 const newEntry = ref({
   status: 'passed',
@@ -59,13 +62,11 @@ const itemsByCategory = computed(() => {
   const categories = checklist.value.categories || []
   const items = checklist.value.items || []
 
-  // Create result with categories
   const result = categories.map(cat => ({
     ...cat,
     items: items.filter(item => item.category_id === cat.id),
   }))
 
-  // Add uncategorized items
   const uncategorized = items.filter(item => !item.category_id)
   if (uncategorized.length > 0) {
     result.push({
@@ -87,26 +88,6 @@ const lastSyncTimeFormatted = computed(() => {
   return `vor ${Math.floor(diff / 60)}m`
 })
 
-// Generate a simple hash of the data to detect changes
-function generateDataHash(data) {
-  if (!data) return null
-  const str = JSON.stringify({
-    items: data.items?.map(i => ({
-      id: i.id,
-      entries: i.entries?.map(e => ({ id: e.id, status: e.status }))
-    })),
-    progress: data.progress
-  })
-  // Simple hash
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return hash
-}
-
 // API Functions
 async function loadChecklist(silent = false) {
   if (!silent) {
@@ -118,7 +99,6 @@ async function loadChecklist(silent = false) {
   try {
     const response = await axios.get(`/api/v1/checklists/public/${token.value}`)
     const newData = response.data.data
-    const newHash = generateDataHash(newData)
 
     // Detect new entries for animation
     if (checklist.value && newData.items) {
@@ -131,7 +111,6 @@ async function loadChecklist(silent = false) {
         item.entries?.forEach(entry => {
           if (!oldEntryIds.has(entry.id)) {
             newEntryIds.value.add(entry.id)
-            // Remove animation class after 2 seconds
             setTimeout(() => {
               newEntryIds.value.delete(entry.id)
             }, 2000)
@@ -140,11 +119,7 @@ async function loadChecklist(silent = false) {
       })
     }
 
-    // Only update if data actually changed
-    if (newHash !== lastDataHash.value) {
-      checklist.value = newData
-      lastDataHash.value = newHash
-    }
+    checklist.value = newData
 
     // Initialize expanded categories
     const categories = checklist.value.categories || []
@@ -174,6 +149,98 @@ async function loadChecklist(silent = false) {
   }
 }
 
+// Check for updates using version endpoint
+async function checkForUpdates() {
+  if (!checklist.value) return
+
+  try {
+    const response = await axios.get(`/api/v1/checklists/public/${token.value}/updates`, {
+      params: { since: lastSyncTime.value?.toISOString() }
+    })
+    const { version } = response.data.data
+
+    // If version changed, do a full reload
+    if (currentVersion.value && version !== currentVersion.value) {
+      await loadChecklist(true)
+    }
+    currentVersion.value = version
+    lastSyncTime.value = new Date()
+    syncError.value = false
+  } catch (err) {
+    syncError.value = true
+  }
+}
+
+// Quick test - one click to mark as passed
+async function quickTest(item) {
+  if (checklist.value.require_name && !testerName.value.trim()) {
+    alert('Bitte gib zuerst deinen Namen ein')
+    return
+  }
+
+  try {
+    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+      item_id: item.id,
+      tester_name: testerName.value.trim() || 'Anonym',
+      status: 'passed',
+      notes: '',
+    })
+
+    if (testerName.value.trim()) {
+      localStorage.setItem('checklist_tester_name', testerName.value.trim())
+    }
+
+    // Update local state
+    item.entries = item.entries || []
+    item.entries.unshift(response.data.data)
+    item.passed_count = (item.passed_count || 0) + 1
+    item.entry_count = (item.entry_count || 0) + 1
+    recalculateProgress()
+
+    // Highlight the new entry
+    newEntryIds.value.add(response.data.data.id)
+    setTimeout(() => {
+      newEntryIds.value.delete(response.data.data.id)
+    }, 2000)
+  } catch (err) {
+    alert(err.response?.data?.error || 'Fehler beim Speichern')
+  }
+}
+
+// Quick fail - one click to mark as failed
+async function quickFail(item) {
+  if (checklist.value.require_name && !testerName.value.trim()) {
+    alert('Bitte gib zuerst deinen Namen ein')
+    return
+  }
+
+  try {
+    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+      item_id: item.id,
+      tester_name: testerName.value.trim() || 'Anonym',
+      status: 'failed',
+      notes: '',
+    })
+
+    if (testerName.value.trim()) {
+      localStorage.setItem('checklist_tester_name', testerName.value.trim())
+    }
+
+    item.entries = item.entries || []
+    item.entries.unshift(response.data.data)
+    item.failed_count = (item.failed_count || 0) + 1
+    item.entry_count = (item.entry_count || 0) + 1
+    recalculateProgress()
+
+    newEntryIds.value.add(response.data.data.id)
+    setTimeout(() => {
+      newEntryIds.value.delete(response.data.data.id)
+    }, 2000)
+  } catch (err) {
+    alert(err.response?.data?.error || 'Fehler beim Speichern')
+  }
+}
+
 async function addEntry() {
   if (checklist.value.require_name && !testerName.value.trim()) {
     alert('Bitte gib deinen Namen ein')
@@ -188,33 +255,26 @@ async function addEntry() {
       notes: newEntry.value.notes,
     })
 
-    // Save tester name
     if (testerName.value.trim()) {
       localStorage.setItem('checklist_tester_name', testerName.value.trim())
     }
 
-    // Update local state
     const item = checklist.value.items.find(i => i.id === selectedItem.value.id)
     if (item) {
       item.entries = item.entries || []
       item.entries.unshift(response.data.data)
 
-      // Update counts
       if (newEntry.value.status === 'passed') item.passed_count++
       else if (newEntry.value.status === 'failed') item.failed_count++
       else if (newEntry.value.status === 'in_progress') item.in_progress_count++
       item.entry_count++
 
-      // Recalculate progress
       recalculateProgress()
     }
 
     showAddEntryModal.value = false
     selectedItem.value = null
     newEntry.value = { status: 'passed', notes: '' }
-
-    // Trigger sync to get latest data
-    await loadChecklist(true)
   } catch (err) {
     alert(err.response?.data?.error || 'Fehler beim Speichern')
   }
@@ -226,11 +286,9 @@ async function updateEntryStatus(entry, newStatus) {
       status: newStatus,
     })
 
-    // Update local state
     const oldStatus = entry.status
     entry.status = newStatus
 
-    // Update counts on item
     for (const cat of itemsByCategory.value) {
       for (const item of cat.items) {
         const foundEntry = item.entries?.find(e => e.id === entry.id)
@@ -248,9 +306,6 @@ async function updateEntryStatus(entry, newStatus) {
         }
       }
     }
-
-    // Trigger sync
-    await loadChecklist(true)
   } catch (err) {
     alert('Fehler beim Aktualisieren')
   }
@@ -262,7 +317,6 @@ async function deleteEntry(entry, item) {
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`)
 
-    // Update local state
     item.entries = item.entries.filter(e => e.id !== entry.id)
     if (entry.status === 'passed') item.passed_count--
     else if (entry.status === 'failed') item.failed_count--
@@ -270,9 +324,6 @@ async function deleteEntry(entry, item) {
     item.entry_count--
 
     recalculateProgress()
-
-    // Trigger sync
-    await loadChecklist(true)
   } catch (err) {
     alert('Fehler beim Löschen')
   }
@@ -301,9 +352,6 @@ async function addItem() {
 
     showAddItemModal.value = false
     newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
-
-    // Trigger sync
-    await loadChecklist(true)
   } catch (err) {
     alert(err.response?.data?.error || 'Fehler beim Erstellen')
   }
@@ -359,11 +407,11 @@ function getStatusIcon(status) {
 
 function getStatusLabel(status) {
   switch (status) {
-    case 'passed': return 'Bestanden'
-    case 'failed': return 'Fehlgeschlagen'
-    case 'in_progress': return 'In Bearbeitung'
+    case 'passed': return 'OK'
+    case 'failed': return 'Fehler'
+    case 'in_progress': return 'In Arbeit'
     case 'blocked': return 'Blockiert'
-    default: return 'Ausstehend'
+    default: return 'Offen'
   }
 }
 
@@ -392,10 +440,11 @@ function isNewEntry(entryId) {
   return newEntryIds.value.has(entryId)
 }
 
-// Real-time sync (3 second interval)
+// Smart sync - use version checking
 function startAutoRefresh() {
+  // Initial full load, then version checks
   refreshInterval.value = setInterval(() => {
-    loadChecklist(true) // Silent refresh
+    checkForUpdates()
   }, 3000)
 }
 
@@ -437,15 +486,13 @@ onUnmounted(() => {
         <!-- Sync Status Bar -->
         <div class="flex items-center justify-between mb-4 px-2">
           <div class="flex items-center gap-2">
-            <div class="relative flex items-center gap-2">
-              <span
-                class="w-2 h-2 rounded-full"
-                :class="syncError ? 'bg-red-500' : 'bg-green-500 animate-pulse'"
-              ></span>
-              <span class="text-xs text-gray-400">
-                {{ syncError ? 'Verbindung unterbrochen' : 'Live-Sync aktiv' }}
-              </span>
-            </div>
+            <span
+              class="w-2 h-2 rounded-full"
+              :class="syncError ? 'bg-red-500' : 'bg-green-500 animate-pulse'"
+            ></span>
+            <span class="text-xs text-gray-400">
+              {{ syncError ? 'Offline' : 'Live' }}
+            </span>
             <span v-if="lastSyncTime" class="text-xs text-gray-500">
               · {{ lastSyncTimeFormatted }}
             </span>
@@ -456,7 +503,6 @@ onUnmounted(() => {
             :class="{ 'animate-spin': isSyncing }"
           >
             <ArrowPathIcon class="w-4 h-4" />
-            <span v-if="!isSyncing">Aktualisieren</span>
           </button>
         </div>
 
@@ -466,11 +512,9 @@ onUnmounted(() => {
             <div>
               <h1 class="text-2xl font-bold text-white">{{ checklist.title }}</h1>
               <p v-if="checklist.description" class="text-gray-400 mt-2">{{ checklist.description }}</p>
-              <p class="text-gray-500 text-sm mt-2">
-                Erstellt von {{ checklist.owner_name }}
-              </p>
+              <p class="text-gray-500 text-sm mt-2">von {{ checklist.owner_name }}</p>
             </div>
-            <ClipboardDocumentListIcon class="w-12 h-12 text-indigo-400 flex-shrink-0" />
+            <ClipboardDocumentListIcon class="w-10 h-10 text-indigo-400 flex-shrink-0" />
           </div>
 
           <!-- Progress -->
@@ -478,17 +522,17 @@ onUnmounted(() => {
             <div class="flex items-center justify-between mb-2">
               <span class="text-gray-400 text-sm">Fortschritt</span>
               <span class="text-white font-medium">
-                {{ checklist.progress.total_completed }} / {{ checklist.progress.total_required }} Tests
+                {{ checklist.progress.total_completed }} / {{ checklist.progress.total_required }}
               </span>
             </div>
-            <div class="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+            <div class="w-full h-4 bg-gray-700 rounded-full overflow-hidden">
               <div
                 class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
                 :style="{ width: checklist.progress.percentage + '%' }"
               ></div>
             </div>
             <div class="text-right mt-1">
-              <span class="text-indigo-400 text-sm font-medium">{{ checklist.progress.percentage }}%</span>
+              <span class="text-indigo-400 font-bold">{{ checklist.progress.percentage }}%</span>
             </div>
           </div>
         </div>
@@ -500,7 +544,7 @@ onUnmounted(() => {
             <input
               v-model="testerName"
               type="text"
-              :placeholder="checklist.require_name ? 'Dein Name (erforderlich)' : 'Dein Name (optional)'"
+              :placeholder="checklist.require_name ? 'Dein Name (erforderlich) *' : 'Dein Name (optional)'"
               class="flex-1 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               @change="testerName && localStorage.setItem('checklist_tester_name', testerName)"
             />
@@ -533,7 +577,7 @@ onUnmounted(() => {
               <div class="flex items-center gap-3">
                 <ChevronDownIcon
                   v-if="expandedCategories[category.id]"
-                  class="w-5 h-5 text-gray-400"
+                  class="w-5 h-5 text-gray-400 transition-transform"
                 />
                 <ChevronRightIcon v-else class="w-5 h-5 text-gray-400" />
                 <FolderIcon class="w-5 h-5 text-indigo-400" />
@@ -545,7 +589,7 @@ onUnmounted(() => {
             <!-- Items -->
             <div v-if="expandedCategories[category.id]" class="divide-y divide-gray-700/50">
               <div v-if="category.items.length === 0" class="p-6 text-center text-gray-500">
-                Keine Testpunkte in dieser Kategorie
+                Keine Testpunkte
               </div>
 
               <div
@@ -554,32 +598,34 @@ onUnmounted(() => {
                 class="p-4"
               >
                 <div class="flex items-start justify-between gap-4">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 flex-wrap">
                       <h4 class="text-white font-medium">{{ item.title }}</h4>
                       <span
                         v-if="getItemProgress(item).isComplete"
-                        class="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400"
+                        class="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 flex items-center gap-1"
                       >
-                        Abgeschlossen
+                        <CheckCircleIconSolid class="w-3 h-3" />
+                        Fertig
                       </span>
                     </div>
                     <p v-if="item.description" class="text-gray-400 text-sm mt-1">{{ item.description }}</p>
 
-                    <!-- Progress -->
+                    <!-- Progress Bar -->
                     <div class="flex items-center gap-3 mt-3">
                       <div class="flex items-center gap-2 text-sm">
-                        <div class="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
                           <div
-                            class="h-full rounded-full transition-all duration-500"
+                            class="h-full rounded-full transition-all duration-300"
                             :class="getItemProgress(item).isComplete ? 'bg-green-500' : 'bg-indigo-500'"
                             :style="{ width: getItemProgress(item).percentage + '%' }"
                           ></div>
                         </div>
-                        <span class="text-gray-400 text-xs">
+                        <span class="text-gray-400 text-xs font-medium">
                           {{ getItemProgress(item).completed }}/{{ getItemProgress(item).required }}
                         </span>
                       </div>
+                      <!-- Status counts -->
                       <div class="flex items-center gap-2">
                         <span v-if="item.passed_count > 0" class="flex items-center gap-1 text-green-400 text-xs">
                           <CheckCircleIcon class="w-4 h-4" />
@@ -589,15 +635,11 @@ onUnmounted(() => {
                           <XCircleIcon class="w-4 h-4" />
                           {{ item.failed_count }}
                         </span>
-                        <span v-if="item.in_progress_count > 0" class="flex items-center gap-1 text-blue-400 text-xs">
-                          <ClockIcon class="w-4 h-4" />
-                          {{ item.in_progress_count }}
-                        </span>
                       </div>
                     </div>
 
                     <!-- Entries -->
-                    <div v-if="item.entries && item.entries.length > 0" class="mt-3 space-y-2">
+                    <div v-if="item.entries && item.entries.length > 0" class="mt-3 space-y-1.5">
                       <div
                         v-for="entry in item.entries"
                         :key="entry.id"
@@ -606,10 +648,10 @@ onUnmounted(() => {
                       >
                         <component
                           :is="getStatusIcon(entry.status)"
-                          class="w-4 h-4"
+                          class="w-4 h-4 flex-shrink-0"
                           :class="getStatusColor(entry.status).split(' ')[0]"
                         />
-                        <span class="text-white">{{ entry.tester_name }}</span>
+                        <span class="text-white font-medium">{{ entry.tester_name }}</span>
                         <span
                           class="px-1.5 py-0.5 rounded text-xs border"
                           :class="getStatusColor(entry.status)"
@@ -617,15 +659,15 @@ onUnmounted(() => {
                           {{ getStatusLabel(entry.status) }}
                         </span>
                         <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
-                        <span class="text-gray-500 text-xs">{{ formatDate(entry.created_at) }}</span>
+                        <span class="text-gray-500 text-xs flex-shrink-0">{{ formatDate(entry.created_at) }}</span>
 
-                        <!-- Entry Actions (only for own entries - compare by name) -->
+                        <!-- Entry Actions -->
                         <div v-if="entry.tester_name === testerName" class="flex items-center gap-1 ml-2">
                           <button
                             v-if="entry.status !== 'passed'"
                             @click="updateEntryStatus(entry, 'passed')"
                             class="p-1 hover:bg-gray-600 rounded"
-                            title="Als bestanden markieren"
+                            title="Als OK markieren"
                           >
                             <CheckCircleIcon class="w-4 h-4 text-green-400" />
                           </button>
@@ -633,7 +675,7 @@ onUnmounted(() => {
                             v-if="entry.status !== 'failed'"
                             @click="updateEntryStatus(entry, 'failed')"
                             class="p-1 hover:bg-gray-600 rounded"
-                            title="Als fehlgeschlagen markieren"
+                            title="Als Fehler markieren"
                           >
                             <XCircleIcon class="w-4 h-4 text-red-400" />
                           </button>
@@ -649,14 +691,32 @@ onUnmounted(() => {
                     </div>
                   </div>
 
-                  <!-- Add Entry Button -->
-                  <button
-                    @click="openAddEntry(item)"
-                    class="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm transition-colors flex-shrink-0"
-                  >
-                    <PlusIcon class="w-4 h-4" />
-                    <span>Test</span>
-                  </button>
+                  <!-- Quick Test Buttons -->
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      @click="quickTest(item)"
+                      class="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white text-sm transition-colors"
+                      title="Als OK markieren"
+                    >
+                      <HandThumbUpIcon class="w-5 h-5" />
+                      <span class="hidden sm:inline">OK</span>
+                    </button>
+                    <button
+                      @click="quickFail(item)"
+                      class="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm transition-colors"
+                      title="Als Fehler markieren"
+                    >
+                      <HandThumbDownIcon class="w-5 h-5" />
+                      <span class="hidden sm:inline">Fehler</span>
+                    </button>
+                    <button
+                      @click="openAddEntry(item)"
+                      class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
+                      title="Mit Notizen"
+                    >
+                      <PlusIcon class="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -667,11 +727,9 @@ onUnmounted(() => {
         <div class="text-center mt-8">
           <div class="flex items-center justify-center gap-2 text-gray-500 text-xs">
             <SignalIcon class="w-4 h-4" />
-            <span>Echtzeit-Synchronisation aktiv</span>
+            <span>Echtzeit-Sync via Redis</span>
           </div>
-          <p class="text-gray-600 text-xs mt-2">
-            Powered by KyuubiSoft
-          </p>
+          <p class="text-gray-600 text-xs mt-2">KyuubiSoft</p>
         </div>
       </template>
 
@@ -684,12 +742,11 @@ onUnmounted(() => {
         >
           <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
             <div class="p-4 border-b border-gray-700">
-              <h2 class="text-lg font-semibold text-white">Test eintragen</h2>
+              <h2 class="text-lg font-semibold text-white">Test mit Notizen</h2>
               <p class="text-gray-400 text-sm mt-1">{{ selectedItem.title }}</p>
             </div>
 
             <div class="p-4 space-y-4">
-              <!-- Name (if not set) -->
               <div v-if="!testerName">
                 <label class="block text-sm font-medium text-gray-300 mb-1">
                   Dein Name {{ checklist.require_name ? '*' : '' }}
@@ -702,7 +759,6 @@ onUnmounted(() => {
                 />
               </div>
 
-              <!-- Status -->
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
                 <div class="grid grid-cols-2 gap-2">
@@ -721,13 +777,12 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Notes -->
               <div v-if="checklist.allow_comments">
                 <label class="block text-sm font-medium text-gray-300 mb-1">Notizen</label>
                 <textarea
                   v-model="newEntry.notes"
                   rows="3"
-                  placeholder="Optionale Notizen..."
+                  placeholder="z.B. Fehler bei Schritt 3..."
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 ></textarea>
               </div>

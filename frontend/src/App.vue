@@ -28,7 +28,7 @@ const layout = computed(() => {
   if (path.includes('/login') || path.includes('/register')) {
     return AuthLayout
   }
-  if (path.includes('/doc/') || path.includes('/support') || path.includes('/ticket/public/')) {
+  if (path.includes('/doc/') || path.includes('/support') || path.includes('/ticket/public/') || path.includes('/checklist/') || path.includes('/d/')) {
     return PublicLayout
   }
 
@@ -37,7 +37,7 @@ const layout = computed(() => {
 
 // Check if current path is a public page (doesn't need auth)
 function isPublicPage() {
-  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register']
+  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup']
   return publicPaths.some(path => window.location.pathname.includes(path))
 }
 

@@ -18,6 +18,7 @@ import {
   ChevronRightIcon,
   UsersIcon,
   ArrowPathIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -85,8 +86,14 @@ const totalProgress = computed(() => {
   let completed = 0
 
   for (const item of checklist.value.items) {
-    total += item.required_testers
-    completed += Math.min(item.passed_count || 0, item.required_testers)
+    if (item.required_testers === -1) {
+      // Unlimited: count as 1 required, completed if at least 1 passed
+      total += 1
+      completed += (item.passed_count || 0) > 0 ? 1 : 0
+    } else {
+      total += item.required_testers
+      completed += Math.min(item.passed_count || 0, item.required_testers)
+    }
   }
 
   return {
@@ -248,12 +255,18 @@ function toggleCategory(categoryId) {
   expandedCategories.value[categoryId] = !expandedCategories.value[categoryId]
 }
 
+function openAddItemInCategory(categoryId) {
+  newItem.value.category_id = categoryId
+  showAddItemModal.value = true
+}
+
 function getStatusColor(status) {
   switch (status) {
     case 'passed': return 'text-green-400 bg-green-400/10'
     case 'failed': return 'text-red-400 bg-red-400/10'
     case 'in_progress': return 'text-blue-400 bg-blue-400/10'
     case 'blocked': return 'text-orange-400 bg-orange-400/10'
+    case 'uncertain': return 'text-yellow-400 bg-yellow-400/10'
     default: return 'text-gray-400 bg-gray-400/10'
   }
 }
@@ -264,6 +277,7 @@ function getStatusLabel(status) {
     case 'failed': return 'Fehlgeschlagen'
     case 'in_progress': return 'In Bearbeitung'
     case 'blocked': return 'Blockiert'
+    case 'uncertain': return 'Unsicher'
     default: return 'Ausstehend'
   }
 }
@@ -412,19 +426,28 @@ watch(() => route.params.id, () => {
               <span class="text-gray-500 text-sm">({{ category.items.length }})</span>
             </div>
 
-            <div v-if="category.id" class="flex items-center gap-1" @click.stop>
+            <div class="flex items-center gap-1" @click.stop>
               <button
-                @click="editingCategory = { ...category }"
+                @click="openAddItemInCategory(category.id)"
                 class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                title="Testpunkt hinzufügen"
               >
-                <PencilIcon class="w-4 h-4 text-gray-400" />
+                <PlusIcon class="w-4 h-4 text-primary-400" />
               </button>
-              <button
-                @click="deleteCategory(category)"
-                class="p-1.5 hover:bg-dark-600 rounded transition-colors"
-              >
-                <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
-              </button>
+              <template v-if="category.id">
+                <button
+                  @click="editingCategory = { ...category }"
+                  class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                >
+                  <PencilIcon class="w-4 h-4 text-gray-400" />
+                </button>
+                <button
+                  @click="deleteCategory(category)"
+                  class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                >
+                  <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
+                </button>
+              </template>
             </div>
           </div>
 
@@ -448,7 +471,9 @@ watch(() => route.params.id, () => {
                   <div class="flex items-center gap-4 mt-3">
                     <div class="flex items-center gap-1.5">
                       <UsersIcon class="w-4 h-4 text-gray-500" />
-                      <span class="text-gray-400 text-sm">{{ item.required_testers }} Tester benötigt</span>
+                      <span class="text-gray-400 text-sm">
+                        {{ item.required_testers === -1 ? '∞' : item.required_testers }} Tester benötigt
+                      </span>
                     </div>
                     <div class="flex items-center gap-2">
                       <span
@@ -457,6 +482,13 @@ watch(() => route.params.id, () => {
                       >
                         <CheckCircleIcon class="w-4 h-4" />
                         {{ item.passed_count }}
+                      </span>
+                      <span
+                        v-if="item.uncertain_count > 0"
+                        class="flex items-center gap-1 text-yellow-400 text-sm"
+                      >
+                        <QuestionMarkCircleIcon class="w-4 h-4" />
+                        {{ item.uncertain_count }}
                       </span>
                       <span
                         v-if="item.failed_count > 0"
@@ -721,16 +753,16 @@ watch(() => route.params.id, () => {
               <input
                 v-model.number="newItem.required_testers"
                 type="number"
-                min="1"
+                min="-1"
                 class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-              <p class="text-gray-500 text-xs mt-1">Wie viele Personen sollen diesen Punkt testen?</p>
+              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞), sonst Anzahl der Tester</p>
             </div>
           </div>
 
           <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
             <button
-              @click="showAddItemModal = false"
+              @click="showAddItemModal = false; newItem.category_id = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
               Abbrechen
@@ -751,7 +783,6 @@ watch(() => route.params.id, () => {
       <div
         v-if="editingItem"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="editingItem = null"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
           <div class="p-4 border-b border-dark-700">
@@ -795,9 +826,10 @@ watch(() => route.params.id, () => {
               <input
                 v-model.number="editingItem.required_testers"
                 type="number"
-                min="1"
+                min="-1"
                 class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
+              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
             </div>
           </div>
 
@@ -824,7 +856,6 @@ watch(() => route.params.id, () => {
       <div
         v-if="editingCategory"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="editingCategory = null"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
           <div class="p-4 border-b border-dark-700">

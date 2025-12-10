@@ -52,13 +52,17 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/']
-    const isPublicPage = publicPaths.some(path => window.location.pathname.includes(path))
+    const publicPagePaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup']
+    const isPublicPage = publicPagePaths.some(path => window.location.pathname.includes(path))
+
+    // Check if the original request was to a public API endpoint
+    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/setup/', '/public/']
+    const isPublicApiRequest = publicApiPaths.some(path => originalRequest?.url?.includes(path))
 
     // If 401 and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // On public pages, don't try to refresh or redirect - just return the error
-      if (isPublicPage) {
+      // On public pages or for public API requests, don't try to refresh or redirect - just return the error
+      if (isPublicPage || isPublicApiRequest) {
         return Promise.reject(error)
       }
 
@@ -115,24 +119,24 @@ api.interceptors.response.use(
           // Refresh failed, process queue with error
           processQueue(refreshError, null)
 
-          // Clear tokens and redirect to login (but not on public pages)
+          // Clear tokens and redirect to login (but not on public pages or public API requests)
           localStorage.removeItem('access_token')
           localStorage.removeItem('refresh_token')
 
-          // Only redirect if not on login page or public pages
-          if (!window.location.pathname.includes('/login') && !isPublicPage) {
+          // Only redirect if not on login page, public pages, or public API requests
+          if (!isPublicPage && !isPublicApiRequest) {
             window.location.href = '/login'
           }
 
           return Promise.reject(refreshError)
         }
       } else {
-        // No refresh token - reset flag and redirect (but not on public pages)
+        // No refresh token - reset flag and redirect (but not on public pages or public API requests)
         isRefreshing = false
 
         localStorage.removeItem('access_token')
 
-        if (!window.location.pathname.includes('/login') && !isPublicPage) {
+        if (!isPublicPage && !isPublicApiRequest) {
           window.location.href = '/login'
         }
 

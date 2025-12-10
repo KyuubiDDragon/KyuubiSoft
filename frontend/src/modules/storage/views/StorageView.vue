@@ -689,7 +689,6 @@ onUnmounted(() => {
       <div
         v-if="showShareModal"
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-        @click.self="showShareModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-2xl max-h-[90vh] flex flex-col">
           <!-- Header -->
@@ -848,7 +847,6 @@ onUnmounted(() => {
       <div
         v-if="showRenameModal"
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-        @click.self="showRenameModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
           <div class="p-4 border-b border-dark-700">

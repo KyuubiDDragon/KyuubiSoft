@@ -17,6 +17,7 @@ import {
   SignalIcon,
   HandThumbUpIcon,
   HandThumbDownIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import axios from 'axios'
@@ -32,6 +33,7 @@ const testerName = ref(localStorage.getItem('checklist_tester_name') || '')
 const showAddEntryModal = ref(false)
 const selectedItem = ref(null)
 const showAddItemModal = ref(false)
+const addItemCategoryId = ref(null)
 const refreshInterval = ref(null)
 
 // Sync state
@@ -241,6 +243,40 @@ async function quickFail(item) {
   }
 }
 
+// Quick uncertain - one click to mark as uncertain
+async function quickUncertain(item) {
+  if (checklist.value.require_name && !testerName.value.trim()) {
+    alert('Bitte gib zuerst deinen Namen ein')
+    return
+  }
+
+  try {
+    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+      item_id: item.id,
+      tester_name: testerName.value.trim() || 'Anonym',
+      status: 'uncertain',
+      notes: '',
+    })
+
+    if (testerName.value.trim()) {
+      localStorage.setItem('checklist_tester_name', testerName.value.trim())
+    }
+
+    item.entries = item.entries || []
+    item.entries.unshift(response.data.data)
+    item.uncertain_count = (item.uncertain_count || 0) + 1
+    item.entry_count = (item.entry_count || 0) + 1
+    recalculateProgress()
+
+    newEntryIds.value.add(response.data.data.id)
+    setTimeout(() => {
+      newEntryIds.value.delete(response.data.data.id)
+    }, 2000)
+  } catch (err) {
+    alert(err.response?.data?.error || 'Fehler beim Speichern')
+  }
+}
+
 async function addEntry() {
   if (checklist.value.require_name && !testerName.value.trim()) {
     alert('Bitte gib deinen Namen ein')
@@ -351,6 +387,7 @@ async function addItem() {
     })
 
     showAddItemModal.value = false
+    addItemCategoryId.value = null
     newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
   } catch (err) {
     alert(err.response?.data?.error || 'Fehler beim Erstellen')
@@ -364,8 +401,14 @@ function recalculateProgress() {
   let totalCompleted = 0
 
   for (const item of checklist.value.items) {
-    totalRequired += item.required_testers || 1
-    totalCompleted += Math.min(item.passed_count || 0, item.required_testers || 1)
+    if (item.required_testers === -1) {
+      // Unlimited: count as 1 required, completed if at least 1 passed
+      totalRequired += 1
+      totalCompleted += (item.passed_count || 0) > 0 ? 1 : 0
+    } else {
+      totalRequired += item.required_testers || 1
+      totalCompleted += Math.min(item.passed_count || 0, item.required_testers || 1)
+    }
   }
 
   checklist.value.progress = {
@@ -381,6 +424,12 @@ function openAddEntry(item) {
   showAddEntryModal.value = true
 }
 
+function openAddItemInCategory(categoryId) {
+  addItemCategoryId.value = categoryId
+  newItem.value.category_id = categoryId
+  showAddItemModal.value = true
+}
+
 function toggleCategory(categoryId) {
   expandedCategories.value[categoryId] = !expandedCategories.value[categoryId]
 }
@@ -391,6 +440,7 @@ function getStatusColor(status) {
     case 'failed': return 'text-red-400 bg-red-400/10 border-red-400/30'
     case 'in_progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/30'
     case 'blocked': return 'text-orange-400 bg-orange-400/10 border-orange-400/30'
+    case 'uncertain': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
     default: return 'text-gray-400 bg-gray-400/10 border-gray-400/30'
   }
 }
@@ -401,6 +451,7 @@ function getStatusIcon(status) {
     case 'failed': return XCircleIcon
     case 'in_progress': return ClockIcon
     case 'blocked': return ExclamationTriangleIcon
+    case 'uncertain': return QuestionMarkCircleIcon
     default: return ClockIcon
   }
 }
@@ -411,18 +462,23 @@ function getStatusLabel(status) {
     case 'failed': return 'Fehler'
     case 'in_progress': return 'In Arbeit'
     case 'blocked': return 'Blockiert'
+    case 'uncertain': return 'Unsicher'
     default: return 'Offen'
   }
 }
 
 function getItemProgress(item) {
-  const required = item.required_testers || 1
-  const completed = Math.min(item.passed_count || 0, required)
+  const isUnlimited = item.required_testers === -1
+  const required = isUnlimited ? null : (item.required_testers || 1)
+  const passedCount = item.passed_count || 0
+  const completed = isUnlimited ? passedCount : Math.min(passedCount, required)
+
   return {
     completed,
     required,
-    percentage: Math.round((completed / required) * 100),
-    isComplete: completed >= required,
+    isUnlimited,
+    percentage: isUnlimited ? (passedCount > 0 ? 100 : 0) : Math.round((completed / required) * 100),
+    isComplete: isUnlimited ? passedCount > 0 : completed >= required,
   }
 }
 
@@ -571,10 +627,9 @@ onUnmounted(() => {
           >
             <!-- Category Header -->
             <div
-              class="flex items-center justify-between p-4 bg-gray-700/30 cursor-pointer"
-              @click="toggleCategory(category.id)"
+              class="flex items-center justify-between p-4 bg-gray-700/30"
             >
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 cursor-pointer" @click="toggleCategory(category.id)">
                 <ChevronDownIcon
                   v-if="expandedCategories[category.id]"
                   class="w-5 h-5 text-gray-400 transition-transform"
@@ -584,6 +639,14 @@ onUnmounted(() => {
                 <span class="text-white font-medium">{{ category.name }}</span>
                 <span class="text-gray-500 text-sm">({{ category.items.length }})</span>
               </div>
+              <button
+                v-if="checklist.allow_add_items"
+                @click.stop="openAddItemInCategory(category.id)"
+                class="p-1.5 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
+                title="Testpunkt in dieser Kategorie hinzufügen"
+              >
+                <PlusIcon class="w-4 h-4" />
+              </button>
             </div>
 
             <!-- Items -->
@@ -622,7 +685,7 @@ onUnmounted(() => {
                           ></div>
                         </div>
                         <span class="text-gray-400 text-xs font-medium">
-                          {{ getItemProgress(item).completed }}/{{ getItemProgress(item).required }}
+                          {{ getItemProgress(item).completed }}/{{ getItemProgress(item).isUnlimited ? '∞' : getItemProgress(item).required }}
                         </span>
                       </div>
                       <!-- Status counts -->
@@ -630,6 +693,10 @@ onUnmounted(() => {
                         <span v-if="item.passed_count > 0" class="flex items-center gap-1 text-green-400 text-xs">
                           <CheckCircleIcon class="w-4 h-4" />
                           {{ item.passed_count }}
+                        </span>
+                        <span v-if="item.uncertain_count > 0" class="flex items-center gap-1 text-yellow-400 text-xs">
+                          <QuestionMarkCircleIcon class="w-4 h-4" />
+                          {{ item.uncertain_count }}
                         </span>
                         <span v-if="item.failed_count > 0" class="flex items-center gap-1 text-red-400 text-xs">
                           <XCircleIcon class="w-4 h-4" />
@@ -672,6 +739,14 @@ onUnmounted(() => {
                             <CheckCircleIcon class="w-4 h-4 text-green-400" />
                           </button>
                           <button
+                            v-if="entry.status !== 'uncertain'"
+                            @click="updateEntryStatus(entry, 'uncertain')"
+                            class="p-1 hover:bg-gray-600 rounded"
+                            title="Als Unsicher markieren"
+                          >
+                            <QuestionMarkCircleIcon class="w-4 h-4 text-yellow-400" />
+                          </button>
+                          <button
                             v-if="entry.status !== 'failed'"
                             @click="updateEntryStatus(entry, 'failed')"
                             class="p-1 hover:bg-gray-600 rounded"
@@ -692,18 +767,26 @@ onUnmounted(() => {
                   </div>
 
                   <!-- Quick Test Buttons -->
-                  <div class="flex items-center gap-2 flex-shrink-0">
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       @click="quickTest(item)"
-                      class="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white text-sm transition-colors"
+                      class="flex items-center gap-1 px-2.5 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white text-sm transition-colors"
                       title="Als OK markieren"
                     >
                       <HandThumbUpIcon class="w-5 h-5" />
                       <span class="hidden sm:inline">OK</span>
                     </button>
                     <button
+                      @click="quickUncertain(item)"
+                      class="flex items-center gap-1 px-2.5 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-white text-sm transition-colors"
+                      title="Als Unsicher markieren"
+                    >
+                      <QuestionMarkCircleIcon class="w-5 h-5" />
+                      <span class="hidden sm:inline">?</span>
+                    </button>
+                    <button
                       @click="quickFail(item)"
-                      class="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm transition-colors"
+                      class="flex items-center gap-1 px-2.5 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm transition-colors"
                       title="Als Fehler markieren"
                     >
                       <HandThumbDownIcon class="w-5 h-5" />
@@ -738,7 +821,6 @@ onUnmounted(() => {
         <div
           v-if="showAddEntryModal && selectedItem"
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          @click.self="showAddEntryModal = false"
         >
           <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
             <div class="p-4 border-b border-gray-700">
@@ -761,9 +843,9 @@ onUnmounted(() => {
 
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                   <button
-                    v-for="status in ['passed', 'failed', 'in_progress', 'blocked']"
+                    v-for="status in ['passed', 'uncertain', 'failed', 'in_progress', 'blocked']"
                     :key="status"
                     @click="newEntry.status = status"
                     class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border transition-colors"
@@ -811,7 +893,6 @@ onUnmounted(() => {
         <div
           v-if="showAddItemModal"
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          @click.self="showAddItemModal = false"
         >
           <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
             <div class="p-4 border-b border-gray-700">

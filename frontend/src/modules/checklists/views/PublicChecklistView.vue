@@ -821,7 +821,6 @@ onUnmounted(() => {
         <div
           v-if="showAddEntryModal && selectedItem"
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          @click.self="showAddEntryModal = false"
         >
           <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
             <div class="p-4 border-b border-gray-700">
@@ -894,7 +893,6 @@ onUnmounted(() => {
         <div
           v-if="showAddItemModal"
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          @click.self="showAddItemModal = false"
         >
           <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
             <div class="p-4 border-b border-gray-700">

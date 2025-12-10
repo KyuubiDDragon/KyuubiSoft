@@ -393,7 +393,6 @@ function canDeleteUser(user) {
       <div
         v-if="showUserModal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-        @click.self="closeModals"
       >
         <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
           <!-- Modal Header -->
@@ -562,7 +561,6 @@ function canDeleteUser(user) {
       <div
         v-if="showDeleteModal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-        @click.self="closeModals"
       >
         <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-md mx-4">
           <div class="p-6">

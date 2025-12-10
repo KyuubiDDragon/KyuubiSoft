@@ -646,7 +646,6 @@ onMounted(async () => {
       <div
         v-if="showSettingsModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showSettingsModal = false"
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
@@ -713,7 +712,6 @@ onMounted(async () => {
       <div
         v-if="showAddFeedModal"
         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="showAddFeedModal = false"
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">

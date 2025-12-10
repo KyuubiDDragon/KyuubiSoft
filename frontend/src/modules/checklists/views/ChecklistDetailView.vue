@@ -536,7 +536,6 @@ watch(() => route.params.id, () => {
       <div
         v-if="showSettingsModal && checklist"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showSettingsModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
           <div class="p-4 border-b border-dark-700">
@@ -624,7 +623,6 @@ watch(() => route.params.id, () => {
       <div
         v-if="showAddCategoryModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showAddCategoryModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
           <div class="p-4 border-b border-dark-700">
@@ -677,7 +675,6 @@ watch(() => route.params.id, () => {
       <div
         v-if="showAddItemModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showAddItemModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
           <div class="p-4 border-b border-dark-700">

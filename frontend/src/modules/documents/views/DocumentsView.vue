@@ -776,7 +776,6 @@ onMounted(async () => {
       <div
         v-if="showShareModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        @click.self="showShareModal = false"
       >
         <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
           <div class="flex items-center gap-3 mb-6">
@@ -953,7 +952,6 @@ onMounted(async () => {
       <div
         v-if="showVersionsModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        @click.self="showVersionsModal = false"
       >
         <div class="bg-dark-800 rounded-xl p-6 w-full max-w-4xl border border-dark-700 max-h-[90vh] flex flex-col">
           <div class="flex items-center justify-between mb-6">

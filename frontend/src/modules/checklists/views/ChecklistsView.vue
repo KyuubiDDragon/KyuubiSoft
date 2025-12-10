@@ -251,7 +251,6 @@ onMounted(() => {
       <div
         v-if="showCreateModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        @click.self="showCreateModal = false"
       >
         <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
           <div class="p-4 border-b border-dark-700">

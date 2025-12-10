@@ -19,6 +19,8 @@ import {
   UsersIcon,
   ArrowPathIcon,
   QuestionMarkCircleIcon,
+  DocumentDuplicateIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -249,6 +251,39 @@ async function deleteItem(item) {
   }
 }
 
+async function duplicateChecklist() {
+  if (!confirm('Checkliste duplizieren? Es wird eine Kopie mit allen Kategorien und Testpunkten erstellt (ohne Einträge).')) return
+
+  try {
+    const response = await api.post(`/api/v1/checklists/${checklistId.value}/duplicate`)
+    uiStore.showSuccess('Checkliste dupliziert')
+    router.push({ name: 'checklist-detail', params: { id: response.data.data.id } })
+  } catch (error) {
+    uiStore.showError('Fehler beim Duplizieren')
+  }
+}
+
+async function resetEntries() {
+  if (!confirm('Alle Testeinträge wirklich zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden!')) return
+
+  try {
+    await api.post(`/api/v1/checklists/${checklistId.value}/reset`)
+    // Reset local state
+    checklist.value.items = checklist.value.items.map(item => ({
+      ...item,
+      entries: [],
+      passed_count: 0,
+      failed_count: 0,
+      uncertain_count: 0,
+      in_progress_count: 0,
+      entry_count: 0,
+    }))
+    uiStore.showSuccess('Alle Einträge wurden zurückgesetzt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Zurücksetzen')
+  }
+}
+
 function copyShareLink() {
   const url = `${window.location.origin}/checklist/${checklist.value.share_token}`
   navigator.clipboard.writeText(url)
@@ -395,21 +430,41 @@ watch(() => route.params.id, () => {
       </div>
 
       <!-- Actions Bar -->
-      <div class="flex items-center gap-2">
-        <button
-          @click="showAddCategoryModal = true"
-          class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
-        >
-          <FolderIcon class="w-4 h-4" />
-          <span>Kategorie</span>
-        </button>
-        <button
-          @click="showAddItemModal = true"
-          class="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
-        >
-          <PlusIcon class="w-4 h-4" />
-          <span>Testpunkt</span>
-        </button>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button
+            @click="showAddCategoryModal = true"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+          >
+            <FolderIcon class="w-4 h-4" />
+            <span>Kategorie</span>
+          </button>
+          <button
+            @click="showAddItemModal = true"
+            class="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+          >
+            <PlusIcon class="w-4 h-4" />
+            <span>Testpunkt</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            @click="duplicateChecklist"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            title="Checkliste duplizieren"
+          >
+            <DocumentDuplicateIcon class="w-4 h-4" />
+            <span class="hidden sm:inline">Duplizieren</span>
+          </button>
+          <button
+            @click="resetEntries"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-red-600/20 text-gray-300 hover:text-red-400 rounded-lg transition-colors"
+            title="Alle Einträge zurücksetzen"
+          >
+            <ArrowUturnLeftIcon class="w-4 h-4" />
+            <span class="hidden sm:inline">Zurücksetzen</span>
+          </button>
+        </div>
       </div>
 
       <!-- Items by Category -->

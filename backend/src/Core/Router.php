@@ -490,6 +490,9 @@ class Router
                 $protected->delete('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'deleteItem']);
                 // Checklist Activity
                 $protected->get('/checklists/{id}/activity', [SharedChecklistController::class, 'getActivity']);
+                // Duplicate & Reset
+                $protected->post('/checklists/{id}/duplicate', [SharedChecklistController::class, 'duplicate']);
+                $protected->post('/checklists/{id}/reset', [SharedChecklistController::class, 'resetEntries']);
 
                 // Settings
                 $protected->get('/settings/user', [SettingsController::class, 'getUserSettings']);
@@ -721,7 +724,11 @@ class Router
             $group->post('/checklists/public/{token}/entries', [SharedChecklistController::class, 'addEntry']);
             $group->put('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'updateEntry']);
             $group->delete('/checklists/public/{token}/entries/{entryId}', [SharedChecklistController::class, 'deleteEntry']);
+            $group->post('/checklists/public/{token}/entries/{entryId}/image', [SharedChecklistController::class, 'uploadEntryImage']);
+            $group->delete('/checklists/public/{token}/entries/{entryId}/image', [SharedChecklistController::class, 'deleteEntryImage']);
             $group->post('/checklists/public/{token}/items', [SharedChecklistController::class, 'addItemPublic']);
+            // Public checklist image serve
+            $group->get('/checklists/images/{filename}', [SharedChecklistController::class, 'serveImage']);
         });
     }
 }

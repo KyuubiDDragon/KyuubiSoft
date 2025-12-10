@@ -37,7 +37,7 @@ const layout = computed(() => {
 
 // Check if current path is a public page (doesn't need auth)
 function isPublicPage() {
-  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup']
+  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup', '/share/']
   return publicPaths.some(path => window.location.pathname.includes(path))
 }
 

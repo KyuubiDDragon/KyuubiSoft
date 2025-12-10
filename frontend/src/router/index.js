@@ -322,7 +322,7 @@ const routes = [
     path: '/checklist/:token',
     name: 'public-checklist',
     component: PublicChecklistView,
-    meta: { layout: 'none', guest: true },
+    meta: { layout: 'public' },
   },
 
   // Catch all

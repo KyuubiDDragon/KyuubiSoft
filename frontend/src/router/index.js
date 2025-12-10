@@ -341,6 +341,32 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
+  // Public routes that don't need any auth checks - check this FIRST before any API calls
+  const isPublicRoute = to.meta.layout === 'public' || to.meta.guest
+
+  // For public routes, skip auth initialization entirely and proceed immediately
+  if (isPublicRoute) {
+    // Still mark as initialized so the app doesn't hang
+    if (!authStore.isInitialized) {
+      authStore.isInitialized = true
+    }
+    // Still check setup status for public routes, but don't block on failure
+    if (!setupChecked && !to.meta.isSetup) {
+      try {
+        const response = await api.get('/api/v1/setup/status')
+        setupRequired = response.data.data.setup_required
+        setupChecked = true
+        if (setupRequired) {
+          return next({ name: 'setup' })
+        }
+      } catch (error) {
+        // Ignore - public routes should work even if setup check fails
+        setupChecked = true
+      }
+    }
+    return next()
+  }
+
   // Check setup status once on first navigation (except for setup page itself)
   if (!setupChecked && !to.meta.isSetup) {
     try {
@@ -362,18 +388,6 @@ router.beforeEach(async (to, from, next) => {
   // If going to setup but setup not required, redirect to login
   if (to.meta.isSetup && setupChecked && !setupRequired) {
     return next({ name: 'login' })
-  }
-
-  // Public routes that don't need any auth checks
-  const isPublicRoute = to.meta.layout === 'public' || to.meta.guest
-
-  // For public routes, skip auth initialization entirely and proceed immediately
-  if (isPublicRoute) {
-    // Still mark as initialized so the app doesn't hang
-    if (!authStore.isInitialized) {
-      authStore.isInitialized = true
-    }
-    return next()
   }
 
   // Wait for auth initialization (only for non-public routes)

@@ -113,6 +113,33 @@ class CacheService
         return true;
     }
 
+    /**
+     * Publish a message to a Redis channel
+     */
+    public function publish(string $channel, mixed $message): int
+    {
+        return $this->redis->publish(
+            $this->prefixKey($channel),
+            is_string($message) ? $message : json_encode($message)
+        );
+    }
+
+    /**
+     * Get the Redis client for advanced operations (like pub/sub subscribe)
+     */
+    public function getRedisClient(): RedisClient
+    {
+        return $this->redis;
+    }
+
+    /**
+     * Get the prefix for external use
+     */
+    public function getPrefix(): string
+    {
+        return $this->prefix;
+    }
+
     private function prefixKey(string $key): string
     {
         return $this->prefix . $key;

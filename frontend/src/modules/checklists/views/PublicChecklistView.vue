@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   ClipboardDocumentListIcon,
@@ -12,8 +12,9 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   UserIcon,
-  PencilIcon,
   TrashIcon,
+  ArrowPathIcon,
+  SignalIcon,
 } from '@heroicons/vue/24/outline'
 import axios from 'axios'
 
@@ -29,6 +30,13 @@ const showAddEntryModal = ref(false)
 const selectedItem = ref(null)
 const showAddItemModal = ref(false)
 const refreshInterval = ref(null)
+
+// Sync state
+const isSyncing = ref(false)
+const lastSyncTime = ref(null)
+const syncError = ref(false)
+const newEntryIds = ref(new Set()) // Track newly added entries for animation
+const lastDataHash = ref(null)
 
 const newEntry = ref({
   status: 'passed',
@@ -70,11 +78,73 @@ const itemsByCategory = computed(() => {
   return result
 })
 
+const lastSyncTimeFormatted = computed(() => {
+  if (!lastSyncTime.value) return ''
+  const now = new Date()
+  const diff = Math.floor((now - lastSyncTime.value) / 1000)
+  if (diff < 5) return 'Gerade eben'
+  if (diff < 60) return `vor ${diff}s`
+  return `vor ${Math.floor(diff / 60)}m`
+})
+
+// Generate a simple hash of the data to detect changes
+function generateDataHash(data) {
+  if (!data) return null
+  const str = JSON.stringify({
+    items: data.items?.map(i => ({
+      id: i.id,
+      entries: i.entries?.map(e => ({ id: e.id, status: e.status }))
+    })),
+    progress: data.progress
+  })
+  // Simple hash
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return hash
+}
+
 // API Functions
-async function loadChecklist() {
+async function loadChecklist(silent = false) {
+  if (!silent) {
+    isLoading.value = true
+  }
+  isSyncing.value = true
+  syncError.value = false
+
   try {
     const response = await axios.get(`/api/v1/checklists/public/${token.value}`)
-    checklist.value = response.data.data
+    const newData = response.data.data
+    const newHash = generateDataHash(newData)
+
+    // Detect new entries for animation
+    if (checklist.value && newData.items) {
+      const oldEntryIds = new Set()
+      checklist.value.items?.forEach(item => {
+        item.entries?.forEach(entry => oldEntryIds.add(entry.id))
+      })
+
+      newData.items.forEach(item => {
+        item.entries?.forEach(entry => {
+          if (!oldEntryIds.has(entry.id)) {
+            newEntryIds.value.add(entry.id)
+            // Remove animation class after 2 seconds
+            setTimeout(() => {
+              newEntryIds.value.delete(entry.id)
+            }, 2000)
+          }
+        })
+      })
+    }
+
+    // Only update if data actually changed
+    if (newHash !== lastDataHash.value) {
+      checklist.value = newData
+      lastDataHash.value = newHash
+    }
 
     // Initialize expanded categories
     const categories = checklist.value.categories || []
@@ -84,16 +154,23 @@ async function loadChecklist() {
       }
     })
     expandedCategories.value[null] = true
+
+    lastSyncTime.value = new Date()
   } catch (err) {
-    if (err.response?.status === 404) {
-      error.value = 'Checkliste nicht gefunden'
-    } else if (err.response?.status === 403) {
-      error.value = err.response.data?.error || 'Checkliste nicht verfügbar'
+    if (!silent) {
+      if (err.response?.status === 404) {
+        error.value = 'Checkliste nicht gefunden'
+      } else if (err.response?.status === 403) {
+        error.value = err.response.data?.error || 'Checkliste nicht verfügbar'
+      } else {
+        error.value = 'Ein Fehler ist aufgetreten'
+      }
     } else {
-      error.value = 'Ein Fehler ist aufgetreten'
+      syncError.value = true
     }
   } finally {
     isLoading.value = false
+    isSyncing.value = false
   }
 }
 
@@ -127,11 +204,17 @@ async function addEntry() {
       else if (newEntry.value.status === 'failed') item.failed_count++
       else if (newEntry.value.status === 'in_progress') item.in_progress_count++
       item.entry_count++
+
+      // Recalculate progress
+      recalculateProgress()
     }
 
     showAddEntryModal.value = false
     selectedItem.value = null
     newEntry.value = { status: 'passed', notes: '' }
+
+    // Trigger sync to get latest data
+    await loadChecklist(true)
   } catch (err) {
     alert(err.response?.data?.error || 'Fehler beim Speichern')
   }
@@ -159,10 +242,15 @@ async function updateEntryStatus(entry, newStatus) {
           if (newStatus === 'passed') item.passed_count++
           else if (newStatus === 'failed') item.failed_count++
           else if (newStatus === 'in_progress') item.in_progress_count++
+
+          recalculateProgress()
           break
         }
       }
     }
+
+    // Trigger sync
+    await loadChecklist(true)
   } catch (err) {
     alert('Fehler beim Aktualisieren')
   }
@@ -180,6 +268,11 @@ async function deleteEntry(entry, item) {
     else if (entry.status === 'failed') item.failed_count--
     else if (entry.status === 'in_progress') item.in_progress_count--
     item.entry_count--
+
+    recalculateProgress()
+
+    // Trigger sync
+    await loadChecklist(true)
   } catch (err) {
     alert('Fehler beim Löschen')
   }
@@ -208,8 +301,30 @@ async function addItem() {
 
     showAddItemModal.value = false
     newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
+
+    // Trigger sync
+    await loadChecklist(true)
   } catch (err) {
     alert(err.response?.data?.error || 'Fehler beim Erstellen')
+  }
+}
+
+function recalculateProgress() {
+  if (!checklist.value) return
+
+  let totalRequired = 0
+  let totalCompleted = 0
+
+  for (const item of checklist.value.items) {
+    totalRequired += item.required_testers || 1
+    totalCompleted += Math.min(item.passed_count || 0, item.required_testers || 1)
+  }
+
+  checklist.value.progress = {
+    total_items: checklist.value.items.length,
+    total_required: totalRequired,
+    total_completed: totalCompleted,
+    percentage: totalRequired > 0 ? Math.round((totalCompleted / totalRequired) * 100) : 0,
   }
 }
 
@@ -273,11 +388,19 @@ function formatDate(dateStr) {
   })
 }
 
-// Auto-refresh
+function isNewEntry(entryId) {
+  return newEntryIds.value.has(entryId)
+}
+
+// Real-time sync (3 second interval)
 function startAutoRefresh() {
   refreshInterval.value = setInterval(() => {
-    loadChecklist()
-  }, 30000) // Refresh every 30 seconds
+    loadChecklist(true) // Silent refresh
+  }, 3000)
+}
+
+function manualRefresh() {
+  loadChecklist(true)
 }
 
 // Initialize
@@ -311,6 +434,32 @@ onUnmounted(() => {
 
       <!-- Checklist -->
       <template v-else-if="checklist">
+        <!-- Sync Status Bar -->
+        <div class="flex items-center justify-between mb-4 px-2">
+          <div class="flex items-center gap-2">
+            <div class="relative flex items-center gap-2">
+              <span
+                class="w-2 h-2 rounded-full"
+                :class="syncError ? 'bg-red-500' : 'bg-green-500 animate-pulse'"
+              ></span>
+              <span class="text-xs text-gray-400">
+                {{ syncError ? 'Verbindung unterbrochen' : 'Live-Sync aktiv' }}
+              </span>
+            </div>
+            <span v-if="lastSyncTime" class="text-xs text-gray-500">
+              · {{ lastSyncTimeFormatted }}
+            </span>
+          </div>
+          <button
+            @click="manualRefresh"
+            class="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+            :class="{ 'animate-spin': isSyncing }"
+          >
+            <ArrowPathIcon class="w-4 h-4" />
+            <span v-if="!isSyncing">Aktualisieren</span>
+          </button>
+        </div>
+
         <!-- Header -->
         <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 mb-6">
           <div class="flex items-start justify-between gap-4">
@@ -422,7 +571,7 @@ onUnmounted(() => {
                       <div class="flex items-center gap-2 text-sm">
                         <div class="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
                           <div
-                            class="h-full rounded-full transition-all"
+                            class="h-full rounded-full transition-all duration-500"
                             :class="getItemProgress(item).isComplete ? 'bg-green-500' : 'bg-indigo-500'"
                             :style="{ width: getItemProgress(item).percentage + '%' }"
                           ></div>
@@ -452,7 +601,8 @@ onUnmounted(() => {
                       <div
                         v-for="entry in item.entries"
                         :key="entry.id"
-                        class="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg text-sm"
+                        class="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg text-sm transition-all duration-500"
+                        :class="{ 'ring-2 ring-indigo-500 ring-opacity-50 bg-indigo-900/20': isNewEntry(entry.id) }"
                       >
                         <component
                           :is="getStatusIcon(entry.status)"
@@ -514,9 +664,15 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer -->
-        <p class="text-center text-gray-600 text-xs mt-8">
-          Powered by KyuubiSoft
-        </p>
+        <div class="text-center mt-8">
+          <div class="flex items-center justify-center gap-2 text-gray-500 text-xs">
+            <SignalIcon class="w-4 h-4" />
+            <span>Echtzeit-Synchronisation aktiv</span>
+          </div>
+          <p class="text-gray-600 text-xs mt-2">
+            Powered by KyuubiSoft
+          </p>
+        </div>
       </template>
 
       <!-- Add Entry Modal -->

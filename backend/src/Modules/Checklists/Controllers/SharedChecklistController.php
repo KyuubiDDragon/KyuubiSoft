@@ -306,7 +306,7 @@ class SharedChecklistController
             'category_id' => $data['category_id'] ?? null,
             'title' => trim($data['title']),
             'description' => $data['description'] ?? null,
-            'required_testers' => isset($data['required_testers']) ? max(1, (int) $data['required_testers']) : 1,
+            'required_testers' => isset($data['required_testers']) ? ((int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers'])) : 1,
             'sort_order' => $maxSort + 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -356,7 +356,7 @@ class SharedChecklistController
             $updates['category_id'] = $data['category_id'];
         }
         if (isset($data['required_testers'])) {
-            $updates['required_testers'] = max(1, (int) $data['required_testers']);
+            $updates['required_testers'] = (int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers']);
         }
         if (isset($data['sort_order'])) {
             $updates['sort_order'] = (int) $data['sort_order'];
@@ -443,7 +443,8 @@ class SharedChecklistController
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id) as entry_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "passed") as passed_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "failed") as failed_count,
-                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "in_progress") as in_progress_count
+                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "in_progress") as in_progress_count,
+                    (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "uncertain") as uncertain_count
              FROM shared_checklist_items i
              WHERE i.checklist_id = ?
              ORDER BY i.sort_order',
@@ -461,12 +462,18 @@ class SharedChecklistController
             );
         }
 
-        // Calculate progress
+        // Calculate progress (-1 means unlimited/unspecified testers)
         $totalRequired = 0;
         $totalCompleted = 0;
         foreach ($items as $item) {
-            $totalRequired += $item['required_testers'];
-            $totalCompleted += min($item['passed_count'], $item['required_testers']);
+            if ($item['required_testers'] == -1) {
+                // Unlimited: count as 1 required, completed if at least 1 passed
+                $totalRequired += 1;
+                $totalCompleted += $item['passed_count'] > 0 ? 1 : 0;
+            } else {
+                $totalRequired += $item['required_testers'];
+                $totalCompleted += min($item['passed_count'], $item['required_testers']);
+            }
         }
 
         return JsonResponse::success([
@@ -532,7 +539,7 @@ class SharedChecklistController
         $status = $data['status'] ?? 'in_progress';
 
         // Validate status
-        $validStatuses = ['pending', 'in_progress', 'passed', 'failed', 'blocked'];
+        $validStatuses = ['pending', 'in_progress', 'passed', 'failed', 'blocked', 'uncertain'];
         if (!in_array($status, $validStatuses)) {
             $status = 'in_progress';
         }
@@ -544,7 +551,7 @@ class SharedChecklistController
             'tester_email' => $data['tester_email'] ?? null,
             'status' => $status,
             'notes' => $data['notes'] ?? null,
-            'tested_at' => in_array($status, ['passed', 'failed']) ? date('Y-m-d H:i:s') : null,
+            'tested_at' => in_array($status, ['passed', 'failed', 'uncertain']) ? date('Y-m-d H:i:s') : null,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
@@ -607,12 +614,12 @@ class SharedChecklistController
         $oldStatus = $entry['status'];
 
         if (isset($data['status'])) {
-            $validStatuses = ['pending', 'in_progress', 'passed', 'failed', 'blocked'];
+            $validStatuses = ['pending', 'in_progress', 'passed', 'failed', 'blocked', 'uncertain'];
             if (in_array($data['status'], $validStatuses)) {
                 $updates['status'] = $data['status'];
 
                 // Set tested_at when completing
-                if (in_array($data['status'], ['passed', 'failed']) && !$entry['tested_at']) {
+                if (in_array($data['status'], ['passed', 'failed', 'uncertain']) && !$entry['tested_at']) {
                     $updates['tested_at'] = date('Y-m-d H:i:s');
                 }
             }
@@ -733,7 +740,7 @@ class SharedChecklistController
             'category_id' => $data['category_id'] ?? null,
             'title' => trim($data['title']),
             'description' => $data['description'] ?? null,
-            'required_testers' => isset($data['required_testers']) ? max(1, (int) $data['required_testers']) : 1,
+            'required_testers' => isset($data['required_testers']) ? ((int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers'])) : 1,
             'sort_order' => $maxSort + 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),

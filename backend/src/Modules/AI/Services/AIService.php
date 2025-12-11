@@ -134,7 +134,8 @@ class AIService
 
         // Build system prompt with user context (only for new conversations or first message)
         if (count($history) <= 1) {
-            $systemPrompt = $this->buildSystemPrompt($userId, $contextEnabled, $toolsEnabled);
+            $projectId = $context['project_id'] ?? null;
+            $systemPrompt = $this->buildSystemPrompt($userId, $contextEnabled, $toolsEnabled, $projectId);
             array_unshift($history, ['role' => 'system', 'content' => $systemPrompt]);
         }
 
@@ -166,7 +167,7 @@ class AIService
     /**
      * Build system prompt with user context
      */
-    private function buildSystemPrompt(string $userId, bool $contextEnabled = true, bool $toolsEnabled = true): string
+    private function buildSystemPrompt(string $userId, bool $contextEnabled = true, bool $toolsEnabled = true, ?string $projectId = null): string
     {
         $userName = $this->getUserName($userId);
 
@@ -175,7 +176,7 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
 
         // Only include user context if enabled
         if ($contextEnabled) {
-            $userContext = $this->getUserContext($userId);
+            $userContext = $this->getUserContext($userId, $projectId);
 
             $systemPrompt .= "WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Informationen, um präzise und hilfreiche Antworten zu geben.
 
@@ -183,23 +184,59 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
 
 ";
 
-            // Add projects
-            $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
-            if (!empty($userContext['projects'])) {
-                foreach ($userContext['projects'] as $project) {
-                    $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
-                    $systemPrompt .= "  {$status} {$project['name']}";
-                    if (!empty($project['description'])) {
-                        $systemPrompt .= " - " . substr($project['description'], 0, 50);
+            // Check if we have project context
+            if (!empty($userContext['active_project'])) {
+                $project = $userContext['active_project'];
+                $systemPrompt .= "*** AKTIVES PROJEKT: {$project['name']} ***\n";
+                if (!empty($project['description'])) {
+                    $systemPrompt .= "Beschreibung: {$project['description']}\n";
+                }
+                $systemPrompt .= "Status: {$project['status']}\n\n";
+
+                // Show project-specific lists
+                if (!empty($userContext['lists'])) {
+                    $systemPrompt .= "LISTEN IN DIESEM PROJEKT:\n";
+                    foreach ($userContext['lists'] as $list) {
+                        $systemPrompt .= "  - {$list['title']} ({$list['open_count']} offen, {$list['completed_count']} erledigt)\n";
                     }
                     $systemPrompt .= "\n";
                 }
+
+                // Show docker hosts for this project
+                if (!empty($userContext['docker_hosts'])) {
+                    $systemPrompt .= "DOCKER-HOSTS IN DIESEM PROJEKT:\n";
+                    foreach ($userContext['docker_hosts'] as $host) {
+                        $status = $host['is_active'] ? '[Aktiv]' : '[Inaktiv]';
+                        $systemPrompt .= "  {$status} {$host['name']} ({$host['host']})\n";
+                    }
+                    $systemPrompt .= "\n";
+                }
+
+                // Show time tracked today
+                if ($userContext['time_entries_today'] > 0) {
+                    $hours = floor($userContext['time_entries_today'] / 3600);
+                    $minutes = floor(($userContext['time_entries_today'] % 3600) / 60);
+                    $systemPrompt .= "ZEIT HEUTE GETRACKT: {$hours}h {$minutes}min\n\n";
+                }
             } else {
-                $systemPrompt .= "  Keine Projekte vorhanden\n";
+                // No project context - show all projects
+                $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
+                if (!empty($userContext['projects'])) {
+                    foreach ($userContext['projects'] as $project) {
+                        $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
+                        $systemPrompt .= "  {$status} {$project['name']}";
+                        if (!empty($project['description'])) {
+                            $systemPrompt .= " - " . substr($project['description'], 0, 50);
+                        }
+                        $systemPrompt .= "\n";
+                    }
+                } else {
+                    $systemPrompt .= "  Keine Projekte vorhanden\n";
+                }
             }
 
-            // Add tasks summary (from list_items)
-            $systemPrompt .= "\nAUFGABEN (Listen):\n";
+            // Add tasks summary
+            $systemPrompt .= "\nAUFGABEN:\n";
             $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
             $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
             $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
@@ -209,14 +246,15 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
                 $systemPrompt .= "\nANSTEHENDE AUFGABEN (naechste 7 Tage):\n";
                 foreach ($userContext['upcoming_tasks'] as $task) {
                     $dueDate = $task['due_date'] ? date('d.m.Y', strtotime($task['due_date'])) : '';
-                    $systemPrompt .= "  - {$task['title']} (Faellig: {$dueDate})\n";
+                    $listInfo = !empty($task['list_name']) ? " [{$task['list_name']}]" : '';
+                    $systemPrompt .= "  - {$task['title']}{$listInfo} (Faellig: {$dueDate})\n";
                 }
             }
 
-            // Add inbox items
+            // Add inbox items (global)
             $systemPrompt .= "\nINBOX: {$userContext['inbox_count']} Eintraege\n";
 
-            // Add wiki pages
+            // Add wiki pages (global)
             $systemPrompt .= "\nWIKI-SEITEN: {$userContext['wiki_count']} Seiten\n";
             if (!empty($userContext['recent_wiki_pages'])) {
                 $systemPrompt .= "  Zuletzt bearbeitet:\n";
@@ -278,88 +316,170 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
     }
 
     /**
-     * Get user context data
+     * Get user context data, optionally filtered by project
      */
-    private function getUserContext(string $userId): array
+    private function getUserContext(string $userId, ?string $projectId = null): array
     {
-        // Get projects (status != 'archived' instead of is_archived)
-        $projects = $this->db->fetchAllAssociative(
-            "SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND status != 'archived' ORDER BY updated_at DESC LIMIT 10",
-            [$userId]
-        );
-
-        // Get task counts from list_items (joined with lists for user_id)
-        $taskCounts = [
-            'open' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM list_items li
-                 INNER JOIN lists l ON li.list_id = l.id
-                 WHERE l.user_id = ? AND li.is_completed = 0",
-                [$userId]
-            ),
-            'completed' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM list_items li
-                 INNER JOIN lists l ON li.list_id = l.id
-                 WHERE l.user_id = ? AND li.is_completed = 1",
-                [$userId]
-            ),
-            'overdue' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM list_items li
-                 INNER JOIN lists l ON li.list_id = l.id
-                 WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date < CURDATE()",
-                [$userId]
-            ),
+        $result = [
+            'active_project' => null,
+            'projects' => [],
+            'project_count' => 0,
+            'tasks' => ['open' => 0, 'completed' => 0, 'overdue' => 0],
+            'upcoming_tasks' => [],
+            'inbox_count' => 0,
+            'wiki_count' => 0,
+            'recent_wiki_pages' => [],
+            'kanban_boards' => [],
+            'kanban_count' => 0,
+            'lists' => [],
+            'docker_hosts' => [],
+            'time_entries_today' => 0,
         ];
 
-        // Get upcoming tasks (next 7 days)
-        $upcomingTasks = $this->db->fetchAllAssociative(
-            "SELECT li.content as title, li.due_date, li.priority FROM list_items li
-             INNER JOIN lists l ON li.list_id = l.id
-             WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date IS NOT NULL
-             AND li.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-             ORDER BY li.due_date ASC LIMIT 5",
-            [$userId]
-        );
+        // If project context is given, get project info and filter by it
+        if ($projectId) {
+            $project = $this->db->fetchAssociative(
+                "SELECT id, name, description, status, color FROM projects WHERE id = ? AND user_id = ?",
+                [$projectId, $userId]
+            );
+            if ($project) {
+                $result['active_project'] = $project;
 
-        // Get inbox count (status 'inbox' not 'pending')
-        $inboxCount = (int) $this->db->fetchOne(
+                // Get lists linked to this project
+                $lists = $this->db->fetchAllAssociative(
+                    "SELECT l.id, l.title, l.type,
+                            (SELECT COUNT(*) FROM list_items li WHERE li.list_id = l.id AND li.is_completed = 0) as open_count,
+                            (SELECT COUNT(*) FROM list_items li WHERE li.list_id = l.id AND li.is_completed = 1) as completed_count
+                     FROM lists l
+                     INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = 'list'
+                     WHERE pl.project_id = ? AND l.is_archived = 0
+                     ORDER BY l.updated_at DESC",
+                    [$projectId]
+                );
+                $result['lists'] = $lists;
+
+                // Calculate task counts from project-linked lists
+                $taskCounts = $this->db->fetchAssociative(
+                    "SELECT
+                        SUM(CASE WHEN li.is_completed = 0 THEN 1 ELSE 0 END) as open_count,
+                        SUM(CASE WHEN li.is_completed = 1 THEN 1 ELSE 0 END) as completed_count,
+                        SUM(CASE WHEN li.is_completed = 0 AND li.due_date < CURDATE() THEN 1 ELSE 0 END) as overdue_count
+                     FROM list_items li
+                     INNER JOIN lists l ON li.list_id = l.id
+                     INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = 'list'
+                     WHERE pl.project_id = ?",
+                    [$projectId]
+                );
+                $result['tasks'] = [
+                    'open' => (int) ($taskCounts['open_count'] ?? 0),
+                    'completed' => (int) ($taskCounts['completed_count'] ?? 0),
+                    'overdue' => (int) ($taskCounts['overdue_count'] ?? 0),
+                ];
+
+                // Get upcoming tasks from project-linked lists
+                $result['upcoming_tasks'] = $this->db->fetchAllAssociative(
+                    "SELECT li.content as title, li.due_date, li.priority, l.title as list_name
+                     FROM list_items li
+                     INNER JOIN lists l ON li.list_id = l.id
+                     INNER JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = 'list'
+                     WHERE pl.project_id = ? AND li.is_completed = 0 AND li.due_date IS NOT NULL
+                     AND li.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                     ORDER BY li.due_date ASC LIMIT 10",
+                    [$projectId]
+                );
+
+                // Get kanban boards linked to this project
+                $result['kanban_boards'] = $this->db->fetchAllAssociative(
+                    "SELECT kb.id, kb.title, kb.description,
+                            (SELECT COUNT(*) FROM kanban_cards kc
+                             INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
+                             WHERE kcol.board_id = kb.id) as card_count
+                     FROM kanban_boards kb
+                     INNER JOIN project_links pl ON pl.linkable_id = kb.id AND pl.linkable_type = 'kanban_board'
+                     WHERE pl.project_id = ? AND kb.is_archived = 0
+                     ORDER BY kb.updated_at DESC",
+                    [$projectId]
+                );
+                $result['kanban_count'] = count($result['kanban_boards']);
+
+                // Get docker hosts linked to this project
+                $result['docker_hosts'] = $this->db->fetchAllAssociative(
+                    "SELECT name, host, is_active FROM docker_hosts WHERE project_id = ? AND user_id = ?",
+                    [$projectId, $userId]
+                );
+
+                // Get time entries for today in this project
+                $result['time_entries_today'] = (int) $this->db->fetchOne(
+                    "SELECT COALESCE(SUM(duration), 0) FROM time_entries
+                     WHERE project_id = ? AND user_id = ? AND DATE(start_time) = CURDATE()",
+                    [$projectId, $userId]
+                );
+            }
+        } else {
+            // No project context - show all user data
+            $result['projects'] = $this->db->fetchAllAssociative(
+                "SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND status != 'archived' ORDER BY updated_at DESC LIMIT 10",
+                [$userId]
+            );
+            $result['project_count'] = count($result['projects']);
+
+            // Get all task counts
+            $result['tasks'] = [
+                'open' => (int) $this->db->fetchOne(
+                    "SELECT COUNT(*) FROM list_items li INNER JOIN lists l ON li.list_id = l.id WHERE l.user_id = ? AND li.is_completed = 0",
+                    [$userId]
+                ),
+                'completed' => (int) $this->db->fetchOne(
+                    "SELECT COUNT(*) FROM list_items li INNER JOIN lists l ON li.list_id = l.id WHERE l.user_id = ? AND li.is_completed = 1",
+                    [$userId]
+                ),
+                'overdue' => (int) $this->db->fetchOne(
+                    "SELECT COUNT(*) FROM list_items li INNER JOIN lists l ON li.list_id = l.id WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date < CURDATE()",
+                    [$userId]
+                ),
+            ];
+
+            // Get upcoming tasks
+            $result['upcoming_tasks'] = $this->db->fetchAllAssociative(
+                "SELECT li.content as title, li.due_date, li.priority FROM list_items li
+                 INNER JOIN lists l ON li.list_id = l.id
+                 WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date IS NOT NULL
+                 AND li.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                 ORDER BY li.due_date ASC LIMIT 5",
+                [$userId]
+            );
+
+            // Get all kanban boards
+            $result['kanban_boards'] = $this->db->fetchAllAssociative(
+                "SELECT kb.id, kb.title, kb.description,
+                        (SELECT COUNT(*) FROM kanban_cards kc
+                         INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
+                         WHERE kcol.board_id = kb.id) as card_count
+                 FROM kanban_boards kb
+                 WHERE kb.user_id = ? AND kb.is_archived = 0
+                 ORDER BY kb.updated_at DESC LIMIT 10",
+                [$userId]
+            );
+            $result['kanban_count'] = count($result['kanban_boards']);
+        }
+
+        // Inbox is always user-global (not project-specific)
+        $result['inbox_count'] = (int) $this->db->fetchOne(
             "SELECT COUNT(*) FROM inbox_items WHERE user_id = ? AND status = 'inbox'",
             [$userId]
         );
 
-        // Get wiki page count and recent pages
-        $wikiCount = (int) $this->db->fetchOne(
+        // Wiki is always user-global
+        $result['wiki_count'] = (int) $this->db->fetchOne(
             'SELECT COUNT(*) FROM wiki_pages WHERE user_id = ?',
             [$userId]
         );
-
-        $recentWikiPages = $this->db->fetchAllAssociative(
+        $result['recent_wiki_pages'] = $this->db->fetchAllAssociative(
             'SELECT title FROM wiki_pages WHERE user_id = ? ORDER BY updated_at DESC LIMIT 5',
             [$userId]
         );
 
-        // Get kanban boards with details (not just count)
-        $kanbanBoards = $this->db->fetchAllAssociative(
-            "SELECT kb.id, kb.title, kb.description,
-                    (SELECT COUNT(*) FROM kanban_cards kc
-                     INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
-                     WHERE kcol.board_id = kb.id) as card_count
-             FROM kanban_boards kb
-             WHERE kb.user_id = ? AND kb.is_archived = 0
-             ORDER BY kb.updated_at DESC LIMIT 10",
-            [$userId]
-        );
-
-        return [
-            'projects' => $projects,
-            'project_count' => count($projects),
-            'tasks' => $taskCounts,
-            'upcoming_tasks' => $upcomingTasks,
-            'inbox_count' => $inboxCount,
-            'wiki_count' => $wikiCount,
-            'recent_wiki_pages' => $recentWikiPages,
-            'kanban_boards' => $kanbanBoards,
-            'kanban_count' => count($kanbanBoards),
-        ];
+        return $result;
     }
 
     /**

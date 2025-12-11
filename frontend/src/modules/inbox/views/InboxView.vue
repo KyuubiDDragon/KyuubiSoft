@@ -101,8 +101,8 @@ async function loadMoveTargets() {
       api.get('/api/v1/lists'),
       api.get('/api/v1/kanban/boards')
     ])
-    lists.value = listsRes.data.data?.items || []
-    boards.value = boardsRes.data.data || []
+    lists.value = listsRes.data.data?.items || listsRes.data?.items || []
+    boards.value = boardsRes.data.data?.items || boardsRes.data?.items || []
   } catch (error) {
     console.error('Failed to load move targets:', error)
   }

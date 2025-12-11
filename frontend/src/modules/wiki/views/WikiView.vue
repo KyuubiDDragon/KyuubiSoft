@@ -1,366 +1,31 @@
-<template>
-  <div class="wiki-container">
-    <!-- Sidebar -->
-    <aside class="wiki-sidebar" :class="{ collapsed: sidebarCollapsed }">
-      <div class="sidebar-header">
-        <h2 v-if="!sidebarCollapsed">Wiki</h2>
-        <button class="btn-icon" @click="sidebarCollapsed = !sidebarCollapsed">
-          <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
-        </button>
-      </div>
-
-      <div v-if="!sidebarCollapsed" class="sidebar-content">
-        <!-- Search -->
-        <div class="search-box">
-          <i class="fas fa-search"></i>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search pages..."
-            @input="debouncedSearch"
-          />
-        </div>
-
-        <!-- Actions -->
-        <div class="sidebar-actions">
-          <button class="btn btn-primary btn-sm" @click="createNewPage">
-            <i class="fas fa-plus"></i> New Page
-          </button>
-          <button class="btn btn-secondary btn-sm" @click="showGraphView = true">
-            <i class="fas fa-project-diagram"></i>
-          </button>
-        </div>
-
-        <!-- Search Results -->
-        <div v-if="searchQuery && wikiStore.searchResults.length" class="search-results">
-          <h4>Search Results</h4>
-          <div
-            v-for="result in wikiStore.searchResults"
-            :key="result.id"
-            class="page-item"
-            @click="selectPage(result.id)"
-          >
-            <i class="fas fa-file-alt"></i>
-            <span>{{ result.title }}</span>
-          </div>
-        </div>
-
-        <!-- Categories -->
-        <div v-else class="page-tree">
-          <div class="category-section">
-            <div
-              class="category-header"
-              :class="{ active: !selectedCategory }"
-              @click="selectedCategory = null"
-            >
-              <i class="fas fa-folder"></i>
-              <span>All Pages</span>
-              <span class="count">{{ wikiStore.pages.length }}</span>
-            </div>
-          </div>
-
-          <div
-            v-for="category in wikiStore.categories"
-            :key="category.id"
-            class="category-section"
-          >
-            <div
-              class="category-header"
-              :class="{ active: selectedCategory === category.id }"
-              :style="{ '--category-color': category.color }"
-              @click="selectedCategory = category.id"
-            >
-              <i :class="category.icon || 'fas fa-folder'"></i>
-              <span>{{ category.name }}</span>
-              <span class="count">{{ category.page_count || 0 }}</span>
-            </div>
-          </div>
-
-          <button class="btn-link add-category" @click="showCategoryModal = true">
-            <i class="fas fa-plus"></i> Add Category
-          </button>
-
-          <!-- Page List -->
-          <div class="page-list">
-            <h4>Pages</h4>
-            <div
-              v-for="page in filteredPages"
-              :key="page.id"
-              class="page-item"
-              :class="{ active: currentPageId === page.id }"
-              @click="selectPage(page.id)"
-            >
-              <i v-if="page.icon" :class="page.icon"></i>
-              <i v-else class="fas fa-file-alt"></i>
-              <span>{{ page.title }}</span>
-              <i v-if="page.is_pinned" class="fas fa-thumbtack pin-icon"></i>
-            </div>
-          </div>
-
-          <!-- Recent Pages -->
-          <div v-if="wikiStore.recentPages.length" class="recent-pages">
-            <h4>Recent</h4>
-            <div
-              v-for="page in wikiStore.recentPages.slice(0, 5)"
-              :key="page.id"
-              class="page-item small"
-              @click="selectPage(page.id)"
-            >
-              <i class="fas fa-clock"></i>
-              <span>{{ page.title }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="wiki-main">
-      <!-- No page selected -->
-      <div v-if="!currentPageId && !isCreating" class="empty-state">
-        <i class="fas fa-book-open"></i>
-        <h3>Welcome to your Wiki</h3>
-        <p>Select a page from the sidebar or create a new one</p>
-        <button class="btn btn-primary" @click="createNewPage">
-          <i class="fas fa-plus"></i> Create First Page
-        </button>
-      </div>
-
-      <!-- Page Editor/Viewer -->
-      <div v-else class="page-content">
-        <!-- Header -->
-        <div class="page-header">
-          <div class="page-title-section">
-            <input
-              v-if="isEditing"
-              v-model="editForm.title"
-              type="text"
-              class="page-title-input"
-              placeholder="Page Title"
-            />
-            <h1 v-else>{{ wikiStore.currentPage?.title || 'New Page' }}</h1>
-
-            <div class="page-meta" v-if="wikiStore.currentPage && !isCreating">
-              <span v-if="wikiStore.currentPage.category_name" class="category-badge" :style="{ backgroundColor: wikiStore.currentPage.category_color }">
-                {{ wikiStore.currentPage.category_name }}
-              </span>
-              <span class="meta-item">
-                <i class="fas fa-eye"></i> {{ wikiStore.currentPage.view_count }} views
-              </span>
-              <span class="meta-item">
-                <i class="fas fa-clock"></i> {{ wikiStore.currentPage.reading_time }} min read
-              </span>
-              <span class="meta-item">
-                Updated {{ formatDate(wikiStore.currentPage.updated_at) }}
-              </span>
-            </div>
-          </div>
-
-          <div class="page-actions">
-            <template v-if="isEditing || isCreating">
-              <button class="btn btn-primary" @click="savePage" :disabled="wikiStore.loading">
-                <i class="fas fa-save"></i> Save
-              </button>
-              <button class="btn btn-secondary" @click="cancelEdit">
-                Cancel
-              </button>
-            </template>
-            <template v-else>
-              <button class="btn btn-secondary" @click="startEdit">
-                <i class="fas fa-edit"></i> Edit
-              </button>
-              <div class="dropdown">
-                <button class="btn btn-icon">
-                  <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <div class="dropdown-menu">
-                  <button @click="togglePin">
-                    <i :class="wikiStore.currentPage?.is_pinned ? 'fas fa-thumbtack' : 'far fa-thumbtack'"></i>
-                    {{ wikiStore.currentPage?.is_pinned ? 'Unpin' : 'Pin' }}
-                  </button>
-                  <button @click="togglePublish">
-                    <i :class="wikiStore.currentPage?.is_published ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                    {{ wikiStore.currentPage?.is_published ? 'Unpublish' : 'Publish' }}
-                  </button>
-                  <button @click="showHistoryModal = true">
-                    <i class="fas fa-history"></i> History
-                  </button>
-                  <hr />
-                  <button class="danger" @click="confirmDelete">
-                    <i class="fas fa-trash"></i> Delete
-                  </button>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <!-- Editor Options -->
-        <div v-if="isEditing || isCreating" class="editor-options">
-          <select v-model="editForm.category_id">
-            <option :value="null">No Category</option>
-            <option v-for="cat in wikiStore.categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-
-          <select v-model="editForm.parent_id">
-            <option :value="null">No Parent</option>
-            <option v-for="page in availableParents" :key="page.id" :value="page.id">
-              {{ page.title }}
-            </option>
-          </select>
-
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editForm.is_published" />
-            Published
-          </label>
-
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="editForm.is_pinned" />
-            Pinned
-          </label>
-        </div>
-
-        <!-- Content Area -->
-        <div class="content-area">
-          <textarea
-            v-if="isEditing || isCreating"
-            v-model="editForm.content"
-            class="markdown-editor"
-            placeholder="Write your content in Markdown...
-
-Use [[Page Title]] to link to other pages."
-          ></textarea>
-
-          <div v-else class="markdown-content" v-html="renderedContent"></div>
-        </div>
-
-        <!-- Backlinks -->
-        <div v-if="wikiStore.currentPage?.backlinks?.length && !isEditing" class="backlinks-section">
-          <h4><i class="fas fa-link"></i> Backlinks</h4>
-          <div class="backlinks-list">
-            <span
-              v-for="link in wikiStore.currentPage.backlinks"
-              :key="link.id"
-              class="backlink"
-              @click="selectPage(link.id)"
-            >
-              {{ link.title }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Children Pages -->
-        <div v-if="wikiStore.currentPage?.children?.length && !isEditing" class="children-section">
-          <h4><i class="fas fa-sitemap"></i> Child Pages</h4>
-          <div class="children-list">
-            <div
-              v-for="child in wikiStore.currentPage.children"
-              :key="child.id"
-              class="child-page"
-              @click="selectPage(child.id)"
-            >
-              <i :class="child.icon || 'fas fa-file-alt'"></i>
-              {{ child.title }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- Graph Modal -->
-    <div v-if="showGraphView" class="modal-overlay" @click.self="showGraphView = false">
-      <div class="modal graph-modal">
-        <div class="modal-header">
-          <h3>Knowledge Graph</h3>
-          <button class="btn-icon" @click="showGraphView = false">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div ref="graphContainer" class="graph-container"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Category Modal -->
-    <div v-if="showCategoryModal" class="modal-overlay" @click.self="showCategoryModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>{{ editingCategory ? 'Edit Category' : 'New Category' }}</h3>
-          <button class="btn-icon" @click="showCategoryModal = false">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Name</label>
-            <input v-model="categoryForm.name" type="text" placeholder="Category name" />
-          </div>
-          <div class="form-group">
-            <label>Color</label>
-            <input v-model="categoryForm.color" type="color" />
-          </div>
-          <div class="form-group">
-            <label>Icon (Font Awesome class)</label>
-            <input v-model="categoryForm.icon" type="text" placeholder="fas fa-folder" />
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea v-model="categoryForm.description" placeholder="Optional description"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showCategoryModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="saveCategory">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- History Modal -->
-    <div v-if="showHistoryModal" class="modal-overlay" @click.self="showHistoryModal = false">
-      <div class="modal history-modal">
-        <div class="modal-header">
-          <h3>Page History</h3>
-          <button class="btn-icon" @click="showHistoryModal = false">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div v-if="wikiStore.pageHistory.length === 0" class="empty-history">
-            No history available
-          </div>
-          <div v-else class="history-list">
-            <div
-              v-for="entry in wikiStore.pageHistory"
-              :key="entry.id"
-              class="history-item"
-            >
-              <div class="history-info">
-                <span class="version">v{{ entry.version_number }}</span>
-                <span class="title">{{ entry.title }}</span>
-                <span class="meta">
-                  by {{ entry.changed_by_name }} - {{ formatDate(entry.created_at) }}
-                </span>
-                <span v-if="entry.change_note" class="note">{{ entry.change_note }}</span>
-              </div>
-              <button class="btn btn-sm btn-secondary" @click="restoreVersion(entry.id)">
-                Restore
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useWikiStore } from '@/stores/wiki'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import {
+  BookOpenIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FolderIcon,
+  DocumentTextIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PencilIcon,
+  TrashIcon,
+  ClockIcon,
+  EyeIcon,
+  MapIcon,
+  LinkIcon,
+  ArrowPathIcon,
+  XMarkIcon,
+  CheckIcon,
+  EllipsisVerticalIcon,
+  BookmarkIcon,
+  GlobeAltIcon,
+  Squares2X2Icon,
+} from '@heroicons/vue/24/outline'
+import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/vue/24/solid'
 
 const wikiStore = useWikiStore()
 
@@ -374,6 +39,7 @@ const isCreating = ref(false)
 const showGraphView = ref(false)
 const showCategoryModal = ref(false)
 const showHistoryModal = ref(false)
+const showDropdown = ref(false)
 const editingCategory = ref(null)
 const graphContainer = ref(null)
 
@@ -416,9 +82,9 @@ const renderedContent = computed(() => {
       const displayText = display || target
       const page = wikiStore.pages.find(p => p.title === target || p.slug === target)
       if (page) {
-        return `<a href="#" class="wiki-link" data-page-id="${page.id}">${displayText}</a>`
+        return `<a href="#" class="wiki-link text-indigo-400 hover:text-indigo-300 hover:underline" data-page-id="${page.id}">${displayText}</a>`
       }
-      return `<span class="wiki-link broken">${displayText}</span>`
+      return `<span class="wiki-link-broken text-red-400">${displayText}</span>`
     }
   )
 
@@ -444,7 +110,7 @@ function createNewPage() {
 
 async function selectPage(pageId) {
   if (isEditing.value || isCreating.value) {
-    if (!confirm('Discard unsaved changes?')) return
+    if (!confirm('Ungespeicherte Änderungen verwerfen?')) return
   }
 
   currentPageId.value = pageId
@@ -469,6 +135,7 @@ function startEdit() {
     is_pinned: wikiStore.currentPage.is_pinned
   }
   isEditing.value = true
+  showDropdown.value = false
 }
 
 function cancelEdit() {
@@ -481,7 +148,7 @@ function cancelEdit() {
 
 async function savePage() {
   if (!editForm.value.title.trim()) {
-    alert('Title is required')
+    alert('Titel ist erforderlich')
     return
   }
 
@@ -495,7 +162,7 @@ async function savePage() {
       isEditing.value = false
     }
   } catch (err) {
-    alert('Failed to save page: ' + (wikiStore.error || err.message))
+    alert('Fehler beim Speichern: ' + (wikiStore.error || err.message))
   }
 }
 
@@ -504,6 +171,7 @@ async function togglePin() {
   await wikiStore.updatePage(currentPageId.value, {
     is_pinned: !wikiStore.currentPage.is_pinned
   })
+  showDropdown.value = false
 }
 
 async function togglePublish() {
@@ -511,16 +179,18 @@ async function togglePublish() {
   await wikiStore.updatePage(currentPageId.value, {
     is_published: !wikiStore.currentPage.is_published
   })
+  showDropdown.value = false
 }
 
 async function confirmDelete() {
-  if (!confirm('Are you sure you want to delete this page?')) return
+  if (!confirm('Diese Seite wirklich löschen?')) return
 
   try {
     await wikiStore.deletePage(currentPageId.value)
     currentPageId.value = null
+    showDropdown.value = false
   } catch (err) {
-    alert('Failed to delete page')
+    alert('Fehler beim Löschen')
   }
 }
 
@@ -540,7 +210,7 @@ function debouncedSearch() {
 // Category methods
 async function saveCategory() {
   if (!categoryForm.value.name.trim()) {
-    alert('Name is required')
+    alert('Name ist erforderlich')
     return
   }
 
@@ -554,19 +224,19 @@ async function saveCategory() {
     editingCategory.value = null
     categoryForm.value = { name: '', color: '#6366f1', icon: '', description: '' }
   } catch (err) {
-    alert('Failed to save category')
+    alert('Fehler beim Speichern der Kategorie')
   }
 }
 
 // History
 async function restoreVersion(historyId) {
-  if (!confirm('Restore this version? Current content will be saved to history.')) return
+  if (!confirm('Diese Version wiederherstellen? Aktueller Inhalt wird in die Historie gespeichert.')) return
 
   try {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)
     showHistoryModal.value = false
   } catch (err) {
-    alert('Failed to restore version')
+    alert('Fehler beim Wiederherstellen')
   }
 }
 
@@ -587,7 +257,6 @@ watch(showGraphView, async (show) => {
 })
 
 function renderGraph() {
-  // Simple force-directed graph using canvas
   const container = graphContainer.value
   if (!container) return
 
@@ -608,9 +277,7 @@ function renderGraph() {
   const edges = wikiStore.graphData.edges
 
   function tick() {
-    // Simple force simulation
     nodes.forEach(node => {
-      // Repulsion from other nodes
       nodes.forEach(other => {
         if (node.id === other.id) return
         const dx = node.x - other.x
@@ -620,13 +287,10 @@ function renderGraph() {
         node.vx += (dx / dist) * force
         node.vy += (dy / dist) * force
       })
-
-      // Attraction to center
       node.vx += (canvas.width / 2 - node.x) * 0.001
       node.vy += (canvas.height / 2 - node.y) * 0.001
     })
 
-    // Edge attraction
     edges.forEach(edge => {
       const source = nodes.find(n => n.id === edge.source)
       const target = nodes.find(n => n.id === edge.target)
@@ -641,21 +305,17 @@ function renderGraph() {
       target.vy -= (dy / dist) * force
     })
 
-    // Apply velocities with damping
     nodes.forEach(node => {
       node.x += node.vx * 0.1
       node.y += node.vy * 0.1
       node.vx *= 0.9
       node.vy *= 0.9
-      // Keep in bounds
       node.x = Math.max(50, Math.min(canvas.width - 50, node.x))
       node.y = Math.max(30, Math.min(canvas.height - 30, node.y))
     })
 
-    // Draw
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Draw edges
     ctx.strokeStyle = '#4b5563'
     ctx.lineWidth = 1
     edges.forEach(edge => {
@@ -668,7 +328,6 @@ function renderGraph() {
       ctx.stroke()
     })
 
-    // Draw nodes
     nodes.forEach(node => {
       ctx.beginPath()
       ctx.arc(node.x, node.y, 20, 0, Math.PI * 2)
@@ -687,7 +346,6 @@ function renderGraph() {
     })
   }
 
-  // Animation loop
   let frame = 0
   function animate() {
     tick()
@@ -698,7 +356,6 @@ function renderGraph() {
   }
   animate()
 
-  // Click handler
   canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
@@ -745,604 +402,559 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.wiki-container {
-  display: flex;
-  height: 100%;
-  background: var(--bg-primary);
+<template>
+  <div class="flex h-full bg-dark-900">
+    <!-- Sidebar -->
+    <aside
+      class="bg-dark-800 border-r border-dark-600 flex flex-col transition-all duration-200"
+      :class="sidebarCollapsed ? 'w-12' : 'w-72'"
+    >
+      <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div v-if="!sidebarCollapsed" class="flex items-center gap-2">
+          <BookOpenIcon class="w-6 h-6 text-indigo-400" />
+          <h2 class="text-lg font-semibold text-white">Wiki</h2>
+        </div>
+        <button
+          class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-700"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >
+          <ChevronLeftIcon v-if="!sidebarCollapsed" class="w-5 h-5" />
+          <ChevronRightIcon v-else class="w-5 h-5" />
+        </button>
+      </div>
+
+      <div v-if="!sidebarCollapsed" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Search -->
+        <div class="relative">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Suchen..."
+            class="w-full pl-9 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+            @input="debouncedSearch"
+          />
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2">
+          <button
+            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+            @click="createNewPage"
+          >
+            <PlusIcon class="w-4 h-4" />
+            Neue Seite
+          </button>
+          <button
+            class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white"
+            @click="showGraphView = true"
+            title="Graph-Ansicht"
+          >
+            <Squares2X2Icon class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Search Results -->
+        <div v-if="searchQuery && wikiStore.searchResults.length" class="space-y-1">
+          <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Suchergebnisse</h4>
+          <button
+            v-for="result in wikiStore.searchResults"
+            :key="result.id"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-gray-300 hover:bg-dark-700"
+            @click="selectPage(result.id)"
+          >
+            <DocumentTextIcon class="w-4 h-4 text-gray-500" />
+            {{ result.title }}
+          </button>
+        </div>
+
+        <!-- Categories & Pages -->
+        <div v-else class="space-y-4">
+          <!-- All Pages -->
+          <button
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+            :class="!selectedCategory ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-dark-700'"
+            @click="selectedCategory = null"
+          >
+            <FolderIcon class="w-4 h-4" />
+            <span class="flex-1">Alle Seiten</span>
+            <span class="text-xs text-gray-500">{{ wikiStore.pages.length }}</span>
+          </button>
+
+          <!-- Categories -->
+          <div v-for="category in wikiStore.categories" :key="category.id">
+            <button
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              :class="selectedCategory === category.id ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-dark-700'"
+              @click="selectedCategory = category.id"
+            >
+              <div
+                class="w-3 h-3 rounded-full"
+                :style="{ backgroundColor: category.color }"
+              ></div>
+              <span class="flex-1">{{ category.name }}</span>
+              <span class="text-xs text-gray-500">{{ category.page_count || 0 }}</span>
+            </button>
+          </div>
+
+          <button
+            class="w-full text-left text-sm text-indigo-400 hover:text-indigo-300 px-3 py-1"
+            @click="showCategoryModal = true"
+          >
+            <PlusIcon class="w-4 h-4 inline mr-1" />
+            Kategorie hinzufügen
+          </button>
+
+          <!-- Page List -->
+          <div class="space-y-1">
+            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">Seiten</h4>
+            <button
+              v-for="page in filteredPages"
+              :key="page.id"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              :class="currentPageId === page.id ? 'bg-dark-600 text-white' : 'text-gray-300 hover:bg-dark-700'"
+              @click="selectPage(page.id)"
+            >
+              <DocumentTextIcon class="w-4 h-4 text-gray-500" />
+              <span class="flex-1 truncate">{{ page.title }}</span>
+              <BookmarkSolidIcon v-if="page.is_pinned" class="w-3 h-3 text-yellow-400" />
+            </button>
+          </div>
+
+          <!-- Recent Pages -->
+          <div v-if="wikiStore.recentPages.length" class="space-y-1">
+            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">Zuletzt bearbeitet</h4>
+            <button
+              v-for="page in wikiStore.recentPages.slice(0, 5)"
+              :key="page.id"
+              class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-xs text-gray-400 hover:bg-dark-700 hover:text-gray-300"
+              @click="selectPage(page.id)"
+            >
+              <ClockIcon class="w-3 h-3" />
+              {{ page.title }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <!-- No page selected -->
+      <div v-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
+        <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
+        <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
+        <p class="text-gray-500 mb-6">Wähle eine Seite aus der Sidebar oder erstelle eine neue.</p>
+        <button
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white"
+          @click="createNewPage"
+        >
+          <PlusIcon class="w-5 h-5" />
+          Erste Seite erstellen
+        </button>
+      </div>
+
+      <!-- Page Editor/Viewer -->
+      <div v-else class="max-w-4xl mx-auto p-8">
+        <!-- Header -->
+        <div class="flex items-start justify-between mb-6 pb-4 border-b border-dark-600">
+          <div class="flex-1">
+            <input
+              v-if="isEditing || isCreating"
+              v-model="editForm.title"
+              type="text"
+              class="w-full text-3xl font-bold bg-transparent text-white border-none outline-none placeholder-gray-600"
+              placeholder="Seitentitel"
+            />
+            <h1 v-else class="text-3xl font-bold text-white">{{ wikiStore.currentPage?.title || 'Neue Seite' }}</h1>
+
+            <div v-if="wikiStore.currentPage && !isCreating" class="flex items-center gap-4 mt-2 text-sm text-gray-500">
+              <span
+                v-if="wikiStore.currentPage.category_name"
+                class="px-2 py-0.5 rounded-full text-xs text-white"
+                :style="{ backgroundColor: wikiStore.currentPage.category_color }"
+              >
+                {{ wikiStore.currentPage.category_name }}
+              </span>
+              <span class="flex items-center gap-1">
+                <EyeIcon class="w-4 h-4" />
+                {{ wikiStore.currentPage.view_count }} Aufrufe
+              </span>
+              <span class="flex items-center gap-1">
+                <ClockIcon class="w-4 h-4" />
+                {{ wikiStore.currentPage.reading_time }} Min.
+              </span>
+              <span>
+                Aktualisiert {{ formatDate(wikiStore.currentPage.updated_at) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <template v-if="isEditing || isCreating">
+              <button
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+                :disabled="wikiStore.loading"
+                @click="savePage"
+              >
+                <CheckIcon class="w-4 h-4 inline mr-1" />
+                Speichern
+              </button>
+              <button
+                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white text-sm"
+                @click="cancelEdit"
+              >
+                Abbrechen
+              </button>
+            </template>
+            <template v-else>
+              <button
+                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white text-sm"
+                @click="startEdit"
+              >
+                <PencilIcon class="w-4 h-4 inline mr-1" />
+                Bearbeiten
+              </button>
+              <div class="relative">
+                <button
+                  class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white"
+                  @click="showDropdown = !showDropdown"
+                >
+                  <EllipsisVerticalIcon class="w-5 h-5" />
+                </button>
+                <div
+                  v-if="showDropdown"
+                  class="absolute right-0 top-full mt-1 w-48 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-50 py-1"
+                >
+                  <button
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    @click="togglePin"
+                  >
+                    <BookmarkIcon class="w-4 h-4" />
+                    {{ wikiStore.currentPage?.is_pinned ? 'Nicht mehr anpinnen' : 'Anpinnen' }}
+                  </button>
+                  <button
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    @click="togglePublish"
+                  >
+                    <GlobeAltIcon class="w-4 h-4" />
+                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : 'Veröffentlichen' }}
+                  </button>
+                  <button
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    @click="showHistoryModal = true; showDropdown = false"
+                  >
+                    <ArrowPathIcon class="w-4 h-4" />
+                    Versionen
+                  </button>
+                  <hr class="border-dark-600 my-1" />
+                  <button
+                    class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-dark-600 flex items-center gap-2"
+                    @click="confirmDelete"
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                    Löschen
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Editor Options -->
+        <div v-if="isEditing || isCreating" class="flex flex-wrap gap-4 mb-4 p-4 bg-dark-800 rounded-lg">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Kategorie</label>
+            <select
+              v-model="editForm.category_id"
+              class="px-3 py-1.5 bg-dark-700 border border-dark-600 rounded text-sm text-white"
+            >
+              <option :value="null">Keine Kategorie</option>
+              <option v-for="cat in wikiStore.categories" :key="cat.id" :value="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Übergeordnete Seite</label>
+            <select
+              v-model="editForm.parent_id"
+              class="px-3 py-1.5 bg-dark-700 border border-dark-600 rounded text-sm text-white"
+            >
+              <option :value="null">Keine</option>
+              <option v-for="page in availableParents" :key="page.id" :value="page.id">
+                {{ page.title }}
+              </option>
+            </select>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-gray-300">
+            <input type="checkbox" v-model="editForm.is_published" class="rounded bg-dark-700 border-dark-600 text-indigo-600" />
+            Veröffentlicht
+          </label>
+
+          <label class="flex items-center gap-2 text-sm text-gray-300">
+            <input type="checkbox" v-model="editForm.is_pinned" class="rounded bg-dark-700 border-dark-600 text-indigo-600" />
+            Angepinnt
+          </label>
+        </div>
+
+        <!-- Content Area -->
+        <div class="min-h-[400px]">
+          <textarea
+            v-if="isEditing || isCreating"
+            v-model="editForm.content"
+            class="w-full min-h-[400px] p-4 bg-dark-800 border border-dark-600 rounded-lg text-white font-mono text-sm resize-y focus:outline-none focus:border-indigo-500"
+            placeholder="Schreibe deinen Inhalt in Markdown...
+
+Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
+          ></textarea>
+
+          <div
+            v-else
+            class="prose prose-invert prose-indigo max-w-none"
+            v-html="renderedContent"
+          ></div>
+        </div>
+
+        <!-- Backlinks -->
+        <div v-if="wikiStore.currentPage?.backlinks?.length && !isEditing" class="mt-8 pt-4 border-t border-dark-600">
+          <h4 class="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
+            <LinkIcon class="w-4 h-4" />
+            Backlinks
+          </h4>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="link in wikiStore.currentPage.backlinks"
+              :key="link.id"
+              class="px-3 py-1 bg-dark-700 hover:bg-dark-600 rounded-full text-sm text-gray-300"
+              @click="selectPage(link.id)"
+            >
+              {{ link.title }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Children Pages -->
+        <div v-if="wikiStore.currentPage?.children?.length && !isEditing" class="mt-6">
+          <h4 class="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
+            <MapIcon class="w-4 h-4" />
+            Unterseiten
+          </h4>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <button
+              v-for="child in wikiStore.currentPage.children"
+              :key="child.id"
+              class="flex items-center gap-2 p-3 bg-dark-800 hover:bg-dark-700 rounded-lg text-left"
+              @click="selectPage(child.id)"
+            >
+              <DocumentTextIcon class="w-5 h-5 text-gray-500" />
+              <span class="text-sm text-gray-300">{{ child.title }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Graph Modal -->
+    <Teleport to="body">
+      <div v-if="showGraphView" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showGraphView = false"></div>
+        <div class="relative bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl h-[600px] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <h3 class="text-lg font-semibold text-white">Wissensgraph</h3>
+            <button class="p-1 text-gray-400 hover:text-white" @click="showGraphView = false">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+          <div ref="graphContainer" class="flex-1 bg-dark-900 rounded-b-xl"></div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Category Modal -->
+    <Teleport to="body">
+      <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showCategoryModal = false"></div>
+        <div class="relative bg-dark-800 rounded-xl border border-dark-600 p-6 w-full max-w-md">
+          <h3 class="text-lg font-semibold text-white mb-4">
+            {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
+          </h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Name</label>
+              <input
+                v-model="categoryForm.name"
+                type="text"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                placeholder="Kategoriename"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Farbe</label>
+              <input
+                v-model="categoryForm.color"
+                type="color"
+                class="w-16 h-10 bg-dark-700 border border-dark-600 rounded cursor-pointer"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Beschreibung</label>
+              <textarea
+                v-model="categoryForm.description"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white resize-none"
+                rows="2"
+                placeholder="Optionale Beschreibung"
+              ></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white" @click="showCategoryModal = false">
+              Abbrechen
+            </button>
+            <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white" @click="saveCategory">
+              Speichern
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- History Modal -->
+    <Teleport to="body">
+      <div v-if="showHistoryModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showHistoryModal = false"></div>
+        <div class="relative bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+            <h3 class="text-lg font-semibold text-white">Versionshistorie</h3>
+            <button class="p-1 text-gray-400 hover:text-white" @click="showHistoryModal = false">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4">
+            <div v-if="wikiStore.pageHistory.length === 0" class="text-center py-8 text-gray-500">
+              Keine Versionen verfügbar
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="entry in wikiStore.pageHistory"
+                :key="entry.id"
+                class="flex items-center justify-between p-4 bg-dark-700 rounded-lg"
+              >
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-indigo-400 font-medium">v{{ entry.version_number }}</span>
+                    <span class="text-white">{{ entry.title }}</span>
+                  </div>
+                  <div class="text-sm text-gray-500 mt-1">
+                    von {{ entry.changed_by_name }} - {{ formatDate(entry.created_at) }}
+                  </div>
+                  <div v-if="entry.change_note" class="text-sm text-gray-400 italic mt-1">
+                    {{ entry.change_note }}
+                  </div>
+                </div>
+                <button
+                  class="px-3 py-1.5 bg-dark-600 hover:bg-dark-500 rounded text-sm text-white"
+                  @click="restoreVersion(entry.id)"
+                >
+                  Wiederherstellen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>
+
+<style>
+/* Prose styling for markdown content */
+.prose {
+  color: #e5e7eb;
+  line-height: 1.75;
 }
 
-.wiki-sidebar {
-  width: 280px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  transition: width 0.2s;
-}
-
-.wiki-sidebar.collapsed {
-  width: 50px;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: var(--bg-primary);
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.search-box input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  color: var(--text-primary);
-}
-
-.sidebar-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.sidebar-actions .btn-primary {
-  flex: 1;
-}
-
-.category-section {
-  margin-bottom: 0.25rem;
-}
-
-.category-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.category-header:hover {
-  background: var(--bg-hover);
-}
-
-.category-header.active {
-  background: var(--bg-active);
-  border-left: 3px solid var(--category-color, var(--primary-color));
-}
-
-.category-header .count {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.add-category {
-  display: block;
-  margin: 0.5rem 0;
-  font-size: 0.85rem;
-}
-
-.page-list, .recent-pages {
-  margin-top: 1rem;
-}
-
-.page-list h4, .recent-pages h4 {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.page-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.page-item:hover {
-  background: var(--bg-hover);
-}
-
-.page-item.active {
-  background: var(--bg-active);
-}
-
-.page-item.small {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
-}
-
-.pin-icon {
-  margin-left: auto;
-  color: var(--primary-color);
-  font-size: 0.75rem;
-}
-
-/* Main Content */
-.wiki-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.empty-state i {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.page-content {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.page-title-input {
-  font-size: 2rem;
-  font-weight: bold;
-  border: none;
-  background: transparent;
-  width: 100%;
-  color: var(--text-primary);
-  outline: none;
-}
-
-.page-meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.category-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  color: white;
-  font-size: 0.75rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.page-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.editor-options {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-}
-
-.editor-options select {
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.content-area {
-  min-height: 400px;
-}
-
-.markdown-editor {
-  width: 100%;
-  min-height: 400px;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  resize: vertical;
-}
-
-.markdown-content {
-  line-height: 1.8;
-}
-
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3) {
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: #fff;
   margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.markdown-content :deep(code) {
-  background: var(--bg-secondary);
-  padding: 0.125rem 0.25rem;
-  border-radius: 4px;
-  font-size: 0.9em;
+.prose h1 { font-size: 2rem; }
+.prose h2 { font-size: 1.5rem; }
+.prose h3 { font-size: 1.25rem; }
+
+.prose p {
+  margin-bottom: 1rem;
 }
 
-.markdown-content :deep(pre) {
-  background: var(--bg-secondary);
+.prose code {
+  background: #374151;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose pre {
+  background: #1f2937;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   overflow-x: auto;
+  margin: 1rem 0;
 }
 
-.markdown-content :deep(blockquote) {
-  border-left: 4px solid var(--primary-color);
+.prose pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose blockquote {
+  border-left: 4px solid #6366f1;
   margin: 1rem 0;
   padding-left: 1rem;
-  color: var(--text-secondary);
+  color: #9ca3af;
+  font-style: italic;
 }
 
-.markdown-content :deep(.wiki-link) {
-  color: var(--primary-color);
-  cursor: pointer;
-  text-decoration: none;
+.prose ul, .prose ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
 }
 
-.markdown-content :deep(.wiki-link:hover) {
+.prose li {
+  margin: 0.25rem 0;
+}
+
+.prose a {
+  color: #818cf8;
+}
+
+.prose a:hover {
   text-decoration: underline;
 }
 
-.markdown-content :deep(.wiki-link.broken) {
-  color: #ef4444;
-  cursor: default;
+.prose img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
 }
 
-.backlinks-section, .children-section {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.backlinks-section h4, .children-section h4 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.backlinks-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.backlink {
-  padding: 0.25rem 0.75rem;
-  background: var(--bg-secondary);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.backlink:hover {
-  background: var(--bg-hover);
-}
-
-.children-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.5rem;
-}
-
-.child-page {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.child-page:hover {
-  background: var(--bg-hover);
-}
-
-/* Dropdown */
-.dropdown {
-  position: relative;
-}
-
-.dropdown-menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  min-width: 150px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 100;
-  display: none;
-}
-
-.dropdown:hover .dropdown-menu {
-  display: block;
-}
-
-.dropdown-menu button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.prose table {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: none;
-  color: var(--text-primary);
-  cursor: pointer;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.prose th, .prose td {
+  border: 1px solid #374151;
+  padding: 0.5rem 0.75rem;
   text-align: left;
 }
 
-.dropdown-menu button:hover {
-  background: var(--bg-hover);
-}
-
-.dropdown-menu button.danger {
-  color: #ef4444;
-}
-
-.dropdown-menu hr {
-  margin: 0.25rem 0;
-  border: none;
-  border-top: 1px solid var(--border-color);
-}
-
-/* Modals */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.graph-modal {
-  max-width: 900px;
-  height: 600px;
-}
-
-.history-modal {
-  max-width: 600px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-header h3 {
-  margin: 0;
-}
-
-.modal-body {
-  flex: 1;
-  padding: 1.5rem;
-  overflow-y: auto;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.graph-container {
-  width: 100%;
-  height: 100%;
-  background: var(--bg-primary);
-  border-radius: 8px;
-}
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: var(--bg-primary);
-  border-radius: 8px;
-}
-
-.history-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.history-info .version {
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.history-info .meta {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.history-info .note {
-  font-size: 0.85rem;
-  font-style: italic;
-  color: var(--text-secondary);
-}
-
-.empty-history {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 2rem;
-}
-
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: white;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-}
-
-.btn-secondary {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--bg-active);
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-.btn-icon {
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.btn-icon:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  padding: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.btn-link:hover {
-  text-decoration: underline;
+.prose th {
+  background: #1f2937;
+  font-weight: 600;
 }
 </style>

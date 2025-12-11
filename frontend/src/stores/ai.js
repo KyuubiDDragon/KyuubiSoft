@@ -17,12 +17,51 @@ export const useAIStore = defineStore('ai', () => {
   const currentModel = computed(() => settings.value?.model || 'gpt-4o-mini')
   const currentProvider = computed(() => settings.value?.provider || 'openai')
 
-  // Available providers and models
+  // Available providers and models - use correct model IDs!
   const providers = [
-    { value: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-    { value: 'anthropic', label: 'Anthropic', models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-opus-latest'] },
-    { value: 'openrouter', label: 'OpenRouter', models: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-pro', 'meta-llama/llama-3.1-70b-instruct'] },
-    { value: 'ollama', label: 'Ollama (Lokal)', models: ['llama3.2', 'llama3.1', 'mistral', 'codellama', 'phi3'] },
+    {
+      value: 'openai',
+      label: 'OpenAI',
+      models: [
+        { id: 'gpt-4o', name: 'GPT-4o (Empfohlen)' },
+        { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Schnell & Günstig)' },
+        { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+      ]
+    },
+    {
+      value: 'anthropic',
+      label: 'Anthropic',
+      models: [
+        { id: 'claude-sonnet-4-5-20250929', name: 'Claude 4.5 Sonnet (Neueste)' },
+        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+        { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Schnell)' },
+        { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Stärkstes)' },
+      ]
+    },
+    {
+      value: 'openrouter',
+      label: 'OpenRouter',
+      models: [
+        { id: 'openai/gpt-4o', name: 'GPT-4o via OpenRouter' },
+        { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet via OpenRouter' },
+        { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5' },
+        { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B' },
+        { id: 'mistralai/mistral-large', name: 'Mistral Large' },
+      ]
+    },
+    {
+      value: 'ollama',
+      label: 'Ollama (Lokal)',
+      models: [
+        { id: 'llama3.2', name: 'Llama 3.2' },
+        { id: 'llama3.1', name: 'Llama 3.1' },
+        { id: 'mistral', name: 'Mistral' },
+        { id: 'codellama', name: 'Code Llama' },
+        { id: 'phi3', name: 'Phi-3' },
+        { id: 'qwen2.5', name: 'Qwen 2.5' },
+      ]
+    },
     { value: 'custom', label: 'Benutzerdefiniert', models: [] },
   ]
 

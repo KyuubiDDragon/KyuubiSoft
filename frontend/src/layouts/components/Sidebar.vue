@@ -44,6 +44,9 @@ import {
   ClipboardDocumentCheckIcon,
   KeyIcon,
   ArrowPathIcon,
+  InboxArrowDownIcon,
+  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -150,6 +153,15 @@ const allNavigationGroups = [
 
   // News - Standalone
   { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon },
+
+  // Inbox - Quick Capture
+  { id: 'inbox', name: 'Inbox', href: '/inbox', icon: InboxArrowDownIcon },
+
+  // Team Chat
+  { id: 'chat', name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
+
+  // Wiki / Knowledge Base
+  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon },
 
   // Inhalte
   {

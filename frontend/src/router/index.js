@@ -51,6 +51,9 @@ const ChecklistDetailView = () => import('@/modules/checklists/views/ChecklistDe
 const PublicChecklistView = () => import('@/modules/checklists/views/PublicChecklistView.vue')
 const PasswordsView = () => import('@/modules/passwords/views/PasswordsView.vue')
 const RecurringTasksView = () => import('@/modules/recurring/views/RecurringTasksView.vue')
+const InboxView = () => import('@/modules/inbox/views/InboxView.vue')
+const ChatView = () => import('@/modules/chat/views/ChatView.vue')
+const WikiView = () => import('@/modules/wiki/views/WikiView.vue')
 
 const routes = [
   // Auth routes
@@ -264,6 +267,24 @@ const routes = [
     path: '/recurring-tasks',
     name: 'recurring-tasks',
     component: RecurringTasksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/inbox',
+    name: 'inbox',
+    component: InboxView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/chat',
+    name: 'chat',
+    component: ChatView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/wiki',
+    name: 'wiki',
+    component: WikiView,
     meta: { requiresAuth: true },
   },
 

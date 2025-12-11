@@ -27,6 +27,14 @@ use App\Modules\Templates\Services\TemplateService;
 use App\Modules\Templates\Controllers\TemplateController;
 use App\Modules\RecurringTasks\Services\RecurringTaskService;
 use App\Modules\RecurringTasks\Controllers\RecurringTaskController;
+use App\Modules\Inbox\Services\InboxService;
+use App\Modules\Inbox\Controllers\InboxController;
+use App\Modules\AI\Services\AIService;
+use App\Modules\AI\Controllers\AIController;
+use App\Modules\Chat\Services\ChatService;
+use App\Modules\Chat\Controllers\ChatController;
+use App\Modules\Wiki\Services\WikiService;
+use App\Modules\Wiki\Controllers\WikiController;
 use App\Core\Middleware\ApiKeyMiddleware;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
@@ -265,6 +273,46 @@ return [
     // Recurring Task Controller
     RecurringTaskController::class => function (ContainerInterface $c): RecurringTaskController {
         return new RecurringTaskController($c->get(RecurringTaskService::class));
+    },
+
+    // Inbox Service
+    InboxService::class => function (ContainerInterface $c): InboxService {
+        return new InboxService($c->get(DBALConnection::class));
+    },
+
+    // Inbox Controller
+    InboxController::class => function (ContainerInterface $c): InboxController {
+        return new InboxController($c->get(InboxService::class));
+    },
+
+    // AI Service
+    AIService::class => function (ContainerInterface $c): AIService {
+        return new AIService($c->get(DBALConnection::class));
+    },
+
+    // AI Controller
+    AIController::class => function (ContainerInterface $c): AIController {
+        return new AIController($c->get(AIService::class));
+    },
+
+    // Chat Service
+    ChatService::class => function (ContainerInterface $c): ChatService {
+        return new ChatService($c->get(DBALConnection::class));
+    },
+
+    // Chat Controller
+    ChatController::class => function (ContainerInterface $c): ChatController {
+        return new ChatController($c->get(ChatService::class));
+    },
+
+    // Wiki Service
+    WikiService::class => function (ContainerInterface $c): WikiService {
+        return new WikiService($c->get(DBALConnection::class));
+    },
+
+    // Wiki Controller
+    WikiController::class => function (ContainerInterface $c): WikiController {
+        return new WikiController($c->get(WikiService::class));
     },
 
     // File Version Service

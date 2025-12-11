@@ -22,13 +22,16 @@ import {
   DocumentArrowDownIcon,
   DocumentArrowUpIcon,
   TagIcon,
+  SparklesIcon,
 } from '@heroicons/vue/24/outline'
 import { useExportImportStore } from '@/stores/exportImport'
+import { useAIStore } from '@/stores/ai'
 import TagManager from '@/components/TagManager.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const exportImportStore = useExportImportStore()
+const aiStore = useAIStore()
 
 const activeTab = ref('profile')
 const isSaving = ref(false)
@@ -47,6 +50,7 @@ const tabs = [
   { id: 'profile', name: 'Profil', icon: UserIcon },
   { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
   { id: 'api-keys', name: 'API-Keys', icon: KeyIcon },
+  { id: 'ai', name: 'AI Assistent', icon: SparklesIcon },
   { id: 'tags', name: 'Tags', icon: TagIcon },
   { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon },
   { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
@@ -274,7 +278,64 @@ watch(activeTab, (newTab) => {
   if (newTab === 'export-import' && Object.keys(exportImportStore.stats).length === 0) {
     exportImportStore.loadStats()
   }
+  if (newTab === 'ai' && !aiStore.settings) {
+    aiStore.fetchSettings()
+  }
 })
+
+// AI Settings state
+const aiForm = reactive({
+  provider: 'openai',
+  api_key: '',
+  model: 'gpt-4o-mini',
+  api_base_url: '',
+  max_tokens: 2000,
+  temperature: 0.7,
+})
+const showAiApiKey = ref(false)
+const isSavingAi = ref(false)
+
+// Watch AI settings to populate form
+watch(() => aiStore.settings, (settings) => {
+  if (settings) {
+    aiForm.provider = settings.provider || 'openai'
+    aiForm.model = settings.model || 'gpt-4o-mini'
+    aiForm.api_base_url = settings.api_base_url || ''
+    aiForm.max_tokens = settings.max_tokens || 2000
+    aiForm.temperature = settings.temperature || 0.7
+    // Don't populate api_key - it's not returned from server
+  }
+}, { immediate: true })
+
+async function saveAiSettings() {
+  isSavingAi.value = true
+  try {
+    await aiStore.saveSettings({
+      provider: aiForm.provider,
+      api_key: aiForm.api_key || undefined,
+      model: aiForm.model,
+      api_base_url: aiForm.api_base_url || undefined,
+      max_tokens: aiForm.max_tokens,
+      temperature: aiForm.temperature,
+    })
+    aiForm.api_key = '' // Clear after save
+    uiStore.showSuccess('AI-Einstellungen gespeichert!')
+  } catch (error) {
+    uiStore.showError(error.message || 'Fehler beim Speichern')
+  } finally {
+    isSavingAi.value = false
+  }
+}
+
+async function removeAiApiKey() {
+  if (!confirm('API-Key wirklich entfernen?')) return
+  try {
+    await aiStore.removeApiKey()
+    uiStore.showSuccess('API-Key entfernt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
 
 const profile = reactive({
   username: authStore.user?.username || '',
@@ -828,6 +889,172 @@ async function disable2FA() {
               <code class="text-sm text-gray-300">
                 curl -H "X-API-Key: ks_xxx..." {{ window.location.origin }}/api/v1/lists
               </code>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Assistant Settings -->
+        <div v-if="activeTab === 'ai'" class="space-y-6">
+          <div class="card p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <SparklesIcon class="w-6 h-6 text-purple-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-white">AI Assistent Konfiguration</h2>
+                <p class="text-sm text-gray-400">Verwende deinen eigenen API-Key um den AI-Assistenten zu nutzen</p>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div class="mb-6 p-4 rounded-lg" :class="aiStore.isConfigured ? 'bg-green-500/10 border border-green-500/30' : 'bg-yellow-500/10 border border-yellow-500/30'">
+              <div class="flex items-center gap-3">
+                <CheckCircleIcon v-if="aiStore.isConfigured" class="w-5 h-5 text-green-400" />
+                <XCircleIcon v-else class="w-5 h-5 text-yellow-400" />
+                <span :class="aiStore.isConfigured ? 'text-green-300' : 'text-yellow-300'">
+                  {{ aiStore.isConfigured ? 'AI Assistent ist konfiguriert und bereit' : 'API-Key erforderlich um AI zu nutzen' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Provider -->
+              <div>
+                <label class="label">Provider</label>
+                <select v-model="aiForm.provider" class="input">
+                  <option v-for="provider in aiStore.providers" :key="provider.value" :value="provider.value">
+                    {{ provider.label }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- API Key -->
+              <div>
+                <label class="label">API-Key</label>
+                <div class="flex items-center gap-2">
+                  <div class="relative flex-1">
+                    <input
+                      v-model="aiForm.api_key"
+                      :type="showAiApiKey ? 'text' : 'password'"
+                      class="input pr-10"
+                      :placeholder="aiStore.isConfigured ? '••••••••••••••••' : 'Dein API-Key...'"
+                    />
+                    <button
+                      type="button"
+                      @click="showAiApiKey = !showAiApiKey"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      <EyeSlashIcon v-if="showAiApiKey" class="w-5 h-5" />
+                      <EyeIcon v-else class="w-5 h-5" />
+                    </button>
+                  </div>
+                  <button
+                    v-if="aiStore.isConfigured"
+                    @click="removeAiApiKey"
+                    class="btn-secondary text-red-400 hover:text-red-300"
+                    title="API-Key entfernen"
+                  >
+                    <TrashIcon class="w-5 h-5" />
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  Wird verschlüsselt gespeichert. Niemals mit anderen geteilt.
+                </p>
+              </div>
+
+              <!-- Model -->
+              <div>
+                <label class="label">Model</label>
+                <select v-model="aiForm.model" class="input">
+                  <option v-for="model in aiStore.providers.find(p => p.value === aiForm.provider)?.models || []" :key="model" :value="model">
+                    {{ model }}
+                  </option>
+                  <option v-if="aiForm.provider === 'custom'" value="">Benutzerdefiniert</option>
+                </select>
+                <input
+                  v-if="aiForm.provider === 'custom' || aiForm.provider === 'ollama'"
+                  v-model="aiForm.model"
+                  type="text"
+                  class="input mt-2"
+                  placeholder="Model-Name (z.B. gpt-4, llama3.2)"
+                />
+              </div>
+
+              <!-- API Base URL (for Ollama/Custom) -->
+              <div v-if="aiForm.provider === 'ollama' || aiForm.provider === 'custom'">
+                <label class="label">API Base URL</label>
+                <input
+                  v-model="aiForm.api_base_url"
+                  type="text"
+                  class="input"
+                  :placeholder="aiForm.provider === 'ollama' ? 'http://localhost:11434' : 'https://api.example.com'"
+                />
+              </div>
+
+              <!-- Advanced Settings -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="label">Max Tokens</label>
+                  <input
+                    v-model.number="aiForm.max_tokens"
+                    type="number"
+                    class="input"
+                    min="100"
+                    max="8000"
+                  />
+                </div>
+                <div>
+                  <label class="label">Temperature</label>
+                  <input
+                    v-model.number="aiForm.temperature"
+                    type="number"
+                    class="input"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+
+              <button
+                @click="saveAiSettings"
+                :disabled="isSavingAi"
+                class="btn-primary flex items-center gap-2"
+              >
+                <span v-if="isSavingAi">Speichern...</span>
+                <span v-else>Einstellungen speichern</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Usage Stats (if configured) -->
+          <div v-if="aiStore.settings && aiStore.settings.total_requests > 0" class="card p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Nutzungsstatistiken</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div class="bg-dark-700 rounded-lg p-4">
+                <p class="text-2xl font-bold text-white">{{ aiStore.settings.total_requests || 0 }}</p>
+                <p class="text-sm text-gray-400">Anfragen</p>
+              </div>
+              <div class="bg-dark-700 rounded-lg p-4">
+                <p class="text-2xl font-bold text-white">{{ (aiStore.settings.total_tokens_used || 0).toLocaleString() }}</p>
+                <p class="text-sm text-gray-400">Tokens verwendet</p>
+              </div>
+              <div class="bg-dark-700 rounded-lg p-4">
+                <p class="text-sm font-bold text-white">{{ aiStore.settings.last_used_at ? formatDate(aiStore.settings.last_used_at) : '-' }}</p>
+                <p class="text-sm text-gray-400">Letzte Nutzung</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Provider Links -->
+          <div class="card p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">API-Key erhalten</h3>
+            <div class="space-y-2 text-sm">
+              <p class="text-gray-400">Erstelle einen API-Key bei deinem gewünschten Anbieter:</p>
+              <ul class="space-y-1">
+                <li><a href="https://platform.openai.com/api-keys" target="_blank" class="text-primary-400 hover:text-primary-300">OpenAI Platform</a></li>
+                <li><a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-primary-400 hover:text-primary-300">Anthropic Console</a></li>
+                <li><a href="https://openrouter.ai/keys" target="_blank" class="text-primary-400 hover:text-primary-300">OpenRouter</a></li>
+                <li><span class="text-gray-400">Ollama: Kein API-Key erforderlich (lokal)</span></li>
+              </ul>
             </div>
           </div>
         </div>

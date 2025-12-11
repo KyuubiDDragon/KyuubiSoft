@@ -50,6 +50,10 @@ use App\Modules\Export\Controllers\ExportController;
 use App\Modules\Tags\Controllers\TagController;
 use App\Modules\Templates\Controllers\TemplateController;
 use App\Modules\RecurringTasks\Controllers\RecurringTaskController;
+use App\Modules\Inbox\Controllers\InboxController;
+use App\Modules\AI\Controllers\AIController;
+use App\Modules\Chat\Controllers\ChatController;
+use App\Modules\Wiki\Controllers\WikiController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -599,6 +603,64 @@ class Router
                 $protected->post('/recurring-tasks/{id}/skip', [RecurringTaskController::class, 'skip']);
                 $protected->post('/recurring-tasks/{id}/process', [RecurringTaskController::class, 'process']);
                 $protected->get('/recurring-tasks/{id}/instances', [RecurringTaskController::class, 'instances']);
+
+                // Inbox / Quick Capture
+                $protected->get('/inbox', [InboxController::class, 'getItems']);
+                $protected->post('/inbox', [InboxController::class, 'capture']);
+                $protected->get('/inbox/stats', [InboxController::class, 'getStats']);
+                $protected->post('/inbox/bulk', [InboxController::class, 'bulkAction']);
+                $protected->get('/inbox/{id}', [InboxController::class, 'getItem']);
+                $protected->put('/inbox/{id}', [InboxController::class, 'updateItem']);
+                $protected->delete('/inbox/{id}', [InboxController::class, 'deleteItem']);
+                $protected->post('/inbox/{id}/move', [InboxController::class, 'moveToModule']);
+
+                // AI Assistant
+                $protected->get('/ai/settings', [AIController::class, 'getSettings']);
+                $protected->post('/ai/settings', [AIController::class, 'saveSettings']);
+                $protected->delete('/ai/settings/api-key', [AIController::class, 'removeApiKey']);
+                $protected->get('/ai/status', [AIController::class, 'checkStatus']);
+                $protected->post('/ai/chat', [AIController::class, 'chat']);
+                $protected->get('/ai/conversations', [AIController::class, 'getConversations']);
+                $protected->get('/ai/conversations/{id}', [AIController::class, 'getConversation']);
+                $protected->delete('/ai/conversations/{id}', [AIController::class, 'deleteConversation']);
+                $protected->get('/ai/prompts', [AIController::class, 'getPrompts']);
+                $protected->post('/ai/prompts', [AIController::class, 'savePrompt']);
+                $protected->delete('/ai/prompts/{id}', [AIController::class, 'deletePrompt']);
+
+                // Team Chat
+                $protected->get('/chat/rooms', [ChatController::class, 'getRooms']);
+                $protected->post('/chat/rooms', [ChatController::class, 'createRoom']);
+                $protected->get('/chat/rooms/{id}', [ChatController::class, 'getRoom']);
+                $protected->post('/chat/rooms/{id}/leave', [ChatController::class, 'leaveRoom']);
+                $protected->post('/chat/rooms/{id}/participants', [ChatController::class, 'addParticipant']);
+                $protected->get('/chat/rooms/{id}/messages', [ChatController::class, 'getMessages']);
+                $protected->post('/chat/rooms/{id}/messages', [ChatController::class, 'sendMessage']);
+                $protected->post('/chat/rooms/{id}/read', [ChatController::class, 'markAsRead']);
+                $protected->post('/chat/rooms/{id}/typing', [ChatController::class, 'setTyping']);
+                $protected->get('/chat/rooms/{id}/typing', [ChatController::class, 'getTyping']);
+                $protected->put('/chat/messages/{messageId}', [ChatController::class, 'editMessage']);
+                $protected->delete('/chat/messages/{messageId}', [ChatController::class, 'deleteMessage']);
+                $protected->post('/chat/messages/{messageId}/reactions', [ChatController::class, 'addReaction']);
+                $protected->delete('/chat/messages/{messageId}/reactions/{emoji}', [ChatController::class, 'removeReaction']);
+                $protected->post('/chat/direct', [ChatController::class, 'startDirectMessage']);
+                $protected->get('/chat/users', [ChatController::class, 'getAvailableUsers']);
+                $protected->get('/chat/search', [ChatController::class, 'searchMessages']);
+
+                // Wiki / Knowledge Base
+                $protected->get('/wiki/pages', [WikiController::class, 'getPages']);
+                $protected->post('/wiki/pages', [WikiController::class, 'createPage']);
+                $protected->get('/wiki/pages/recent', [WikiController::class, 'getRecent']);
+                $protected->get('/wiki/search', [WikiController::class, 'search']);
+                $protected->get('/wiki/graph', [WikiController::class, 'getGraph']);
+                $protected->get('/wiki/pages/{id}', [WikiController::class, 'getPage']);
+                $protected->put('/wiki/pages/{id}', [WikiController::class, 'updatePage']);
+                $protected->delete('/wiki/pages/{id}', [WikiController::class, 'deletePage']);
+                $protected->get('/wiki/pages/{id}/history', [WikiController::class, 'getPageHistory']);
+                $protected->post('/wiki/pages/{id}/restore/{historyId}', [WikiController::class, 'restoreFromHistory']);
+                $protected->get('/wiki/categories', [WikiController::class, 'getCategories']);
+                $protected->post('/wiki/categories', [WikiController::class, 'createCategory']);
+                $protected->put('/wiki/categories/{id}', [WikiController::class, 'updateCategory']);
+                $protected->delete('/wiki/categories/{id}', [WikiController::class, 'deleteCategory']);
 
                 // System (Owner only)
                 $protected->get('/system/info', [SystemController::class, 'getInfo'])

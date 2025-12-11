@@ -5,6 +5,8 @@ import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
 import QuickNotes from '@/components/QuickNotes.vue'
+import QuickCapture from '@/components/QuickCapture.vue'
+import AIAssistant from '@/components/AIAssistant.vue'
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal.vue'
 
 const uiStore = useUiStore()
@@ -84,6 +86,12 @@ function closeMobileSidebar() {
 
     <!-- Quick Notes Floating Widget -->
     <QuickNotes />
+
+    <!-- Quick Capture Floating Widget -->
+    <QuickCapture />
+
+    <!-- AI Assistant Floating Widget -->
+    <AIAssistant />
 
     <!-- Keyboard Shortcuts Modal -->
     <KeyboardShortcutsModal />

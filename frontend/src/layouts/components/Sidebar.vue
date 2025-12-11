@@ -570,7 +570,7 @@ function navigateTo(href) {
             ]"
           >
             <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-            <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium">
+            <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm">
               {{ group.name }}
             </span>
           </button>

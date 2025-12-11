@@ -319,6 +319,13 @@ class AnalyticsController
             'calendar_preview' => $this->getCalendarPreviewData($userId, $projectId),
             'quick_notes' => $this->getQuickNotesData($userId),
             'recent_activity' => $this->getRecentActivityData($userId, $projectId),
+            // New widgets
+            'recurring_tasks_upcoming' => $this->getRecurringTasksUpcomingData($userId),
+            'favorites_quick_access' => $this->getFavoritesQuickAccessData($userId),
+            'storage_usage' => $this->getStorageUsageData($userId),
+            'password_health' => $this->getPasswordHealthData($userId),
+            'project_progress' => $this->getProjectProgressData($userId, $projectId),
+            'checklist_progress' => $this->getChecklistProgressData($userId),
             default => null,
         };
 
@@ -660,5 +667,272 @@ class AnalyticsController
              LIMIT 15',
             [$userId]
         );
+    }
+
+    private function getRecurringTasksUpcomingData(string $userId): array
+    {
+        try {
+            return $this->db->fetchAllAssociative(
+                "SELECT id, title, description, frequency, next_occurrence, target_type
+                 FROM recurring_tasks
+                 WHERE user_id = ? AND is_active = TRUE AND next_occurrence IS NOT NULL
+                   AND next_occurrence <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
+                 ORDER BY next_occurrence ASC
+                 LIMIT 10",
+                [$userId]
+            );
+        } catch (\Exception $e) {
+            return []; // Table may not exist yet
+        }
+    }
+
+    private function getFavoritesQuickAccessData(string $userId): array
+    {
+        try {
+            $favorites = $this->db->fetchAllAssociative(
+                "SELECT f.id, f.item_type, f.item_id, f.created_at
+                 FROM favorites f
+                 WHERE f.user_id = ?
+                 ORDER BY f.created_at DESC
+                 LIMIT 10",
+                [$userId]
+            );
+
+            // Enrich with item details
+            foreach ($favorites as &$fav) {
+                $fav['item'] = $this->getFavoriteItemDetails($fav['item_type'], $fav['item_id']);
+            }
+
+            return $favorites;
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    private function getFavoriteItemDetails(string $type, string $itemId): ?array
+    {
+        return match ($type) {
+            'list' => $this->db->fetchAssociative(
+                "SELECT id, title, color FROM lists WHERE id = ?",
+                [$itemId]
+            ) ?: null,
+            'document' => $this->db->fetchAssociative(
+                "SELECT id, title FROM documents WHERE id = ?",
+                [$itemId]
+            ) ?: null,
+            'kanban_board' => $this->db->fetchAssociative(
+                "SELECT id, title, color FROM kanban_boards WHERE id = ?",
+                [$itemId]
+            ) ?: null,
+            'project' => $this->db->fetchAssociative(
+                "SELECT id, name as title, color FROM projects WHERE id = ?",
+                [$itemId]
+            ) ?: null,
+            'checklist' => $this->db->fetchAssociative(
+                "SELECT id, title FROM checklists WHERE id = ?",
+                [$itemId]
+            ) ?: null,
+            default => null,
+        };
+    }
+
+    private function getStorageUsageData(string $userId): array
+    {
+        try {
+            // Get total storage used
+            $totalBytes = (int) $this->db->fetchOne(
+                "SELECT COALESCE(SUM(size), 0) FROM storage_files WHERE user_id = ?",
+                [$userId]
+            );
+
+            // Get file count
+            $fileCount = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM storage_files WHERE user_id = ?",
+                [$userId]
+            );
+
+            // Get by type
+            $byType = $this->db->fetchAllAssociative(
+                "SELECT
+                    CASE
+                        WHEN mime_type LIKE 'image/%' THEN 'images'
+                        WHEN mime_type LIKE 'video/%' THEN 'videos'
+                        WHEN mime_type LIKE 'audio/%' THEN 'audio'
+                        WHEN mime_type IN ('application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') THEN 'documents'
+                        ELSE 'other'
+                    END as category,
+                    SUM(size) as bytes,
+                    COUNT(*) as count
+                 FROM storage_files
+                 WHERE user_id = ?
+                 GROUP BY category",
+                [$userId]
+            );
+
+            // Storage limit (could be from user settings)
+            $storageLimit = 10 * 1024 * 1024 * 1024; // 10GB default
+
+            return [
+                'used_bytes' => $totalBytes,
+                'used_formatted' => $this->formatBytes($totalBytes),
+                'limit_bytes' => $storageLimit,
+                'limit_formatted' => $this->formatBytes($storageLimit),
+                'usage_percent' => round(($totalBytes / $storageLimit) * 100, 1),
+                'file_count' => $fileCount,
+                'by_type' => $byType,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'used_bytes' => 0,
+                'used_formatted' => '0 B',
+                'limit_bytes' => 10 * 1024 * 1024 * 1024,
+                'limit_formatted' => '10 GB',
+                'usage_percent' => 0,
+                'file_count' => 0,
+                'by_type' => [],
+            ];
+        }
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return round($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+        return $bytes . ' B';
+    }
+
+    private function getPasswordHealthData(string $userId): array
+    {
+        try {
+            // Count passwords
+            $total = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM passwords WHERE user_id = ?",
+                [$userId]
+            );
+
+            // Count weak passwords (passwords that haven't been updated in 90+ days)
+            $old = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM passwords WHERE user_id = ? AND updated_at < DATE_SUB(NOW(), INTERVAL 90 DAY)",
+                [$userId]
+            );
+
+            // Count recently updated (within 30 days)
+            $recent = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM passwords WHERE user_id = ? AND updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)",
+                [$userId]
+            );
+
+            // Calculate health score
+            $healthScore = 100;
+            if ($total > 0) {
+                $oldPercent = ($old / $total) * 100;
+                $healthScore = max(0, 100 - ($oldPercent * 0.5));
+            }
+
+            return [
+                'total_passwords' => $total,
+                'old_passwords' => $old,
+                'recent_updates' => $recent,
+                'health_score' => round($healthScore),
+                'recommendation' => $old > 0 ? "Aktualisiere {$old} alte Passwörter" : 'Alles in Ordnung!',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total_passwords' => 0,
+                'old_passwords' => 0,
+                'recent_updates' => 0,
+                'health_score' => 100,
+                'recommendation' => 'Keine Passwörter gespeichert',
+            ];
+        }
+    }
+
+    private function getProjectProgressData(string $userId, ?string $projectId = null): array
+    {
+        $filter = '';
+        $params = [$userId];
+
+        if ($projectId) {
+            $filter = 'AND p.id = ?';
+            $params[] = $projectId;
+        }
+
+        $projects = $this->db->fetchAllAssociative(
+            "SELECT p.id, p.name, p.color, p.status, p.deadline,
+                    (SELECT COUNT(*) FROM project_links pl WHERE pl.project_id = p.id) as linked_items
+             FROM projects p
+             WHERE p.user_id = ? AND p.status NOT IN ('completed', 'cancelled') {$filter}
+             ORDER BY p.deadline ASC, p.name ASC
+             LIMIT 10",
+            $params
+        );
+
+        // Calculate progress for each project
+        foreach ($projects as &$project) {
+            // Get linked lists and calculate task completion
+            $taskStats = $this->db->fetchAssociative(
+                "SELECT
+                    COUNT(li.id) as total_tasks,
+                    SUM(CASE WHEN li.is_completed = TRUE THEN 1 ELSE 0 END) as completed_tasks
+                 FROM list_items li
+                 JOIN lists l ON li.list_id = l.id
+                 JOIN project_links pl ON pl.linkable_id = l.id AND pl.linkable_type = 'list'
+                 WHERE pl.project_id = ?",
+                [$project['id']]
+            );
+
+            $project['total_tasks'] = (int) ($taskStats['total_tasks'] ?? 0);
+            $project['completed_tasks'] = (int) ($taskStats['completed_tasks'] ?? 0);
+            $project['progress_percent'] = $project['total_tasks'] > 0
+                ? round(($project['completed_tasks'] / $project['total_tasks']) * 100)
+                : 0;
+
+            // Days until deadline
+            if ($project['deadline']) {
+                $deadline = new \DateTime($project['deadline']);
+                $today = new \DateTime();
+                $diff = $today->diff($deadline);
+                $project['days_until_deadline'] = $diff->invert ? -$diff->days : $diff->days;
+            } else {
+                $project['days_until_deadline'] = null;
+            }
+        }
+
+        return $projects;
+    }
+
+    private function getChecklistProgressData(string $userId): array
+    {
+        try {
+            $checklists = $this->db->fetchAllAssociative(
+                "SELECT c.id, c.title, c.updated_at,
+                        COUNT(ci.id) as total_items,
+                        SUM(CASE WHEN ci.checked = TRUE THEN 1 ELSE 0 END) as checked_items
+                 FROM checklists c
+                 LEFT JOIN checklist_items ci ON ci.checklist_id = c.id
+                 WHERE c.user_id = ?
+                 GROUP BY c.id, c.title, c.updated_at
+                 ORDER BY c.updated_at DESC
+                 LIMIT 8",
+                [$userId]
+            );
+
+            foreach ($checklists as &$checklist) {
+                $checklist['total_items'] = (int) $checklist['total_items'];
+                $checklist['checked_items'] = (int) $checklist['checked_items'];
+                $checklist['progress_percent'] = $checklist['total_items'] > 0
+                    ? round(($checklist['checked_items'] / $checklist['total_items']) * 100)
+                    : 0;
+            }
+
+            return $checklists;
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 }

@@ -11,10 +11,24 @@ import {
   BellIcon,
   CheckCircleIcon,
   XCircleIcon,
+  KeyIcon,
+  ClipboardIcon,
+  TrashIcon,
+  PlusIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  DocumentArrowDownIcon,
+  DocumentArrowUpIcon,
+  TagIcon,
 } from '@heroicons/vue/24/outline'
+import { useExportImportStore } from '@/stores/exportImport'
+import TagManager from '@/components/TagManager.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const exportImportStore = useExportImportStore()
 
 const activeTab = ref('profile')
 const isSaving = ref(false)
@@ -32,8 +46,235 @@ const disableCode = ref('')
 const tabs = [
   { id: 'profile', name: 'Profil', icon: UserIcon },
   { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
+  { id: 'api-keys', name: 'API-Keys', icon: KeyIcon },
+  { id: 'tags', name: 'Tags', icon: TagIcon },
+  { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon },
   { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
 ]
+
+// Export/Import state
+const exportTypes = ref([])
+const allExportTypes = [
+  { id: 'lists', name: 'Listen', icon: '📋' },
+  { id: 'documents', name: 'Dokumente', icon: '📄' },
+  { id: 'snippets', name: 'Snippets', icon: '💻' },
+  { id: 'bookmarks', name: 'Lesezeichen', icon: '🔖' },
+  { id: 'connections', name: 'Verbindungen', icon: '🔌' },
+  { id: 'passwords', name: 'Passwörter', icon: '🔐' },
+  { id: 'checklists', name: 'Checklisten', icon: '✅' },
+  { id: 'kanban', name: 'Kanban-Boards', icon: '📊' },
+  { id: 'projects', name: 'Projekte', icon: '📁' },
+  { id: 'invoices', name: 'Rechnungen', icon: '💰' },
+  { id: 'calendar', name: 'Kalender', icon: '📅' },
+  { id: 'time_entries', name: 'Zeiteinträge', icon: '⏱️' },
+]
+const exportFormat = ref('json')
+const importFile = ref(null)
+const importData = ref(null)
+const conflictResolution = ref('skip')
+const selectedImportTypes = ref([])
+
+function toggleExportType(typeId) {
+  const idx = exportTypes.value.indexOf(typeId)
+  if (idx >= 0) {
+    exportTypes.value.splice(idx, 1)
+  } else {
+    exportTypes.value.push(typeId)
+  }
+}
+
+function selectAllExportTypes() {
+  exportTypes.value = allExportTypes.map(t => t.id)
+}
+
+function deselectAllExportTypes() {
+  exportTypes.value = []
+}
+
+async function handleExport() {
+  if (exportTypes.value.length === 0) {
+    uiStore.showError('Bitte wähle mindestens einen Datentyp')
+    return
+  }
+  try {
+    await exportImportStore.exportData(exportTypes.value, exportFormat.value)
+    uiStore.showSuccess('Export erfolgreich!')
+  } catch (error) {
+    uiStore.showError('Export fehlgeschlagen')
+  }
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result)
+      importData.value = data
+      const validation = await exportImportStore.validateImport(data)
+      if (validation.valid) {
+        selectedImportTypes.value = validation.types
+      }
+    } catch (error) {
+      uiStore.showError('Ungültige Datei')
+      importData.value = null
+    }
+  }
+  reader.readAsText(file)
+}
+
+async function handleImport() {
+  if (!importData.value) {
+    uiStore.showError('Keine Datei ausgewählt')
+    return
+  }
+  if (selectedImportTypes.value.length === 0) {
+    uiStore.showError('Bitte wähle mindestens einen Datentyp')
+    return
+  }
+
+  try {
+    const result = await exportImportStore.importData(importData.value, {
+      conflictResolution: conflictResolution.value,
+      types: selectedImportTypes.value,
+    })
+    if (result.success) {
+      uiStore.showSuccess('Import erfolgreich!')
+    } else {
+      uiStore.showError('Import teilweise fehlgeschlagen')
+    }
+  } catch (error) {
+    uiStore.showError('Import fehlgeschlagen')
+  }
+}
+
+function resetImport() {
+  importFile.value = null
+  importData.value = null
+  selectedImportTypes.value = []
+  exportImportStore.reset()
+}
+
+// API Keys state
+const apiKeys = ref([])
+const availableScopes = ref({})
+const isLoadingApiKeys = ref(false)
+const isCreatingApiKey = ref(false)
+const newApiKeyResult = ref(null)
+const showNewApiKey = ref(false)
+const newKeyForm = reactive({
+  name: '',
+  scopes: [],
+  expires_in_days: 0,
+})
+
+async function loadApiKeys() {
+  isLoadingApiKeys.value = true
+  try {
+    const response = await api.get('/api/v1/settings/api-keys')
+    apiKeys.value = response.data.data.items || []
+    availableScopes.value = response.data.data.available_scopes || {}
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der API-Keys')
+  } finally {
+    isLoadingApiKeys.value = false
+  }
+}
+
+async function createApiKey() {
+  if (!newKeyForm.name) {
+    uiStore.showError('Name ist erforderlich')
+    return
+  }
+  if (newKeyForm.scopes.length === 0) {
+    uiStore.showError('Mindestens ein Scope ist erforderlich')
+    return
+  }
+
+  isCreatingApiKey.value = true
+  try {
+    const response = await api.post('/api/v1/settings/api-keys', {
+      name: newKeyForm.name,
+      scopes: newKeyForm.scopes,
+      expires_in_days: newKeyForm.expires_in_days || null,
+    })
+    newApiKeyResult.value = response.data.data
+    showNewApiKey.value = true
+    // Reset form
+    newKeyForm.name = ''
+    newKeyForm.scopes = []
+    newKeyForm.expires_in_days = 0
+    // Reload list
+    await loadApiKeys()
+    uiStore.showSuccess('API-Key erstellt!')
+  } catch (error) {
+    const message = error.response?.data?.error || 'Fehler beim Erstellen'
+    uiStore.showError(message)
+  } finally {
+    isCreatingApiKey.value = false
+  }
+}
+
+async function revokeApiKey(keyId) {
+  if (!confirm('API-Key wirklich widerrufen?')) return
+
+  try {
+    await api.post(`/api/v1/settings/api-keys/${keyId}/revoke`)
+    await loadApiKeys()
+    uiStore.showSuccess('API-Key widerrufen')
+  } catch (error) {
+    uiStore.showError('Fehler beim Widerrufen')
+  }
+}
+
+async function deleteApiKey(keyId) {
+  if (!confirm('API-Key endgültig löschen?')) return
+
+  try {
+    await api.delete(`/api/v1/settings/api-keys/${keyId}`)
+    await loadApiKeys()
+    uiStore.showSuccess('API-Key gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text)
+  uiStore.showSuccess('In Zwischenablage kopiert!')
+}
+
+function toggleScope(scope) {
+  const idx = newKeyForm.scopes.indexOf(scope)
+  if (idx >= 0) {
+    newKeyForm.scopes.splice(idx, 1)
+  } else {
+    newKeyForm.scopes.push(scope)
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// Load API keys when tab is selected
+watch(activeTab, (newTab) => {
+  if (newTab === 'api-keys' && apiKeys.value.length === 0) {
+    loadApiKeys()
+  }
+  if (newTab === 'export-import' && Object.keys(exportImportStore.stats).length === 0) {
+    exportImportStore.loadStats()
+  }
+})
 
 const profile = reactive({
   username: authStore.user?.username || '',
@@ -419,6 +660,433 @@ async function disable2FA() {
               >
                 2FA deaktivieren
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Keys -->
+        <div v-if="activeTab === 'api-keys'" class="space-y-6">
+          <!-- New API Key Result Modal -->
+          <div v-if="showNewApiKey && newApiKeyResult" class="card p-6 border-2 border-green-500/50 bg-green-500/10">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-green-400">Neuer API-Key erstellt!</h3>
+                <p class="text-sm text-gray-400 mt-1">Kopiere den Key jetzt - er wird nur einmal angezeigt!</p>
+              </div>
+              <button @click="showNewApiKey = false; newApiKeyResult = null" class="text-gray-400 hover:text-white">
+                <XCircleIcon class="w-6 h-6" />
+              </button>
+            </div>
+            <div class="bg-dark-800 rounded-lg p-4">
+              <div class="flex items-center justify-between gap-4">
+                <code class="text-primary-400 font-mono text-sm break-all flex-1">{{ newApiKeyResult.key }}</code>
+                <button @click="copyToClipboard(newApiKeyResult.key)" class="btn-secondary shrink-0">
+                  <ClipboardIcon class="w-5 h-5" />
+                  Kopieren
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create New Key -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Neuen API-Key erstellen</h2>
+
+            <div class="space-y-4">
+              <div>
+                <label class="label">Name</label>
+                <input
+                  v-model="newKeyForm.name"
+                  type="text"
+                  class="input"
+                  placeholder="z.B. Mobile App, CI/CD Pipeline"
+                />
+              </div>
+
+              <div>
+                <label class="label">Berechtigungen (Scopes)</label>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                  <label
+                    v-for="(label, scope) in availableScopes"
+                    :key="scope"
+                    class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
+                    :class="newKeyForm.scopes.includes(scope) ? 'bg-primary-600/20 border border-primary-500' : 'bg-dark-700 hover:bg-dark-600'"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="newKeyForm.scopes.includes(scope)"
+                      @change="toggleScope(scope)"
+                      class="rounded border-gray-600 bg-dark-700 text-primary-600 focus:ring-primary-600"
+                    />
+                    <span class="text-sm text-gray-300">{{ label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="label">Gültigkeit (optional)</label>
+                <select v-model="newKeyForm.expires_in_days" class="input">
+                  <option :value="0">Unbegrenzt</option>
+                  <option :value="7">7 Tage</option>
+                  <option :value="30">30 Tage</option>
+                  <option :value="90">90 Tage</option>
+                  <option :value="365">1 Jahr</option>
+                </select>
+              </div>
+
+              <button
+                @click="createApiKey"
+                :disabled="isCreatingApiKey"
+                class="btn-primary flex items-center gap-2"
+              >
+                <PlusIcon class="w-5 h-5" />
+                <span v-if="isCreatingApiKey">Erstellen...</span>
+                <span v-else>API-Key erstellen</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Keys -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Vorhandene API-Keys</h2>
+
+            <div v-if="isLoadingApiKeys" class="text-center py-8">
+              <svg class="animate-spin h-8 w-8 text-primary-500 mx-auto" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+
+            <div v-else-if="apiKeys.length === 0" class="text-center py-8 text-gray-400">
+              <KeyIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>Noch keine API-Keys erstellt</p>
+            </div>
+
+            <div v-else class="space-y-4">
+              <div
+                v-for="key in apiKeys"
+                :key="key.id"
+                class="bg-dark-700/50 rounded-lg p-4"
+                :class="{ 'opacity-50': !key.is_active }"
+              >
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-medium text-white truncate">{{ key.name }}</h3>
+                      <span
+                        v-if="!key.is_active"
+                        class="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400"
+                      >
+                        Widerrufen
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-500 font-mono mt-1">{{ key.key_prefix }}...</p>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                      <span
+                        v-for="scope in key.scopes"
+                        :key="scope"
+                        class="px-2 py-0.5 text-xs rounded-full bg-primary-600/20 text-primary-400"
+                      >
+                        {{ scope }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2 space-x-4">
+                      <span>Erstellt: {{ formatDate(key.created_at) }}</span>
+                      <span v-if="key.last_used_at">Zuletzt: {{ formatDate(key.last_used_at) }}</span>
+                      <span v-if="key.expires_at" class="text-yellow-500">Läuft ab: {{ formatDate(key.expires_at) }}</span>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 shrink-0">
+                    <button
+                      v-if="key.is_active"
+                      @click="revokeApiKey(key.id)"
+                      class="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                      title="Widerrufen"
+                    >
+                      <EyeSlashIcon class="w-5 h-5" />
+                    </button>
+                    <button
+                      @click="deleteApiKey(key.id)"
+                      class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Löschen"
+                    >
+                      <TrashIcon class="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Documentation -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">API-Verwendung</h2>
+            <p class="text-gray-400 text-sm mb-4">
+              Füge den API-Key im Header <code class="text-primary-400">X-API-Key</code> hinzu:
+            </p>
+            <div class="bg-dark-800 rounded-lg p-4">
+              <code class="text-sm text-gray-300">
+                curl -H "X-API-Key: ks_xxx..." {{ window.location.origin }}/api/v1/lists
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div v-if="activeTab === 'tags'" class="card p-6">
+          <TagManager />
+        </div>
+
+        <!-- Export/Import -->
+        <div v-if="activeTab === 'export-import'" class="space-y-6">
+          <!-- Export Section -->
+          <div class="card p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <DocumentArrowDownIcon class="w-6 h-6 text-primary-400" />
+              <h2 class="text-lg font-semibold text-white">Daten exportieren</h2>
+            </div>
+
+            <p class="text-gray-400 text-sm mb-4">
+              Exportiere deine Daten als Backup oder um sie in eine andere Instanz zu übertragen.
+            </p>
+
+            <!-- Export Stats -->
+            <div v-if="Object.keys(exportImportStore.stats).length > 0" class="mb-6">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Verfügbare Daten:</h3>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div
+                  v-for="type in allExportTypes"
+                  :key="type.id"
+                  class="flex items-center justify-between p-2 bg-dark-700/50 rounded-lg text-sm"
+                >
+                  <span class="text-gray-300">{{ type.icon }} {{ type.name }}</span>
+                  <span class="text-primary-400 font-medium">{{ exportImportStore.stats[type.id] || 0 }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Type Selection -->
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-3">
+                <label class="label mb-0">Zu exportierende Daten:</label>
+                <div class="flex gap-2">
+                  <button @click="selectAllExportTypes" class="text-xs text-primary-400 hover:text-primary-300">
+                    Alle auswählen
+                  </button>
+                  <span class="text-gray-600">|</span>
+                  <button @click="deselectAllExportTypes" class="text-xs text-gray-400 hover:text-gray-300">
+                    Keine
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <label
+                  v-for="type in allExportTypes"
+                  :key="type.id"
+                  class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
+                  :class="exportTypes.includes(type.id) ? 'bg-primary-600/20 border border-primary-500' : 'bg-dark-700 hover:bg-dark-600'"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="exportTypes.includes(type.id)"
+                    @change="toggleExportType(type.id)"
+                    class="rounded border-gray-600 bg-dark-700 text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-sm text-gray-300">{{ type.icon }} {{ type.name }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Format Selection -->
+            <div class="mb-6">
+              <label class="label">Format:</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="exportFormat"
+                    value="json"
+                    class="text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-gray-300">JSON</span>
+                  <span class="text-xs text-gray-500">(empfohlen)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="exportFormat"
+                    value="csv"
+                    class="text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-gray-300">CSV (ZIP)</span>
+                </label>
+              </div>
+            </div>
+
+            <button
+              @click="handleExport"
+              :disabled="exportImportStore.isExporting || exportTypes.length === 0"
+              class="btn-primary flex items-center gap-2"
+            >
+              <ArrowDownTrayIcon class="w-5 h-5" />
+              <span v-if="exportImportStore.isExporting">Exportiere...</span>
+              <span v-else>Export starten</span>
+            </button>
+          </div>
+
+          <!-- Import Section -->
+          <div class="card p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <DocumentArrowUpIcon class="w-6 h-6 text-green-400" />
+              <h2 class="text-lg font-semibold text-white">Daten importieren</h2>
+            </div>
+
+            <p class="text-gray-400 text-sm mb-4">
+              Importiere Daten aus einem vorherigen Export.
+            </p>
+
+            <!-- File Upload -->
+            <div class="mb-6">
+              <label class="label">Datei auswählen:</label>
+              <input
+                type="file"
+                accept=".json"
+                @change="handleFileSelect"
+                class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-600 file:text-white hover:file:bg-primary-700 cursor-pointer"
+              />
+            </div>
+
+            <!-- Validation Result -->
+            <div v-if="exportImportStore.importValidation" class="mb-6">
+              <div
+                v-if="exportImportStore.importValidation.valid"
+                class="bg-green-500/10 border border-green-500/30 rounded-lg p-4"
+              >
+                <h3 class="text-green-400 font-medium mb-2">Datei validiert</h3>
+                <p class="text-sm text-gray-400 mb-3">
+                  Gefundene Daten:
+                </p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <label
+                    v-for="type in exportImportStore.importValidation.types"
+                    :key="type"
+                    class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
+                    :class="selectedImportTypes.includes(type) ? 'bg-green-600/20 border border-green-500' : 'bg-dark-700 hover:bg-dark-600'"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="selectedImportTypes.includes(type)"
+                      @change="() => {
+                        const idx = selectedImportTypes.indexOf(type)
+                        if (idx >= 0) selectedImportTypes.splice(idx, 1)
+                        else selectedImportTypes.push(type)
+                      }"
+                      class="rounded border-gray-600 bg-dark-700 text-green-600 focus:ring-green-600"
+                    />
+                    <span class="text-sm text-gray-300">
+                      {{ allExportTypes.find(t => t.id === type)?.name || type }}
+                      <span class="text-green-400">({{ exportImportStore.importValidation.counts[type] }})</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div
+                v-else
+                class="bg-red-500/10 border border-red-500/30 rounded-lg p-4"
+              >
+                <h3 class="text-red-400 font-medium mb-2">Validierung fehlgeschlagen</h3>
+                <ul class="text-sm text-gray-400 list-disc list-inside">
+                  <li v-for="error in exportImportStore.importValidation.errors" :key="error">
+                    {{ error }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Conflict Resolution -->
+            <div v-if="exportImportStore.importValidation?.valid" class="mb-6">
+              <label class="label">Bei Konflikten:</label>
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="conflictResolution"
+                    value="skip"
+                    class="text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-gray-300">Überspringen</span>
+                  <span class="text-xs text-gray-500">(bestehende Daten behalten)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="conflictResolution"
+                    value="replace"
+                    class="text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-gray-300">Ersetzen</span>
+                  <span class="text-xs text-gray-500">(bestehende Daten überschreiben)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="conflictResolution"
+                    value="rename"
+                    class="text-primary-600 focus:ring-primary-600"
+                  />
+                  <span class="text-gray-300">Umbenennen</span>
+                  <span class="text-xs text-gray-500">(importierte Daten umbenennen)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Import Actions -->
+            <div class="flex gap-3">
+              <button
+                v-if="importData"
+                @click="resetImport"
+                class="btn-secondary"
+              >
+                Zurücksetzen
+              </button>
+              <button
+                @click="handleImport"
+                :disabled="exportImportStore.isImporting || !exportImportStore.importValidation?.valid || selectedImportTypes.length === 0"
+                class="btn-primary flex items-center gap-2"
+              >
+                <ArrowUpTrayIcon class="w-5 h-5" />
+                <span v-if="exportImportStore.isImporting">Importiere...</span>
+                <span v-else>Import starten</span>
+              </button>
+            </div>
+
+            <!-- Import Result -->
+            <div v-if="exportImportStore.importResult" class="mt-6">
+              <div
+                :class="exportImportStore.importResult.success ? 'bg-green-500/10 border-green-500/30' : 'bg-yellow-500/10 border-yellow-500/30'"
+                class="border rounded-lg p-4"
+              >
+                <h3 :class="exportImportStore.importResult.success ? 'text-green-400' : 'text-yellow-400'" class="font-medium mb-3">
+                  Import {{ exportImportStore.importResult.success ? 'abgeschlossen' : 'mit Warnungen' }}
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div v-for="(count, type) in exportImportStore.importResult.imported" :key="type">
+                    <span class="text-gray-400">{{ allExportTypes.find(t => t.id === type)?.name || type }}:</span>
+                    <span class="text-green-400 ml-2">{{ count }} importiert</span>
+                    <span v-if="exportImportStore.importResult.skipped[type]" class="text-yellow-400 ml-1">
+                      ({{ exportImportStore.importResult.skipped[type] }} übersprungen)
+                    </span>
+                  </div>
+                </div>
+                <div v-if="Object.keys(exportImportStore.importResult.errors).length > 0" class="mt-4 pt-4 border-t border-dark-700">
+                  <h4 class="text-red-400 font-medium mb-2">Fehler:</h4>
+                  <ul class="text-sm text-gray-400 list-disc list-inside">
+                    <li v-for="(errors, type) in exportImportStore.importResult.errors" :key="type">
+                      {{ type }}: {{ Array.isArray(errors) ? errors.join(', ') : errors }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>

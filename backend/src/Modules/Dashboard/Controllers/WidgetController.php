@@ -16,16 +16,23 @@ use Slim\Routing\RouteContext;
 class WidgetController
 {
     private const AVAILABLE_WIDGETS = [
-        'quick_stats' => ['title' => 'Schnellstatistik', 'default_width' => 2, 'default_height' => 1],
-        'recent_tasks' => ['title' => 'Aktuelle Aufgaben', 'default_width' => 1, 'default_height' => 2],
-        'recent_documents' => ['title' => 'Letzte Dokumente', 'default_width' => 1, 'default_height' => 2],
-        'uptime_status' => ['title' => 'Uptime Status', 'default_width' => 1, 'default_height' => 1],
-        'time_tracking_today' => ['title' => 'Zeiterfassung Heute', 'default_width' => 1, 'default_height' => 1],
-        'kanban_summary' => ['title' => 'Kanban Übersicht', 'default_width' => 1, 'default_height' => 2],
-        'productivity_chart' => ['title' => 'Produktivität', 'default_width' => 2, 'default_height' => 2],
-        'calendar_preview' => ['title' => 'Kalender', 'default_width' => 1, 'default_height' => 2],
-        'quick_notes' => ['title' => 'Quick Notes', 'default_width' => 1, 'default_height' => 2],
-        'recent_activity' => ['title' => 'Letzte Aktivität', 'default_width' => 1, 'default_height' => 2],
+        'quick_stats' => ['title' => 'Schnellstatistik', 'default_width' => 2, 'default_height' => 1, 'description' => 'Übersicht über wichtige Kennzahlen'],
+        'recent_tasks' => ['title' => 'Aktuelle Aufgaben', 'default_width' => 1, 'default_height' => 2, 'description' => 'Liste der zuletzt bearbeiteten Aufgaben'],
+        'recent_documents' => ['title' => 'Letzte Dokumente', 'default_width' => 1, 'default_height' => 2, 'description' => 'Zuletzt bearbeitete Dokumente'],
+        'uptime_status' => ['title' => 'Uptime Status', 'default_width' => 1, 'default_height' => 1, 'description' => 'Status der Uptime-Monitore'],
+        'time_tracking_today' => ['title' => 'Zeiterfassung Heute', 'default_width' => 1, 'default_height' => 1, 'description' => 'Heutige Zeiterfassung'],
+        'kanban_summary' => ['title' => 'Kanban Übersicht', 'default_width' => 1, 'default_height' => 2, 'description' => 'Zusammenfassung der Kanban-Boards'],
+        'productivity_chart' => ['title' => 'Produktivität', 'default_width' => 2, 'default_height' => 2, 'description' => 'Produktivitätsdiagramm'],
+        'calendar_preview' => ['title' => 'Kalender', 'default_width' => 1, 'default_height' => 2, 'description' => 'Kommende Termine'],
+        'quick_notes' => ['title' => 'Quick Notes', 'default_width' => 1, 'default_height' => 2, 'description' => 'Schnelle Notizen'],
+        'recent_activity' => ['title' => 'Letzte Aktivität', 'default_width' => 1, 'default_height' => 2, 'description' => 'Aktivitätsprotokoll'],
+        // New widgets
+        'recurring_tasks_upcoming' => ['title' => 'Wiederkehrende Aufgaben', 'default_width' => 1, 'default_height' => 2, 'description' => 'Bevorstehende wiederkehrende Aufgaben'],
+        'favorites_quick_access' => ['title' => 'Favoriten', 'default_width' => 1, 'default_height' => 2, 'description' => 'Schnellzugriff auf Favoriten'],
+        'storage_usage' => ['title' => 'Speichernutzung', 'default_width' => 1, 'default_height' => 1, 'description' => 'Cloud-Speichernutzung'],
+        'password_health' => ['title' => 'Passwort-Sicherheit', 'default_width' => 1, 'default_height' => 1, 'description' => 'Übersicht zur Passwortsicherheit'],
+        'project_progress' => ['title' => 'Projektfortschritt', 'default_width' => 2, 'default_height' => 2, 'description' => 'Fortschritt aktiver Projekte'],
+        'checklist_progress' => ['title' => 'Checklisten', 'default_width' => 1, 'default_height' => 2, 'description' => 'Fortschritt der Checklisten'],
     ];
 
     public function __construct(

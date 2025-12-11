@@ -14,6 +14,20 @@ use App\Core\Services\LoggerService;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Setup\Controllers\SetupController;
+use App\Modules\ApiKeys\Services\ApiKeyService;
+use App\Modules\ApiKeys\Controllers\ApiKeyController;
+use App\Modules\Favorites\Controllers\FavoriteController;
+use App\Modules\Passwords\Services\PasswordService;
+use App\Modules\Passwords\Controllers\PasswordController;
+use App\Modules\Export\Services\ExportService;
+use App\Modules\Export\Controllers\ExportController;
+use App\Modules\Tags\Services\TagService;
+use App\Modules\Tags\Controllers\TagController;
+use App\Modules\Templates\Services\TemplateService;
+use App\Modules\Templates\Controllers\TemplateController;
+use App\Modules\RecurringTasks\Services\RecurringTaskService;
+use App\Modules\RecurringTasks\Controllers\RecurringTaskController;
+use App\Core\Middleware\ApiKeyMiddleware;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Services\AuthService;
@@ -177,6 +191,106 @@ return [
             $c->get(UserRepository::class),
             $c->get(PasswordHasher::class),
             $c->get(RbacManager::class)
+        );
+    },
+
+    // API Key Service
+    ApiKeyService::class => function (ContainerInterface $c): ApiKeyService {
+        return new ApiKeyService($c->get(DBALConnection::class));
+    },
+
+    // API Key Controller
+    ApiKeyController::class => function (ContainerInterface $c): ApiKeyController {
+        return new ApiKeyController($c->get(ApiKeyService::class));
+    },
+
+    // API Key Middleware
+    ApiKeyMiddleware::class => function (ContainerInterface $c): ApiKeyMiddleware {
+        return new ApiKeyMiddleware($c->get(ApiKeyService::class));
+    },
+
+    // Favorite Controller
+    FavoriteController::class => function (ContainerInterface $c): FavoriteController {
+        return new FavoriteController($c->get(DBALConnection::class));
+    },
+
+    // Password Service
+    PasswordService::class => function (ContainerInterface $c): PasswordService {
+        return new PasswordService($c->get(DBALConnection::class));
+    },
+
+    // Password Controller
+    PasswordController::class => function (ContainerInterface $c): PasswordController {
+        return new PasswordController($c->get(PasswordService::class));
+    },
+
+    // Export Service
+    ExportService::class => function (ContainerInterface $c): ExportService {
+        return new ExportService(
+            $c->get(DBALConnection::class),
+            $c->get(LoggerInterface::class)
+        );
+    },
+
+    // Export Controller
+    ExportController::class => function (ContainerInterface $c): ExportController {
+        return new ExportController($c->get(ExportService::class));
+    },
+
+    // Tag Service
+    TagService::class => function (ContainerInterface $c): TagService {
+        return new TagService($c->get(DBALConnection::class));
+    },
+
+    // Tag Controller
+    TagController::class => function (ContainerInterface $c): TagController {
+        return new TagController($c->get(TagService::class));
+    },
+
+    // Template Service
+    TemplateService::class => function (ContainerInterface $c): TemplateService {
+        return new TemplateService($c->get(DBALConnection::class));
+    },
+
+    // Template Controller
+    TemplateController::class => function (ContainerInterface $c): TemplateController {
+        return new TemplateController($c->get(TemplateService::class));
+    },
+
+    // Recurring Task Service
+    RecurringTaskService::class => function (ContainerInterface $c): RecurringTaskService {
+        return new RecurringTaskService($c->get(DBALConnection::class));
+    },
+
+    // Recurring Task Controller
+    RecurringTaskController::class => function (ContainerInterface $c): RecurringTaskController {
+        return new RecurringTaskController($c->get(RecurringTaskService::class));
+    },
+
+    // File Version Service
+    \App\Modules\Storage\Services\FileVersionService::class => function (ContainerInterface $c): \App\Modules\Storage\Services\FileVersionService {
+        return new \App\Modules\Storage\Services\FileVersionService($c->get(DBALConnection::class));
+    },
+
+    // File Version Controller
+    \App\Modules\Storage\Controllers\FileVersionController::class => function (ContainerInterface $c): \App\Modules\Storage\Controllers\FileVersionController {
+        return new \App\Modules\Storage\Controllers\FileVersionController(
+            $c->get(\App\Modules\Storage\Services\FileVersionService::class)
+        );
+    },
+
+    // Notification Service
+    \App\Core\Services\NotificationService::class => function (ContainerInterface $c): \App\Core\Services\NotificationService {
+        return new \App\Core\Services\NotificationService(
+            $c->get(DBALConnection::class),
+            $c->get(LoggerInterface::class)
+        );
+    },
+
+    // Notification Controller
+    \App\Modules\Notifications\Controllers\NotificationController::class => function (ContainerInterface $c): \App\Modules\Notifications\Controllers\NotificationController {
+        return new \App\Modules\Notifications\Controllers\NotificationController(
+            $c->get(\App\Core\Services\NotificationService::class)
         );
     },
 ];

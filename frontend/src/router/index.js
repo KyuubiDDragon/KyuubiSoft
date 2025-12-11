@@ -49,6 +49,8 @@ const PublicDownloadView = () => import('@/modules/storage/views/PublicDownloadV
 const ChecklistsView = () => import('@/modules/checklists/views/ChecklistsView.vue')
 const ChecklistDetailView = () => import('@/modules/checklists/views/ChecklistDetailView.vue')
 const PublicChecklistView = () => import('@/modules/checklists/views/PublicChecklistView.vue')
+const PasswordsView = () => import('@/modules/passwords/views/PasswordsView.vue')
+const RecurringTasksView = () => import('@/modules/recurring/views/RecurringTasksView.vue')
 
 const routes = [
   // Auth routes
@@ -250,6 +252,18 @@ const routes = [
     path: '/settings',
     name: 'settings',
     component: SettingsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/passwords',
+    name: 'passwords',
+    component: PasswordsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/recurring-tasks',
+    name: 'recurring-tasks',
+    component: RecurringTasksView,
     meta: { requiresAuth: true },
   },
 

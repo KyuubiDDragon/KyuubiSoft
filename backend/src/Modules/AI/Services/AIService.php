@@ -225,10 +225,16 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
                 }
             }
 
-            // Add kanban boards
+            // Add kanban boards with names
             if ($userContext['kanban_count'] > 0) {
-                $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards";
-                $systemPrompt .= " ({$userContext['kanban_cards']['total']} Karten)\n";
+                $systemPrompt .= "\nKANBAN-BOARDS ({$userContext['kanban_count']}):\n";
+                foreach ($userContext['kanban_boards'] as $board) {
+                    $systemPrompt .= "  - {$board['title']} ({$board['card_count']} Karten)";
+                    if (!empty($board['description'])) {
+                        $systemPrompt .= " - " . substr($board['description'], 0, 50);
+                    }
+                    $systemPrompt .= "\n";
+                }
             }
 
             $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===\n\n";
@@ -331,22 +337,17 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
             [$userId]
         );
 
-        // Get kanban board count and card count
-        $kanbanCount = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM kanban_boards WHERE user_id = ?',
+        // Get kanban boards with details (not just count)
+        $kanbanBoards = $this->db->fetchAllAssociative(
+            "SELECT kb.id, kb.title, kb.description,
+                    (SELECT COUNT(*) FROM kanban_cards kc
+                     INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
+                     WHERE kcol.board_id = kb.id) as card_count
+             FROM kanban_boards kb
+             WHERE kb.user_id = ? AND kb.is_archived = 0
+             ORDER BY kb.updated_at DESC LIMIT 10",
             [$userId]
         );
-
-        // Get kanban card counts
-        $kanbanCardCounts = [
-            'total' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM kanban_cards kc
-                 INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
-                 INNER JOIN kanban_boards kb ON kcol.board_id = kb.id
-                 WHERE kb.user_id = ?",
-                [$userId]
-            ),
-        ];
 
         return [
             'projects' => $projects,
@@ -356,8 +357,8 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
             'inbox_count' => $inboxCount,
             'wiki_count' => $wikiCount,
             'recent_wiki_pages' => $recentWikiPages,
-            'kanban_count' => $kanbanCount,
-            'kanban_cards' => $kanbanCardCounts,
+            'kanban_boards' => $kanbanBoards,
+            'kanban_count' => count($kanbanBoards),
         ];
     }
 

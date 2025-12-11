@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS file_versions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Add versioning columns to storage_files
-ALTER TABLE storage_files
-    ADD COLUMN IF NOT EXISTS is_versioned BOOLEAN DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS current_version INT DEFAULT 1,
-    ADD COLUMN IF NOT EXISTS max_versions INT DEFAULT 10 COMMENT 'Max versions to keep (0 = unlimited)';
+-- Note: These will fail silently if columns already exist (migration runs once)
+ALTER TABLE storage_files ADD COLUMN is_versioned BOOLEAN DEFAULT FALSE;
+ALTER TABLE storage_files ADD COLUMN current_version INT DEFAULT 1;
+ALTER TABLE storage_files ADD COLUMN max_versions INT DEFAULT 10;
 
 -- File version settings per user
 CREATE TABLE IF NOT EXISTS file_version_settings (

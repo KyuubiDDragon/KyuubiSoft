@@ -62,7 +62,7 @@ class AIService
         // Only update API key if provided
         if (!empty($data['api_key'])) {
             $updateData['api_key_encrypted'] = $this->encryptApiKey($data['api_key']);
-            $updateData['is_enabled'] = true;
+            $updateData['is_enabled'] = 1;
         }
 
         if ($existing) {
@@ -84,7 +84,7 @@ class AIService
     {
         return $this->db->update('ai_settings', [
             'api_key_encrypted' => null,
-            'is_enabled' => false,
+            'is_enabled' => 0,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['user_id' => $userId]) > 0;
     }

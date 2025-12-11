@@ -338,7 +338,7 @@ return [
     // Notification Controller
     \App\Modules\Notifications\Controllers\NotificationController::class => function (ContainerInterface $c): \App\Modules\Notifications\Controllers\NotificationController {
         return new \App\Modules\Notifications\Controllers\NotificationController(
-            $c->get(\App\Core\Services\NotificationService::class)
+            $c->get(DBALConnection::class)
         );
     },
 ];

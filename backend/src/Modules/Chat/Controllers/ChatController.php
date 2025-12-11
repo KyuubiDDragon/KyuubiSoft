@@ -7,6 +7,7 @@ namespace App\Modules\Chat\Controllers;
 use App\Modules\Chat\Services\ChatService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteContext;
 
 class ChatController
 {
@@ -30,10 +31,10 @@ class ChatController
     /**
      * Get single room
      */
-    public function getRoom(Request $request, Response $response, array $args): Response
+    public function getRoom(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $room = $this->chatService->getRoom($userId, $roomId);
 
@@ -86,10 +87,10 @@ class ChatController
     /**
      * Get messages for a room
      */
-    public function getMessages(Request $request, Response $response, array $args): Response
+    public function getMessages(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $params = $request->getQueryParams();
 
         try {
@@ -113,10 +114,10 @@ class ChatController
     /**
      * Send a message
      */
-    public function sendMessage(Request $request, Response $response, array $args): Response
+    public function sendMessage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         if (empty($data['content'])) {
@@ -142,10 +143,10 @@ class ChatController
     /**
      * Edit a message
      */
-    public function editMessage(Request $request, Response $response, array $args): Response
+    public function editMessage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $messageId = $args['messageId'];
+        $messageId = RouteContext::fromRequest($request)->getRoute()->getArgument('messageId');
         $data = $request->getParsedBody();
 
         if (empty($data['content'])) {
@@ -171,10 +172,10 @@ class ChatController
     /**
      * Delete a message
      */
-    public function deleteMessage(Request $request, Response $response, array $args): Response
+    public function deleteMessage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $messageId = $args['messageId'];
+        $messageId = RouteContext::fromRequest($request)->getRoute()->getArgument('messageId');
 
         $deleted = $this->chatService->deleteMessage($userId, $messageId);
 
@@ -192,10 +193,10 @@ class ChatController
     /**
      * Add reaction
      */
-    public function addReaction(Request $request, Response $response, array $args): Response
+    public function addReaction(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $messageId = $args['messageId'];
+        $messageId = RouteContext::fromRequest($request)->getRoute()->getArgument('messageId');
         $data = $request->getParsedBody();
 
         if (empty($data['emoji'])) {
@@ -214,11 +215,12 @@ class ChatController
     /**
      * Remove reaction
      */
-    public function removeReaction(Request $request, Response $response, array $args): Response
+    public function removeReaction(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $messageId = $args['messageId'];
-        $emoji = $args['emoji'];
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $messageId = $route->getArgument('messageId');
+        $emoji = $route->getArgument('emoji');
 
         $this->chatService->removeReaction($userId, $messageId, $emoji);
 
@@ -229,10 +231,10 @@ class ChatController
     /**
      * Mark room as read
      */
-    public function markAsRead(Request $request, Response $response, array $args): Response
+    public function markAsRead(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->chatService->markAsRead($userId, $roomId);
 
@@ -243,10 +245,10 @@ class ChatController
     /**
      * Set typing indicator
      */
-    public function setTyping(Request $request, Response $response, array $args): Response
+    public function setTyping(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->chatService->setTyping($userId, $roomId);
 
@@ -257,10 +259,10 @@ class ChatController
     /**
      * Get typing users
      */
-    public function getTyping(Request $request, Response $response, array $args): Response
+    public function getTyping(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $typing = $this->chatService->getTypingUsers($roomId, $userId);
 
@@ -309,10 +311,10 @@ class ChatController
     /**
      * Add participant to room
      */
-    public function addParticipant(Request $request, Response $response, array $args): Response
+    public function addParticipant(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         if (empty($data['user_id'])) {
@@ -338,10 +340,10 @@ class ChatController
     /**
      * Leave room
      */
-    public function leaveRoom(Request $request, Response $response, array $args): Response
+    public function leaveRoom(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $roomId = $args['id'];
+        $roomId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->chatService->removeParticipant($roomId, $userId);
 

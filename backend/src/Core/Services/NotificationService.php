@@ -440,7 +440,7 @@ class NotificationService
 
         $updateData = [];
         if (isset($data['is_enabled'])) {
-            $updateData['is_enabled'] = (bool) $data['is_enabled'];
+            $updateData['is_enabled'] = $data['is_enabled'] ? 1 : 0;
         }
         if (isset($data['config'])) {
             $updateData['config'] = json_encode($data['config']);
@@ -453,6 +453,9 @@ class NotificationService
             $updateData['id'] = Uuid::uuid4()->toString();
             $updateData['user_id'] = $userId;
             $updateData['channel_type'] = $channelType;
+            if (!isset($updateData['is_enabled'])) {
+                $updateData['is_enabled'] = 1;
+            }
             $this->db->insert('notification_channels', $updateData);
         }
 
@@ -495,7 +498,7 @@ class NotificationService
             $updateData['channels'] = json_encode($data['channels']);
         }
         if (isset($data['is_enabled'])) {
-            $updateData['is_enabled'] = (bool) $data['is_enabled'];
+            $updateData['is_enabled'] = $data['is_enabled'] ? 1 : 0;
         }
         $updateData['updated_at'] = date('Y-m-d H:i:s');
 
@@ -505,6 +508,9 @@ class NotificationService
             $updateData['id'] = Uuid::uuid4()->toString();
             $updateData['user_id'] = $userId;
             $updateData['notification_type'] = $type;
+            if (!isset($updateData['is_enabled'])) {
+                $updateData['is_enabled'] = 1;
+            }
             $this->db->insert('notification_preferences', $updateData);
         }
 

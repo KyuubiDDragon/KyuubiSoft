@@ -54,6 +54,8 @@ class AIService
             'api_base_url' => $data['api_base_url'] ?? null,
             'max_tokens' => $data['max_tokens'] ?? 2000,
             'temperature' => $data['temperature'] ?? 0.7,
+            'context_enabled' => isset($data['context_enabled']) ? ($data['context_enabled'] ? 1 : 0) : 1,
+            'tools_enabled' => isset($data['tools_enabled']) ? ($data['tools_enabled'] ? 1 : 0) : 1,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -115,6 +117,10 @@ class AIService
 
         $apiKey = $this->decryptApiKey($settings['api_key_encrypted']);
 
+        // Get feature flags (default to true for backwards compatibility)
+        $contextEnabled = ($settings['context_enabled'] ?? 1) == 1;
+        $toolsEnabled = ($settings['tools_enabled'] ?? 1) == 1;
+
         // Create or get conversation
         if (!$conversationId) {
             $conversationId = $this->createConversation($userId, $context);
@@ -128,7 +134,7 @@ class AIService
 
         // Build system prompt with user context (only for new conversations or first message)
         if (count($history) <= 1) {
-            $systemPrompt = $this->buildSystemPrompt($userId);
+            $systemPrompt = $this->buildSystemPrompt($userId, $contextEnabled, $toolsEnabled);
             array_unshift($history, ['role' => 'system', 'content' => $systemPrompt]);
         }
 
@@ -140,7 +146,8 @@ class AIService
             $settings['api_base_url'],
             $history,
             (int) $settings['max_tokens'],
-            (float) $settings['temperature']
+            (float) $settings['temperature'],
+            $toolsEnabled
         );
 
         // Save assistant response
@@ -159,71 +166,77 @@ class AIService
     /**
      * Build system prompt with user context
      */
-    private function buildSystemPrompt(string $userId): string
+    private function buildSystemPrompt(string $userId, bool $contextEnabled = true, bool $toolsEnabled = true): string
     {
         $userName = $this->getUserName($userId);
-        $userContext = $this->getUserContext($userId);
 
         $systemPrompt = "Du bist ein hilfreicher AI-Assistent in KyuubiSoft, einer Produktivitäts- und Projektmanagement-Anwendung.
-Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgaben, Wiki-Seiten und mehr.
+Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgaben, Wiki-Seiten und mehr.\n\n";
 
-WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Informationen, um präzise und hilfreiche Antworten zu geben.
+        // Only include user context if enabled
+        if ($contextEnabled) {
+            $userContext = $this->getUserContext($userId);
+
+            $systemPrompt .= "WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Informationen, um präzise und hilfreiche Antworten zu geben.
 
 === AKTUELLE BENUTZERDATEN ===
 
 ";
 
-        // Add projects
-        $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
-        if (!empty($userContext['projects'])) {
-            foreach ($userContext['projects'] as $project) {
-                $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
-                $systemPrompt .= "  {$status} {$project['name']}";
-                if (!empty($project['description'])) {
-                    $systemPrompt .= " - " . substr($project['description'], 0, 50);
+            // Add projects
+            $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
+            if (!empty($userContext['projects'])) {
+                foreach ($userContext['projects'] as $project) {
+                    $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
+                    $systemPrompt .= "  {$status} {$project['name']}";
+                    if (!empty($project['description'])) {
+                        $systemPrompt .= " - " . substr($project['description'], 0, 50);
+                    }
+                    $systemPrompt .= "\n";
                 }
-                $systemPrompt .= "\n";
+            } else {
+                $systemPrompt .= "  Keine Projekte vorhanden\n";
             }
-        } else {
-            $systemPrompt .= "  Keine Projekte vorhanden\n";
-        }
 
-        // Add tasks summary
-        $systemPrompt .= "\nAUFGABEN:\n";
-        $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
-        $systemPrompt .= "  In Bearbeitung: {$userContext['tasks']['in_progress']}\n";
-        $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
-        $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
+            // Add tasks summary
+            $systemPrompt .= "\nAUFGABEN:\n";
+            $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
+            $systemPrompt .= "  In Bearbeitung: {$userContext['tasks']['in_progress']}\n";
+            $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
+            $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
 
-        // Add upcoming tasks
-        if (!empty($userContext['upcoming_tasks'])) {
-            $systemPrompt .= "\nANSTEHENDE AUFGABEN (naechste 7 Tage):\n";
-            foreach ($userContext['upcoming_tasks'] as $task) {
-                $dueDate = $task['due_date'] ? date('d.m.Y', strtotime($task['due_date'])) : '';
-                $systemPrompt .= "  - {$task['title']} (Faellig: {$dueDate})\n";
+            // Add upcoming tasks
+            if (!empty($userContext['upcoming_tasks'])) {
+                $systemPrompt .= "\nANSTEHENDE AUFGABEN (naechste 7 Tage):\n";
+                foreach ($userContext['upcoming_tasks'] as $task) {
+                    $dueDate = $task['due_date'] ? date('d.m.Y', strtotime($task['due_date'])) : '';
+                    $systemPrompt .= "  - {$task['title']} (Faellig: {$dueDate})\n";
+                }
             }
-        }
 
-        // Add inbox items
-        $systemPrompt .= "\nINBOX: {$userContext['inbox_count']} Eintraege\n";
+            // Add inbox items
+            $systemPrompt .= "\nINBOX: {$userContext['inbox_count']} Eintraege\n";
 
-        // Add wiki pages
-        $systemPrompt .= "\nWIKI-SEITEN: {$userContext['wiki_count']} Seiten\n";
-        if (!empty($userContext['recent_wiki_pages'])) {
-            $systemPrompt .= "  Zuletzt bearbeitet:\n";
-            foreach ($userContext['recent_wiki_pages'] as $page) {
-                $systemPrompt .= "    - {$page['title']}\n";
+            // Add wiki pages
+            $systemPrompt .= "\nWIKI-SEITEN: {$userContext['wiki_count']} Seiten\n";
+            if (!empty($userContext['recent_wiki_pages'])) {
+                $systemPrompt .= "  Zuletzt bearbeitet:\n";
+                foreach ($userContext['recent_wiki_pages'] as $page) {
+                    $systemPrompt .= "    - {$page['title']}\n";
+                }
             }
+
+            // Add kanban boards
+            if ($userContext['kanban_count'] > 0) {
+                $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards\n";
+            }
+
+            $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===\n\n";
         }
 
-        // Add kanban boards
-        if ($userContext['kanban_count'] > 0) {
-            $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards\n";
-        }
-
-        $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===
-
-=== VERFUEGBARE TOOLS ===
+        // Only include tools info if enabled
+        if ($toolsEnabled) {
+            $systemPrompt .= "=== VERFUEGBARE TOOLS ===
 Du hast Zugriff auf System-Tools, die du nutzen kannst:
 - get_docker_containers: Docker-Container auflisten
 - get_docker_container_logs: Container-Logs anzeigen
@@ -234,10 +247,14 @@ Du hast Zugriff auf System-Tools, die du nutzen kannst:
 - get_network_info: Netzwerkinformationen anzeigen
 
 Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen fragt, nutze die entsprechenden Tools!
-=== ENDE TOOLS ===
+=== ENDE TOOLS ===\n\n";
+        }
 
-Beantworte Fragen freundlich auf Deutsch. Wenn der Benutzer nach seinen Daten fragt, nutze die obigen Informationen.
-Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren und vieles mehr.";
+        $systemPrompt .= "Beantworte Fragen freundlich auf Deutsch.";
+        if ($contextEnabled) {
+            $systemPrompt .= " Wenn der Benutzer nach seinen Daten fragt, nutze die obigen Informationen.";
+        }
+        $systemPrompt .= " Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren und vieles mehr.";
 
         return $systemPrompt;
     }
@@ -259,9 +276,9 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
      */
     private function getUserContext(string $userId): array
     {
-        // Get projects
+        // Get projects (status != 'archived' instead of is_archived)
         $projects = $this->db->fetchAllAssociative(
-            'SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND is_archived = 0 ORDER BY updated_at DESC LIMIT 10',
+            "SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND status != 'archived' ORDER BY updated_at DESC LIMIT 10",
             [$userId]
         );
 
@@ -339,7 +356,8 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
         ?string $baseUrl,
         array $messages,
         int $maxTokens,
-        float $temperature
+        float $temperature,
+        bool $toolsEnabled = true
     ): array {
         $formattedMessages = array_map(fn($m) => [
             'role' => $m['role'],
@@ -348,11 +366,11 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
 
         switch ($provider) {
             case 'openai':
-                return $this->callOpenAI($apiKey, $model, $formattedMessages, $maxTokens, $temperature);
+                return $this->callOpenAI($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
             case 'anthropic':
-                return $this->callAnthropic($apiKey, $model, $formattedMessages, $maxTokens, $temperature);
+                return $this->callAnthropic($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
             case 'openrouter':
-                return $this->callOpenRouter($apiKey, $model, $formattedMessages, $maxTokens, $temperature);
+                return $this->callOpenRouter($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
             case 'ollama':
                 return $this->callOllama($baseUrl ?? 'http://localhost:11434', $model, $formattedMessages, $maxTokens, $temperature);
             case 'custom':
@@ -365,11 +383,10 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
     /**
      * Call OpenAI API with tool support
      */
-    private function callOpenAI(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
+    private function callOpenAI(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
     {
-        $tools = $this->toolsService->getToolDefinitions();
         $totalTokens = 0;
-        $maxIterations = 5; // Prevent infinite loops
+        $maxIterations = $toolsEnabled ? 5 : 1; // Only loop if tools enabled
 
         for ($i = 0; $i < $maxIterations; $i++) {
             $payload = [
@@ -377,9 +394,13 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
                 'messages' => $messages,
                 'max_tokens' => $maxTokens,
                 'temperature' => $temperature,
-                'tools' => $tools,
-                'tool_choice' => 'auto',
             ];
+
+            // Only add tools if enabled
+            if ($toolsEnabled) {
+                $payload['tools'] = $this->toolsService->getToolDefinitions();
+                $payload['tool_choice'] = 'auto';
+            }
 
             $response = $this->httpPost('https://api.openai.com/v1/chat/completions', $payload, [
                 'Authorization: Bearer ' . $apiKey
@@ -434,11 +455,10 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
     /**
      * Call Anthropic API with tool support
      */
-    private function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
+    private function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
     {
-        $tools = $this->toolsService->getAnthropicToolDefinitions();
         $totalTokens = 0;
-        $maxIterations = 5;
+        $maxIterations = $toolsEnabled ? 5 : 1;
 
         // Extract system message
         $system = null;
@@ -457,8 +477,12 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
                 'messages' => $filteredMessages,
                 'max_tokens' => $maxTokens,
                 'temperature' => $temperature,
-                'tools' => $tools,
             ];
+
+            // Only add tools if enabled
+            if ($toolsEnabled) {
+                $payload['tools'] = $this->toolsService->getAnthropicToolDefinitions();
+            }
 
             if ($system) {
                 $payload['system'] = $system;
@@ -528,11 +552,10 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
     /**
      * Call OpenRouter API with tool support (OpenAI compatible)
      */
-    private function callOpenRouter(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
+    private function callOpenRouter(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
     {
-        $tools = $this->toolsService->getToolDefinitions();
         $totalTokens = 0;
-        $maxIterations = 5;
+        $maxIterations = $toolsEnabled ? 5 : 1;
 
         for ($i = 0; $i < $maxIterations; $i++) {
             $payload = [
@@ -540,9 +563,13 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
                 'messages' => $messages,
                 'max_tokens' => $maxTokens,
                 'temperature' => $temperature,
-                'tools' => $tools,
-                'tool_choice' => 'auto',
             ];
+
+            // Only add tools if enabled
+            if ($toolsEnabled) {
+                $payload['tools'] = $this->toolsService->getToolDefinitions();
+                $payload['tool_choice'] = 'auto';
+            }
 
             $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', $payload, [
                 'Authorization: Bearer ' . $apiKey,

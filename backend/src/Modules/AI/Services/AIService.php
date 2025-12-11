@@ -198,10 +198,9 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
                 $systemPrompt .= "  Keine Projekte vorhanden\n";
             }
 
-            // Add tasks summary
-            $systemPrompt .= "\nAUFGABEN:\n";
+            // Add tasks summary (from list_items)
+            $systemPrompt .= "\nAUFGABEN (Listen):\n";
             $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
-            $systemPrompt .= "  In Bearbeitung: {$userContext['tasks']['in_progress']}\n";
             $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
             $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
 
@@ -228,7 +227,8 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
 
             // Add kanban boards
             if ($userContext['kanban_count'] > 0) {
-                $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards\n";
+                $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards";
+                $systemPrompt .= " ({$userContext['kanban_cards']['total']} Karten)\n";
             }
 
             $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===\n\n";
@@ -282,39 +282,42 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
             [$userId]
         );
 
-        // Get task counts
+        // Get task counts from list_items (joined with lists for user_id)
         $taskCounts = [
             'open' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'open'",
-                [$userId]
-            ),
-            'in_progress' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'in_progress'",
+                "SELECT COUNT(*) FROM list_items li
+                 INNER JOIN lists l ON li.list_id = l.id
+                 WHERE l.user_id = ? AND li.is_completed = 0",
                 [$userId]
             ),
             'completed' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'completed'",
+                "SELECT COUNT(*) FROM list_items li
+                 INNER JOIN lists l ON li.list_id = l.id
+                 WHERE l.user_id = ? AND li.is_completed = 1",
                 [$userId]
             ),
             'overdue' => (int) $this->db->fetchOne(
-                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status != 'completed' AND due_date < CURDATE()",
+                "SELECT COUNT(*) FROM list_items li
+                 INNER JOIN lists l ON li.list_id = l.id
+                 WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date < CURDATE()",
                 [$userId]
             ),
         ];
 
         // Get upcoming tasks (next 7 days)
         $upcomingTasks = $this->db->fetchAllAssociative(
-            "SELECT title, due_date, priority FROM tasks
-             WHERE user_id = ? AND status != 'completed' AND due_date IS NOT NULL
-             AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-             ORDER BY due_date ASC LIMIT 5",
+            "SELECT li.content as title, li.due_date, li.priority FROM list_items li
+             INNER JOIN lists l ON li.list_id = l.id
+             WHERE l.user_id = ? AND li.is_completed = 0 AND li.due_date IS NOT NULL
+             AND li.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+             ORDER BY li.due_date ASC LIMIT 5",
             [$userId]
         );
 
-        // Get inbox count
+        // Get inbox count (status 'inbox' not 'pending')
         $inboxCount = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) FROM inbox_items WHERE user_id = ? AND status = ?',
-            [$userId, 'pending']
+            "SELECT COUNT(*) FROM inbox_items WHERE user_id = ? AND status = 'inbox'",
+            [$userId]
         );
 
         // Get wiki page count and recent pages
@@ -328,11 +331,22 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
             [$userId]
         );
 
-        // Get kanban board count
+        // Get kanban board count and card count
         $kanbanCount = (int) $this->db->fetchOne(
             'SELECT COUNT(*) FROM kanban_boards WHERE user_id = ?',
             [$userId]
         );
+
+        // Get kanban card counts
+        $kanbanCardCounts = [
+            'total' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM kanban_cards kc
+                 INNER JOIN kanban_columns kcol ON kc.column_id = kcol.id
+                 INNER JOIN kanban_boards kb ON kcol.board_id = kb.id
+                 WHERE kb.user_id = ?",
+                [$userId]
+            ),
+        ];
 
         return [
             'projects' => $projects,
@@ -343,6 +357,7 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
             'wiki_count' => $wikiCount,
             'recent_wiki_pages' => $recentWikiPages,
             'kanban_count' => $kanbanCount,
+            'kanban_cards' => $kanbanCardCounts,
         ];
     }
 

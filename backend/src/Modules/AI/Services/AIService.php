@@ -411,8 +411,8 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
 
                 // Get time entries for today in this project
                 $result['time_entries_today'] = (int) $this->db->fetchOne(
-                    "SELECT COALESCE(SUM(duration), 0) FROM time_entries
-                     WHERE project_id = ? AND user_id = ? AND DATE(start_time) = CURDATE()",
+                    "SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries
+                     WHERE project_id = ? AND user_id = ? AND DATE(started_at) = CURDATE()",
                     [$projectId, $userId]
                 );
             }

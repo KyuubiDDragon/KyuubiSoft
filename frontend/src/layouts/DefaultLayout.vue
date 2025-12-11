@@ -85,13 +85,13 @@ function closeMobileSidebar() {
     </div>
 
     <!-- Quick Notes Floating Widget -->
-    <QuickNotes />
+    <QuickNotes v-if="uiStore.showQuickNotes" />
 
     <!-- Quick Capture Floating Widget -->
-    <QuickCapture />
+    <QuickCapture v-if="uiStore.showQuickCapture" />
 
     <!-- AI Assistant Floating Widget -->
-    <AIAssistant />
+    <AIAssistant v-if="uiStore.showAIAssistant" />
 
     <!-- Keyboard Shortcuts Modal -->
     <KeyboardShortcutsModal />

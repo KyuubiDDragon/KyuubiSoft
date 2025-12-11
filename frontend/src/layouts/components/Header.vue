@@ -11,6 +11,11 @@ import {
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
   Bars3Icon,
+  Squares2X2Icon,
+  PencilSquareIcon,
+  InboxArrowDownIcon,
+  SparklesIcon,
+  CheckIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -27,6 +32,7 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const showUserMenu = ref(false)
+const showWidgetsMenu = ref(false)
 
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
@@ -78,6 +84,69 @@ function goToSettings() {
 
       <!-- Notifications -->
       <NotificationCenter />
+
+      <!-- Widgets menu -->
+      <div class="relative">
+        <button
+          @click="showWidgetsMenu = !showWidgetsMenu"
+          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+          title="Widgets"
+        >
+          <Squares2X2Icon class="w-5 h-5" />
+        </button>
+
+        <!-- Dropdown -->
+        <Transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <div
+            v-if="showWidgetsMenu"
+            class="absolute right-0 mt-2 w-52 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 z-50"
+          >
+            <div class="px-4 py-2 border-b border-dark-700">
+              <p class="text-sm font-medium text-white">Widgets</p>
+            </div>
+
+            <button
+              @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
+              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <PencilSquareIcon class="w-4 h-4" />
+                Quick Notes
+              </div>
+              <CheckIcon v-if="uiStore.showQuickNotes" class="w-4 h-4 text-primary-400" />
+            </button>
+
+            <button
+              @click="uiStore.toggleQuickCapture(); showWidgetsMenu = false"
+              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <InboxArrowDownIcon class="w-4 h-4" />
+                Quick Capture
+              </div>
+              <CheckIcon v-if="uiStore.showQuickCapture" class="w-4 h-4 text-primary-400" />
+            </button>
+
+            <button
+              @click="uiStore.toggleAIAssistant(); showWidgetsMenu = false"
+              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <SparklesIcon class="w-4 h-4" />
+                AI Assistent
+              </div>
+              <CheckIcon v-if="uiStore.showAIAssistant" class="w-4 h-4 text-primary-400" />
+            </button>
+          </div>
+        </Transition>
+      </div>
 
       <!-- User menu -->
       <div class="relative">
@@ -133,10 +202,15 @@ function goToSettings() {
     </div>
   </header>
 
-  <!-- Click outside to close menu -->
+  <!-- Click outside to close menus -->
   <div
     v-if="showUserMenu"
     @click="closeUserMenu"
+    class="fixed inset-0 z-40"
+  ></div>
+  <div
+    v-if="showWidgetsMenu"
+    @click="showWidgetsMenu = false"
     class="fixed inset-0 z-40"
   ></div>
 </template>

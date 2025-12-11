@@ -197,7 +197,7 @@ function toggleParticipant(userId) {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-120px)] flex bg-dark-900">
+  <div class="h-[calc(100vh-96px)] flex bg-dark-900 -m-4 lg:-m-6">
     <!-- Sidebar: Room List -->
     <div class="w-80 bg-dark-800 border-r border-dark-600 flex flex-col">
       <!-- Header -->

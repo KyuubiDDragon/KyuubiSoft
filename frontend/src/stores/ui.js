@@ -12,6 +12,11 @@ export const useUiStore = defineStore('ui', () => {
   const isAuthenticated = ref(false)
   const settingsLoaded = ref(false)
 
+  // Floating widgets visibility (default: hidden)
+  const showQuickNotes = ref(false)
+  const showQuickCapture = ref(false)
+  const showAIAssistant = ref(false)
+
   // Initialize from localStorage (fallback)
   const storedDarkMode = localStorage.getItem('darkMode')
   if (storedDarkMode !== null) {
@@ -21,6 +26,20 @@ export const useUiStore = defineStore('ui', () => {
   const storedSidebarCollapsed = localStorage.getItem('sidebarCollapsed')
   if (storedSidebarCollapsed !== null) {
     sidebarCollapsed.value = storedSidebarCollapsed === 'true'
+  }
+
+  // Initialize widget visibility from localStorage
+  const storedQuickNotes = localStorage.getItem('showQuickNotes')
+  if (storedQuickNotes !== null) {
+    showQuickNotes.value = storedQuickNotes === 'true'
+  }
+  const storedQuickCapture = localStorage.getItem('showQuickCapture')
+  if (storedQuickCapture !== null) {
+    showQuickCapture.value = storedQuickCapture === 'true'
+  }
+  const storedAIAssistant = localStorage.getItem('showAIAssistant')
+  if (storedAIAssistant !== null) {
+    showAIAssistant.value = storedAIAssistant === 'true'
   }
 
   // Apply dark mode class immediately
@@ -142,6 +161,21 @@ export const useUiStore = defineStore('ui', () => {
     isLoading.value = false
   }
 
+  function toggleQuickNotes() {
+    showQuickNotes.value = !showQuickNotes.value
+    localStorage.setItem('showQuickNotes', String(showQuickNotes.value))
+  }
+
+  function toggleQuickCapture() {
+    showQuickCapture.value = !showQuickCapture.value
+    localStorage.setItem('showQuickCapture', String(showQuickCapture.value))
+  }
+
+  function toggleAIAssistant() {
+    showAIAssistant.value = !showAIAssistant.value
+    localStorage.setItem('showAIAssistant', String(showAIAssistant.value))
+  }
+
   return {
     // State
     isDarkMode,
@@ -149,11 +183,17 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed,
     notification,
     isLoading,
+    showQuickNotes,
+    showQuickCapture,
+    showAIAssistant,
 
     // Actions
     toggleDarkMode,
     toggleSidebar,
     toggleSidebarCollapse,
+    toggleQuickNotes,
+    toggleQuickCapture,
+    toggleAIAssistant,
     showNotification,
     showSuccess,
     showError,

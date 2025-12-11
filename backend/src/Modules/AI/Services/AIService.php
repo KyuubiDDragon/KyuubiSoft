@@ -207,7 +207,8 @@ Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgabe
                     $systemPrompt .= "DOCKER-HOSTS IN DIESEM PROJEKT:\n";
                     foreach ($userContext['docker_hosts'] as $host) {
                         $status = $host['is_active'] ? '[Aktiv]' : '[Inaktiv]';
-                        $systemPrompt .= "  {$status} {$host['name']} ({$host['host']})\n";
+                        $connection = $host['type'] === 'tcp' ? $host['tcp_host'] : $host['socket_path'];
+                        $systemPrompt .= "  {$status} {$host['name']} ({$connection})\n";
                     }
                     $systemPrompt .= "\n";
                 }
@@ -404,7 +405,7 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
 
                 // Get docker hosts linked to this project
                 $result['docker_hosts'] = $this->db->fetchAllAssociative(
-                    "SELECT name, host, is_active FROM docker_hosts WHERE project_id = ? AND user_id = ?",
+                    "SELECT name, tcp_host, socket_path, type, is_active FROM docker_hosts WHERE project_id = ? AND user_id = ?",
                     [$projectId, $userId]
                 );
 

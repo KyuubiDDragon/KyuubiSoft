@@ -409,8 +409,12 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
                 $toolName = $toolCall['function']['name'] ?? '';
                 $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
 
-                // Execute the tool
-                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+                // Execute the tool with error handling
+                try {
+                    $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+                } catch (\Throwable $e) {
+                    $toolResult = ['error' => 'Tool execution failed: ' . $e->getMessage()];
+                }
 
                 // Add tool result to messages
                 $messages[] = [
@@ -497,8 +501,12 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
                 $toolArgs = $toolUse['input'] ?? [];
                 $toolId = $toolUse['id'] ?? '';
 
-                // Execute the tool
-                $result = $this->toolsService->executeTool($toolName, $toolArgs);
+                // Execute the tool with error handling
+                try {
+                    $result = $this->toolsService->executeTool($toolName, $toolArgs);
+                } catch (\Throwable $e) {
+                    $result = ['error' => 'Tool execution failed: ' . $e->getMessage()];
+                }
 
                 $toolResults[] = [
                     'type' => 'tool_result',
@@ -562,7 +570,13 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
             foreach ($message['tool_calls'] as $toolCall) {
                 $toolName = $toolCall['function']['name'] ?? '';
                 $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
-                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                // Execute the tool with error handling
+                try {
+                    $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+                } catch (\Throwable $e) {
+                    $toolResult = ['error' => 'Tool execution failed: ' . $e->getMessage()];
+                }
 
                 $messages[] = [
                     'role' => 'tool',

@@ -112,6 +112,13 @@ class AIController
                 'error' => $e->getMessage()
             ]));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            // Log the error for debugging
+            error_log('AI Chat Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            $response->getBody()->write(json_encode([
+                'error' => 'Ein Fehler ist aufgetreten: ' . $e->getMessage()
+            ]));
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
     }
 

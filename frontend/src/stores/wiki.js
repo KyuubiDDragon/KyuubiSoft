@@ -46,10 +46,14 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
+      console.log('Fetching page:', identifier)
       const response = await api.get(`/api/v1/wiki/pages/${identifier}`)
+      console.log('API Response:', response.data)
       currentPage.value = response.data.data
+      console.log('Current page set to:', currentPage.value)
       return currentPage.value
     } catch (err) {
+      console.error('Fetch page error:', err)
       error.value = err.response?.data?.error || 'Failed to fetch page'
       throw err
     } finally {

@@ -118,9 +118,14 @@ async function selectPage(pageId) {
   isCreating.value = false
 
   try {
-    await wikiStore.fetchPage(pageId)
+    const page = await wikiStore.fetchPage(pageId)
+    console.log('Page loaded:', page)
+    if (!page) {
+      console.error('Page not found or empty response')
+    }
   } catch (err) {
     console.error('Failed to load page:', err)
+    alert('Fehler beim Laden der Seite: ' + (err.response?.data?.error || err.message))
   }
 }
 
@@ -541,8 +546,14 @@ onMounted(async () => {
 
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto">
+      <!-- Loading state -->
+      <div v-if="wikiStore.loading && currentPageId" class="flex flex-col items-center justify-center h-full text-center p-8">
+        <ArrowPathIcon class="w-12 h-12 text-indigo-400 animate-spin mb-4" />
+        <p class="text-gray-400">Seite wird geladen...</p>
+      </div>
+
       <!-- No page selected -->
-      <div v-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
+      <div v-else-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
         <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
         <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
         <p class="text-gray-500 mb-6">Wähle eine Seite aus der Sidebar oder erstelle eine neue.</p>

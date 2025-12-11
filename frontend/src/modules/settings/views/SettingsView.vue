@@ -887,7 +887,7 @@ async function disable2FA() {
             </p>
             <div class="bg-dark-800 rounded-lg p-4">
               <code class="text-sm text-gray-300">
-                curl -H "X-API-Key: ks_xxx..." {{ window.location.origin }}/api/v1/lists
+                curl -H "X-API-Key: ks_xxx..." /api/v1/lists
               </code>
             </div>
           </div>

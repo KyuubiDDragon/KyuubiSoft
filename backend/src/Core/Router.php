@@ -600,19 +600,6 @@ class Router
                 $protected->post('/recurring-tasks/{id}/process', [RecurringTaskController::class, 'process']);
                 $protected->get('/recurring-tasks/{id}/instances', [RecurringTaskController::class, 'instances']);
 
-                // Notifications
-                $protected->get('/notifications', [\App\Modules\Notifications\Controllers\NotificationController::class, 'index']);
-                $protected->get('/notifications/unread-count', [\App\Modules\Notifications\Controllers\NotificationController::class, 'unreadCount']);
-                $protected->post('/notifications/mark-all-read', [\App\Modules\Notifications\Controllers\NotificationController::class, 'markAllRead']);
-                $protected->get('/notifications/channels', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getChannels']);
-                $protected->put('/notifications/channels/{type}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'updateChannel']);
-                $protected->post('/notifications/channels/{type}/test', [\App\Modules\Notifications\Controllers\NotificationController::class, 'testChannel']);
-                $protected->get('/notifications/preferences', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getPreferences']);
-                $protected->put('/notifications/preferences/{type}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'updatePreference']);
-                $protected->get('/notifications/types', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getTypes']);
-                $protected->post('/notifications/{id}/read', [\App\Modules\Notifications\Controllers\NotificationController::class, 'markRead']);
-                $protected->delete('/notifications/{id}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'delete']);
-
                 // System (Owner only)
                 $protected->get('/system/info', [SystemController::class, 'getInfo'])
                     ->add(new PermissionMiddleware('settings.system.read'));

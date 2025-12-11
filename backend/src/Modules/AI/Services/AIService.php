@@ -124,6 +124,12 @@ class AIService
         // Get conversation history
         $history = $this->getConversationHistory($conversationId);
 
+        // Build system prompt with user context (only for new conversations or first message)
+        if (count($history) <= 1) {
+            $systemPrompt = $this->buildSystemPrompt($userId);
+            array_unshift($history, ['role' => 'system', 'content' => $systemPrompt]);
+        }
+
         // Call AI provider
         $response = $this->callProvider(
             $settings['provider'],
@@ -145,6 +151,166 @@ class AIService
             'conversation_id' => $conversationId,
             'message' => $response['content'],
             'tokens_used' => $response['tokens'] ?? 0,
+        ];
+    }
+
+    /**
+     * Build system prompt with user context
+     */
+    private function buildSystemPrompt(string $userId): string
+    {
+        $userName = $this->getUserName($userId);
+        $userContext = $this->getUserContext($userId);
+
+        $systemPrompt = "Du bist ein hilfreicher AI-Assistent in KyuubiSoft, einer Produktivitäts- und Projektmanagement-Anwendung.
+Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgaben, Wiki-Seiten und mehr.
+
+WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Informationen, um präzise und hilfreiche Antworten zu geben.
+
+=== AKTUELLE BENUTZERDATEN ===
+
+";
+
+        // Add projects
+        $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
+        if (!empty($userContext['projects'])) {
+            foreach ($userContext['projects'] as $project) {
+                $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
+                $systemPrompt .= "  {$status} {$project['name']}";
+                if (!empty($project['description'])) {
+                    $systemPrompt .= " - " . substr($project['description'], 0, 50);
+                }
+                $systemPrompt .= "\n";
+            }
+        } else {
+            $systemPrompt .= "  Keine Projekte vorhanden\n";
+        }
+
+        // Add tasks summary
+        $systemPrompt .= "\nAUFGABEN:\n";
+        $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
+        $systemPrompt .= "  In Bearbeitung: {$userContext['tasks']['in_progress']}\n";
+        $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
+        $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
+
+        // Add upcoming tasks
+        if (!empty($userContext['upcoming_tasks'])) {
+            $systemPrompt .= "\nANSTEHENDE AUFGABEN (naechste 7 Tage):\n";
+            foreach ($userContext['upcoming_tasks'] as $task) {
+                $dueDate = $task['due_date'] ? date('d.m.Y', strtotime($task['due_date'])) : '';
+                $systemPrompt .= "  - {$task['title']} (Faellig: {$dueDate})\n";
+            }
+        }
+
+        // Add inbox items
+        $systemPrompt .= "\nINBOX: {$userContext['inbox_count']} Eintraege\n";
+
+        // Add wiki pages
+        $systemPrompt .= "\nWIKI-SEITEN: {$userContext['wiki_count']} Seiten\n";
+        if (!empty($userContext['recent_wiki_pages'])) {
+            $systemPrompt .= "  Zuletzt bearbeitet:\n";
+            foreach ($userContext['recent_wiki_pages'] as $page) {
+                $systemPrompt .= "    - {$page['title']}\n";
+            }
+        }
+
+        // Add kanban boards
+        if ($userContext['kanban_count'] > 0) {
+            $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards\n";
+        }
+
+        $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===
+
+Beantworte Fragen freundlich auf Deutsch. Wenn der Benutzer nach seinen Daten fragt, nutze die obigen Informationen.
+Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren und vieles mehr.";
+
+        return $systemPrompt;
+    }
+
+    /**
+     * Get user name
+     */
+    private function getUserName(string $userId): string
+    {
+        $user = $this->db->fetchAssociative(
+            'SELECT name, email FROM users WHERE id = ?',
+            [$userId]
+        );
+        return $user['name'] ?? $user['email'] ?? 'Benutzer';
+    }
+
+    /**
+     * Get user context data
+     */
+    private function getUserContext(string $userId): array
+    {
+        // Get projects
+        $projects = $this->db->fetchAllAssociative(
+            'SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND is_archived = 0 ORDER BY updated_at DESC LIMIT 10',
+            [$userId]
+        );
+
+        // Get task counts
+        $taskCounts = [
+            'open' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'open'",
+                [$userId]
+            ),
+            'in_progress' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'in_progress'",
+                [$userId]
+            ),
+            'completed' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'completed'",
+                [$userId]
+            ),
+            'overdue' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status != 'completed' AND due_date < CURDATE()",
+                [$userId]
+            ),
+        ];
+
+        // Get upcoming tasks (next 7 days)
+        $upcomingTasks = $this->db->fetchAllAssociative(
+            "SELECT title, due_date, priority FROM tasks
+             WHERE user_id = ? AND status != 'completed' AND due_date IS NOT NULL
+             AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+             ORDER BY due_date ASC LIMIT 5",
+            [$userId]
+        );
+
+        // Get inbox count
+        $inboxCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM inbox_items WHERE user_id = ? AND status = ?',
+            [$userId, 'pending']
+        );
+
+        // Get wiki page count and recent pages
+        $wikiCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM wiki_pages WHERE user_id = ?',
+            [$userId]
+        );
+
+        $recentWikiPages = $this->db->fetchAllAssociative(
+            'SELECT title FROM wiki_pages WHERE user_id = ? ORDER BY updated_at DESC LIMIT 5',
+            [$userId]
+        );
+
+        // Get kanban board count
+        $kanbanCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM kanban_boards WHERE user_id = ?',
+            [$userId]
+        );
+
+        return [
+            'projects' => $projects,
+            'project_count' => count($projects),
+            'tasks' => $taskCounts,
+            'upcoming_tasks' => $upcomingTasks,
+            'inbox_count' => $inboxCount,
+            'wiki_count' => $wikiCount,
+            'recent_wiki_pages' => $recentWikiPages,
+            'kanban_count' => $kanbanCount,
         ];
     }
 

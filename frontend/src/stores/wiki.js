@@ -31,9 +31,9 @@ export const useWikiStore = defineStore('wiki', () => {
       if (filters.search) params.append('search', filters.search)
       if (filters.is_published !== undefined) params.append('is_published', filters.is_published.toString())
 
-      const { data } = await api.get(`/api/v1/wiki/pages?${params}`)
-      pages.value = data
-      return data
+      const response = await api.get(`/api/v1/wiki/pages?${params}`)
+      pages.value = response.data.data || []
+      return pages.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch pages'
       throw err
@@ -46,9 +46,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/api/v1/wiki/pages/${identifier}`)
-      currentPage.value = data
-      return data
+      const response = await api.get(`/api/v1/wiki/pages/${identifier}`)
+      currentPage.value = response.data.data
+      return currentPage.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch page'
       throw err
@@ -61,10 +61,11 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post('/api/v1/wiki/pages', pageData)
-      pages.value.unshift(data)
-      currentPage.value = data
-      return data
+      const response = await api.post('/api/v1/wiki/pages', pageData)
+      const newPage = response.data.data
+      pages.value.unshift(newPage)
+      currentPage.value = newPage
+      return newPage
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to create page'
       throw err
@@ -77,15 +78,16 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.put(`/api/v1/wiki/pages/${pageId}`, pageData)
+      const response = await api.put(`/api/v1/wiki/pages/${pageId}`, pageData)
+      const updatedPage = response.data.data
       const index = pages.value.findIndex(p => p.id === pageId)
       if (index !== -1) {
-        pages.value[index] = data
+        pages.value[index] = updatedPage
       }
       if (currentPage.value?.id === pageId) {
-        currentPage.value = data
+        currentPage.value = updatedPage
       }
-      return data
+      return updatedPage
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to update page'
       throw err
@@ -115,9 +117,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/api/v1/wiki/pages/${pageId}/history`)
-      pageHistory.value = data
-      return data
+      const response = await api.get(`/api/v1/wiki/pages/${pageId}/history`)
+      pageHistory.value = response.data.data || []
+      return pageHistory.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch history'
       throw err
@@ -130,11 +132,12 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post(`/api/v1/wiki/pages/${pageId}/restore/${historyId}`)
+      const response = await api.post(`/api/v1/wiki/pages/${pageId}/restore/${historyId}`)
+      const restoredPage = response.data.data
       if (currentPage.value?.id === pageId) {
-        currentPage.value = data
+        currentPage.value = restoredPage
       }
-      return data
+      return restoredPage
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to restore version'
       throw err
@@ -148,9 +151,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/api/v1/wiki/categories')
-      categories.value = data
-      return data
+      const response = await api.get('/api/v1/wiki/categories')
+      categories.value = response.data.data || []
+      return categories.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch categories'
       throw err
@@ -163,9 +166,10 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post('/api/v1/wiki/categories', categoryData)
-      categories.value.push(data)
-      return data
+      const response = await api.post('/api/v1/wiki/categories', categoryData)
+      const newCategory = response.data.data
+      categories.value.push(newCategory)
+      return newCategory
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to create category'
       throw err
@@ -178,12 +182,13 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.put(`/api/v1/wiki/categories/${categoryId}`, categoryData)
+      const response = await api.put(`/api/v1/wiki/categories/${categoryId}`, categoryData)
+      const updatedCategory = response.data.data
       const index = categories.value.findIndex(c => c.id === categoryId)
       if (index !== -1) {
-        categories.value[index] = data
+        categories.value[index] = updatedCategory
       }
-      return data
+      return updatedCategory
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to update category'
       throw err
@@ -211,9 +216,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/api/v1/wiki/graph')
-      graphData.value = data
-      return data
+      const response = await api.get('/api/v1/wiki/graph')
+      graphData.value = response.data.data || { nodes: [], edges: [] }
+      return graphData.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch graph data'
       throw err
@@ -226,9 +231,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/api/v1/wiki/search?q=${encodeURIComponent(query)}`)
-      searchResults.value = data
-      return data
+      const response = await api.get(`/api/v1/wiki/search?q=${encodeURIComponent(query)}`)
+      searchResults.value = response.data.data || []
+      return searchResults.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Search failed'
       throw err
@@ -241,9 +246,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/api/v1/wiki/pages/recent?limit=${limit}`)
-      recentPages.value = data
-      return data
+      const response = await api.get(`/api/v1/wiki/pages/recent?limit=${limit}`)
+      recentPages.value = response.data.data || []
+      return recentPages.value
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch recent pages'
       throw err

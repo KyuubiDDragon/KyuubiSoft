@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
 import { useFeatureStore } from '@/stores/features'
+import { useFavoritesStore } from '@/stores/favorites'
 import {
   HomeIcon,
   ListBulletIcon,
@@ -39,6 +40,9 @@ import {
   CloudIcon,
   LinkIcon,
   ClipboardDocumentListIcon,
+  StarIcon,
+  ClipboardDocumentCheckIcon,
+  KeyIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -60,17 +64,44 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
 const featureStore = useFeatureStore()
+const favoritesStore = useFavoritesStore()
 
 const showProjectDropdown = ref(false)
 const expandedGroups = ref([]) // Only expand groups with active routes
+const showFavorites = ref(true)
 
-// Load projects and features on mount
+// Load projects, features and favorites on mount
 onMounted(async () => {
   await featureStore.loadFeatures()
   projectStore.loadProjects()
+  favoritesStore.load()
   // Expand group containing current route
   expandGroupForCurrentRoute()
 })
+
+// Icon mapping for favorite item types
+const favoriteIcons = {
+  list: ListBulletIcon,
+  document: DocumentTextIcon,
+  kanban_board: ViewColumnsIcon,
+  project: FolderIcon,
+  checklist: ClipboardDocumentCheckIcon,
+  snippet: CodeBracketIcon,
+  bookmark_group: BookmarkIcon,
+  connection: ServerIcon,
+}
+
+function getFavoriteIcon(type) {
+  return favoriteIcons[type] || StarIcon
+}
+
+function navigateToFavorite(fav) {
+  const route = favoritesStore.getItemRoute(fav)
+  router.push(route)
+  if (props.isMobile) {
+    emit('close')
+  }
+}
 
 // Watch route changes to expand relevant group
 watch(() => route.path, () => {
@@ -216,6 +247,7 @@ const allNavigationGroups = [
     name: 'Administration',
     icon: Cog6ToothIcon,
     children: [
+      { name: 'Passwörter', href: '/passwords', icon: KeyIcon },
       { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
       { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
       { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
@@ -441,6 +473,71 @@ function navigateTo(href) {
               :style="{ backgroundColor: projectStore.selectedProject.color }"
             ></span>
           </button>
+        </div>
+      </div>
+
+      <!-- Favorites Section -->
+      <div v-if="favoritesStore.favorites.length > 0" class="px-3 py-2 border-b border-dark-700">
+        <button
+          v-if="isMobile || !uiStore.sidebarCollapsed"
+          @click="showFavorites = !showFavorites"
+          class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase font-semibold"
+        >
+          <div class="flex items-center gap-2">
+            <StarIcon class="w-4 h-4 text-yellow-500" />
+            <span>Favoriten</span>
+          </div>
+          <ChevronDownIcon
+            class="w-3 h-3 transition-transform duration-200"
+            :class="{ 'rotate-180': showFavorites }"
+          />
+        </button>
+        <div
+          v-else-if="!isMobile"
+          class="flex justify-center py-1"
+          title="Favoriten"
+        >
+          <StarIcon class="w-5 h-5 text-yellow-500" />
+        </div>
+
+        <!-- Favorites list -->
+        <div
+          v-if="showFavorites && (isMobile || !uiStore.sidebarCollapsed)"
+          class="space-y-0.5 mt-1"
+        >
+          <button
+            v-for="fav in favoritesStore.favorites"
+            :key="fav.id"
+            @click="navigateToFavorite(fav)"
+            class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-dark-700 hover:text-white transition-colors truncate"
+          >
+            <component :is="getFavoriteIcon(fav.item_type)" class="w-4 h-4 flex-shrink-0" />
+            <span class="text-sm truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
+          </button>
+        </div>
+
+        <!-- Collapsed favorites tooltip -->
+        <div
+          v-if="!isMobile && uiStore.sidebarCollapsed"
+          class="group relative"
+        >
+          <div class="absolute left-full ml-2 top-0 hidden group-hover:block z-50">
+            <div class="bg-dark-700 border border-dark-600 rounded-lg shadow-xl py-2 min-w-48">
+              <div class="px-3 py-1 text-xs text-gray-500 font-semibold uppercase flex items-center gap-2">
+                <StarIcon class="w-3 h-3 text-yellow-500" />
+                Favoriten
+              </div>
+              <button
+                v-for="fav in favoritesStore.favorites"
+                :key="fav.id"
+                @click="navigateToFavorite(fav)"
+                class="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+              >
+                <component :is="getFavoriteIcon(fav.item_type)" class="w-4 h-4 flex-shrink-0" />
+                <span class="text-sm truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

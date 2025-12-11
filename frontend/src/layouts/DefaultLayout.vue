@@ -1,11 +1,16 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
 import QuickNotes from '@/components/QuickNotes.vue'
+import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal.vue'
 
 const uiStore = useUiStore()
+
+// Initialize keyboard shortcuts
+useKeyboardShortcuts()
 const isMobile = ref(false)
 const mobileSidebarOpen = ref(false)
 
@@ -79,6 +84,9 @@ function closeMobileSidebar() {
 
     <!-- Quick Notes Floating Widget -->
     <QuickNotes />
+
+    <!-- Keyboard Shortcuts Modal -->
+    <KeyboardShortcutsModal />
 
     <!-- Loading overlay -->
     <Transition name="fade">

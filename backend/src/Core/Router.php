@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Core\Middleware\AuthMiddleware;
+use App\Core\Middleware\ApiKeyMiddleware;
 use App\Core\Middleware\FeatureMiddleware;
 use App\Core\Middleware\PermissionMiddleware;
 use App\Modules\System\Controllers\FeaturesController;
@@ -42,6 +43,12 @@ use App\Modules\Setup\Controllers\SetupController;
 use App\Modules\News\Controllers\NewsController;
 use App\Modules\Storage\Controllers\StorageController;
 use App\Modules\Checklists\Controllers\SharedChecklistController;
+use App\Modules\ApiKeys\Controllers\ApiKeyController;
+use App\Modules\Favorites\Controllers\FavoriteController;
+use App\Modules\Passwords\Controllers\PasswordController;
+use App\Modules\Export\Controllers\ExportController;
+use App\Modules\Tags\Controllers\TagController;
+use App\Modules\Templates\Controllers\TemplateController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -502,6 +509,71 @@ class Router
                 $protected->put('/settings/system', [SettingsController::class, 'updateSystemSettings'])
                     ->add(new PermissionMiddleware('settings.system.write'));
 
+                // API Keys
+                $protected->get('/settings/api-keys', [ApiKeyController::class, 'index']);
+                $protected->post('/settings/api-keys', [ApiKeyController::class, 'create']);
+                $protected->put('/settings/api-keys/{id}', [ApiKeyController::class, 'update']);
+                $protected->post('/settings/api-keys/{id}/revoke', [ApiKeyController::class, 'revoke']);
+                $protected->delete('/settings/api-keys/{id}', [ApiKeyController::class, 'delete']);
+
+                // Favorites / Quick Access
+                $protected->get('/favorites', [FavoriteController::class, 'index']);
+                $protected->post('/favorites', [FavoriteController::class, 'create']);
+                $protected->post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+                $protected->put('/favorites/reorder', [FavoriteController::class, 'reorder']);
+                $protected->get('/favorites/{type}/{id}', [FavoriteController::class, 'check']);
+                $protected->delete('/favorites/{type}/{id}', [FavoriteController::class, 'delete']);
+
+                // Password Manager
+                $protected->get('/passwords', [PasswordController::class, 'index']);
+                $protected->post('/passwords', [PasswordController::class, 'create']);
+                $protected->get('/passwords/search', [PasswordController::class, 'search']);
+                $protected->get('/passwords/generate', [PasswordController::class, 'generatePassword']);
+                $protected->get('/passwords/categories', [PasswordController::class, 'getCategories']);
+                $protected->post('/passwords/categories', [PasswordController::class, 'createCategory']);
+                $protected->put('/passwords/categories/{id}', [PasswordController::class, 'updateCategory']);
+                $protected->delete('/passwords/categories/{id}', [PasswordController::class, 'deleteCategory']);
+                $protected->get('/passwords/{id}', [PasswordController::class, 'show']);
+                $protected->put('/passwords/{id}', [PasswordController::class, 'update']);
+                $protected->delete('/passwords/{id}', [PasswordController::class, 'delete']);
+                $protected->post('/passwords/{id}/favorite', [PasswordController::class, 'toggleFavorite']);
+                $protected->get('/passwords/{id}/totp', [PasswordController::class, 'generateTOTP']);
+
+                // Export/Import
+                $protected->get('/export/stats', [ExportController::class, 'getStats']);
+                $protected->post('/export', [ExportController::class, 'export']);
+                $protected->post('/import/validate', [ExportController::class, 'validateImport']);
+                $protected->post('/import', [ExportController::class, 'import']);
+
+                // Global Tags
+                $protected->get('/tags', [TagController::class, 'index']);
+                $protected->post('/tags', [TagController::class, 'create']);
+                $protected->get('/tags/types', [TagController::class, 'getTypes']);
+                $protected->get('/tags/search', [TagController::class, 'searchByTags']);
+                $protected->post('/tags/merge', [TagController::class, 'mergeTags']);
+                $protected->get('/tags/{id}', [TagController::class, 'show']);
+                $protected->put('/tags/{id}', [TagController::class, 'update']);
+                $protected->delete('/tags/{id}', [TagController::class, 'delete']);
+                $protected->post('/tags/{id}/tag', [TagController::class, 'tagItem']);
+                $protected->delete('/tags/{id}/{type}/{itemId}', [TagController::class, 'untagItem']);
+                // Item tags
+                $protected->get('/taggable/{type}/{itemId}', [TagController::class, 'getItemTags']);
+                $protected->put('/taggable/{type}/{itemId}', [TagController::class, 'setItemTags']);
+
+                // Templates
+                $protected->get('/templates', [TemplateController::class, 'index']);
+                $protected->post('/templates', [TemplateController::class, 'create']);
+                $protected->get('/templates/types', [TemplateController::class, 'getTypes']);
+                $protected->post('/templates/from-item', [TemplateController::class, 'createFromItem']);
+                $protected->get('/templates/categories', [TemplateController::class, 'getCategories']);
+                $protected->post('/templates/categories', [TemplateController::class, 'createCategory']);
+                $protected->put('/templates/categories/{id}', [TemplateController::class, 'updateCategory']);
+                $protected->delete('/templates/categories/{id}', [TemplateController::class, 'deleteCategory']);
+                $protected->get('/templates/{id}', [TemplateController::class, 'show']);
+                $protected->put('/templates/{id}', [TemplateController::class, 'update']);
+                $protected->delete('/templates/{id}', [TemplateController::class, 'delete']);
+                $protected->post('/templates/{id}/use', [TemplateController::class, 'useTemplate']);
+
                 // System (Owner only)
                 $protected->get('/system/info', [SystemController::class, 'getInfo'])
                     ->add(new PermissionMiddleware('settings.system.read'));
@@ -690,7 +762,7 @@ class Router
                 $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder'])
                     ->add(new FeatureMiddleware('tickets', null, 'manage'));
 
-            })->add(AuthMiddleware::class);
+            })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 
             // Public Ticket Routes (no auth required)
             $group->get('/public/ticket-categories', [TicketController::class, 'getCategories']);

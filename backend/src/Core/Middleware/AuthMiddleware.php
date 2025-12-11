@@ -19,6 +19,11 @@ class AuthMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        // Check if already authenticated via API key
+        if ($request->getAttribute('auth_type') === 'api_key') {
+            return $handler->handle($request);
+        }
+
         $token = $this->extractToken($request);
 
         if ($token === null) {

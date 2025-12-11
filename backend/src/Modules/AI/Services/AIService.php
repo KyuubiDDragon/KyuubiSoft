@@ -10,11 +10,13 @@ use Ramsey\Uuid\Uuid;
 class AIService
 {
     private string $encryptionKey;
+    private AIToolsService $toolsService;
 
     public function __construct(
         private readonly Connection $db
     ) {
         $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->toolsService = new AIToolsService();
     }
 
     /**
@@ -221,6 +223,19 @@ WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Info
 
         $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===
 
+=== VERFUEGBARE TOOLS ===
+Du hast Zugriff auf System-Tools, die du nutzen kannst:
+- get_docker_containers: Docker-Container auflisten
+- get_docker_container_logs: Container-Logs anzeigen
+- get_system_info: Systeminformationen (CPU, RAM, etc.)
+- get_running_processes: Laufende Prozesse anzeigen
+- get_disk_usage: Festplattennutzung pruefen
+- get_service_status: Dienst-Status pruefen
+- get_network_info: Netzwerkinformationen anzeigen
+
+Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen fragt, nutze die entsprechenden Tools!
+=== ENDE TOOLS ===
+
 Beantworte Fragen freundlich auf Deutsch. Wenn der Benutzer nach seinen Daten fragt, nutze die obigen Informationen.
 Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren und vieles mehr.";
 
@@ -348,33 +363,80 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
     }
 
     /**
-     * Call OpenAI API
+     * Call OpenAI API with tool support
      */
     private function callOpenAI(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        $response = $this->httpPost('https://api.openai.com/v1/chat/completions', [
-            'model' => $model,
-            'messages' => $messages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ], ['Authorization: Bearer ' . $apiKey]);
+        $tools = $this->toolsService->getToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5; // Prevent infinite loops
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'OpenAI API error');
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+                'tool_choice' => 'auto',
+            ];
+
+            $response = $this->httpPost('https://api.openai.com/v1/chat/completions', $payload, [
+                'Authorization: Bearer ' . $apiKey
+            ]);
+
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'OpenAI API error');
+            }
+
+            $totalTokens += $response['usage']['total_tokens'] ?? 0;
+            $choice = $response['choices'][0] ?? [];
+            $message = $choice['message'] ?? [];
+            $finishReason = $choice['finish_reason'] ?? '';
+
+            // If no tool calls, return the content
+            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
+                return [
+                    'content' => $message['content'] ?? '',
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            // Process tool calls
+            $messages[] = $message; // Add assistant message with tool calls
+
+            foreach ($message['tool_calls'] as $toolCall) {
+                $toolName = $toolCall['function']['name'] ?? '';
+                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
+
+                // Execute the tool
+                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                // Add tool result to messages
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
+                ];
+            }
         }
 
         return [
-            'content' => $response['choices'][0]['message']['content'] ?? '',
-            'tokens' => $response['usage']['total_tokens'] ?? 0,
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 
     /**
-     * Call Anthropic API
+     * Call Anthropic API with tool support
      */
     private function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        // Extract system message if present
+        $tools = $this->toolsService->getAnthropicToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5;
+
+        // Extract system message
         $system = null;
         $filteredMessages = [];
         foreach ($messages as $msg) {
@@ -385,54 +447,134 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
             }
         }
 
-        $payload = [
-            'model' => $model,
-            'messages' => $filteredMessages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ];
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $filteredMessages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+            ];
 
-        if ($system) {
-            $payload['system'] = $system;
-        }
+            if ($system) {
+                $payload['system'] = $system;
+            }
 
-        $response = $this->httpPost('https://api.anthropic.com/v1/messages', $payload, [
-            'x-api-key: ' . $apiKey,
-            'anthropic-version: 2023-06-01',
-        ]);
+            $response = $this->httpPost('https://api.anthropic.com/v1/messages', $payload, [
+                'x-api-key: ' . $apiKey,
+                'anthropic-version: 2023-06-01',
+            ]);
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'Anthropic API error');
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'Anthropic API error');
+            }
+
+            $totalTokens += ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
+            $stopReason = $response['stop_reason'] ?? '';
+            $content = $response['content'] ?? [];
+
+            // Check for tool use
+            $toolUseBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'tool_use');
+
+            if (empty($toolUseBlocks) || $stopReason !== 'tool_use') {
+                // Extract text content
+                $textBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'text');
+                $textContent = implode("\n", array_map(fn($block) => $block['text'] ?? '', $textBlocks));
+
+                return [
+                    'content' => $textContent,
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            // Add assistant response with tool use to messages
+            $filteredMessages[] = ['role' => 'assistant', 'content' => $content];
+
+            // Process each tool use and collect results
+            $toolResults = [];
+            foreach ($toolUseBlocks as $toolUse) {
+                $toolName = $toolUse['name'] ?? '';
+                $toolArgs = $toolUse['input'] ?? [];
+                $toolId = $toolUse['id'] ?? '';
+
+                // Execute the tool
+                $result = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                $toolResults[] = [
+                    'type' => 'tool_result',
+                    'tool_use_id' => $toolId,
+                    'content' => json_encode($result, JSON_UNESCAPED_UNICODE),
+                ];
+            }
+
+            // Add tool results as user message
+            $filteredMessages[] = ['role' => 'user', 'content' => $toolResults];
         }
 
         return [
-            'content' => $response['content'][0]['text'] ?? '',
-            'tokens' => ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0),
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 
     /**
-     * Call OpenRouter API (OpenAI compatible)
+     * Call OpenRouter API with tool support (OpenAI compatible)
      */
     private function callOpenRouter(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', [
-            'model' => $model,
-            'messages' => $messages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ], [
-            'Authorization: Bearer ' . $apiKey,
-            'HTTP-Referer: ' . ($_ENV['APP_URL'] ?? 'http://localhost'),
-        ]);
+        $tools = $this->toolsService->getToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5;
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'OpenRouter API error');
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+                'tool_choice' => 'auto',
+            ];
+
+            $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', $payload, [
+                'Authorization: Bearer ' . $apiKey,
+                'HTTP-Referer: ' . ($_ENV['APP_URL'] ?? 'http://localhost'),
+            ]);
+
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'OpenRouter API error');
+            }
+
+            $totalTokens += $response['usage']['total_tokens'] ?? 0;
+            $choice = $response['choices'][0] ?? [];
+            $message = $choice['message'] ?? [];
+            $finishReason = $choice['finish_reason'] ?? '';
+
+            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
+                return [
+                    'content' => $message['content'] ?? '',
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            $messages[] = $message;
+
+            foreach ($message['tool_calls'] as $toolCall) {
+                $toolName = $toolCall['function']['name'] ?? '';
+                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
+                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
+                ];
+            }
         }
 
         return [
-            'content' => $response['choices'][0]['message']['content'] ?? '',
-            'tokens' => $response['usage']['total_tokens'] ?? 0,
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 

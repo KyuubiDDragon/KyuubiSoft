@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAIStore } from '@/stores/ai'
+import { useProjectStore } from '@/stores/project'
 import { useRouter } from 'vue-router'
 import {
   SparklesIcon,
@@ -16,6 +17,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const aiStore = useAIStore()
+const projectStore = useProjectStore()
 const router = useRouter()
 
 const isOpen = ref(false)
@@ -54,7 +56,9 @@ async function sendMessage() {
   scrollToBottom()
 
   try {
-    const response = await aiStore.chat(userMessage, conversationId.value)
+    // Get project context if a project is selected
+    const context = projectStore.getProjectContext()
+    const response = await aiStore.chat(userMessage, conversationId.value, context)
     conversationId.value = response.conversation_id
 
     // Add assistant response
@@ -153,7 +157,12 @@ function formatTime(dateStr) {
       <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-b border-dark-600">
         <div class="flex items-center gap-2">
           <SparklesIcon class="w-5 h-5 text-purple-400" />
-          <h3 class="font-semibold text-white">AI Assistent</h3>
+          <div>
+            <h3 class="font-semibold text-white text-sm">AI Assistent</h3>
+            <p v-if="projectStore.selectedProject" class="text-xs text-purple-300">
+              {{ projectStore.selectedProject.name }}
+            </p>
+          </div>
           <span v-if="isConfigured" class="w-2 h-2 bg-green-500 rounded-full"></span>
           <span v-else class="w-2 h-2 bg-red-500 rounded-full"></span>
         </div>

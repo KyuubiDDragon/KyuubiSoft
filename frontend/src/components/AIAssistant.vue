@@ -57,7 +57,7 @@ async function sendMessage() {
 
   try {
     // Get project context if a project is selected
-    const context = projectStore.getProjectContext()
+    const context = projectStore.getProjectFilter()
     const response = await aiStore.chat(userMessage, conversationId.value, context)
     conversationId.value = response.conversation_id
 

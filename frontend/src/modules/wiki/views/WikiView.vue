@@ -403,7 +403,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-full bg-dark-900">
+  <!-- Negative margin to counteract parent padding, calc height to fill available space -->
+  <div class="flex bg-dark-900 -m-4 lg:-m-6" style="min-height: calc(100vh - 64px);">
     <!-- Sidebar -->
     <aside
       class="bg-dark-800 border-r border-dark-600 flex flex-col transition-all duration-200"

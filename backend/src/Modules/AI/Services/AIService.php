@@ -10,11 +10,13 @@ use Ramsey\Uuid\Uuid;
 class AIService
 {
     private string $encryptionKey;
+    private AIToolsService $toolsService;
 
     public function __construct(
         private readonly Connection $db
     ) {
         $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->toolsService = new AIToolsService();
     }
 
     /**
@@ -124,6 +126,12 @@ class AIService
         // Get conversation history
         $history = $this->getConversationHistory($conversationId);
 
+        // Build system prompt with user context (only for new conversations or first message)
+        if (count($history) <= 1) {
+            $systemPrompt = $this->buildSystemPrompt($userId);
+            array_unshift($history, ['role' => 'system', 'content' => $systemPrompt]);
+        }
+
         // Call AI provider
         $response = $this->callProvider(
             $settings['provider'],
@@ -145,6 +153,179 @@ class AIService
             'conversation_id' => $conversationId,
             'message' => $response['content'],
             'tokens_used' => $response['tokens'] ?? 0,
+        ];
+    }
+
+    /**
+     * Build system prompt with user context
+     */
+    private function buildSystemPrompt(string $userId): string
+    {
+        $userName = $this->getUserName($userId);
+        $userContext = $this->getUserContext($userId);
+
+        $systemPrompt = "Du bist ein hilfreicher AI-Assistent in KyuubiSoft, einer Produktivitäts- und Projektmanagement-Anwendung.
+Du hilfst dem Benutzer '{$userName}' bei der Verwaltung seiner Projekte, Aufgaben, Wiki-Seiten und mehr.
+
+WICHTIG: Du hast Zugriff auf die aktuellen Daten des Benutzers. Nutze diese Informationen, um präzise und hilfreiche Antworten zu geben.
+
+=== AKTUELLE BENUTZERDATEN ===
+
+";
+
+        // Add projects
+        $systemPrompt .= "PROJEKTE ({$userContext['project_count']}):\n";
+        if (!empty($userContext['projects'])) {
+            foreach ($userContext['projects'] as $project) {
+                $status = $project['status'] === 'active' ? '[Aktiv]' : '[Inaktiv]';
+                $systemPrompt .= "  {$status} {$project['name']}";
+                if (!empty($project['description'])) {
+                    $systemPrompt .= " - " . substr($project['description'], 0, 50);
+                }
+                $systemPrompt .= "\n";
+            }
+        } else {
+            $systemPrompt .= "  Keine Projekte vorhanden\n";
+        }
+
+        // Add tasks summary
+        $systemPrompt .= "\nAUFGABEN:\n";
+        $systemPrompt .= "  Offen: {$userContext['tasks']['open']}\n";
+        $systemPrompt .= "  In Bearbeitung: {$userContext['tasks']['in_progress']}\n";
+        $systemPrompt .= "  Erledigt: {$userContext['tasks']['completed']}\n";
+        $systemPrompt .= "  Ueberfaellig: {$userContext['tasks']['overdue']}\n";
+
+        // Add upcoming tasks
+        if (!empty($userContext['upcoming_tasks'])) {
+            $systemPrompt .= "\nANSTEHENDE AUFGABEN (naechste 7 Tage):\n";
+            foreach ($userContext['upcoming_tasks'] as $task) {
+                $dueDate = $task['due_date'] ? date('d.m.Y', strtotime($task['due_date'])) : '';
+                $systemPrompt .= "  - {$task['title']} (Faellig: {$dueDate})\n";
+            }
+        }
+
+        // Add inbox items
+        $systemPrompt .= "\nINBOX: {$userContext['inbox_count']} Eintraege\n";
+
+        // Add wiki pages
+        $systemPrompt .= "\nWIKI-SEITEN: {$userContext['wiki_count']} Seiten\n";
+        if (!empty($userContext['recent_wiki_pages'])) {
+            $systemPrompt .= "  Zuletzt bearbeitet:\n";
+            foreach ($userContext['recent_wiki_pages'] as $page) {
+                $systemPrompt .= "    - {$page['title']}\n";
+            }
+        }
+
+        // Add kanban boards
+        if ($userContext['kanban_count'] > 0) {
+            $systemPrompt .= "\nKANBAN-BOARDS: {$userContext['kanban_count']} Boards\n";
+        }
+
+        $systemPrompt .= "\n=== ENDE BENUTZERDATEN ===
+
+=== VERFUEGBARE TOOLS ===
+Du hast Zugriff auf System-Tools, die du nutzen kannst:
+- get_docker_containers: Docker-Container auflisten
+- get_docker_container_logs: Container-Logs anzeigen
+- get_system_info: Systeminformationen (CPU, RAM, etc.)
+- get_running_processes: Laufende Prozesse anzeigen
+- get_disk_usage: Festplattennutzung pruefen
+- get_service_status: Dienst-Status pruefen
+- get_network_info: Netzwerkinformationen anzeigen
+
+Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen fragt, nutze die entsprechenden Tools!
+=== ENDE TOOLS ===
+
+Beantworte Fragen freundlich auf Deutsch. Wenn der Benutzer nach seinen Daten fragt, nutze die obigen Informationen.
+Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren und vieles mehr.";
+
+        return $systemPrompt;
+    }
+
+    /**
+     * Get user name
+     */
+    private function getUserName(string $userId): string
+    {
+        $user = $this->db->fetchAssociative(
+            'SELECT name, email FROM users WHERE id = ?',
+            [$userId]
+        );
+        return $user['name'] ?? $user['email'] ?? 'Benutzer';
+    }
+
+    /**
+     * Get user context data
+     */
+    private function getUserContext(string $userId): array
+    {
+        // Get projects
+        $projects = $this->db->fetchAllAssociative(
+            'SELECT id, name, description, status, color FROM projects WHERE user_id = ? AND is_archived = 0 ORDER BY updated_at DESC LIMIT 10',
+            [$userId]
+        );
+
+        // Get task counts
+        $taskCounts = [
+            'open' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'open'",
+                [$userId]
+            ),
+            'in_progress' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'in_progress'",
+                [$userId]
+            ),
+            'completed' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'completed'",
+                [$userId]
+            ),
+            'overdue' => (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status != 'completed' AND due_date < CURDATE()",
+                [$userId]
+            ),
+        ];
+
+        // Get upcoming tasks (next 7 days)
+        $upcomingTasks = $this->db->fetchAllAssociative(
+            "SELECT title, due_date, priority FROM tasks
+             WHERE user_id = ? AND status != 'completed' AND due_date IS NOT NULL
+             AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+             ORDER BY due_date ASC LIMIT 5",
+            [$userId]
+        );
+
+        // Get inbox count
+        $inboxCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM inbox_items WHERE user_id = ? AND status = ?',
+            [$userId, 'pending']
+        );
+
+        // Get wiki page count and recent pages
+        $wikiCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM wiki_pages WHERE user_id = ?',
+            [$userId]
+        );
+
+        $recentWikiPages = $this->db->fetchAllAssociative(
+            'SELECT title FROM wiki_pages WHERE user_id = ? ORDER BY updated_at DESC LIMIT 5',
+            [$userId]
+        );
+
+        // Get kanban board count
+        $kanbanCount = (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM kanban_boards WHERE user_id = ?',
+            [$userId]
+        );
+
+        return [
+            'projects' => $projects,
+            'project_count' => count($projects),
+            'tasks' => $taskCounts,
+            'upcoming_tasks' => $upcomingTasks,
+            'inbox_count' => $inboxCount,
+            'wiki_count' => $wikiCount,
+            'recent_wiki_pages' => $recentWikiPages,
+            'kanban_count' => $kanbanCount,
         ];
     }
 
@@ -182,33 +363,80 @@ class AIService
     }
 
     /**
-     * Call OpenAI API
+     * Call OpenAI API with tool support
      */
     private function callOpenAI(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        $response = $this->httpPost('https://api.openai.com/v1/chat/completions', [
-            'model' => $model,
-            'messages' => $messages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ], ['Authorization: Bearer ' . $apiKey]);
+        $tools = $this->toolsService->getToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5; // Prevent infinite loops
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'OpenAI API error');
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+                'tool_choice' => 'auto',
+            ];
+
+            $response = $this->httpPost('https://api.openai.com/v1/chat/completions', $payload, [
+                'Authorization: Bearer ' . $apiKey
+            ]);
+
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'OpenAI API error');
+            }
+
+            $totalTokens += $response['usage']['total_tokens'] ?? 0;
+            $choice = $response['choices'][0] ?? [];
+            $message = $choice['message'] ?? [];
+            $finishReason = $choice['finish_reason'] ?? '';
+
+            // If no tool calls, return the content
+            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
+                return [
+                    'content' => $message['content'] ?? '',
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            // Process tool calls
+            $messages[] = $message; // Add assistant message with tool calls
+
+            foreach ($message['tool_calls'] as $toolCall) {
+                $toolName = $toolCall['function']['name'] ?? '';
+                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
+
+                // Execute the tool
+                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                // Add tool result to messages
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
+                ];
+            }
         }
 
         return [
-            'content' => $response['choices'][0]['message']['content'] ?? '',
-            'tokens' => $response['usage']['total_tokens'] ?? 0,
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 
     /**
-     * Call Anthropic API
+     * Call Anthropic API with tool support
      */
     private function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        // Extract system message if present
+        $tools = $this->toolsService->getAnthropicToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5;
+
+        // Extract system message
         $system = null;
         $filteredMessages = [];
         foreach ($messages as $msg) {
@@ -219,54 +447,134 @@ class AIService
             }
         }
 
-        $payload = [
-            'model' => $model,
-            'messages' => $filteredMessages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ];
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $filteredMessages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+            ];
 
-        if ($system) {
-            $payload['system'] = $system;
-        }
+            if ($system) {
+                $payload['system'] = $system;
+            }
 
-        $response = $this->httpPost('https://api.anthropic.com/v1/messages', $payload, [
-            'x-api-key: ' . $apiKey,
-            'anthropic-version: 2023-06-01',
-        ]);
+            $response = $this->httpPost('https://api.anthropic.com/v1/messages', $payload, [
+                'x-api-key: ' . $apiKey,
+                'anthropic-version: 2023-06-01',
+            ]);
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'Anthropic API error');
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'Anthropic API error');
+            }
+
+            $totalTokens += ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
+            $stopReason = $response['stop_reason'] ?? '';
+            $content = $response['content'] ?? [];
+
+            // Check for tool use
+            $toolUseBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'tool_use');
+
+            if (empty($toolUseBlocks) || $stopReason !== 'tool_use') {
+                // Extract text content
+                $textBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'text');
+                $textContent = implode("\n", array_map(fn($block) => $block['text'] ?? '', $textBlocks));
+
+                return [
+                    'content' => $textContent,
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            // Add assistant response with tool use to messages
+            $filteredMessages[] = ['role' => 'assistant', 'content' => $content];
+
+            // Process each tool use and collect results
+            $toolResults = [];
+            foreach ($toolUseBlocks as $toolUse) {
+                $toolName = $toolUse['name'] ?? '';
+                $toolArgs = $toolUse['input'] ?? [];
+                $toolId = $toolUse['id'] ?? '';
+
+                // Execute the tool
+                $result = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                $toolResults[] = [
+                    'type' => 'tool_result',
+                    'tool_use_id' => $toolId,
+                    'content' => json_encode($result, JSON_UNESCAPED_UNICODE),
+                ];
+            }
+
+            // Add tool results as user message
+            $filteredMessages[] = ['role' => 'user', 'content' => $toolResults];
         }
 
         return [
-            'content' => $response['content'][0]['text'] ?? '',
-            'tokens' => ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0),
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 
     /**
-     * Call OpenRouter API (OpenAI compatible)
+     * Call OpenRouter API with tool support (OpenAI compatible)
      */
     private function callOpenRouter(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
     {
-        $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', [
-            'model' => $model,
-            'messages' => $messages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ], [
-            'Authorization: Bearer ' . $apiKey,
-            'HTTP-Referer: ' . ($_ENV['APP_URL'] ?? 'http://localhost'),
-        ]);
+        $tools = $this->toolsService->getToolDefinitions();
+        $totalTokens = 0;
+        $maxIterations = 5;
 
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'OpenRouter API error');
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
+                'tools' => $tools,
+                'tool_choice' => 'auto',
+            ];
+
+            $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', $payload, [
+                'Authorization: Bearer ' . $apiKey,
+                'HTTP-Referer: ' . ($_ENV['APP_URL'] ?? 'http://localhost'),
+            ]);
+
+            if (isset($response['error'])) {
+                throw new \RuntimeException($response['error']['message'] ?? 'OpenRouter API error');
+            }
+
+            $totalTokens += $response['usage']['total_tokens'] ?? 0;
+            $choice = $response['choices'][0] ?? [];
+            $message = $choice['message'] ?? [];
+            $finishReason = $choice['finish_reason'] ?? '';
+
+            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
+                return [
+                    'content' => $message['content'] ?? '',
+                    'tokens' => $totalTokens,
+                ];
+            }
+
+            $messages[] = $message;
+
+            foreach ($message['tool_calls'] as $toolCall) {
+                $toolName = $toolCall['function']['name'] ?? '';
+                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
+                $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
+
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
+                ];
+            }
         }
 
         return [
-            'content' => $response['choices'][0]['message']['content'] ?? '',
-            'tokens' => $response['usage']['total_tokens'] ?? 0,
+            'content' => 'Maximale Tool-Iterationen erreicht.',
+            'tokens' => $totalTokens,
         ];
     }
 

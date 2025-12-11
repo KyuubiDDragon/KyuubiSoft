@@ -307,6 +307,24 @@ watch(() => aiStore.settings, (settings) => {
   }
 }, { immediate: true })
 
+// Auto-select first model when provider changes
+watch(() => aiForm.provider, (newProvider) => {
+  const provider = aiStore.providers.find(p => p.value === newProvider)
+  if (provider && provider.models.length > 0) {
+    // Check if current model is valid for this provider
+    const validModel = provider.models.find(m => m.id === aiForm.model)
+    if (!validModel) {
+      // Set first model as default
+      aiForm.model = provider.models[0].id
+    }
+  } else if (newProvider === 'custom') {
+    // Keep custom model or clear it
+    if (!aiForm.model) {
+      aiForm.model = ''
+    }
+  }
+})
+
 async function saveAiSettings() {
   isSavingAi.value = true
   try {
@@ -964,8 +982,8 @@ async function disable2FA() {
               <div>
                 <label class="label">Model</label>
                 <select v-model="aiForm.model" class="input">
-                  <option v-for="model in aiStore.providers.find(p => p.value === aiForm.provider)?.models || []" :key="model" :value="model">
-                    {{ model }}
+                  <option v-for="model in aiStore.providers.find(p => p.value === aiForm.provider)?.models || []" :key="model.id" :value="model.id">
+                    {{ model.name }}
                   </option>
                   <option v-if="aiForm.provider === 'custom'" value="">Benutzerdefiniert</option>
                 </select>
@@ -976,6 +994,7 @@ async function disable2FA() {
                   class="input mt-2"
                   placeholder="Model-Name (z.B. gpt-4, llama3.2)"
                 />
+                <p class="text-xs text-gray-500 mt-1">Model-ID: {{ aiForm.model }}</p>
               </div>
 
               <!-- API Base URL (for Ollama/Custom) -->

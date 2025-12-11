@@ -291,6 +291,8 @@ const aiForm = reactive({
   api_base_url: '',
   max_tokens: 2000,
   temperature: 0.7,
+  context_enabled: true,
+  tools_enabled: true,
 })
 const showAiApiKey = ref(false)
 const isSavingAi = ref(false)
@@ -303,6 +305,8 @@ watch(() => aiStore.settings, (settings) => {
     aiForm.api_base_url = settings.api_base_url || ''
     aiForm.max_tokens = settings.max_tokens || 2000
     aiForm.temperature = settings.temperature || 0.7
+    aiForm.context_enabled = settings.context_enabled !== 0 && settings.context_enabled !== false
+    aiForm.tools_enabled = settings.tools_enabled !== 0 && settings.tools_enabled !== false
     // Don't populate api_key - it's not returned from server
   }
 }, { immediate: true })
@@ -335,6 +339,8 @@ async function saveAiSettings() {
       api_base_url: aiForm.api_base_url || undefined,
       max_tokens: aiForm.max_tokens,
       temperature: aiForm.temperature,
+      context_enabled: aiForm.context_enabled,
+      tools_enabled: aiForm.tools_enabled,
     })
     aiForm.api_key = '' // Clear after save
     uiStore.showSuccess('AI-Einstellungen gespeichert!')
@@ -1030,6 +1036,35 @@ async function disable2FA() {
                     max="2"
                     step="0.1"
                   />
+                </div>
+              </div>
+
+              <!-- Context & Tools Settings -->
+              <div class="border-t border-dark-600 pt-4 mt-4">
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">Kontext & Tools</h3>
+                <div class="space-y-3">
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input
+                      v-model="aiForm.context_enabled"
+                      type="checkbox"
+                      class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500"
+                    />
+                    <div>
+                      <span class="text-white">Benutzerkontext einbeziehen</span>
+                      <p class="text-xs text-gray-500">Die AI kennt deine Projekte, Aufgaben, Wiki-Seiten etc.</p>
+                    </div>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input
+                      v-model="aiForm.tools_enabled"
+                      type="checkbox"
+                      class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500"
+                    />
+                    <div>
+                      <span class="text-white">System-Tools aktivieren</span>
+                      <p class="text-xs text-gray-500">Docker, Server-Info, Prozesse, etc. (verbraucht mehr Tokens)</p>
+                    </div>
+                  </label>
                 </div>
               </div>
 

@@ -25,6 +25,8 @@ use App\Modules\Tags\Services\TagService;
 use App\Modules\Tags\Controllers\TagController;
 use App\Modules\Templates\Services\TemplateService;
 use App\Modules\Templates\Controllers\TemplateController;
+use App\Modules\RecurringTasks\Services\RecurringTaskService;
+use App\Modules\RecurringTasks\Controllers\RecurringTaskController;
 use App\Core\Middleware\ApiKeyMiddleware;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
@@ -253,5 +255,42 @@ return [
     // Template Controller
     TemplateController::class => function (ContainerInterface $c): TemplateController {
         return new TemplateController($c->get(TemplateService::class));
+    },
+
+    // Recurring Task Service
+    RecurringTaskService::class => function (ContainerInterface $c): RecurringTaskService {
+        return new RecurringTaskService($c->get(DBALConnection::class));
+    },
+
+    // Recurring Task Controller
+    RecurringTaskController::class => function (ContainerInterface $c): RecurringTaskController {
+        return new RecurringTaskController($c->get(RecurringTaskService::class));
+    },
+
+    // File Version Service
+    \App\Modules\Storage\Services\FileVersionService::class => function (ContainerInterface $c): \App\Modules\Storage\Services\FileVersionService {
+        return new \App\Modules\Storage\Services\FileVersionService($c->get(DBALConnection::class));
+    },
+
+    // File Version Controller
+    \App\Modules\Storage\Controllers\FileVersionController::class => function (ContainerInterface $c): \App\Modules\Storage\Controllers\FileVersionController {
+        return new \App\Modules\Storage\Controllers\FileVersionController(
+            $c->get(\App\Modules\Storage\Services\FileVersionService::class)
+        );
+    },
+
+    // Notification Service
+    \App\Core\Services\NotificationService::class => function (ContainerInterface $c): \App\Core\Services\NotificationService {
+        return new \App\Core\Services\NotificationService(
+            $c->get(DBALConnection::class),
+            $c->get(LoggerInterface::class)
+        );
+    },
+
+    // Notification Controller
+    \App\Modules\Notifications\Controllers\NotificationController::class => function (ContainerInterface $c): \App\Modules\Notifications\Controllers\NotificationController {
+        return new \App\Modules\Notifications\Controllers\NotificationController(
+            $c->get(\App\Core\Services\NotificationService::class)
+        );
     },
 ];

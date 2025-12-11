@@ -43,6 +43,7 @@ import {
   StarIcon,
   ClipboardDocumentCheckIcon,
   KeyIcon,
+  ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -185,6 +186,7 @@ const allNavigationGroups = [
       { name: 'Projekte', href: '/projects', icon: FolderIcon },
       { name: 'Kalender', href: '/calendar', icon: CalendarIcon },
       { name: 'Zeiterfassung', href: '/time', icon: ClockIcon },
+      { name: 'Wiederkehrend', href: '/recurring-tasks', icon: ArrowPathIcon },
     ],
   },
 

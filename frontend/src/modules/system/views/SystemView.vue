@@ -19,7 +19,28 @@ const metrics = ref({
 })
 
 const auditLogs = ref([])
-const auditPagination = ref({ page: 1, perPage: 10, total: 0 })
+const auditPagination = ref({ page: 1, perPage: 20, total: 0 })
+const auditFilters = ref({ action: '', user_id: '', entity_type: '' })
+const expandedLogId = ref(null)
+const availableEntityTypes = ref([
+  { value: '', label: 'Alle Entitäten' },
+  { value: 'user', label: 'Benutzer' },
+  { value: 'list', label: 'Listen' },
+  { value: 'document', label: 'Dokumente' },
+  { value: 'snippet', label: 'Snippets' },
+  { value: 'connection', label: 'Verbindungen' },
+  { value: 'kanban', label: 'Kanban' },
+  { value: 'project', label: 'Projekte' },
+  { value: 'invoice', label: 'Rechnungen' },
+  { value: 'checklist', label: 'Checklisten' },
+  { value: 'password', label: 'Passwörter' },
+  { value: 'recurring_task', label: 'Wiederkehrende Aufgaben' },
+  { value: 'template', label: 'Templates' },
+  { value: 'tag', label: 'Tags' },
+  { value: 'api_key', label: 'API-Keys' },
+  { value: 'cache', label: 'Cache' },
+  { value: 'session', label: 'Sessions' },
+])
 
 const isLoading = ref(true)
 const isLoadingMetrics = ref(true)
@@ -52,23 +73,105 @@ function formatDate(dateStr) {
 function getActionLabel(action) {
   if (!action) return '-'
   const labels = {
+    // Auth
     'user.login': 'Anmeldung',
     'user.logout': 'Abmeldung',
     'user.register': 'Registrierung',
     'user.update': 'Benutzer aktualisiert',
     'user.delete': 'Benutzer gelöscht',
+    'user.password_change': 'Passwort geändert',
+    '2fa.enabled': '2FA aktiviert',
+    '2fa.disabled': '2FA deaktiviert',
+    // Lists
     'list.create': 'Liste erstellt',
     'list.update': 'Liste aktualisiert',
     'list.delete': 'Liste gelöscht',
+    // Documents
     'document.create': 'Dokument erstellt',
     'document.update': 'Dokument aktualisiert',
     'document.delete': 'Dokument gelöscht',
+    'document.share': 'Dokument geteilt',
+    // Snippets
+    'snippet.create': 'Snippet erstellt',
+    'snippet.update': 'Snippet aktualisiert',
+    'snippet.delete': 'Snippet gelöscht',
+    // Connections
+    'connection.create': 'Verbindung erstellt',
+    'connection.update': 'Verbindung aktualisiert',
+    'connection.delete': 'Verbindung gelöscht',
+    // Kanban
+    'kanban.create': 'Kanban-Board erstellt',
+    'kanban.update': 'Kanban-Board aktualisiert',
+    'kanban.delete': 'Kanban-Board gelöscht',
+    // Projects
+    'project.create': 'Projekt erstellt',
+    'project.update': 'Projekt aktualisiert',
+    'project.delete': 'Projekt gelöscht',
+    // Invoices
+    'invoice.create': 'Rechnung erstellt',
+    'invoice.update': 'Rechnung aktualisiert',
+    'invoice.delete': 'Rechnung gelöscht',
+    // Checklists
+    'checklist.create': 'Checkliste erstellt',
+    'checklist.update': 'Checkliste aktualisiert',
+    'checklist.delete': 'Checkliste gelöscht',
+    // Passwords
+    'password.create': 'Passwort erstellt',
+    'password.update': 'Passwort aktualisiert',
+    'password.delete': 'Passwort gelöscht',
+    'password.view': 'Passwort angezeigt',
+    // Recurring Tasks
+    'recurring_task.create': 'Wiederkehrende Aufgabe erstellt',
+    'recurring_task.update': 'Wiederkehrende Aufgabe aktualisiert',
+    'recurring_task.delete': 'Wiederkehrende Aufgabe gelöscht',
+    'recurring_task.process': 'Wiederkehrende Aufgabe ausgeführt',
+    // Templates
+    'template.create': 'Template erstellt',
+    'template.update': 'Template aktualisiert',
+    'template.delete': 'Template gelöscht',
+    'template.use': 'Template verwendet',
+    // Tags
+    'tag.create': 'Tag erstellt',
+    'tag.update': 'Tag aktualisiert',
+    'tag.delete': 'Tag gelöscht',
+    'tag.merge': 'Tags zusammengeführt',
+    // API Keys
+    'api_key.create': 'API-Key erstellt',
+    'api_key.revoke': 'API-Key widerrufen',
+    'api_key.delete': 'API-Key gelöscht',
+    // Export/Import
+    'export.create': 'Export durchgeführt',
+    'import.create': 'Import durchgeführt',
+    // System
     'cache.clear': 'Cache geleert',
     'sessions.terminate_all': 'Sessions beendet',
-    '2fa.enabled': '2FA aktiviert',
-    '2fa.disabled': '2FA deaktiviert',
+    'system.settings_update': 'Systemeinstellungen geändert',
   }
   return labels[action] || action
+}
+
+function toggleLogDetails(logId) {
+  expandedLogId.value = expandedLogId.value === logId ? null : logId
+}
+
+function parseJsonSafe(str) {
+  if (!str) return null
+  try {
+    return typeof str === 'string' ? JSON.parse(str) : str
+  } catch {
+    return null
+  }
+}
+
+function applyFilters() {
+  auditPagination.value.page = 1
+  loadAuditLogs()
+}
+
+function resetFilters() {
+  auditFilters.value = { action: '', user_id: '', entity_type: '' }
+  auditPagination.value.page = 1
+  loadAuditLogs()
 }
 
 function getActionColor(action) {
@@ -109,12 +212,15 @@ async function loadMetrics() {
 async function loadAuditLogs() {
   isLoadingLogs.value = true
   try {
-    const response = await api.get('/api/v1/system/audit-logs', {
-      params: {
-        page: auditPagination.value.page,
-        per_page: auditPagination.value.perPage,
-      },
-    })
+    const params = {
+      page: auditPagination.value.page,
+      per_page: auditPagination.value.perPage,
+    }
+    if (auditFilters.value.action) params.action = auditFilters.value.action
+    if (auditFilters.value.user_id) params.user_id = auditFilters.value.user_id
+    if (auditFilters.value.entity_type) params.entity_type = auditFilters.value.entity_type
+
+    const response = await api.get('/api/v1/system/audit-logs', { params })
     if (response.data.data) {
       auditLogs.value = response.data.data
       auditPagination.value.total = response.data.pagination?.total || 0
@@ -339,6 +445,44 @@ onUnmounted(() => {
         <span class="text-sm text-gray-400">{{ auditPagination.total }} Einträge</span>
       </div>
 
+      <!-- Filters -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-dark-700/50 rounded-lg">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Entitätstyp</label>
+          <select
+            v-model="auditFilters.entity_type"
+            class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+          >
+            <option v-for="type in availableEntityTypes" :key="type.value" :value="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Aktion enthält</label>
+          <input
+            v-model="auditFilters.action"
+            type="text"
+            placeholder="z.B. create, delete"
+            class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+          />
+        </div>
+        <div class="flex items-end gap-2">
+          <button
+            @click="applyFilters"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
+          >
+            Filtern
+          </button>
+          <button
+            @click="resetFilters"
+            class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors text-sm"
+          >
+            Zurücksetzen
+          </button>
+        </div>
+      </div>
+
       <div v-if="isLoadingLogs" class="text-gray-400 py-4">Lade Audit Logs...</div>
 
       <div v-else-if="auditLogs.length === 0" class="text-gray-400 py-4">Keine Audit Logs vorhanden</div>
@@ -348,6 +492,7 @@ onUnmounted(() => {
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-gray-400 border-b border-dark-700">
+                <th class="pb-3 font-medium w-8"></th>
                 <th class="pb-3 font-medium">Zeitpunkt</th>
                 <th class="pb-3 font-medium">Benutzer</th>
                 <th class="pb-3 font-medium">Aktion</th>
@@ -356,18 +501,61 @@ onUnmounted(() => {
               </tr>
             </thead>
             <tbody class="divide-y divide-dark-700">
-              <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-dark-700/50">
-                <td class="py-3 text-gray-300">{{ formatDate(log.created_at) }}</td>
-                <td class="py-3 text-gray-300">{{ log.user_name || log.user_email || 'System' }}</td>
-                <td class="py-3">
-                  <span :class="getActionColor(log.action)">{{ getActionLabel(log.action) }}</span>
-                </td>
-                <td class="py-3 text-gray-400">
-                  {{ log.entity_type }}
-                  <span v-if="log.entity_id" class="text-gray-500 text-xs ml-1">({{ log.entity_id.substring(0, 8) }}...)</span>
-                </td>
-                <td class="py-3 text-gray-500 text-xs font-mono">{{ log.ip_address || '-' }}</td>
-              </tr>
+              <template v-for="log in auditLogs" :key="log.id">
+                <tr
+                  @click="toggleLogDetails(log.id)"
+                  class="hover:bg-dark-700/50 cursor-pointer"
+                  :class="{ 'bg-dark-700/30': expandedLogId === log.id }"
+                >
+                  <td class="py-3 text-gray-400">
+                    <svg
+                      class="w-4 h-4 transition-transform"
+                      :class="{ 'rotate-90': expandedLogId === log.id }"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </td>
+                  <td class="py-3 text-gray-300">{{ formatDate(log.created_at) }}</td>
+                  <td class="py-3 text-gray-300">{{ log.user_name || log.user_email || 'System' }}</td>
+                  <td class="py-3">
+                    <span :class="getActionColor(log.action)">{{ getActionLabel(log.action) }}</span>
+                  </td>
+                  <td class="py-3 text-gray-400">
+                    {{ log.entity_type }}
+                    <span v-if="log.entity_id" class="text-gray-500 text-xs ml-1">({{ log.entity_id.substring(0, 8) }}...)</span>
+                  </td>
+                  <td class="py-3 text-gray-500 text-xs font-mono">{{ log.ip_address || '-' }}</td>
+                </tr>
+                <!-- Expanded Details Row -->
+                <tr v-if="expandedLogId === log.id">
+                  <td colspan="6" class="bg-dark-700/20 p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <!-- General Info -->
+                      <div class="space-y-2">
+                        <h4 class="text-sm font-medium text-white">Details</h4>
+                        <div class="text-xs space-y-1">
+                          <p><span class="text-gray-500">ID:</span> <span class="text-gray-300 font-mono">{{ log.id }}</span></p>
+                          <p><span class="text-gray-500">Entität ID:</span> <span class="text-gray-300 font-mono">{{ log.entity_id || '-' }}</span></p>
+                          <p><span class="text-gray-500">User Agent:</span> <span class="text-gray-300">{{ log.user_agent || '-' }}</span></p>
+                        </div>
+                      </div>
+                      <!-- Old Values -->
+                      <div v-if="parseJsonSafe(log.old_values)" class="space-y-2">
+                        <h4 class="text-sm font-medium text-red-400">Vorherige Werte</h4>
+                        <pre class="text-xs bg-dark-800 rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.old_values), null, 2) }}</pre>
+                      </div>
+                      <!-- New Values -->
+                      <div v-if="parseJsonSafe(log.new_values)" class="space-y-2">
+                        <h4 class="text-sm font-medium text-green-400">Neue Werte</h4>
+                        <pre class="text-xs bg-dark-800 rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.new_values), null, 2) }}</pre>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>

@@ -49,6 +49,7 @@ use App\Modules\Passwords\Controllers\PasswordController;
 use App\Modules\Export\Controllers\ExportController;
 use App\Modules\Tags\Controllers\TagController;
 use App\Modules\Templates\Controllers\TemplateController;
+use App\Modules\RecurringTasks\Controllers\RecurringTaskController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -481,6 +482,18 @@ class Router
                 $protected->put('/storage/{id}/share', [StorageController::class, 'updateShare']);
                 $protected->delete('/storage/{id}/share', [StorageController::class, 'deleteShare']);
 
+                // File Versioning
+                $protected->get('/storage/versions/settings', [\App\Modules\Storage\Controllers\FileVersionController::class, 'getSettings']);
+                $protected->put('/storage/versions/settings', [\App\Modules\Storage\Controllers\FileVersionController::class, 'updateSettings']);
+                $protected->get('/storage/versions/stats', [\App\Modules\Storage\Controllers\FileVersionController::class, 'stats']);
+                $protected->get('/storage/versions/compare', [\App\Modules\Storage\Controllers\FileVersionController::class, 'compare']);
+                $protected->post('/storage/versions/cleanup', [\App\Modules\Storage\Controllers\FileVersionController::class, 'cleanup']);
+                $protected->get('/storage/{fileId}/versions', [\App\Modules\Storage\Controllers\FileVersionController::class, 'index']);
+                $protected->get('/storage/versions/{id}', [\App\Modules\Storage\Controllers\FileVersionController::class, 'show']);
+                $protected->post('/storage/versions/{id}/restore', [\App\Modules\Storage\Controllers\FileVersionController::class, 'restore']);
+                $protected->delete('/storage/versions/{id}', [\App\Modules\Storage\Controllers\FileVersionController::class, 'delete']);
+                $protected->get('/storage/versions/{id}/download', [\App\Modules\Storage\Controllers\FileVersionController::class, 'download']);
+
                 // Shared Checklists (Test Lists)
                 $protected->get('/checklists', [SharedChecklistController::class, 'index']);
                 $protected->post('/checklists', [SharedChecklistController::class, 'create']);
@@ -573,6 +586,32 @@ class Router
                 $protected->put('/templates/{id}', [TemplateController::class, 'update']);
                 $protected->delete('/templates/{id}', [TemplateController::class, 'delete']);
                 $protected->post('/templates/{id}/use', [TemplateController::class, 'useTemplate']);
+
+                // Recurring Tasks
+                $protected->get('/recurring-tasks', [RecurringTaskController::class, 'index']);
+                $protected->post('/recurring-tasks', [RecurringTaskController::class, 'create']);
+                $protected->get('/recurring-tasks/upcoming', [RecurringTaskController::class, 'upcoming']);
+                $protected->post('/recurring-tasks/process-due', [RecurringTaskController::class, 'processDue']);
+                $protected->get('/recurring-tasks/{id}', [RecurringTaskController::class, 'show']);
+                $protected->put('/recurring-tasks/{id}', [RecurringTaskController::class, 'update']);
+                $protected->delete('/recurring-tasks/{id}', [RecurringTaskController::class, 'delete']);
+                $protected->post('/recurring-tasks/{id}/toggle', [RecurringTaskController::class, 'toggle']);
+                $protected->post('/recurring-tasks/{id}/skip', [RecurringTaskController::class, 'skip']);
+                $protected->post('/recurring-tasks/{id}/process', [RecurringTaskController::class, 'process']);
+                $protected->get('/recurring-tasks/{id}/instances', [RecurringTaskController::class, 'instances']);
+
+                // Notifications
+                $protected->get('/notifications', [\App\Modules\Notifications\Controllers\NotificationController::class, 'index']);
+                $protected->get('/notifications/unread-count', [\App\Modules\Notifications\Controllers\NotificationController::class, 'unreadCount']);
+                $protected->post('/notifications/mark-all-read', [\App\Modules\Notifications\Controllers\NotificationController::class, 'markAllRead']);
+                $protected->get('/notifications/channels', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getChannels']);
+                $protected->put('/notifications/channels/{type}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'updateChannel']);
+                $protected->post('/notifications/channels/{type}/test', [\App\Modules\Notifications\Controllers\NotificationController::class, 'testChannel']);
+                $protected->get('/notifications/preferences', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getPreferences']);
+                $protected->put('/notifications/preferences/{type}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'updatePreference']);
+                $protected->get('/notifications/types', [\App\Modules\Notifications\Controllers\NotificationController::class, 'getTypes']);
+                $protected->post('/notifications/{id}/read', [\App\Modules\Notifications\Controllers\NotificationController::class, 'markRead']);
+                $protected->delete('/notifications/{id}', [\App\Modules\Notifications\Controllers\NotificationController::class, 'delete']);
 
                 // System (Owner only)
                 $protected->get('/system/info', [SystemController::class, 'getInfo'])

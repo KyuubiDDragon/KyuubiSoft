@@ -248,10 +248,10 @@ Du kannst auch bei allgemeinen Fragen helfen, Texte schreiben, Code erklaeren un
     private function getUserName(string $userId): string
     {
         $user = $this->db->fetchAssociative(
-            'SELECT name, email FROM users WHERE id = ?',
+            'SELECT username, email FROM users WHERE id = ?',
             [$userId]
         );
-        return $user['name'] ?? $user['email'] ?? 'Benutzer';
+        return $user['username'] ?? $user['email'] ?? 'Benutzer';
     }
 
     /**

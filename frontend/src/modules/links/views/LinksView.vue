@@ -74,7 +74,7 @@ async function fetchData() {
       api.get('/api/v1/links'),
       api.get('/api/v1/links/stats'),
     ])
-    links.value = linksRes.data.data || []
+    links.value = linksRes.data.data?.items || []
     stats.value = statsRes.data.data
   } catch (error) {
     console.error('Failed to fetch links:', error)

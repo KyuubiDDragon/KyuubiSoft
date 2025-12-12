@@ -112,7 +112,7 @@ async function fetchData() {
       api.get('/api/v1/backups/schedules'),
       api.get('/api/v1/backups/stats'),
     ])
-    backups.value = backupsRes.data.data || []
+    backups.value = backupsRes.data.data?.items || []
     targets.value = targetsRes.data.data || []
     schedules.value = schedulesRes.data.data || []
     stats.value = statsRes.data.data

@@ -30,9 +30,12 @@ use App\Modules\ApiTester\Controllers\ApiTesterController;
 use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use App\Modules\QuickNotes\Controllers\QuickNoteController;
 use App\Modules\Notifications\Controllers\NotificationController;
+use App\Modules\Notifications\Controllers\PushNotificationController;
 use App\Modules\Dashboard\Controllers\WidgetController;
 use App\Modules\Server\Controllers\ServerController;
 use App\Modules\Dashboard\Controllers\AnalyticsController;
+use App\Modules\Dashboard\Controllers\WeatherController;
+use App\Modules\Automation\Controllers\WorkflowController;
 use App\Modules\Calendar\Controllers\CalendarController;
 use App\Modules\Calendar\Controllers\ExternalCalendarController;
 use App\Modules\Tools\Controllers\ToolsController;
@@ -55,6 +58,8 @@ use App\Modules\AI\Controllers\AIController;
 use App\Modules\Chat\Controllers\ChatController;
 use App\Modules\Wiki\Controllers\WikiController;
 use App\Modules\QuickAccess\Controllers\QuickAccessController;
+use App\Modules\Backup\Controllers\BackupController;
+use App\Modules\Links\Controllers\LinkController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -431,6 +436,17 @@ class Router
                 $protected->get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
                 $protected->put('/notifications/preferences', [NotificationController::class, 'updatePreferences']);
 
+                // Push Notifications
+                $protected->get('/push/vapid-key', [PushNotificationController::class, 'getVapidKey']);
+                $protected->post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
+                $protected->post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
+                $protected->get('/push/subscriptions', [PushNotificationController::class, 'getSubscriptions']);
+                $protected->get('/push/preferences', [PushNotificationController::class, 'getPreferences']);
+                $protected->put('/push/preferences', [PushNotificationController::class, 'updatePreferences']);
+                $protected->get('/push/history', [PushNotificationController::class, 'getHistory']);
+                $protected->post('/push/history/{id}/clicked', [PushNotificationController::class, 'markClicked']);
+                $protected->post('/push/test', [PushNotificationController::class, 'sendTest']);
+
                 // Dashboard Widgets
                 $protected->get('/dashboard/widgets', [WidgetController::class, 'getUserWidgets']);
                 $protected->get('/dashboard/widgets/available', [WidgetController::class, 'getAvailableWidgets']);
@@ -442,6 +458,24 @@ class Router
                 // Analytics
                 $protected->get('/analytics/productivity', [AnalyticsController::class, 'getProductivityStats']);
                 $protected->get('/analytics/widget-data', [AnalyticsController::class, 'getWidgetData']);
+
+                // Weather Widget
+                $protected->get('/weather', [WeatherController::class, 'getWeather']);
+                $protected->get('/weather/search', [WeatherController::class, 'searchLocation']);
+
+                // Automation / Workflows
+                $protected->get('/workflows', [WorkflowController::class, 'index']);
+                $protected->post('/workflows', [WorkflowController::class, 'create']);
+                $protected->get('/workflows/options', [WorkflowController::class, 'options']);
+                $protected->get('/workflows/templates', [WorkflowController::class, 'templates']);
+                $protected->post('/workflows/templates/{template_id}', [WorkflowController::class, 'createFromTemplate']);
+                $protected->get('/workflows/{id}', [WorkflowController::class, 'show']);
+                $protected->put('/workflows/{id}', [WorkflowController::class, 'update']);
+                $protected->delete('/workflows/{id}', [WorkflowController::class, 'delete']);
+                $protected->post('/workflows/{id}/toggle', [WorkflowController::class, 'toggle']);
+                $protected->post('/workflows/{id}/execute', [WorkflowController::class, 'execute']);
+                $protected->get('/workflows/{id}/history', [WorkflowController::class, 'history']);
+                $protected->get('/workflows/{id}/runs/{run_id}', [WorkflowController::class, 'runDetails']);
 
                 // Calendar
                 $protected->get('/calendar/events', [CalendarController::class, 'getEvents']);
@@ -861,6 +895,67 @@ class Router
                 $protected->post('/admin/tickets/categories/reorder', [TicketCategoryController::class, 'reorder'])
                     ->add(new FeatureMiddleware('tickets', null, 'manage'));
 
+                // Backup & Recovery System
+                // Storage Targets
+                $protected->get('/backups/targets', [BackupController::class, 'listTargets'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->post('/backups/targets', [BackupController::class, 'createTarget'])
+                    ->add(new PermissionMiddleware('backups.manage_targets'));
+                $protected->get('/backups/targets/{id}', [BackupController::class, 'getTarget'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->put('/backups/targets/{id}', [BackupController::class, 'updateTarget'])
+                    ->add(new PermissionMiddleware('backups.manage_targets'));
+                $protected->delete('/backups/targets/{id}', [BackupController::class, 'deleteTarget'])
+                    ->add(new PermissionMiddleware('backups.manage_targets'));
+                $protected->post('/backups/targets/{id}/test', [BackupController::class, 'testTarget'])
+                    ->add(new PermissionMiddleware('backups.view'));
+
+                // Backup Schedules
+                $protected->get('/backups/schedules', [BackupController::class, 'listSchedules'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->post('/backups/schedules', [BackupController::class, 'createSchedule'])
+                    ->add(new PermissionMiddleware('backups.manage_schedules'));
+                $protected->get('/backups/schedules/{id}', [BackupController::class, 'getSchedule'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->put('/backups/schedules/{id}', [BackupController::class, 'updateSchedule'])
+                    ->add(new PermissionMiddleware('backups.manage_schedules'));
+                $protected->delete('/backups/schedules/{id}', [BackupController::class, 'deleteSchedule'])
+                    ->add(new PermissionMiddleware('backups.manage_schedules'));
+
+                // Backups
+                $protected->get('/backups', [BackupController::class, 'listBackups'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->post('/backups', [BackupController::class, 'createBackup'])
+                    ->add(new PermissionMiddleware('backups.create'));
+                $protected->get('/backups/stats', [BackupController::class, 'getStats'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->get('/backups/{id}', [BackupController::class, 'getBackup'])
+                    ->add(new PermissionMiddleware('backups.view'));
+                $protected->delete('/backups/{id}', [BackupController::class, 'deleteBackup'])
+                    ->add(new PermissionMiddleware('backups.delete'));
+                $protected->post('/backups/{id}/restore', [BackupController::class, 'restoreBackup'])
+                    ->add(new PermissionMiddleware('backups.restore'));
+                $protected->get('/backups/{id}/download', [BackupController::class, 'downloadBackup'])
+                    ->add(new PermissionMiddleware('backups.view'));
+
+                // Link Shortener
+                $protected->get('/links', [LinkController::class, 'index'])
+                    ->add(new PermissionMiddleware('links.view'));
+                $protected->post('/links', [LinkController::class, 'create'])
+                    ->add(new PermissionMiddleware('links.create'));
+                $protected->get('/links/stats', [LinkController::class, 'userStats'])
+                    ->add(new PermissionMiddleware('links.view'));
+                $protected->get('/links/{id}', [LinkController::class, 'show'])
+                    ->add(new PermissionMiddleware('links.view'));
+                $protected->put('/links/{id}', [LinkController::class, 'update'])
+                    ->add(new PermissionMiddleware('links.create'));
+                $protected->delete('/links/{id}', [LinkController::class, 'delete'])
+                    ->add(new PermissionMiddleware('links.delete'));
+                $protected->get('/links/{id}/stats', [LinkController::class, 'stats'])
+                    ->add(new PermissionMiddleware('links.view'));
+                $protected->get('/links/{id}/qr', [LinkController::class, 'qrCode'])
+                    ->add(new PermissionMiddleware('links.view'));
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 
             // Public Ticket Routes (no auth required)
@@ -900,6 +995,11 @@ class Router
             $group->post('/checklists/public/{token}/items', [SharedChecklistController::class, 'addItemPublic']);
             // Public checklist image serve
             $group->get('/checklists/images/{filename}', [SharedChecklistController::class, 'serveImage']);
+
+            // Public Short Link Routes
+            $group->get('/s/{code}', [LinkController::class, 'redirect']);
+            $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
+            $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
         });
     }
 }

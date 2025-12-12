@@ -54,6 +54,9 @@ const RecurringTasksView = () => import('@/modules/recurring/views/RecurringTask
 const InboxView = () => import('@/modules/inbox/views/InboxView.vue')
 const ChatView = () => import('@/modules/chat/views/ChatView.vue')
 const WikiView = () => import('@/modules/wiki/views/WikiView.vue')
+const BackupsView = () => import('@/modules/backups/views/BackupsView.vue')
+const LinksView = () => import('@/modules/links/views/LinksView.vue')
+const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue')
 
 const routes = [
   // Auth routes
@@ -287,6 +290,18 @@ const routes = [
     component: WikiView,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/links',
+    name: 'links',
+    component: LinksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/workflows',
+    name: 'workflows',
+    component: WorkflowsView,
+    meta: { requiresAuth: true },
+  },
 
   // Admin routes (role-protected)
   {
@@ -300,6 +315,12 @@ const routes = [
     name: 'system',
     component: SystemView,
     meta: { requiresAuth: true, roles: ['owner'] },
+  },
+  {
+    path: '/backups',
+    name: 'backups',
+    component: BackupsView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
   },
 
   // Ticket routes

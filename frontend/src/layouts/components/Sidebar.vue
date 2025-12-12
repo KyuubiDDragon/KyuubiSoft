@@ -49,6 +49,8 @@ import {
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
   MapPinIcon,
+  BoltIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -113,6 +115,8 @@ const iconToName = new Map([
   [InboxArrowDownIcon, 'InboxArrowDownIcon'],
   [ChatBubbleLeftRightIcon, 'ChatBubbleLeftRightIcon'],
   [BookOpenIcon, 'BookOpenIcon'],
+  [BoltIcon, 'BoltIcon'],
+  [ArchiveBoxIcon, 'ArchiveBoxIcon'],
 ])
 
 // Get icon name from component
@@ -255,6 +259,7 @@ const allNavigationGroups = [
       { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon },
       { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon },
       { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon },
+      { name: 'Short Links', href: '/links', icon: LinkIcon },
     ],
   },
 
@@ -283,6 +288,7 @@ const allNavigationGroups = [
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime' },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
+      { name: 'Workflows', href: '/workflows', icon: BoltIcon },
     ],
   },
 
@@ -332,6 +338,7 @@ const allNavigationGroups = [
     icon: Cog6ToothIcon,
     children: [
       { name: 'Passwörter', href: '/passwords', icon: KeyIcon },
+      { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon },
       { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
       { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
       { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },

@@ -60,18 +60,15 @@ class SettingsController
             $jsonValue = json_encode($value);
 
             if ($exists) {
-                $this->db->update('user_settings', [
-                    'value' => $jsonValue,
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ], ['user_id' => $userId, 'key' => $key]);
+                $this->db->executeStatement(
+                    'UPDATE user_settings SET `value` = ?, updated_at = ? WHERE user_id = ? AND `key` = ?',
+                    [$jsonValue, date('Y-m-d H:i:s'), $userId, $key]
+                );
             } else {
-                $this->db->insert('user_settings', [
-                    'user_id' => $userId,
-                    'key' => $key,
-                    'value' => $jsonValue,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+                $this->db->executeStatement(
+                    'INSERT INTO user_settings (user_id, `key`, `value`, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+                    [$userId, $key, $jsonValue, date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]
+                );
             }
         }
 
@@ -111,19 +108,15 @@ class SettingsController
             $jsonValue = json_encode($value);
 
             if ($exists) {
-                $this->db->update('system_settings', [
-                    'value' => $jsonValue,
-                    'updated_at' => date('Y-m-d H:i:s'),
-                    'updated_by' => $userId,
-                ], ['key' => $key]);
+                $this->db->executeStatement(
+                    'UPDATE system_settings SET `value` = ?, updated_at = ?, updated_by = ? WHERE `key` = ?',
+                    [$jsonValue, date('Y-m-d H:i:s'), $userId, $key]
+                );
             } else {
-                $this->db->insert('system_settings', [
-                    'key' => $key,
-                    'value' => $jsonValue,
-                    'type' => 'string',
-                    'updated_at' => date('Y-m-d H:i:s'),
-                    'updated_by' => $userId,
-                ]);
+                $this->db->executeStatement(
+                    'INSERT INTO system_settings (`key`, `value`, `type`, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)',
+                    [$key, $jsonValue, 'string', date('Y-m-d H:i:s'), $userId]
+                );
             }
         }
 

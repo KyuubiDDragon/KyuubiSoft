@@ -44,6 +44,42 @@ class RecurringTaskController
     }
 
     /**
+     * Get upcoming recurring tasks
+     */
+    public function upcoming(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $days = isset($params['days']) ? (int) $params['days'] : 7;
+
+        $upcoming = $this->recurringTaskService->getUpcomingTasks($userId, $days);
+
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'data' => $upcoming,
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Process all due recurring tasks
+     */
+    public function processDue(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $results = $this->recurringTaskService->processDueTasks($userId);
+
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'data' => $results,
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
      * Get a single recurring task
      */
     public function show(Request $request, Response $response, array $args): Response

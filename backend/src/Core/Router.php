@@ -644,10 +644,10 @@ class Router
                 $protected->get('/recurring-tasks/{id}', [RecurringTaskController::class, 'show']);
                 $protected->put('/recurring-tasks/{id}', [RecurringTaskController::class, 'update']);
                 $protected->delete('/recurring-tasks/{id}', [RecurringTaskController::class, 'delete']);
-                $protected->post('/recurring-tasks/{id}/toggle', [RecurringTaskController::class, 'toggle']);
-                $protected->post('/recurring-tasks/{id}/skip', [RecurringTaskController::class, 'skip']);
-                $protected->post('/recurring-tasks/{id}/process', [RecurringTaskController::class, 'process']);
-                $protected->get('/recurring-tasks/{id}/instances', [RecurringTaskController::class, 'instances']);
+                $protected->post('/recurring-tasks/{id}/toggle', [RecurringTaskController::class, 'toggleActive']);
+                $protected->post('/recurring-tasks/{id}/skip', [RecurringTaskController::class, 'skipOccurrence']);
+                $protected->post('/recurring-tasks/{id}/process', [RecurringTaskController::class, 'processTask']);
+                $protected->get('/recurring-tasks/{id}/instances', [RecurringTaskController::class, 'getInstances']);
 
                 // Inbox / Quick Capture
                 $protected->get('/inbox', [InboxController::class, 'getItems']);

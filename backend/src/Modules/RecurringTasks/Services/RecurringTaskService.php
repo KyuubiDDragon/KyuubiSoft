@@ -189,6 +189,60 @@ class RecurringTaskService
     }
 
     /**
+     * Get upcoming tasks for a user
+     */
+    public function getUpcomingTasks(string $userId, int $days = 7): array
+    {
+        $endDate = date('Y-m-d', strtotime("+{$days} days"));
+
+        return $this->db->fetchAllAssociative(
+            "SELECT rt.*, rtc.name as category_name, rtc.color as category_color, rtc.icon as category_icon
+             FROM recurring_tasks rt
+             LEFT JOIN recurring_task_categories rtc ON rt.category_id = rtc.id
+             WHERE rt.user_id = ?
+               AND rt.is_active = 1
+               AND rt.next_occurrence IS NOT NULL
+               AND rt.next_occurrence <= ?
+             ORDER BY rt.next_occurrence ASC",
+            [$userId, $endDate]
+        );
+    }
+
+    /**
+     * Process all due tasks for a user
+     */
+    public function processDueTasks(string $userId): array
+    {
+        $results = ['processed' => 0, 'failed' => 0, 'items' => []];
+        $today = date('Y-m-d');
+
+        $dueTasks = $this->db->fetchAllAssociative(
+            "SELECT * FROM recurring_tasks
+             WHERE user_id = ?
+               AND is_active = 1
+               AND next_occurrence <= ?
+               AND (end_date IS NULL OR end_date >= ?)",
+            [$userId, $today, $today]
+        );
+
+        foreach ($dueTasks as $task) {
+            $result = $this->processTask($task['id']);
+            if ($result['success']) {
+                $results['processed']++;
+            } else {
+                $results['failed']++;
+            }
+            $results['items'][] = [
+                'task_id' => $task['id'],
+                'title' => $task['title'],
+                'result' => $result,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
      * Get due tasks (tasks that need to generate items)
      */
     public function getDueTasks(): array

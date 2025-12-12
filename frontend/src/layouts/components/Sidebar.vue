@@ -77,6 +77,49 @@ const showProjectDropdown = ref(false)
 const expandedGroups = ref([]) // Only expand groups with active routes
 const showFavorites = ref(true)
 
+// Reverse icon mapping: component -> string name
+const iconToName = new Map([
+  [HomeIcon, 'HomeIcon'],
+  [ListBulletIcon, 'ListBulletIcon'],
+  [DocumentTextIcon, 'DocumentTextIcon'],
+  [ServerIcon, 'ServerIcon'],
+  [CodeBracketIcon, 'CodeBracketIcon'],
+  [ViewColumnsIcon, 'ViewColumnsIcon'],
+  [FolderIcon, 'FolderIcon'],
+  [ClockIcon, 'ClockIcon'],
+  [BellIcon, 'BellIcon'],
+  [BookmarkIcon, 'BookmarkIcon'],
+  [SignalIcon, 'SignalIcon'],
+  [CurrencyDollarIcon, 'CurrencyDollarIcon'],
+  [WrenchScrewdriverIcon, 'WrenchScrewdriverIcon'],
+  [Cog6ToothIcon, 'Cog6ToothIcon'],
+  [UsersIcon, 'UsersIcon'],
+  [ShieldCheckIcon, 'ShieldCheckIcon'],
+  [DocumentDuplicateIcon, 'DocumentDuplicateIcon'],
+  [BriefcaseIcon, 'BriefcaseIcon'],
+  [CommandLineIcon, 'CommandLineIcon'],
+  [CalendarIcon, 'CalendarIcon'],
+  [CubeIcon, 'CubeIcon'],
+  [TicketIcon, 'TicketIcon'],
+  [TagIcon, 'TagIcon'],
+  [NewspaperIcon, 'NewspaperIcon'],
+  [CloudArrowUpIcon, 'CloudArrowUpIcon'],
+  [CloudIcon, 'CloudIcon'],
+  [LinkIcon, 'LinkIcon'],
+  [ClipboardDocumentListIcon, 'ClipboardDocumentListIcon'],
+  [ClipboardDocumentCheckIcon, 'ClipboardDocumentCheckIcon'],
+  [KeyIcon, 'KeyIcon'],
+  [ArrowPathIcon, 'ArrowPathIcon'],
+  [InboxArrowDownIcon, 'InboxArrowDownIcon'],
+  [ChatBubbleLeftRightIcon, 'ChatBubbleLeftRightIcon'],
+  [BookOpenIcon, 'BookOpenIcon'],
+])
+
+// Get icon name from component
+function getIconName(iconComponent) {
+  return iconToName.get(iconComponent) || 'HomeIcon'
+}
+
 // Load projects, features, favorites and quick access on mount
 onMounted(async () => {
   await featureStore.loadFeatures()
@@ -91,8 +134,8 @@ onMounted(async () => {
 async function toggleQuickAccess(item, event) {
   event.stopPropagation()
   try {
-    // Get the icon name from the component
-    const iconName = item.icon?.name || item.icon?.displayName || 'HomeIcon'
+    // Get the icon name from the component using reverse mapping
+    const iconName = getIconName(item.icon)
     await quickAccessStore.toggle({
       id: item.id || item.href.replace(/\//g, '-').replace(/^-/, ''),
       name: item.name,

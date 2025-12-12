@@ -8,12 +8,23 @@ use App\Core\Http\JsonResponse;
 use App\Modules\Backup\Services\BackupService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 class BackupController
 {
     public function __construct(
         private readonly BackupService $backupService
     ) {}
+
+    /**
+     * Extract route argument from request
+     */
+    private function getRouteArg(ServerRequestInterface $request, string $name): ?string
+    {
+        $routeContext = RouteContext::fromRequest($request);
+        $route = $routeContext->getRoute();
+        return $route ? $route->getArgument($name) : null;
+    }
 
     // ==================== Storage Targets ====================
 
@@ -31,10 +42,11 @@ class BackupController
     /**
      * Get single storage target
      */
-    public function getTarget(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function getTarget(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $target = $this->backupService->getStorageTarget($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $target = $this->backupService->getStorageTarget($id, $userId);
 
         if (!$target) {
             return JsonResponse::error('Storage target not found', 404);
@@ -74,12 +86,13 @@ class BackupController
     /**
      * Update storage target
      */
-    public function updateTarget(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function updateTarget(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $id = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody() ?? [];
 
-        $success = $this->backupService->updateStorageTarget($args['id'], $userId, $data);
+        $success = $this->backupService->updateStorageTarget($id, $userId, $data);
 
         if (!$success) {
             return JsonResponse::error('Storage target not found or no changes made', 404);
@@ -91,10 +104,11 @@ class BackupController
     /**
      * Delete storage target
      */
-    public function deleteTarget(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteTarget(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $success = $this->backupService->deleteStorageTarget($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $success = $this->backupService->deleteStorageTarget($id, $userId);
 
         if (!$success) {
             return JsonResponse::error('Storage target not found', 404);
@@ -106,10 +120,11 @@ class BackupController
     /**
      * Test storage target connection
      */
-    public function testTarget(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function testTarget(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $result = $this->backupService->testStorageTarget($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $result = $this->backupService->testStorageTarget($id, $userId);
 
         return JsonResponse::success($result);
     }
@@ -130,10 +145,11 @@ class BackupController
     /**
      * Get single schedule
      */
-    public function getSchedule(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function getSchedule(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $schedule = $this->backupService->getSchedule($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $schedule = $this->backupService->getSchedule($id, $userId);
 
         if (!$schedule) {
             return JsonResponse::error('Schedule not found', 404);
@@ -165,12 +181,13 @@ class BackupController
     /**
      * Update schedule
      */
-    public function updateSchedule(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function updateSchedule(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $id = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody() ?? [];
 
-        $success = $this->backupService->updateSchedule($args['id'], $userId, $data);
+        $success = $this->backupService->updateSchedule($id, $userId, $data);
 
         if (!$success) {
             return JsonResponse::error('Schedule not found or no changes made', 404);
@@ -182,10 +199,11 @@ class BackupController
     /**
      * Delete schedule
      */
-    public function deleteSchedule(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteSchedule(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $success = $this->backupService->deleteSchedule($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $success = $this->backupService->deleteSchedule($id, $userId);
 
         if (!$success) {
             return JsonResponse::error('Schedule not found', 404);
@@ -215,10 +233,11 @@ class BackupController
     /**
      * Get single backup
      */
-    public function getBackup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function getBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $backup = $this->backupService->getBackup($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $backup = $this->backupService->getBackup($id, $userId);
 
         if (!$backup) {
             return JsonResponse::error('Backup not found', 404);
@@ -250,10 +269,11 @@ class BackupController
     /**
      * Delete backup
      */
-    public function deleteBackup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $success = $this->backupService->deleteBackup($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $success = $this->backupService->deleteBackup($id, $userId);
 
         if (!$success) {
             return JsonResponse::error('Backup not found', 404);
@@ -265,13 +285,14 @@ class BackupController
     /**
      * Restore from backup
      */
-    public function restoreBackup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function restoreBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $id = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody() ?? [];
 
         try {
-            $result = $this->backupService->restoreBackup($args['id'], $userId, $data);
+            $result = $this->backupService->restoreBackup($id, $userId, $data);
             return JsonResponse::success($result);
         } catch (\Exception $e) {
             return JsonResponse::error($e->getMessage(), 400);
@@ -281,10 +302,11 @@ class BackupController
     /**
      * Download backup file
      */
-    public function downloadBackup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function downloadBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $backup = $this->backupService->getBackup($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $backup = $this->backupService->getBackup($id, $userId);
 
         if (!$backup) {
             return JsonResponse::error('Backup not found', 404);

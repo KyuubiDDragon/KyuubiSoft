@@ -199,9 +199,9 @@ class QuickAccessController
 
         $maxVisible = max(1, min(10, (int) $data['max_visible']));
 
-        // Check if setting exists
+        // Check if setting exists (user_settings uses composite key: user_id + key)
         $existing = $this->db->fetchAssociative(
-            'SELECT id FROM user_settings WHERE user_id = ? AND setting_key = ?',
+            'SELECT `value` FROM user_settings WHERE user_id = ? AND `key` = ?',
             [$userId, 'quick_access_max_visible']
         );
 
@@ -209,17 +209,16 @@ class QuickAccessController
             $this->db->update(
                 'user_settings',
                 [
-                    'setting_value' => (string) $maxVisible,
+                    'value' => json_encode($maxVisible),
                     'updated_at' => date('Y-m-d H:i:s'),
                 ],
-                ['user_id' => $userId, 'setting_key' => 'quick_access_max_visible']
+                ['user_id' => $userId, 'key' => 'quick_access_max_visible']
             );
         } else {
             $this->db->insert('user_settings', [
-                'id' => Uuid::uuid4()->toString(),
                 'user_id' => $userId,
-                'setting_key' => 'quick_access_max_visible',
-                'setting_value' => (string) $maxVisible,
+                'key' => 'quick_access_max_visible',
+                'value' => json_encode($maxVisible),
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
@@ -253,11 +252,16 @@ class QuickAccessController
     private function getMaxVisibleSetting(string $userId): int
     {
         $setting = $this->db->fetchOne(
-            'SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = ?',
+            'SELECT `value` FROM user_settings WHERE user_id = ? AND `key` = ?',
             [$userId, 'quick_access_max_visible']
         );
 
-        return $setting ? (int) $setting : 5; // Default to 5
+        if ($setting) {
+            $decoded = json_decode($setting, true);
+            return is_int($decoded) ? $decoded : 5;
+        }
+
+        return 5; // Default to 5
     }
 
     /**

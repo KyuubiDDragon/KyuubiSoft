@@ -347,4 +347,28 @@ return [
     QuickAccessController::class => function (ContainerInterface $c): QuickAccessController {
         return new QuickAccessController($c->get(DBALConnection::class));
     },
+
+    // Backup Service
+    \App\Modules\Backup\Services\BackupService::class => function (ContainerInterface $c): \App\Modules\Backup\Services\BackupService {
+        return new \App\Modules\Backup\Services\BackupService($c->get(DBALConnection::class));
+    },
+
+    // Backup Controller
+    \App\Modules\Backup\Controllers\BackupController::class => function (ContainerInterface $c): \App\Modules\Backup\Controllers\BackupController {
+        return new \App\Modules\Backup\Controllers\BackupController(
+            $c->get(\App\Modules\Backup\Services\BackupService::class)
+        );
+    },
+
+    // Link Service
+    \App\Modules\Links\Services\LinkService::class => function (ContainerInterface $c): \App\Modules\Links\Services\LinkService {
+        return new \App\Modules\Links\Services\LinkService($c->get(DBALConnection::class));
+    },
+
+    // Link Controller
+    \App\Modules\Links\Controllers\LinkController::class => function (ContainerInterface $c): \App\Modules\Links\Controllers\LinkController {
+        return new \App\Modules\Links\Controllers\LinkController(
+            $c->get(\App\Modules\Links\Services\LinkService::class)
+        );
+    },
 ];

@@ -206,22 +206,15 @@ class QuickAccessController
         );
 
         if ($existing) {
-            $this->db->update(
-                'user_settings',
-                [
-                    'value' => json_encode($maxVisible),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ],
-                ['user_id' => $userId, 'key' => 'quick_access_max_visible']
+            $this->db->executeStatement(
+                'UPDATE user_settings SET `value` = ?, updated_at = ? WHERE user_id = ? AND `key` = ?',
+                [json_encode($maxVisible), date('Y-m-d H:i:s'), $userId, 'quick_access_max_visible']
             );
         } else {
-            $this->db->insert('user_settings', [
-                'user_id' => $userId,
-                'key' => 'quick_access_max_visible',
-                'value' => json_encode($maxVisible),
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+            $this->db->executeStatement(
+                'INSERT INTO user_settings (user_id, `key`, `value`, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+                [$userId, 'quick_access_max_visible', json_encode($maxVisible), date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]
+            );
         }
 
         return JsonResponse::success(['max_visible' => $maxVisible], 'Settings updated');

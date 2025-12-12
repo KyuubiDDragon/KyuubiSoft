@@ -39,6 +39,10 @@ const isEditMode = ref(false)
 const showAddWidget = ref(false)
 const analyticsData = ref(null)
 
+// Drag and drop state
+const draggedIndex = ref(null)
+const dragOverIndex = ref(null)
+
 // Weather widget state
 const weatherData = ref({})
 const weatherLoading = ref({})
@@ -364,6 +368,63 @@ onUnmounted(() => {
     clearInterval(countdownInterval)
   }
 })
+
+// Drag and drop handlers
+function onDragStart(index, event) {
+  if (!isEditMode.value) return
+  draggedIndex.value = index
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', index.toString())
+  // Add a slight delay for visual effect
+  setTimeout(() => {
+    event.target.classList.add('opacity-50')
+  }, 0)
+}
+
+function onDragEnd(event) {
+  event.target.classList.remove('opacity-50')
+  draggedIndex.value = null
+  dragOverIndex.value = null
+}
+
+function onDragOver(index, event) {
+  if (!isEditMode.value || draggedIndex.value === null) return
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+  dragOverIndex.value = index
+}
+
+function onDragLeave() {
+  dragOverIndex.value = null
+}
+
+async function onDrop(targetIndex, event) {
+  event.preventDefault()
+  if (draggedIndex.value === null || draggedIndex.value === targetIndex) {
+    dragOverIndex.value = null
+    return
+  }
+
+  // Reorder widgets
+  const widgetsCopy = [...widgets.value]
+  const [draggedWidget] = widgetsCopy.splice(draggedIndex.value, 1)
+  widgetsCopy.splice(targetIndex, 0, draggedWidget)
+  widgets.value = widgetsCopy
+
+  // Reset drag state
+  draggedIndex.value = null
+  dragOverIndex.value = null
+
+  // Save new layout
+  await saveLayout()
+}
+
+function getDragClass(index) {
+  if (dragOverIndex.value === index && draggedIndex.value !== index) {
+    return 'ring-2 ring-primary-500 ring-offset-2 ring-offset-dark-800'
+  }
+  return ''
+}
 </script>
 
 <template>
@@ -419,7 +480,14 @@ onUnmounted(() => {
         <!-- Quick Stats Widget -->
         <div
           v-if="widget.widget_type === 'quick_stats'"
-          class="card p-6 col-span-full lg:col-span-4 relative group"
+          class="card p-6 col-span-full lg:col-span-4 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -452,7 +520,14 @@ onUnmounted(() => {
         <!-- Recent Tasks Widget -->
         <div
           v-else-if="widget.widget_type === 'recent_tasks'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -496,7 +571,14 @@ onUnmounted(() => {
         <!-- Recent Documents Widget -->
         <div
           v-else-if="widget.widget_type === 'recent_documents'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -532,7 +614,14 @@ onUnmounted(() => {
         <!-- Productivity Chart Widget -->
         <div
           v-else-if="widget.widget_type === 'productivity_chart'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -597,7 +686,14 @@ onUnmounted(() => {
         <!-- Calendar Preview Widget -->
         <div
           v-else-if="widget.widget_type === 'calendar_preview'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -638,7 +734,14 @@ onUnmounted(() => {
         <!-- Uptime Status Widget -->
         <div
           v-else-if="widget.widget_type === 'uptime_status'"
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -678,7 +781,14 @@ onUnmounted(() => {
         <!-- Time Tracking Today Widget -->
         <div
           v-else-if="widget.widget_type === 'time_tracking_today'"
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -713,7 +823,14 @@ onUnmounted(() => {
         <!-- Kanban Summary Widget -->
         <div
           v-else-if="widget.widget_type === 'kanban_summary'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -763,7 +880,14 @@ onUnmounted(() => {
         <!-- Recent Activity Widget -->
         <div
           v-else-if="widget.widget_type === 'recent_activity'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group"
+          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -795,7 +919,14 @@ onUnmounted(() => {
         <!-- Quick Notes Widget -->
         <div
           v-else-if="widget.widget_type === 'quick_notes'"
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -822,7 +953,14 @@ onUnmounted(() => {
         <!-- Weather Widget -->
         <div
           v-else-if="widget.widget_type === 'weather'"
-          class="card p-6 col-span-1 lg:col-span-1 relative group"
+          class="card p-6 col-span-1 lg:col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -901,7 +1039,14 @@ onUnmounted(() => {
         <!-- Countdown Widget -->
         <div
           v-else-if="widget.widget_type === 'countdown'"
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -956,7 +1101,14 @@ onUnmounted(() => {
         <!-- Link Stats Widget -->
         <div
           v-else-if="widget.widget_type === 'link_stats'"
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"
@@ -978,10 +1130,117 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Storage Usage Widget -->
+        <div
+          v-else-if="widget.widget_type === 'storage_usage'"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
+          </div>
+          <div class="text-center">
+            <!-- Progress Ring -->
+            <div class="relative inline-flex items-center justify-center w-24 h-24 mb-3">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="none"
+                  class="text-dark-600"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="none"
+                  :stroke-dasharray="251.2"
+                  :stroke-dashoffset="251.2 - (251.2 * (widgetData.storage_usage?.usage_percent || 0) / 100)"
+                  class="text-primary-500 transition-all duration-500"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <span class="absolute text-xl font-bold text-white">{{ widgetData.storage_usage?.usage_percent || 0 }}%</span>
+            </div>
+            <p class="text-white font-medium">{{ widgetData.storage_usage?.used_formatted || '0 B' }}</p>
+            <p class="text-gray-500 text-sm">von {{ widgetData.storage_usage?.limit_formatted || '10 GB' }}</p>
+            <p class="text-gray-400 text-xs mt-2">{{ widgetData.storage_usage?.file_count || 0 }} Dateien</p>
+          </div>
+        </div>
+
+        <!-- Backup Status Widget -->
+        <div
+          v-else-if="widget.widget_type === 'backup_status'"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <router-link to="/backups" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Erfolgreiche Backups</span>
+              <span class="text-green-400 font-medium">{{ widgetData.backup_status?.successful_backups || 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Fehlgeschlagen</span>
+              <span class="text-red-400 font-medium">{{ widgetData.backup_status?.failed_backups || 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Aktive Zeitpläne</span>
+              <span class="text-white font-medium">{{ widgetData.backup_status?.active_schedules || 0 }}</span>
+            </div>
+            <div v-if="widgetData.backup_status?.last_successful" class="pt-2 border-t border-dark-700">
+              <p class="text-xs text-gray-500">Letztes erfolgreiches Backup:</p>
+              <p class="text-sm text-white">{{ formatDate(widgetData.backup_status.last_successful) }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Generic fallback widget -->
         <div
           v-else
-          class="card p-6 col-span-1 relative group"
+          class="card p-6 col-span-1 relative group transition-all duration-200"
+          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
+          :draggable="isEditMode"
+          @dragstart="onDragStart(index, $event)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver(index, $event)"
+          @dragleave="onDragLeave"
+          @drop="onDrop(index, $event)"
         >
           <button
             v-if="isEditMode"

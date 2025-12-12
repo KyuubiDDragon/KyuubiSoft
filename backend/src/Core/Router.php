@@ -54,6 +54,7 @@ use App\Modules\Inbox\Controllers\InboxController;
 use App\Modules\AI\Controllers\AIController;
 use App\Modules\Chat\Controllers\ChatController;
 use App\Modules\Wiki\Controllers\WikiController;
+use App\Modules\QuickAccess\Controllers\QuickAccessController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -540,6 +541,16 @@ class Router
                 $protected->put('/favorites/reorder', [FavoriteController::class, 'reorder']);
                 $protected->get('/favorites/{type}/{id}', [FavoriteController::class, 'check']);
                 $protected->delete('/favorites/{type}/{id}', [FavoriteController::class, 'delete']);
+
+                // Quick Access Navigation
+                $protected->get('/quick-access', [QuickAccessController::class, 'index']);
+                $protected->post('/quick-access', [QuickAccessController::class, 'create']);
+                $protected->post('/quick-access/toggle', [QuickAccessController::class, 'toggle']);
+                $protected->put('/quick-access/reorder', [QuickAccessController::class, 'reorder']);
+                $protected->get('/quick-access/settings', [QuickAccessController::class, 'getSettings']);
+                $protected->put('/quick-access/settings', [QuickAccessController::class, 'updateSettings']);
+                $protected->get('/quick-access/{navId}', [QuickAccessController::class, 'check']);
+                $protected->delete('/quick-access/{navId}', [QuickAccessController::class, 'delete']);
 
                 // Password Manager
                 $protected->get('/passwords', [PasswordController::class, 'index']);

@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useQuickAccessStore } from '@/stores/quickAccess'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import {
@@ -16,6 +17,39 @@ import {
   InboxArrowDownIcon,
   SparklesIcon,
   CheckIcon,
+  EllipsisHorizontalIcon,
+  HomeIcon,
+  ListBulletIcon,
+  DocumentTextIcon,
+  ServerIcon,
+  CodeBracketIcon,
+  ViewColumnsIcon,
+  FolderIcon,
+  ClockIcon,
+  BellIcon,
+  BookmarkIcon,
+  SignalIcon,
+  CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
+  UsersIcon,
+  ShieldCheckIcon,
+  DocumentDuplicateIcon,
+  BriefcaseIcon,
+  CommandLineIcon,
+  CalendarIcon,
+  CubeIcon,
+  TicketIcon,
+  TagIcon,
+  NewspaperIcon,
+  CloudArrowUpIcon,
+  CloudIcon,
+  LinkIcon,
+  ClipboardDocumentListIcon,
+  ClipboardDocumentCheckIcon,
+  KeyIcon,
+  ArrowPathIcon,
+  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -30,9 +64,67 @@ const emit = defineEmits(['toggle-sidebar'])
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const quickAccessStore = useQuickAccessStore()
 
 const showUserMenu = ref(false)
 const showWidgetsMenu = ref(false)
+const showQuickAccessOverflow = ref(false)
+
+// Icon mapping from string names to components
+const iconMap = {
+  HomeIcon,
+  ListBulletIcon,
+  DocumentTextIcon,
+  ServerIcon,
+  CodeBracketIcon,
+  ViewColumnsIcon,
+  FolderIcon,
+  ClockIcon,
+  BellIcon,
+  BookmarkIcon,
+  SignalIcon,
+  CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
+  Cog6ToothIcon,
+  UsersIcon,
+  ShieldCheckIcon,
+  DocumentDuplicateIcon,
+  BriefcaseIcon,
+  CommandLineIcon,
+  CalendarIcon,
+  CubeIcon,
+  TicketIcon,
+  TagIcon,
+  NewspaperIcon,
+  CloudArrowUpIcon,
+  CloudIcon,
+  LinkIcon,
+  ClipboardDocumentListIcon,
+  ClipboardDocumentCheckIcon,
+  KeyIcon,
+  ArrowPathIcon,
+  InboxArrowDownIcon,
+  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
+}
+
+// Load quick access on mount
+onMounted(() => {
+  if (!quickAccessStore.isInitialized) {
+    quickAccessStore.load()
+  }
+})
+
+// Get icon component from name
+function getIconComponent(iconName) {
+  return iconMap[iconName] || HomeIcon
+}
+
+// Navigate to quick access item
+function navigateToQuickAccess(item) {
+  router.push(item.nav_href)
+  showQuickAccessOverflow.value = false
+}
 
 function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value
@@ -68,6 +160,58 @@ function goToSettings() {
     <!-- Global Search -->
     <div class="flex-1">
       <GlobalSearch />
+    </div>
+
+    <!-- Quick Access Icons -->
+    <div v-if="quickAccessStore.items.length > 0 && !isMobile" class="flex items-center gap-1 mr-4">
+      <!-- Visible items -->
+      <button
+        v-for="item in quickAccessStore.visibleItems"
+        :key="item.id"
+        @click="navigateToQuickAccess(item)"
+        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        :title="item.nav_name"
+      >
+        <component :is="getIconComponent(item.nav_icon)" class="w-5 h-5" />
+      </button>
+
+      <!-- Overflow dropdown -->
+      <div v-if="quickAccessStore.hasOverflow" class="relative">
+        <button
+          @click="showQuickAccessOverflow = !showQuickAccessOverflow"
+          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+          title="Weitere"
+        >
+          <EllipsisHorizontalIcon class="w-5 h-5" />
+        </button>
+
+        <Transition
+          enter-active-class="transition ease-out duration-100"
+          enter-from-class="transform opacity-0 scale-95"
+          enter-to-class="transform opacity-100 scale-100"
+          leave-active-class="transition ease-in duration-75"
+          leave-from-class="transform opacity-100 scale-100"
+          leave-to-class="transform opacity-0 scale-95"
+        >
+          <div
+            v-if="showQuickAccessOverflow"
+            class="absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 z-50"
+          >
+            <button
+              v-for="item in quickAccessStore.overflowItems"
+              :key="item.id"
+              @click="navigateToQuickAccess(item)"
+              class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4" />
+              {{ item.nav_name }}
+            </button>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-px h-6 bg-dark-600 mx-2"></div>
     </div>
 
     <!-- Actions -->
@@ -144,6 +288,24 @@ function goToSettings() {
               </div>
               <CheckIcon v-if="uiStore.showAIAssistant" class="w-4 h-4 text-primary-400" />
             </button>
+
+            <!-- Quick Access Settings -->
+            <div v-if="quickAccessStore.items.length > 0" class="border-t border-dark-700 mt-1 pt-1">
+              <div class="px-4 py-2">
+                <p class="text-xs text-gray-500 mb-2">Quick Access Icons</p>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="range"
+                    :value="quickAccessStore.maxVisible"
+                    @input="quickAccessStore.updateMaxVisible(Number($event.target.value))"
+                    min="1"
+                    max="10"
+                    class="flex-1 h-1 bg-dark-600 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                  />
+                  <span class="text-xs text-gray-400 w-4 text-center">{{ quickAccessStore.maxVisible }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </Transition>
       </div>
@@ -211,6 +373,11 @@ function goToSettings() {
   <div
     v-if="showWidgetsMenu"
     @click="showWidgetsMenu = false"
+    class="fixed inset-0 z-40"
+  ></div>
+  <div
+    v-if="showQuickAccessOverflow"
+    @click="showQuickAccessOverflow = false"
     class="fixed inset-0 z-40"
   ></div>
 </template>

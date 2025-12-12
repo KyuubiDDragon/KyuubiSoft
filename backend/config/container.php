@@ -35,6 +35,7 @@ use App\Modules\Chat\Services\ChatService;
 use App\Modules\Chat\Controllers\ChatController;
 use App\Modules\Wiki\Services\WikiService;
 use App\Modules\Wiki\Controllers\WikiController;
+use App\Modules\QuickAccess\Controllers\QuickAccessController;
 use App\Core\Middleware\ApiKeyMiddleware;
 use App\Modules\Auth\Repositories\UserRepository;
 use App\Modules\Auth\Repositories\RefreshTokenRepository;
@@ -340,5 +341,10 @@ return [
         return new \App\Modules\Notifications\Controllers\NotificationController(
             $c->get(DBALConnection::class)
         );
+    },
+
+    // Quick Access Controller
+    QuickAccessController::class => function (ContainerInterface $c): QuickAccessController {
+        return new QuickAccessController($c->get(DBALConnection::class));
     },
 ];

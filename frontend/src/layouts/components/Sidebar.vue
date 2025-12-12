@@ -6,6 +6,7 @@ import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
 import { useFeatureStore } from '@/stores/features'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useQuickAccessStore } from '@/stores/quickAccess'
 import {
   HomeIcon,
   ListBulletIcon,
@@ -47,6 +48,7 @@ import {
   InboxArrowDownIcon,
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
+  MapPinIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -69,19 +71,44 @@ const uiStore = useUiStore()
 const projectStore = useProjectStore()
 const featureStore = useFeatureStore()
 const favoritesStore = useFavoritesStore()
+const quickAccessStore = useQuickAccessStore()
 
 const showProjectDropdown = ref(false)
 const expandedGroups = ref([]) // Only expand groups with active routes
 const showFavorites = ref(true)
 
-// Load projects, features and favorites on mount
+// Load projects, features, favorites and quick access on mount
 onMounted(async () => {
   await featureStore.loadFeatures()
   projectStore.loadProjects()
   favoritesStore.load()
+  quickAccessStore.load()
   // Expand group containing current route
   expandGroupForCurrentRoute()
 })
+
+// Toggle quick access for a navigation item
+async function toggleQuickAccess(item, event) {
+  event.stopPropagation()
+  try {
+    // Get the icon name from the component
+    const iconName = item.icon?.name || item.icon?.displayName || 'HomeIcon'
+    await quickAccessStore.toggle({
+      id: item.id || item.href.replace(/\//g, '-').replace(/^-/, ''),
+      name: item.name,
+      href: item.href,
+      icon: iconName,
+    })
+  } catch (error) {
+    console.error('Failed to toggle quick access:', error)
+  }
+}
+
+// Check if item is pinned to quick access
+function isPinned(item) {
+  const navId = item.id || item.href.replace(/\//g, '-').replace(/^-/, '')
+  return quickAccessStore.isPinned(navId)
+}
 
 // Icon mapping for favorite item types
 const favoriteIcons = {
@@ -559,21 +586,35 @@ function navigateTo(href) {
       <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         <template v-for="group in navigationGroups" :key="group.id">
           <!-- Standalone item (no children) -->
-          <button
+          <div
             v-if="!group.children"
-            @click="navigateTo(group.href)"
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200"
-            :class="[
-              isActive(group.href)
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-            ]"
+            class="group/nav relative"
           >
-            <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-            <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm">
-              {{ group.name }}
-            </span>
-          </button>
+            <button
+              @click="navigateTo(group.href)"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200"
+              :class="[
+                isActive(group.href)
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+              ]"
+            >
+              <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
+              <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm flex-1 text-left">
+                {{ group.name }}
+              </span>
+              <!-- Pin button (visible on hover) -->
+              <button
+                v-if="isMobile || !uiStore.sidebarCollapsed"
+                @click="toggleQuickAccess(group, $event)"
+                class="opacity-0 group-hover/nav:opacity-100 transition-opacity p-1 rounded hover:bg-dark-600"
+                :class="isPinned(group) ? 'text-primary-400 opacity-100' : 'text-gray-500'"
+                :title="isPinned(group) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
+              >
+                <MapPinIcon class="w-4 h-4" />
+              </button>
+            </button>
+          </div>
 
           <!-- Group with children -->
           <div v-else class="space-y-1">
@@ -605,20 +646,33 @@ function navigateTo(href) {
               v-if="(isMobile || !uiStore.sidebarCollapsed) && isGroupExpanded(group.id)"
               class="ml-4 pl-4 border-l border-dark-600 space-y-1"
             >
-              <button
+              <div
                 v-for="child in group.children"
                 :key="child.name"
-                @click="navigateTo(child.href)"
-                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200"
-                :class="[
-                  isActive(child.href)
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-                ]"
+                class="group/child relative"
               >
-                <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
-                <span class="font-medium text-sm">{{ child.name }}</span>
-              </button>
+                <button
+                  @click="navigateTo(child.href)"
+                  class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200"
+                  :class="[
+                    isActive(child.href)
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+                  ]"
+                >
+                  <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
+                  <span class="font-medium text-sm flex-1 text-left">{{ child.name }}</span>
+                  <!-- Pin button (visible on hover) -->
+                  <button
+                    @click="toggleQuickAccess(child, $event)"
+                    class="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded hover:bg-dark-600"
+                    :class="isPinned(child) ? 'text-primary-400 opacity-100' : 'text-gray-500'"
+                    :title="isPinned(child) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
+                  >
+                    <MapPinIcon class="w-3 h-3" />
+                  </button>
+                </button>
+              </div>
             </div>
 
             <!-- Collapsed view: Show tooltip/dropdown on hover (desktop only) -->

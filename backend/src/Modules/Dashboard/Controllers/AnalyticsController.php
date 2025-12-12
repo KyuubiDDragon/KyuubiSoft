@@ -326,6 +326,13 @@ class AnalyticsController
             'password_health' => $this->getPasswordHealthData($userId),
             'project_progress' => $this->getProjectProgressData($userId, $projectId),
             'checklist_progress' => $this->getChecklistProgressData($userId),
+            // Extended widgets (new)
+            'weather' => [], // Weather data loaded separately via /weather endpoint
+            'countdown' => [], // Countdown is client-side only
+            'link_stats' => $this->getLinkStatsData($userId),
+            'backup_status' => $this->getBackupStatusData($userId),
+            'custom_links' => [], // Custom links stored in widget config
+            'quote_of_day' => $this->getQuoteOfDayData(),
             default => null,
         };
 
@@ -934,5 +941,118 @@ class AnalyticsController
         } catch (\Exception $e) {
             return [];
         }
+    }
+
+    private function getLinkStatsData(string $userId): array
+    {
+        try {
+            $totalLinks = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM short_links WHERE user_id = ?",
+                [$userId]
+            );
+
+            $totalClicks = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM short_link_clicks slc
+                 JOIN short_links sl ON slc.link_id = sl.id
+                 WHERE sl.user_id = ?",
+                [$userId]
+            );
+
+            $recentLinks = $this->db->fetchAllAssociative(
+                "SELECT sl.id, sl.code, sl.original_url, sl.title,
+                        (SELECT COUNT(*) FROM short_link_clicks WHERE link_id = sl.id) as click_count
+                 FROM short_links sl
+                 WHERE sl.user_id = ?
+                 ORDER BY sl.created_at DESC
+                 LIMIT 5",
+                [$userId]
+            );
+
+            return [
+                'total_links' => $totalLinks,
+                'total_clicks' => $totalClicks,
+                'recent_links' => $recentLinks,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total_links' => 0,
+                'total_clicks' => 0,
+                'recent_links' => [],
+            ];
+        }
+    }
+
+    private function getBackupStatusData(string $userId): array
+    {
+        try {
+            // Get recent backups
+            $recentBackups = $this->db->fetchAllAssociative(
+                "SELECT b.id, b.file_name, b.file_size, b.status, b.created_at,
+                        bst.name as target_name, bst.type as target_type
+                 FROM backups b
+                 LEFT JOIN backup_storage_targets bst ON b.target_id = bst.id
+                 WHERE b.user_id = ?
+                 ORDER BY b.created_at DESC
+                 LIMIT 5",
+                [$userId]
+            );
+
+            // Get backup stats
+            $stats = $this->db->fetchAssociative(
+                "SELECT
+                    COUNT(*) as total_backups,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                    MAX(CASE WHEN status = 'completed' THEN created_at END) as last_successful
+                 FROM backups
+                 WHERE user_id = ?",
+                [$userId]
+            );
+
+            // Get active schedules
+            $activeSchedules = (int) $this->db->fetchOne(
+                "SELECT COUNT(*) FROM backup_schedules WHERE user_id = ? AND is_enabled = TRUE",
+                [$userId]
+            );
+
+            return [
+                'recent_backups' => $recentBackups,
+                'total_backups' => (int) ($stats['total_backups'] ?? 0),
+                'successful_backups' => (int) ($stats['successful'] ?? 0),
+                'failed_backups' => (int) ($stats['failed'] ?? 0),
+                'last_successful' => $stats['last_successful'] ?? null,
+                'active_schedules' => $activeSchedules,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'recent_backups' => [],
+                'total_backups' => 0,
+                'successful_backups' => 0,
+                'failed_backups' => 0,
+                'last_successful' => null,
+                'active_schedules' => 0,
+            ];
+        }
+    }
+
+    private function getQuoteOfDayData(): array
+    {
+        // Simple inspirational quotes
+        $quotes = [
+            ['quote' => 'Der einzige Weg, großartige Arbeit zu leisten, ist zu lieben, was man tut.', 'author' => 'Steve Jobs'],
+            ['quote' => 'Erfolg ist nicht der Schlüssel zum Glück. Glück ist der Schlüssel zum Erfolg.', 'author' => 'Albert Schweitzer'],
+            ['quote' => 'Die beste Zeit, einen Baum zu pflanzen, war vor 20 Jahren. Die zweitbeste Zeit ist jetzt.', 'author' => 'Chinesisches Sprichwort'],
+            ['quote' => 'Qualität bedeutet, es richtig zu machen, wenn niemand zuschaut.', 'author' => 'Henry Ford'],
+            ['quote' => 'Wer aufhört, besser zu werden, hat aufgehört, gut zu sein.', 'author' => 'Philip Rosenthal'],
+            ['quote' => 'Kreativität ist Intelligenz, die Spaß hat.', 'author' => 'Albert Einstein'],
+            ['quote' => 'Der Unterschied zwischen dem, was wir tun, und dem, was wir tun könnten, würde ausreichen, um die meisten Probleme der Welt zu lösen.', 'author' => 'Gandhi'],
+            ['quote' => 'Jeder Tag ist eine neue Chance, das zu tun, was du möchtest.', 'author' => 'Friedrich Schiller'],
+        ];
+
+        // Use day of year to pick a quote consistently for the day
+        $dayOfYear = (int) date('z');
+        $index = $dayOfYear % count($quotes);
+
+        return $quotes[$index];
     }
 }

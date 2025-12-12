@@ -978,6 +978,92 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Storage Usage Widget -->
+        <div
+          v-else-if="widget.widget_type === 'storage_usage'"
+          class="card p-6 col-span-1 relative group"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
+          </div>
+          <div class="text-center">
+            <!-- Progress Ring -->
+            <div class="relative inline-flex items-center justify-center w-24 h-24 mb-3">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="none"
+                  class="text-dark-600"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="none"
+                  :stroke-dasharray="251.2"
+                  :stroke-dashoffset="251.2 - (251.2 * (widgetData.storage_usage?.usage_percent || 0) / 100)"
+                  class="text-primary-500 transition-all duration-500"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <span class="absolute text-xl font-bold text-white">{{ widgetData.storage_usage?.usage_percent || 0 }}%</span>
+            </div>
+            <p class="text-white font-medium">{{ widgetData.storage_usage?.used_formatted || '0 B' }}</p>
+            <p class="text-gray-500 text-sm">von {{ widgetData.storage_usage?.limit_formatted || '10 GB' }}</p>
+            <p class="text-gray-400 text-xs mt-2">{{ widgetData.storage_usage?.file_count || 0 }} Dateien</p>
+          </div>
+        </div>
+
+        <!-- Backup Status Widget -->
+        <div
+          v-else-if="widget.widget_type === 'backup_status'"
+          class="card p-6 col-span-1 relative group"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <router-link to="/backups" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Erfolgreiche Backups</span>
+              <span class="text-green-400 font-medium">{{ widgetData.backup_status?.successful_backups || 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Fehlgeschlagen</span>
+              <span class="text-red-400 font-medium">{{ widgetData.backup_status?.failed_backups || 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-sm">Aktive Zeitpläne</span>
+              <span class="text-white font-medium">{{ widgetData.backup_status?.active_schedules || 0 }}</span>
+            </div>
+            <div v-if="widgetData.backup_status?.last_successful" class="pt-2 border-t border-dark-700">
+              <p class="text-xs text-gray-500">Letztes erfolgreiches Backup:</p>
+              <p class="text-sm text-white">{{ formatDate(widgetData.backup_status.last_successful) }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Generic fallback widget -->
         <div
           v-else

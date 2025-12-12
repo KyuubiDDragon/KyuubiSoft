@@ -65,7 +65,7 @@ class BackupController
 
         try {
             $id = $this->backupService->createStorageTarget($userId, $data);
-            return JsonResponse::success(['id' => $id], 201);
+            return JsonResponse::created(['id' => $id]);
         } catch (\Exception $e) {
             return JsonResponse::error($e->getMessage(), 400);
         }
@@ -156,7 +156,7 @@ class BackupController
 
         try {
             $id = $this->backupService->createSchedule($userId, $data);
-            return JsonResponse::success(['id' => $id], 201);
+            return JsonResponse::created(['id' => $id]);
         } catch (\Exception $e) {
             return JsonResponse::error($e->getMessage(), 400);
         }
@@ -206,7 +206,10 @@ class BackupController
 
         $result = $this->backupService->getBackups($userId, $params);
 
-        return JsonResponse::success($result['items'], 200, $result['pagination']);
+        return JsonResponse::success([
+            'items' => $result['items'],
+            'pagination' => $result['pagination']
+        ]);
     }
 
     /**
@@ -238,7 +241,7 @@ class BackupController
 
         try {
             $result = $this->backupService->createBackup($userId, $data);
-            return JsonResponse::success($result, 201);
+            return JsonResponse::created($result);
         } catch (\Exception $e) {
             return JsonResponse::error($e->getMessage(), 400);
         }

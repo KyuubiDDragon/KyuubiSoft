@@ -59,7 +59,7 @@ class WorkflowController
 
         try {
             $workflow = $this->workflowService->createWorkflow($userId, $data);
-            return JsonResponse::success($workflow, 201);
+            return JsonResponse::created($workflow);
         } catch (\InvalidArgumentException $e) {
             return JsonResponse::error($e->getMessage(), 400);
         }
@@ -190,7 +190,7 @@ class WorkflowController
 
         try {
             $workflow = $this->workflowService->createFromTemplate($args['template_id'], $userId);
-            return JsonResponse::success($workflow, 201);
+            return JsonResponse::created($workflow);
         } catch (\InvalidArgumentException $e) {
             return JsonResponse::error($e->getMessage(), 404);
         }

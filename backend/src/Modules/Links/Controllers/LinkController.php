@@ -25,7 +25,10 @@ class LinkController
 
         $result = $this->linkService->getLinks($userId, $params);
 
-        return JsonResponse::success($result['items'], 200, $result['pagination']);
+        return JsonResponse::success([
+            'items' => $result['items'],
+            'pagination' => $result['pagination']
+        ]);
     }
 
     /**
@@ -62,7 +65,7 @@ class LinkController
 
         try {
             $link = $this->linkService->createLink($userId, $data);
-            return JsonResponse::success($link, 201);
+            return JsonResponse::created($link);
         } catch (\InvalidArgumentException $e) {
             return JsonResponse::error($e->getMessage(), 400);
         }

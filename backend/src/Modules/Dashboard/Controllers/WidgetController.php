@@ -33,6 +33,13 @@ class WidgetController
         'password_health' => ['title' => 'Passwort-Sicherheit', 'default_width' => 1, 'default_height' => 1, 'description' => 'Übersicht zur Passwortsicherheit'],
         'project_progress' => ['title' => 'Projektfortschritt', 'default_width' => 2, 'default_height' => 2, 'description' => 'Fortschritt aktiver Projekte'],
         'checklist_progress' => ['title' => 'Checklisten', 'default_width' => 1, 'default_height' => 2, 'description' => 'Fortschritt der Checklisten'],
+        // Extended widgets
+        'weather' => ['title' => 'Wetter', 'default_width' => 1, 'default_height' => 2, 'description' => 'Wettervorhersage für deinen Standort', 'configurable' => true],
+        'countdown' => ['title' => 'Countdown', 'default_width' => 1, 'default_height' => 1, 'description' => 'Countdown zu einem Ereignis', 'configurable' => true],
+        'custom_links' => ['title' => 'Schnelllinks', 'default_width' => 1, 'default_height' => 2, 'description' => 'Benutzerdefinierte Links', 'configurable' => true],
+        'quote_of_day' => ['title' => 'Zitat des Tages', 'default_width' => 2, 'default_height' => 1, 'description' => 'Inspirierendes Zitat'],
+        'link_stats' => ['title' => 'Link-Statistiken', 'default_width' => 1, 'default_height' => 1, 'description' => 'Übersicht über Short-Links'],
+        'backup_status' => ['title' => 'Backup-Status', 'default_width' => 1, 'default_height' => 1, 'description' => 'Status der Backups'],
     ];
 
     public function __construct(

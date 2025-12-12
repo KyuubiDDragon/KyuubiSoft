@@ -27,6 +27,7 @@ import {
 import { useExportImportStore } from '@/stores/exportImport'
 import { useAIStore } from '@/stores/ai'
 import TagManager from '@/components/TagManager.vue'
+import pushNotifications from '@/core/services/pushNotifications'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -49,6 +50,7 @@ const disableCode = ref('')
 const tabs = [
   { id: 'profile', name: 'Profil', icon: UserIcon },
   { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
+  { id: 'notifications', name: 'Benachrichtigungen', icon: BellIcon },
   { id: 'api-keys', name: 'API-Keys', icon: KeyIcon },
   { id: 'ai', name: 'AI Assistent', icon: SparklesIcon },
   { id: 'tags', name: 'Tags', icon: TagIcon },
@@ -281,6 +283,9 @@ watch(activeTab, (newTab) => {
   if (newTab === 'ai' && !aiStore.settings) {
     aiStore.fetchSettings()
   }
+  if (newTab === 'notifications') {
+    loadPushSettings()
+  }
 })
 
 // AI Settings state
@@ -370,6 +375,29 @@ const security = reactive({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
+})
+
+// Push Notifications State
+const pushSupported = ref(pushNotifications.isSupported)
+const pushPermission = ref(pushNotifications.getPermissionStatus())
+const isSubscribed = ref(false)
+const pushSubscriptions = ref([])
+const isLoadingPush = ref(false)
+const isSendingTest = ref(false)
+const pushPreferences = reactive({
+  push_enabled: true,
+  email_enabled: true,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
+  notify_tasks: true,
+  notify_calendar: true,
+  notify_tickets: true,
+  notify_uptime: true,
+  notify_chat: true,
+  notify_inbox: true,
+  notify_recurring: true,
+  notify_backups: true,
+  notify_system: true,
 })
 
 // Watch for auth store user changes
@@ -509,6 +537,74 @@ async function disable2FA() {
   } catch (error) {
     const message = error.response?.data?.error || 'Ungültiger Code'
     uiStore.showError(message)
+  }
+}
+
+// Push Notification Functions
+async function loadPushSettings() {
+  isLoadingPush.value = true
+  try {
+    await pushNotifications.init()
+    pushPermission.value = pushNotifications.getPermissionStatus()
+    isSubscribed.value = await pushNotifications.isSubscribed()
+    pushSubscriptions.value = await pushNotifications.getSubscriptions()
+
+    const prefs = await pushNotifications.getPreferences()
+    if (prefs) {
+      Object.assign(pushPreferences, prefs)
+    }
+  } catch (error) {
+    console.error('Failed to load push settings:', error)
+  } finally {
+    isLoadingPush.value = false
+  }
+}
+
+async function enablePushNotifications() {
+  try {
+    await pushNotifications.subscribe()
+    isSubscribed.value = true
+    pushPermission.value = 'granted'
+    pushSubscriptions.value = await pushNotifications.getSubscriptions()
+    uiStore.showSuccess('Push-Benachrichtigungen aktiviert!')
+  } catch (error) {
+    if (error.message?.includes('denied')) {
+      uiStore.showError('Benachrichtigungen wurden im Browser blockiert')
+    } else {
+      uiStore.showError('Fehler beim Aktivieren der Push-Benachrichtigungen')
+    }
+  }
+}
+
+async function disablePushNotifications() {
+  try {
+    await pushNotifications.unsubscribe()
+    isSubscribed.value = false
+    pushSubscriptions.value = await pushNotifications.getSubscriptions()
+    uiStore.showSuccess('Push-Benachrichtigungen deaktiviert')
+  } catch (error) {
+    uiStore.showError('Fehler beim Deaktivieren')
+  }
+}
+
+async function savePushPreferences() {
+  try {
+    await pushNotifications.updatePreferences(pushPreferences)
+    uiStore.showSuccess('Einstellungen gespeichert!')
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern')
+  }
+}
+
+async function sendTestNotification() {
+  isSendingTest.value = true
+  try {
+    await pushNotifications.sendTest()
+    uiStore.showSuccess('Test-Benachrichtigung gesendet!')
+  } catch (error) {
+    uiStore.showError('Fehler beim Senden der Test-Benachrichtigung')
+  } finally {
+    isSendingTest.value = false
   }
 }
 </script>
@@ -746,6 +842,246 @@ async function disable2FA() {
                 2FA deaktivieren
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div v-if="activeTab === 'notifications'" class="space-y-6">
+          <!-- Push Notifications -->
+          <div class="card p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <BellIcon class="w-6 h-6 text-primary-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-white">Push-Benachrichtigungen</h2>
+                <p class="text-sm text-gray-400">Erhalte Benachrichtigungen direkt im Browser</p>
+              </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isLoadingPush" class="flex justify-center py-8">
+              <svg class="animate-spin h-8 w-8 text-primary-500" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+
+            <div v-else>
+              <!-- Not Supported Warning -->
+              <div v-if="!pushSupported" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <p class="text-yellow-300">Push-Benachrichtigungen werden in diesem Browser nicht unterstützt.</p>
+              </div>
+
+              <!-- Permission Denied Warning -->
+              <div v-else-if="pushPermission === 'denied'" class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+                <p class="text-red-300">Benachrichtigungen wurden im Browser blockiert.</p>
+                <p class="text-sm text-gray-400 mt-2">Bitte aktiviere Benachrichtigungen in deinen Browser-Einstellungen.</p>
+              </div>
+
+              <!-- Status & Toggle -->
+              <div v-else class="mb-6">
+                <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div v-if="isSubscribed" class="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                    <div v-else class="w-3 h-3 rounded-full bg-gray-500" />
+                    <span class="text-white">
+                      {{ isSubscribed ? 'Push-Benachrichtigungen aktiv' : 'Push-Benachrichtigungen inaktiv' }}
+                    </span>
+                  </div>
+                  <button
+                    v-if="isSubscribed"
+                    @click="disablePushNotifications"
+                    class="btn-secondary text-red-400"
+                  >
+                    Deaktivieren
+                  </button>
+                  <button
+                    v-else
+                    @click="enablePushNotifications"
+                    class="btn-primary"
+                  >
+                    Aktivieren
+                  </button>
+                </div>
+
+                <!-- Test Notification -->
+                <button
+                  v-if="isSubscribed"
+                  @click="sendTestNotification"
+                  :disabled="isSendingTest"
+                  class="mt-4 btn-secondary flex items-center gap-2"
+                >
+                  <BellIcon class="w-4 h-4" />
+                  <span v-if="isSendingTest">Sende...</span>
+                  <span v-else>Test-Benachrichtigung senden</span>
+                </button>
+              </div>
+
+              <!-- Active Subscriptions -->
+              <div v-if="pushSubscriptions.length > 0" class="mb-6">
+                <h3 class="text-sm font-medium text-gray-400 mb-3">Aktive Geräte ({{ pushSubscriptions.length }})</h3>
+                <div class="space-y-2">
+                  <div
+                    v-for="sub in pushSubscriptions"
+                    :key="sub.id"
+                    class="flex items-center justify-between p-3 bg-dark-700/50 rounded-lg text-sm"
+                  >
+                    <div>
+                      <p class="text-white">{{ sub.device_name || 'Unbekanntes Gerät' }}</p>
+                      <p class="text-xs text-gray-500">Zuletzt aktiv: {{ sub.last_used_at ? formatDate(sub.last_used_at) : 'Nie' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notification Preferences -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-6">Benachrichtigungs-Einstellungen</h2>
+
+            <!-- Global Settings -->
+            <div class="space-y-4 mb-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-white font-medium">Push-Benachrichtigungen</p>
+                  <p class="text-gray-400 text-sm">Browser-Benachrichtigungen aktivieren</p>
+                </div>
+                <button
+                  @click="pushPreferences.push_enabled = !pushPreferences.push_enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="pushPreferences.push_enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="pushPreferences.push_enabled ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-white font-medium">E-Mail-Benachrichtigungen</p>
+                  <p class="text-gray-400 text-sm">Wichtige Updates per E-Mail erhalten</p>
+                </div>
+                <button
+                  @click="pushPreferences.email_enabled = !pushPreferences.email_enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="pushPreferences.email_enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="pushPreferences.email_enabled ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <!-- Quiet Hours -->
+            <div class="border-t border-dark-700 pt-4 mb-6">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Ruhezeiten</h3>
+              <p class="text-xs text-gray-500 mb-3">Keine Benachrichtigungen in diesem Zeitraum</p>
+              <div class="flex items-center gap-4">
+                <div>
+                  <label class="label text-xs">Von</label>
+                  <input
+                    v-model="pushPreferences.quiet_hours_start"
+                    type="time"
+                    class="input w-32"
+                  />
+                </div>
+                <div>
+                  <label class="label text-xs">Bis</label>
+                  <input
+                    v-model="pushPreferences.quiet_hours_end"
+                    type="time"
+                    class="input w-32"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Settings -->
+            <div class="border-t border-dark-700 pt-4">
+              <h3 class="text-sm font-medium text-gray-400 mb-3">Benachrichtigungen nach Kategorie</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_tasks"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Aufgaben & Listen</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_calendar"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Kalender-Erinnerungen</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_tickets"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Tickets</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_uptime"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Uptime-Warnungen</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_chat"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Chat-Nachrichten</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_inbox"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Inbox</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_recurring"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Wiederkehrende Aufgaben</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_backups"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">Backup-Status</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                  <input
+                    v-model="pushPreferences.notify_system"
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                  />
+                  <span class="text-white">System-Benachrichtigungen</span>
+                </label>
+              </div>
+            </div>
+
+            <button @click="savePushPreferences" class="btn-primary mt-6">
+              Einstellungen speichern
+            </button>
           </div>
         </div>
 

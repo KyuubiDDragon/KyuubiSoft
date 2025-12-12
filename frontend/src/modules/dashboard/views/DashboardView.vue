@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
@@ -21,6 +21,10 @@ import {
   ExclamationTriangleIcon,
   ArrowTrendingUpIcon,
   PlayIcon,
+  SunIcon,
+  CloudIcon,
+  MapPinIcon,
+  LinkIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -34,6 +38,24 @@ const isLoading = ref(true)
 const isEditMode = ref(false)
 const showAddWidget = ref(false)
 const analyticsData = ref(null)
+
+// Weather widget state
+const weatherData = ref({})
+const weatherLoading = ref({})
+const showWeatherConfig = ref(false)
+const weatherConfigWidget = ref(null)
+const weatherSearch = ref('')
+const weatherSearchResults = ref([])
+const isSearchingWeather = ref(false)
+
+// Countdown widget state
+const countdowns = ref({})
+const showCountdownConfig = ref(false)
+const countdownConfigWidget = ref(null)
+const countdownForm = ref({
+  title: '',
+  date: '',
+})
 
 // Widget type icons
 const widgetIcons = {
@@ -148,7 +170,17 @@ async function loadAllWidgetData() {
   // Load data for each widget
   for (const widget of widgets.value) {
     await fetchWidgetData(widget.widget_type)
+
+    // Load weather data for weather widgets
+    if (widget.widget_type === 'weather' && widget.config) {
+      await fetchWeatherData(widget.id, widget.config)
+    }
   }
+
+  // Initialize countdowns
+  updateCountdowns()
+  countdownInterval = setInterval(updateCountdowns, 1000)
+
   isLoading.value = false
 }
 
@@ -192,6 +224,145 @@ const availableToAdd = computed(() => {
   return Object.entries(availableWidgets.value)
     .filter(([type]) => !addedTypes.includes(type))
     .map(([type, info]) => ({ type, ...info }))
+})
+
+// Weather widget functions
+async function fetchWeatherData(widgetId, config) {
+  if (!config?.location && !config?.latitude) return
+
+  weatherLoading.value[widgetId] = true
+  try {
+    const params = config.latitude
+      ? { lat: config.latitude, lon: config.longitude }
+      : { location: config.location }
+
+    const response = await api.get('/api/v1/weather', { params })
+    weatherData.value[widgetId] = response.data.data
+  } catch (error) {
+    console.error('Failed to fetch weather:', error)
+  } finally {
+    weatherLoading.value[widgetId] = false
+  }
+}
+
+async function searchWeatherLocation() {
+  if (weatherSearch.value.length < 2) return
+
+  isSearchingWeather.value = true
+  try {
+    const response = await api.get('/api/v1/weather/search', {
+      params: { q: weatherSearch.value }
+    })
+    weatherSearchResults.value = response.data.data
+  } catch (error) {
+    console.error('Failed to search locations:', error)
+  } finally {
+    isSearchingWeather.value = false
+  }
+}
+
+async function selectWeatherLocation(location) {
+  if (!weatherConfigWidget.value) return
+
+  const widgetIndex = widgets.value.findIndex(w => w.id === weatherConfigWidget.value.id)
+  if (widgetIndex < 0) return
+
+  widgets.value[widgetIndex].config = {
+    location: `${location.name}, ${location.country}`,
+    latitude: location.latitude,
+    longitude: location.longitude,
+  }
+
+  await saveLayout()
+  await fetchWeatherData(widgets.value[widgetIndex].id, widgets.value[widgetIndex].config)
+
+  showWeatherConfig.value = false
+  weatherConfigWidget.value = null
+  weatherSearch.value = ''
+  weatherSearchResults.value = []
+}
+
+function openWeatherConfig(widget) {
+  weatherConfigWidget.value = widget
+  showWeatherConfig.value = true
+}
+
+// Countdown widget functions
+function calculateCountdown(targetDate) {
+  const now = new Date()
+  const target = new Date(targetDate)
+  const diff = target - now
+
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true }
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+  return { days, hours, minutes, seconds, expired: false }
+}
+
+function updateCountdowns() {
+  widgets.value.forEach(widget => {
+    if (widget.widget_type === 'countdown' && widget.config?.date) {
+      countdowns.value[widget.id] = calculateCountdown(widget.config.date)
+    }
+  })
+}
+
+function openCountdownConfig(widget) {
+  countdownConfigWidget.value = widget
+  countdownForm.value = {
+    title: widget.config?.title || '',
+    date: widget.config?.date || '',
+  }
+  showCountdownConfig.value = true
+}
+
+async function saveCountdownConfig() {
+  if (!countdownConfigWidget.value) return
+
+  const widgetIndex = widgets.value.findIndex(w => w.id === countdownConfigWidget.value.id)
+  if (widgetIndex < 0) return
+
+  widgets.value[widgetIndex].config = {
+    title: countdownForm.value.title,
+    date: countdownForm.value.date,
+  }
+
+  await saveLayout()
+  updateCountdowns()
+
+  showCountdownConfig.value = false
+  countdownConfigWidget.value = null
+}
+
+// Weather icon helper
+function getWeatherIcon(icon) {
+  const icons = {
+    sunny: SunIcon,
+    partly_cloudy: CloudIcon,
+    cloudy: CloudIcon,
+    rain: CloudIcon,
+    snow: CloudIcon,
+    thunderstorm: CloudIcon,
+    fog: CloudIcon,
+    drizzle: CloudIcon,
+    showers: CloudIcon,
+  }
+  return icons[icon] || CloudIcon
+}
+
+// Update countdowns every second
+let countdownInterval = null
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+  }
 })
 </script>
 
@@ -648,6 +819,165 @@ const availableToAdd = computed(() => {
           </div>
         </div>
 
+        <!-- Weather Widget -->
+        <div
+          v-else-if="widget.widget_type === 'weather'"
+          class="card p-6 col-span-1 lg:col-span-1 relative group"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <button @click="openWeatherConfig(widget)" class="text-gray-400 hover:text-white">
+              <Cog6ToothIcon class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="weatherLoading[widget.id]" class="flex justify-center py-8">
+            <svg class="animate-spin h-8 w-8 text-primary-500" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+
+          <!-- No location configured -->
+          <div v-else-if="!widget.config?.location" class="text-center py-6">
+            <MapPinIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
+            <p class="text-gray-500 text-sm mb-3">Ort nicht konfiguriert</p>
+            <button @click="openWeatherConfig(widget)" class="btn-secondary text-xs">
+              Ort festlegen
+            </button>
+          </div>
+
+          <!-- Weather data -->
+          <div v-else-if="weatherData[widget.id]">
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
+              <MapPinIcon class="w-3 h-3" />
+              {{ widget.config.location }}
+            </div>
+
+            <!-- Current weather -->
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-4xl font-bold text-white">{{ weatherData[widget.id].current?.temperature }}°</p>
+                <p class="text-sm text-gray-400">{{ weatherData[widget.id].current?.description }}</p>
+              </div>
+              <component :is="getWeatherIcon(weatherData[widget.id].current?.icon)" class="w-16 h-16 text-yellow-400" />
+            </div>
+
+            <!-- Details -->
+            <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+              <div class="bg-dark-700/50 rounded p-2">
+                <p class="text-gray-500 text-xs">Gefühlt</p>
+                <p class="text-white">{{ weatherData[widget.id].current?.feels_like }}°</p>
+              </div>
+              <div class="bg-dark-700/50 rounded p-2">
+                <p class="text-gray-500 text-xs">Wind</p>
+                <p class="text-white">{{ weatherData[widget.id].current?.wind_speed }} km/h</p>
+              </div>
+            </div>
+
+            <!-- Forecast -->
+            <div class="flex gap-2 overflow-x-auto">
+              <div
+                v-for="day in (weatherData[widget.id].forecast || []).slice(1, 5)"
+                :key="day.date"
+                class="flex-shrink-0 text-center p-2 bg-dark-700/50 rounded"
+              >
+                <p class="text-xs text-gray-500">{{ day.day?.substring(0, 2) }}</p>
+                <p class="text-sm font-medium text-white">{{ day.temp_max }}°</p>
+                <p class="text-xs text-gray-500">{{ day.temp_min }}°</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Countdown Widget -->
+        <div
+          v-else-if="widget.widget_type === 'countdown'"
+          class="card p-6 col-span-1 relative group"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.config?.title || widget.title }}</h3>
+            <button @click="openCountdownConfig(widget)" class="text-gray-400 hover:text-white">
+              <Cog6ToothIcon class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- No date configured -->
+          <div v-if="!widget.config?.date" class="text-center py-6">
+            <ClockIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
+            <p class="text-gray-500 text-sm mb-3">Kein Datum festgelegt</p>
+            <button @click="openCountdownConfig(widget)" class="btn-secondary text-xs">
+              Countdown einrichten
+            </button>
+          </div>
+
+          <!-- Countdown display -->
+          <div v-else-if="countdowns[widget.id]" class="text-center">
+            <div v-if="countdowns[widget.id].expired" class="py-4">
+              <p class="text-2xl font-bold text-green-400">Erreicht!</p>
+            </div>
+            <div v-else class="grid grid-cols-4 gap-2">
+              <div class="bg-dark-700/50 rounded-lg p-2">
+                <p class="text-2xl font-bold text-white">{{ countdowns[widget.id].days }}</p>
+                <p class="text-xs text-gray-500">Tage</p>
+              </div>
+              <div class="bg-dark-700/50 rounded-lg p-2">
+                <p class="text-2xl font-bold text-white">{{ countdowns[widget.id].hours }}</p>
+                <p class="text-xs text-gray-500">Std</p>
+              </div>
+              <div class="bg-dark-700/50 rounded-lg p-2">
+                <p class="text-2xl font-bold text-white">{{ countdowns[widget.id].minutes }}</p>
+                <p class="text-xs text-gray-500">Min</p>
+              </div>
+              <div class="bg-dark-700/50 rounded-lg p-2">
+                <p class="text-2xl font-bold text-white">{{ countdowns[widget.id].seconds }}</p>
+                <p class="text-xs text-gray-500">Sek</p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">{{ new Date(widget.config.date).toLocaleDateString('de-DE') }}</p>
+          </div>
+        </div>
+
+        <!-- Link Stats Widget -->
+        <div
+          v-else-if="widget.widget_type === 'link_stats'"
+          class="card p-6 col-span-1 relative group"
+        >
+          <button
+            v-if="isEditMode"
+            @click="removeWidget(index)"
+            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
+            <router-link to="/links" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+          </div>
+          <div class="text-center">
+            <LinkIcon class="w-8 h-8 text-primary-400 mx-auto mb-2" />
+            <p class="text-2xl font-bold text-white">{{ widgetData.link_stats?.total_links || 0 }}</p>
+            <p class="text-gray-500 text-sm">Kurzlinks</p>
+            <p class="text-xl font-bold text-green-400 mt-2">{{ widgetData.link_stats?.total_clicks || 0 }}</p>
+            <p class="text-gray-500 text-sm">Klicks gesamt</p>
+          </div>
+        </div>
+
         <!-- Generic fallback widget -->
         <div
           v-else
@@ -719,6 +1049,117 @@ const availableToAdd = computed(() => {
               <p v-if="availableToAdd.length === 0" class="text-center text-gray-500 py-4">
                 Alle Widgets wurden bereits hinzugefügt
               </p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Weather Config Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="showWeatherConfig"
+          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+              <h3 class="text-lg font-semibold text-white">Ort festlegen</h3>
+              <button @click="showWeatherConfig = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
+            <div class="p-6">
+              <div class="relative">
+                <input
+                  v-model="weatherSearch"
+                  @input="searchWeatherLocation"
+                  type="text"
+                  class="input pr-10"
+                  placeholder="Stadt suchen..."
+                />
+                <MapPinIcon class="w-5 h-5 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2" />
+              </div>
+
+              <!-- Loading -->
+              <div v-if="isSearchingWeather" class="flex justify-center py-4">
+                <svg class="animate-spin h-6 w-6 text-primary-500" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </div>
+
+              <!-- Results -->
+              <div v-else-if="weatherSearchResults.length > 0" class="mt-4 space-y-2">
+                <button
+                  v-for="loc in weatherSearchResults"
+                  :key="`${loc.latitude}-${loc.longitude}`"
+                  @click="selectWeatherLocation(loc)"
+                  class="w-full text-left p-3 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors"
+                >
+                  <p class="text-white">{{ loc.name }}</p>
+                  <p class="text-sm text-gray-500">{{ loc.admin1 ? `${loc.admin1}, ` : '' }}{{ loc.country }}</p>
+                </button>
+              </div>
+
+              <p v-else-if="weatherSearch.length >= 2" class="text-gray-500 text-sm text-center py-4">
+                Keine Ergebnisse gefunden
+              </p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Countdown Config Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="showCountdownConfig"
+          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+              <h3 class="text-lg font-semibold text-white">Countdown einrichten</h3>
+              <button @click="showCountdownConfig = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label class="label">Titel</label>
+                <input
+                  v-model="countdownForm.title"
+                  type="text"
+                  class="input"
+                  placeholder="z.B. Urlaub, Geburtstag..."
+                />
+              </div>
+              <div>
+                <label class="label">Datum & Uhrzeit</label>
+                <input
+                  v-model="countdownForm.date"
+                  type="datetime-local"
+                  class="input"
+                />
+              </div>
+              <button @click="saveCountdownConfig" class="btn-primary w-full">
+                Speichern
+              </button>
             </div>
           </div>
         </div>

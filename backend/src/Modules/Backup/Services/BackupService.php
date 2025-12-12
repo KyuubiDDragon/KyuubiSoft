@@ -581,11 +581,12 @@ class BackupService
         $user = $_ENV['DB_USERNAME'] ?? 'root';
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
+        // Use --defaults-extra-file for secure password passing or MYSQL_PWD env
         $cmd = sprintf(
-            'mysqldump -h%s -u%s -p%s %s > %s 2>/dev/null',
+            'MYSQL_PWD=%s mysqldump --host=%s --user=%s %s > %s 2>&1',
+            escapeshellarg($password),
             escapeshellarg($host),
             escapeshellarg($user),
-            escapeshellarg($password),
             escapeshellarg($database),
             escapeshellarg($outputFile)
         );
@@ -593,7 +594,8 @@ class BackupService
         exec($cmd, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            throw new \RuntimeException('Database backup failed');
+            $errorMsg = implode("\n", $output);
+            throw new \RuntimeException('Database backup failed: ' . $errorMsg);
         }
     }
 
@@ -605,10 +607,10 @@ class BackupService
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
         $cmd = sprintf(
-            'mysql -h%s -u%s -p%s %s < %s 2>/dev/null',
+            'MYSQL_PWD=%s mysql --host=%s --user=%s %s < %s 2>&1',
+            escapeshellarg($password),
             escapeshellarg($host),
             escapeshellarg($user),
-            escapeshellarg($password),
             escapeshellarg($database),
             escapeshellarg($inputFile)
         );
@@ -616,7 +618,8 @@ class BackupService
         exec($cmd, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            throw new \RuntimeException('Database restore failed');
+            $errorMsg = implode("\n", $output);
+            throw new \RuntimeException('Database restore failed: ' . $errorMsg);
         }
     }
 

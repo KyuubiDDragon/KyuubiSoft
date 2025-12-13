@@ -6,6 +6,7 @@ namespace App\Modules\TimeTracking\Controllers;
 
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,7 +17,8 @@ class TimeTrackingController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     public function index(Request $request, Response $response): Response
@@ -208,6 +210,14 @@ class TimeTrackingController
         $entry['is_running'] = true;
         $entry['is_billable'] = (bool) $entry['is_billable'];
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'time.started', [
+            'id' => $id,
+            'name' => $taskName,
+            'project' => $entry['project_name'] ?? null,
+            'message' => 'Zeiterfassung gestartet: ' . $taskName,
+        ]);
+
         return JsonResponse::created([
             'entry' => $entry,
         ], 'Zeiterfassung gestartet');
@@ -244,6 +254,15 @@ class TimeTrackingController
         $updated['tags'] = json_decode($updated['tags'] ?? '[]', true);
         $updated['is_running'] = false;
         $updated['is_billable'] = (bool) $updated['is_billable'];
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'time.stopped', [
+            'id' => $entryId,
+            'name' => $updated['task_name'],
+            'project' => $updated['project_name'] ?? null,
+            'duration_seconds' => $updated['duration_seconds'],
+            'message' => 'Zeiterfassung gestoppt: ' . $updated['task_name'],
+        ]);
 
         return JsonResponse::success( [
             'entry' => $updated,

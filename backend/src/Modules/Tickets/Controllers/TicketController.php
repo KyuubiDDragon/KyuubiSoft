@@ -8,6 +8,7 @@ use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Tickets\Repositories\TicketRepository;
+use App\Modules\Webhooks\Services\WebhookService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Routing\RouteContext;
@@ -16,7 +17,8 @@ class TicketController
 {
     public function __construct(
         private readonly TicketRepository $repository,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     private function getRouteArg(ServerRequestInterface $request, string $name): ?string
@@ -190,6 +192,14 @@ class TicketController
         // Add initial status history
         $this->repository->addStatusHistory($id, null, 'open', $userId, 'Ticket erstellt');
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'ticket.created', [
+            'id' => $id,
+            'title' => $ticket['title'],
+            'priority' => $ticket['priority'],
+            'message' => 'Neues Ticket erstellt: ' . $ticket['title'],
+        ]);
+
         return JsonResponse::created(['ticket' => $ticket], 'Ticket erstellt');
     }
 
@@ -289,6 +299,24 @@ class TicketController
         $this->repository->addStatusHistory($id, $oldStatus, $newStatus, $userId, $data['comment'] ?? null);
 
         $updatedTicket = $this->repository->findById($id);
+
+        // Trigger webhook for status change
+        $this->webhookService->trigger($userId, 'ticket.status_changed', [
+            'id' => $id,
+            'title' => $ticket['title'],
+            'status' => $newStatus,
+            'old_status' => $oldStatus,
+            'message' => 'Ticket-Status geändert: ' . $ticket['title'] . ' (' . $oldStatus . ' → ' . $newStatus . ')',
+        ]);
+
+        // Additional webhook for resolved status
+        if ($newStatus === 'resolved') {
+            $this->webhookService->trigger($userId, 'ticket.resolved', [
+                'id' => $id,
+                'title' => $ticket['title'],
+                'message' => 'Ticket gelöst: ' . $ticket['title'],
+            ]);
+        }
 
         return JsonResponse::success(['ticket' => $updatedTicket]);
     }

@@ -343,6 +343,9 @@ class BookmarkController
             throw new NotFoundException('Bookmark not found');
         }
 
+        // Cleanup tags
+        $this->db->delete('taggables', ['taggable_type' => 'bookmark', 'taggable_id' => $id]);
+
         $this->db->delete('bookmarks', ['id' => $id]);
 
         return JsonResponse::success(null, 'Bookmark deleted');

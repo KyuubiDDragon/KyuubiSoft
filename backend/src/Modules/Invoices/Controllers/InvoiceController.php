@@ -8,6 +8,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,7 +19,8 @@ class InvoiceController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     // ============ CLIENTS ============
@@ -258,6 +260,15 @@ class InvoiceController
 
         $invoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$id]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'invoice.created', [
+            'id' => $id,
+            'invoice_number' => $invoiceNumber,
+            'amount' => $invoice['total'] ?? 0,
+            'client' => $clientData['client_name'] ?? null,
+            'message' => 'Neue Rechnung erstellt: ' . $invoiceNumber,
+        ]);
+
         return JsonResponse::created($invoice, 'Invoice created');
     }
 
@@ -324,6 +335,17 @@ class InvoiceController
                 'UPDATE invoices SET ' . implode(', ', $updates) . ' WHERE id = ?',
                 $params
             );
+        }
+
+        // Trigger webhook when invoice is marked as paid
+        if (isset($data['status']) && $data['status'] === 'paid' && $invoice['status'] !== 'paid') {
+            $updatedInvoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$id]);
+            $this->webhookService->trigger($userId, 'invoice.paid', [
+                'id' => $id,
+                'invoice_number' => $invoice['invoice_number'],
+                'amount' => $updatedInvoice['total'] ?? 0,
+                'message' => 'Rechnung bezahlt: ' . $invoice['invoice_number'],
+            ]);
         }
 
         return JsonResponse::success(null, 'Invoice updated');

@@ -9,6 +9,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,7 +20,8 @@ class KanbanController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     // Board methods
@@ -122,6 +124,13 @@ class KanbanController
 
         $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'kanban.board_created', [
+            'id' => $boardId,
+            'title' => $board['title'],
+            'message' => 'Kanban-Board erstellt: ' . $board['title'],
+        ]);
+
         return JsonResponse::created($board, 'Board created successfully');
     }
 
@@ -223,7 +232,7 @@ class KanbanController
         $userId = $request->getAttribute('user_id');
         $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
-        $this->getBoardForUser($boardId, $userId, true);
+        $board = $this->getBoardForUser($boardId, $userId, true);
 
         // Cleanup favorites and tags (board and all cards)
         $this->db->delete('favorites', ['item_type' => 'kanban_board', 'item_id' => $boardId]);
@@ -238,6 +247,13 @@ class KanbanController
         }
 
         $this->db->delete('kanban_boards', ['id' => $boardId]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'kanban.board_deleted', [
+            'id' => $boardId,
+            'title' => $board['title'],
+            'message' => 'Kanban-Board gelöscht: ' . $board['title'],
+        ]);
 
         return JsonResponse::success(null, 'Board deleted successfully');
     }
@@ -430,6 +446,13 @@ class KanbanController
             'title' => $data['title'],
         ]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'kanban.card_created', [
+            'id' => $cardId,
+            'title' => $card['title'],
+            'message' => 'Karte erstellt: ' . $card['title'],
+        ]);
+
         return JsonResponse::created($card, 'Card created successfully');
     }
 
@@ -522,7 +545,20 @@ class KanbanController
         $cardId = $route->getArgument('cardId');
 
         $this->getBoardForUser($boardId, $userId, true);
+
+        // Get card info for webhook before deletion
+        $card = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
+
         $this->db->delete('kanban_cards', ['id' => $cardId]);
+
+        // Trigger webhook
+        if ($card) {
+            $this->webhookService->trigger($userId, 'kanban.card_deleted', [
+                'id' => $cardId,
+                'title' => $card['title'],
+                'message' => 'Karte gelöscht: ' . $card['title'],
+            ]);
+        }
 
         return JsonResponse::success(null, 'Card deleted successfully');
     }
@@ -571,6 +607,15 @@ class KanbanController
                 'from_column_id' => $oldColumn['id'],
                 'to_column' => $newColumn['title'],
                 'to_column_id' => $newColumn['id'],
+            ]);
+
+            // Trigger webhook
+            $this->webhookService->trigger($userId, 'kanban.card_moved', [
+                'id' => $cardId,
+                'title' => $card['title'],
+                'from_column' => $oldColumn['title'],
+                'to_column' => $newColumn['title'],
+                'message' => 'Karte verschoben: ' . $card['title'] . ' (' . $oldColumn['title'] . ' → ' . $newColumn['title'] . ')',
             ]);
         }
 

@@ -9,6 +9,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,7 +20,8 @@ class SnippetController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -162,6 +164,14 @@ class SnippetController
         $snippet = $this->db->fetchAssociative('SELECT * FROM snippets WHERE id = ?', [$snippetId]);
         $snippet['tags'] = $snippet['tags'] ? json_decode($snippet['tags'], true) : [];
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'snippet.created', [
+            'id' => $snippetId,
+            'title' => $snippet['title'],
+            'language' => $snippet['language'],
+            'message' => 'Neues Snippet erstellt: ' . $snippet['title'],
+        ]);
+
         return JsonResponse::created($snippet, 'Snippet created successfully');
     }
 
@@ -210,13 +220,20 @@ class SnippetController
         $userId = $request->getAttribute('user_id');
         $snippetId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
-        $this->getSnippetForUser($snippetId, $userId);
+        $snippet = $this->getSnippetForUser($snippetId, $userId);
 
         // Cleanup favorites and tags
         $this->db->delete('favorites', ['item_type' => 'snippet', 'item_id' => $snippetId]);
         $this->db->delete('taggables', ['taggable_type' => 'snippet', 'taggable_id' => $snippetId]);
 
         $this->db->delete('snippets', ['id' => $snippetId]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'snippet.deleted', [
+            'id' => $snippetId,
+            'title' => $snippet['title'],
+            'message' => 'Snippet gelöscht: ' . $snippet['title'],
+        ]);
 
         return JsonResponse::success(null, 'Snippet deleted successfully');
     }

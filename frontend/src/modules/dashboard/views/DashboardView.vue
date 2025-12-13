@@ -547,8 +547,8 @@ function discardChanges() {
       <!-- Ghost Preview (drop/resize indicator) -->
       <div
         v-if="ghostPosition && (draggedWidget || resizingWidget)"
-        class="pointer-events-none rounded-xl border-2 border-dashed bg-primary-500/10 transition-all duration-75"
-        :class="resizingWidget ? 'border-green-500' : 'border-primary-500'"
+        class="pointer-events-none rounded-xl border-4 transition-all duration-75 z-50"
+        :class="resizingWidget ? 'border-green-500 bg-green-500/20' : 'border-primary-500 bg-primary-500/20'"
         :style="getGhostStyle()"
       ></div>
 

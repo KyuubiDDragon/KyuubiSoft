@@ -227,16 +227,24 @@ export function useDashboardGrid(widgets, isEditMode) {
 
     const dims = getCellDimensions(gridElement)
     const widget = resizingWidget.value
+
+    // Use the ORIGINAL position when resize started, not current ghost position
     const origX = widget.position_x ?? 0
     const origY = widget.position_y ?? 0
     const origW = widget.width ?? 1
     const origH = widget.height ?? 1
 
-    // Mouse position in grid coordinates
+    // Calculate the right and bottom edges of the original widget
+    const origRight = origX + origW
+    const origBottom = origY + origH
+
+    // Mouse position in grid coordinates (with some offset for better feel)
     const relX = event.clientX - dims.gridLeft
     const relY = event.clientY - dims.gridTop
-    const mouseCol = relX / dims.width
-    const mouseRow = relY / dims.height
+
+    // Convert to cell coordinates
+    const mouseCol = Math.round(relX / dims.width)
+    const mouseRow = Math.round(relY / dims.height)
 
     const dir = resizeDirection.value
     let newX = origX
@@ -246,31 +254,33 @@ export function useDashboardGrid(widgets, isEditMode) {
 
     // Calculate new dimensions based on resize direction
     if (dir.includes('e')) {
-      // Resize from right edge
-      newW = Math.max(1, Math.min(GRID_COLS - origX, Math.round(mouseCol - origX + 0.5)))
+      // Resize from right edge - width changes, position stays
+      const newRight = Math.max(origX + 1, Math.min(GRID_COLS, mouseCol))
+      newW = newRight - origX
     }
     if (dir.includes('w')) {
-      // Resize from left edge
-      const newLeft = Math.max(0, Math.min(origX + origW - 1, Math.floor(mouseCol)))
-      newW = origX + origW - newLeft
+      // Resize from left edge - both position and width change
+      const newLeft = Math.max(0, Math.min(origRight - 1, mouseCol))
       newX = newLeft
+      newW = origRight - newLeft
     }
     if (dir.includes('s')) {
-      // Resize from bottom edge
-      newH = Math.max(1, Math.round(mouseRow - origY + 0.5))
+      // Resize from bottom edge - height changes, position stays
+      const newBottom = Math.max(origY + 1, mouseRow)
+      newH = newBottom - origY
     }
     if (dir.includes('n')) {
-      // Resize from top edge
-      const newTop = Math.max(0, Math.min(origY + origH - 1, Math.floor(mouseRow)))
-      newH = origY + origH - newTop
+      // Resize from top edge - both position and height change
+      const newTop = Math.max(0, Math.min(origBottom - 1, mouseRow))
       newY = newTop
+      newH = origBottom - newTop
     }
 
     // Ensure minimum size
-    if (newW < 1) newW = 1
-    if (newH < 1) newH = 1
+    newW = Math.max(1, newW)
+    newH = Math.max(1, newH)
 
-    // Check if placement is valid
+    // Check if placement is valid (no collision with other widgets)
     if (canPlaceWidget(widget, newX, newY, newW, newH)) {
       ghostSize.value = { w: newW, h: newH }
       ghostPosition.value = { x: newX, y: newY }

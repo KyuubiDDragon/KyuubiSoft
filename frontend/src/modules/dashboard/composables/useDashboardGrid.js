@@ -1,15 +1,15 @@
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 const GRID_COLS = 4
-const GRID_ROWS = 20 // Max rows, can grow
+const MIN_CELL_HEIGHT = 120
 
 export function useDashboardGrid(widgets, isEditMode) {
   const draggedWidget = ref(null)
-  const dragOffset = ref({ x: 0, y: 0 })
   const resizingWidget = ref(null)
   const resizeDirection = ref(null)
   const ghostPosition = ref(null)
   const ghostSize = ref(null)
+  const gridRef = ref(null)
 
   // Create a grid map to track occupied cells
   const gridMap = computed(() => {
@@ -19,10 +19,11 @@ export function useDashboardGrid(widgets, isEditMode) {
       const y = widget.position_y ?? 0
       const w = widget.width ?? 1
       const h = widget.height ?? 1
+      const id = widget.id || `temp-${widget.widget_type}`
 
       for (let row = y; row < y + h; row++) {
         for (let col = x; col < x + w; col++) {
-          map[`${col}-${row}`] = widget.id || widget.widget_type
+          map[`${col}-${row}`] = id
         }
       }
     })
@@ -33,6 +34,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   function canPlaceWidget(widget, newX, newY, newWidth = null, newHeight = null) {
     const w = newWidth ?? widget.width ?? 1
     const h = newHeight ?? widget.height ?? 1
+    const widgetId = widget.id || `temp-${widget.widget_type}`
 
     // Check bounds
     if (newX < 0 || newX + w > GRID_COLS) return false
@@ -42,7 +44,7 @@ export function useDashboardGrid(widgets, isEditMode) {
     for (let row = newY; row < newY + h; row++) {
       for (let col = newX; col < newX + w; col++) {
         const occupant = gridMap.value[`${col}-${row}`]
-        if (occupant && occupant !== (widget.id || widget.widget_type)) {
+        if (occupant && occupant !== widgetId) {
           return false
         }
       }
@@ -53,7 +55,8 @@ export function useDashboardGrid(widgets, isEditMode) {
 
   // Find the next available position for a new widget
   function findNextAvailablePosition(width = 1, height = 1) {
-    for (let row = 0; row < GRID_ROWS; row++) {
+    const maxRows = getMaxRow() + 5
+    for (let row = 0; row < maxRows; row++) {
       for (let col = 0; col <= GRID_COLS - width; col++) {
         let canPlace = true
         for (let r = row; r < row + height && canPlace; r++) {
@@ -68,7 +71,6 @@ export function useDashboardGrid(widgets, isEditMode) {
         }
       }
     }
-    // If no space found, put at the bottom
     return { x: 0, y: getMaxRow() + 1 }
   }
 
@@ -88,6 +90,27 @@ export function useDashboardGrid(widgets, isEditMode) {
     return Math.max(getMaxRow() + (isEditMode.value ? 2 : 0), 4)
   })
 
+  // Get cell dimensions from grid
+  function getCellDimensions(gridElement) {
+    if (!gridElement) return { width: 200, height: MIN_CELL_HEIGHT }
+
+    const gridRect = gridElement.getBoundingClientRect()
+    const gap = 24 // 1.5rem gap
+    const availableWidth = gridRect.width - (gap * (GRID_COLS - 1))
+    const cellWidth = availableWidth / GRID_COLS
+
+    // Try to get actual cell height from first widget
+    const firstWidget = gridElement.querySelector('.card')
+    const cellHeight = firstWidget ? firstWidget.getBoundingClientRect().height + gap : MIN_CELL_HEIGHT + gap
+
+    return {
+      width: cellWidth + gap,
+      height: cellHeight,
+      gridLeft: gridRect.left,
+      gridTop: gridRect.top
+    }
+  }
+
   // Drag handlers
   function startDrag(widget, event) {
     if (!isEditMode.value) return
@@ -95,43 +118,67 @@ export function useDashboardGrid(widgets, isEditMode) {
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', widget.id || widget.widget_type)
 
+    // Set drag image to be more visible
+    if (event.target) {
+      event.dataTransfer.setDragImage(event.target, 50, 50)
+    }
+
     draggedWidget.value = widget
     ghostPosition.value = { x: widget.position_x ?? 0, y: widget.position_y ?? 0 }
     ghostSize.value = { w: widget.width ?? 1, h: widget.height ?? 1 }
 
-    // Calculate offset from mouse to widget top-left
-    const rect = event.target.getBoundingClientRect()
-    dragOffset.value = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
-    }
-
-    // Visual feedback
+    // Visual feedback with delay for drag image
     setTimeout(() => {
-      event.target.style.opacity = '0.5'
+      if (event.target) {
+        event.target.style.opacity = '0.4'
+      }
     }, 0)
   }
 
   function onDrag(event, gridElement) {
-    if (!draggedWidget.value || !gridElement) return
+    if (!draggedWidget.value || !gridElement || event.clientX === 0) return
 
-    const gridRect = gridElement.getBoundingClientRect()
-    const cellWidth = gridRect.width / GRID_COLS
-    const cellHeight = 120 // Approximate cell height
+    const dims = getCellDimensions(gridElement)
+    const widget = draggedWidget.value
+    const widgetWidth = widget.width ?? 1
 
-    const relX = event.clientX - gridRect.left - dragOffset.value.x + (cellWidth / 2)
-    const relY = event.clientY - gridRect.top - dragOffset.value.y + (cellHeight / 2)
+    // Calculate position relative to grid
+    const relX = event.clientX - dims.gridLeft
+    const relY = event.clientY - dims.gridTop
 
-    const newX = Math.max(0, Math.min(GRID_COLS - (draggedWidget.value.width ?? 1), Math.floor(relX / cellWidth)))
-    const newY = Math.max(0, Math.floor(relY / cellHeight))
+    // Convert to grid coordinates
+    let newX = Math.floor(relX / dims.width)
+    let newY = Math.floor(relY / dims.height)
 
-    ghostPosition.value = { x: newX, y: newY }
+    // Clamp to valid range
+    newX = Math.max(0, Math.min(GRID_COLS - widgetWidth, newX))
+    newY = Math.max(0, newY)
+
+    // Only update if position changed
+    if (!ghostPosition.value || ghostPosition.value.x !== newX || ghostPosition.value.y !== newY) {
+      ghostPosition.value = { x: newX, y: newY }
+    }
   }
 
   function endDrag(event) {
-    if (event.target) {
+    // Reset visual
+    if (event && event.target) {
       event.target.style.opacity = '1'
     }
+
+    // Apply position if we have a ghost position
+    if (draggedWidget.value && ghostPosition.value) {
+      const widget = draggedWidget.value
+      const newX = ghostPosition.value.x
+      const newY = ghostPosition.value.y
+
+      if (canPlaceWidget(widget, newX, newY)) {
+        widget.position_x = newX
+        widget.position_y = newY
+      }
+    }
+
+    // Clear state
     draggedWidget.value = null
     ghostPosition.value = null
     ghostSize.value = null
@@ -160,8 +207,16 @@ export function useDashboardGrid(widgets, isEditMode) {
     ghostSize.value = { w: widget.width ?? 1, h: widget.height ?? 1 }
     ghostPosition.value = { x: widget.position_x ?? 0, y: widget.position_y ?? 0 }
 
-    document.addEventListener('mousemove', onResizeMove)
-    document.addEventListener('mouseup', endResize)
+    // Add listeners
+    const onMove = (e) => onResizeMove(e)
+    const onEnd = () => {
+      endResize()
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onEnd)
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onEnd)
   }
 
   function onResizeMove(event) {
@@ -170,42 +225,53 @@ export function useDashboardGrid(widgets, isEditMode) {
     const gridElement = document.querySelector('.dashboard-grid')
     if (!gridElement) return
 
-    const gridRect = gridElement.getBoundingClientRect()
-    const cellWidth = gridRect.width / GRID_COLS
-    const cellHeight = 120
-
+    const dims = getCellDimensions(gridElement)
     const widget = resizingWidget.value
-    const startX = widget.position_x ?? 0
-    const startY = widget.position_y ?? 0
+    const origX = widget.position_x ?? 0
+    const origY = widget.position_y ?? 0
+    const origW = widget.width ?? 1
+    const origH = widget.height ?? 1
 
-    const relX = event.clientX - gridRect.left
-    const relY = event.clientY - gridRect.top
+    // Mouse position in grid coordinates
+    const relX = event.clientX - dims.gridLeft
+    const relY = event.clientY - dims.gridTop
+    const mouseCol = relX / dims.width
+    const mouseRow = relY / dims.height
 
     const dir = resizeDirection.value
-    let newW = widget.width ?? 1
-    let newH = widget.height ?? 1
-    let newX = startX
-    let newY = startY
+    let newX = origX
+    let newY = origY
+    let newW = origW
+    let newH = origH
 
+    // Calculate new dimensions based on resize direction
     if (dir.includes('e')) {
-      newW = Math.max(1, Math.min(GRID_COLS - startX, Math.ceil((relX - startX * cellWidth) / cellWidth)))
+      // Resize from right edge
+      newW = Math.max(1, Math.min(GRID_COLS - origX, Math.round(mouseCol - origX + 0.5)))
     }
     if (dir.includes('w')) {
-      const endX = startX + (widget.width ?? 1)
-      newX = Math.max(0, Math.min(startX + (widget.width ?? 1) - 1, Math.floor(relX / cellWidth)))
-      newW = endX - newX
+      // Resize from left edge
+      const newLeft = Math.max(0, Math.min(origX + origW - 1, Math.floor(mouseCol)))
+      newW = origX + origW - newLeft
+      newX = newLeft
     }
     if (dir.includes('s')) {
-      newH = Math.max(1, Math.ceil((relY - startY * cellHeight) / cellHeight))
+      // Resize from bottom edge
+      newH = Math.max(1, Math.round(mouseRow - origY + 0.5))
     }
     if (dir.includes('n')) {
-      const endY = startY + (widget.height ?? 1)
-      newY = Math.max(0, Math.floor(relY / cellHeight))
-      newH = endY - newY
+      // Resize from top edge
+      const newTop = Math.max(0, Math.min(origY + origH - 1, Math.floor(mouseRow)))
+      newH = origY + origH - newTop
+      newY = newTop
     }
 
-    // Validate
-    if (newW >= 1 && newH >= 1 && canPlaceWidget(widget, newX, newY, newW, newH)) {
+    // Ensure minimum size
+    if (newW < 1) newW = 1
+    if (newH < 1) newH = 1
+
+    // Check if placement is valid
+    if (canPlaceWidget(widget, newX, newY, newW, newH)) {
       ghostSize.value = { w: newW, h: newH }
       ghostPosition.value = { x: newX, y: newY }
     }
@@ -213,19 +279,18 @@ export function useDashboardGrid(widgets, isEditMode) {
 
   function endResize() {
     if (resizingWidget.value && ghostSize.value && ghostPosition.value) {
+      // Apply the new size and position
       resizingWidget.value.width = ghostSize.value.w
       resizingWidget.value.height = ghostSize.value.h
       resizingWidget.value.position_x = ghostPosition.value.x
       resizingWidget.value.position_y = ghostPosition.value.y
     }
 
+    // Clear state
     resizingWidget.value = null
     resizeDirection.value = null
     ghostSize.value = null
     ghostPosition.value = null
-
-    document.removeEventListener('mousemove', onResizeMove)
-    document.removeEventListener('mouseup', endResize)
   }
 
   // Get widget style for grid positioning

@@ -16,30 +16,30 @@ use Slim\Routing\RouteContext;
 class WidgetController
 {
     private const AVAILABLE_WIDGETS = [
-        'quick_stats' => ['title' => 'Schnellstatistik', 'default_width' => 2, 'default_height' => 1, 'description' => 'Übersicht über wichtige Kennzahlen'],
-        'recent_tasks' => ['title' => 'Aktuelle Aufgaben', 'default_width' => 1, 'default_height' => 2, 'description' => 'Liste der zuletzt bearbeiteten Aufgaben'],
-        'recent_documents' => ['title' => 'Letzte Dokumente', 'default_width' => 1, 'default_height' => 2, 'description' => 'Zuletzt bearbeitete Dokumente'],
-        'uptime_status' => ['title' => 'Uptime Status', 'default_width' => 1, 'default_height' => 1, 'description' => 'Status der Uptime-Monitore'],
-        'time_tracking_today' => ['title' => 'Zeiterfassung Heute', 'default_width' => 1, 'default_height' => 1, 'description' => 'Heutige Zeiterfassung'],
-        'kanban_summary' => ['title' => 'Kanban Übersicht', 'default_width' => 1, 'default_height' => 2, 'description' => 'Zusammenfassung der Kanban-Boards'],
-        'productivity_chart' => ['title' => 'Produktivität', 'default_width' => 2, 'default_height' => 2, 'description' => 'Produktivitätsdiagramm'],
-        'calendar_preview' => ['title' => 'Kalender', 'default_width' => 1, 'default_height' => 2, 'description' => 'Kommende Termine'],
-        'quick_notes' => ['title' => 'Quick Notes', 'default_width' => 1, 'default_height' => 2, 'description' => 'Schnelle Notizen'],
-        'recent_activity' => ['title' => 'Letzte Aktivität', 'default_width' => 1, 'default_height' => 2, 'description' => 'Aktivitätsprotokoll'],
+        'quick_stats' => ['title' => 'Schnellstatistik', 'default_width' => 2, 'default_height' => 5, 'description' => 'Übersicht über wichtige Kennzahlen'],
+        'recent_tasks' => ['title' => 'Aktuelle Aufgaben', 'default_width' => 1, 'default_height' => 10, 'description' => 'Liste der zuletzt bearbeiteten Aufgaben'],
+        'recent_documents' => ['title' => 'Letzte Dokumente', 'default_width' => 1, 'default_height' => 10, 'description' => 'Zuletzt bearbeitete Dokumente'],
+        'uptime_status' => ['title' => 'Uptime Status', 'default_width' => 1, 'default_height' => 6, 'description' => 'Status der Uptime-Monitore'],
+        'time_tracking_today' => ['title' => 'Zeiterfassung Heute', 'default_width' => 1, 'default_height' => 6, 'description' => 'Heutige Zeiterfassung'],
+        'kanban_summary' => ['title' => 'Kanban Übersicht', 'default_width' => 1, 'default_height' => 10, 'description' => 'Zusammenfassung der Kanban-Boards'],
+        'productivity_chart' => ['title' => 'Produktivität', 'default_width' => 2, 'default_height' => 12, 'description' => 'Produktivitätsdiagramm'],
+        'calendar_preview' => ['title' => 'Kalender', 'default_width' => 1, 'default_height' => 12, 'description' => 'Kommende Termine'],
+        'quick_notes' => ['title' => 'Quick Notes', 'default_width' => 1, 'default_height' => 10, 'description' => 'Schnelle Notizen'],
+        'recent_activity' => ['title' => 'Letzte Aktivität', 'default_width' => 1, 'default_height' => 10, 'description' => 'Aktivitätsprotokoll'],
         // New widgets
-        'recurring_tasks_upcoming' => ['title' => 'Wiederkehrende Aufgaben', 'default_width' => 1, 'default_height' => 2, 'description' => 'Bevorstehende wiederkehrende Aufgaben'],
-        'favorites_quick_access' => ['title' => 'Favoriten', 'default_width' => 1, 'default_height' => 2, 'description' => 'Schnellzugriff auf Favoriten'],
-        'storage_usage' => ['title' => 'Speichernutzung', 'default_width' => 1, 'default_height' => 1, 'description' => 'Cloud-Speichernutzung'],
-        'password_health' => ['title' => 'Passwort-Sicherheit', 'default_width' => 1, 'default_height' => 1, 'description' => 'Übersicht zur Passwortsicherheit'],
-        'project_progress' => ['title' => 'Projektfortschritt', 'default_width' => 2, 'default_height' => 2, 'description' => 'Fortschritt aktiver Projekte'],
-        'checklist_progress' => ['title' => 'Checklisten', 'default_width' => 1, 'default_height' => 2, 'description' => 'Fortschritt der Checklisten'],
+        'recurring_tasks_upcoming' => ['title' => 'Wiederkehrende Aufgaben', 'default_width' => 1, 'default_height' => 10, 'description' => 'Bevorstehende wiederkehrende Aufgaben'],
+        'favorites_quick_access' => ['title' => 'Favoriten', 'default_width' => 1, 'default_height' => 10, 'description' => 'Schnellzugriff auf Favoriten'],
+        'storage_usage' => ['title' => 'Speichernutzung', 'default_width' => 1, 'default_height' => 6, 'description' => 'Cloud-Speichernutzung'],
+        'password_health' => ['title' => 'Passwort-Sicherheit', 'default_width' => 1, 'default_height' => 6, 'description' => 'Übersicht zur Passwortsicherheit'],
+        'project_progress' => ['title' => 'Projektfortschritt', 'default_width' => 2, 'default_height' => 12, 'description' => 'Fortschritt aktiver Projekte'],
+        'checklist_progress' => ['title' => 'Checklisten', 'default_width' => 1, 'default_height' => 10, 'description' => 'Fortschritt der Checklisten'],
         // Extended widgets
-        'weather' => ['title' => 'Wetter', 'default_width' => 1, 'default_height' => 2, 'description' => 'Wettervorhersage für deinen Standort', 'configurable' => true],
-        'countdown' => ['title' => 'Countdown', 'default_width' => 1, 'default_height' => 1, 'description' => 'Countdown zu einem Ereignis', 'configurable' => true],
-        'custom_links' => ['title' => 'Schnelllinks', 'default_width' => 1, 'default_height' => 2, 'description' => 'Benutzerdefinierte Links', 'configurable' => true],
-        'quote_of_day' => ['title' => 'Zitat des Tages', 'default_width' => 2, 'default_height' => 1, 'description' => 'Inspirierendes Zitat'],
-        'link_stats' => ['title' => 'Link-Statistiken', 'default_width' => 1, 'default_height' => 1, 'description' => 'Übersicht über Short-Links'],
-        'backup_status' => ['title' => 'Backup-Status', 'default_width' => 1, 'default_height' => 1, 'description' => 'Status der Backups'],
+        'weather' => ['title' => 'Wetter', 'default_width' => 1, 'default_height' => 10, 'description' => 'Wettervorhersage für deinen Standort', 'configurable' => true],
+        'countdown' => ['title' => 'Countdown', 'default_width' => 1, 'default_height' => 5, 'description' => 'Countdown zu einem Ereignis', 'configurable' => true],
+        'custom_links' => ['title' => 'Schnelllinks', 'default_width' => 1, 'default_height' => 10, 'description' => 'Benutzerdefinierte Links', 'configurable' => true],
+        'quote_of_day' => ['title' => 'Zitat des Tages', 'default_width' => 2, 'default_height' => 5, 'description' => 'Inspirierendes Zitat'],
+        'link_stats' => ['title' => 'Link-Statistiken', 'default_width' => 1, 'default_height' => 5, 'description' => 'Übersicht über Short-Links'],
+        'backup_status' => ['title' => 'Backup-Status', 'default_width' => 1, 'default_height' => 6, 'description' => 'Status der Backups'],
     ];
 
     public function __construct(
@@ -174,14 +174,14 @@ class WidgetController
     private function createDefaultWidgets(string $userId): array
     {
         $defaultLayout = [
-            ['widget_type' => 'quick_stats', 'position_x' => 0, 'position_y' => 0, 'width' => 4, 'height' => 1],
-            ['widget_type' => 'recent_tasks', 'position_x' => 0, 'position_y' => 1, 'width' => 2, 'height' => 2],
-            ['widget_type' => 'recent_documents', 'position_x' => 2, 'position_y' => 1, 'width' => 2, 'height' => 2],
-            ['widget_type' => 'productivity_chart', 'position_x' => 0, 'position_y' => 3, 'width' => 2, 'height' => 2],
-            ['widget_type' => 'calendar_preview', 'position_x' => 2, 'position_y' => 3, 'width' => 2, 'height' => 2],
-            ['widget_type' => 'uptime_status', 'position_x' => 0, 'position_y' => 5, 'width' => 1, 'height' => 1],
-            ['widget_type' => 'time_tracking_today', 'position_x' => 1, 'position_y' => 5, 'width' => 1, 'height' => 1],
-            ['widget_type' => 'kanban_summary', 'position_x' => 2, 'position_y' => 5, 'width' => 2, 'height' => 2],
+            ['widget_type' => 'quick_stats', 'position_x' => 0, 'position_y' => 0, 'width' => 4, 'height' => 5],
+            ['widget_type' => 'recent_tasks', 'position_x' => 0, 'position_y' => 5, 'width' => 2, 'height' => 10],
+            ['widget_type' => 'recent_documents', 'position_x' => 2, 'position_y' => 5, 'width' => 2, 'height' => 10],
+            ['widget_type' => 'productivity_chart', 'position_x' => 0, 'position_y' => 15, 'width' => 2, 'height' => 12],
+            ['widget_type' => 'calendar_preview', 'position_x' => 2, 'position_y' => 15, 'width' => 2, 'height' => 12],
+            ['widget_type' => 'uptime_status', 'position_x' => 0, 'position_y' => 27, 'width' => 1, 'height' => 6],
+            ['widget_type' => 'time_tracking_today', 'position_x' => 1, 'position_y' => 27, 'width' => 1, 'height' => 6],
+            ['widget_type' => 'kanban_summary', 'position_x' => 2, 'position_y' => 27, 'width' => 2, 'height' => 10],
         ];
 
         $widgets = [];

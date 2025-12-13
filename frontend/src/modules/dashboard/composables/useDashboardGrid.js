@@ -1,7 +1,7 @@
 import { ref, computed, nextTick } from 'vue'
 
 const GRID_COLS = 4
-const MIN_CELL_HEIGHT = 120
+const MIN_CELL_HEIGHT = 80
 
 export function useDashboardGrid(widgets, isEditMode) {
   const draggedWidget = ref(null)

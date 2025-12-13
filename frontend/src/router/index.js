@@ -387,7 +387,7 @@ const routes = [
     path: '/s/:code',
     name: 'short-link-redirect',
     component: ShortLinkRedirectView,
-    meta: { layout: 'none', guest: true },
+    meta: { layout: 'public' },
   },
 
   // Catch all

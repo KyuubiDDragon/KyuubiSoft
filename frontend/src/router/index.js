@@ -382,15 +382,12 @@ const routes = [
     meta: { layout: 'public' },
   },
 
-  // Short link redirect - force full page reload to let nginx handle it
+  // Short link redirect - public route for all users
   {
     path: '/s/:code',
     name: 'short-link-redirect',
-    beforeEnter: (to) => {
-      // Force a full page reload to bypass Vue Router and let nginx handle it
-      window.location.href = to.fullPath
-      return false
-    },
+    component: ShortLinkRedirectView,
+    meta: { layout: 'public' },
   },
 
   // Catch all

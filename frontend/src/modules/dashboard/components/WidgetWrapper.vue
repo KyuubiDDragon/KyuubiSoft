@@ -43,6 +43,7 @@ function onResizeStart(direction, event) {
       isDragging || isResizing ? 'opacity-40' : ''
     ]"
     :style="style"
+    :data-widget-height="widget.height ?? 1"
     :draggable="isEditMode && !isResizing"
     @dragstart="$emit('dragstart', $event)"
     @dragend="$emit('dragend', $event)"

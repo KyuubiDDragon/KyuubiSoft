@@ -539,7 +539,7 @@ function discardChanges() {
       :style="{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gridAutoRows: 'minmax(120px, auto)',
+        gridAutoRows: '120px',
         gap: '1.5rem',
       }"
       @dragover="handleGridDragOver"

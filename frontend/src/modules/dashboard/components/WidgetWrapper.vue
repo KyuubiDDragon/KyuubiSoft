@@ -37,12 +37,12 @@ function onResizeStart(direction, event) {
 
 <template>
   <div
-    class="card p-6 relative group transition-all duration-200 overflow-hidden"
+    class="card p-6 relative group transition-all duration-200 overflow-y-auto"
     :class="[
       isEditMode ? 'cursor-move ring-2 ring-transparent hover:ring-primary-500/50' : '',
       isDragging || isResizing ? 'opacity-40' : ''
     ]"
-    :style="style"
+    :style="{ ...style, height: '100%' }"
     :data-widget-height="widget.height ?? 1"
     :draggable="isEditMode && !isResizing"
     @dragstart="$emit('dragstart', $event)"

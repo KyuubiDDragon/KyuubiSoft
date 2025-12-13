@@ -190,6 +190,10 @@ class DocumentController
 
         $this->getDocumentForUser($docId, $userId, true);
 
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'document', 'item_id' => $docId]);
+        $this->db->delete('taggables', ['taggable_type' => 'document', 'taggable_id' => $docId]);
+
         $this->db->delete('documents', ['id' => $docId]);
 
         return JsonResponse::success(null, 'Document deleted successfully');

@@ -113,6 +113,13 @@ class TicketRepository
             $params[] = $filters['project_id'];
         }
 
+        // Filter by multiple project IDs (for restricted users)
+        if (!empty($filters['project_ids']) && is_array($filters['project_ids'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['project_ids']), '?'));
+            $sql .= " AND t.project_id IN ($placeholders)";
+            $params = array_merge($params, $filters['project_ids']);
+        }
+
         if (!empty($filters['search'])) {
             $sql .= ' AND (t.title LIKE ? OR t.description LIKE ? OR t.ticket_number = ?)';
             $searchTerm = '%' . $filters['search'] . '%';
@@ -176,6 +183,13 @@ class TicketRepository
         if (!empty($filters['project_id'])) {
             $sql .= ' AND t.project_id = ?';
             $params[] = $filters['project_id'];
+        }
+
+        // Filter by multiple project IDs (for restricted users)
+        if (!empty($filters['project_ids']) && is_array($filters['project_ids'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['project_ids']), '?'));
+            $sql .= " AND t.project_id IN ($placeholders)";
+            $params = array_merge($params, $filters['project_ids']);
         }
 
         return (int) $this->db->fetchOne($sql, $params);

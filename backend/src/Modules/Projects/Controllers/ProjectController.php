@@ -234,15 +234,25 @@ class ProjectController
         $userId = $request->getAttribute('user_id');
         $projectId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
+        // Check ownership first
+        $project = $this->db->fetchAssociative(
+            'SELECT id FROM projects WHERE id = ? AND user_id = ?',
+            [$projectId, $userId]
+        );
+
+        if (!$project) {
+            return JsonResponse::error( 'Projekt nicht gefunden', 404);
+        }
+
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'project', 'item_id' => $projectId]);
+        $this->db->delete('taggables', ['taggable_type' => 'project', 'taggable_id' => $projectId]);
+
         // Only owner can delete
-        $deleted = $this->db->delete('projects', [
+        $this->db->delete('projects', [
             'id' => $projectId,
             'user_id' => $userId,
         ]);
-
-        if (!$deleted) {
-            return JsonResponse::error( 'Projekt nicht gefunden', 404);
-        }
 
         return JsonResponse::success( ['message' => 'Projekt gelöscht']);
     }

@@ -211,6 +211,11 @@ class SnippetController
         $snippetId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getSnippetForUser($snippetId, $userId);
+
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'snippet', 'item_id' => $snippetId]);
+        $this->db->delete('taggables', ['taggable_type' => 'snippet', 'taggable_id' => $snippetId]);
+
         $this->db->delete('snippets', ['id' => $snippetId]);
 
         return JsonResponse::success(null, 'Snippet deleted successfully');

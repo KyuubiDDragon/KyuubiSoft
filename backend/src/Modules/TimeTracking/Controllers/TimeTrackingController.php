@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\TimeTracking\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -14,7 +15,8 @@ use Slim\Routing\RouteContext;
 class TimeTrackingController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     public function index(Request $request, Response $response): Response
@@ -28,12 +30,39 @@ class TimeTrackingController
         $limit = min((int) ($params['limit'] ?? 50), 100);
         $offset = (int) ($params['offset'] ?? 0);
 
+        // Check project access for restricted users
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        // Validate requested project_id access
+        if ($projectId && $isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
+
         $sql = 'SELECT te.*, p.name as project_name, p.color as project_color
                 FROM time_entries te
                 LEFT JOIN projects p ON p.id = te.project_id
                 WHERE te.user_id = ?';
         $sqlParams = [$userId];
         $types = [\PDO::PARAM_STR];
+
+        // Filter by accessible projects for restricted users
+        if ($isRestricted && !$projectId) {
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::success([
+                    'items' => [],
+                    'total' => 0,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ]);
+            }
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $sql .= " AND te.project_id IN ({$placeholders})";
+            foreach ($accessibleProjectIds as $pid) {
+                $sqlParams[] = $pid;
+                $types[] = \PDO::PARAM_STR;
+            }
+        }
 
         if ($projectId) {
             $sql .= ' AND te.project_id = ?';
@@ -56,6 +85,14 @@ class TimeTrackingController
         // Count total before adding LIMIT/OFFSET
         $countSql = 'SELECT COUNT(*) FROM time_entries te WHERE te.user_id = ?';
         $countParams = [$userId];
+
+        // Filter count by accessible projects for restricted users
+        if ($isRestricted && !$projectId && !empty($accessibleProjectIds)) {
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $countSql .= " AND te.project_id IN ({$placeholders})";
+            $countParams = array_merge($countParams, $accessibleProjectIds);
+        }
+
         if ($projectId) {
             $countSql .= ' AND te.project_id = ?';
             $countParams[] = $projectId;
@@ -120,6 +157,15 @@ class TimeTrackingController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
+        // Validate project access for restricted users
+        $projectId = $data['project_id'] ?? null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
+
         // Stop any running entry first
         $running = $this->db->fetchAssociative(
             'SELECT id FROM time_entries WHERE user_id = ? AND is_running = 1',
@@ -140,7 +186,7 @@ class TimeTrackingController
         $this->db->insert('time_entries', [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
+            'project_id' => $projectId,
             'task_name' => $taskName,
             'description' => $data['description'] ?? null,
             'started_at' => date('Y-m-d H:i:s'),
@@ -210,6 +256,15 @@ class TimeTrackingController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
+        // Validate project access for restricted users
+        $projectId = $data['project_id'] ?? null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
+
         $taskName = trim($data['task_name'] ?? '');
         if (empty($taskName)) {
             return JsonResponse::error( 'Aufgabenname ist erforderlich', 400);
@@ -235,7 +290,7 @@ class TimeTrackingController
         $this->db->insert('time_entries', [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
+            'project_id' => $projectId,
             'task_name' => $taskName,
             'description' => $data['description'] ?? null,
             'started_at' => $startedAt,

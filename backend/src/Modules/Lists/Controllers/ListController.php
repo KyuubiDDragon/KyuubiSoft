@@ -167,6 +167,10 @@ class ListController
 
         $this->getListForUser($listId, $userId, true);
 
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'list', 'item_id' => $listId]);
+        $this->db->delete('taggables', ['taggable_type' => 'list', 'taggable_id' => $listId]);
+
         $this->db->delete('lists', ['id' => $listId]);
 
         return JsonResponse::success(null, 'List deleted successfully');

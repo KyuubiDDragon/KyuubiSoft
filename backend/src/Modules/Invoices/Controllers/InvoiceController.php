@@ -7,6 +7,7 @@ namespace App\Modules\Invoices\Controllers;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -16,7 +17,8 @@ use Slim\Routing\RouteContext;
 class InvoiceController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     // ============ CLIENTS ============
@@ -129,11 +131,31 @@ class InvoiceController
         $queryParams = $request->getQueryParams();
         $status = $queryParams['status'] ?? null;
         $clientId = $queryParams['client_id'] ?? null;
+        $projectId = $queryParams['project_id'] ?? null;
+
+        // Check project access for restricted users
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        // Validate requested project_id access
+        if ($projectId && $isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
 
         $sql = 'SELECT i.*, c.name as client_name FROM invoices i
                 LEFT JOIN clients c ON i.client_id = c.id
                 WHERE i.user_id = ?';
         $params = [$userId];
+
+        // Filter by accessible projects for restricted users
+        if ($isRestricted && !$projectId) {
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::success(['items' => []]);
+            }
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $sql .= " AND i.project_id IN ({$placeholders})";
+            $params = array_merge($params, $accessibleProjectIds);
+        }
 
         if ($status) {
             $sql .= ' AND i.status = ?';
@@ -142,6 +164,10 @@ class InvoiceController
         if ($clientId) {
             $sql .= ' AND i.client_id = ?';
             $params[] = $clientId;
+        }
+        if ($projectId) {
+            $sql .= ' AND i.project_id = ?';
+            $params[] = $projectId;
         }
 
         $sql .= ' ORDER BY i.issue_date DESC, i.invoice_number DESC';
@@ -155,6 +181,15 @@ class InvoiceController
     {
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
+
+        // Validate project access for restricted users
+        $projectId = $data['project_id'] ?? null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
 
         $id = Uuid::uuid4()->toString();
 
@@ -203,7 +238,7 @@ class InvoiceController
             'id' => $id,
             'user_id' => $userId,
             'client_id' => $data['client_id'] ?? null,
-            'project_id' => $data['project_id'] ?? null,
+            'project_id' => $projectId,
             'invoice_number' => $invoiceNumber,
             'status' => 'draft',
             'issue_date' => $data['issue_date'] ?? date('Y-m-d'),

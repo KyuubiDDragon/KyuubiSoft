@@ -533,6 +533,14 @@ class BookmarkController
         }
 
         if ($deleteBookmarks) {
+            // Cleanup tags for all bookmarks in the group
+            $bookmarkIds = $this->db->fetchFirstColumn(
+                'SELECT id FROM bookmarks WHERE group_id = ?',
+                [$groupId]
+            );
+            foreach ($bookmarkIds as $bookmarkId) {
+                $this->db->delete('taggables', ['taggable_type' => 'bookmark', 'taggable_id' => $bookmarkId]);
+            }
             // Delete all bookmarks in the group
             $this->db->executeStatement(
                 'DELETE FROM bookmarks WHERE group_id = ?',
@@ -540,6 +548,9 @@ class BookmarkController
             );
         }
         // Note: If not deleting bookmarks, foreign key ON DELETE SET NULL handles ungrouping
+
+        // Cleanup favorites for the group
+        $this->db->delete('favorites', ['item_type' => 'bookmark_group', 'item_id' => $groupId]);
 
         $this->db->delete('bookmark_groups', ['id' => $groupId]);
 

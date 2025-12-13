@@ -224,6 +224,19 @@ class KanbanController
         $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getBoardForUser($boardId, $userId, true);
+
+        // Cleanup favorites and tags (board and all cards)
+        $this->db->delete('favorites', ['item_type' => 'kanban_board', 'item_id' => $boardId]);
+        $this->db->delete('taggables', ['taggable_type' => 'kanban_board', 'taggable_id' => $boardId]);
+        // Also cleanup tags for all cards in this board
+        $cardIds = $this->db->fetchFirstColumn(
+            'SELECT id FROM kanban_cards WHERE board_id = ?',
+            [$boardId]
+        );
+        foreach ($cardIds as $cardId) {
+            $this->db->delete('taggables', ['taggable_type' => 'kanban_card', 'taggable_id' => $cardId]);
+        }
+
         $this->db->delete('kanban_boards', ['id' => $boardId]);
 
         return JsonResponse::success(null, 'Board deleted successfully');

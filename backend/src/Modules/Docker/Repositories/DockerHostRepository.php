@@ -30,7 +30,7 @@ class DockerHostRepository
         return $result ?: null;
     }
 
-    public function findByUser(string $userId, ?string $projectId = null): array
+    public function findByUser(string $userId, ?string $projectId = null, ?array $accessibleProjectIds = null): array
     {
         $sql = 'SELECT dh.*, p.name as project_name, p.color as project_color
                 FROM docker_hosts dh
@@ -44,14 +44,24 @@ class DockerHostRepository
             $params[] = $projectId;
         }
 
+        // Filter by accessible projects for restricted users
+        if ($accessibleProjectIds !== null) {
+            if (empty($accessibleProjectIds)) {
+                return [];
+            }
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $sql .= " AND dh.project_id IN ({$placeholders})";
+            $params = array_merge($params, $accessibleProjectIds);
+        }
+
         $sql .= ' ORDER BY dh.is_default DESC, p.name ASC, dh.name ASC';
 
         return $this->db->fetchAllAssociative($sql, $params);
     }
 
-    public function findByUserGroupedByProject(string $userId): array
+    public function findByUserGroupedByProject(string $userId, ?array $accessibleProjectIds = null): array
     {
-        $hosts = $this->findByUser($userId);
+        $hosts = $this->findByUser($userId, null, $accessibleProjectIds);
 
         $grouped = [
             'no_project' => [

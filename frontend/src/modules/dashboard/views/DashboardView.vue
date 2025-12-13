@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
+import { useDashboardGrid } from '../composables/useDashboardGrid'
+import WidgetWrapper from '../components/WidgetWrapper.vue'
 import {
   ListBulletIcon,
   DocumentTextIcon,
@@ -38,10 +40,28 @@ const isLoading = ref(true)
 const isEditMode = ref(false)
 const showAddWidget = ref(false)
 const analyticsData = ref(null)
+const hasUnsavedChanges = ref(false)
+const gridElement = ref(null)
 
-// Drag and drop state
-const draggedIndex = ref(null)
-const dragOverIndex = ref(null)
+// Initialize grid composable
+const {
+  GRID_COLS,
+  draggedWidget,
+  resizingWidget,
+  ghostPosition,
+  ghostSize,
+  gridRows,
+  emptyCells,
+  canPlaceWidget,
+  findNextAvailablePosition,
+  startDrag,
+  onDrag,
+  endDrag,
+  dropOnCell,
+  startResize,
+  getWidgetStyle,
+  getGhostStyle,
+} = useDashboardGrid(widgets, isEditMode)
 
 // Weather widget state
 const weatherData = ref({})
@@ -117,39 +137,84 @@ async function fetchAnalytics() {
   }
 }
 
-async function saveLayout() {
+async function saveLayout(closeEditMode = true) {
   try {
     await api.post('/api/v1/dashboard/widgets/layout', {
       widgets: widgets.value
     })
-    isEditMode.value = false
+    hasUnsavedChanges.value = false
+    if (closeEditMode) {
+      isEditMode.value = false
+    }
   } catch (error) {
     console.error('Failed to save layout:', error)
   }
+}
+
+// Mark changes as unsaved when widgets are modified
+function markUnsaved() {
+  hasUnsavedChanges.value = true
+}
+
+// Handle widget drop on grid
+function handleWidgetDrop(widget, x, y) {
+  if (dropOnCell(widget, x, y)) {
+    markUnsaved()
+  }
+}
+
+// Handle drag over grid
+function handleGridDragOver(event) {
+  event.preventDefault()
+  onDrag(event, gridElement.value)
+}
+
+// Handle drop on empty cell
+function handleEmptyCellDrop(x, y, event) {
+  event.preventDefault()
+  if (draggedWidget.value) {
+    handleWidgetDrop(draggedWidget.value, x, y)
+  }
+  endDrag(event)
+}
+
+// Handle widget resize
+function handleResize(widget, direction, event) {
+  startResize(widget, direction, event)
+  // Mark unsaved when resize ends
+  const onResizeEnd = () => {
+    markUnsaved()
+    document.removeEventListener('mouseup', onResizeEnd)
+  }
+  document.addEventListener('mouseup', onResizeEnd)
 }
 
 async function addWidget(widgetType) {
   const widgetInfo = availableWidgets.value[widgetType]
   if (!widgetInfo) return
 
+  const defaultWidth = widgetInfo.default_width || 1
+  const defaultHeight = widgetInfo.default_height || 1
+  const position = findNextAvailablePosition(defaultWidth, defaultHeight)
+
   const newWidget = {
     widget_type: widgetType,
     title: widgetInfo.title,
-    position_x: 0,
-    position_y: widgets.value.length,
-    width: widgetInfo.default_width,
-    height: widgetInfo.default_height,
+    position_x: position.x,
+    position_y: position.y,
+    width: defaultWidth,
+    height: defaultHeight,
   }
 
   widgets.value.push(newWidget)
-  await saveLayout()
+  markUnsaved()
   await fetchWidgetData(widgetType)
   showAddWidget.value = false
 }
 
 async function removeWidget(index) {
   widgets.value.splice(index, 1)
-  await saveLayout()
+  markUnsaved()
 }
 
 async function resetDashboard() {
@@ -277,7 +342,7 @@ async function selectWeatherLocation(location) {
     longitude: location.longitude,
   }
 
-  await saveLayout()
+  markUnsaved()
   await fetchWeatherData(widgets.value[widgetIndex].id, widgets.value[widgetIndex].config)
 
   showWeatherConfig.value = false
@@ -337,7 +402,7 @@ async function saveCountdownConfig() {
     date: countdownForm.value.date,
   }
 
-  await saveLayout()
+  markUnsaved()
   updateCountdowns()
 
   showCountdownConfig.value = false
@@ -369,61 +434,11 @@ onUnmounted(() => {
   }
 })
 
-// Drag and drop handlers
-function onDragStart(index, event) {
-  if (!isEditMode.value) return
-  draggedIndex.value = index
-  event.dataTransfer.effectAllowed = 'move'
-  event.dataTransfer.setData('text/plain', index.toString())
-  // Add a slight delay for visual effect
-  setTimeout(() => {
-    event.target.classList.add('opacity-50')
-  }, 0)
-}
-
-function onDragEnd(event) {
-  event.target.classList.remove('opacity-50')
-  draggedIndex.value = null
-  dragOverIndex.value = null
-}
-
-function onDragOver(index, event) {
-  if (!isEditMode.value || draggedIndex.value === null) return
-  event.preventDefault()
-  event.dataTransfer.dropEffect = 'move'
-  dragOverIndex.value = index
-}
-
-function onDragLeave() {
-  dragOverIndex.value = null
-}
-
-async function onDrop(targetIndex, event) {
-  event.preventDefault()
-  if (draggedIndex.value === null || draggedIndex.value === targetIndex) {
-    dragOverIndex.value = null
-    return
-  }
-
-  // Reorder widgets
-  const widgetsCopy = [...widgets.value]
-  const [draggedWidget] = widgetsCopy.splice(draggedIndex.value, 1)
-  widgetsCopy.splice(targetIndex, 0, draggedWidget)
-  widgets.value = widgetsCopy
-
-  // Reset drag state
-  draggedIndex.value = null
-  dragOverIndex.value = null
-
-  // Save new layout
-  await saveLayout()
-}
-
-function getDragClass(index) {
-  if (dragOverIndex.value === index && draggedIndex.value !== index) {
-    return 'ring-2 ring-primary-500 ring-offset-2 ring-offset-dark-800'
-  }
-  return ''
+// Discard changes and exit edit mode
+function discardChanges() {
+  hasUnsavedChanges.value = false
+  isEditMode.value = false
+  loadAllWidgetData()
 }
 </script>
 
@@ -440,28 +455,43 @@ function getDragClass(index) {
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <template v-if="isEditMode">
+          <button
+            @click="resetDashboard"
+            class="btn-secondary text-sm"
+          >
+            Zurücksetzen
+          </button>
+          <button
+            @click="showAddWidget = true"
+            class="btn-secondary text-sm"
+          >
+            <PlusIcon class="w-4 h-4 mr-1" />
+            Widget hinzufügen
+          </button>
+          <button
+            v-if="hasUnsavedChanges"
+            @click="discardChanges"
+            class="btn-secondary text-sm text-red-400 hover:text-red-300"
+          >
+            Abbrechen
+          </button>
+          <button
+            @click="saveLayout(true)"
+            class="btn-primary text-sm"
+            :class="hasUnsavedChanges ? 'animate-pulse' : ''"
+          >
+            <CheckIcon class="w-4 h-4 mr-1" />
+            Speichern
+          </button>
+        </template>
         <button
-          v-if="isEditMode"
-          @click="resetDashboard"
-          class="btn-secondary text-sm"
-        >
-          Zurücksetzen
-        </button>
-        <button
-          v-if="isEditMode"
-          @click="showAddWidget = true"
-          class="btn-secondary text-sm"
-        >
-          <PlusIcon class="w-4 h-4 mr-1" />
-          Widget hinzufügen
-        </button>
-        <button
-          @click="isEditMode ? saveLayout() : isEditMode = true"
+          v-else
+          @click="isEditMode = true"
           class="btn-primary text-sm"
         >
-          <Cog6ToothIcon v-if="!isEditMode" class="w-4 h-4 mr-1" />
-          <CheckIcon v-else class="w-4 h-4 mr-1" />
-          {{ isEditMode ? 'Speichern' : 'Anpassen' }}
+          <Cog6ToothIcon class="w-4 h-4 mr-1" />
+          Anpassen
         </button>
       </div>
     </div>
@@ -474,28 +504,66 @@ function getDragClass(index) {
       </div>
     </div>
 
+    <!-- Edit Mode Info Bar -->
+    <div v-if="isEditMode" class="bg-primary-500/10 border border-primary-500/30 rounded-lg p-3 flex items-center gap-4">
+      <div class="flex-1 text-sm text-primary-300">
+        <span class="font-medium">Bearbeitungsmodus aktiv</span> - Widgets verschieben (Drag & Drop), Ecken ziehen zum Vergrößern/Verkleinern
+      </div>
+      <div v-if="hasUnsavedChanges" class="text-xs text-yellow-400 flex items-center gap-1">
+        <ExclamationTriangleIcon class="w-4 h-4" />
+        Ungespeicherte Änderungen
+      </div>
+    </div>
+
     <!-- Widgets Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div
+      v-if="!isLoading"
+      ref="gridElement"
+      class="dashboard-grid relative"
+      :style="{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridAutoRows: 'minmax(120px, auto)',
+        gap: '1.5rem',
+      }"
+      @dragover="handleGridDragOver"
+    >
+      <!-- Ghost Preview (drop indicator) -->
+      <div
+        v-if="draggedWidget && ghostPosition"
+        class="pointer-events-none rounded-xl border-2 border-dashed border-primary-500 bg-primary-500/10"
+        :style="getGhostStyle()"
+      ></div>
+
+      <!-- Empty cells for drop zones in edit mode -->
+      <div
+        v-for="cell in emptyCells"
+        :key="`empty-${cell.x}-${cell.y}`"
+        class="rounded-xl border-2 border-dashed transition-all duration-200"
+        :class="isEditMode ? 'border-dark-600 hover:border-dark-500 hover:bg-dark-800/50' : 'border-transparent'"
+        :style="{
+          gridColumn: `${cell.x + 1} / span 1`,
+          gridRow: `${cell.y + 1} / span 1`,
+        }"
+        @dragover.prevent
+        @drop="handleEmptyCellDrop(cell.x, cell.y, $event)"
+      ></div>
+
+      <!-- Widgets -->
       <template v-for="(widget, index) in widgets" :key="widget.id || index">
         <!-- Quick Stats Widget -->
-        <div
+        <WidgetWrapper
           v-if="widget.widget_type === 'quick_stats'"
-          class="card p-6 col-span-full lg:col-span-4 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-dark-700/50 rounded-lg p-4">
@@ -515,27 +583,21 @@ function getDragClass(index) {
               <p class="text-2xl font-bold text-white">{{ widgetData.quick_stats?.kanban_cards || 0 }}</p>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Recent Tasks Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'recent_tasks'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/lists" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
@@ -566,27 +628,21 @@ function getDragClass(index) {
               Keine offenen Aufgaben
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Recent Documents Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'recent_documents'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/documents" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
@@ -609,27 +665,21 @@ function getDragClass(index) {
               Keine Dokumente
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Productivity Chart Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'productivity_chart'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
 
           <!-- Productivity Score -->
@@ -681,27 +731,21 @@ function getDragClass(index) {
               </div>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Calendar Preview Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'calendar_preview'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/calendar" class="text-sm text-primary-400 hover:text-primary-300">Kalender</router-link>
@@ -729,27 +773,21 @@ function getDragClass(index) {
               Keine Termine diese Woche
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Uptime Status Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'uptime_status'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/uptime" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
@@ -776,27 +814,21 @@ function getDragClass(index) {
               Keine Monitore
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Time Tracking Today Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'time_tracking_today'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
           <div class="text-center">
             <p class="text-4xl font-bold text-white">
@@ -818,27 +850,21 @@ function getDragClass(index) {
               </p>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Kanban Summary Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'kanban_summary'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/kanban" class="text-sm text-primary-400 hover:text-primary-300">Boards</router-link>
@@ -875,27 +901,21 @@ function getDragClass(index) {
               </div>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Recent Activity Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'recent_activity'"
-          class="card p-6 col-span-1 lg:col-span-2 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
           <div class="space-y-2 max-h-64 overflow-y-auto">
             <div
@@ -914,27 +934,21 @@ function getDragClass(index) {
               Keine Aktivität
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Quick Notes Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'quick_notes'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
           <div class="space-y-2">
             <div
@@ -948,27 +962,21 @@ function getDragClass(index) {
               Keine Notizen
             </p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Weather Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'weather'"
-          class="card p-6 col-span-1 lg:col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <button @click="openWeatherConfig(widget)" class="text-gray-400 hover:text-white">
@@ -1034,27 +1042,21 @@ function getDragClass(index) {
               </div>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Countdown Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'countdown'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.config?.title || widget.title }}</h3>
             <button @click="openCountdownConfig(widget)" class="text-gray-400 hover:text-white">
@@ -1096,27 +1098,21 @@ function getDragClass(index) {
             </div>
             <p class="text-xs text-gray-500 mt-3">{{ new Date(widget.config.date).toLocaleDateString('de-DE') }}</p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Link Stats Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'link_stats'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/links" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
@@ -1128,27 +1124,21 @@ function getDragClass(index) {
             <p class="text-xl font-bold text-green-400 mt-2">{{ widgetData.link_stats?.total_clicks || 0 }}</p>
             <p class="text-gray-500 text-sm">Klicks gesamt</p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Storage Usage Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'storage_usage'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
@@ -1185,27 +1175,21 @@ function getDragClass(index) {
             <p class="text-gray-500 text-sm">von {{ widgetData.storage_usage?.limit_formatted || '10 GB' }}</p>
             <p class="text-gray-400 text-xs mt-2">{{ widgetData.storage_usage?.file_count || 0 }} Dateien</p>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Backup Status Widget -->
-        <div
+        <WidgetWrapper
           v-else-if="widget.widget_type === 'backup_status'"
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
             <router-link to="/backups" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
@@ -1228,30 +1212,24 @@ function getDragClass(index) {
               <p class="text-sm text-white">{{ formatDate(widgetData.backup_status.last_successful) }}</p>
             </div>
           </div>
-        </div>
+        </WidgetWrapper>
 
         <!-- Generic fallback widget -->
-        <div
+        <WidgetWrapper
           v-else
-          class="card p-6 col-span-1 relative group transition-all duration-200"
-          :class="[getDragClass(index), isEditMode ? 'cursor-move' : '']"
-          :draggable="isEditMode"
-          @dragstart="onDragStart(index, $event)"
-          @dragend="onDragEnd"
-          @dragover="onDragOver(index, $event)"
-          @dragleave="onDragLeave"
-          @drop="onDrop(index, $event)"
+          :widget="widget"
+          :index="index"
+          :is-edit-mode="isEditMode"
+          :is-dragging="draggedWidget?.id === widget.id"
+          :style="getWidgetStyle(widget)"
+          @remove="removeWidget"
+          @dragstart="startDrag(widget, $event)"
+          @dragend="endDrag"
+          @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <button
-            v-if="isEditMode"
-            @click="removeWidget(index)"
-            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <XMarkIcon class="w-4 h-4" />
-          </button>
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
           <p class="text-gray-500 text-sm">Widget: {{ widget.widget_type }}</p>
-        </div>
+        </WidgetWrapper>
       </template>
     </div>
 

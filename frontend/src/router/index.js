@@ -388,9 +388,10 @@ const routes = [
     name: 'short-link-redirect',
     meta: { layout: 'public' },
     beforeEnter: (to) => {
-      // Use window.location.replace to make a fresh HTTP request
+      // Force a fresh HTTP request with cache-busting parameter
       // nginx will route /s/ directly to the backend, which returns a 302 redirect
-      window.location.replace(to.fullPath)
+      const url = `/s/${to.params.code}?_t=${Date.now()}`
+      window.location.replace(url)
       return false
     },
   },

@@ -28,7 +28,7 @@ const processQueue = (error, token = null) => {
 api.interceptors.request.use(
   (config) => {
     // Don't send auth header for public API routes
-    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/']
+    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/s/']
     const isPublicApi = publicApiPaths.some(path => config.url?.includes(path))
 
     if (!isPublicApi) {
@@ -52,11 +52,11 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPagePaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/']
+    const publicPagePaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/']
     const isPublicPage = publicPagePaths.some(path => window.location.pathname.includes(path))
 
     // Check if the original request was to a public API endpoint
-    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/setup/', '/public/']
+    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/setup/', '/public/', '/s/']
     const isPublicApiRequest = publicApiPaths.some(path => originalRequest?.url?.includes(path))
 
     // If 401 and not already retried

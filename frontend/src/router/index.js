@@ -56,6 +56,7 @@ const ChatView = () => import('@/modules/chat/views/ChatView.vue')
 const WikiView = () => import('@/modules/wiki/views/WikiView.vue')
 const BackupsView = () => import('@/modules/backups/views/BackupsView.vue')
 const LinksView = () => import('@/modules/links/views/LinksView.vue')
+const ShortLinkRedirectView = () => import('@/modules/links/views/ShortLinkRedirectView.vue')
 const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue')
 
 const routes = [
@@ -379,6 +380,14 @@ const routes = [
     name: 'public-checklist',
     component: PublicChecklistView,
     meta: { layout: 'public' },
+  },
+
+  // Short link redirect (public - handles /s/:code URLs)
+  {
+    path: '/s/:code',
+    name: 'short-link-redirect',
+    component: ShortLinkRedirectView,
+    meta: { layout: 'none', guest: true },
   },
 
   // Catch all

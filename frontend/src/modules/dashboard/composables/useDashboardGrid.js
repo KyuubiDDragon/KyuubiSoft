@@ -92,16 +92,26 @@ export function useDashboardGrid(widgets, isEditMode) {
 
   // Get cell dimensions from grid
   function getCellDimensions(gridElement) {
-    if (!gridElement) return { width: 200, height: MIN_CELL_HEIGHT }
+    if (!gridElement) return { width: 200, height: MIN_CELL_HEIGHT + 24 }
 
     const gridRect = gridElement.getBoundingClientRect()
     const gap = 24 // 1.5rem gap
     const availableWidth = gridRect.width - (gap * (GRID_COLS - 1))
     const cellWidth = availableWidth / GRID_COLS
 
-    // Try to get actual cell height from first widget
-    const firstWidget = gridElement.querySelector('.card')
-    const cellHeight = firstWidget ? firstWidget.getBoundingClientRect().height + gap : MIN_CELL_HEIGHT + gap
+    // For row height: Use MIN_CELL_HEIGHT since grid uses minmax(120px, auto)
+    // This is the baseline row height - widgets can grow but resize uses this base
+    let cellHeight = MIN_CELL_HEIGHT + gap
+
+    // Try to measure actual row height from a single-height widget
+    const allWidgets = gridElement.querySelectorAll('[data-widget-height="1"]')
+    if (allWidgets.length > 0) {
+      const singleWidget = allWidgets[0]
+      const rect = singleWidget.getBoundingClientRect()
+      if (rect.height > 0) {
+        cellHeight = rect.height + gap
+      }
+    }
 
     return {
       width: cellWidth + gap,

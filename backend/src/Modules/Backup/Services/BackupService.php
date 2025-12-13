@@ -581,19 +581,26 @@ class BackupService
         $user = $_ENV['DB_USERNAME'] ?? 'root';
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
-        // Check if mysqldump is available
-        exec('which mysqldump 2>&1', $whichOutput, $whichReturn);
-        if ($whichReturn !== 0) {
-            throw new \RuntimeException('Database backup failed: mysqldump is not installed in the container');
+        // Check if mariadb-dump or mysqldump is available
+        $dumpCommand = 'mysqldump';
+        exec('which mariadb-dump 2>&1', $mariaOutput, $mariaReturn);
+        if ($mariaReturn === 0) {
+            $dumpCommand = 'mariadb-dump';
+        } else {
+            exec('which mysqldump 2>&1', $mysqlOutput, $mysqlReturn);
+            if ($mysqlReturn !== 0) {
+                throw new \RuntimeException('Database backup failed: Neither mysqldump nor mariadb-dump is installed in the container');
+            }
         }
 
         // Create error file for capturing stderr
         $errorFile = $outputFile . '.err';
 
-        // Use MYSQL_PWD env var for password, redirect stderr to error file
+        // Use MYSQL_PWD env var for password, disable SSL for local connections
         $cmd = sprintf(
-            'MYSQL_PWD=%s mysqldump --host=%s --user=%s --single-transaction --quick %s > %s 2>%s',
+            'MYSQL_PWD=%s %s --host=%s --user=%s --single-transaction --quick --skip-ssl %s > %s 2>%s',
             escapeshellarg($password),
+            $dumpCommand,
             escapeshellarg($host),
             escapeshellarg($user),
             escapeshellarg($database),
@@ -607,6 +614,9 @@ class BackupService
         $errorMsg = '';
         if (file_exists($errorFile)) {
             $errorMsg = trim(file_get_contents($errorFile));
+            // Filter out deprecation warnings
+            $errorMsg = preg_replace('/.*Deprecated program name.*\n?/i', '', $errorMsg);
+            $errorMsg = trim($errorMsg);
             unlink($errorFile);
         }
 
@@ -631,20 +641,38 @@ class BackupService
         $user = $_ENV['DB_USERNAME'] ?? 'root';
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
+        // Use mariadb or mysql command
+        $mysqlCommand = 'mysql';
+        exec('which mariadb 2>&1', $mariaOutput, $mariaReturn);
+        if ($mariaReturn === 0) {
+            $mysqlCommand = 'mariadb';
+        }
+
+        $errorFile = $inputFile . '.restore.err';
+
         $cmd = sprintf(
-            'MYSQL_PWD=%s mysql --host=%s --user=%s %s < %s 2>&1',
+            'MYSQL_PWD=%s %s --host=%s --user=%s --skip-ssl %s < %s 2>%s',
             escapeshellarg($password),
+            $mysqlCommand,
             escapeshellarg($host),
             escapeshellarg($user),
             escapeshellarg($database),
-            escapeshellarg($inputFile)
+            escapeshellarg($inputFile),
+            escapeshellarg($errorFile)
         );
 
         exec($cmd, $output, $returnCode);
 
+        $errorMsg = '';
+        if (file_exists($errorFile)) {
+            $errorMsg = trim(file_get_contents($errorFile));
+            $errorMsg = preg_replace('/.*Deprecated program name.*\n?/i', '', $errorMsg);
+            $errorMsg = trim($errorMsg);
+            unlink($errorFile);
+        }
+
         if ($returnCode !== 0) {
-            $errorMsg = implode("\n", $output);
-            throw new \RuntimeException('Database restore failed: ' . $errorMsg);
+            throw new \RuntimeException('Database restore failed: ' . ($errorMsg ?: 'Unknown error'));
         }
     }
 

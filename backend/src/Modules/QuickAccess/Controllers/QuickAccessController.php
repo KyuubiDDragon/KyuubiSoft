@@ -15,6 +15,37 @@ use Slim\Routing\RouteContext;
 
 class QuickAccessController
 {
+    // Valid navigation path prefixes - only internal app routes are allowed
+    private const VALID_NAV_PREFIXES = [
+        '/dashboard',
+        '/documents',
+        '/lists',
+        '/kanban',
+        '/projects',
+        '/tickets',
+        '/calendar',
+        '/time-tracking',
+        '/invoices',
+        '/passwords',
+        '/snippets',
+        '/bookmarks',
+        '/connections',
+        '/checklists',
+        '/wiki',
+        '/chat',
+        '/storage',
+        '/docker',
+        '/uptime',
+        '/automation',
+        '/templates',
+        '/tags',
+        '/settings',
+        '/backup',
+        '/users',
+        '/webhooks',
+        '/api-keys',
+    ];
+
     public function __construct(
         private readonly Connection $db
     ) {}
@@ -276,6 +307,47 @@ class QuickAccessController
 
         if (empty($data['nav_icon'])) {
             throw new ValidationException('nav_icon is required');
+        }
+
+        // Validate nav_href is a valid internal path (prevent arbitrary URLs)
+        $navHref = $data['nav_href'];
+
+        // Must start with / (relative path)
+        if (!str_starts_with($navHref, '/')) {
+            throw new ValidationException('nav_href must be a valid internal path');
+        }
+
+        // Must not contain protocol (no external URLs)
+        if (preg_match('/^https?:\/\//i', $navHref) || str_contains($navHref, '://')) {
+            throw new ValidationException('External URLs are not allowed in quick access');
+        }
+
+        // Must start with one of the valid prefixes
+        $isValid = false;
+        foreach (self::VALID_NAV_PREFIXES as $prefix) {
+            if (str_starts_with($navHref, $prefix)) {
+                $isValid = true;
+                break;
+            }
+        }
+
+        if (!$isValid) {
+            throw new ValidationException('nav_href must be a valid application path');
+        }
+
+        // Validate nav_id format (alphanumeric with dashes/underscores)
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $data['nav_id'])) {
+            throw new ValidationException('nav_id contains invalid characters');
+        }
+
+        // Validate nav_name length
+        if (mb_strlen($data['nav_name']) > 100) {
+            throw new ValidationException('nav_name is too long (max 100 characters)');
+        }
+
+        // Validate nav_icon format (alphanumeric with dashes)
+        if (!preg_match('/^[a-zA-Z0-9-]+$/', $data['nav_icon'])) {
+            throw new ValidationException('nav_icon contains invalid characters');
         }
     }
 }

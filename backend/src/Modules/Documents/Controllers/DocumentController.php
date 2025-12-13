@@ -9,6 +9,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,7 +20,8 @@ class DocumentController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -138,6 +140,13 @@ class DocumentController
 
         $doc = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'document.created', [
+            'id' => $docId,
+            'title' => $doc['title'],
+            'message' => 'Neues Dokument erstellt: ' . $doc['title'],
+        ]);
+
         return JsonResponse::created($doc, 'Document created successfully');
     }
 
@@ -180,6 +189,13 @@ class DocumentController
 
         $updated = $this->db->fetchAssociative('SELECT * FROM documents WHERE id = ?', [$docId]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'document.updated', [
+            'id' => $docId,
+            'title' => $updated['title'],
+            'message' => 'Dokument aktualisiert: ' . $updated['title'],
+        ]);
+
         return JsonResponse::success($updated, 'Document updated successfully');
     }
 
@@ -188,13 +204,20 @@ class DocumentController
         $userId = $request->getAttribute('user_id');
         $docId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
-        $this->getDocumentForUser($docId, $userId, true);
+        $doc = $this->getDocumentForUser($docId, $userId, true);
 
         // Cleanup favorites and tags
         $this->db->delete('favorites', ['item_type' => 'document', 'item_id' => $docId]);
         $this->db->delete('taggables', ['taggable_type' => 'document', 'taggable_id' => $docId]);
 
         $this->db->delete('documents', ['id' => $docId]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'document.deleted', [
+            'id' => $docId,
+            'title' => $doc['title'],
+            'message' => 'Dokument gelöscht: ' . $doc['title'],
+        ]);
 
         return JsonResponse::success(null, 'Document deleted successfully');
     }

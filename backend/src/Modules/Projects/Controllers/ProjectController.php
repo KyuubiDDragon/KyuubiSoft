@@ -6,6 +6,7 @@ namespace App\Modules\Projects\Controllers;
 
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,7 +17,8 @@ class ProjectController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     public function index(Request $request, Response $response): Response
@@ -108,6 +110,13 @@ class ProjectController
             'icon' => $data['icon'] ?? 'folder',
             'status' => 'active',
             'is_favorite' => 0,
+        ]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'project.created', [
+            'id' => $id,
+            'name' => $name,
+            'message' => 'Neues Projekt erstellt: ' . $name,
         ]);
 
         return JsonResponse::created([
@@ -244,6 +253,9 @@ class ProjectController
             return JsonResponse::error( 'Projekt nicht gefunden', 404);
         }
 
+        // Get project name for webhook
+        $projectName = $project['name'];
+
         // Cleanup favorites and tags
         $this->db->delete('favorites', ['item_type' => 'project', 'item_id' => $projectId]);
         $this->db->delete('taggables', ['taggable_type' => 'project', 'taggable_id' => $projectId]);
@@ -252,6 +264,13 @@ class ProjectController
         $this->db->delete('projects', [
             'id' => $projectId,
             'user_id' => $userId,
+        ]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'project.deleted', [
+            'id' => $projectId,
+            'name' => $projectName,
+            'message' => 'Projekt gelöscht: ' . $projectName,
         ]);
 
         return JsonResponse::success( ['message' => 'Projekt gelöscht']);

@@ -382,15 +382,16 @@ const routes = [
     meta: { layout: 'public' },
   },
 
-  // Short link redirect - bypass Vue Router and go directly to backend API
+  // Short link redirect - bypass Vue Router and go directly to backend
   {
     path: '/s/:code',
     name: 'short-link-redirect',
     meta: { layout: 'public' },
     beforeEnter: (to) => {
-      // Redirect directly to the backend API endpoint
-      // This bypasses Vue Router completely and lets the backend handle the 302 redirect
-      window.location.href = `/api/v1/s/${to.params.code}`
+      // Force a fresh HTTP request with cache-busting parameter
+      // nginx will route /s/ directly to the backend, which returns a 302 redirect
+      const url = `/s/${to.params.code}?_t=${Date.now()}`
+      window.location.replace(url)
       return false
     },
   },

@@ -169,6 +169,21 @@ function handleGridDragOver(event) {
   onDrag(event, gridElement.value)
 }
 
+// Handle drag end - apply position and mark unsaved
+function handleDragEnd(event) {
+  const hadWidget = !!draggedWidget.value
+  const oldX = draggedWidget.value?.position_x
+  const oldY = draggedWidget.value?.position_y
+
+  endDrag(event)
+
+  // Check if position actually changed
+  if (hadWidget && draggedWidget.value === null) {
+    // Widget was moved, mark as unsaved
+    markUnsaved()
+  }
+}
+
 // Handle drop on empty cell
 function handleEmptyCellDrop(x, y, event) {
   event.preventDefault()
@@ -176,6 +191,7 @@ function handleEmptyCellDrop(x, y, event) {
     handleWidgetDrop(draggedWidget.value, x, y)
   }
   endDrag(event)
+  markUnsaved()
 }
 
 // Handle widget resize
@@ -528,10 +544,11 @@ function discardChanges() {
       }"
       @dragover="handleGridDragOver"
     >
-      <!-- Ghost Preview (drop indicator) -->
+      <!-- Ghost Preview (drop/resize indicator) -->
       <div
-        v-if="draggedWidget && ghostPosition"
-        class="pointer-events-none rounded-xl border-2 border-dashed border-primary-500 bg-primary-500/10"
+        v-if="ghostPosition && (draggedWidget || resizingWidget)"
+        class="pointer-events-none rounded-xl border-2 border-dashed bg-primary-500/10 transition-all duration-75"
+        :class="resizingWidget ? 'border-green-500' : 'border-primary-500'"
         :style="getGhostStyle()"
       ></div>
 
@@ -561,7 +578,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
@@ -595,7 +612,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -640,7 +657,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -677,7 +694,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
@@ -743,7 +760,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -785,7 +802,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -826,7 +843,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
@@ -862,7 +879,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -913,7 +930,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
@@ -946,7 +963,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
@@ -974,7 +991,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -1054,7 +1071,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -1110,7 +1127,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -1136,7 +1153,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -1187,7 +1204,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <div class="flex items-center justify-between mb-4">
@@ -1224,7 +1241,7 @@ function discardChanges() {
           :style="getWidgetStyle(widget)"
           @remove="removeWidget"
           @dragstart="startDrag(widget, $event)"
-          @dragend="endDrag"
+          @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
           <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>

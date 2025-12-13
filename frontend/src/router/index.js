@@ -386,6 +386,7 @@ const routes = [
   {
     path: '/s/:code',
     name: 'short-link-redirect',
+    meta: { layout: 'public' },
     beforeEnter: (to) => {
       // Redirect directly to the backend API endpoint
       // This bypasses Vue Router completely and lets the backend handle the 302 redirect

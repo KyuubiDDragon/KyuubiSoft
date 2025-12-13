@@ -80,6 +80,11 @@ class Router
             return $response->withHeader('Content-Type', 'application/json');
         });
 
+        // Short Link Redirect - directly under /s/ (public, no auth)
+        $this->app->get('/s/{code}', [LinkController::class, 'redirect']);
+        $this->app->post('/s/{code}', [LinkController::class, 'redirect']);
+        $this->app->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
+
         // API v1 routes
         $this->app->group('/api/v1', function (RouteCollectorProxy $group) {
             // Public features endpoint (for frontend to check available features)

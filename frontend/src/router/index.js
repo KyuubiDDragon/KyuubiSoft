@@ -382,12 +382,16 @@ const routes = [
     meta: { layout: 'public' },
   },
 
-  // Short link redirect - public route for all users
+  // Short link redirect - bypass Vue Router and go directly to backend API
   {
     path: '/s/:code',
     name: 'short-link-redirect',
-    component: ShortLinkRedirectView,
-    meta: { layout: 'public' },
+    beforeEnter: (to) => {
+      // Redirect directly to the backend API endpoint
+      // This bypasses Vue Router completely and lets the backend handle the 302 redirect
+      window.location.href = `/api/v1/s/${to.params.code}`
+      return false
+    },
   },
 
   // Catch all

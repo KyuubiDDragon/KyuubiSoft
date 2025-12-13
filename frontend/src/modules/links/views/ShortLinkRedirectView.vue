@@ -44,7 +44,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import api from '@/core/api/axios'
 
 const route = useRoute()
 
@@ -64,7 +64,7 @@ onMounted(async () => {
 async function checkLink() {
   try {
     // First check if link exists and if password is required
-    const response = await axios.get(`/api/v1/s/${code}/info`)
+    const response = await api.get(`/api/v1/s/${code}/info`)
     const data = response.data.data
 
     linkTitle.value = data.title || ''
@@ -110,7 +110,7 @@ async function submitPassword() {
 
   try {
     // Verify password first via POST
-    const response = await axios.post(`/api/v1/s/${code}`, {
+    const response = await api.post(`/api/v1/s/${code}`, {
       password: password.value
     })
 

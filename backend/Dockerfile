@@ -21,6 +21,7 @@ RUN apk add --no-cache \
     openssh-client \
     sshpass \
     libssh2-dev \
+    mysql-client \
     $PHPIZE_DEPS
 
 # Install yt-dlp

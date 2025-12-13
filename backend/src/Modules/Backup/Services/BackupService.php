@@ -581,21 +581,46 @@ class BackupService
         $user = $_ENV['DB_USERNAME'] ?? 'root';
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
-        // Use --defaults-extra-file for secure password passing or MYSQL_PWD env
+        // Check if mysqldump is available
+        exec('which mysqldump 2>&1', $whichOutput, $whichReturn);
+        if ($whichReturn !== 0) {
+            throw new \RuntimeException('Database backup failed: mysqldump is not installed in the container');
+        }
+
+        // Create error file for capturing stderr
+        $errorFile = $outputFile . '.err';
+
+        // Use MYSQL_PWD env var for password, redirect stderr to error file
         $cmd = sprintf(
-            'MYSQL_PWD=%s mysqldump --host=%s --user=%s %s > %s 2>&1',
+            'MYSQL_PWD=%s mysqldump --host=%s --user=%s --single-transaction --quick %s > %s 2>%s',
             escapeshellarg($password),
             escapeshellarg($host),
             escapeshellarg($user),
             escapeshellarg($database),
-            escapeshellarg($outputFile)
+            escapeshellarg($outputFile),
+            escapeshellarg($errorFile)
         );
 
         exec($cmd, $output, $returnCode);
 
+        // Read error output if command failed
+        $errorMsg = '';
+        if (file_exists($errorFile)) {
+            $errorMsg = trim(file_get_contents($errorFile));
+            unlink($errorFile);
+        }
+
         if ($returnCode !== 0) {
-            $errorMsg = implode("\n", $output);
-            throw new \RuntimeException('Database backup failed: ' . $errorMsg);
+            // Clean up potentially incomplete dump file
+            if (file_exists($outputFile)) {
+                unlink($outputFile);
+            }
+            throw new \RuntimeException('Database backup failed: ' . ($errorMsg ?: 'Unknown error (exit code: ' . $returnCode . ')'));
+        }
+
+        // Verify the dump file was created and has content
+        if (!file_exists($outputFile) || filesize($outputFile) === 0) {
+            throw new \RuntimeException('Database backup failed: Dump file is empty or was not created');
         }
     }
 

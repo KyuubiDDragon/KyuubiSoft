@@ -7,6 +7,7 @@ namespace App\Modules\UptimeMonitor\Controllers;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use App\Modules\UptimeMonitor\Checkers\CheckerFactory;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
@@ -17,13 +18,24 @@ use Slim\Routing\RouteContext;
 class UptimeMonitorController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
+
+        // Check project access for restricted users
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        // Validate requested project_id access
+        $requestedProjectId = $params['project_id'] ?? null;
+        if ($requestedProjectId && $isRestricted && !in_array($requestedProjectId, $accessibleProjectIds)) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
 
         // Build query with optional filters
         $sql = 'SELECT um.*, p.name as project_name, p.color as project_color, uf.name as folder_name, uf.color as folder_color
@@ -32,6 +44,19 @@ class UptimeMonitorController
                 LEFT JOIN uptime_folders uf ON um.folder_id = uf.id
                 WHERE um.user_id = ?';
         $queryParams = [$userId];
+
+        // Filter by accessible projects for restricted users
+        if ($isRestricted && !$requestedProjectId) {
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::success([
+                    'items' => [],
+                    'folders' => [],
+                ]);
+            }
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $sql .= " AND um.project_id IN ({$placeholders})";
+            $queryParams = array_merge($queryParams, $accessibleProjectIds);
+        }
 
         // Filter by project
         if (!empty($params['project_id'])) {
@@ -113,6 +138,15 @@ class UptimeMonitorController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
+        // Validate project access for restricted users
+        $projectId = !empty($data['project_id']) ? $data['project_id'] : null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
+
         if (empty($data['name'])) {
             throw new ValidationException('Name is required');
         }
@@ -150,7 +184,7 @@ class UptimeMonitorController
         $insertData = [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => !empty($data['project_id']) ? $data['project_id'] : null,
+            'project_id' => $projectId,
             'folder_id' => !empty($data['folder_id']) ? $data['folder_id'] : null,
             'name' => $data['name'],
             'url' => $data['url'] ?? ($hostname ? "tcp://{$hostname}:{$port}" : null),

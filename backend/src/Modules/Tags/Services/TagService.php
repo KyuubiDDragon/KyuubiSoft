@@ -23,6 +23,22 @@ class TagService
         'calendar_event',
     ];
 
+    // Mapping of taggable types to their table names and user_id column
+    private const TAGGABLE_TABLES = [
+        'list' => ['table' => 'lists', 'user_column' => 'user_id'],
+        'document' => ['table' => 'documents', 'user_column' => 'user_id'],
+        'snippet' => ['table' => 'snippets', 'user_column' => 'user_id'],
+        'bookmark' => ['table' => 'bookmarks', 'user_column' => 'user_id'],
+        'connection' => ['table' => 'connections', 'user_column' => 'user_id'],
+        'password' => ['table' => 'passwords', 'user_column' => 'user_id'],
+        'checklist' => ['table' => 'checklists', 'user_column' => 'user_id'],
+        'kanban_board' => ['table' => 'kanban_boards', 'user_column' => 'user_id'],
+        'kanban_card' => ['table' => 'kanban_cards', 'user_column' => null, 'parent_table' => 'kanban_boards', 'parent_column' => 'board_id'],
+        'project' => ['table' => 'projects', 'user_column' => 'user_id'],
+        'invoice' => ['table' => 'invoices', 'user_column' => 'user_id'],
+        'calendar_event' => ['table' => 'calendar_events', 'user_column' => 'user_id'],
+    ];
+
     public function __construct(
         private Connection $db
     ) {}
@@ -153,6 +169,11 @@ class TagService
 
         // Validate taggable type
         if (!in_array($taggableType, self::VALID_TAGGABLE_TYPES)) {
+            return false;
+        }
+
+        // Verify user owns the item they're trying to tag
+        if (!$this->verifyItemOwnership($userId, $taggableType, $taggableId)) {
             return false;
         }
 
@@ -391,6 +412,39 @@ class TagService
     public function getValidTypes(): array
     {
         return self::VALID_TAGGABLE_TYPES;
+    }
+
+    /**
+     * Verify that a user owns the item they're trying to tag
+     */
+    private function verifyItemOwnership(string $userId, string $taggableType, string $taggableId): bool
+    {
+        $config = self::TAGGABLE_TABLES[$taggableType] ?? null;
+        if (!$config) {
+            return false;
+        }
+
+        // Handle special case for kanban_card (ownership through board)
+        if ($config['user_column'] === null && isset($config['parent_table'])) {
+            $parentId = $this->db->fetchOne(
+                "SELECT {$config['parent_column']} FROM {$config['table']} WHERE id = ?",
+                [$taggableId]
+            );
+            if (!$parentId) {
+                return false;
+            }
+            $parentConfig = self::TAGGABLE_TABLES['kanban_board'];
+            return (bool) $this->db->fetchOne(
+                "SELECT 1 FROM {$parentConfig['table']} WHERE id = ? AND {$parentConfig['user_column']} = ?",
+                [$parentId, $userId]
+            );
+        }
+
+        // Standard ownership check
+        return (bool) $this->db->fetchOne(
+            "SELECT 1 FROM {$config['table']} WHERE id = ? AND {$config['user_column']} = ?",
+            [$taggableId, $userId]
+        );
     }
 
     private function generateUuid(): string

@@ -9,6 +9,7 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Services\ProjectAccessService;
+use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,7 +20,8 @@ class ListController
 {
     public function __construct(
         private readonly Connection $db,
-        private readonly ProjectAccessService $projectAccess
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -114,6 +116,13 @@ class ListController
 
         $list = $this->db->fetchAssociative('SELECT * FROM lists WHERE id = ?', [$listId]);
 
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'list.created', [
+            'id' => $listId,
+            'title' => $list['title'],
+            'message' => 'Neue Liste erstellt: ' . $list['title'],
+        ]);
+
         return JsonResponse::created($list, 'List created successfully');
     }
 
@@ -165,9 +174,20 @@ class ListController
         $userId = $request->getAttribute('user_id');
         $listId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
-        $this->getListForUser($listId, $userId, true);
+        $list = $this->getListForUser($listId, $userId, true);
+
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'list', 'item_id' => $listId]);
+        $this->db->delete('taggables', ['taggable_type' => 'list', 'taggable_id' => $listId]);
 
         $this->db->delete('lists', ['id' => $listId]);
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'list.deleted', [
+            'id' => $listId,
+            'title' => $list['title'],
+            'message' => 'Liste gelöscht: ' . $list['title'],
+        ]);
 
         return JsonResponse::success(null, 'List deleted successfully');
     }

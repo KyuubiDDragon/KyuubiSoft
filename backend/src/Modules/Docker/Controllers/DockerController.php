@@ -6,6 +6,7 @@ namespace App\Modules\Docker\Controllers;
 
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use App\Modules\Docker\Repositories\DockerHostRepository;
 use App\Modules\Auth\Services\AuthService;
 use Psr\Http\Message\ResponseInterface;
@@ -16,7 +17,8 @@ class DockerController
 {
     public function __construct(
         private readonly DockerHostRepository $hostRepository,
-        private readonly AuthService $authService
+        private readonly AuthService $authService,
+        private readonly ProjectAccessService $projectAccess
     ) {}
 
     /**
@@ -43,14 +45,23 @@ class DockerController
         $grouped = ($params['grouped'] ?? 'false') === 'true';
         $projectId = $params['project_id'] ?? null;
 
+        // Check project access for restricted users
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        // Validate requested project_id access
+        if ($projectId && $isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
+
         if ($grouped) {
-            $hosts = $this->hostRepository->findByUserGroupedByProject($userId);
+            $hosts = $this->hostRepository->findByUserGroupedByProject($userId, $isRestricted ? $accessibleProjectIds : null);
         } else {
-            $hosts = $this->hostRepository->findByUser($userId, $projectId);
+            $hosts = $this->hostRepository->findByUser($userId, $projectId, $isRestricted ? $accessibleProjectIds : null);
         }
 
         // Auto-create default local host if user has no hosts configured
-        if (empty($hosts) && !$projectId) {
+        if (empty($hosts) && !$projectId && !$isRestricted) {
             $defaultHost = $this->hostRepository->createDefaultForUser($userId);
             $hosts = [$defaultHost];
         }
@@ -87,6 +98,15 @@ class DockerController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
+        // Validate project access for restricted users
+        $projectId = $data['project_id'] ?? null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
+
         // Validate required fields
         if (empty($data['name'])) {
             throw new ValidationException('Name is required');
@@ -105,7 +125,7 @@ class DockerController
         $hostData = [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
+            'project_id' => $projectId,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'type' => $type,

@@ -203,6 +203,10 @@ class SharedChecklistController
 
         $checklist = $this->getChecklistForUser($id, $userId, true);
 
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'checklist', 'item_id' => $id]);
+        $this->db->delete('taggables', ['taggable_type' => 'checklist', 'taggable_id' => $id]);
+
         $this->db->delete('shared_checklists', ['id' => $id]);
 
         return JsonResponse::success(null, 'Checkliste gelöscht');

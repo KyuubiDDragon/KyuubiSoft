@@ -6,7 +6,9 @@ namespace App\Modules\Tickets\Controllers;
 
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Services\ProjectAccessService;
 use App\Modules\Tickets\Repositories\TicketRepository;
+use App\Modules\Webhooks\Services\WebhookService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Routing\RouteContext;
@@ -14,7 +16,9 @@ use Slim\Routing\RouteContext;
 class TicketController
 {
     public function __construct(
-        private readonly TicketRepository $repository
+        private readonly TicketRepository $repository,
+        private readonly ProjectAccessService $projectAccess,
+        private readonly WebhookService $webhookService
     ) {}
 
     private function getRouteArg(ServerRequestInterface $request, string $name): ?string
@@ -45,6 +49,16 @@ class TicketController
         $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
 
+        // Check project access for restricted users
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        // Validate requested project_id access
+        $requestedProjectId = $params['project_id'] ?? null;
+        if ($requestedProjectId && $isRestricted && !in_array($requestedProjectId, $accessibleProjectIds)) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
+
         $filters = [];
 
         // Check if user can see all tickets or only their own
@@ -53,6 +67,19 @@ class TicketController
         if (!$canViewAll) {
             // User can only see their own tickets or tickets assigned to them
             $filters['user_id'] = $userId;
+        }
+
+        // Filter by accessible projects for restricted users
+        if ($isRestricted && !$requestedProjectId) {
+            if (empty($accessibleProjectIds)) {
+                return JsonResponse::success([
+                    'tickets' => [],
+                    'total' => 0,
+                    'limit' => min((int) ($params['limit'] ?? 50), 100),
+                    'offset' => (int) ($params['offset'] ?? 0),
+                ]);
+            }
+            $filters['project_ids'] = $accessibleProjectIds;
         }
 
         if (!empty($params['status'])) {
@@ -128,6 +155,15 @@ class TicketController
         $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody();
 
+        // Validate project access for restricted users
+        $projectId = $data['project_id'] ?? null;
+        if ($projectId && $this->projectAccess->isUserRestricted($userId)) {
+            $accessibleProjectIds = $this->projectAccess->getUserAccessibleProjectIds($userId);
+            if (!in_array($projectId, $accessibleProjectIds)) {
+                return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+            }
+        }
+
         if (empty($data['title'])) {
             throw new ValidationException('Titel ist erforderlich');
         }
@@ -145,7 +181,7 @@ class TicketController
             'status' => 'open',
             'priority' => $data['priority'] ?? 'normal',
             'category_id' => $data['category_id'] ?? null,
-            'project_id' => $data['project_id'] ?? null,
+            'project_id' => $projectId,
             'user_id' => $userId,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -155,6 +191,14 @@ class TicketController
 
         // Add initial status history
         $this->repository->addStatusHistory($id, null, 'open', $userId, 'Ticket erstellt');
+
+        // Trigger webhook
+        $this->webhookService->trigger($userId, 'ticket.created', [
+            'id' => $id,
+            'title' => $ticket['title'],
+            'priority' => $ticket['priority'],
+            'message' => 'Neues Ticket erstellt: ' . $ticket['title'],
+        ]);
 
         return JsonResponse::created(['ticket' => $ticket], 'Ticket erstellt');
     }
@@ -255,6 +299,24 @@ class TicketController
         $this->repository->addStatusHistory($id, $oldStatus, $newStatus, $userId, $data['comment'] ?? null);
 
         $updatedTicket = $this->repository->findById($id);
+
+        // Trigger webhook for status change
+        $this->webhookService->trigger($userId, 'ticket.status_changed', [
+            'id' => $id,
+            'title' => $ticket['title'],
+            'status' => $newStatus,
+            'old_status' => $oldStatus,
+            'message' => 'Ticket-Status geändert: ' . $ticket['title'] . ' (' . $oldStatus . ' → ' . $newStatus . ')',
+        ]);
+
+        // Additional webhook for resolved status
+        if ($newStatus === 'resolved') {
+            $this->webhookService->trigger($userId, 'ticket.resolved', [
+                'id' => $id,
+                'title' => $ticket['title'],
+                'message' => 'Ticket gelöst: ' . $ticket['title'],
+            ]);
+        }
 
         return JsonResponse::success(['ticket' => $updatedTicket]);
     }

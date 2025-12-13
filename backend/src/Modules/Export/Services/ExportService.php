@@ -246,11 +246,33 @@ class ExportService
     private function exportConnections(string $userId): array
     {
         // Export connections without sensitive data
-        return $this->db->fetchAllAssociative(
-            "SELECT id, name, type, host, port, username, description, tags, folder_id, created_at, updated_at
+        $connections = $this->db->fetchAllAssociative(
+            "SELECT id, name, type, host, port, username, description, color, icon, is_favorite, created_at, updated_at
              FROM connections WHERE user_id = ? ORDER BY name",
             [$userId]
         );
+
+        // Export connection tags
+        $tags = $this->db->fetchAllAssociative(
+            "SELECT id, name, color, created_at
+             FROM connection_tags WHERE user_id = ? ORDER BY name",
+            [$userId]
+        );
+
+        // Export tag mappings
+        foreach ($connections as &$connection) {
+            $connection['tags'] = $this->db->fetchFirstColumn(
+                "SELECT ct.name FROM connection_tags ct
+                 INNER JOIN connection_tag_mapping ctm ON ct.id = ctm.tag_id
+                 WHERE ctm.connection_id = ?",
+                [$connection['id']]
+            );
+        }
+
+        return [
+            'connections' => $connections,
+            'tags' => $tags,
+        ];
     }
 
     private function exportPasswords(string $userId): array

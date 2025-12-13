@@ -267,6 +267,11 @@ class ConnectionController
         $connectionId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $this->getConnectionForUser($connectionId, $userId);
+
+        // Cleanup favorites and tags
+        $this->db->delete('favorites', ['item_type' => 'connection', 'item_id' => $connectionId]);
+        $this->db->delete('taggables', ['taggable_type' => 'connection', 'taggable_id' => $connectionId]);
+
         $this->db->delete('connections', ['id' => $connectionId]);
 
         return JsonResponse::success(null, 'Connection deleted successfully');

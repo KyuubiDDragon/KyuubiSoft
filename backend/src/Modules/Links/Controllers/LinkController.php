@@ -153,6 +153,7 @@ class LinkController
     public function redirect(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $code = $this->getRouteArg($request, 'code');
+        $isJsonRequest = str_contains($request->getHeaderLine('Content-Type'), 'application/json');
 
         // Check if password is required
         if ($this->linkService->requiresPassword($code)) {
@@ -181,14 +182,20 @@ class LinkController
             return JsonResponse::error('Link not found or expired', 404);
         }
 
-        // Return redirect response
+        // For JSON requests (from frontend), return URL as JSON
+        // This allows the frontend to handle the redirect
+        if ($isJsonRequest) {
+            return JsonResponse::success(['original_url' => $originalUrl]);
+        }
+
+        // For browser requests, return 302 redirect
         return $response
             ->withStatus(302)
             ->withHeader('Location', $originalUrl);
     }
 
     /**
-     * Get link info (public - for password check)
+     * Get link info (public - for password check and direct redirect)
      */
     public function getLinkInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
@@ -197,6 +204,11 @@ class LinkController
 
         if (!$link) {
             return JsonResponse::error('Link not found', 404);
+        }
+
+        // Check if active
+        if (!$link['is_active']) {
+            return JsonResponse::error('Link is inactive', 410);
         }
 
         // Check if expired
@@ -209,9 +221,29 @@ class LinkController
             return JsonResponse::error('Link limit reached', 410);
         }
 
+        $requiresPassword = !empty($link['password_hash']);
+
+        // If no password required, return the original URL and record click
+        if (!$requiresPassword) {
+            // Record the click
+            $requestInfo = [
+                'ip' => $this->getClientIp($request),
+                'user_agent' => $request->getHeaderLine('User-Agent'),
+                'referrer' => $request->getHeaderLine('Referer'),
+            ];
+            $this->linkService->recordClick($code, $requestInfo);
+
+            return JsonResponse::success([
+                'title' => $link['title'],
+                'requires_password' => false,
+                'original_url' => $link['original_url'],
+            ]);
+        }
+
+        // Password required - don't return URL yet
         return JsonResponse::success([
             'title' => $link['title'],
-            'requires_password' => !empty($link['password_hash']),
+            'requires_password' => true,
         ]);
     }
 

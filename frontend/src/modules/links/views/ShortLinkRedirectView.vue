@@ -72,9 +72,12 @@ async function checkLink() {
     if (data.requires_password) {
       requiresPassword.value = true
       loading.value = false
+    } else if (data.original_url) {
+      // No password required - redirect directly to target URL
+      window.location.href = data.original_url
     } else {
-      // No password required - redirect directly
-      redirectToLink()
+      // Fallback: redirect via backend (shouldn't happen)
+      window.location.href = `/api/v1/s/${code}`
     }
   } catch (err) {
     loading.value = false
@@ -88,17 +91,6 @@ async function checkLink() {
   }
 }
 
-function redirectToLink(pwd = null) {
-  // Build the redirect URL
-  let url = `/api/v1/s/${code}`
-  if (pwd) {
-    url += `?p=${encodeURIComponent(pwd)}`
-  }
-
-  // Redirect using window.location to follow the 302 redirect
-  window.location.href = url
-}
-
 async function submitPassword() {
   if (!password.value) {
     error.value = 'Please enter the password'
@@ -109,14 +101,19 @@ async function submitPassword() {
   error.value = ''
 
   try {
-    // Verify password first via POST
+    // Verify password and get original URL
     const response = await api.post(`/api/v1/s/${code}`, {
       password: password.value
     })
 
-    // If we get here, password is correct - redirect will happen via 302
-    // But axios won't follow cross-origin redirects, so we do it manually
-    redirectToLink(password.value)
+    // Redirect to the original URL
+    const originalUrl = response.data.data?.original_url
+    if (originalUrl) {
+      window.location.href = originalUrl
+    } else {
+      error.value = 'Could not get redirect URL'
+      submitting.value = false
+    }
   } catch (err) {
     submitting.value = false
     if (err.response?.status === 401) {

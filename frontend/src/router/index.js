@@ -382,18 +382,12 @@ const routes = [
     meta: { layout: 'public' },
   },
 
-  // Short link redirect - bypass Vue Router and go directly to backend
+  // Short link redirect - loads component that fetches target URL from API
   {
     path: '/s/:code',
     name: 'short-link-redirect',
+    component: ShortLinkRedirectView,
     meta: { layout: 'public' },
-    beforeEnter: (to) => {
-      // Force a fresh HTTP request with cache-busting parameter
-      // nginx will route /s/ directly to the backend, which returns a 302 redirect
-      const url = `/s/${to.params.code}?_t=${Date.now()}`
-      window.location.replace(url)
-      return false
-    },
   },
 
   // Catch all

@@ -8,12 +8,23 @@ use App\Core\Http\JsonResponse;
 use App\Modules\Links\Services\LinkService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 class LinkController
 {
     public function __construct(
         private readonly LinkService $linkService
     ) {}
+
+    /**
+     * Extract route argument from request
+     */
+    private function getRouteArg(ServerRequestInterface $request, string $name): ?string
+    {
+        $routeContext = RouteContext::fromRequest($request);
+        $route = $routeContext->getRoute();
+        return $route ? $route->getArgument($name) : null;
+    }
 
     /**
      * List all links
@@ -34,10 +45,11 @@ class LinkController
     /**
      * Get a single link
      */
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $link = $this->linkService->getLink($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $link = $this->linkService->getLink($id, $userId);
 
         if (!$link) {
             return JsonResponse::error('Link not found', 404);
@@ -74,12 +86,13 @@ class LinkController
     /**
      * Update a link
      */
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $id = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody() ?? [];
 
-        $success = $this->linkService->updateLink($args['id'], $userId, $data);
+        $success = $this->linkService->updateLink($id, $userId, $data);
 
         if (!$success) {
             return JsonResponse::error('Link not found or no changes made', 404);
@@ -91,10 +104,11 @@ class LinkController
     /**
      * Delete a link
      */
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $success = $this->linkService->deleteLink($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $success = $this->linkService->deleteLink($id, $userId);
 
         if (!$success) {
             return JsonResponse::error('Link not found', 404);
@@ -106,13 +120,14 @@ class LinkController
     /**
      * Get link statistics
      */
-    public function stats(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function stats(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $id = $this->getRouteArg($request, 'id');
         $params = $request->getQueryParams();
         $days = (int) ($params['days'] ?? 30);
 
-        $stats = $this->linkService->getStats($args['id'], $userId, $days);
+        $stats = $this->linkService->getStats($id, $userId, $days);
 
         if (empty($stats)) {
             return JsonResponse::error('Link not found', 404);
@@ -135,9 +150,9 @@ class LinkController
     /**
      * Public redirect endpoint
      */
-    public function redirect(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function redirect(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $code = $args['code'];
+        $code = $this->getRouteArg($request, 'code');
 
         // Check if password is required
         if ($this->linkService->requiresPassword($code)) {
@@ -175,9 +190,9 @@ class LinkController
     /**
      * Get link info (public - for password check)
      */
-    public function getLinkInfo(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function getLinkInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $code = $args['code'];
+        $code = $this->getRouteArg($request, 'code');
         $link = $this->linkService->getLinkByCode($code);
 
         if (!$link) {
@@ -203,10 +218,11 @@ class LinkController
     /**
      * Generate QR code for link
      */
-    public function qrCode(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function qrCode(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $link = $this->linkService->getLink($args['id'], $userId);
+        $id = $this->getRouteArg($request, 'id');
+        $link = $this->linkService->getLink($id, $userId);
 
         if (!$link) {
             return JsonResponse::error('Link not found', 404);

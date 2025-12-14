@@ -43,28 +43,25 @@ class FeatureMiddleware implements MiddlewareInterface
 
         // 1. Check if feature is enabled at instance level
         if (!$featureService->isEnabled($this->feature)) {
-            return JsonResponse::create(
-                ['error' => 'Feature not available', 'feature' => $this->feature],
-                403,
-                'This feature is not available on this instance'
+            return JsonResponse::error(
+                'Feature not available: ' . $this->feature,
+                403
             );
         }
 
         // 2. Check specific mode requirement (if specified)
         if ($this->requiredMode !== null && !$featureService->hasMode($this->feature, $this->requiredMode)) {
-            return JsonResponse::create(
-                ['error' => 'Insufficient feature access', 'feature' => $this->feature, 'required' => $this->requiredMode],
-                403,
-                'This action requires elevated feature access'
+            return JsonResponse::error(
+                'Insufficient feature access for: ' . $this->feature,
+                403
             );
         }
 
         // 3. Check sub-feature access at instance level (if specified)
         if ($this->subFeature !== null && !$featureService->isSubFeatureAllowed($this->feature, $this->subFeature)) {
-            return JsonResponse::create(
-                ['error' => 'Sub-feature not available', 'feature' => $this->feature, 'subFeature' => $this->subFeature],
-                403,
-                'This specific action is not available on this instance'
+            return JsonResponse::error(
+                'Sub-feature not available: ' . $this->feature . '.' . $this->subFeature,
+                403
             );
         }
 
@@ -82,10 +79,9 @@ class FeatureMiddleware implements MiddlewareInterface
                         : "{$this->feature}.view";
 
                     if (!$rbac->hasPermission($userId, $permission)) {
-                        return JsonResponse::create(
-                            ['error' => 'Permission denied', 'permission' => $permission],
-                            403,
-                            'You do not have permission to access this feature'
+                        return JsonResponse::error(
+                            'Permission denied: ' . $permission,
+                            403
                         );
                     }
                 }

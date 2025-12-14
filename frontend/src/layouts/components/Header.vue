@@ -216,6 +216,27 @@ function goToSettings() {
 
     <!-- Actions -->
     <div class="flex items-center gap-2">
+      <!-- Inbox -->
+      <button
+        @click="router.push('/inbox')"
+        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        title="Inbox"
+      >
+        <InboxArrowDownIcon class="w-5 h-5" />
+      </button>
+
+      <!-- Team Chat -->
+      <button
+        @click="router.push('/chat')"
+        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        title="Team Chat"
+      >
+        <ChatBubbleLeftRightIcon class="w-5 h-5" />
+      </button>
+
+      <!-- Divider -->
+      <div class="w-px h-6 bg-dark-600"></div>
+
       <!-- Dark mode toggle -->
       <button
         @click="uiStore.toggleDarkMode"

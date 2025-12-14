@@ -172,37 +172,37 @@ class PublicGalleryController
         $insertData = [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
-            'category_id' => $data['category_id'] ?? null,
+            'project_id' => !empty($data['project_id']) ? $data['project_id'] : null,
+            'category_id' => !empty($data['category_id']) ? $data['category_id'] : null,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'slug' => $slug,
             'layout' => $data['layout'] ?? 'grid',
             'theme' => $data['theme'] ?? 'auto',
             'custom_css' => $data['custom_css'] ?? null,
-            'show_header' => $data['show_header'] ?? 1,
-            'show_description' => $data['show_description'] ?? 1,
-            'show_item_titles' => $data['show_item_titles'] ?? 1,
-            'show_item_descriptions' => $data['show_item_descriptions'] ?? 1,
-            'show_download_button' => $data['show_download_button'] ?? 0,
-            'items_per_row' => $data['items_per_row'] ?? 3,
+            'show_header' => !empty($data['show_header']) ? 1 : 0,
+            'show_description' => !empty($data['show_description']) ? 1 : 0,
+            'show_item_titles' => !empty($data['show_item_titles']) ? 1 : 0,
+            'show_item_descriptions' => !empty($data['show_item_descriptions']) ? 1 : 0,
+            'show_download_button' => !empty($data['show_download_button']) ? 1 : 0,
+            'items_per_row' => (int) ($data['items_per_row'] ?? 3),
             'thumbnail_size' => $data['thumbnail_size'] ?? 'medium',
             'cover_image_url' => $data['cover_image_url'] ?? null,
             'logo_url' => $data['logo_url'] ?? null,
             'accent_color' => $data['accent_color'] ?? '#6366f1',
-            'is_public' => $data['is_public'] ?? 1,
+            'is_public' => !empty($data['is_public']) ? 1 : 0,
             'is_password_protected' => !empty($data['password']) ? 1 : 0,
             'password_hash' => !empty($data['password']) ? $this->passwordHasher->hash($data['password']) : null,
-            'require_email' => $data['require_email'] ?? 0,
+            'require_email' => !empty($data['require_email']) ? 1 : 0,
             'allowed_emails' => !empty($data['allowed_emails']) ? json_encode($data['allowed_emails']) : null,
-            'expires_at' => $data['expires_at'] ?? null,
-            'max_views' => $data['max_views'] ?? null,
-            'track_views' => $data['track_views'] ?? 1,
-            'track_downloads' => $data['track_downloads'] ?? 1,
+            'expires_at' => !empty($data['expires_at']) ? $data['expires_at'] : null,
+            'max_views' => !empty($data['max_views']) ? (int) $data['max_views'] : null,
+            'track_views' => !empty($data['track_views']) ? 1 : 0,
+            'track_downloads' => !empty($data['track_downloads']) ? 1 : 0,
             'meta_title' => $data['meta_title'] ?? null,
             'meta_description' => $data['meta_description'] ?? null,
             'meta_image' => $data['meta_image'] ?? null,
-            'allow_indexing' => $data['allow_indexing'] ?? 0,
+            'allow_indexing' => !empty($data['allow_indexing']) ? 1 : 0,
             'is_active' => 1,
         ];
 
@@ -243,13 +243,27 @@ class PublicGalleryController
             'is_active', 'project_id', 'category_id'
         ];
 
+        $booleanFields = ['show_header', 'show_description', 'show_item_titles', 'show_item_descriptions', 'show_download_button', 'is_public', 'require_email', 'track_views', 'track_downloads', 'allow_indexing', 'is_active'];
+        $integerFields = ['items_per_row', 'max_views'];
+        $nullableFields = ['project_id', 'category_id', 'expires_at', 'meta_title', 'meta_description', 'meta_image', 'custom_css', 'cover_image_url', 'logo_url'];
+
         $updates = [];
         $params = [];
 
         foreach ($updateFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                $value = $data[$field];
+
+                if (in_array($field, $booleanFields)) {
+                    $value = !empty($value) ? 1 : 0;
+                } elseif (in_array($field, $integerFields)) {
+                    $value = !empty($value) ? (int) $value : null;
+                } elseif (in_array($field, $nullableFields) && empty($value)) {
+                    $value = null;
+                }
+
+                $params[] = $value;
             }
         }
 
@@ -346,22 +360,22 @@ class PublicGalleryController
             'id' => $id,
             'gallery_id' => $galleryId,
             'item_type' => $data['item_type'],
-            'item_id' => $data['item_id'] ?? null,
+            'item_id' => !empty($data['item_id']) ? $data['item_id'] : null,
             'title' => $data['title'] ?? null,
             'description' => $data['description'] ?? null,
             'content' => $data['content'] ?? null,
             'url' => $data['url'] ?? null,
             'thumbnail_url' => $data['thumbnail_url'] ?? null,
-            'display_order' => $data['display_order'] ?? ($maxOrder + 1),
-            'is_featured' => $data['is_featured'] ?? 0,
-            'is_visible' => $data['is_visible'] ?? 1,
+            'display_order' => (int) ($data['display_order'] ?? ($maxOrder + 1)),
+            'is_featured' => !empty($data['is_featured']) ? 1 : 0,
+            'is_visible' => isset($data['is_visible']) ? (!empty($data['is_visible']) ? 1 : 0) : 1,
             'custom_thumbnail' => $data['custom_thumbnail'] ?? null,
             'custom_title' => $data['custom_title'] ?? null,
             'custom_description' => $data['custom_description'] ?? null,
-            'allow_download' => $data['allow_download'] ?? 1,
-            'open_in_new_tab' => $data['open_in_new_tab'] ?? 0,
-            'embed_width' => $data['embed_width'] ?? null,
-            'embed_height' => $data['embed_height'] ?? null,
+            'allow_download' => isset($data['allow_download']) ? (!empty($data['allow_download']) ? 1 : 0) : 1,
+            'open_in_new_tab' => !empty($data['open_in_new_tab']) ? 1 : 0,
+            'embed_width' => !empty($data['embed_width']) ? (int) $data['embed_width'] : null,
+            'embed_height' => !empty($data['embed_height']) ? (int) $data['embed_height'] : null,
         ]);
 
         $item = $this->db->fetchAssociative(
@@ -401,13 +415,24 @@ class PublicGalleryController
             'allow_download', 'open_in_new_tab', 'embed_width', 'embed_height'
         ];
 
+        $booleanFields = ['is_featured', 'is_visible', 'allow_download', 'open_in_new_tab'];
+        $integerFields = ['display_order', 'embed_width', 'embed_height'];
+
         $updates = [];
         $params = [];
 
         foreach ($updateFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                $value = $data[$field];
+
+                if (in_array($field, $booleanFields)) {
+                    $value = !empty($value) ? 1 : 0;
+                } elseif (in_array($field, $integerFields)) {
+                    $value = !empty($value) ? (int) $value : null;
+                }
+
+                $params[] = $value;
             }
         }
 

@@ -167,20 +167,20 @@ class SslCertificateController
         $this->db->insert('ssl_certificates', [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
-            'folder_id' => $data['folder_id'] ?? null,
+            'project_id' => !empty($data['project_id']) ? $data['project_id'] : null,
+            'folder_id' => !empty($data['folder_id']) ? $data['folder_id'] : null,
             'name' => $data['name'],
             'hostname' => $data['hostname'],
-            'port' => $data['port'] ?? 443,
+            'port' => (int) ($data['port'] ?? 443),
             'is_active' => 1,
-            'check_interval' => $data['check_interval'] ?? 86400,
-            'warn_days_before' => $data['warn_days_before'] ?? 30,
-            'critical_days_before' => $data['critical_days_before'] ?? 7,
-            'notify_on_expiry_warning' => $data['notify_on_expiry_warning'] ?? 1,
-            'notify_on_expiry_critical' => $data['notify_on_expiry_critical'] ?? 1,
-            'notify_on_expired' => $data['notify_on_expired'] ?? 1,
-            'notify_on_renewed' => $data['notify_on_renewed'] ?? 1,
-            'notify_on_chain_error' => $data['notify_on_chain_error'] ?? 1,
+            'check_interval' => (int) ($data['check_interval'] ?? 86400),
+            'warn_days_before' => (int) ($data['warn_days_before'] ?? 30),
+            'critical_days_before' => (int) ($data['critical_days_before'] ?? 7),
+            'notify_on_expiry_warning' => !empty($data['notify_on_expiry_warning']) ? 1 : 0,
+            'notify_on_expiry_critical' => !empty($data['notify_on_expiry_critical']) ? 1 : 0,
+            'notify_on_expired' => !empty($data['notify_on_expired']) ? 1 : 0,
+            'notify_on_renewed' => !empty($data['notify_on_renewed']) ? 1 : 0,
+            'notify_on_chain_error' => !empty($data['notify_on_chain_error']) ? 1 : 0,
             'current_status' => 'pending',
         ]);
 
@@ -224,13 +224,27 @@ class SslCertificateController
             'project_id', 'folder_id'
         ];
 
+        $booleanFields = ['is_active', 'notify_on_expiry_warning', 'notify_on_expiry_critical', 'notify_on_expired', 'notify_on_renewed', 'notify_on_chain_error'];
+        $integerFields = ['port', 'check_interval', 'warn_days_before', 'critical_days_before'];
+        $nullableFields = ['project_id', 'folder_id'];
+
         $updates = [];
         $params = [];
 
         foreach ($updateFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                $value = $data[$field];
+
+                if (in_array($field, $booleanFields)) {
+                    $value = !empty($value) ? 1 : 0;
+                } elseif (in_array($field, $integerFields)) {
+                    $value = (int) $value;
+                } elseif (in_array($field, $nullableFields) && empty($value)) {
+                    $value = null;
+                }
+
+                $params[] = $value;
             }
         }
 

@@ -62,7 +62,6 @@ use App\Modules\Backup\Controllers\BackupController;
 use App\Modules\Links\Controllers\LinkController;
 use App\Modules\GitRepository\Controllers\GitRepositoryController;
 use App\Modules\SslCertificate\Controllers\SslCertificateController;
-use App\Modules\ServiceHealth\Controllers\ServiceHealthController;
 use App\Modules\PublicGallery\Controllers\PublicGalleryController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
@@ -1012,16 +1011,6 @@ class Router
                     ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->delete('/ssl/folders/{id}', [SslCertificateController::class, 'deleteFolder'])
                     ->add(new FeatureMiddleware('ssl', null, 'manage'));
-
-                // Service Health Dashboard
-                $protected->get('/service-health', [ServiceHealthController::class, 'index'])
-                    ->add(new FeatureMiddleware('service_health', null, 'view'));
-                $protected->get('/service-health/summary', [ServiceHealthController::class, 'summary'])
-                    ->add(new FeatureMiddleware('service_health', null, 'view'));
-                $protected->get('/service-health/incidents', [ServiceHealthController::class, 'incidents'])
-                    ->add(new FeatureMiddleware('service_health', null, 'view'));
-                $protected->get('/service-health/timeline', [ServiceHealthController::class, 'timeline'])
-                    ->add(new FeatureMiddleware('service_health', null, 'view'));
 
                 // Public Galleries
                 $protected->get('/galleries', [PublicGalleryController::class, 'index'])

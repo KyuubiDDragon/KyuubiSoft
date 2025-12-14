@@ -287,7 +287,6 @@ const allNavigationGroups = [
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime' },
       { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl' },
-      { name: 'Service Health', href: '/service-health', icon: HeartIcon, feature: 'service_health' },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
       { name: 'Workflows', href: '/workflows', icon: BoltIcon },
     ],

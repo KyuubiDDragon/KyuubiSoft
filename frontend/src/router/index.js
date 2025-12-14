@@ -60,7 +60,6 @@ const ShortLinkRedirectView = () => import('@/modules/links/views/ShortLinkRedir
 const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue')
 const GitRepositoryView = () => import('@/modules/git/views/GitRepositoryView.vue')
 const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.vue')
-const ServiceHealthView = () => import('@/modules/service-health/views/ServiceHealthView.vue')
 const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
 
 const routes = [
@@ -317,12 +316,6 @@ const routes = [
     path: '/ssl',
     name: 'ssl-certificates',
     component: SslCertificateView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/service-health',
-    name: 'service-health',
-    component: ServiceHealthView,
     meta: { requiresAuth: true },
   },
   {

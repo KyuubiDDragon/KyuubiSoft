@@ -398,13 +398,6 @@ return [
         );
     },
 
-    // Service Health Controller
-    \App\Modules\ServiceHealth\Controllers\ServiceHealthController::class => function (ContainerInterface $c): \App\Modules\ServiceHealth\Controllers\ServiceHealthController {
-        return new \App\Modules\ServiceHealth\Controllers\ServiceHealthController(
-            $c->get(DBALConnection::class)
-        );
-    },
-
     // Public Gallery Controller
     \App\Modules\PublicGallery\Controllers\PublicGalleryController::class => function (ContainerInterface $c): \App\Modules\PublicGallery\Controllers\PublicGalleryController {
         return new \App\Modules\PublicGallery\Controllers\PublicGalleryController(

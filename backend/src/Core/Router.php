@@ -60,6 +60,10 @@ use App\Modules\Wiki\Controllers\WikiController;
 use App\Modules\QuickAccess\Controllers\QuickAccessController;
 use App\Modules\Backup\Controllers\BackupController;
 use App\Modules\Links\Controllers\LinkController;
+use App\Modules\GitRepository\Controllers\GitRepositoryController;
+use App\Modules\SslCertificate\Controllers\SslCertificateController;
+use App\Modules\ServiceHealth\Controllers\ServiceHealthController;
+use App\Modules\PublicGallery\Controllers\PublicGalleryController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -961,6 +965,92 @@ class Router
                 $protected->get('/links/{id}/qr', [LinkController::class, 'qrCode'])
                     ->add(new PermissionMiddleware('links.view'));
 
+                // Git Repository Dashboard
+                $protected->get('/git/repositories', [GitRepositoryController::class, 'index'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                $protected->post('/git/repositories', [GitRepositoryController::class, 'create'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->get('/git/repositories/stats', [GitRepositoryController::class, 'stats'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                $protected->get('/git/repositories/{id}', [GitRepositoryController::class, 'show'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                $protected->put('/git/repositories/{id}', [GitRepositoryController::class, 'update'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->delete('/git/repositories/{id}', [GitRepositoryController::class, 'delete'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->post('/git/repositories/{id}/sync', [GitRepositoryController::class, 'sync'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->get('/git/folders', [GitRepositoryController::class, 'index'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                $protected->post('/git/folders', [GitRepositoryController::class, 'createFolder'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->put('/git/folders/{id}', [GitRepositoryController::class, 'updateFolder'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                $protected->delete('/git/folders/{id}', [GitRepositoryController::class, 'deleteFolder'])
+                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+
+                // SSL Certificate Monitor
+                $protected->get('/ssl/certificates', [SslCertificateController::class, 'index'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                $protected->post('/ssl/certificates', [SslCertificateController::class, 'create'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->get('/ssl/certificates/stats', [SslCertificateController::class, 'stats'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                $protected->post('/ssl/certificates/check-all', [SslCertificateController::class, 'checkAll'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->get('/ssl/certificates/{id}', [SslCertificateController::class, 'show'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                $protected->put('/ssl/certificates/{id}', [SslCertificateController::class, 'update'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->delete('/ssl/certificates/{id}', [SslCertificateController::class, 'delete'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->post('/ssl/certificates/{id}/check', [SslCertificateController::class, 'check'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->post('/ssl/folders', [SslCertificateController::class, 'createFolder'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->put('/ssl/folders/{id}', [SslCertificateController::class, 'updateFolder'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                $protected->delete('/ssl/folders/{id}', [SslCertificateController::class, 'deleteFolder'])
+                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+
+                // Service Health Dashboard
+                $protected->get('/service-health', [ServiceHealthController::class, 'index'])
+                    ->add(new FeatureMiddleware('service_health', null, 'view'));
+                $protected->get('/service-health/summary', [ServiceHealthController::class, 'summary'])
+                    ->add(new FeatureMiddleware('service_health', null, 'view'));
+                $protected->get('/service-health/incidents', [ServiceHealthController::class, 'incidents'])
+                    ->add(new FeatureMiddleware('service_health', null, 'view'));
+                $protected->get('/service-health/timeline', [ServiceHealthController::class, 'timeline'])
+                    ->add(new FeatureMiddleware('service_health', null, 'view'));
+
+                // Public Galleries
+                $protected->get('/galleries', [PublicGalleryController::class, 'index'])
+                    ->add(new FeatureMiddleware('galleries', null, 'view'));
+                $protected->post('/galleries', [PublicGalleryController::class, 'create'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->get('/galleries/{id}', [PublicGalleryController::class, 'show'])
+                    ->add(new FeatureMiddleware('galleries', null, 'view'));
+                $protected->put('/galleries/{id}', [PublicGalleryController::class, 'update'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->delete('/galleries/{id}', [PublicGalleryController::class, 'delete'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->get('/galleries/{id}/stats', [PublicGalleryController::class, 'stats'])
+                    ->add(new FeatureMiddleware('galleries', null, 'view'));
+                $protected->post('/galleries/{id}/items', [PublicGalleryController::class, 'addItem'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->put('/galleries/{id}/items/{itemId}', [PublicGalleryController::class, 'updateItem'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->delete('/galleries/{id}/items/{itemId}', [PublicGalleryController::class, 'removeItem'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->post('/galleries/{id}/reorder', [PublicGalleryController::class, 'reorderItems'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->post('/gallery-categories', [PublicGalleryController::class, 'createCategory'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->put('/gallery-categories/{id}', [PublicGalleryController::class, 'updateCategory'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+                $protected->delete('/gallery-categories/{id}', [PublicGalleryController::class, 'deleteCategory'])
+                    ->add(new FeatureMiddleware('galleries', null, 'manage'));
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 
             // Public Ticket Routes (no auth required)
@@ -1005,6 +1095,10 @@ class Router
             $group->get('/s/{code}', [LinkController::class, 'redirect']);
             $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
             $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
+
+            // Public Gallery Routes (no auth required)
+            $group->get('/gallery/{slug}', [PublicGalleryController::class, 'viewPublic']);
+            $group->post('/gallery/{slug}', [PublicGalleryController::class, 'viewPublic']); // For password-protected galleries
         });
     }
 }

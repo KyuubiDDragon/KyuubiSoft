@@ -58,6 +58,10 @@ const BackupsView = () => import('@/modules/backups/views/BackupsView.vue')
 const LinksView = () => import('@/modules/links/views/LinksView.vue')
 const ShortLinkRedirectView = () => import('@/modules/links/views/ShortLinkRedirectView.vue')
 const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue')
+const GitRepositoryView = () => import('@/modules/git/views/GitRepositoryView.vue')
+const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.vue')
+const ServiceHealthView = () => import('@/modules/service-health/views/ServiceHealthView.vue')
+const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
 
 const routes = [
   // Auth routes
@@ -301,6 +305,30 @@ const routes = [
     path: '/workflows',
     name: 'workflows',
     component: WorkflowsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/git',
+    name: 'git-repositories',
+    component: GitRepositoryView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/ssl',
+    name: 'ssl-certificates',
+    component: SslCertificateView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/service-health',
+    name: 'service-health',
+    component: ServiceHealthView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/galleries',
+    name: 'galleries',
+    component: GalleryView,
     meta: { requiresAuth: true },
   },
 

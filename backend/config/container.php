@@ -371,4 +371,45 @@ return [
             $c->get(\App\Modules\Links\Services\LinkService::class)
         );
     },
+
+    // Git Repository Service
+    \App\Modules\GitRepository\Services\GitProviderService::class => function (ContainerInterface $c): \App\Modules\GitRepository\Services\GitProviderService {
+        return new \App\Modules\GitRepository\Services\GitProviderService();
+    },
+
+    // Git Repository Controller
+    \App\Modules\GitRepository\Controllers\GitRepositoryController::class => function (ContainerInterface $c): \App\Modules\GitRepository\Controllers\GitRepositoryController {
+        return new \App\Modules\GitRepository\Controllers\GitRepositoryController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\GitRepository\Services\GitProviderService::class)
+        );
+    },
+
+    // SSL Certificate Service
+    \App\Modules\SslCertificate\Services\SslCheckerService::class => function (ContainerInterface $c): \App\Modules\SslCertificate\Services\SslCheckerService {
+        return new \App\Modules\SslCertificate\Services\SslCheckerService();
+    },
+
+    // SSL Certificate Controller
+    \App\Modules\SslCertificate\Controllers\SslCertificateController::class => function (ContainerInterface $c): \App\Modules\SslCertificate\Controllers\SslCertificateController {
+        return new \App\Modules\SslCertificate\Controllers\SslCertificateController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\SslCertificate\Services\SslCheckerService::class)
+        );
+    },
+
+    // Service Health Controller
+    \App\Modules\ServiceHealth\Controllers\ServiceHealthController::class => function (ContainerInterface $c): \App\Modules\ServiceHealth\Controllers\ServiceHealthController {
+        return new \App\Modules\ServiceHealth\Controllers\ServiceHealthController(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Public Gallery Controller
+    \App\Modules\PublicGallery\Controllers\PublicGalleryController::class => function (ContainerInterface $c): \App\Modules\PublicGallery\Controllers\PublicGalleryController {
+        return new \App\Modules\PublicGallery\Controllers\PublicGalleryController(
+            $c->get(DBALConnection::class),
+            $c->get(PasswordHasher::class)
+        );
+    },
 ];

@@ -463,24 +463,18 @@ onMounted(async () => {
         v-for="item in newsItems"
         :key="item.id"
         @click="openArticle(item)"
-        class="card-hover p-4 cursor-pointer group"
+        class="card-hover p-4 cursor-pointer group flex gap-4"
         :class="{ 'opacity-60': item.is_read == 1 }"
       >
-        <!-- Image -->
-        <div v-if="item.image_url" class="relative h-40 -mx-4 -mt-4 mb-4 overflow-hidden rounded-t-lg">
-          <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
-          <div class="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent"></div>
-        </div>
-
-        <!-- Content -->
-        <div class="space-y-2">
-          <div class="flex items-start justify-between gap-2">
+        <!-- Content (left side) -->
+        <div class="flex-1 min-w-0 flex flex-col">
+          <div class="flex items-start justify-between gap-2 mb-2">
             <h3 class="font-semibold text-white group-hover:text-primary-400 transition-colors line-clamp-2">
               {{ item.title }}
             </h3>
             <button
               @click.stop="toggleSaved(item)"
-              class="p-1 rounded hover:bg-dark-600"
+              class="p-1 rounded hover:bg-dark-600 flex-shrink-0"
               :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
             >
               <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
@@ -488,21 +482,21 @@ onMounted(async () => {
             </button>
           </div>
 
-          <p class="text-sm text-gray-400 line-clamp-3">
+          <p class="text-sm text-gray-400 line-clamp-3 flex-1">
             {{ stripHtml(item.description) }}
           </p>
 
-          <div class="flex items-center justify-between text-xs text-gray-500">
-            <div class="flex items-center gap-2">
-              <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
-              <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
-              <span>{{ item.feed_name }}</span>
-            </div>
-            <div class="flex items-center gap-1">
-              <ClockIcon class="w-3.5 h-3.5" />
-              {{ formatDate(item.published_at) }}
-            </div>
+          <div class="flex items-center gap-2 text-xs text-gray-500 mt-3">
+            <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4 flex-shrink-0" />
+            <span class="truncate">{{ item.feed_name }}</span>
+            <span class="flex-shrink-0">·</span>
+            <span class="flex-shrink-0">{{ formatDate(item.published_at) }}</span>
           </div>
+        </div>
+
+        <!-- Image (right side, fixed size) -->
+        <div v-if="item.image_url" class="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden">
+          <img :src="item.image_url" :alt="item.title" class="w-full h-full object-cover">
         </div>
       </div>
     </div>

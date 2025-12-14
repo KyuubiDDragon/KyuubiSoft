@@ -321,41 +321,37 @@ onMounted(() => {
             </h2>
             <form @submit.prevent="saveGallery" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-                <input v-model="form.name" type="text" required
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Name</label>
+                <input v-model="form.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Beschreibung</label>
-                <textarea v-model="form.description" rows="2"
-                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"></textarea>
+                <label class="label">Beschreibung</label>
+                <textarea v-model="form.description" rows="2" class="input"></textarea>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL-Slug</label>
+                <label class="label">URL-Slug</label>
                 <div class="flex items-center">
                   <span class="text-gray-500 text-sm mr-2">/gallery/</span>
-                  <input v-model="form.slug" type="text" placeholder="meine-galerie"
-                         class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <input v-model="form.slug" type="text" placeholder="meine-galerie" class="input flex-1" />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layout</label>
-                  <select v-model="form.layout" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <label class="label">Layout</label>
+                  <select v-model="form.layout" class="input">
                     <option v-for="l in layouts" :key="l.value" :value="l.value">{{ l.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Theme</label>
-                  <select v-model="form.theme" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <label class="label">Theme</label>
+                  <select v-model="form.theme" class="input">
                     <option v-for="t in themes" :key="t.value" :value="t.value">{{ t.label }}</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Passwort (optional)</label>
-                <input v-model="form.password" type="password" placeholder="Leer lassen für keinen Schutz"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Passwort (optional)</label>
+                <input v-model="form.password" type="password" placeholder="Leer lassen für keinen Schutz" class="input" />
               </div>
               <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
@@ -462,25 +458,22 @@ onMounted(() => {
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Element hinzufügen</h2>
             <form @submit.prevent="addItem" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ</label>
-                <select v-model="itemForm.item_type" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                <label class="label">Typ</label>
+                <select v-model="itemForm.item_type" class="input">
                   <option v-for="t in itemTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titel</label>
-                <input v-model="itemForm.title" type="text"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Titel</label>
+                <input v-model="itemForm.title" type="text" class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
-                <input v-model="itemForm.url" type="url" placeholder="https://..."
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">URL</label>
+                <input v-model="itemForm.url" type="url" placeholder="https://..." class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail URL</label>
-                <input v-model="itemForm.thumbnail_url" type="url"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Thumbnail URL</label>
+                <input v-model="itemForm.thumbnail_url" type="url" class="input" />
               </div>
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2">

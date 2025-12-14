@@ -384,32 +384,28 @@ onMounted(() => {
             </h2>
             <form @submit.prevent="saveRepository" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-                <input v-model="form.name" type="text" required
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Name</label>
+                <input v-model="form.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Repository URL</label>
-                <input v-model="form.repo_url" type="url" required placeholder="https://github.com/user/repo"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Repository URL</label>
+                <input v-model="form.repo_url" type="url" required placeholder="https://github.com/user/repo" class="input" />
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Provider</label>
-                  <select v-model="form.provider" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <label class="label">Provider</label>
+                  <select v-model="form.provider" class="input">
                     <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Branch</label>
-                  <input v-model="form.default_branch" type="text"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <label class="label">Branch</label>
+                  <input v-model="form.default_branch" type="text" class="input" />
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Token (optional)</label>
-                <input v-model="form.api_token" type="password" placeholder="Für private Repositories"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">API Token (optional)</label>
+                <input v-model="form.api_token" type="password" placeholder="Für private Repositories" class="input" />
               </div>
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2">
@@ -440,12 +436,11 @@ onMounted(() => {
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Neuer Ordner</h2>
             <form @submit.prevent="saveFolder" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-                <input v-model="folderForm.name" type="text" required
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Name</label>
+                <input v-model="folderForm.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farbe</label>
+                <label class="label">Farbe</label>
                 <div class="flex gap-2">
                   <button v-for="color in folderColors" :key="color" type="button"
                           @click="folderForm.color = color"

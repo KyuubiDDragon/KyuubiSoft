@@ -400,32 +400,27 @@ onMounted(() => {
             </h2>
             <form @submit.prevent="saveCertificate" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-                <input v-model="form.name" type="text" required
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                <label class="label">Name</label>
+                <input v-model="form.name" type="text" required class="input" />
               </div>
               <div class="grid grid-cols-3 gap-4">
                 <div class="col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hostname</label>
-                  <input v-model="form.hostname" type="text" required placeholder="example.com"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <label class="label">Hostname</label>
+                  <input v-model="form.hostname" type="text" required placeholder="example.com" class="input" />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Port</label>
-                  <input v-model.number="form.port" type="number" min="1" max="65535"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <label class="label">Port</label>
+                  <input v-model.number="form.port" type="number" min="1" max="65535" class="input" />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warnung (Tage)</label>
-                  <input v-model.number="form.warn_days_before" type="number" min="1"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <label class="label">Warnung (Tage)</label>
+                  <input v-model.number="form.warn_days_before" type="number" min="1" class="input" />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kritisch (Tage)</label>
-                  <input v-model.number="form.critical_days_before" type="number" min="1"
-                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                  <label class="label">Kritisch (Tage)</label>
+                  <input v-model.number="form.critical_days_before" type="number" min="1" class="input" />
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-4">

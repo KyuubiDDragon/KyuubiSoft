@@ -194,23 +194,23 @@ class GitRepositoryController
         $this->db->insert('git_repositories', [
             'id' => $id,
             'user_id' => $userId,
-            'project_id' => $data['project_id'] ?? null,
-            'folder_id' => $data['folder_id'] ?? null,
+            'project_id' => !empty($data['project_id']) ? $data['project_id'] : null,
+            'folder_id' => !empty($data['folder_id']) ? $data['folder_id'] : null,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'provider' => $provider,
             'repo_url' => $data['repo_url'],
             'api_url' => $data['api_url'] ?? null,
-            'api_token' => $data['api_token'] ?? null,
+            'api_token' => !empty($data['api_token']) ? $data['api_token'] : null,
             'default_branch' => $data['default_branch'] ?? 'main',
-            'is_private' => $data['is_private'] ?? 0,
+            'is_private' => !empty($data['is_private']) ? 1 : 0,
             'is_active' => 1,
-            'auto_sync' => $data['auto_sync'] ?? 1,
-            'sync_interval' => $data['sync_interval'] ?? 300,
-            'notify_on_new_pr' => $data['notify_on_new_pr'] ?? 1,
-            'notify_on_new_issue' => $data['notify_on_new_issue'] ?? 1,
-            'notify_on_merge' => $data['notify_on_merge'] ?? 1,
-            'notify_on_release' => $data['notify_on_release'] ?? 0,
+            'auto_sync' => !empty($data['auto_sync']) ? 1 : 0,
+            'sync_interval' => (int) ($data['sync_interval'] ?? 300),
+            'notify_on_new_pr' => !empty($data['notify_on_new_pr']) ? 1 : 0,
+            'notify_on_new_issue' => !empty($data['notify_on_new_issue']) ? 1 : 0,
+            'notify_on_merge' => !empty($data['notify_on_merge']) ? 1 : 0,
+            'notify_on_release' => !empty($data['notify_on_release']) ? 1 : 0,
         ]);
 
         $repository = $this->db->fetchAssociative(
@@ -246,13 +246,26 @@ class GitRepositoryController
             'project_id', 'folder_id'
         ];
 
+        $booleanFields = ['is_private', 'is_active', 'auto_sync', 'notify_on_new_pr', 'notify_on_new_issue', 'notify_on_merge', 'notify_on_release'];
+        $nullableFields = ['project_id', 'folder_id', 'api_token', 'description', 'api_url'];
+
         $updates = [];
         $params = [];
 
         foreach ($updateFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                $value = $data[$field];
+
+                if (in_array($field, $booleanFields)) {
+                    $value = !empty($value) ? 1 : 0;
+                } elseif (in_array($field, $nullableFields) && empty($value)) {
+                    $value = null;
+                } elseif ($field === 'sync_interval') {
+                    $value = (int) $value;
+                }
+
+                $params[] = $value;
             }
         }
 

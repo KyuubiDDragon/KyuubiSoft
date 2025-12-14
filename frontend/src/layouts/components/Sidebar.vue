@@ -51,6 +51,9 @@ import {
   MapPinIcon,
   BoltIcon,
   ArchiveBoxIcon,
+  LockClosedIcon,
+  HeartIcon,
+  PhotoIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -117,6 +120,9 @@ const iconToName = new Map([
   [BookOpenIcon, 'BookOpenIcon'],
   [BoltIcon, 'BoltIcon'],
   [ArchiveBoxIcon, 'ArchiveBoxIcon'],
+  [LockClosedIcon, 'LockClosedIcon'],
+  [HeartIcon, 'HeartIcon'],
+  [PhotoIcon, 'PhotoIcon'],
 ])
 
 // Get icon name from component
@@ -228,15 +234,6 @@ const allNavigationGroups = [
   // News - Standalone
   { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon },
 
-  // Inbox - Quick Capture
-  { id: 'inbox', name: 'Inbox', href: '/inbox', icon: InboxArrowDownIcon },
-
-  // Team Chat
-  { id: 'chat', name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
-
-  // Wiki / Knowledge Base
-  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon },
-
   // Inhalte
   {
     id: 'inhalte',
@@ -260,6 +257,7 @@ const allNavigationGroups = [
       { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon },
       { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon },
       { name: 'Short Links', href: '/links', icon: LinkIcon },
+      { name: 'Galerien', href: '/galleries', icon: PhotoIcon, feature: 'galleries' },
     ],
   },
 
@@ -285,8 +283,11 @@ const allNavigationGroups = [
     children: [
       { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
       { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server' },
+      { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git' },
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime' },
+      { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl' },
+      { name: 'Service Health', href: '/service-health', icon: HeartIcon, feature: 'service_health' },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
       { name: 'Workflows', href: '/workflows', icon: BoltIcon },
     ],
@@ -344,6 +345,9 @@ const allNavigationGroups = [
       { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
     ],
   },
+
+  // Wiki / Knowledge Base (am Ende)
+  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon },
 ]
 
 // Filter navigation based on user permissions and features

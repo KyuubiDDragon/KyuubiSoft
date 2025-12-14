@@ -967,51 +967,51 @@ class Router
 
                 // Git Repository Dashboard
                 $protected->get('/git/repositories', [GitRepositoryController::class, 'index'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                    ->add(new FeatureMiddleware('git', null, 'view'));
                 $protected->post('/git/repositories', [GitRepositoryController::class, 'create'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->get('/git/repositories/stats', [GitRepositoryController::class, 'stats'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                    ->add(new FeatureMiddleware('git', null, 'view'));
                 $protected->get('/git/repositories/{id}', [GitRepositoryController::class, 'show'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                    ->add(new FeatureMiddleware('git', null, 'view'));
                 $protected->put('/git/repositories/{id}', [GitRepositoryController::class, 'update'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->delete('/git/repositories/{id}', [GitRepositoryController::class, 'delete'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->post('/git/repositories/{id}/sync', [GitRepositoryController::class, 'sync'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'sync'));
                 $protected->get('/git/folders', [GitRepositoryController::class, 'index'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'view'));
+                    ->add(new FeatureMiddleware('git', null, 'view'));
                 $protected->post('/git/folders', [GitRepositoryController::class, 'createFolder'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->put('/git/folders/{id}', [GitRepositoryController::class, 'updateFolder'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->delete('/git/folders/{id}', [GitRepositoryController::class, 'deleteFolder'])
-                    ->add(new FeatureMiddleware('git_dashboard', null, 'manage'));
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
 
                 // SSL Certificate Monitor
                 $protected->get('/ssl/certificates', [SslCertificateController::class, 'index'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                    ->add(new FeatureMiddleware('ssl', null, 'view'));
                 $protected->post('/ssl/certificates', [SslCertificateController::class, 'create'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->get('/ssl/certificates/stats', [SslCertificateController::class, 'stats'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                    ->add(new FeatureMiddleware('ssl', null, 'view'));
                 $protected->post('/ssl/certificates/check-all', [SslCertificateController::class, 'checkAll'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'check'));
                 $protected->get('/ssl/certificates/{id}', [SslCertificateController::class, 'show'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'view'));
+                    ->add(new FeatureMiddleware('ssl', null, 'view'));
                 $protected->put('/ssl/certificates/{id}', [SslCertificateController::class, 'update'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->delete('/ssl/certificates/{id}', [SslCertificateController::class, 'delete'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->post('/ssl/certificates/{id}/check', [SslCertificateController::class, 'check'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'check'));
                 $protected->post('/ssl/folders', [SslCertificateController::class, 'createFolder'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->put('/ssl/folders/{id}', [SslCertificateController::class, 'updateFolder'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
                 $protected->delete('/ssl/folders/{id}', [SslCertificateController::class, 'deleteFolder'])
-                    ->add(new FeatureMiddleware('ssl_monitor', null, 'manage'));
+                    ->add(new FeatureMiddleware('ssl', null, 'manage'));
 
                 // Service Health Dashboard
                 $protected->get('/service-health', [ServiceHealthController::class, 'index'])

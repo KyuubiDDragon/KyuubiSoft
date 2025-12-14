@@ -134,6 +134,48 @@ class FeatureService
                 'manage' => ['full'],
             ],
         ],
+        'git' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_GIT',
+            'description' => 'Git repository dashboard (GitHub/GitLab)',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+                'sync' => ['full'],
+            ],
+        ],
+        'ssl' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_SSL',
+            'description' => 'SSL certificate monitoring',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+                'check' => ['full'],
+            ],
+        ],
+        'service_health' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_SERVICE_HEALTH',
+            'description' => 'Unified service health dashboard',
+            'subFeatures' => [
+                'view' => ['full'],
+            ],
+        ],
+        'galleries' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_GALLERIES',
+            'description' => 'Public link galleries',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+                'public' => ['full'],
+            ],
+        ],
     ];
 
     private array $featureCache = [];

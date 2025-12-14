@@ -156,15 +156,6 @@ class FeatureService
                 'check' => ['full'],
             ],
         ],
-        'service_health' => [
-            'modes' => ['disabled', 'full'],
-            'default' => 'full',
-            'env' => 'FEATURE_SERVICE_HEALTH',
-            'description' => 'Unified service health dashboard',
-            'subFeatures' => [
-                'view' => ['full'],
-            ],
-        ],
         'galleries' => [
             'modes' => ['disabled', 'full'],
             'default' => 'full',

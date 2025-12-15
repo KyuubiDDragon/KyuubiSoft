@@ -22,6 +22,7 @@ import { useRouter } from 'vue-router'
 import WikiLink from '../../extensions/WikiLink'
 import Callout from '../../extensions/Callout'
 import { Toggle, ToggleTitle, ToggleContent } from '../../extensions/Toggle'
+import InlineDatabase from '../../extensions/InlineDatabase'
 import { useNotesStore } from '../../stores/notesStore'
 
 const props = defineProps({
@@ -88,6 +89,7 @@ const availableSlashCommands = [
   { title: 'Gefahr', description: 'Wichtiger Warnhinweis', icon: '❌', keywords: ['callout', 'danger'] },
   { title: 'Toggle', description: 'Ausklappbarer Bereich', icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
   { title: 'Tabelle', description: 'Tabelle einfügen', icon: '▦', keywords: ['table', 'grid'] },
+  { title: 'Datenbank', description: 'Inline-Datenbank erstellen', icon: '🗃️', keywords: ['database', 'datenbank', 'notion', 'table', 'board'] },
 ]
 
 // Handle wiki link navigation
@@ -209,7 +211,11 @@ const editor = useEditor({
     Toggle,
     ToggleTitle,
     ToggleContent,
+    InlineDatabase,
   ],
+  editorProps: {
+    noteId: props.noteId,
+  },
   onUpdate: () => {
     emit('update:modelValue', editor.value.getHTML())
     checkForWikiLinkTrigger()
@@ -343,6 +349,16 @@ function executeSlashCommand(command) {
       break
     case 'Tabelle':
       editor.value.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      break
+    case 'Datenbank':
+      editor.value.chain().focus().insertContent({
+        type: 'inlineDatabase',
+        attrs: {
+          noteId: props.noteId,
+          name: 'Neue Datenbank',
+          view: 'table'
+        }
+      }).run()
       break
   }
 
@@ -783,5 +799,18 @@ const slashMenuStyle = computed(() => {
 
 .notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle-content] p:last-child {
   @apply mb-0;
+}
+
+/* Inline Database Styles */
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-inline-database] {
+  @apply my-4;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-inline-database] .inline-database-wrapper {
+  @apply select-none;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-inline-database].ProseMirror-selectednode {
+  @apply ring-2 ring-primary-500;
 }
 </style>

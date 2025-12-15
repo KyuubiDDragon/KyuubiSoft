@@ -64,6 +64,7 @@ use App\Modules\GitRepository\Controllers\GitRepositoryController;
 use App\Modules\SslCertificate\Controllers\SslCertificateController;
 use App\Modules\PublicGallery\Controllers\PublicGalleryController;
 use App\Modules\Notes\Controllers\NoteController;
+use App\Modules\Notes\Controllers\DatabaseController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -222,6 +223,27 @@ class Router
                 $protected->get('/notes/{id}/tags', [NoteController::class, 'getTags']);
                 $protected->post('/notes/{id}/tags', [NoteController::class, 'addTags']);
                 $protected->delete('/notes/{id}/tags/{tagId}', [NoteController::class, 'removeTag']);
+
+                // Note Databases - Inline databases for notes
+                $protected->post('/databases', [DatabaseController::class, 'create']);
+                $protected->get('/databases/{id}', [DatabaseController::class, 'show']);
+                $protected->put('/databases/{id}', [DatabaseController::class, 'update']);
+                $protected->delete('/databases/{id}', [DatabaseController::class, 'delete']);
+                $protected->post('/databases/{id}/duplicate', [DatabaseController::class, 'duplicate']);
+                // Properties
+                $protected->post('/databases/{id}/properties', [DatabaseController::class, 'addProperty']);
+                $protected->put('/databases/{id}/properties/{propertyId}', [DatabaseController::class, 'updateProperty']);
+                $protected->delete('/databases/{id}/properties/{propertyId}', [DatabaseController::class, 'deleteProperty']);
+                $protected->put('/databases/{id}/properties/reorder', [DatabaseController::class, 'reorderProperties']);
+                // Rows
+                $protected->post('/databases/{id}/rows', [DatabaseController::class, 'addRow']);
+                $protected->put('/databases/{id}/rows/{rowId}', [DatabaseController::class, 'updateRow']);
+                $protected->delete('/databases/{id}/rows/{rowId}', [DatabaseController::class, 'deleteRow']);
+                $protected->put('/databases/{id}/rows/reorder', [DatabaseController::class, 'reorderRows']);
+                // Views
+                $protected->post('/databases/{id}/views', [DatabaseController::class, 'createView']);
+                $protected->put('/databases/{id}/views/{viewId}', [DatabaseController::class, 'updateView']);
+                $protected->delete('/databases/{id}/views/{viewId}', [DatabaseController::class, 'deleteView']);
 
                 // Connections
                 $protected->get('/connections', [ConnectionController::class, 'index']);

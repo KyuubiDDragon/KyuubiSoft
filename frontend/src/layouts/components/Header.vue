@@ -50,6 +50,10 @@ import {
   ArrowPathIcon,
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
+  BoltIcon,
+  ArchiveBoxIcon,
+  LockClosedIcon,
+  PhotoIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -106,6 +110,10 @@ const iconMap = {
   InboxArrowDownIcon,
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
+  BoltIcon,
+  ArchiveBoxIcon,
+  LockClosedIcon,
+  PhotoIcon,
 }
 
 // Load quick access on mount

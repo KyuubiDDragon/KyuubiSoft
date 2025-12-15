@@ -1663,6 +1663,44 @@ class DockerController
     }
 
     /**
+     * Pull latest images and redeploy a stack
+     */
+    public function stackPullAndRedeploy(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host = $this->resolveHost($request);
+        $stackName = $this->getRouteArg($request, 'name');
+
+        if (empty($stackName) || !preg_match('/^[a-zA-Z0-9_-]+$/', $stackName)) {
+            throw new ValidationException('Invalid stack name');
+        }
+
+        try {
+            $workingDir = $this->getStackWorkingDir($host, $stackName);
+            $pullOutput = '';
+            $upOutput = '';
+
+            if ($workingDir && is_dir($workingDir)) {
+                // Pull latest images
+                $pullOutput = shell_exec("cd " . escapeshellarg($workingDir) . " && docker compose pull 2>&1") ?? '';
+                // Redeploy with new images
+                $upOutput = shell_exec("cd " . escapeshellarg($workingDir) . " && docker compose up -d --force-recreate 2>&1") ?? '';
+            } else {
+                // Try by project name
+                $pullOutput = shell_exec("docker compose -p " . escapeshellarg($stackName) . " pull 2>&1") ?? '';
+                $upOutput = shell_exec("docker compose -p " . escapeshellarg($stackName) . " up -d --force-recreate 2>&1") ?? '';
+            }
+
+            return JsonResponse::success([
+                'message' => 'Stack pulled and redeployed successfully',
+                'pull_output' => $pullOutput,
+                'deploy_output' => $upOutput,
+            ]);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Failed to pull and redeploy stack: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get stack working directory from container labels
      */
     private function getStackWorkingDir(array $host, string $stackName): ?string

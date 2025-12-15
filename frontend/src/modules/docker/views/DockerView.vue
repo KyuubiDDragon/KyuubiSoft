@@ -29,6 +29,7 @@ import {
   ClipboardDocumentIcon,
   PlusIcon,
   CloudArrowUpIcon,
+  CloudArrowDownIcon,
   ArchiveBoxIcon,
   TrashIcon,
   ArrowDownTrayIcon,
@@ -499,6 +500,21 @@ async function stackRestart(stackName) {
     await loadContainers()
   } catch (e) {
     error.value = 'Stack konnte nicht neugestartet werden'
+  }
+}
+
+async function stackPullAndRedeploy(stackName) {
+  if (!confirm(`Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`)) return
+  try {
+    loading.value = true
+    const response = await api.post(`/api/v1/docker/stacks/${stackName}/pull-redeploy`, null, { params: getHostParams() })
+    await loadContainers()
+    const data = response.data.data || response.data
+    alert(`Stack "${stackName}" erfolgreich aktualisiert!\n\nPull Output:\n${data.pull_output?.substring(0, 500) || 'OK'}`)
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Pull & Redeploy fehlgeschlagen'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -1024,6 +1040,13 @@ watch(() => projectStore.selectedProjectId, async () => {
                   title="Compose-Datei anzeigen"
                 >
                   <CodeBracketIcon class="w-4 h-4" />
+                </button>
+                <button
+                  @click="stackPullAndRedeploy(stack.name)"
+                  class="btn-icon text-green-400 hover:bg-green-500/20"
+                  title="Pull & Redeploy"
+                >
+                  <CloudArrowDownIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="stackRestart(stack.name)"

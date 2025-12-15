@@ -54,6 +54,7 @@ import {
   LockClosedIcon,
   HeartIcon,
   PhotoIcon,
+  PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -123,6 +124,7 @@ const iconToName = new Map([
   [LockClosedIcon, 'LockClosedIcon'],
   [HeartIcon, 'HeartIcon'],
   [PhotoIcon, 'PhotoIcon'],
+  [PencilSquareIcon, 'PencilSquareIcon'],
 ])
 
 // Get icon name from component
@@ -242,6 +244,7 @@ const allNavigationGroups = [
     children: [
       { name: 'Listen', href: '/lists', icon: ListBulletIcon },
       { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
+      { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes' },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
     ],

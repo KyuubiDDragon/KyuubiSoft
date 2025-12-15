@@ -13,6 +13,7 @@ const SetupView = () => import('@/modules/auth/views/SetupView.vue')
 const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
+const NotesView = () => import('@/modules/notes/views/NotesView.vue')
 const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
 const SnippetsView = () => import('@/modules/snippets/views/SnippetsView.vue')
 const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
@@ -41,6 +42,7 @@ const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.
 const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategoriesView.vue')
 const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
 const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
+const PublicNotePage = () => import('@/modules/notes/views/PublicNotePage.vue')
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 const NewsView = () => import('@/modules/news/views/NewsView.vue')
 const StorageView = () => import('@/modules/storage/views/StorageView.vue')
@@ -100,6 +102,12 @@ const routes = [
     path: '/documents',
     name: 'documents',
     component: DocumentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notes/:id?',
+    name: 'notes',
+    component: NotesView,
     meta: { requiresAuth: true },
   },
   {
@@ -384,6 +392,12 @@ const routes = [
     path: '/doc/:token',
     name: 'public-document',
     component: PublicDocumentView,
+    meta: { layout: 'public' },
+  },
+  {
+    path: '/public/note/:token',
+    name: 'public-note',
+    component: PublicNotePage,
     meta: { layout: 'public' },
   },
 

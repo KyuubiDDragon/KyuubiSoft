@@ -60,18 +60,16 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy composer files first for better caching
-COPY composer.json composer.lock* ./
+COPY composer.json composer.lock ./
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction || true
+# Install dependencies (fails build if installation fails)
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
 # Copy application files
 COPY . .
 
-# Run composer scripts after copying all files
-RUN if [ -f "composer.json" ]; then \
-        composer dump-autoload --optimize; \
-    fi
+# Regenerate autoloader with all files
+RUN composer dump-autoload --optimize
 
 # Create storage directories
 RUN mkdir -p storage/logs storage/cache storage/uploads \

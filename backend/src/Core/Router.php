@@ -65,6 +65,7 @@ use App\Modules\SslCertificate\Controllers\SslCertificateController;
 use App\Modules\PublicGallery\Controllers\PublicGalleryController;
 use App\Modules\Notes\Controllers\NoteController;
 use App\Modules\Notes\Controllers\DatabaseController;
+use App\Modules\Notes\Controllers\CollaborationController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -244,6 +245,12 @@ class Router
                 $protected->post('/databases/{id}/views', [DatabaseController::class, 'createView']);
                 $protected->put('/databases/{id}/views/{viewId}', [DatabaseController::class, 'updateView']);
                 $protected->delete('/databases/{id}/views/{viewId}', [DatabaseController::class, 'deleteView']);
+
+                // Collaboration - Real-time editing
+                $protected->get('/collaboration/status', [CollaborationController::class, 'status']);
+                $protected->get('/collaboration/notes/{noteId}/collaborators', [CollaborationController::class, 'collaborators']);
+                $protected->get('/collaboration/notes/{noteId}/history', [CollaborationController::class, 'history']);
+                $protected->delete('/collaboration/notes/{noteId}', [CollaborationController::class, 'clear']);
 
                 // Connections
                 $protected->get('/connections', [ConnectionController::class, 'index']);

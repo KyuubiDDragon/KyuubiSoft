@@ -12,6 +12,7 @@ import NoteQuickSwitcher from '../components/modals/NoteQuickSwitcher.vue'
 import NoteTemplatesModal from '../components/modals/NoteTemplatesModal.vue'
 import NoteVersionsModal from '../components/modals/NoteVersionsModal.vue'
 import NoteTrashModal from '../components/modals/NoteTrashModal.vue'
+import CollaborationPresence from '../components/collaboration/CollaborationPresence.vue'
 import {
   PlusIcon,
   Cog6ToothIcon,
@@ -394,6 +395,9 @@ function formatRelativeTime(date) {
               <span v-else-if="lastSaved" class="text-xs text-gray-500">
                 Gespeichert {{ formatRelativeTime(lastSaved) }}
               </span>
+
+              <!-- Collaboration Presence -->
+              <CollaborationPresence class="mx-2" />
 
               <!-- Favorite -->
               <button

@@ -23,7 +23,10 @@ import WikiLink from '../../extensions/WikiLink'
 import Callout from '../../extensions/Callout'
 import { Toggle, ToggleTitle, ToggleContent } from '../../extensions/Toggle'
 import InlineDatabase from '../../extensions/InlineDatabase'
+import CollaborationCursor from '../../extensions/CollaborationCursor'
 import { useNotesStore } from '../../stores/notesStore'
+import { useCollaborationStore } from '../../stores/collaborationStore'
+import { useCollaboration } from '../../composables/useCollaboration'
 
 const props = defineProps({
   modelValue: {
@@ -45,6 +48,10 @@ const props = defineProps({
   noteId: {
     type: String,
     default: ''
+  },
+  enableCollaboration: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -52,8 +59,12 @@ const emit = defineEmits(['update:modelValue', 'navigate'])
 
 const router = useRouter()
 const notesStore = useNotesStore()
+const collaborationStore = useCollaborationStore()
 
 const lowlight = createLowlight(common)
+
+// Collaboration state
+const collaborationEnabled = ref(false)
 
 // Wiki link suggestion state
 const showSuggestions = ref(false)
@@ -212,6 +223,27 @@ const editor = useEditor({
     ToggleTitle,
     ToggleContent,
     InlineDatabase,
+    CollaborationCursor.configure({
+      getCursors: () => {
+        if (!collaborationEnabled.value) return []
+        return Object.entries(collaborationStore.cursors).map(([userId, data]) => ({
+          userId,
+          position: data.position,
+          user: data.user,
+          color: data.user?.color || '#6366F1',
+        }))
+      },
+      getSelections: () => {
+        if (!collaborationEnabled.value) return []
+        return Object.entries(collaborationStore.selections).map(([userId, data]) => ({
+          userId,
+          from: data.from,
+          to: data.to,
+          user: data.user,
+          color: data.user?.color || '#6366F1',
+        }))
+      },
+    }),
   ],
   editorProps: {
     noteId: props.noteId,
@@ -220,10 +252,21 @@ const editor = useEditor({
     emit('update:modelValue', editor.value.getHTML())
     checkForWikiLinkTrigger()
     checkForSlashCommand()
+
+    // Send collaboration update (debounced in store)
+    if (collaborationEnabled.value) {
+      sendCollaborationUpdate()
+    }
   },
   onSelectionUpdate: () => {
     checkForWikiLinkTrigger()
     checkForSlashCommand()
+
+    // Send cursor/selection updates
+    if (collaborationEnabled.value) {
+      sendCursorUpdate()
+      sendSelectionUpdate()
+    }
   },
 })
 
@@ -467,12 +510,94 @@ function handleSuggestionKeydown(event) {
 }
 
 // Add keyboard listener
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('keydown', handleSuggestionKeydown)
+
+  // Initialize collaboration if enabled
+  if (props.enableCollaboration && props.noteId) {
+    await initCollaboration()
+  }
 })
+
+// Initialize collaboration
+async function initCollaboration() {
+  try {
+    await collaborationStore.connect()
+    await collaborationStore.joinRoom(props.noteId)
+    collaborationEnabled.value = true
+
+    // Register update handler
+    collaborationStore.onMessage('update', handleRemoteUpdate)
+
+    console.log('Collaboration enabled for note:', props.noteId)
+  } catch (error) {
+    console.error('Failed to initialize collaboration:', error)
+    collaborationEnabled.value = false
+  }
+}
+
+// Handle remote update from collaboration
+function handleRemoteUpdate(data) {
+  if (!editor.value) return
+
+  // Skip if this is our own update
+  // In production, use proper CRDT conflict resolution
+  try {
+    if (data.update && typeof data.update === 'string') {
+      const content = JSON.parse(data.update)
+
+      // Save current selection
+      const { from, to } = editor.value.state.selection
+
+      // Update content without triggering our own update handler
+      editor.value.commands.setContent(content, false)
+
+      // Restore selection
+      const docSize = editor.value.state.doc.content.size
+      editor.value.commands.setTextSelection({
+        from: Math.min(from, docSize),
+        to: Math.min(to, docSize)
+      })
+    }
+  } catch (error) {
+    console.error('Failed to apply remote update:', error)
+  }
+}
+
+// Send local changes to collaboration server
+function sendCollaborationUpdate() {
+  if (!collaborationEnabled.value || !editor.value) return
+
+  const content = editor.value.getJSON()
+  collaborationStore.sendUpdate(JSON.stringify(content))
+}
+
+// Send cursor position
+function sendCursorUpdate() {
+  if (!collaborationEnabled.value || !editor.value) return
+
+  const { anchor } = editor.value.state.selection
+  collaborationStore.sendCursor({ position: anchor })
+}
+
+// Send selection update
+function sendSelectionUpdate() {
+  if (!collaborationEnabled.value || !editor.value) return
+
+  const { from, to } = editor.value.state.selection
+  if (from !== to) {
+    collaborationStore.sendSelection({ from, to })
+  }
+}
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleSuggestionKeydown)
+
+  // Leave collaboration room
+  if (collaborationEnabled.value) {
+    collaborationStore.leaveRoom()
+    collaborationEnabled.value = false
+  }
   editor.value?.destroy()
 })
 
@@ -812,5 +937,30 @@ const slashMenuStyle = computed(() => {
 
 .notes-tiptap-editor .tiptap-content .ProseMirror div[data-inline-database].ProseMirror-selectednode {
   @apply ring-2 ring-primary-500;
+}
+
+/* Collaboration Cursor Styles */
+.notes-tiptap-editor .tiptap-content .ProseMirror .collaboration-cursor {
+  position: relative;
+  pointer-events: none;
+  animation: cursor-blink 1s infinite;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror .collaboration-cursor-flag {
+  animation: flag-fade-in 0.2s ease-out;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror .collaboration-selection {
+  border-radius: 2px;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.7; }
+}
+
+@keyframes flag-fade-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 0.9; transform: translateY(-2px); }
 }
 </style>

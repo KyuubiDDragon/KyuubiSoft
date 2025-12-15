@@ -11,6 +11,7 @@ import NoteBacklinks from '../components/editor/NoteBacklinks.vue'
 import NoteQuickSwitcher from '../components/modals/NoteQuickSwitcher.vue'
 import NoteTemplateModal from '../components/modals/NoteTemplateModal.vue'
 import NoteVersionModal from '../components/modals/NoteVersionModal.vue'
+import NoteTrashModal from '../components/modals/NoteTrashModal.vue'
 import {
   PlusIcon,
   Cog6ToothIcon,
@@ -34,6 +35,7 @@ const uiStore = useUiStore()
 const showQuickSwitcher = ref(false)
 const showTemplateModal = ref(false)
 const showVersionModal = ref(false)
+const showTrashModal = ref(false)
 const showNoteMenu = ref(false)
 const sidebarCollapsed = ref(false)
 const autoSaveTimeout = ref(null)
@@ -281,10 +283,12 @@ function formatRelativeTime(date) {
     <!-- Sidebar -->
     <NotesSidebar
       :collapsed="sidebarCollapsed"
+      :selected-note-id="currentNote?.id"
       @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
       @select-note="navigateToNote"
       @create-note="createNewNote"
       @show-templates="showTemplateModal = true"
+      @show-trash="showTrashModal = true"
     />
 
     <!-- Main Content Area -->
@@ -501,6 +505,13 @@ function formatRelativeTime(date) {
       v-if="showVersionModal && currentNote"
       :note-id="currentNote.id"
       @close="showVersionModal = false"
+    />
+
+    <!-- Trash Modal -->
+    <NoteTrashModal
+      v-if="showTrashModal"
+      @close="showTrashModal = false"
+      @restore="navigateToNote"
     />
 
     <!-- Click outside handler for menu -->

@@ -167,6 +167,22 @@ class FeatureService
                 'public' => ['full'],
             ],
         ],
+        'notes' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_NOTES',
+            'description' => 'Notes and knowledge base (Notion-like)',
+            'subFeatures' => [
+                'view' => ['full'],
+                'create' => ['full'],
+                'edit' => ['full'],
+                'delete' => ['full'],
+                'databases' => ['full'],
+                'templates' => ['full'],
+                'collaborate' => ['full'],
+                'public' => ['full'],
+            ],
+        ],
     ];
 
     private array $featureCache = [];

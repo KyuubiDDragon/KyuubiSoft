@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
 import DatabaseCell from './DatabaseCell.vue'
@@ -155,13 +155,19 @@ watch(() => props.databaseId, () => {
   }
 }, { immediate: true })
 
+// Click outside handler
+function handleClickOutside(e) {
+  if (!e.target.closest('.database-cell-editor')) {
+    editingCell.value = null
+  }
+}
+
 onMounted(() => {
-  // Click outside to close editing
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.database-cell-editor')) {
-      editingCell.value = null
-    }
-  })
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 

@@ -160,8 +160,21 @@ export const useNotesStore = defineStore('notes', () => {
    */
   async function moveNote(noteId, parentId) {
     try {
-      await api.put(`/api/v1/notes/${noteId}/move`, { parent_id: parentId })
+      const response = await api.put(`/api/v1/notes/${noteId}/move`, { parent_id: parentId })
+
+      // Update local state
+      const noteIndex = notes.value.findIndex(n => n.id === noteId)
+      if (noteIndex !== -1) {
+        notes.value[noteIndex].parent_id = parentId
+      }
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId) {
+        currentNote.value.parent_id = parentId
+      }
+
       await fetchTree()
+      return response.data.data
     } catch (error) {
       console.error('Error moving note:', error)
       throw error
@@ -173,7 +186,25 @@ export const useNotesStore = defineStore('notes', () => {
    */
   async function reorderNotes(items) {
     try {
-      await api.put('/api/v1/notes/reorder', { items })
+      // items is an array of { id, sort_order } or { id, parent_id, sort_order }
+      const response = await api.put('/api/v1/notes/reorder', { items })
+
+      // Update local state with new sort orders
+      items.forEach(item => {
+        const noteIndex = notes.value.findIndex(n => n.id === item.id)
+        if (noteIndex !== -1) {
+          if (item.sort_order !== undefined) {
+            notes.value[noteIndex].sort_order = item.sort_order
+          }
+          if (item.parent_id !== undefined) {
+            notes.value[noteIndex].parent_id = item.parent_id
+          }
+        }
+      })
+
+      // Refresh tree to reflect changes
+      await fetchTree()
+      return response.data.data
     } catch (error) {
       console.error('Error reordering notes:', error)
       throw error
@@ -512,6 +543,134 @@ export const useNotesStore = defineStore('notes', () => {
     ])
   }
 
+  // =========================================================================
+  // TAGS
+  // =========================================================================
+
+  /**
+   * Get tags for a note
+   */
+  async function getTags(noteId) {
+    try {
+      const response = await api.get(`/api/v1/notes/${noteId}/tags`)
+      return response.data.data || []
+    } catch (error) {
+      console.error('Error fetching note tags:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Add tags to a note
+   */
+  async function addTags(noteId, tagIds) {
+    try {
+      await api.post(`/api/v1/notes/${noteId}/tags`, { tag_ids: tagIds })
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId) {
+        currentNote.value.tags = await getTags(noteId)
+      }
+    } catch (error) {
+      console.error('Error adding tags:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Remove tag from note
+   */
+  async function removeTag(noteId, tagId) {
+    try {
+      await api.delete(`/api/v1/notes/${noteId}/tags/${tagId}`)
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId && currentNote.value.tags) {
+        currentNote.value.tags = currentNote.value.tags.filter(t => t.id !== tagId)
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error)
+      throw error
+    }
+  }
+
+  // =========================================================================
+  // SHARING
+  // =========================================================================
+
+  /**
+   * Get share status for a note
+   */
+  async function getShareStatus(noteId) {
+    try {
+      const response = await api.get(`/api/v1/notes/${noteId}/share/status`)
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching share status:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Share a note (generate/update public link)
+   */
+  async function shareNote(noteId, settings = {}) {
+    try {
+      const response = await api.post(`/api/v1/notes/${noteId}/share`, settings)
+      const shareData = response.data.data
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId) {
+        currentNote.value.is_shared = true
+        currentNote.value.public_token = shareData.token
+        currentNote.value.share_url = shareData.url
+      }
+
+      return shareData
+    } catch (error) {
+      console.error('Error sharing note:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Disable sharing for a note
+   */
+  async function unshareNote(noteId) {
+    try {
+      await api.delete(`/api/v1/notes/${noteId}/share`)
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId) {
+        currentNote.value.is_shared = false
+      }
+    } catch (error) {
+      console.error('Error unsharing note:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Regenerate share token for a note
+   */
+  async function regenerateShareToken(noteId) {
+    try {
+      const response = await api.post(`/api/v1/notes/${noteId}/share/regenerate`)
+      const shareData = response.data.data
+
+      // Update current note if applicable
+      if (currentNote.value?.id === noteId) {
+        currentNote.value.public_token = shareData.token
+        currentNote.value.share_url = shareData.url
+      }
+
+      return shareData
+    } catch (error) {
+      console.error('Error regenerating share token:', error)
+      throw error
+    }
+  }
+
   return {
     // State
     notes,
@@ -564,6 +723,15 @@ export const useNotesStore = defineStore('notes', () => {
     fetchStats,
     fetchNoteBySlug,
     clearCurrentNote,
-    initialize
+    initialize,
+    // Tags
+    getTags,
+    addTags,
+    removeTag,
+    // Sharing
+    getShareStatus,
+    shareNote,
+    unshareNote,
+    regenerateShareToken
   }
 })

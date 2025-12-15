@@ -119,25 +119,100 @@ class DatabaseService
         }
 
         // Build query
-        $sql = "SELECT r.*, u1.username as created_by_name, u2.username as updated_by_name
+        $sql = "SELECT DISTINCT r.*, u1.username as created_by_name, u2.username as updated_by_name
                 FROM note_database_rows r
                 LEFT JOIN users u1 ON r.created_by = u1.id
-                LEFT JOIN users u2 ON r.updated_by = u2.id
-                WHERE r.database_id = ? AND r.is_archived = FALSE";
+                LEFT JOIN users u2 ON r.updated_by = u2.id";
+
         $params = [$databaseId];
+        $filterJoins = [];
+        $filterConditions = [];
 
         // Apply filters if provided
         if ($filters && !empty($filters['conditions'])) {
+            $filterLogic = $filters['logic'] ?? 'AND';
+            $conditionIndex = 0;
+
             foreach ($filters['conditions'] as $condition) {
-                // Filter logic would be added here
-                // This is simplified for now
+                if (!isset($condition['property_id'], $condition['operator'])) {
+                    continue;
+                }
+
+                $property = $propertyMap[$condition['property_id']] ?? null;
+                if (!$property) {
+                    continue;
+                }
+
+                $alias = "c{$conditionIndex}";
+                $filterJoins[] = "LEFT JOIN note_database_cells {$alias} ON r.id = {$alias}.row_id AND {$alias}.property_id = ?";
+                $params[] = $condition['property_id'];
+
+                $valueColumn = $this->getValueColumnForType($property['type']);
+                $filterSql = $this->buildFilterCondition($alias, $valueColumn, $property['type'], $condition);
+
+                if ($filterSql) {
+                    $filterConditions[] = $filterSql['sql'];
+                    if (isset($filterSql['params'])) {
+                        $params = array_merge($params, $filterSql['params']);
+                    }
+                }
+
+                $conditionIndex++;
             }
+        }
+
+        // Add joins
+        if (!empty($filterJoins)) {
+            $sql .= " " . implode(" ", $filterJoins);
+        }
+
+        // Add base condition
+        $sql .= " WHERE r.database_id = ? AND r.is_archived = FALSE";
+        $params[] = $databaseId;
+
+        // Add filter conditions
+        if (!empty($filterConditions)) {
+            $filterLogic = strtoupper($filters['logic'] ?? 'AND');
+            $sql .= " AND (" . implode(" {$filterLogic} ", $filterConditions) . ")";
         }
 
         // Apply sorting
         if ($sorts && !empty($sorts)) {
-            // For now, default sort by sort_order
-            $sql .= " ORDER BY r.sort_order ASC";
+            $orderClauses = [];
+            $sortIndex = 0;
+
+            foreach ($sorts as $sort) {
+                if (!isset($sort['property_id'])) {
+                    continue;
+                }
+
+                $property = $propertyMap[$sort['property_id']] ?? null;
+                if (!$property) {
+                    continue;
+                }
+
+                $direction = strtoupper($sort['direction'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                $sortAlias = "s{$sortIndex}";
+
+                // Join for sorting
+                $sql = str_replace(
+                    "FROM note_database_rows r",
+                    "FROM note_database_rows r LEFT JOIN note_database_cells {$sortAlias} ON r.id = {$sortAlias}.row_id AND {$sortAlias}.property_id = ?",
+                    $sql
+                );
+                array_splice($params, $sortIndex, 0, [$sort['property_id']]);
+
+                $valueColumn = $this->getValueColumnForType($property['type']);
+                $orderClauses[] = "{$sortAlias}.{$valueColumn} {$direction}";
+
+                $sortIndex++;
+            }
+
+            if (!empty($orderClauses)) {
+                $sql .= " ORDER BY " . implode(", ", $orderClauses) . ", r.sort_order ASC";
+            } else {
+                $sql .= " ORDER BY r.sort_order ASC";
+            }
         } else {
             $sql .= " ORDER BY r.sort_order ASC";
         }
@@ -207,6 +282,140 @@ class DatabaseService
             'multi_select', 'person', 'relation' => [],
             'date' => ['start' => null, 'end' => null],
             default => '',
+        };
+    }
+
+    /**
+     * Get the database column name for a property type
+     */
+    private function getValueColumnForType(string $type): string
+    {
+        return match ($type) {
+            'number' => 'value_number',
+            'checkbox' => 'value_boolean',
+            'date', 'created_time', 'updated_time' => 'value_date',
+            'multi_select', 'person', 'relation' => 'value_json',
+            default => 'value_text',
+        };
+    }
+
+    /**
+     * Build SQL filter condition based on operator and value
+     */
+    private function buildFilterCondition(string $alias, string $column, string $type, array $condition): ?array
+    {
+        $operator = $condition['operator'];
+        $value = $condition['value'] ?? null;
+        $fullColumn = "{$alias}.{$column}";
+
+        return match ($operator) {
+            // Text/General operators
+            'equals' => [
+                'sql' => "{$fullColumn} = ?",
+                'params' => [$value],
+            ],
+            'not_equals' => [
+                'sql' => "({$fullColumn} IS NULL OR {$fullColumn} != ?)",
+                'params' => [$value],
+            ],
+            'contains' => [
+                'sql' => "{$fullColumn} LIKE ?",
+                'params' => ['%' . $value . '%'],
+            ],
+            'not_contains' => [
+                'sql' => "({$fullColumn} IS NULL OR {$fullColumn} NOT LIKE ?)",
+                'params' => ['%' . $value . '%'],
+            ],
+            'starts_with' => [
+                'sql' => "{$fullColumn} LIKE ?",
+                'params' => [$value . '%'],
+            ],
+            'ends_with' => [
+                'sql' => "{$fullColumn} LIKE ?",
+                'params' => ['%' . $value],
+            ],
+            'is_empty' => [
+                'sql' => "({$fullColumn} IS NULL OR {$fullColumn} = '')",
+                'params' => [],
+            ],
+            'is_not_empty' => [
+                'sql' => "({$fullColumn} IS NOT NULL AND {$fullColumn} != '')",
+                'params' => [],
+            ],
+
+            // Number operators
+            'greater_than' => [
+                'sql' => "{$fullColumn} > ?",
+                'params' => [(float) $value],
+            ],
+            'less_than' => [
+                'sql' => "{$fullColumn} < ?",
+                'params' => [(float) $value],
+            ],
+            'greater_or_equal' => [
+                'sql' => "{$fullColumn} >= ?",
+                'params' => [(float) $value],
+            ],
+            'less_or_equal' => [
+                'sql' => "{$fullColumn} <= ?",
+                'params' => [(float) $value],
+            ],
+
+            // Date operators
+            'date_is' => [
+                'sql' => "DATE({$fullColumn}) = DATE(?)",
+                'params' => [$value],
+            ],
+            'date_before' => [
+                'sql' => "{$fullColumn} < ?",
+                'params' => [$value],
+            ],
+            'date_after' => [
+                'sql' => "{$fullColumn} > ?",
+                'params' => [$value],
+            ],
+            'date_on_or_before' => [
+                'sql' => "{$fullColumn} <= ?",
+                'params' => [$value],
+            ],
+            'date_on_or_after' => [
+                'sql' => "{$fullColumn} >= ?",
+                'params' => [$value],
+            ],
+            'past_week' => [
+                'sql' => "{$fullColumn} >= DATE_SUB(NOW(), INTERVAL 7 DAY)",
+                'params' => [],
+            ],
+            'past_month' => [
+                'sql' => "{$fullColumn} >= DATE_SUB(NOW(), INTERVAL 1 MONTH)",
+                'params' => [],
+            ],
+            'next_week' => [
+                'sql' => "{$fullColumn} <= DATE_ADD(NOW(), INTERVAL 7 DAY) AND {$fullColumn} >= NOW()",
+                'params' => [],
+            ],
+
+            // Checkbox operators
+            'is_checked' => [
+                'sql' => "{$fullColumn} = 1",
+                'params' => [],
+            ],
+            'is_unchecked' => [
+                'sql' => "({$fullColumn} IS NULL OR {$fullColumn} = 0)",
+                'params' => [],
+            ],
+
+            // Multi-select / JSON array operators
+            'array_contains' => [
+                'sql' => "JSON_CONTAINS({$fullColumn}, ?)",
+                'params' => [json_encode($value)],
+            ],
+            'array_not_contains' => [
+                'sql' => "NOT JSON_CONTAINS({$fullColumn}, ?)",
+                'params' => [json_encode($value)],
+            ],
+
+            default => null,
         };
     }
 

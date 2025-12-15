@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Notes\Controllers;
 
 use App\Core\Controller;
+use App\Core\Exceptions\NotFoundException;
+use App\Core\Exceptions\ForbiddenException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Predis\Client as RedisClient;
+use Doctrine\DBAL\Connection;
 
 /**
  * Controller for collaboration-related HTTP endpoints
@@ -15,8 +18,46 @@ use Predis\Client as RedisClient;
 class CollaborationController extends Controller
 {
     public function __construct(
-        private RedisClient $redis
+        private RedisClient $redis,
+        private Connection $db
     ) {}
+
+    /**
+     * Verify user has access to note (owner or collaborator)
+     */
+    private function verifyNoteAccess(string $noteId, string $userId): void
+    {
+        // Check if user is owner
+        $isOwner = $this->db->fetchOne(
+            'SELECT 1 FROM notes WHERE id = ? AND user_id = ?',
+            [$noteId, $userId]
+        );
+
+        if ($isOwner) {
+            return;
+        }
+
+        // Check if user is a collaborator (via sharing)
+        $isCollaborator = $this->db->fetchOne(
+            'SELECT 1 FROM note_shares WHERE note_id = ? AND shared_with_user_id = ?',
+            [$noteId, $userId]
+        );
+
+        if (!$isCollaborator) {
+            throw new ForbiddenException('You do not have access to this note');
+        }
+    }
+
+    /**
+     * Check if user is owner of note
+     */
+    private function isNoteOwner(string $noteId, string $userId): bool
+    {
+        return (bool) $this->db->fetchOne(
+            'SELECT 1 FROM notes WHERE id = ? AND user_id = ?',
+            [$noteId, $userId]
+        );
+    }
 
     /**
      * Get collaboration status and WebSocket URL
@@ -44,10 +85,14 @@ class CollaborationController extends Controller
     public function collaborators(Request $request, Response $response, array $args): Response
     {
         $noteId = $args['noteId'] ?? null;
+        $userId = $request->getAttribute('user_id');
 
         if (!$noteId) {
             return $this->json($response, ['error' => 'Note ID required'], 400);
         }
+
+        // Verify user has access to this note
+        $this->verifyNoteAccess($noteId, $userId);
 
         // Get active collaborators from Redis
         $key = "collab:note:{$noteId}:users";
@@ -75,10 +120,14 @@ class CollaborationController extends Controller
     public function history(Request $request, Response $response, array $args): Response
     {
         $noteId = $args['noteId'] ?? null;
+        $userId = $request->getAttribute('user_id');
 
         if (!$noteId) {
             return $this->json($response, ['error' => 'Note ID required'], 400);
         }
+
+        // Verify user has access to this note
+        $this->verifyNoteAccess($noteId, $userId);
 
         // Get recent activity from Redis
         $key = "collab:note:{$noteId}:activity";
@@ -95,7 +144,7 @@ class CollaborationController extends Controller
     }
 
     /**
-     * Clear collaboration state for a note (admin function)
+     * Clear collaboration state for a note (owner only)
      */
     public function clear(Request $request, Response $response, array $args): Response
     {
@@ -104,6 +153,11 @@ class CollaborationController extends Controller
 
         if (!$noteId) {
             return $this->json($response, ['error' => 'Note ID required'], 400);
+        }
+
+        // Only note owner can clear collaboration state
+        if (!$this->isNoteOwner($noteId, $userId)) {
+            throw new ForbiddenException('Only the note owner can clear collaboration state');
         }
 
         // Clear collaboration state from Redis

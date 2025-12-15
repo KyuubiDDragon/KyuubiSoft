@@ -83,7 +83,9 @@ function loadEmbed() {
 
 // Open in new tab
 function openExternal() {
-  window.open(props.node.attrs.src, '_blank')
+  if (embedUrl.value) {
+    window.open(embedUrl.value, '_blank')
+  }
 }
 
 // Toggle fullscreen

@@ -233,6 +233,26 @@ async function deleteCurrentNote() {
   }
 }
 
+// Archive note
+async function archiveCurrentNote() {
+  if (!currentNote.value) return
+
+  try {
+    const isArchived = !currentNote.value.is_archived
+    await notesStore.updateNote(currentNote.value.id, { is_archived: isArchived })
+    showNoteMenu.value = false
+
+    if (isArchived) {
+      router.push('/notes')
+      uiStore.showSuccess('Notiz archiviert')
+    } else {
+      uiStore.showSuccess('Notiz wiederhergestellt')
+    }
+  } catch (error) {
+    uiStore.showError('Fehler beim Archivieren')
+  }
+}
+
 // Toggle favorite
 async function toggleFavorite() {
   if (!currentNote.value) return
@@ -482,11 +502,11 @@ function formatRelativeTime(date) {
                     Teilen
                   </button>
                   <button
-                    @click="() => { /* archive */ }"
+                    @click="archiveCurrentNote"
                     class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-dark-600"
                   >
                     <ArchiveBoxIcon class="h-4 w-4" />
-                    Archivieren
+                    {{ currentNote?.is_archived ? 'Dearchivieren' : 'Archivieren' }}
                   </button>
                   <hr class="my-1 border-dark-600" />
                   <button

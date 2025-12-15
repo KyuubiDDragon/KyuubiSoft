@@ -61,7 +61,7 @@ class DatabaseService
                 break;
 
             case 'checkbox':
-                $data['value_boolean'] = (bool) $value;
+                $data['value_boolean'] = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
                 break;
 
             case 'date':

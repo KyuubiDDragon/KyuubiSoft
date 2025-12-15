@@ -56,8 +56,8 @@ class DatabaseController
             'description' => $data['description'] ?? null,
             'icon' => $data['icon'] ?? null,
             'default_view' => $data['default_view'] ?? 'table',
-            'show_title' => $data['show_title'] ?? true,
-            'full_width' => $data['full_width'] ?? false,
+            'show_title' => isset($data['show_title']) ? (filter_var($data['show_title'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0) : 1,
+            'full_width' => isset($data['full_width']) ? (filter_var($data['full_width'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0) : 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
@@ -127,11 +127,19 @@ class DatabaseController
         $this->getDatabaseForUser($databaseId, $userId);
 
         $updateData = [];
-        $allowedFields = ['name', 'description', 'icon', 'default_view', 'show_title', 'full_width'];
+        $allowedFields = ['name', 'description', 'icon', 'default_view'];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
+            }
+        }
+
+        // Handle boolean fields with proper type casting
+        $booleanFields = ['show_title', 'full_width'];
+        foreach ($booleanFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $updateData[$field] = filter_var($data[$field], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
             }
         }
 
@@ -220,9 +228,9 @@ class DatabaseController
             'name' => $data['name'] ?? 'Neue Spalte',
             'type' => $data['type'] ?? 'text',
             'config' => isset($data['config']) ? json_encode($data['config']) : null,
-            'width' => $data['width'] ?? 200,
-            'is_visible' => $data['is_visible'] ?? true,
-            'is_primary' => false,
+            'width' => (int) ($data['width'] ?? 200),
+            'is_visible' => isset($data['is_visible']) ? (filter_var($data['is_visible'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0) : 1,
+            'is_primary' => 0,
             'sort_order' => $maxOrder + 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -263,12 +271,17 @@ class DatabaseController
         }
 
         $updateData = [];
-        $allowedFields = ['name', 'width', 'is_visible', 'sort_order'];
+        $allowedFields = ['name', 'width', 'sort_order'];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
             }
+        }
+
+        // Handle boolean fields with proper type casting
+        if (array_key_exists('is_visible', $data)) {
+            $updateData['is_visible'] = filter_var($data['is_visible'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         }
 
         // Config update (merge with existing)

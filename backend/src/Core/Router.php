@@ -63,6 +63,7 @@ use App\Modules\Links\Controllers\LinkController;
 use App\Modules\GitRepository\Controllers\GitRepositoryController;
 use App\Modules\SslCertificate\Controllers\SslCertificateController;
 use App\Modules\PublicGallery\Controllers\PublicGalleryController;
+use App\Modules\Notes\Controllers\NoteController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -185,6 +186,42 @@ class Router
                 $protected->get('/documents/{id}/public', [DocumentController::class, 'getPublicShareInfo']);
                 $protected->post('/documents/{id}/public', [DocumentController::class, 'enablePublicShare']);
                 $protected->delete('/documents/{id}/public', [DocumentController::class, 'disablePublicShare']);
+
+                // Notes - Hierarchical note-taking system
+                $protected->get('/notes', [NoteController::class, 'index']);
+                $protected->post('/notes', [NoteController::class, 'create']);
+                $protected->get('/notes/tree', [NoteController::class, 'tree']);
+                $protected->get('/notes/recent', [NoteController::class, 'recent']);
+                $protected->get('/notes/favorites', [NoteController::class, 'favorites']);
+                $protected->get('/notes/trash', [NoteController::class, 'trash']);
+                $protected->delete('/notes/trash', [NoteController::class, 'emptyTrash']);
+                $protected->get('/notes/templates', [NoteController::class, 'templates']);
+                $protected->get('/notes/search', [NoteController::class, 'search']);
+                $protected->get('/notes/search/suggestions', [NoteController::class, 'suggestions']);
+                $protected->get('/notes/stats', [NoteController::class, 'stats']);
+                $protected->get('/notes/by-slug/{slug}', [NoteController::class, 'bySlug']);
+                $protected->post('/notes/from-template/{id}', [NoteController::class, 'fromTemplate']);
+                $protected->put('/notes/reorder', [NoteController::class, 'reorder']);
+                $protected->get('/notes/{id}', [NoteController::class, 'show']);
+                $protected->put('/notes/{id}', [NoteController::class, 'update']);
+                $protected->delete('/notes/{id}', [NoteController::class, 'delete']);
+                $protected->get('/notes/{id}/children', [NoteController::class, 'children']);
+                $protected->get('/notes/{id}/breadcrumb', [NoteController::class, 'breadcrumb']);
+                $protected->get('/notes/{id}/backlinks', [NoteController::class, 'backlinks']);
+                $protected->put('/notes/{id}/move', [NoteController::class, 'move']);
+                $protected->post('/notes/{id}/favorite', [NoteController::class, 'favorite']);
+                $protected->delete('/notes/{id}/favorite', [NoteController::class, 'unfavorite']);
+                $protected->post('/notes/{id}/pin', [NoteController::class, 'pin']);
+                $protected->delete('/notes/{id}/pin', [NoteController::class, 'unpin']);
+                $protected->post('/notes/{id}/duplicate', [NoteController::class, 'duplicate']);
+                $protected->post('/notes/{id}/restore', [NoteController::class, 'restore']);
+                $protected->delete('/notes/{id}/permanent', [NoteController::class, 'permanentDelete']);
+                $protected->get('/notes/{id}/versions', [NoteController::class, 'versions']);
+                $protected->get('/notes/{id}/versions/{versionId}', [NoteController::class, 'version']);
+                $protected->post('/notes/{id}/versions/{versionId}/restore', [NoteController::class, 'restoreVersion']);
+                $protected->get('/notes/{id}/tags', [NoteController::class, 'getTags']);
+                $protected->post('/notes/{id}/tags', [NoteController::class, 'addTags']);
+                $protected->delete('/notes/{id}/tags/{tagId}', [NoteController::class, 'removeTag']);
 
                 // Connections
                 $protected->get('/connections', [ConnectionController::class, 'index']);

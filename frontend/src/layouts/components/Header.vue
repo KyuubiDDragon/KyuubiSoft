@@ -114,6 +114,7 @@ const iconMap = {
   ArchiveBoxIcon,
   LockClosedIcon,
   PhotoIcon,
+  PencilSquareIcon,
 }
 
 // Load quick access on mount

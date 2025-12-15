@@ -13,6 +13,7 @@ const SetupView = () => import('@/modules/auth/views/SetupView.vue')
 const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
 const ListsView = () => import('@/modules/lists/views/ListsView.vue')
 const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
+const NotesView = () => import('@/modules/notes/views/NotesView.vue')
 const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
 const SnippetsView = () => import('@/modules/snippets/views/SnippetsView.vue')
 const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
@@ -100,6 +101,12 @@ const routes = [
     path: '/documents',
     name: 'documents',
     component: DocumentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notes/:id?',
+    name: 'notes',
+    component: NotesView,
     meta: { requiresAuth: true },
   },
   {

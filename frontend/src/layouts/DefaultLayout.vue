@@ -74,12 +74,11 @@ function closeMobileSidebar() {
 
     <!-- Main content -->
     <div
-      class="transition-all duration-300"
-      :class="[mainClass, { 'h-screen flex flex-col': isFullBleed }]"
+      class="transition-all duration-300 flex flex-col"
+      :class="[mainClass, { 'h-screen': isFullBleed }]"
     >
-      <!-- Header (hidden for full-bleed pages) -->
+      <!-- Header (always visible) -->
       <Header
-        v-if="!isFullBleed"
         :is-mobile="isMobile"
         @toggle-sidebar="toggleMobileSidebar"
       />

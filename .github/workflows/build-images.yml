@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/*']
   workflow_dispatch:  # Manueller Trigger
 
 env:
@@ -172,7 +172,8 @@ jobs:
   deploy:
     needs: [build-backend, build-frontend, build-nginx, build-collaboration]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Deploy auf main und claude/* Branches
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/claude/')
 
     steps:
       - name: Trigger Portainer Webhook

@@ -13,6 +13,8 @@ import NoteTemplatesModal from '../components/modals/NoteTemplatesModal.vue'
 import NoteVersionsModal from '../components/modals/NoteVersionsModal.vue'
 import NoteTrashModal from '../components/modals/NoteTrashModal.vue'
 import CollaborationPresence from '../components/collaboration/CollaborationPresence.vue'
+import ExportModal from '../components/export/ExportModal.vue'
+import ShareModal from '../components/share/ShareModal.vue'
 import {
   PlusIcon,
   Cog6ToothIcon,
@@ -23,7 +25,9 @@ import {
   StarIcon,
   ArchiveBoxIcon,
   EllipsisVerticalIcon,
-  ClockIcon
+  ClockIcon,
+  ArrowDownTrayIcon,
+  ShareIcon
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
@@ -37,6 +41,8 @@ const showQuickSwitcher = ref(false)
 const showTemplateModal = ref(false)
 const showVersionModal = ref(false)
 const showTrashModal = ref(false)
+const showExportModal = ref(false)
+const showShareModal = ref(false)
 const showNoteMenu = ref(false)
 const sidebarCollapsed = ref(false)
 const autoSaveTimeout = ref(null)
@@ -104,6 +110,8 @@ function handleKeydown(e) {
     showQuickSwitcher.value = false
     showTemplateModal.value = false
     showVersionModal.value = false
+    showExportModal.value = false
+    showShareModal.value = false
     showNoteMenu.value = false
   }
 }
@@ -460,6 +468,20 @@ function formatRelativeTime(date) {
                     Duplizieren
                   </button>
                   <button
+                    @click="showExportModal = true; showNoteMenu = false"
+                    class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-dark-600"
+                  >
+                    <ArrowDownTrayIcon class="h-4 w-4" />
+                    Exportieren
+                  </button>
+                  <button
+                    @click="showShareModal = true; showNoteMenu = false"
+                    class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-dark-600"
+                  >
+                    <ShareIcon class="h-4 w-4" />
+                    Teilen
+                  </button>
+                  <button
                     @click="() => { /* archive */ }"
                     class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-dark-600"
                   >
@@ -547,6 +569,21 @@ function formatRelativeTime(date) {
       v-if="showTrashModal"
       @close="showTrashModal = false"
       @restore="navigateToNote"
+    />
+
+    <!-- Export Modal -->
+    <ExportModal
+      :show="showExportModal"
+      :note="currentNote"
+      @close="showExportModal = false"
+    />
+
+    <!-- Share Modal -->
+    <ShareModal
+      :show="showShareModal"
+      :note-id="currentNote?.id || ''"
+      :note-title="currentNote?.title || 'Untitled'"
+      @close="showShareModal = false"
     />
 
     <!-- Click outside handler for menu -->

@@ -24,6 +24,8 @@ import Callout from '../../extensions/Callout'
 import { Toggle, ToggleTitle, ToggleContent } from '../../extensions/Toggle'
 import InlineDatabase from '../../extensions/InlineDatabase'
 import CollaborationCursor from '../../extensions/CollaborationCursor'
+import Embed from '../../extensions/Embed'
+import EmbedInput from '../embeds/EmbedInput.vue'
 import { useNotesStore } from '../../stores/notesStore'
 import { useCollaborationStore } from '../../stores/collaborationStore'
 import { useCollaboration } from '../../composables/useCollaboration'
@@ -66,6 +68,9 @@ const lowlight = createLowlight(common)
 // Collaboration state
 const collaborationEnabled = ref(false)
 
+// Embed modal state
+const showEmbedInput = ref(false)
+
 // Wiki link suggestion state
 const showSuggestions = ref(false)
 const suggestions = ref([])
@@ -101,6 +106,7 @@ const availableSlashCommands = [
   { title: 'Toggle', description: 'Ausklappbarer Bereich', icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
   { title: 'Tabelle', description: 'Tabelle einfügen', icon: '▦', keywords: ['table', 'grid'] },
   { title: 'Datenbank', description: 'Inline-Datenbank erstellen', icon: '🗃️', keywords: ['database', 'datenbank', 'notion', 'table', 'board'] },
+  { title: 'Embed', description: 'YouTube, Twitter, etc. einbetten', icon: '🔗', keywords: ['embed', 'youtube', 'video', 'twitter', 'spotify', 'einbetten'] },
 ]
 
 // Handle wiki link navigation
@@ -244,6 +250,7 @@ const editor = useEditor({
         }))
       },
     }),
+    Embed,
   ],
   editorProps: {
     noteId: props.noteId,
@@ -402,6 +409,9 @@ function executeSlashCommand(command) {
           view: 'table'
         }
       }).run()
+      break
+    case 'Embed':
+      showEmbedInput.value = true
       break
   }
 
@@ -590,6 +600,14 @@ function sendSelectionUpdate() {
   }
 }
 
+// Handle embed URL submission
+function handleEmbedSubmit(url) {
+  if (!editor.value || !url) return
+
+  editor.value.chain().focus().setEmbed({ url }).run()
+  showEmbedInput.value = false
+}
+
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleSuggestionKeydown)
 
@@ -737,6 +755,13 @@ const slashMenuStyle = computed(() => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Embed Input Modal -->
+    <EmbedInput
+      :show="showEmbedInput"
+      @close="showEmbedInput = false"
+      @submit="handleEmbedSubmit"
+    />
   </div>
 </template>
 
@@ -962,5 +987,18 @@ const slashMenuStyle = computed(() => {
 @keyframes flag-fade-in {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 0.9; transform: translateY(-2px); }
+}
+
+/* Embed Styles */
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-embed] {
+  @apply my-4;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-embed].ProseMirror-selectednode {
+  @apply ring-2 ring-primary-500;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-embed] .embed-wrapper {
+  @apply select-none;
 }
 </style>

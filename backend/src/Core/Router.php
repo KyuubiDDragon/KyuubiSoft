@@ -66,6 +66,7 @@ use App\Modules\PublicGallery\Controllers\PublicGalleryController;
 use App\Modules\Notes\Controllers\NoteController;
 use App\Modules\Notes\Controllers\DatabaseController;
 use App\Modules\Notes\Controllers\CollaborationController;
+use App\Modules\Notes\Controllers\PublicNoteController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -113,6 +114,9 @@ class Router
                 $setup->get('/status', [SetupController::class, 'checkStatus']);
                 $setup->post('/complete', [SetupController::class, 'complete']);
             });
+
+            // Public note access (no auth required)
+            $group->get('/public/notes/{token}', [PublicNoteController::class, 'show']);
 
             // Protected routes
             $group->group('', function (RouteCollectorProxy $protected) {
@@ -224,6 +228,11 @@ class Router
                 $protected->get('/notes/{id}/tags', [NoteController::class, 'getTags']);
                 $protected->post('/notes/{id}/tags', [NoteController::class, 'addTags']);
                 $protected->delete('/notes/{id}/tags/{tagId}', [NoteController::class, 'removeTag']);
+                // Public sharing
+                $protected->get('/notes/{id}/share', [PublicNoteController::class, 'status']);
+                $protected->post('/notes/{id}/share', [PublicNoteController::class, 'share']);
+                $protected->delete('/notes/{id}/share', [PublicNoteController::class, 'unshare']);
+                $protected->post('/notes/{id}/share/regenerate', [PublicNoteController::class, 'regenerateToken']);
 
                 // Note Databases - Inline databases for notes
                 $protected->post('/databases', [DatabaseController::class, 'create']);

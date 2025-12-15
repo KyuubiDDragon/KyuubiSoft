@@ -42,6 +42,7 @@ const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.
 const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategoriesView.vue')
 const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
 const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
+const PublicNotePage = () => import('@/modules/notes/views/PublicNotePage.vue')
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 const NewsView = () => import('@/modules/news/views/NewsView.vue')
 const StorageView = () => import('@/modules/storage/views/StorageView.vue')
@@ -391,6 +392,12 @@ const routes = [
     path: '/doc/:token',
     name: 'public-document',
     component: PublicDocumentView,
+    meta: { layout: 'public' },
+  },
+  {
+    path: '/public/note/:token',
+    name: 'public-note',
+    component: PublicNotePage,
     meta: { layout: 'public' },
   },
 

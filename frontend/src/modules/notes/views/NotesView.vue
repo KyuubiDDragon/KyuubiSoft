@@ -262,6 +262,30 @@ function navigateToNote(noteId) {
   showQuickSwitcher.value = false
 }
 
+// Handle wiki link navigation (from editor)
+async function handleWikiLinkNavigation(href) {
+  // href could be a slug or note ID
+  try {
+    // First try to find by slug
+    const note = await notesStore.fetchNoteBySlug(href)
+    if (note) {
+      router.push(`/notes/${note.id}`)
+    } else {
+      // If not found, it might be a direct ID
+      router.push(`/notes/${href}`)
+    }
+  } catch (error) {
+    // Note doesn't exist - could offer to create it
+    if (confirm(`Notiz "${href}" existiert nicht. Neu erstellen?`)) {
+      const newNote = await notesStore.createNote({
+        title: href.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        content: ''
+      })
+      router.push(`/notes/${newNote.id}`)
+    }
+  }
+}
+
 // Format relative time
 function formatRelativeTime(date) {
   if (!date) return ''
@@ -461,6 +485,7 @@ function formatRelativeTime(date) {
                 :content="editorContent"
                 :note-id="currentNote.id"
                 @update:content="handleContentChange"
+                @navigate="handleWikiLinkNavigation"
               />
             </div>
 

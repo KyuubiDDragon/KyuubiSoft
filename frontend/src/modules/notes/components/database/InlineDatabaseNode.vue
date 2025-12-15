@@ -58,6 +58,7 @@ const isExpanded = ref(false)
 const calendarDateProperty = ref(null)
 const galleryImageProperty = ref(null)
 const galleryCardSize = ref('medium')
+const selectedRow = ref(null)
 
 // View options
 const viewOptions = [
@@ -228,8 +229,8 @@ async function handleDatabaseUpdate() {
 
 // Handle row selection (for calendar/gallery)
 function handleSelectRow(row) {
-  // Could open a detail modal - for now just log
-  console.log('Selected row:', row)
+  // TODO: Open detail modal for row editing
+  selectedRow.value = row
 }
 
 // Handle add row (for calendar/gallery)

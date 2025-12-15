@@ -450,6 +450,9 @@ function checkForWikiLinkTrigger() {
       suggestions.value = results.slice(0, 8) // Limit to 8 suggestions
       selectedIndex.value = 0
       showSuggestions.value = true
+    }).catch(error => {
+      console.error('Error fetching suggestions:', error)
+      showSuggestions.value = false
     })
   } else {
     showSuggestions.value = false
@@ -538,8 +541,6 @@ async function initCollaboration() {
 
     // Register update handler
     collaborationStore.onMessage('update', handleRemoteUpdate)
-
-    console.log('Collaboration enabled for note:', props.noteId)
   } catch (error) {
     console.error('Failed to initialize collaboration:', error)
     collaborationEnabled.value = false

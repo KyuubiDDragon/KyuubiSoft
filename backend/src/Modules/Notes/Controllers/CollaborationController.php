@@ -99,8 +99,8 @@ class CollaborationController extends Controller
         $users = $this->redis->smembers($key);
 
         $collaborators = [];
-        foreach ($users as $userId) {
-            $userKey = "collab:user:{$userId}";
+        foreach ($users as $collabUserId) {
+            $userKey = "collab:user:{$collabUserId}";
             $userData = $this->redis->hgetall($userKey);
             if ($userData) {
                 $collaborators[] = $userData;
@@ -133,9 +133,10 @@ class CollaborationController extends Controller
         $key = "collab:note:{$noteId}:activity";
         $activity = $this->redis->lrange($key, 0, 49); // Last 50 activities
 
-        $history = array_map(function ($item) {
-            return json_decode($item, true);
-        }, $activity);
+        $history = array_filter(array_map(function ($item) {
+            $decoded = json_decode($item, true);
+            return json_last_error() === JSON_ERROR_NONE ? $decoded : null;
+        }, $activity));
 
         return $this->json($response, [
             'noteId' => $noteId,

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotesStore } from '../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
@@ -72,6 +72,11 @@ onMounted(async () => {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeydown)
+})
+
+// Cleanup event listeners
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeydown)
 })
 
 // Watch route changes

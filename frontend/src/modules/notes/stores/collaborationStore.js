@@ -104,7 +104,6 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
    * Handle WebSocket open
    */
   function handleOpen() {
-    console.log('WebSocket connected')
     isConnecting.value = false
     isConnected.value = true
 
@@ -135,11 +134,11 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
       // Built-in handlers
       switch (type) {
         case 'connected':
-          console.log('Connected to collaboration server')
+          // Connection confirmed
           break
 
         case 'authenticated':
-          console.log('Authenticated:', data.user)
+          // Authentication successful
           break
 
         case 'joined':
@@ -206,7 +205,6 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
    * Handle WebSocket close
    */
   function handleClose(event) {
-    console.log('WebSocket closed:', event.code, event.reason)
     isConnected.value = false
     isConnecting.value = false
 
@@ -214,11 +212,12 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
     if (event.code !== 1000 && currentRoom.value) {
       setTimeout(() => {
         if (!isConnected.value) {
-          console.log('Attempting to reconnect...')
           connect().then(() => {
             if (currentRoom.value) {
               joinRoom(currentRoom.value)
             }
+          }).catch(error => {
+            console.error('Reconnection failed:', error)
           })
         }
       }, 3000)

@@ -40,8 +40,6 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
 
       // Register sync handler
       collaborationStore.onMessage('sync_response', handleSyncResponse)
-
-      console.log('Collaboration started for note:', noteId)
     } catch (error) {
       console.error('Failed to start collaboration:', error)
       syncError.value = error.message
@@ -101,8 +99,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
    * Handle sync response
    */
   function handleSyncResponse(data) {
-    console.log('Sync response received:', data)
-    // Handle full sync if needed
+    // Handle full sync if needed - data contains the current document state
   }
 
   /**

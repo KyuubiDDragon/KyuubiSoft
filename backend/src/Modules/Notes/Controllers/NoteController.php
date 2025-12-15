@@ -189,8 +189,8 @@ class NoteController
             'content' => $content,
             'icon' => $data['icon'] ?? null,
             'cover_image' => $data['cover_image'] ?? null,
-            'is_pinned' => !empty($data['is_pinned']),
-            'is_template' => !empty($data['is_template']),
+            'is_pinned' => !empty($data['is_pinned']) ? 1 : 0,
+            'is_template' => !empty($data['is_template']) ? 1 : 0,
             'sort_order' => (int) ($data['sort_order'] ?? 0),
             'word_count' => $wordCount,
             'created_at' => date('Y-m-d H:i:s'),
@@ -370,7 +370,7 @@ class NoteController
 
         // Soft delete
         $this->db->update('notes', [
-            'is_deleted' => true,
+            'is_deleted' => 1,
             'deleted_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $noteId]);
@@ -599,7 +599,7 @@ class NoteController
         $this->getNoteForUser($noteId, $userId);
 
         $this->db->update('notes', [
-            'is_pinned' => true,
+            'is_pinned' => 1,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $noteId]);
 
@@ -617,7 +617,7 @@ class NoteController
         $this->getNoteForUser($noteId, $userId);
 
         $this->db->update('notes', [
-            'is_pinned' => false,
+            'is_pinned' => 0,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $noteId]);
 
@@ -886,7 +886,7 @@ class NoteController
         }
 
         $this->db->update('notes', [
-            'is_deleted' => false,
+            'is_deleted' => 0,
             'deleted_at' => null,
             'updated_at' => date('Y-m-d H:i:s'),
         ], ['id' => $noteId]);
@@ -1250,7 +1250,7 @@ class NoteController
 
         foreach ($children as $child) {
             $this->db->update('notes', [
-                'is_deleted' => true,
+                'is_deleted' => 1,
                 'deleted_at' => date('Y-m-d H:i:s'),
             ], ['id' => $child['id']]);
 

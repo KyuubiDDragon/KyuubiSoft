@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -41,8 +41,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         opcache
 
-# Install Redis extension
-RUN pecl install redis-6.0.2 \
+# Install Redis extension (>= 6.1 required by symfony/cache)
+RUN pecl install redis-6.1.0 \
     && docker-php-ext-enable redis
 
 # Install SSH2 extension for SSH terminal functionality

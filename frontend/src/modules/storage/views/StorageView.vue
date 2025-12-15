@@ -105,9 +105,9 @@ async function loadStats() {
 async function uploadFile(file) {
   if (!file) return
 
-  // Validate size (100MB)
-  if (file.size > 100 * 1024 * 1024) {
-    uiStore.showError('Datei zu groß (max. 100MB)')
+  // Validate size (200MB)
+  if (file.size > 200 * 1024 * 1024) {
+    uiStore.showError('Datei zu groß (max. 200MB)')
     return
   }
 

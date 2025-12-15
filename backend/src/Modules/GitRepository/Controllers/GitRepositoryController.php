@@ -513,6 +513,21 @@ class GitRepositoryController
         return 'custom';
     }
 
+    /**
+     * Convert ISO 8601 datetime to MySQL datetime format
+     */
+    private function formatDateTime(?string $datetime): ?string
+    {
+        if (empty($datetime)) {
+            return null;
+        }
+        try {
+            return (new \DateTime($datetime))->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     private function syncPullRequests(string $repositoryId, array $prs): void
     {
         foreach ($prs as $pr) {
@@ -541,10 +556,10 @@ class GitRepositoryController
                 'labels' => json_encode($pr['labels'] ?? []),
                 'reviewers' => json_encode($pr['reviewers'] ?? []),
                 'external_url' => $pr['external_url'] ?? null,
-                'external_created_at' => $pr['external_created_at'] ?? null,
-                'external_updated_at' => $pr['external_updated_at'] ?? null,
-                'external_merged_at' => $pr['external_merged_at'] ?? null,
-                'external_closed_at' => $pr['external_closed_at'] ?? null,
+                'external_created_at' => $this->formatDateTime($pr['external_created_at'] ?? null),
+                'external_updated_at' => $this->formatDateTime($pr['external_updated_at'] ?? null),
+                'external_merged_at' => $this->formatDateTime($pr['external_merged_at'] ?? null),
+                'external_closed_at' => $this->formatDateTime($pr['external_closed_at'] ?? null),
             ];
 
             if ($existing) {
@@ -579,9 +594,9 @@ class GitRepositoryController
                 'comments_count' => (int) ($issue['comments_count'] ?? 0),
                 'is_locked' => !empty($issue['is_locked']) ? 1 : 0,
                 'external_url' => $issue['external_url'] ?? null,
-                'external_created_at' => $issue['external_created_at'] ?? null,
-                'external_updated_at' => $issue['external_updated_at'] ?? null,
-                'external_closed_at' => $issue['external_closed_at'] ?? null,
+                'external_created_at' => $this->formatDateTime($issue['external_created_at'] ?? null),
+                'external_updated_at' => $this->formatDateTime($issue['external_updated_at'] ?? null),
+                'external_closed_at' => $this->formatDateTime($issue['external_closed_at'] ?? null),
             ];
 
             if ($existing) {
@@ -614,7 +629,7 @@ class GitRepositoryController
                     'committer_email' => $commit['committer_email'],
                     'branch' => $commit['branch'],
                     'external_url' => $commit['external_url'],
-                    'committed_at' => $commit['committed_at'],
+                    'committed_at' => $this->formatDateTime($commit['committed_at'] ?? null),
                 ]);
             }
         }
@@ -641,7 +656,7 @@ class GitRepositoryController
                 'assets' => json_encode($release['assets'] ?? []),
                 'download_count' => (int) ($release['download_count'] ?? 0),
                 'external_url' => $release['external_url'] ?? null,
-                'published_at' => $release['published_at'] ?? null,
+                'published_at' => $this->formatDateTime($release['published_at'] ?? null),
             ];
 
             if ($existing) {

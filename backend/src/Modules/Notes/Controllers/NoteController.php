@@ -284,10 +284,18 @@ class NoteController
         }
 
         // Handle other fields
-        $allowedFields = ['icon', 'cover_image', 'is_pinned', 'is_archived', 'is_template', 'sort_order'];
+        $allowedFields = ['icon', 'cover_image', 'sort_order'];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
+            }
+        }
+
+        // Handle boolean fields with proper type casting
+        $booleanFields = ['is_pinned', 'is_archived', 'is_template'];
+        foreach ($booleanFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $updateData[$field] = filter_var($data[$field], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
             }
         }
 

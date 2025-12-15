@@ -405,4 +405,45 @@ return [
             $c->get(PasswordHasher::class)
         );
     },
+
+    // Notes Controllers
+    \App\Modules\Notes\Controllers\NoteController::class => function (ContainerInterface $c): \App\Modules\Notes\Controllers\NoteController {
+        return new \App\Modules\Notes\Controllers\NoteController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\Notes\Services\WikiLinkService::class)
+        );
+    },
+
+    \App\Modules\Notes\Controllers\DatabaseController::class => function (ContainerInterface $c): \App\Modules\Notes\Controllers\DatabaseController {
+        return new \App\Modules\Notes\Controllers\DatabaseController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\Notes\Services\DatabaseService::class)
+        );
+    },
+
+    \App\Modules\Notes\Controllers\CollaborationController::class => function (ContainerInterface $c): \App\Modules\Notes\Controllers\CollaborationController {
+        return new \App\Modules\Notes\Controllers\CollaborationController(
+            $c->get(RedisClient::class),
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    \App\Modules\Notes\Controllers\PublicNoteController::class => function (ContainerInterface $c): \App\Modules\Notes\Controllers\PublicNoteController {
+        return new \App\Modules\Notes\Controllers\PublicNoteController(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Notes Services
+    \App\Modules\Notes\Services\WikiLinkService::class => function (ContainerInterface $c): \App\Modules\Notes\Services\WikiLinkService {
+        return new \App\Modules\Notes\Services\WikiLinkService(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    \App\Modules\Notes\Services\DatabaseService::class => function (ContainerInterface $c): \App\Modules\Notes\Services\DatabaseService {
+        return new \App\Modules\Notes\Services\DatabaseService(
+            $c->get(DBALConnection::class)
+        );
+    },
 ];

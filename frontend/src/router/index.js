@@ -108,7 +108,7 @@ const routes = [
     path: '/notes/:id?',
     name: 'notes',
     component: NotesView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, fullBleed: true },
   },
   {
     path: '/connections',

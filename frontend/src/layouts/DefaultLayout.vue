@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import Sidebar from './components/Sidebar.vue'
@@ -9,12 +10,16 @@ import QuickCapture from '@/components/QuickCapture.vue'
 import AIAssistant from '@/components/AIAssistant.vue'
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal.vue'
 
+const route = useRoute()
 const uiStore = useUiStore()
 
 // Initialize keyboard shortcuts
 useKeyboardShortcuts()
 const isMobile = ref(false)
 const mobileSidebarOpen = ref(false)
+
+// Check if current page needs full-bleed layout (no padding, full height)
+const isFullBleed = computed(() => route.meta?.fullBleed === true)
 
 // Check if mobile on mount and window resize
 function checkMobile() {
@@ -70,16 +75,17 @@ function closeMobileSidebar() {
     <!-- Main content -->
     <div
       class="transition-all duration-300"
-      :class="mainClass"
+      :class="[mainClass, { 'h-screen flex flex-col': isFullBleed }]"
     >
-      <!-- Header -->
+      <!-- Header (hidden for full-bleed pages) -->
       <Header
+        v-if="!isFullBleed"
         :is-mobile="isMobile"
         @toggle-sidebar="toggleMobileSidebar"
       />
 
       <!-- Page content -->
-      <main class="p-4 lg:p-6">
+      <main :class="isFullBleed ? 'flex-1 overflow-hidden' : 'p-4 lg:p-6'">
         <slot />
       </main>
     </div>

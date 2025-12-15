@@ -3,6 +3,20 @@
 -- Description: Hierarchical note-taking system with wiki-links, versions, and favorites
 
 -- =====================================================
+-- FEATURE FLAGS: Create if not exists (dependency)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS feature_flags (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(500) NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_feature_flags_name (name),
+    INDEX idx_feature_flags_enabled (is_enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- NOTES: Main table for hierarchical notes
 -- =====================================================
 CREATE TABLE IF NOT EXISTS notes (

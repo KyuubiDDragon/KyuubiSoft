@@ -127,8 +127,8 @@ class WikiService
             'excerpt' => $excerpt,
             'icon' => $data['icon'] ?? null,
             'cover_image' => $data['cover_image'] ?? null,
-            'is_published' => $data['is_published'] ?? false,
-            'is_pinned' => $data['is_pinned'] ?? false,
+            'is_published' => !empty($data['is_published']) ? 1 : 0,
+            'is_pinned' => !empty($data['is_pinned']) ? 1 : 0,
             'parent_id' => $data['parent_id'] ?? null,
             'category_id' => $data['category_id'] ?? null,
             'word_count' => $wordCount,
@@ -192,14 +192,14 @@ class WikiService
         }
 
         if (isset($data['is_published'])) {
-            $updates['is_published'] = $data['is_published'];
-            if ($data['is_published'] && !$page['published_at']) {
+            $updates['is_published'] = filter_var($data['is_published'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            if ($updates['is_published'] && !$page['published_at']) {
                 $updates['published_at'] = date('Y-m-d H:i:s');
             }
         }
 
         if (isset($data['is_pinned'])) {
-            $updates['is_pinned'] = $data['is_pinned'];
+            $updates['is_pinned'] = filter_var($data['is_pinned'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         }
 
         if (array_key_exists('parent_id', $data)) {

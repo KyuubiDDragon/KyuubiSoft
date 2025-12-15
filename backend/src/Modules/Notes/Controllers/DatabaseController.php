@@ -587,7 +587,7 @@ class DatabaseController
             'config' => json_encode($data['config'] ?? []),
             'sort_config' => isset($data['sort_config']) ? json_encode($data['sort_config']) : null,
             'filter_config' => isset($data['filter_config']) ? json_encode($data['filter_config']) : null,
-            'is_default' => false,
+            'is_default' => 0,
             'sort_order' => $maxOrder + 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),

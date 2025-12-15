@@ -410,7 +410,9 @@ return [
     \App\Modules\Notes\Controllers\NoteController::class => function (ContainerInterface $c): \App\Modules\Notes\Controllers\NoteController {
         return new \App\Modules\Notes\Controllers\NoteController(
             $c->get(DBALConnection::class),
-            $c->get(\App\Modules\Notes\Services\WikiLinkService::class)
+            $c->get(\App\Modules\Notes\Services\NoteService::class),
+            $c->get(\App\Modules\Notes\Services\WikiLinkService::class),
+            $c->get(\App\Modules\Webhooks\Services\WebhookService::class)
         );
     },
 
@@ -435,6 +437,12 @@ return [
     },
 
     // Notes Services
+    \App\Modules\Notes\Services\NoteService::class => function (ContainerInterface $c): \App\Modules\Notes\Services\NoteService {
+        return new \App\Modules\Notes\Services\NoteService(
+            $c->get(DBALConnection::class)
+        );
+    },
+
     \App\Modules\Notes\Services\WikiLinkService::class => function (ContainerInterface $c): \App\Modules\Notes\Services\WikiLinkService {
         return new \App\Modules\Notes\Services\WikiLinkService(
             $c->get(DBALConnection::class)
@@ -443,6 +451,13 @@ return [
 
     \App\Modules\Notes\Services\DatabaseService::class => function (ContainerInterface $c): \App\Modules\Notes\Services\DatabaseService {
         return new \App\Modules\Notes\Services\DatabaseService(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Webhook Service
+    \App\Modules\Webhooks\Services\WebhookService::class => function (ContainerInterface $c): \App\Modules\Webhooks\Services\WebhookService {
+        return new \App\Modules\Webhooks\Services\WebhookService(
             $c->get(DBALConnection::class)
         );
     },

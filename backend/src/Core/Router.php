@@ -794,6 +794,8 @@ class Router
                     ->add(new FeatureMiddleware('docker'));
                 $protected->post('/docker/stacks/{name}/restart', [DockerController::class, 'stackRestart'])
                     ->add(new FeatureMiddleware('docker'));
+                $protected->post('/docker/stacks/{name}/pull-redeploy', [DockerController::class, 'stackPullAndRedeploy'])
+                    ->add(new FeatureMiddleware('docker'));
                 $protected->post('/docker/stacks/{name}/backup', [DockerController::class, 'backupStack'])
                     ->add(new FeatureMiddleware('docker'));
                 $protected->post('/docker/stacks/deploy', [DockerController::class, 'deployStack'])

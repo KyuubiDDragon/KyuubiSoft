@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 // Tool Components - Developer
 import JsonToolkit from '../components/tools/JsonToolkit.vue'
+import SwqlToolkit from '../components/tools/SwqlToolkit.vue'
 import RegexTester from '../components/tools/RegexTester.vue'
 import JwtDecoder from '../components/tools/JwtDecoder.vue'
 import CronParser from '../components/tools/CronParser.vue'
@@ -52,6 +53,21 @@ const activeTool = ref(null)
 
 // Tool definitions
 const toolCategories = [
+  {
+    id: 'solarwinds',
+    name: 'SolarWinds Tools',
+    icon: '☀️',
+    tools: [
+      {
+        id: 'swql-toolkit',
+        name: 'SWQL Toolkit',
+        description: 'SWQL Query Builder, Templates, Schema Explorer, PowerShell Generator',
+        icon: '🔍',
+        component: SwqlToolkit,
+        fullWidth: true,
+      },
+    ],
+  },
   {
     id: 'dev',
     name: 'Entwickler Tools',

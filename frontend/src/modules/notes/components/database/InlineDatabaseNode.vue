@@ -6,6 +6,8 @@ import { useUiStore } from '@/stores/ui'
 import DatabaseTable from './DatabaseTable.vue'
 import DatabaseBoard from './DatabaseBoard.vue'
 import DatabaseList from './DatabaseList.vue'
+import DatabaseCalendarView from './DatabaseCalendarView.vue'
+import DatabaseGalleryView from './DatabaseGalleryView.vue'
 import {
   TableCellsIcon,
   ViewColumnsIcon,
@@ -53,6 +55,9 @@ const isRenaming = ref(false)
 const renameValue = ref('')
 const currentView = ref('table')
 const isExpanded = ref(false)
+const calendarDateProperty = ref(null)
+const galleryImageProperty = ref(null)
+const galleryCardSize = ref('medium')
 
 // View options
 const viewOptions = [
@@ -220,6 +225,40 @@ async function handleDatabaseUpdate() {
     await loadDatabase(database.value.id)
   }
 }
+
+// Handle row selection (for calendar/gallery)
+function handleSelectRow(row) {
+  // Could open a detail modal - for now just log
+  console.log('Selected row:', row)
+}
+
+// Handle add row (for calendar/gallery)
+async function handleAddRow(options = {}) {
+  if (!database.value) return
+
+  try {
+    const newRow = await databaseStore.addRow(database.value.id, options)
+    await handleDatabaseUpdate()
+    return newRow
+  } catch (error) {
+    uiStore.showError('Fehler beim Hinzufügen')
+  }
+}
+
+// Change calendar date property
+function changeCalendarDateProperty(propertyId) {
+  calendarDateProperty.value = propertyId
+}
+
+// Change gallery image property
+function changeGalleryImageProperty(propertyId) {
+  galleryImageProperty.value = propertyId
+}
+
+// Change gallery card size
+function changeGalleryCardSize(size) {
+  galleryCardSize.value = size
+}
 </script>
 
 <template>
@@ -362,17 +401,29 @@ async function handleDatabaseUpdate() {
         @updated="handleDatabaseUpdate"
       />
 
-      <!-- Calendar View (placeholder) -->
-      <div v-else-if="currentView === 'calendar'" class="p-8 text-center text-gray-500">
-        <CalendarIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p>Kalenderansicht kommt bald</p>
-      </div>
+      <!-- Calendar View -->
+      <DatabaseCalendarView
+        v-else-if="currentView === 'calendar'"
+        :rows="database.rows || []"
+        :properties="database.properties || []"
+        :date-property="calendarDateProperty"
+        @select-row="handleSelectRow"
+        @add-row="handleAddRow"
+        @change-date-property="changeCalendarDateProperty"
+      />
 
-      <!-- Gallery View (placeholder) -->
-      <div v-else-if="currentView === 'gallery'" class="p-8 text-center text-gray-500">
-        <PhotoIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p>Galerieansicht kommt bald</p>
-      </div>
+      <!-- Gallery View -->
+      <DatabaseGalleryView
+        v-else-if="currentView === 'gallery'"
+        :rows="database.rows || []"
+        :properties="database.properties || []"
+        :image-property="galleryImageProperty"
+        :card-size="galleryCardSize"
+        @select-row="handleSelectRow"
+        @add-row="handleAddRow"
+        @change-image-property="changeGalleryImageProperty"
+        @change-card-size="changeGalleryCardSize"
+      />
     </div>
 
     <!-- Click outside handler for menu -->

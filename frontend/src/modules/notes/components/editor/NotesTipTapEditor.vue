@@ -20,6 +20,8 @@ import { common, createLowlight } from 'lowlight'
 import { watch, onBeforeUnmount, onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import WikiLink from '../../extensions/WikiLink'
+import Callout from '../../extensions/Callout'
+import { Toggle, ToggleTitle, ToggleContent } from '../../extensions/Toggle'
 import { useNotesStore } from '../../stores/notesStore'
 
 const props = defineProps({
@@ -59,6 +61,34 @@ const selectedIndex = ref(0)
 const suggestionQuery = ref('')
 const suggestionCoords = ref(null)
 const suggestionRange = ref(null)
+
+// Slash command state
+const showSlashMenu = ref(false)
+const slashCommands = ref([])
+const slashSelectedIndex = ref(0)
+const slashQuery = ref('')
+const slashCoords = ref(null)
+const slashRange = ref(null)
+
+// Available slash commands
+const availableSlashCommands = [
+  { title: 'Text', description: 'Normaler Absatztext', icon: 'Aa', keywords: ['paragraph', 'text'] },
+  { title: 'Überschrift 1', description: 'Große Überschrift', icon: 'H1', keywords: ['heading', 'h1'] },
+  { title: 'Überschrift 2', description: 'Mittlere Überschrift', icon: 'H2', keywords: ['heading', 'h2'] },
+  { title: 'Überschrift 3', description: 'Kleine Überschrift', icon: 'H3', keywords: ['heading', 'h3'] },
+  { title: 'Aufzählung', description: 'Punktliste erstellen', icon: '•', keywords: ['bullet', 'list'] },
+  { title: 'Nummerierung', description: 'Nummerierte Liste', icon: '1.', keywords: ['number', 'ordered'] },
+  { title: 'Checkliste', description: 'Aufgabenliste', icon: '☑', keywords: ['todo', 'task', 'checkbox'] },
+  { title: 'Zitat', description: 'Zitat hervorheben', icon: '"', keywords: ['quote', 'blockquote'] },
+  { title: 'Codeblock', description: 'Code mit Syntax', icon: '</>', keywords: ['code', 'syntax'] },
+  { title: 'Trennlinie', description: 'Horizontale Linie', icon: '—', keywords: ['divider', 'line'] },
+  { title: 'Info', description: 'Informationshinweis', icon: 'ℹ️', keywords: ['callout', 'info'] },
+  { title: 'Warnung', description: 'Warnhinweis', icon: '⚠️', keywords: ['callout', 'warning'] },
+  { title: 'Tipp', description: 'Hilfreicher Tipp', icon: '💡', keywords: ['callout', 'tip'] },
+  { title: 'Gefahr', description: 'Wichtiger Warnhinweis', icon: '❌', keywords: ['callout', 'danger'] },
+  { title: 'Toggle', description: 'Ausklappbarer Bereich', icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
+  { title: 'Tabelle', description: 'Tabelle einfügen', icon: '▦', keywords: ['table', 'grid'] },
+]
 
 // Handle wiki link navigation
 function handleWikiLinkNavigation(href) {
@@ -175,15 +205,151 @@ const editor = useEditor({
     WikiLink.configure({
       onNavigate: handleWikiLinkNavigation,
     }),
+    Callout,
+    Toggle,
+    ToggleTitle,
+    ToggleContent,
   ],
   onUpdate: () => {
     emit('update:modelValue', editor.value.getHTML())
     checkForWikiLinkTrigger()
+    checkForSlashCommand()
   },
   onSelectionUpdate: () => {
     checkForWikiLinkTrigger()
+    checkForSlashCommand()
   },
 })
+
+// Check if user is typing a slash command
+function checkForSlashCommand() {
+  if (!editor.value) return
+
+  const { $from } = editor.value.state.selection
+  const textBefore = $from.parent.textBetween(0, $from.parentOffset)
+
+  // Check for / at start of block or after whitespace
+  const match = textBefore.match(/(?:^|\s)\/([^\s]*)$/)
+
+  if (match) {
+    const query = match[1] || ''
+    slashQuery.value = query
+
+    // Calculate range to delete when executing command
+    const fullMatch = match[0]
+    const slashStart = $from.pos - query.length - 1 // -1 for the /
+    slashRange.value = { from: slashStart, to: $from.pos }
+
+    // Get cursor position for popup
+    const coords = editor.value.view.coordsAtPos($from.pos)
+    slashCoords.value = coords
+
+    // Filter commands by query
+    const filtered = availableSlashCommands.filter(cmd =>
+      cmd.title.toLowerCase().includes(query.toLowerCase()) ||
+      cmd.keywords?.some(k => k.toLowerCase().includes(query.toLowerCase()))
+    )
+    slashCommands.value = filtered
+    slashSelectedIndex.value = 0
+    showSlashMenu.value = true
+  } else {
+    showSlashMenu.value = false
+  }
+}
+
+// Execute a slash command
+function executeSlashCommand(command) {
+  if (!editor.value || !slashRange.value) return
+
+  const { from, to } = slashRange.value
+
+  // Delete the slash command text first
+  editor.value.chain().focus().deleteRange({ from, to }).run()
+
+  // Execute the appropriate command
+  switch (command.title) {
+    case 'Text':
+      editor.value.chain().focus().setParagraph().run()
+      break
+    case 'Überschrift 1':
+      editor.value.chain().focus().toggleHeading({ level: 1 }).run()
+      break
+    case 'Überschrift 2':
+      editor.value.chain().focus().toggleHeading({ level: 2 }).run()
+      break
+    case 'Überschrift 3':
+      editor.value.chain().focus().toggleHeading({ level: 3 }).run()
+      break
+    case 'Aufzählung':
+      editor.value.chain().focus().toggleBulletList().run()
+      break
+    case 'Nummerierung':
+      editor.value.chain().focus().toggleOrderedList().run()
+      break
+    case 'Checkliste':
+      editor.value.chain().focus().toggleTaskList().run()
+      break
+    case 'Zitat':
+      editor.value.chain().focus().toggleBlockquote().run()
+      break
+    case 'Codeblock':
+      editor.value.chain().focus().toggleCodeBlock().run()
+      break
+    case 'Trennlinie':
+      editor.value.chain().focus().setHorizontalRule().run()
+      break
+    case 'Info':
+      editor.value.chain().focus().insertContent({
+        type: 'callout',
+        attrs: { type: 'info' },
+        content: [{ type: 'paragraph' }]
+      }).run()
+      break
+    case 'Warnung':
+      editor.value.chain().focus().insertContent({
+        type: 'callout',
+        attrs: { type: 'warning' },
+        content: [{ type: 'paragraph' }]
+      }).run()
+      break
+    case 'Tipp':
+      editor.value.chain().focus().insertContent({
+        type: 'callout',
+        attrs: { type: 'tip' },
+        content: [{ type: 'paragraph' }]
+      }).run()
+      break
+    case 'Gefahr':
+      editor.value.chain().focus().insertContent({
+        type: 'callout',
+        attrs: { type: 'danger' },
+        content: [{ type: 'paragraph' }]
+      }).run()
+      break
+    case 'Toggle':
+      editor.value.chain().focus().insertContent({
+        type: 'toggle',
+        content: [
+          {
+            type: 'toggleTitle',
+            content: [{ type: 'text', text: 'Klicken zum Öffnen' }]
+          },
+          {
+            type: 'toggleContent',
+            content: [{ type: 'paragraph' }]
+          }
+        ]
+      }).run()
+      break
+    case 'Tabelle':
+      editor.value.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      break
+  }
+
+  // Close the menu
+  showSlashMenu.value = false
+  slashCommands.value = []
+}
 
 // Check if user is typing a wiki link
 function checkForWikiLinkTrigger() {
@@ -223,32 +389,62 @@ function checkForWikiLinkTrigger() {
 
 // Handle keyboard navigation in suggestions
 function handleSuggestionKeydown(event) {
-  if (!showSuggestions.value) return false
-
-  if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    selectedIndex.value = Math.min(selectedIndex.value + 1, suggestions.value.length - 1)
-    return true
-  }
-
-  if (event.key === 'ArrowUp') {
-    event.preventDefault()
-    selectedIndex.value = Math.max(selectedIndex.value - 1, 0)
-    return true
-  }
-
-  if (event.key === 'Enter' || event.key === 'Tab') {
-    if (suggestions.value.length > 0) {
+  // Handle wiki link suggestions
+  if (showSuggestions.value) {
+    if (event.key === 'ArrowDown') {
       event.preventDefault()
-      insertWikiLink(suggestions.value[selectedIndex.value])
+      selectedIndex.value = Math.min(selectedIndex.value + 1, suggestions.value.length - 1)
+      return true
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      selectedIndex.value = Math.max(selectedIndex.value - 1, 0)
+      return true
+    }
+
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      if (suggestions.value.length > 0) {
+        event.preventDefault()
+        insertWikiLink(suggestions.value[selectedIndex.value])
+        return true
+      }
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      showSuggestions.value = false
       return true
     }
   }
 
-  if (event.key === 'Escape') {
-    event.preventDefault()
-    showSuggestions.value = false
-    return true
+  // Handle slash command menu
+  if (showSlashMenu.value) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      slashSelectedIndex.value = Math.min(slashSelectedIndex.value + 1, slashCommands.value.length - 1)
+      return true
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      slashSelectedIndex.value = Math.max(slashSelectedIndex.value - 1, 0)
+      return true
+    }
+
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      if (slashCommands.value.length > 0) {
+        event.preventDefault()
+        executeSlashCommand(slashCommands.value[slashSelectedIndex.value])
+        return true
+      }
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      showSlashMenu.value = false
+      return true
+    }
   }
 
   return false
@@ -283,6 +479,18 @@ const suggestionStyle = computed(() => {
     position: 'fixed',
     top: `${suggestionCoords.value.bottom + 5}px`,
     left: `${suggestionCoords.value.left}px`,
+    zIndex: 100,
+  }
+})
+
+// Computed position for slash command menu
+const slashMenuStyle = computed(() => {
+  if (!slashCoords.value) return {}
+
+  return {
+    position: 'fixed',
+    top: `${slashCoords.value.bottom + 5}px`,
+    left: `${slashCoords.value.left}px`,
     zIndex: 100,
   }
 })
@@ -345,6 +553,46 @@ const suggestionStyle = computed(() => {
           <p class="text-xs text-gray-500">
             Drücke <span class="bg-dark-600 px-1 rounded">↵</span> um eine neue Notiz zu erstellen
           </p>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Slash Command Menu -->
+    <Teleport to="body">
+      <div
+        v-if="showSlashMenu && slashCommands.length > 0"
+        :style="slashMenuStyle"
+        class="slash-command-menu bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden min-w-[250px] max-w-[320px]"
+      >
+        <div class="px-3 py-2 text-xs text-gray-500 border-b border-dark-600">
+          Befehle
+        </div>
+        <div class="max-h-[300px] overflow-y-auto">
+          <button
+            v-for="(command, index) in slashCommands"
+            :key="command.title"
+            @click="executeSlashCommand(command)"
+            @mouseenter="slashSelectedIndex = index"
+            :class="[
+              'w-full flex items-center gap-3 px-3 py-2 text-left transition-colors',
+              index === slashSelectedIndex
+                ? 'bg-primary-600/20 text-white'
+                : 'text-gray-300 hover:bg-dark-600'
+            ]"
+          >
+            <span class="w-8 h-8 flex items-center justify-center rounded bg-dark-600 text-sm flex-shrink-0">
+              {{ command.icon }}
+            </span>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">{{ command.title }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ command.description }}</div>
+            </div>
+          </button>
+        </div>
+        <div class="px-3 py-1.5 text-xs text-gray-500 border-t border-dark-600 flex items-center gap-2">
+          <span class="bg-dark-600 px-1 rounded">↑↓</span> navigieren
+          <span class="bg-dark-600 px-1 rounded">↵</span> auswählen
+          <span class="bg-dark-600 px-1 rounded">esc</span> schließen
         </div>
       </div>
     </Teleport>
@@ -477,5 +725,63 @@ const suggestionStyle = computed(() => {
 /* Highlight */
 .notes-tiptap-editor .tiptap-content .ProseMirror mark {
   @apply bg-yellow-500/40 px-0.5 rounded;
+}
+
+/* Callout Styles (already styled inline by extension, but adding additional polish) */
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout] {
+  @apply my-4;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout] .callout-content p:last-child {
+  @apply mb-0;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout] .callout-header {
+  @apply text-white;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout].callout-info .callout-header {
+  @apply text-blue-400;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout].callout-warning .callout-header {
+  @apply text-yellow-400;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout].callout-tip .callout-header {
+  @apply text-green-400;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-callout].callout-danger .callout-header {
+  @apply text-red-400;
+}
+
+/* Toggle (Collapsible) Styles */
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle] {
+  @apply my-3 border border-dark-600 rounded-lg overflow-hidden bg-dark-800/30;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle-title] {
+  @apply px-4 py-2 bg-dark-700 cursor-pointer;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle-title] .toggle-icon {
+  @apply text-gray-500;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle][data-open="true"] div[data-toggle-title] .toggle-icon {
+  @apply transform rotate-90;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle-content] {
+  @apply px-4 py-3;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle][data-open="false"] div[data-toggle-content] {
+  @apply hidden;
+}
+
+.notes-tiptap-editor .tiptap-content .ProseMirror div[data-toggle-content] p:last-child {
+  @apply mb-0;
 }
 </style>

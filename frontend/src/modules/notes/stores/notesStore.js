@@ -366,6 +366,13 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   /**
+   * Get templates (alias)
+   */
+  async function getTemplates() {
+    return fetchTemplates()
+  }
+
+  /**
    * Create note from template
    */
   async function createFromTemplate(templateId, data = {}) {
@@ -406,6 +413,26 @@ export const useNotesStore = defineStore('notes', () => {
       return response.data.data || []
     } catch (error) {
       console.error('Error fetching versions:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get note versions (alias)
+   */
+  async function getVersions(noteId) {
+    return fetchVersions(noteId)
+  }
+
+  /**
+   * Get single version with content
+   */
+  async function getVersion(noteId, versionId) {
+    try {
+      const response = await api.get(`/api/v1/notes/${noteId}/versions/${versionId}`)
+      return response.data.data
+    } catch (error) {
+      console.error('Error fetching version:', error)
       throw error
     }
   }
@@ -526,9 +553,12 @@ export const useNotesStore = defineStore('notes', () => {
     search,
     getSuggestions,
     fetchTemplates,
+    getTemplates,
     createFromTemplate,
     duplicateNote,
     fetchVersions,
+    getVersions,
+    getVersion,
     restoreVersion,
     fetchBacklinks,
     fetchStats,

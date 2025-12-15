@@ -9,8 +9,8 @@ import NoteHeader from '../components/editor/NoteHeader.vue'
 import NoteBreadcrumb from '../components/editor/NoteBreadcrumb.vue'
 import NoteBacklinks from '../components/editor/NoteBacklinks.vue'
 import NoteQuickSwitcher from '../components/modals/NoteQuickSwitcher.vue'
-import NoteTemplateModal from '../components/modals/NoteTemplateModal.vue'
-import NoteVersionModal from '../components/modals/NoteVersionModal.vue'
+import NoteTemplatesModal from '../components/modals/NoteTemplatesModal.vue'
+import NoteVersionsModal from '../components/modals/NoteVersionsModal.vue'
 import NoteTrashModal from '../components/modals/NoteTrashModal.vue'
 import {
   PlusIcon,
@@ -140,15 +140,19 @@ async function createNewNote(parentId = null) {
   }
 }
 
-// Create from template
-async function createFromTemplate(templateId) {
-  try {
-    const note = await notesStore.createFromTemplate(templateId)
-    router.push(`/notes/${note.id}`)
-    showTemplateModal.value = false
-    uiStore.showSuccess('Notiz aus Vorlage erstellt')
-  } catch (error) {
-    uiStore.showError('Fehler beim Erstellen aus Vorlage')
+// Handle template modal create
+function handleTemplateCreate(data) {
+  if (data.useEmpty) {
+    createNewNote()
+  } else if (data.id) {
+    router.push(`/notes/${data.id}`)
+  }
+}
+
+// Handle version restored
+async function handleVersionRestored() {
+  if (currentNote.value) {
+    await loadNote(currentNote.value.id)
   }
 }
 
@@ -519,17 +523,19 @@ function formatRelativeTime(date) {
     />
 
     <!-- Template Modal -->
-    <NoteTemplateModal
-      v-if="showTemplateModal"
+    <NoteTemplatesModal
+      :show="showTemplateModal"
       @close="showTemplateModal = false"
-      @select="createFromTemplate"
+      @create="handleTemplateCreate"
     />
 
     <!-- Version Modal -->
-    <NoteVersionModal
-      v-if="showVersionModal && currentNote"
-      :note-id="currentNote.id"
+    <NoteVersionsModal
+      :show="showVersionModal && !!currentNote"
+      :note-id="currentNote?.id || ''"
+      :current-title="currentNote?.title || ''"
       @close="showVersionModal = false"
+      @restored="handleVersionRestored"
     />
 
     <!-- Trash Modal -->

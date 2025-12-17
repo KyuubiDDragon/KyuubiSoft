@@ -1198,7 +1198,8 @@ class SharedChecklistController
             'category_id' => $data['category_id'] ?? null,
             'title' => trim($data['title']),
             'description' => $data['description'] ?? null,
-            'required_testers' => isset($data['required_testers']) ? ((int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers'])) : 1,
+            'required_testers' => isset($data['required_testers']) ? ((int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers'])) : -1,
+            'added_by' => $addedBy,
             'sort_order' => $maxSort + 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -1265,6 +1266,7 @@ class SharedChecklistController
             'checklist_id' => $checklist['id'],
             'name' => trim($data['name']),
             'description' => $data['description'] ?? null,
+            'added_by' => $addedBy,
             'sort_order' => $maxSort + 1,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
@@ -1285,6 +1287,110 @@ class SharedChecklistController
         ]);
 
         return JsonResponse::created($category, 'Kategorie erstellt');
+    }
+
+    /**
+     * Update item via public link (only by creator)
+     */
+    public function updateItemPublic(ServerRequestInterface $request, ResponseInterface $response, string $token, string $itemId): ResponseInterface
+    {
+        $data = $request->getParsedBody() ?? [];
+
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        if (!$checklist['is_active']) {
+            throw new ForbiddenException('Diese Checkliste ist deaktiviert');
+        }
+
+        $item = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
+            [$itemId, $checklist['id']]
+        );
+
+        if (!$item) {
+            throw new NotFoundException('Testpunkt nicht gefunden');
+        }
+
+        // Check if user is the creator
+        $requestedBy = trim($data['requested_by'] ?? '');
+        if (empty($item['added_by']) || $item['added_by'] !== $requestedBy) {
+            throw new ForbiddenException('Nur der Ersteller kann diesen Testpunkt bearbeiten');
+        }
+
+        $updates = ['updated_at' => date('Y-m-d H:i:s')];
+
+        if (isset($data['title']) && !empty(trim($data['title']))) {
+            $updates['title'] = trim($data['title']);
+        }
+        if (array_key_exists('description', $data)) {
+            $updates['description'] = $data['description'];
+        }
+        if (isset($data['category_id'])) {
+            $updates['category_id'] = $data['category_id'] ?: null;
+        }
+        if (isset($data['required_testers'])) {
+            $updates['required_testers'] = (int) $data['required_testers'] === -1 ? -1 : max(1, (int) $data['required_testers']);
+        }
+
+        $this->db->update('shared_checklist_items', $updates, ['id' => $itemId]);
+
+        $updatedItem = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklist_items WHERE id = ?',
+            [$itemId]
+        );
+
+        $this->publishUpdate($token, 'item_updated', ['item' => $updatedItem]);
+
+        return JsonResponse::success($updatedItem, 'Testpunkt aktualisiert');
+    }
+
+    /**
+     * Delete item via public link (only by creator)
+     */
+    public function deleteItemPublic(ServerRequestInterface $request, ResponseInterface $response, string $token, string $itemId): ResponseInterface
+    {
+        $params = $request->getQueryParams();
+
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        if (!$checklist['is_active']) {
+            throw new ForbiddenException('Diese Checkliste ist deaktiviert');
+        }
+
+        $item = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
+            [$itemId, $checklist['id']]
+        );
+
+        if (!$item) {
+            throw new NotFoundException('Testpunkt nicht gefunden');
+        }
+
+        // Check if user is the creator
+        $requestedBy = trim($params['requested_by'] ?? '');
+        if (empty($item['added_by']) || $item['added_by'] !== $requestedBy) {
+            throw new ForbiddenException('Nur der Ersteller kann diesen Testpunkt löschen');
+        }
+
+        $this->db->delete('shared_checklist_items', ['id' => $itemId]);
+
+        $this->publishUpdate($token, 'item_deleted', ['item_id' => $itemId]);
+
+        return JsonResponse::success(null, 'Testpunkt gelöscht');
     }
 
     /**

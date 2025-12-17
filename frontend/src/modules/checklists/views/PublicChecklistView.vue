@@ -25,6 +25,7 @@ import {
   XMarkIcon,
   PhotoIcon,
   CameraIcon,
+  PencilIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import axios from 'axios'
@@ -67,6 +68,10 @@ const showFilters = ref(false)
 // Image preview state
 const previewImage = ref(null)
 const uploadingEntryId = ref(null)
+
+// Edit item state
+const showEditItemModal = ref(false)
+const editingItem = ref(null)
 
 const newEntry = ref({
   status: 'passed',
@@ -600,6 +605,56 @@ async function addCategory() {
   }
 }
 
+function openEditItem(item) {
+  editingItem.value = { ...item }
+  showEditItemModal.value = true
+}
+
+async function updateItem() {
+  if (!editingItem.value?.title?.trim()) {
+    toast.warning('Titel ist erforderlich')
+    return
+  }
+
+  try {
+    const response = await axios.put(`/api/v1/checklists/public/${token.value}/items/${editingItem.value.id}`, {
+      title: editingItem.value.title,
+      description: editingItem.value.description,
+      category_id: editingItem.value.category_id,
+      required_testers: editingItem.value.required_testers,
+      requested_by: testerName.value,
+    })
+
+    // Update in local state
+    const idx = checklist.value.items.findIndex(i => i.id === editingItem.value.id)
+    if (idx !== -1) {
+      checklist.value.items[idx] = {
+        ...checklist.value.items[idx],
+        ...response.data.data,
+      }
+    }
+
+    showEditItemModal.value = false
+    editingItem.value = null
+    toast.success('Testpunkt aktualisiert')
+  } catch (err) {
+    toast.error(err.response?.data?.error || 'Fehler beim Aktualisieren')
+  }
+}
+
+async function deleteItem(item) {
+  if (!await confirm({ message: `"${item.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+
+  try {
+    await axios.delete(`/api/v1/checklists/public/${token.value}/items/${item.id}?requested_by=${encodeURIComponent(testerName.value)}`)
+
+    checklist.value.items = checklist.value.items.filter(i => i.id !== item.id)
+    toast.success('Testpunkt gelöscht')
+  } catch (err) {
+    toast.error(err.response?.data?.error || 'Fehler beim Löschen')
+  }
+}
+
 function recalculateProgress() {
   if (!checklist.value) return
 
@@ -1051,6 +1106,23 @@ onUnmounted(() => {
                         <CheckCircleIconSolid class="w-3 h-3" />
                         Fertig
                       </span>
+                      <!-- Edit/Delete buttons for own items -->
+                      <div v-if="item.added_by && item.added_by === testerName" class="flex items-center gap-1 ml-auto">
+                        <button
+                          @click="openEditItem(item)"
+                          class="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white"
+                          title="Bearbeiten"
+                        >
+                          <PencilIcon class="w-4 h-4" />
+                        </button>
+                        <button
+                          @click="deleteItem(item)"
+                          class="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-red-400"
+                          title="Löschen"
+                        >
+                          <TrashIcon class="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <p v-if="item.description" class="text-gray-400 text-sm mt-1">{{ item.description }}</p>
 
@@ -1429,6 +1501,79 @@ onUnmounted(() => {
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
               >
                 Erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Edit Item Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showEditItemModal && editingItem"
+          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        >
+          <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
+            <div class="p-4 border-b border-gray-700">
+              <h2 class="text-lg font-semibold text-white">Testpunkt bearbeiten</h2>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+                <input
+                  v-model="editingItem.title"
+                  type="text"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+                <textarea
+                  v-model="editingItem.description"
+                  rows="2"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                ></textarea>
+              </div>
+
+              <div v-if="checklist?.categories?.length > 0">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+                <select
+                  v-model="editingItem.category_id"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option :value="null">Keine Kategorie</option>
+                  <option v-for="cat in checklist.categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+                <input
+                  v-model.number="editingItem.required_testers"
+                  type="number"
+                  min="-1"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p class="text-gray-500 text-xs mt-1">-1 = Unbegrenzt</p>
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-700 flex justify-end gap-3">
+              <button
+                @click="showEditItemModal = false; editingItem = null"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                @click="updateItem"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
+              >
+                Speichern
               </button>
             </div>
           </div>

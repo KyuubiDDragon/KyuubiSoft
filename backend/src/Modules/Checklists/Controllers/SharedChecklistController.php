@@ -746,7 +746,7 @@ class SharedChecklistController
 
         // Get items with entries
         $items = $this->db->fetchAllAssociative(
-            'SELECT i.*,
+            'SELECT DISTINCT i.*,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id) as entry_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "passed") as passed_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries WHERE item_id = i.id AND status = "failed") as failed_count,
@@ -757,6 +757,17 @@ class SharedChecklistController
              ORDER BY i.sort_order',
             [$checklist['id']]
         );
+
+        // Remove any duplicates by ID (safety check)
+        $seenIds = [];
+        $items = array_filter($items, function($item) use (&$seenIds) {
+            if (in_array($item['id'], $seenIds)) {
+                return false;
+            }
+            $seenIds[] = $item['id'];
+            return true;
+        });
+        $items = array_values($items); // Re-index array
 
         // Get entries for each item
         foreach ($items as &$item) {

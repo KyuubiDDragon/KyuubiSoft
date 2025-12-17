@@ -761,7 +761,7 @@ class SharedChecklistController
         // Get entries for each item
         foreach ($items as &$item) {
             $item['entries'] = $this->db->fetchAllAssociative(
-                'SELECT id, tester_name, status, notes, tested_at, created_at, updated_at
+                'SELECT id, tester_name, status, notes, image_path, tested_at, created_at, updated_at
                  FROM shared_checklist_entries
                  WHERE item_id = ?
                  ORDER BY created_at DESC',

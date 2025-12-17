@@ -220,14 +220,16 @@ async function loadChecklist(silent = false) {
 
     checklist.value = newData
 
-    // Initialize expanded categories
+    // Initialize expanded categories (collapsed by default)
     const categories = checklist.value.categories || []
     categories.forEach(cat => {
       if (expandedCategories.value[cat.id] === undefined) {
-        expandedCategories.value[cat.id] = true
+        expandedCategories.value[cat.id] = false
       }
     })
-    expandedCategories.value[null] = true
+    if (expandedCategories.value[null] === undefined) {
+      expandedCategories.value[null] = false
+    }
 
     lastSyncTime.value = new Date()
   } catch (err) {

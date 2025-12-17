@@ -132,14 +132,16 @@ const itemsByCategory = computed(() => {
 
   const categories = checklist.value.categories || []
   const items = filteredItems.value
+  const canAddItems = checklist.value.allow_add_items
 
   const result = categories.map(cat => ({
     ...cat,
     items: items.filter(item => item.category_id === cat.id),
   }))
 
+  // Always add "Allgemein" for uncategorized items (or if adding items is allowed)
   const uncategorized = items.filter(item => !item.category_id)
-  if (uncategorized.length > 0) {
+  if (uncategorized.length > 0 || canAddItems) {
     result.push({
       id: null,
       name: 'Allgemein',
@@ -147,7 +149,10 @@ const itemsByCategory = computed(() => {
     })
   }
 
-  // Only return categories that have items (after filtering)
+  // Show empty categories when adding items is allowed, otherwise filter them out
+  if (canAddItems) {
+    return result
+  }
   return result.filter(cat => cat.items.length > 0)
 })
 

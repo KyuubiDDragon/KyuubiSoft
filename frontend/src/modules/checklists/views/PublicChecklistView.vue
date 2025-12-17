@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { usePromptDialog } from '@/composables/usePromptDialog'
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -33,6 +34,7 @@ import axios from 'axios'
 const route = useRoute()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { prompt } = usePromptDialog()
 
 // State
 const checklist = ref(null)
@@ -297,24 +299,44 @@ async function submitPassword() {
   }
 }
 
+// Helper to get or prompt for tester name
+async function ensureTesterName() {
+  if (testerName.value.trim()) {
+    return testerName.value.trim()
+  }
+
+  if (checklist.value.require_name) {
+    const name = await prompt({
+      title: 'Name erforderlich',
+      message: 'Bitte gib deinen Namen ein, um abzustimmen:',
+      placeholder: 'Dein Name',
+      confirmText: 'Weiter',
+      cancelText: 'Abbrechen',
+    })
+
+    if (name && name.trim()) {
+      testerName.value = name.trim()
+      localStorage.setItem('checklist_tester_name', name.trim())
+      return name.trim()
+    }
+    return null // User cancelled or empty input
+  }
+
+  return 'Anonym'
+}
+
 // Quick test - one click to mark as passed
 async function quickTest(item) {
-  if (checklist.value.require_name && !testerName.value.trim()) {
-    toast.warning('Bitte gib zuerst deinen Namen ein')
-    return
-  }
+  const name = await ensureTesterName()
+  if (!name) return
 
   try {
     const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
-      tester_name: testerName.value.trim() || 'Anonym',
+      tester_name: name,
       status: 'passed',
       notes: '',
     })
-
-    if (testerName.value.trim()) {
-      localStorage.setItem('checklist_tester_name', testerName.value.trim())
-    }
 
     // Update local state
     item.entries = item.entries || []
@@ -335,22 +357,16 @@ async function quickTest(item) {
 
 // Quick fail - one click to mark as failed
 async function quickFail(item) {
-  if (checklist.value.require_name && !testerName.value.trim()) {
-    toast.warning('Bitte gib zuerst deinen Namen ein')
-    return
-  }
+  const name = await ensureTesterName()
+  if (!name) return
 
   try {
     const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
-      tester_name: testerName.value.trim() || 'Anonym',
+      tester_name: name,
       status: 'failed',
       notes: '',
     })
-
-    if (testerName.value.trim()) {
-      localStorage.setItem('checklist_tester_name', testerName.value.trim())
-    }
 
     item.entries = item.entries || []
     item.entries.unshift(response.data.data)
@@ -369,22 +385,16 @@ async function quickFail(item) {
 
 // Quick uncertain - one click to mark as uncertain
 async function quickUncertain(item) {
-  if (checklist.value.require_name && !testerName.value.trim()) {
-    toast.warning('Bitte gib zuerst deinen Namen ein')
-    return
-  }
+  const name = await ensureTesterName()
+  if (!name) return
 
   try {
     const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
-      tester_name: testerName.value.trim() || 'Anonym',
+      tester_name: name,
       status: 'uncertain',
       notes: '',
     })
-
-    if (testerName.value.trim()) {
-      localStorage.setItem('checklist_tester_name', testerName.value.trim())
-    }
 
     item.entries = item.entries || []
     item.entries.unshift(response.data.data)
@@ -402,22 +412,16 @@ async function quickUncertain(item) {
 }
 
 async function addEntry() {
-  if (checklist.value.require_name && !testerName.value.trim()) {
-    toast.warning('Bitte gib deinen Namen ein')
-    return
-  }
+  const name = await ensureTesterName()
+  if (!name) return
 
   try {
     const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: selectedItem.value.id,
-      tester_name: testerName.value.trim() || 'Anonym',
+      tester_name: name,
       status: newEntry.value.status,
       notes: newEntry.value.notes,
     })
-
-    if (testerName.value.trim()) {
-      localStorage.setItem('checklist_tester_name', testerName.value.trim())
-    }
 
     const item = checklist.value.items.find(i => i.id === selectedItem.value.id)
     if (item) {

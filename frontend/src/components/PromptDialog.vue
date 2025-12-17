@@ -16,10 +16,16 @@ watch(isOpen, async (open) => {
 })
 
 function onKeydown(e) {
-  if (e.key === 'Enter') {
-    handleConfirm()
-  } else if (e.key === 'Escape') {
+  if (e.key === 'Escape') {
     handleCancel()
+  }
+}
+
+function onInputKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    e.stopPropagation()
+    handleConfirm()
   }
 }
 </script>
@@ -81,7 +87,9 @@ function onKeydown(e) {
                 v-model="inputValue"
                 :type="dialogConfig.inputType"
                 :placeholder="dialogConfig.placeholder"
+                autocomplete="off"
                 class="w-full px-4 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                @keydown="onInputKeydown"
               />
             </div>
 

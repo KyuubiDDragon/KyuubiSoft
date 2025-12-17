@@ -545,18 +545,25 @@ async function addItem() {
       added_by: testerName.value.trim() || 'Anonym',
     })
 
-    checklist.value.items.push({
+    const newItemData = {
       ...response.data.data,
       entries: [],
       passed_count: 0,
       failed_count: 0,
       in_progress_count: 0,
+      uncertain_count: 0,
       entry_count: 0,
-    })
+    }
+    checklist.value.items.push(newItemData)
+
+    // Expand the category so the new item is visible
+    const categoryId = newItemData.category_id || null
+    expandedCategories.value[categoryId] = true
 
     showAddItemModal.value = false
     addItemCategoryId.value = null
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
+    toast.success('Testpunkt erstellt')
   } catch (err) {
     toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
   }

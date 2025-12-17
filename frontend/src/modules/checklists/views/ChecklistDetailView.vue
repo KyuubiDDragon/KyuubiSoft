@@ -50,7 +50,7 @@ const newItem = ref({
   title: '',
   description: '',
   category_id: null,
-  required_testers: 1,
+  required_testers: -1,
 })
 
 const newCategory = ref({
@@ -61,7 +61,7 @@ const newCategory = ref({
 const batchAdd = ref({
   items: '',
   category_id: null,
-  required_testers: 1,
+  required_testers: -1,
 })
 
 const editingItem = ref(null)
@@ -233,7 +233,7 @@ async function addItem() {
     checklist.value.items = checklist.value.items || []
     checklist.value.items.push({ ...response.data.data, entries: [], passed_count: 0, failed_count: 0, entry_count: 0 })
     showAddItemModal.value = false
-    newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
+    newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     uiStore.showSuccess('Testpunkt erstellt')
   } catch (error) {
     uiStore.showError('Fehler beim Erstellen')
@@ -296,7 +296,7 @@ async function addBatchItems() {
   }
 
   showBatchAddModal.value = false
-  batchAdd.value = { items: '', category_id: null, required_testers: 1 }
+  batchAdd.value = { items: '', category_id: null, required_testers: -1 }
 }
 
 function openBatchAddInCategory(categoryId) {

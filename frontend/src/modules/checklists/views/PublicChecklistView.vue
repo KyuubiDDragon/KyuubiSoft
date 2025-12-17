@@ -77,7 +77,7 @@ const newItem = ref({
   title: '',
   description: '',
   category_id: null,
-  required_testers: 1,
+  required_testers: -1,
 })
 
 const newCategory = ref({
@@ -132,14 +132,16 @@ const itemsByCategory = computed(() => {
 
   const categories = checklist.value.categories || []
   const items = filteredItems.value
+  const canAddItems = checklist.value.allow_add_items
 
   const result = categories.map(cat => ({
     ...cat,
     items: items.filter(item => item.category_id === cat.id),
   }))
 
+  // Always add "Allgemein" for uncategorized items (or if adding items is allowed)
   const uncategorized = items.filter(item => !item.category_id)
-  if (uncategorized.length > 0) {
+  if (uncategorized.length > 0 || canAddItems) {
     result.push({
       id: null,
       name: 'Allgemein',
@@ -147,7 +149,10 @@ const itemsByCategory = computed(() => {
     })
   }
 
-  // Only return categories that have items (after filtering)
+  // Show empty categories when adding items is allowed, otherwise filter them out
+  if (canAddItems) {
+    return result
+  }
   return result.filter(cat => cat.items.length > 0)
 })
 
@@ -545,18 +550,25 @@ async function addItem() {
       added_by: testerName.value.trim() || 'Anonym',
     })
 
-    checklist.value.items.push({
+    const newItemData = {
       ...response.data.data,
       entries: [],
       passed_count: 0,
       failed_count: 0,
       in_progress_count: 0,
+      uncertain_count: 0,
       entry_count: 0,
-    })
+    }
+    checklist.value.items.push(newItemData)
+
+    // Expand the category so the new item is visible
+    const categoryId = newItemData.category_id || null
+    expandedCategories.value[categoryId] = true
 
     showAddItemModal.value = false
     addItemCategoryId.value = null
-    newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
+    newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
+    toast.success('Testpunkt erstellt')
   } catch (err) {
     toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
   }
@@ -1337,6 +1349,17 @@ onUnmounted(() => {
                     {{ cat.name }}
                   </option>
                 </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+                <input
+                  v-model.number="newItem.required_testers"
+                  type="number"
+                  min="-1"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p class="text-gray-500 text-xs mt-1">-1 = Unbegrenzt</p>
               </div>
             </div>
 

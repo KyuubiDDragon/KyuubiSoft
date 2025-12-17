@@ -22,6 +22,8 @@ import {
   DocumentDuplicateIcon,
   ArrowUturnLeftIcon,
   ListBulletIcon,
+  PhotoIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -65,6 +67,8 @@ const batchAdd = ref({
 const editingItem = ref(null)
 const editingCategory = ref(null)
 const newPassword = ref('')
+const uploadingEntryId = ref(null)
+const previewImage = ref(null)
 
 // Computed
 const checklistId = computed(() => route.params.id)
@@ -358,6 +362,76 @@ async function resetEntries() {
   } catch (error) {
     uiStore.showError('Fehler beim Zurücksetzen')
   }
+}
+
+async function deleteEntry(entry, item) {
+  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  try {
+    await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}`)
+
+    item.entries = item.entries.filter(e => e.id !== entry.id)
+    if (entry.status === 'passed') item.passed_count--
+    else if (entry.status === 'failed') item.failed_count--
+    else if (entry.status === 'uncertain') item.uncertain_count--
+    else if (entry.status === 'in_progress') item.in_progress_count--
+    item.entry_count--
+
+    toast.success('Eintrag gelöscht')
+  } catch (error) {
+    toast.error('Fehler beim Löschen')
+  }
+}
+
+async function uploadEntryImage(entry, event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.warning('Bild darf maximal 5MB groß sein')
+    return
+  }
+
+  uploadingEntryId.value = entry.id
+  const formData = new FormData()
+  formData.append('image', file)
+
+  try {
+    const response = await api.post(
+      `/api/v1/checklists/${checklistId.value}/entries/${entry.id}/image`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    entry.image_path = response.data.data.image_path
+    toast.success('Bild hochgeladen')
+  } catch (error) {
+    toast.error(error.response?.data?.error || 'Fehler beim Hochladen')
+  } finally {
+    uploadingEntryId.value = null
+    event.target.value = ''
+  }
+}
+
+async function deleteEntryImage(entry) {
+  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  try {
+    await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}/image`)
+    entry.image_path = null
+    toast.success('Bild gelöscht')
+  } catch (error) {
+    toast.error('Fehler beim Löschen')
+  }
+}
+
+function getImageUrl(imagePath) {
+  return `/api/v1/checklists/images/${imagePath}`
 }
 
 function copyShareLink() {
@@ -667,17 +741,71 @@ watch(() => route.params.id, () => {
                     <div
                       v-for="entry in item.entries"
                       :key="entry.id"
-                      class="flex items-center gap-3 p-2 bg-dark-700/50 rounded-lg text-sm"
+                      class="p-3 bg-dark-700/50 rounded-lg text-sm"
                     >
-                      <span
-                        class="px-2 py-0.5 rounded text-xs font-medium"
-                        :class="getStatusColor(entry.status)"
-                      >
-                        {{ getStatusLabel(entry.status) }}
-                      </span>
-                      <span class="text-white">{{ entry.tester_name }}</span>
-                      <span v-if="entry.notes" class="text-gray-400 truncate">{{ entry.notes }}</span>
-                      <span class="text-gray-500 ml-auto">{{ formatDate(entry.created_at) }}</span>
+                      <div class="flex items-center gap-3">
+                        <span
+                          class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="getStatusColor(entry.status)"
+                        >
+                          {{ getStatusLabel(entry.status) }}
+                        </span>
+                        <span class="text-white">{{ entry.tester_name }}</span>
+                        <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
+                        <span class="text-gray-500 text-xs">{{ formatDate(entry.created_at) }}</span>
+
+                        <!-- Entry Actions -->
+                        <div class="flex items-center gap-1 ml-2">
+                          <!-- Image Upload -->
+                          <label
+                            class="p-1.5 hover:bg-dark-600 rounded cursor-pointer transition-colors"
+                            :title="entry.image_path ? 'Bild ersetzen' : 'Bild hinzufügen'"
+                          >
+                            <PhotoIcon
+                              class="w-4 h-4"
+                              :class="entry.image_path ? 'text-primary-400' : 'text-gray-400'"
+                            />
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              class="hidden"
+                              :disabled="uploadingEntryId === entry.id"
+                              @change="uploadEntryImage(entry, $event)"
+                            />
+                          </label>
+                          <!-- Delete Entry -->
+                          <button
+                            @click="deleteEntry(entry, item)"
+                            class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                            title="Eintrag löschen"
+                          >
+                            <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Entry Image -->
+                      <div v-if="entry.image_path" class="mt-2 relative group">
+                        <img
+                          :src="getImageUrl(entry.image_path)"
+                          class="max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          alt="Screenshot"
+                          @click="previewImage = entry.image_path"
+                        />
+                        <button
+                          @click="deleteEntryImage(entry)"
+                          class="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Bild löschen"
+                        >
+                          <XMarkIcon class="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+
+                      <!-- Upload Progress -->
+                      <div v-if="uploadingEntryId === entry.id" class="mt-2 flex items-center gap-2 text-gray-400">
+                        <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs">Wird hochgeladen...</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1148,6 +1276,28 @@ watch(() => route.params.id, () => {
             </button>
           </div>
         </div>
+      </div>
+    </Teleport>
+
+    <!-- Image Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="previewImage"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 cursor-pointer"
+        @click="previewImage = null"
+      >
+        <button
+          class="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          @click="previewImage = null"
+        >
+          <XMarkIcon class="w-8 h-8" />
+        </button>
+        <img
+          :src="getImageUrl(previewImage)"
+          class="max-w-full max-h-full object-contain rounded-lg"
+          alt="Screenshot Vorschau"
+          @click.stop
+        />
       </div>
     </Teleport>
   </div>

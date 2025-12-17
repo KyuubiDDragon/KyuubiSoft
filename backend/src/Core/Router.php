@@ -632,6 +632,10 @@ class Router
                 $protected->delete('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'deleteItem']);
                 // Checklist Activity
                 $protected->get('/checklists/{id}/activity', [SharedChecklistController::class, 'getActivity']);
+                // Checklist Entries (Admin)
+                $protected->delete('/checklists/{id}/entries/{entryId}', [SharedChecklistController::class, 'deleteEntryAdmin']);
+                $protected->post('/checklists/{id}/entries/{entryId}/image', [SharedChecklistController::class, 'uploadEntryImageAdmin']);
+                $protected->delete('/checklists/{id}/entries/{entryId}/image', [SharedChecklistController::class, 'deleteEntryImageAdmin']);
                 // Duplicate & Reset
                 $protected->post('/checklists/{id}/duplicate', [SharedChecklistController::class, 'duplicate']);
                 $protected->post('/checklists/{id}/reset', [SharedChecklistController::class, 'resetEntries']);

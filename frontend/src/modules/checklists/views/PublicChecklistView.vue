@@ -77,7 +77,7 @@ const newItem = ref({
   title: '',
   description: '',
   category_id: null,
-  required_testers: 1,
+  required_testers: -1,
 })
 
 const newCategory = ref({
@@ -556,7 +556,7 @@ async function addItem() {
 
     showAddItemModal.value = false
     addItemCategoryId.value = null
-    newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
+    newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
   } catch (err) {
     toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
   }
@@ -1337,6 +1337,17 @@ onUnmounted(() => {
                     {{ cat.name }}
                   </option>
                 </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+                <input
+                  v-model.number="newItem.required_testers"
+                  type="number"
+                  min="-1"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p class="text-gray-500 text-xs mt-1">-1 = Unbegrenzt</p>
               </div>
             </div>
 

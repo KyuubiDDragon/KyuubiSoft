@@ -20,6 +20,9 @@ import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import { common, createLowlight } from 'lowlight'
 import { watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
+import { usePromptDialog } from '@/composables/usePromptDialog'
+
+const { prompt } = usePromptDialog()
 
 const props = defineProps({
   ydoc: {
@@ -202,9 +205,14 @@ onBeforeUnmount(() => {
   editor.value?.destroy()
 })
 
-function setLink() {
+async function setLink() {
   const previousUrl = editor.value.getAttributes('link').href
-  const url = window.prompt('URL eingeben:', previousUrl)
+  const url = await prompt({
+    title: 'Link einfügen',
+    message: 'URL eingeben:',
+    placeholder: 'https://...',
+    defaultValue: previousUrl || ''
+  })
 
   if (url === null) return
 
@@ -216,8 +224,12 @@ function setLink() {
   editor.value.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
 }
 
-function addImage() {
-  const url = window.prompt('Bild-URL eingeben:')
+async function addImage() {
+  const url = await prompt({
+    title: 'Bild einfügen',
+    message: 'Bild-URL eingeben:',
+    placeholder: 'https://example.com/bild.jpg'
+  })
   if (url) {
     editor.value.chain().focus().setImage({ src: url }).run()
   }

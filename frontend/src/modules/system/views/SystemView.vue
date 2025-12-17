@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import api from '@/core/api/axios'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const systemInfo = ref({
   version: '1.0.0',
@@ -49,6 +51,9 @@ const isClearingCache = ref(false)
 const isTerminatingSessions = ref(false)
 
 let metricsInterval = null
+
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const totalPages = computed(() => Math.ceil(auditPagination.value.total / auditPagination.value.perPage))
 
@@ -233,30 +238,30 @@ async function loadAuditLogs() {
 }
 
 async function clearCache() {
-  if (!confirm('Möchten Sie wirklich den Cache leeren?')) return
+  if (!await confirm({ message: 'Möchten Sie wirklich den Cache leeren?', type: 'warning', confirmText: 'Bestätigen' })) return
 
   isClearingCache.value = true
   try {
     await api.post('/api/v1/system/clear-cache')
-    alert('Cache wurde erfolgreich geleert')
+    toast.success('Cache wurde erfolgreich geleert')
     loadAuditLogs()
   } catch (err) {
-    alert('Fehler beim Leeren des Caches: ' + (err.response?.data?.error || err.message))
+    toast.error('Fehler beim Leeren des Caches: ' + (err.response?.data?.error || err.message))
   } finally {
     isClearingCache.value = false
   }
 }
 
 async function terminateSessions() {
-  if (!confirm('Möchten Sie wirklich alle Benutzer-Sessions beenden? Alle Benutzer werden abgemeldet.')) return
+  if (!await confirm({ message: 'Möchten Sie wirklich alle Benutzer-Sessions beenden? Alle Benutzer werden abgemeldet.', type: 'warning', confirmText: 'Bestätigen' })) return
 
   isTerminatingSessions.value = true
   try {
     const response = await api.post('/api/v1/system/terminate-sessions')
-    alert(response.data.message || 'Sessions wurden erfolgreich beendet')
+    toast.success(response.data.message || 'Sessions wurden erfolgreich beendet')
     loadAuditLogs()
   } catch (err) {
-    alert('Fehler beim Beenden der Sessions: ' + (err.response?.data?.error || err.message))
+    toast.error('Fehler beim Beenden der Sessions: ' + (err.response?.data?.error || err.message))
   } finally {
     isTerminatingSessions.value = false
   }

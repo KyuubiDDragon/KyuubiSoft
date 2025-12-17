@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotesStore } from '../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import NotesSidebar from '../components/sidebar/NotesSidebar.vue'
 import NoteEditor from '../components/editor/NoteEditor.vue'
 import NoteHeader from '../components/editor/NoteHeader.vue'
@@ -35,6 +37,8 @@ const route = useRoute()
 const router = useRouter()
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const showQuickSwitcher = ref(false)
@@ -227,7 +231,7 @@ async function handleIconChange(newIcon) {
 async function deleteCurrentNote() {
   if (!currentNote.value) return
 
-  if (!confirm('Notiz in den Papierkorb verschieben?')) return
+  if (!await confirm({ message: 'Notiz in den Papierkorb verschieben?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await notesStore.deleteNote(currentNote.value.id)
@@ -314,7 +318,7 @@ async function handleWikiLinkNavigation(href) {
     }
   } catch (error) {
     // Note doesn't exist - could offer to create it
-    if (confirm(`Notiz "${href}" existiert nicht. Neu erstellen?`)) {
+    if (await confirm({ message: `Notiz "${href}" existiert nicht. Neu erstellen?`, type: 'info', confirmText: 'Erstellen' })) {
       const newNote = await notesStore.createNote({
         title: href.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''

@@ -3,6 +3,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   ServerIcon,
@@ -28,6 +30,8 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const connections = ref([])
@@ -161,7 +165,7 @@ async function saveConnection() {
 }
 
 async function deleteConnection(connection) {
-  if (!confirm(`Verbindung "${connection.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Verbindung "${connection.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/connections/${connection.id}`)
@@ -212,7 +216,7 @@ async function saveTag() {
 }
 
 async function deleteTag(tag) {
-  if (!confirm(`Tag "${tag.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/connections/tags/${tag.id}`)

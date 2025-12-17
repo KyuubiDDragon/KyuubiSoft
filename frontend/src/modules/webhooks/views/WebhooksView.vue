@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   TrashIcon,
@@ -15,6 +17,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const webhooks = ref([])
@@ -118,7 +122,7 @@ async function saveWebhook() {
 
 // Delete webhook
 async function deleteWebhook(webhook) {
-  if (!confirm(`Webhook "${webhook.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Webhook "${webhook.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/webhooks/${webhook.id}`)

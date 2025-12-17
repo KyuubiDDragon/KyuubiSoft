@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ServerStackIcon,
   PlusIcon,
@@ -18,6 +20,8 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const hosts = ref([])
 const projects = ref([])
@@ -176,7 +180,7 @@ async function savePortainerConfig() {
     await fetchHosts()
   } catch (error) {
     console.error('Failed to save Portainer config:', error)
-    alert(error.response?.data?.error || 'Failed to save Portainer configuration')
+    toast.error(error.response?.data?.error || 'Failed to save Portainer configuration')
   } finally {
     savingPortainer.value = false
   }
@@ -228,7 +232,7 @@ async function saveHost() {
 }
 
 async function deleteHost(host) {
-  if (!confirm(`Docker Host "${host.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Docker Host "${host.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/docker/hosts/${host.id}`)

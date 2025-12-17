@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   BoltIcon,
   PlusIcon,
@@ -19,6 +21,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const workflows = ref([])
 const templates = ref([])
@@ -155,7 +159,7 @@ async function toggleWorkflow(workflow) {
 }
 
 async function deleteWorkflow(workflow) {
-  if (!confirm(`Workflow "${workflow.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Workflow "${workflow.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/workflows/${workflow.id}`)

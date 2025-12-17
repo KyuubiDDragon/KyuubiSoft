@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRecurringTasksStore } from '@/stores/recurringTasks'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ArrowPathIcon,
   PlusIcon,
@@ -23,6 +25,8 @@ import {
 
 const store = useRecurringTasksStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const showModal = ref(false)
 const showInstancesModal = ref(false)
@@ -144,7 +148,7 @@ async function saveTask() {
 }
 
 async function deleteTask(task) {
-  if (!confirm(`"${task.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `"${task.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await store.deleteTask(task.id)

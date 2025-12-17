@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   CloudArrowUpIcon,
   CloudArrowDownIcon,
@@ -23,6 +25,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const isLoading = ref(true)
@@ -166,7 +170,7 @@ async function saveTarget() {
 }
 
 async function deleteTarget(target) {
-  if (!confirm(`Speicherziel "${target.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Speicherziel "${target.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/targets/${target.id}`)
     uiStore.showSuccess('Speicherziel gelöscht')
@@ -232,7 +236,7 @@ async function saveSchedule() {
 }
 
 async function deleteSchedule(schedule) {
-  if (!confirm(`Zeitplan "${schedule.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Zeitplan "${schedule.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/schedules/${schedule.id}`)
     uiStore.showSuccess('Zeitplan gelöscht')
@@ -278,7 +282,7 @@ async function createBackup() {
 }
 
 async function deleteBackup(backup) {
-  if (!confirm('Backup wirklich löschen?')) return
+  if (!await confirm({ message: 'Backup wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/${backup.id}`)
     uiStore.showSuccess('Backup gelöscht')

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ArrowLeftIcon,
   PencilIcon,
@@ -24,6 +26,8 @@ const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const ticket = ref(null)
@@ -131,7 +135,7 @@ async function addComment() {
 
 // Delete comment
 async function deleteComment(commentId) {
-  if (!confirm('Kommentar wirklich löschen?')) return
+  if (!await confirm({ message: 'Kommentar wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}/comments/${commentId}`)
@@ -207,7 +211,7 @@ async function assignTicket(userId) {
 
 // Delete ticket
 async function deleteTicket() {
-  if (!confirm('Ticket wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return
+  if (!await confirm({ message: 'Ticket wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}`)

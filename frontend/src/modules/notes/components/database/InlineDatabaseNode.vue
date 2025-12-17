@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { NodeViewWrapper } from '@tiptap/vue-3'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import DatabaseTable from './DatabaseTable.vue'
 import DatabaseBoard from './DatabaseBoard.vue'
 import DatabaseList from './DatabaseList.vue'
@@ -47,6 +49,8 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const isLoading = ref(true)
 const database = ref(null)
@@ -202,7 +206,7 @@ async function duplicateDatabase() {
 
 // Delete database
 async function handleDelete() {
-  if (!confirm('Datenbank wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return
+  if (!await confirm({ message: 'Datenbank wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     if (database.value) {

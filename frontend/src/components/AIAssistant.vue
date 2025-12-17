@@ -3,6 +3,8 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAIStore } from '@/stores/ai'
 import { useProjectStore } from '@/stores/project'
 import { useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   SparklesIcon,
   XMarkIcon,
@@ -19,6 +21,8 @@ import {
 const aiStore = useAIStore()
 const projectStore = useProjectStore()
 const router = useRouter()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const isOpen = ref(false)
 const isMinimized = ref(false)
@@ -100,11 +104,11 @@ async function loadConversation(conv) {
 }
 
 async function deleteConversation(conv) {
-  if (confirm('Mochtest du diese Unterhaltung wirklich loschen?')) {
-    await aiStore.deleteConversation(conv.id)
-    if (conversationId.value === conv.id) {
-      startNewConversation()
-    }
+  if (!await confirm({ message: 'Möchtest du diese Unterhaltung wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  await aiStore.deleteConversation(conv.id)
+  if (conversationId.value === conv.id) {
+    startNewConversation()
   }
 }
 

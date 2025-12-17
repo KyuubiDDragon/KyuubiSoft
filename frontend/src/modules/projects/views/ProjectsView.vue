@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   TrashIcon,
@@ -29,6 +31,8 @@ import { StarIcon as StarIconSolid, FolderIcon as FolderIconSolid } from '@heroi
 
 const router = useRouter()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const projects = ref([])
@@ -171,7 +175,7 @@ async function saveProject() {
 
 // Delete project
 async function deleteProject(project) {
-  if (!confirm(`Projekt "${project.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Projekt "${project.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/projects/${project.id}`)
@@ -258,7 +262,7 @@ async function addLink(item) {
 
 // Remove link
 async function removeLink(link) {
-  if (!confirm('Verknüpfung wirklich entfernen?')) return
+  if (!await confirm({ message: 'Verknüpfung wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/projects/${selectedProject.value.id}/links/${link.link_id}`)
@@ -387,7 +391,7 @@ async function addMember() {
 
 // Remove project member
 async function removeMember(userId) {
-  if (!confirm('Mitglied wirklich entfernen?')) return
+  if (!await confirm({ message: 'Mitglied wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/projects/${selectedProject.value.id}/shares/${userId}`)

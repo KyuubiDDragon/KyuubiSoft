@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import api from '@/core/api/axios'
 
 const props = defineProps({
@@ -18,6 +20,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'updated'])
+
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const loading = ref(false)
@@ -127,7 +132,7 @@ async function updateSettings() {
 
 // Regenerate link
 async function regenerateLink() {
-  if (!confirm('Bisheriger Link wird ungültig. Fortfahren?')) return
+  if (!await confirm({ message: 'Bisheriger Link wird ungültig. Fortfahren?', type: 'danger', confirmText: 'Löschen' })) return
 
   loading.value = true
   error.value = null

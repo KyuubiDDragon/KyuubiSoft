@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   LinkIcon,
   PlusIcon,
@@ -24,6 +26,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const isLoading = ref(true)
@@ -127,7 +131,7 @@ async function createLink() {
 
 // Delete link
 async function deleteLink(link) {
-  if (!confirm(`Link "${link.short_code}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Link "${link.short_code}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/links/${link.id}`)

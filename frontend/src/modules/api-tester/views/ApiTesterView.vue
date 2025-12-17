@@ -2,6 +2,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   FolderIcon,
@@ -18,6 +20,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const collections = ref([])
@@ -295,7 +299,7 @@ async function saveRequest() {
 }
 
 async function deleteRequest(req) {
-  if (!confirm('Request wirklich löschen?')) return
+  if (!await confirm({ message: 'Request wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/api-tester/requests/${req.id}`)
     if (currentRequest.value?.id === req.id) {
@@ -382,7 +386,7 @@ async function saveCollection() {
 }
 
 async function deleteCollection(id) {
-  if (!confirm('Collection und alle Requests löschen?')) return
+  if (!await confirm({ message: 'Collection und alle Requests löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/api-tester/collections/${id}`)
@@ -463,7 +467,7 @@ async function activateEnvironment() {
 
 async function deleteEnvironment() {
   if (!editingEnvironment.value?.id) return
-  if (!confirm('Environment löschen?')) return
+  if (!await confirm({ message: 'Environment löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`)
@@ -516,7 +520,7 @@ async function loadFromHistory(item) {
 }
 
 async function clearHistory() {
-  if (!confirm('Gesamte Historie löschen?')) return
+  if (!await confirm({ message: 'Gesamte Historie löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete('/api/v1/api-tester/history')

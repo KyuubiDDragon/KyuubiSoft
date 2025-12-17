@@ -7,6 +7,9 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import PromptDialog from '@/components/PromptDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,5 +100,10 @@ onMounted(async () => {
 
     <!-- PWA Update Prompt -->
     <PWAUpdatePrompt />
+
+    <!-- Global Dialog Components -->
+    <ToastContainer />
+    <ConfirmDialog />
+    <PromptDialog />
   </div>
 </template>

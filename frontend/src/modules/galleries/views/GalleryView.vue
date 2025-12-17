@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   TrashIcon,
@@ -16,6 +18,9 @@ import {
   ListBulletIcon,
   ArrowsUpDownIcon,
 } from '@heroicons/vue/24/outline'
+
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const galleries = ref([])
@@ -118,7 +123,7 @@ const saveGallery = async () => {
 }
 
 const deleteGallery = async (id) => {
-  if (!confirm('Galerie wirklich löschen?')) return
+  if (!await confirm({ message: 'Galerie wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/galleries/${id}`)
     await loadGalleries()
@@ -140,7 +145,8 @@ const addItem = async () => {
 }
 
 const removeItem = async (itemId) => {
-  if (!selectedGallery.value || !confirm('Element entfernen?')) return
+  if (!selectedGallery.value) return
+  if (!await confirm({ message: 'Element entfernen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/galleries/${selectedGallery.value.gallery.id}/items/${itemId}`)
     await loadGalleryDetails(selectedGallery.value.gallery.id)

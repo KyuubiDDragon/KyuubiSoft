@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import draggable from 'vuedraggable'
 import {
   PlusIcon,
@@ -35,6 +37,8 @@ const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
@@ -228,7 +232,7 @@ async function saveBoard() {
 
 // Delete board
 async function deleteBoard(board) {
-  if (!confirm(`Board "${board.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Board "${board.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${board.id}`)
@@ -295,7 +299,7 @@ async function saveColumn() {
 
 // Delete column
 async function deleteColumn(column) {
-  if (!confirm(`Spalte "${column.title}" wirklich löschen? Alle Karten werden ebenfalls gelöscht.`)) return
+  if (!await confirm({ message: `Spalte "${column.title}" wirklich löschen? Alle Karten werden ebenfalls gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/${column.id}`)
@@ -383,7 +387,7 @@ async function saveCard() {
 
 // Delete card
 async function deleteCard(card) {
-  if (!confirm(`Karte "${card.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Karte "${card.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${card.id}`)
@@ -507,7 +511,7 @@ async function uploadAttachment(event) {
 async function deleteAttachment(attachmentId) {
   if (!editingCard.value) return
 
-  if (!confirm('Bild wirklich löschen?')) return
+  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(
@@ -587,7 +591,7 @@ async function saveTag() {
 }
 
 async function deleteTag(tag) {
-  if (!confirm(`Tag "${tag.name}" wirklich löschen? Er wird von allen Karten entfernt.`)) return
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen? Er wird von allen Karten entfernt.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${tag.id}`)
@@ -777,7 +781,7 @@ async function createChecklist() {
 }
 
 async function deleteChecklist(checklistId) {
-  if (!confirm('Checkliste wirklich löschen?')) return
+  if (!await confirm({ message: 'Checkliste wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/checklists/${checklistId}`)
@@ -898,7 +902,7 @@ async function saveEditComment(commentId) {
 }
 
 async function deleteCommentAction(commentId) {
-  if (!confirm('Kommentar wirklich löschen?')) return
+  if (!await confirm({ message: 'Kommentar wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/comments/${commentId}`)

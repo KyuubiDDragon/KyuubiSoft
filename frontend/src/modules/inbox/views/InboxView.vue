@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useInboxStore } from '@/stores/inbox'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   InboxArrowDownIcon,
   TrashIcon,
@@ -23,6 +25,8 @@ import {
 import api from '@/core/api/axios'
 
 const inboxStore = useInboxStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const selectedItems = ref([])
@@ -117,9 +121,8 @@ async function refreshItems() {
 }
 
 async function deleteItem(id) {
-  if (confirm('Mochtest du diesen Eintrag wirklich loschen?')) {
-    await inboxStore.deleteItem(id)
-  }
+  if (!await confirm({ message: 'Mochtest du diesen Eintrag wirklich loschen?', type: 'danger', confirmText: 'Löschen' })) return
+  await inboxStore.deleteItem(id)
 }
 
 async function updateItem(item) {
@@ -186,10 +189,9 @@ async function confirmMove() {
 
 async function bulkDelete() {
   if (selectedItems.value.length === 0) return
-  if (confirm(`Mochtest du ${selectedItems.value.length} Eintrage wirklich loschen?`)) {
-    await inboxStore.bulkAction(selectedItems.value, 'delete')
-    selectedItems.value = []
-  }
+  if (!await confirm({ message: `Mochtest du ${selectedItems.value.length} Eintrage wirklich loschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  await inboxStore.bulkAction(selectedItems.value, 'delete')
+  selectedItems.value = []
 }
 
 async function bulkArchive() {

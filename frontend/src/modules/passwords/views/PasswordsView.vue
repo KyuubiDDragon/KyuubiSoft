@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { usePasswordsStore } from '@/stores/passwords'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -24,6 +26,8 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const passwordsStore = usePasswordsStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Modal states
 const showPasswordModal = ref(false)
@@ -131,7 +135,7 @@ async function savePassword() {
 }
 
 async function deletePassword(pwd) {
-  if (!confirm(`"${pwd.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `"${pwd.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await passwordsStore.deletePassword(pwd.id)
@@ -238,7 +242,7 @@ async function saveCategory() {
 }
 
 async function deleteCategory(cat) {
-  if (!confirm(`Kategorie "${cat.name}" löschen? Passwörter bleiben erhalten.`)) return
+  if (!await confirm({ message: `Kategorie "${cat.name}" löschen? Passwörter bleiben erhalten.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await passwordsStore.deleteCategory(cat.id)

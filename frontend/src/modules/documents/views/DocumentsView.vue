@@ -25,6 +25,8 @@ import {
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 
 // Lazy load heavy editors
@@ -34,6 +36,8 @@ const UniverSheet = defineAsyncComponent(() => import('@/components/UniverSheet.
 const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
@@ -185,7 +189,7 @@ async function updateDocument() {
 }
 
 async function deleteDocument(docId) {
-  if (!confirm('Dokument wirklich löschen?')) return
+  if (!await confirm({ message: 'Dokument wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/documents/${docId}`)
@@ -302,7 +306,7 @@ async function enableShare() {
 }
 
 async function disableShare() {
-  if (!confirm('Freigabe wirklich deaktivieren?')) return
+  if (!await confirm({ message: 'Freigabe wirklich deaktivieren?', type: 'danger', confirmText: 'Löschen' })) return
 
   isLoadingShare.value = true
   try {
@@ -390,7 +394,7 @@ async function previewVersion(version) {
 }
 
 async function restoreVersion(version) {
-  if (!confirm(`Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`)) return
+  if (!await confirm({ message: `Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`, type: 'danger', confirmText: 'Löschen' })) return
 
   isLoadingVersions.value = true
   try {

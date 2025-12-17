@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   PencilIcon,
@@ -15,6 +17,8 @@ import {
 import draggable from 'vuedraggable'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const categories = ref([])
@@ -131,7 +135,7 @@ async function saveCategory() {
 
 // Delete category
 async function deleteCategory(category) {
-  if (!confirm(`Kategorie "${category.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/tickets/categories/${category.id}`)

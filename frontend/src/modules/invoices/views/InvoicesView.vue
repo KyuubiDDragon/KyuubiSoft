@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -17,6 +19,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const activeTab = ref('invoices')
@@ -118,7 +122,7 @@ async function saveInvoice() {
 }
 
 async function deleteInvoice(invoice) {
-  if (!confirm(`Rechnung ${invoice.invoice_number} wirklich löschen?`)) return
+  if (!await confirm({ message: `Rechnung ${invoice.invoice_number} wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/invoices/${invoice.id}`)
@@ -175,7 +179,7 @@ async function saveClient() {
 }
 
 async function deleteClient(client) {
-  if (!confirm(`Kunde "${client.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Kunde "${client.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/clients/${client.id}`)

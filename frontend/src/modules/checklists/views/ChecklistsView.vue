@@ -16,9 +16,13 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const router = useRouter()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const checklists = ref([])
@@ -67,7 +71,7 @@ async function createChecklist() {
 }
 
 async function deleteChecklist(checklist) {
-  if (!confirm(`Checkliste "${checklist.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Checkliste "${checklist.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklist.id}`)

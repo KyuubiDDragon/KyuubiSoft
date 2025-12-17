@@ -118,6 +118,7 @@ class SharedChecklistController
                 [$item['id']]
             );
         }
+        unset($item); // Referenz aufheben
 
         // Cast boolean fields for proper frontend handling
         $checklist['is_active'] = (bool) $checklist['is_active'];
@@ -779,6 +780,7 @@ class SharedChecklistController
                 [$item['id']]
             );
         }
+        unset($item); // WICHTIG: Referenz aufheben um PHP foreach-Bug zu vermeiden
 
         // Calculate progress (-1 means unlimited/unspecified testers)
         $totalRequired = 0;

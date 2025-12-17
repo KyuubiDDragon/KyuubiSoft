@@ -21,6 +21,7 @@ import {
   QuestionMarkCircleIcon,
   DocumentDuplicateIcon,
   ArrowUturnLeftIcon,
+  ListBulletIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -40,6 +41,7 @@ const copiedToken = ref(false)
 const showSettingsModal = ref(false)
 const showAddItemModal = ref(false)
 const showAddCategoryModal = ref(false)
+const showBatchAddModal = ref(false)
 const expandedCategories = ref({})
 
 const newItem = ref({
@@ -52,6 +54,12 @@ const newItem = ref({
 const newCategory = ref({
   name: '',
   description: '',
+})
+
+const batchAdd = ref({
+  items: '',
+  category_id: null,
+  required_testers: 1,
 })
 
 const editingItem = ref(null)
@@ -226,6 +234,70 @@ async function addItem() {
   } catch (error) {
     uiStore.showError('Fehler beim Erstellen')
   }
+}
+
+async function addBatchItems() {
+  const lines = batchAdd.value.items
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+
+  if (lines.length === 0) {
+    toast.warning('Bitte gib mindestens einen Testpunkt ein')
+    return
+  }
+
+  let successCount = 0
+  let errorCount = 0
+
+  for (const line of lines) {
+    // Parse line: "Titel" or "Titel || Beschreibung" or "Titel\tBeschreibung"
+    let title, description = ''
+    if (line.includes('||')) {
+      [title, description] = line.split('||').map(s => s.trim())
+    } else if (line.includes('\t')) {
+      [title, description] = line.split('\t').map(s => s.trim())
+    } else {
+      title = line
+    }
+
+    if (!title) continue
+
+    try {
+      const response = await api.post(`/api/v1/checklists/${checklistId.value}/items`, {
+        title,
+        description,
+        category_id: batchAdd.value.category_id,
+        required_testers: batchAdd.value.required_testers,
+      })
+      checklist.value.items = checklist.value.items || []
+      checklist.value.items.push({
+        ...response.data.data,
+        entries: [],
+        passed_count: 0,
+        failed_count: 0,
+        entry_count: 0,
+      })
+      successCount++
+    } catch (error) {
+      errorCount++
+    }
+  }
+
+  if (successCount > 0) {
+    toast.success(`${successCount} Testpunkt${successCount > 1 ? 'e' : ''} erstellt`)
+  }
+  if (errorCount > 0) {
+    toast.error(`${errorCount} Testpunkt${errorCount > 1 ? 'e' : ''} fehlgeschlagen`)
+  }
+
+  showBatchAddModal.value = false
+  batchAdd.value = { items: '', category_id: null, required_testers: 1 }
+}
+
+function openBatchAddInCategory(categoryId) {
+  batchAdd.value.category_id = categoryId
+  showBatchAddModal.value = true
 }
 
 async function updateItem(item) {
@@ -450,6 +522,14 @@ watch(() => route.params.id, () => {
             <PlusIcon class="w-4 h-4" />
             <span>Testpunkt</span>
           </button>
+          <button
+            @click="showBatchAddModal = true"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            title="Mehrere Testpunkte auf einmal hinzufügen"
+          >
+            <ListBulletIcon class="w-4 h-4" />
+            <span>Mehrere</span>
+          </button>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -501,6 +581,13 @@ watch(() => route.params.id, () => {
                 title="Testpunkt hinzufügen"
               >
                 <PlusIcon class="w-4 h-4 text-primary-400" />
+              </button>
+              <button
+                @click="openBatchAddInCategory(category.id)"
+                class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                title="Mehrere Testpunkte hinzufügen"
+              >
+                <ListBulletIcon class="w-4 h-4 text-gray-400" />
               </button>
               <template v-if="category.id">
                 <button
@@ -859,6 +946,83 @@ watch(() => route.params.id, () => {
               class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
             >
               Erstellen
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Batch Add Items Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showBatchAddModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
+          <div class="p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">Mehrere Testpunkte hinzufügen</h2>
+            <p class="text-gray-400 text-sm mt-1">Ein Testpunkt pro Zeile</p>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Testpunkte *</label>
+              <textarea
+                v-model="batchAdd.items"
+                rows="8"
+                placeholder="Login mit E-Mail&#10;Login mit Google&#10;Passwort vergessen || Überprüfe ob E-Mail gesendet wird&#10;Logout-Funktion"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none font-mono text-sm"
+              ></textarea>
+              <p class="text-gray-500 text-xs mt-1">
+                Tipp: Für Beschreibung <code class="bg-dark-600 px-1 rounded">||</code> oder Tab verwenden: <code class="bg-dark-600 px-1 rounded">Titel || Beschreibung</code>
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <select
+                v-model="batchAdd.category_id"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option :value="null">Keine Kategorie</option>
+                <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester (für alle)</label>
+              <input
+                v-model.number="batchAdd.required_testers"
+                type="number"
+                min="-1"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
+            </div>
+
+            <div class="p-3 bg-dark-700/50 rounded-lg">
+              <p class="text-gray-400 text-sm">
+                <span class="text-white font-medium">
+                  {{ batchAdd.items.split('\n').filter(l => l.trim()).length }}
+                </span> Testpunkt{{ batchAdd.items.split('\n').filter(l => l.trim()).length !== 1 ? 'e' : '' }} werden erstellt
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+            <button
+              @click="showBatchAddModal = false; batchAdd.category_id = null"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              @click="addBatchItems"
+              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+            >
+              Alle erstellen
             </button>
           </div>
         </div>

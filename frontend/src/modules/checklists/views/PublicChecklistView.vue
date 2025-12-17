@@ -566,7 +566,12 @@ async function addItem() {
       uncertain_count: 0,
       entry_count: 0,
     }
-    checklist.value.items.push(newItemData)
+
+    // Prevent duplicates and ensure reactivity
+    const existingIdx = checklist.value.items.findIndex(i => i.id === newItemData.id)
+    if (existingIdx === -1) {
+      checklist.value.items = [...checklist.value.items, newItemData]
+    }
 
     // Expand the category so the new item is visible
     const categoryId = newItemData.category_id || null
@@ -593,8 +598,12 @@ async function addCategory() {
       added_by: testerName.value.trim() || 'Anonym',
     })
 
+    // Prevent duplicates and ensure reactivity
     checklist.value.categories = checklist.value.categories || []
-    checklist.value.categories.push(response.data.data)
+    const existingCatIdx = checklist.value.categories.findIndex(c => c.id === response.data.data.id)
+    if (existingCatIdx === -1) {
+      checklist.value.categories = [...checklist.value.categories, response.data.data]
+    }
     expandedCategories.value[response.data.data.id] = true
 
     showAddCategoryModal.value = false

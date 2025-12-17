@@ -42,6 +42,7 @@ const testerName = ref(localStorage.getItem('checklist_tester_name') || '')
 const showAddEntryModal = ref(false)
 const selectedItem = ref(null)
 const showAddItemModal = ref(false)
+const showAddCategoryModal = ref(false)
 const addItemCategoryId = ref(null)
 const refreshInterval = ref(null)
 
@@ -77,6 +78,11 @@ const newItem = ref({
   description: '',
   category_id: null,
   required_testers: 1,
+})
+
+const newCategory = ref({
+  name: '',
+  description: '',
 })
 
 // Computed
@@ -556,6 +562,30 @@ async function addItem() {
   }
 }
 
+async function addCategory() {
+  if (!newCategory.value.name.trim()) {
+    toast.warning('Name ist erforderlich')
+    return
+  }
+
+  try {
+    const response = await axios.post(`/api/v1/checklists/public/${token.value}/categories`, {
+      ...newCategory.value,
+      added_by: testerName.value.trim() || 'Anonym',
+    })
+
+    checklist.value.categories = checklist.value.categories || []
+    checklist.value.categories.push(response.data.data)
+    expandedCategories.value[response.data.data.id] = true
+
+    showAddCategoryModal.value = false
+    newCategory.value = { name: '', description: '' }
+    toast.success('Kategorie erstellt')
+  } catch (err) {
+    toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
+  }
+}
+
 function recalculateProgress() {
   if (!checklist.value) return
 
@@ -918,14 +948,21 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Add Item Button (if allowed) -->
-        <div v-if="checklist.allow_add_items" class="mb-6">
+        <!-- Add Buttons (if allowed) -->
+        <div v-if="checklist.allow_add_items" class="mb-6 flex items-center gap-3">
           <button
             @click="showAddItemModal = true"
             class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
           >
             <PlusIcon class="w-5 h-5" />
-            <span>Testpunkt hinzufügen</span>
+            <span>Testpunkt</span>
+          </button>
+          <button
+            @click="showAddCategoryModal = true"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
+          >
+            <FolderIcon class="w-5 h-5" />
+            <span>Kategorie</span>
           </button>
         </div>
 
@@ -1312,6 +1349,58 @@ onUnmounted(() => {
               </button>
               <button
                 @click="addItem"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
+              >
+                Erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Add Category Modal -->
+      <Teleport to="body">
+        <div
+          v-if="showAddCategoryModal"
+          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        >
+          <div class="bg-gray-800 rounded-2xl border border-gray-700 w-full max-w-md">
+            <div class="p-4 border-b border-gray-700">
+              <h2 class="text-lg font-semibold text-white">Neue Kategorie</h2>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+                <input
+                  v-model="newCategory.name"
+                  type="text"
+                  placeholder="z.B. Login-Tests"
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  @keyup.enter="addCategory"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+                <input
+                  v-model="newCategory.description"
+                  type="text"
+                  placeholder="Optional..."
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-700 flex justify-end gap-3">
+              <button
+                @click="showAddCategoryModal = false"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                @click="addCategory"
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
               >
                 Erstellen

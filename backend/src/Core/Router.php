@@ -1158,6 +1158,7 @@ class Router
             $group->post('/checklists/public/{token}/entries/{entryId}/image', [SharedChecklistController::class, 'uploadEntryImage']);
             $group->delete('/checklists/public/{token}/entries/{entryId}/image', [SharedChecklistController::class, 'deleteEntryImage']);
             $group->post('/checklists/public/{token}/items', [SharedChecklistController::class, 'addItemPublic']);
+            $group->post('/checklists/public/{token}/categories', [SharedChecklistController::class, 'addCategoryPublic']);
             // Public checklist image serve
             $group->get('/checklists/images/{filename}', [SharedChecklistController::class, 'serveImage']);
 

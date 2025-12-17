@@ -1223,6 +1223,71 @@ class SharedChecklistController
     }
 
     /**
+     * Add category via public link (if allowed)
+     */
+    public function addCategoryPublic(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
+    {
+        $data = $request->getParsedBody() ?? [];
+
+        $checklist = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklists WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$checklist) {
+            throw new NotFoundException('Checkliste nicht gefunden');
+        }
+
+        if (!$checklist['is_active']) {
+            throw new ForbiddenException('Diese Checkliste ist deaktiviert');
+        }
+
+        if (!$checklist['allow_add_items']) {
+            throw new ForbiddenException('Das Hinzufügen von Kategorien ist nicht erlaubt');
+        }
+
+        if (empty($data['name'])) {
+            throw new ValidationException('Name ist erforderlich');
+        }
+
+        $addedBy = trim($data['added_by'] ?? 'Anonym');
+
+        // Get max sort order
+        $maxSort = (int) $this->db->fetchOne(
+            'SELECT COALESCE(MAX(sort_order), 0) FROM shared_checklist_categories WHERE checklist_id = ?',
+            [$checklist['id']]
+        );
+
+        $categoryId = Uuid::uuid4()->toString();
+
+        $this->db->insert('shared_checklist_categories', [
+            'id' => $categoryId,
+            'checklist_id' => $checklist['id'],
+            'name' => trim($data['name']),
+            'description' => $data['description'] ?? null,
+            'sort_order' => $maxSort + 1,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Log activity
+        $this->logActivity($checklist['id'], null, null, $addedBy, 'category_added', [
+            'name' => $data['name'],
+        ]);
+
+        $category = $this->db->fetchAssociative(
+            'SELECT * FROM shared_checklist_categories WHERE id = ?',
+            [$categoryId]
+        );
+
+        // Publish real-time update
+        $this->publishUpdate($token, 'category_added', [
+            'category' => $category,
+        ]);
+
+        return JsonResponse::created($category, 'Kategorie erstellt');
+    }
+
+    /**
      * Server-Sent Events endpoint for real-time updates
      */
     public function stream(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface

@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   SignalIcon,
@@ -27,6 +29,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const monitors = ref([])
@@ -244,7 +248,7 @@ async function saveMonitor() {
 }
 
 async function deleteMonitor(monitor) {
-  if (!confirm(`Monitor "${monitor.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Monitor "${monitor.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/uptime/${monitor.id}`)
@@ -318,7 +322,7 @@ async function saveFolder() {
 }
 
 async function deleteFolder(folder) {
-  if (!confirm(`Ordner "${folder.name}" löschen? Monitore werden nicht gelöscht.`)) return
+  if (!await confirm({ message: `Ordner "${folder.name}" löschen? Monitore werden nicht gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/uptime/folders/${folder.id}`)

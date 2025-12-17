@@ -2,6 +2,8 @@
 import { ref, reactive, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import api from '@/core/api/axios'
 import QRCode from 'qrcode'
 import {
@@ -33,6 +35,8 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const exportImportStore = useExportImportStore()
 const aiStore = useAIStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const activeTab = ref('profile')
 const isSaving = ref(false)
@@ -224,7 +228,7 @@ async function createApiKey() {
 }
 
 async function revokeApiKey(keyId) {
-  if (!confirm('API-Key wirklich widerrufen?')) return
+  if (!await confirm({ message: 'API-Key wirklich widerrufen?', type: 'danger', confirmText: 'Widerrufen' })) return
 
   try {
     await api.post(`/api/v1/settings/api-keys/${keyId}/revoke`)
@@ -236,7 +240,7 @@ async function revokeApiKey(keyId) {
 }
 
 async function deleteApiKey(keyId) {
-  if (!confirm('API-Key endgültig löschen?')) return
+  if (!await confirm({ message: 'API-Key endgültig löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/settings/api-keys/${keyId}`)
@@ -357,7 +361,7 @@ async function saveAiSettings() {
 }
 
 async function removeAiApiKey() {
-  if (!confirm('API-Key wirklich entfernen?')) return
+  if (!await confirm({ message: 'API-Key wirklich entfernen?', type: 'danger', confirmText: 'Entfernen' })) return
   try {
     await aiStore.removeApiKey()
     uiStore.showSuccess('API-Key entfernt')

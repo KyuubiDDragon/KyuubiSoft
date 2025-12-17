@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   ArrowPathIcon,
@@ -19,6 +21,9 @@ import {
   ShareIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
+
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const repositories = ref([])
@@ -147,7 +152,7 @@ const saveRepository = async () => {
 }
 
 const deleteRepository = async (id) => {
-  if (!confirm('Repository wirklich entfernen?')) return
+  if (!await confirm({ message: 'Repository wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/git/repositories/${id}`)
     await loadRepositories()

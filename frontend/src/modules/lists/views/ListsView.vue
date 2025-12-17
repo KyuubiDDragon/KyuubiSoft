@@ -14,10 +14,14 @@ import {
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
@@ -132,7 +136,7 @@ async function updateList() {
 }
 
 async function deleteList(listId) {
-  if (!confirm('Liste wirklich löschen?')) return
+  if (!await confirm({ message: 'Liste wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/lists/${listId}`)

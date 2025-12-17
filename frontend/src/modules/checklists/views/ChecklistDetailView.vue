@@ -24,10 +24,14 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const checklist = ref(null)
@@ -188,7 +192,7 @@ async function updateCategory(category) {
 }
 
 async function deleteCategory(category) {
-  if (!confirm(`Kategorie "${category.name}" wirklich löschen? Die Punkte werden nicht gelöscht.`)) return
+  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen? Die Punkte werden nicht gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/categories/${category.id}`)
@@ -240,7 +244,7 @@ async function updateItem(item) {
 }
 
 async function deleteItem(item) {
-  if (!confirm(`Testpunkt "${item.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Testpunkt "${item.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/items/${item.id}`)
@@ -252,7 +256,7 @@ async function deleteItem(item) {
 }
 
 async function duplicateChecklist() {
-  if (!confirm('Checkliste duplizieren? Es wird eine Kopie mit allen Kategorien und Testpunkten erstellt (ohne Einträge).')) return
+  if (!await confirm({ message: 'Checkliste duplizieren? Es wird eine Kopie mit allen Kategorien und Testpunkten erstellt (ohne Einträge).', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     const response = await api.post(`/api/v1/checklists/${checklistId.value}/duplicate`)
@@ -264,7 +268,7 @@ async function duplicateChecklist() {
 }
 
 async function resetEntries() {
-  if (!confirm('Alle Testeinträge wirklich zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden!')) return
+  if (!await confirm({ message: 'Alle Testeinträge wirklich zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden!', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.post(`/api/v1/checklists/${checklistId.value}/reset`)

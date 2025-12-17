@@ -3,6 +3,8 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useWikiStore } from '@/stores/wiki'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   BookOpenIcon,
   PlusIcon,
@@ -28,6 +30,8 @@ import {
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/vue/24/solid'
 
 const wikiStore = useWikiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const sidebarCollapsed = ref(false)
@@ -110,7 +114,7 @@ function createNewPage() {
 
 async function selectPage(pageId) {
   if (isEditing.value || isCreating.value) {
-    if (!confirm('Ungespeicherte Änderungen verwerfen?')) return
+    if (!await confirm({ message: 'Ungespeicherte Änderungen verwerfen?', type: 'danger', confirmText: 'Verwerfen' })) return
   }
 
   currentPageId.value = pageId
@@ -125,7 +129,7 @@ async function selectPage(pageId) {
     }
   } catch (err) {
     console.error('Failed to load page:', err)
-    alert('Fehler beim Laden der Seite: ' + (err.response?.data?.error || err.message))
+    toast.error('Fehler beim Laden der Seite: ' + (err.response?.data?.error || err.message))
   }
 }
 
@@ -153,7 +157,7 @@ function cancelEdit() {
 
 async function savePage() {
   if (!editForm.value.title.trim()) {
-    alert('Titel ist erforderlich')
+    toast.warning('Titel ist erforderlich')
     return
   }
 
@@ -167,7 +171,7 @@ async function savePage() {
       isEditing.value = false
     }
   } catch (err) {
-    alert('Fehler beim Speichern: ' + (wikiStore.error || err.message))
+    toast.error('Fehler beim Speichern: ' + (wikiStore.error || err.message))
   }
 }
 
@@ -188,14 +192,14 @@ async function togglePublish() {
 }
 
 async function confirmDelete() {
-  if (!confirm('Diese Seite wirklich löschen?')) return
+  if (!await confirm({ message: 'Diese Seite wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await wikiStore.deletePage(currentPageId.value)
     currentPageId.value = null
     showDropdown.value = false
   } catch (err) {
-    alert('Fehler beim Löschen')
+    toast.error('Fehler beim Löschen')
   }
 }
 
@@ -215,7 +219,7 @@ function debouncedSearch() {
 // Category methods
 async function saveCategory() {
   if (!categoryForm.value.name.trim()) {
-    alert('Name ist erforderlich')
+    toast.warning('Name ist erforderlich')
     return
   }
 
@@ -229,19 +233,19 @@ async function saveCategory() {
     editingCategory.value = null
     categoryForm.value = { name: '', color: '#6366f1', icon: '', description: '' }
   } catch (err) {
-    alert('Fehler beim Speichern der Kategorie')
+    toast.error('Fehler beim Speichern der Kategorie')
   }
 }
 
 // History
 async function restoreVersion(historyId) {
-  if (!confirm('Diese Version wiederherstellen? Aktueller Inhalt wird in die Historie gespeichert.')) return
+  if (!await confirm({ message: 'Diese Version wiederherstellen? Aktueller Inhalt wird in die Historie gespeichert.', type: 'danger', confirmText: 'Wiederherstellen' })) return
 
   try {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)
     showHistoryModal.value = false
   } catch (err) {
-    alert('Fehler beim Wiederherstellen')
+    toast.error('Fehler beim Wiederherstellen')
   }
 }
 

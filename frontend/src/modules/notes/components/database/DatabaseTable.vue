@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import DatabaseCell from './DatabaseCell.vue'
 import DatabasePropertyHeader from './DatabasePropertyHeader.vue'
 import {
@@ -35,6 +37,8 @@ const emit = defineEmits(['change-view', 'updated'])
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const isLoading = ref(true)
 const selectedRows = ref(new Set())
@@ -81,7 +85,7 @@ async function addRow() {
 
 // Delete row
 async function deleteRow(rowId) {
-  if (!confirm('Zeile wirklich löschen?')) return
+  if (!await confirm({ message: 'Zeile wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await databaseStore.deleteRow(props.databaseId, rowId)
     emit('updated')

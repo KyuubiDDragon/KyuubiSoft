@@ -22,8 +22,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/vue/24/outline'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const activeTab = ref('overview')
@@ -160,7 +164,7 @@ async function addCustomService() {
 }
 
 async function removeCustomService(serviceName) {
-  if (!confirm(`Service "${serviceName}" wirklich aus der Liste entfernen?`)) return
+  if (!await confirm({ message: `Service "${serviceName}" wirklich aus der Liste entfernen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/server/services/custom/${encodeURIComponent(serviceName)}`)
@@ -227,7 +231,7 @@ async function addCrontab() {
 }
 
 async function deleteCrontab(line) {
-  if (!confirm('Diesen Crontab-Eintrag wirklich löschen?')) return
+  if (!await confirm({ message: 'Diesen Crontab-Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete('/api/v1/server/crontabs', { data: { line } })
@@ -251,7 +255,7 @@ async function saveCrontabRaw() {
 
 // Process Actions
 async function killProcess(pid, signal = 'TERM') {
-  if (!confirm(`Prozess ${pid} wirklich beenden?`)) return
+  if (!await confirm({ message: `Prozess ${pid} wirklich beenden?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     const response = await api.post('/api/v1/server/processes/kill', { pid, signal })
@@ -293,7 +297,7 @@ async function controlService(service, action) {
     reload: 'neu laden',
   }
 
-  if (!confirm(`${service} wirklich ${actionNames[action] || action}?`)) return
+  if (!await confirm({ message: `${service} wirklich ${actionNames[action] || action}?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.post('/api/v1/server/services/control', { service, action })

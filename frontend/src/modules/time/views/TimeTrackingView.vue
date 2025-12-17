@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlayIcon,
   StopIcon,
@@ -21,6 +23,8 @@ import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Watch for global project changes and sync with local filter
 watch(() => projectStore.selectedProjectId, (newId) => {
@@ -237,7 +241,7 @@ async function saveEntry() {
 
 // Delete entry
 async function deleteEntry(entry) {
-  if (!confirm('Eintrag wirklich löschen?')) return
+  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/time/${entry.id}`)

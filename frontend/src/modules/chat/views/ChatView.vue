@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
@@ -20,6 +22,8 @@ import {
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Refs
 const messageInput = ref('')
@@ -144,9 +148,9 @@ function cancelEdit() {
 }
 
 async function deleteMessage(messageId) {
-  if (confirm('Nachricht wirklich loschen?')) {
-    await chatStore.deleteMessage(messageId)
-  }
+  if (!await confirm({ message: 'Nachricht wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  await chatStore.deleteMessage(messageId)
 }
 
 function toggleReaction(messageId, emoji) {

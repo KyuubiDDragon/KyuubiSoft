@@ -26,8 +26,12 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const files = ref([])
@@ -156,7 +160,7 @@ async function downloadFile(file) {
 }
 
 async function deleteFile(file) {
-  if (!confirm(`"${file.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `"${file.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/storage/${file.id}`)
@@ -215,7 +219,7 @@ async function createShare() {
 
 async function deleteShare(share) {
   if (!selectedFile.value) return
-  if (!confirm('Freigabe wirklich löschen?')) return
+  if (!await confirm({ message: 'Freigabe wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/storage/${selectedFile.value.id}/share?share_id=${share.id}`)

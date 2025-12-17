@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTagsStore } from '@/stores/tags'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   TagIcon,
   PlusIcon,
@@ -15,6 +17,8 @@ import {
 
 const tagsStore = useTagsStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const searchQuery = ref('')
 const isCreating = ref(false)
@@ -116,9 +120,7 @@ function cancelEdit() {
 }
 
 async function deleteTag(tag) {
-  if (!confirm(`Tag "${tag.name}" wirklich löschen? Er wird von ${tag.usage_count || 0} Elementen entfernt.`)) {
-    return
-  }
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen? Er wird von ${tag.usage_count || 0} Elementen entfernt.`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await tagsStore.deleteTag(tag.id)

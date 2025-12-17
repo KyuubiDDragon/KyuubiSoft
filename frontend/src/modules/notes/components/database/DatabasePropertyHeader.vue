@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ChevronDownIcon,
   PencilIcon,
@@ -24,6 +26,8 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const showMenu = ref(false)
 const isRenaming = ref(false)
@@ -70,7 +74,7 @@ async function deleteProperty() {
     return
   }
 
-  if (!confirm(`Spalte "${props.property.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Spalte "${props.property.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await databaseStore.deleteProperty(props.databaseId, props.property.id)

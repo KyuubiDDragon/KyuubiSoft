@@ -16,8 +16,12 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const shares = ref([])
@@ -65,7 +69,7 @@ async function toggleShareActive(share) {
 }
 
 async function deleteShare(share) {
-  if (!confirm(`Freigabe für "${share.file.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Freigabe für "${share.file.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/storage/${share.file_id}/share`)

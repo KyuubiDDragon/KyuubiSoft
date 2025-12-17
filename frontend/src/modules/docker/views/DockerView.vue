@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ArrowPathIcon,
   PlayIcon,
@@ -38,6 +40,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const activeTab = ref('containers')
@@ -405,7 +409,7 @@ async function saveComposeFile() {
     composeContent.value = data.content || ''
 
     error.value = null
-    alert('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
+    toast.success('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
   } catch (e) {
     console.error('Failed to save compose file:', e)
     error.value = 'Compose-Datei konnte nicht gespeichert werden'
@@ -485,7 +489,7 @@ async function stackUp(stackName) {
 }
 
 async function stackDown(stackName) {
-  if (!confirm(`Stack "${stackName}" stoppen?`)) return
+  if (!await confirm({ message: `Stack "${stackName}" stoppen?`, type: 'danger', confirmText: 'Bestätigen' })) return
   try {
     await api.post(`/api/v1/docker/stacks/${stackName}/down`, null, { params: getHostParams() })
     await loadContainers()
@@ -504,13 +508,13 @@ async function stackRestart(stackName) {
 }
 
 async function stackPullAndRedeploy(stackName) {
-  if (!confirm(`Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`)) return
+  if (!await confirm({ message: `Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`, type: 'danger', confirmText: 'Bestätigen' })) return
   try {
     loading.value = true
     const response = await api.post(`/api/v1/docker/stacks/${stackName}/pull-redeploy`, null, { params: getHostParams() })
     await loadContainers()
     const data = response.data.data || response.data
-    alert(`Stack "${stackName}" erfolgreich aktualisiert!\n\nPull Output:\n${data.pull_output?.substring(0, 500) || 'OK'}`)
+    toast.success(`Stack "${stackName}" erfolgreich aktualisiert!\n\nPull Output:\n${data.pull_output?.substring(0, 500) || 'OK'}`)
   } catch (e) {
     error.value = e.response?.data?.message || 'Pull & Redeploy fehlgeschlagen'
   } finally {
@@ -540,7 +544,7 @@ async function backupStack(stackName, sensitiveToken = null) {
     }
     const response = await api.post(`/api/v1/docker/stacks/${stackName}/backup`, null, { params })
     const data = response.data.data || response.data
-    alert(`Backup erstellt: ${data.backup_file}\nDateien: ${data.files?.join(', ')}`)
+    toast.success(`Backup erstellt: ${data.backup_file}\nDateien: ${data.files?.join(', ')}`)
     await loadBackups()
   } catch (e) {
     // Check if 2FA verification is required (status 428)
@@ -619,7 +623,7 @@ async function viewBackup(backup) {
 
 async function restoreBackup(backup, deploy = false) {
   const action = deploy ? 'wiederherstellen und deployen' : 'nur wiederherstellen'
-  if (!confirm(`Backup "${backup.file}" ${action}?`)) return
+  if (!await confirm({ message: `Backup "${backup.file}" ${action}?`, type: 'danger', confirmText: 'Bestätigen' })) return
 
   try {
     await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy, ...getHostParams() })
@@ -627,14 +631,14 @@ async function restoreBackup(backup, deploy = false) {
       await loadContainers()
     }
     showBackupModal.value = false
-    alert('Backup erfolgreich wiederhergestellt!')
+    toast.success('Backup erfolgreich wiederhergestellt!')
   } catch (e) {
     error.value = e.response?.data?.message || 'Backup konnte nicht wiederhergestellt werden'
   }
 }
 
 async function deleteBackup(backup) {
-  if (!confirm(`Backup "${backup.file}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Backup "${backup.file}" wirklich löschen?`, type: 'danger', confirmText: 'Bestätigen' })) return
 
   try {
     await api.delete(`/api/v1/docker/backups/${backup.file}`, { params: getHostParams() })
@@ -646,7 +650,7 @@ async function deleteBackup(backup) {
 }
 
 async function removeContainer(container) {
-  if (!confirm(`Container "${container.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Container "${container.name}" wirklich löschen?`, type: 'danger', confirmText: 'Bestätigen' })) return
 
   try {
     await api.delete(`/api/v1/docker/containers/${container.id}`, { params: { force: 'true', ...getHostParams() } })

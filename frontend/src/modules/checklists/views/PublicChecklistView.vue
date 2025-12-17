@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
@@ -28,6 +30,8 @@ import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid
 import axios from 'axios'
 
 const route = useRoute()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const checklist = ref(null)
@@ -278,7 +282,7 @@ async function submitPassword() {
 // Quick test - one click to mark as passed
 async function quickTest(item) {
   if (checklist.value.require_name && !testerName.value.trim()) {
-    alert('Bitte gib zuerst deinen Namen ein')
+    toast.warning('Bitte gib zuerst deinen Namen ein')
     return
   }
 
@@ -307,14 +311,14 @@ async function quickTest(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
   }
 }
 
 // Quick fail - one click to mark as failed
 async function quickFail(item) {
   if (checklist.value.require_name && !testerName.value.trim()) {
-    alert('Bitte gib zuerst deinen Namen ein')
+    toast.warning('Bitte gib zuerst deinen Namen ein')
     return
   }
 
@@ -341,14 +345,14 @@ async function quickFail(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
   }
 }
 
 // Quick uncertain - one click to mark as uncertain
 async function quickUncertain(item) {
   if (checklist.value.require_name && !testerName.value.trim()) {
-    alert('Bitte gib zuerst deinen Namen ein')
+    toast.warning('Bitte gib zuerst deinen Namen ein')
     return
   }
 
@@ -375,13 +379,13 @@ async function quickUncertain(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
   }
 }
 
 async function addEntry() {
   if (checklist.value.require_name && !testerName.value.trim()) {
-    alert('Bitte gib deinen Namen ein')
+    toast.warning('Bitte gib deinen Namen ein')
     return
   }
 
@@ -414,7 +418,7 @@ async function addEntry() {
     selectedItem.value = null
     newEntry.value = { status: 'passed', notes: '' }
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
   }
 }
 
@@ -445,12 +449,12 @@ async function updateEntryStatus(entry, newStatus) {
       }
     }
   } catch (err) {
-    alert('Fehler beim Aktualisieren')
+    toast.error('Fehler beim Aktualisieren')
   }
 }
 
 async function deleteEntry(entry, item) {
-  if (!confirm('Eintrag wirklich löschen?')) return
+  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`)
@@ -463,7 +467,7 @@ async function deleteEntry(entry, item) {
 
     recalculateProgress()
   } catch (err) {
-    alert('Fehler beim Löschen')
+    toast.error('Fehler beim Löschen')
   }
 }
 
@@ -474,13 +478,13 @@ async function uploadEntryImage(entry, event) {
   // Validate file type
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    alert('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
     return
   }
 
   // Validate file size (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    alert('Bild darf maximal 5MB groß sein')
+    toast.warning('Bild darf maximal 5MB groß sein')
     return
   }
 
@@ -496,7 +500,7 @@ async function uploadEntryImage(entry, event) {
     )
     entry.image_path = response.data.data.image_path
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Hochladen')
+    toast.error(err.response?.data?.error || 'Fehler beim Hochladen')
   } finally {
     uploadingEntryId.value = null
     // Reset file input
@@ -505,13 +509,13 @@ async function uploadEntryImage(entry, event) {
 }
 
 async function deleteEntryImage(entry) {
-  if (!confirm('Bild wirklich löschen?')) return
+  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`)
     entry.image_path = null
   } catch (err) {
-    alert('Fehler beim Löschen')
+    toast.error('Fehler beim Löschen')
   }
 }
 
@@ -525,7 +529,7 @@ function openImagePreview(imagePath) {
 
 async function addItem() {
   if (!newItem.value.title.trim()) {
-    alert('Titel ist erforderlich')
+    toast.warning('Titel ist erforderlich')
     return
   }
 
@@ -548,7 +552,7 @@ async function addItem() {
     addItemCategoryId.value = null
     newItem.value = { title: '', description: '', category_id: null, required_testers: 1 }
   } catch (err) {
-    alert(err.response?.data?.error || 'Fehler beim Erstellen')
+    toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
   }
 }
 

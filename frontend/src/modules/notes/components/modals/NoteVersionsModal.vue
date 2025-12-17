@@ -2,6 +2,8 @@
 import { ref, watch, computed } from 'vue'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   XMarkIcon,
   ClockIcon,
@@ -29,6 +31,8 @@ const emit = defineEmits(['close', 'restored'])
 
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const isLoading = ref(false)
 const isRestoring = ref(false)
@@ -90,9 +94,7 @@ async function preview(version) {
 
 // Restore version
 async function restore(version) {
-  if (!confirm(`Version ${version.version_number} wiederherstellen? Der aktuelle Inhalt wird als neue Version gespeichert.`)) {
-    return
-  }
+  if (!await confirm({ message: `Version ${version.version_number} wiederherstellen? Der aktuelle Inhalt wird als neue Version gespeichert.`, type: 'danger', confirmText: 'Löschen' })) return
 
   isRestoring.value = true
   try {

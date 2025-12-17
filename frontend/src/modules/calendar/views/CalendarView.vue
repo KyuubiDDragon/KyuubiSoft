@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -21,6 +23,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 const currentDate = ref(new Date())
 const events = ref([])
 const isLoading = ref(true)
@@ -387,7 +391,7 @@ async function addExternalCalendar() {
 }
 
 async function deleteExternalCalendar(calendarId) {
-  if (!confirm('Kalender wirklich entfernen?')) return
+  if (!await confirm({ message: 'Kalender wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/calendar/external/${calendarId}`)
     await loadExternalCalendars()

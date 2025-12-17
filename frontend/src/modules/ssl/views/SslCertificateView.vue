@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   ArrowPathIcon,
@@ -17,6 +19,9 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@heroicons/vue/24/outline'
+
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const certificates = ref([])
@@ -114,7 +119,7 @@ const saveCertificate = async () => {
 }
 
 const deleteCertificate = async (id) => {
-  if (!confirm('Zertifikat wirklich entfernen?')) return
+  if (!await confirm({ message: 'Zertifikat wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/ssl/certificates/${id}`)
     await loadCertificates()

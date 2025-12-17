@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   CodeBracketIcon,
@@ -22,6 +24,8 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // Watch for project changes
 watch(() => projectStore.selectedProjectId, () => {
@@ -158,7 +162,7 @@ async function saveSnippet() {
 }
 
 async function deleteSnippet(snippet) {
-  if (!confirm(`Snippet "${snippet.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Snippet "${snippet.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/snippets/${snippet.id}`)

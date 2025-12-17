@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   BookmarkIcon,
@@ -21,6 +23,8 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const groups = ref([])
@@ -180,7 +184,7 @@ async function saveBookmark() {
 }
 
 async function deleteBookmark(bookmark) {
-  if (!confirm(`"${bookmark.title}" wirklich löschen?`)) return
+  if (!await confirm({ message: `"${bookmark.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/${bookmark.id}`)
@@ -246,8 +250,7 @@ async function saveGroup() {
 }
 
 async function deleteGroup(group) {
-  const choice = confirm(`Gruppe "${group.name}" wirklich löschen?\n\nOK = Lesezeichen behalten\nAbbrechen = Abbrechen`)
-  if (!choice) return
+  if (!await confirm({ message: `Gruppe "${group.name}" wirklich löschen?\n\nLesezeichen bleiben erhalten`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/groups/${group.id}`)
@@ -294,7 +297,7 @@ async function saveTag() {
 }
 
 async function deleteTag(tag) {
-  if (!confirm(`Tag "${tag.name}" wirklich löschen?`)) return
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/tags/${tag.id}`)

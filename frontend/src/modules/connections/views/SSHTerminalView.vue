@@ -3,6 +3,8 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ArrowLeftIcon,
   CommandLineIcon,
@@ -22,6 +24,8 @@ import {
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 // State
 const connection = ref(null)
@@ -187,9 +191,9 @@ async function verify2FA() {
 }
 
 // Run preset
-function runPreset(preset) {
+async function runPreset(preset) {
   if (preset.is_dangerous) {
-    if (!confirm(`WARNUNG: Dieser Befehl ist als gefährlich markiert!\n\n${preset.command}\n\nWirklich ausführen?`)) {
+    if (!await confirm({ message: `WARNUNG: Dieser Befehl ist als gefährlich markiert!\n\n${preset.command}\n\nWirklich ausführen?`, type: 'danger', confirmText: 'Löschen' })) {
       return
     }
   }
@@ -241,7 +245,7 @@ async function savePreset() {
 
 // Delete preset
 async function deletePreset(preset) {
-  if (!confirm('Preset wirklich löschen?')) return
+  if (!await confirm({ message: 'Preset wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/connections/${route.params.id}/presets/${preset.id}`)

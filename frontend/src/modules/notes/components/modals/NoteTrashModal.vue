@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
+import { useToast } from '@/composables/useToast'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   XMarkIcon,
   TrashIcon,
@@ -14,6 +16,8 @@ const emit = defineEmits(['close', 'restore'])
 
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const toast = useToast()
+const { confirm } = useConfirmDialog()
 
 const trashedNotes = ref([])
 const isLoading = ref(true)
@@ -47,9 +51,7 @@ async function restoreNote(note) {
 }
 
 async function permanentDelete(note) {
-  if (!confirm(`"${note.title}" endgültig löschen? Dies kann nicht rückgängig gemacht werden.`)) {
-    return
-  }
+  if (!await confirm({ message: `"${note.title}" endgültig löschen? Dies kann nicht rückgängig gemacht werden.`, type: 'danger', confirmText: 'Löschen' })) return
 
   isDeleting.value = true
   try {
@@ -64,9 +66,7 @@ async function permanentDelete(note) {
 }
 
 async function emptyTrash() {
-  if (!confirm(`Papierkorb leeren? ${trashedNotes.value.length} Notizen werden endgültig gelöscht.`)) {
-    return
-  }
+  if (!await confirm({ message: `Papierkorb leeren? ${trashedNotes.value.length} Notizen werden endgültig gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
 
   isEmptyingTrash.value = true
   try {

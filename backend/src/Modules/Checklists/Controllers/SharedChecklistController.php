@@ -528,6 +528,156 @@ class SharedChecklistController
     }
 
     /**
+     * Delete a test entry (admin - can delete any entry)
+     */
+    public function deleteEntryAdmin(ServerRequestInterface $request, ResponseInterface $response, string $id, string $entryId): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $checklist = $this->getChecklistForUser($id, $userId, true);
+
+        // Get entry and verify it belongs to this checklist
+        $entry = $this->db->fetchAssociative(
+            'SELECT e.*, i.checklist_id
+             FROM shared_checklist_entries e
+             JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE e.id = ? AND i.checklist_id = ?',
+            [$entryId, $id]
+        );
+
+        if (!$entry) {
+            throw new NotFoundException('Eintrag nicht gefunden');
+        }
+
+        // Delete image if exists
+        if ($entry['image_path']) {
+            $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+            $imagePath = $uploadDir . $entry['image_path'];
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+
+        $this->db->delete('shared_checklist_entries', ['id' => $entryId]);
+
+        // Log activity
+        $this->logActivity($id, $entry['item_id'], null, 'Admin', 'entry_deleted', []);
+
+        return JsonResponse::success(null, 'Eintrag gelöscht');
+    }
+
+    /**
+     * Upload an image for a checklist entry (admin)
+     */
+    public function uploadEntryImageAdmin(ServerRequestInterface $request, ResponseInterface $response, string $id, string $entryId): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $checklist = $this->getChecklistForUser($id, $userId, true);
+
+        // Get entry and verify it belongs to this checklist
+        $entry = $this->db->fetchAssociative(
+            'SELECT e.*, i.checklist_id
+             FROM shared_checklist_entries e
+             JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE e.id = ? AND i.checklist_id = ?',
+            [$entryId, $id]
+        );
+
+        if (!$entry) {
+            throw new NotFoundException('Eintrag nicht gefunden');
+        }
+
+        $uploadedFiles = $request->getUploadedFiles();
+        $uploadedFile = $uploadedFiles['image'] ?? null;
+
+        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            throw new ValidationException('Kein gültiges Bild hochgeladen');
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $mimeType = $uploadedFile->getClientMediaType();
+        if (!in_array($mimeType, $allowedTypes)) {
+            throw new ValidationException('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt');
+        }
+
+        // Check file size (max 5MB)
+        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
+            throw new ValidationException('Bild darf maximal 5MB groß sein');
+        }
+
+        // Generate unique filename
+        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+        $filename = 'checklist_' . $id . '_' . $entryId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+
+        // Ensure upload directory exists
+        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Delete old image if exists
+        if ($entry['image_path']) {
+            $oldImagePath = $uploadDir . $entry['image_path'];
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+
+        // Move uploaded file
+        $uploadedFile->moveTo($uploadDir . $filename);
+
+        // Update database
+        $this->db->update('shared_checklist_entries', [
+            'image_path' => $filename,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $entryId]);
+
+        return JsonResponse::success([
+            'image_path' => $filename,
+        ], 'Bild hochgeladen');
+    }
+
+    /**
+     * Delete an entry image (admin)
+     */
+    public function deleteEntryImageAdmin(ServerRequestInterface $request, ResponseInterface $response, string $id, string $entryId): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $checklist = $this->getChecklistForUser($id, $userId, true);
+
+        // Get entry and verify it belongs to this checklist
+        $entry = $this->db->fetchAssociative(
+            'SELECT e.*, i.checklist_id
+             FROM shared_checklist_entries e
+             JOIN shared_checklist_items i ON e.item_id = i.id
+             WHERE e.id = ? AND i.checklist_id = ?',
+            [$entryId, $id]
+        );
+
+        if (!$entry) {
+            throw new NotFoundException('Eintrag nicht gefunden');
+        }
+
+        if ($entry['image_path']) {
+            $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+            $imagePath = $uploadDir . $entry['image_path'];
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+            $this->db->update('shared_checklist_entries', [
+                'image_path' => null,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], ['id' => $entryId]);
+        }
+
+        return JsonResponse::success(null, 'Bild gelöscht');
+    }
+
+    /**
      * Get activity log for a checklist
      */
     public function getActivity(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface

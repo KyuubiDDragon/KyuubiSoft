@@ -21,6 +21,9 @@ import {
   QuestionMarkCircleIcon,
   DocumentDuplicateIcon,
   ArrowUturnLeftIcon,
+  ListBulletIcon,
+  PhotoIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -40,6 +43,7 @@ const copiedToken = ref(false)
 const showSettingsModal = ref(false)
 const showAddItemModal = ref(false)
 const showAddCategoryModal = ref(false)
+const showBatchAddModal = ref(false)
 const expandedCategories = ref({})
 
 const newItem = ref({
@@ -54,9 +58,17 @@ const newCategory = ref({
   description: '',
 })
 
+const batchAdd = ref({
+  items: '',
+  category_id: null,
+  required_testers: 1,
+})
+
 const editingItem = ref(null)
 const editingCategory = ref(null)
 const newPassword = ref('')
+const uploadingEntryId = ref(null)
+const previewImage = ref(null)
 
 // Computed
 const checklistId = computed(() => route.params.id)
@@ -228,6 +240,70 @@ async function addItem() {
   }
 }
 
+async function addBatchItems() {
+  const lines = batchAdd.value.items
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+
+  if (lines.length === 0) {
+    toast.warning('Bitte gib mindestens einen Testpunkt ein')
+    return
+  }
+
+  let successCount = 0
+  let errorCount = 0
+
+  for (const line of lines) {
+    // Parse line: "Titel" or "Titel || Beschreibung" or "Titel\tBeschreibung"
+    let title, description = ''
+    if (line.includes('||')) {
+      [title, description] = line.split('||').map(s => s.trim())
+    } else if (line.includes('\t')) {
+      [title, description] = line.split('\t').map(s => s.trim())
+    } else {
+      title = line
+    }
+
+    if (!title) continue
+
+    try {
+      const response = await api.post(`/api/v1/checklists/${checklistId.value}/items`, {
+        title,
+        description,
+        category_id: batchAdd.value.category_id,
+        required_testers: batchAdd.value.required_testers,
+      })
+      checklist.value.items = checklist.value.items || []
+      checklist.value.items.push({
+        ...response.data.data,
+        entries: [],
+        passed_count: 0,
+        failed_count: 0,
+        entry_count: 0,
+      })
+      successCount++
+    } catch (error) {
+      errorCount++
+    }
+  }
+
+  if (successCount > 0) {
+    toast.success(`${successCount} Testpunkt${successCount > 1 ? 'e' : ''} erstellt`)
+  }
+  if (errorCount > 0) {
+    toast.error(`${errorCount} Testpunkt${errorCount > 1 ? 'e' : ''} fehlgeschlagen`)
+  }
+
+  showBatchAddModal.value = false
+  batchAdd.value = { items: '', category_id: null, required_testers: 1 }
+}
+
+function openBatchAddInCategory(categoryId) {
+  batchAdd.value.category_id = categoryId
+  showBatchAddModal.value = true
+}
+
 async function updateItem(item) {
   try {
     await api.put(`/api/v1/checklists/${checklistId.value}/items/${item.id}`, {
@@ -286,6 +362,76 @@ async function resetEntries() {
   } catch (error) {
     uiStore.showError('Fehler beim Zurücksetzen')
   }
+}
+
+async function deleteEntry(entry, item) {
+  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  try {
+    await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}`)
+
+    item.entries = item.entries.filter(e => e.id !== entry.id)
+    if (entry.status === 'passed') item.passed_count--
+    else if (entry.status === 'failed') item.failed_count--
+    else if (entry.status === 'uncertain') item.uncertain_count--
+    else if (entry.status === 'in_progress') item.in_progress_count--
+    item.entry_count--
+
+    toast.success('Eintrag gelöscht')
+  } catch (error) {
+    toast.error('Fehler beim Löschen')
+  }
+}
+
+async function uploadEntryImage(entry, event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.warning('Bild darf maximal 5MB groß sein')
+    return
+  }
+
+  uploadingEntryId.value = entry.id
+  const formData = new FormData()
+  formData.append('image', file)
+
+  try {
+    const response = await api.post(
+      `/api/v1/checklists/${checklistId.value}/entries/${entry.id}/image`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    entry.image_path = response.data.data.image_path
+    toast.success('Bild hochgeladen')
+  } catch (error) {
+    toast.error(error.response?.data?.error || 'Fehler beim Hochladen')
+  } finally {
+    uploadingEntryId.value = null
+    event.target.value = ''
+  }
+}
+
+async function deleteEntryImage(entry) {
+  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+
+  try {
+    await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}/image`)
+    entry.image_path = null
+    toast.success('Bild gelöscht')
+  } catch (error) {
+    toast.error('Fehler beim Löschen')
+  }
+}
+
+function getImageUrl(imagePath) {
+  return `/api/v1/checklists/images/${imagePath}`
 }
 
 function copyShareLink() {
@@ -450,6 +596,14 @@ watch(() => route.params.id, () => {
             <PlusIcon class="w-4 h-4" />
             <span>Testpunkt</span>
           </button>
+          <button
+            @click="showBatchAddModal = true"
+            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            title="Mehrere Testpunkte auf einmal hinzufügen"
+          >
+            <ListBulletIcon class="w-4 h-4" />
+            <span>Mehrere</span>
+          </button>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -501,6 +655,13 @@ watch(() => route.params.id, () => {
                 title="Testpunkt hinzufügen"
               >
                 <PlusIcon class="w-4 h-4 text-primary-400" />
+              </button>
+              <button
+                @click="openBatchAddInCategory(category.id)"
+                class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                title="Mehrere Testpunkte hinzufügen"
+              >
+                <ListBulletIcon class="w-4 h-4 text-gray-400" />
               </button>
               <template v-if="category.id">
                 <button
@@ -580,17 +741,71 @@ watch(() => route.params.id, () => {
                     <div
                       v-for="entry in item.entries"
                       :key="entry.id"
-                      class="flex items-center gap-3 p-2 bg-dark-700/50 rounded-lg text-sm"
+                      class="p-3 bg-dark-700/50 rounded-lg text-sm"
                     >
-                      <span
-                        class="px-2 py-0.5 rounded text-xs font-medium"
-                        :class="getStatusColor(entry.status)"
-                      >
-                        {{ getStatusLabel(entry.status) }}
-                      </span>
-                      <span class="text-white">{{ entry.tester_name }}</span>
-                      <span v-if="entry.notes" class="text-gray-400 truncate">{{ entry.notes }}</span>
-                      <span class="text-gray-500 ml-auto">{{ formatDate(entry.created_at) }}</span>
+                      <div class="flex items-center gap-3">
+                        <span
+                          class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="getStatusColor(entry.status)"
+                        >
+                          {{ getStatusLabel(entry.status) }}
+                        </span>
+                        <span class="text-white">{{ entry.tester_name }}</span>
+                        <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
+                        <span class="text-gray-500 text-xs">{{ formatDate(entry.created_at) }}</span>
+
+                        <!-- Entry Actions -->
+                        <div class="flex items-center gap-1 ml-2">
+                          <!-- Image Upload -->
+                          <label
+                            class="p-1.5 hover:bg-dark-600 rounded cursor-pointer transition-colors"
+                            :title="entry.image_path ? 'Bild ersetzen' : 'Bild hinzufügen'"
+                          >
+                            <PhotoIcon
+                              class="w-4 h-4"
+                              :class="entry.image_path ? 'text-primary-400' : 'text-gray-400'"
+                            />
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              class="hidden"
+                              :disabled="uploadingEntryId === entry.id"
+                              @change="uploadEntryImage(entry, $event)"
+                            />
+                          </label>
+                          <!-- Delete Entry -->
+                          <button
+                            @click="deleteEntry(entry, item)"
+                            class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                            title="Eintrag löschen"
+                          >
+                            <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Entry Image -->
+                      <div v-if="entry.image_path" class="mt-2 relative group">
+                        <img
+                          :src="getImageUrl(entry.image_path)"
+                          class="max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          alt="Screenshot"
+                          @click="previewImage = entry.image_path"
+                        />
+                        <button
+                          @click="deleteEntryImage(entry)"
+                          class="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Bild löschen"
+                        >
+                          <XMarkIcon class="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+
+                      <!-- Upload Progress -->
+                      <div v-if="uploadingEntryId === entry.id" class="mt-2 flex items-center gap-2 text-gray-400">
+                        <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs">Wird hochgeladen...</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -865,6 +1080,83 @@ watch(() => route.params.id, () => {
       </div>
     </Teleport>
 
+    <!-- Batch Add Items Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showBatchAddModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      >
+        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
+          <div class="p-4 border-b border-dark-700">
+            <h2 class="text-lg font-semibold text-white">Mehrere Testpunkte hinzufügen</h2>
+            <p class="text-gray-400 text-sm mt-1">Ein Testpunkt pro Zeile</p>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Testpunkte *</label>
+              <textarea
+                v-model="batchAdd.items"
+                rows="8"
+                placeholder="Login mit E-Mail&#10;Login mit Google&#10;Passwort vergessen || Überprüfe ob E-Mail gesendet wird&#10;Logout-Funktion"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none font-mono text-sm"
+              ></textarea>
+              <p class="text-gray-500 text-xs mt-1">
+                Tipp: Für Beschreibung <code class="bg-dark-600 px-1 rounded">||</code> oder Tab verwenden: <code class="bg-dark-600 px-1 rounded">Titel || Beschreibung</code>
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <select
+                v-model="batchAdd.category_id"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option :value="null">Keine Kategorie</option>
+                <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester (für alle)</label>
+              <input
+                v-model.number="batchAdd.required_testers"
+                type="number"
+                min="-1"
+                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
+            </div>
+
+            <div class="p-3 bg-dark-700/50 rounded-lg">
+              <p class="text-gray-400 text-sm">
+                <span class="text-white font-medium">
+                  {{ batchAdd.items.split('\n').filter(l => l.trim()).length }}
+                </span> Testpunkt{{ batchAdd.items.split('\n').filter(l => l.trim()).length !== 1 ? 'e' : '' }} werden erstellt
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+            <button
+              @click="showBatchAddModal = false; batchAdd.category_id = null"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              @click="addBatchItems"
+              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+            >
+              Alle erstellen
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Edit Item Modal -->
     <Teleport to="body">
       <div
@@ -984,6 +1276,28 @@ watch(() => route.params.id, () => {
             </button>
           </div>
         </div>
+      </div>
+    </Teleport>
+
+    <!-- Image Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="previewImage"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 cursor-pointer"
+        @click="previewImage = null"
+      >
+        <button
+          class="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          @click="previewImage = null"
+        >
+          <XMarkIcon class="w-8 h-8" />
+        </button>
+        <img
+          :src="getImageUrl(previewImage)"
+          class="max-w-full max-h-full object-contain rounded-lg"
+          alt="Screenshot Vorschau"
+          @click.stop
+        />
       </div>
     </Teleport>
   </div>

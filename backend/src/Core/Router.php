@@ -1154,6 +1154,12 @@ class Router
                     ->add(new PermissionMiddleware('discord.delete_backups'));
                 $protected->get('/discord/backups/{id}/messages', [DiscordController::class, 'getBackupMessages'])
                     ->add(new PermissionMiddleware('discord.view_messages'));
+                // Global Search
+                $protected->get('/discord/search', [DiscordController::class, 'searchMessages'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
+                // Links
+                $protected->get('/discord/links', [DiscordController::class, 'getLinks'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
                 // Media
                 $protected->get('/discord/media', [DiscordController::class, 'getMedia'])
                     ->add(new PermissionMiddleware('discord.download_media'));

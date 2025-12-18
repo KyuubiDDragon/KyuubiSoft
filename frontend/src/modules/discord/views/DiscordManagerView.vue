@@ -19,6 +19,7 @@ import {
   ServerIcon,
   HashtagIcon,
   UserIcon,
+  LinkIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 
@@ -35,6 +36,16 @@ const showMessagesModal = ref(false)
 const selectedBackup = ref(null)
 const backupMessages = ref([])
 const messageSearch = ref('')
+
+// Global Search
+const globalSearchQuery = ref('')
+const globalSearchResults = ref([])
+const globalSearchTotal = ref(0)
+const isSearching = ref(false)
+
+// Links
+const links = ref([])
+const isLoadingLinks = ref(false)
 
 // Add Account Form
 const tokenInput = ref('')
@@ -250,6 +261,36 @@ async function searchMessages() {
   }
 }
 
+async function performGlobalSearch() {
+  if (globalSearchQuery.value.length < 2) {
+    uiStore.showError('Mindestens 2 Zeichen erforderlich')
+    return
+  }
+
+  isSearching.value = true
+  try {
+    const result = await discordStore.searchMessages(globalSearchQuery.value)
+    globalSearchResults.value = result.items || []
+    globalSearchTotal.value = result.total || 0
+  } catch (error) {
+    uiStore.showError('Fehler bei der Suche')
+  } finally {
+    isSearching.value = false
+  }
+}
+
+async function loadAllLinks() {
+  isLoadingLinks.value = true
+  try {
+    const result = await discordStore.loadLinks()
+    links.value = result.items || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Links')
+  } finally {
+    isLoadingLinks.value = false
+  }
+}
+
 function openDeleteModal(channel) {
   deleteForm.account_id = discordStore.selectedAccount
   deleteForm.discord_channel_id = channel.discord_channel_id
@@ -415,6 +456,20 @@ function formatSize(bytes) {
             <UserIcon class="w-4 h-4 inline mr-1" />
             DMs
           </button>
+          <button
+            @click="activeTab = 'search'"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'search' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <MagnifyingGlassIcon class="w-4 h-4 inline mr-1" />
+            Suche
+          </button>
+          <button
+            @click="activeTab = 'links'; loadAllLinks()"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'links' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <LinkIcon class="w-4 h-4 inline mr-1" />
+            Links
+          </button>
         </div>
 
         <!-- Server List -->
@@ -488,10 +543,128 @@ function formatSize(bytes) {
             Keine DMs gefunden
           </div>
         </div>
+
+        <!-- Search Panel -->
+        <div v-if="activeTab === 'search'" class="card p-4 space-y-4">
+          <div class="flex gap-2">
+            <input
+              v-model="globalSearchQuery"
+              type="text"
+              class="input flex-1"
+              placeholder="Nachrichten durchsuchen..."
+              @keyup.enter="performGlobalSearch"
+            />
+            <button
+              @click="performGlobalSearch"
+              :disabled="isSearching"
+              class="btn-primary"
+            >
+              <ArrowPathIcon v-if="isSearching" class="w-5 h-5 animate-spin" />
+              <MagnifyingGlassIcon v-else class="w-5 h-5" />
+            </button>
+          </div>
+
+          <p class="text-sm text-gray-500">
+            Durchsuche alle gesicherten Nachrichten. Mindestens 2 Zeichen erforderlich.
+          </p>
+
+          <div v-if="globalSearchResults.length > 0" class="text-sm text-gray-400">
+            {{ globalSearchTotal }} Ergebnisse gefunden
+          </div>
+        </div>
       </div>
 
       <!-- Right: Channel Details / Backups -->
       <div class="lg:col-span-2 space-y-6">
+        <!-- Search Results -->
+        <div v-if="activeTab === 'search' && globalSearchResults.length > 0" class="card">
+          <div class="p-4 border-b border-dark-600">
+            <h3 class="font-semibold text-white">Suchergebnisse</h3>
+            <span class="text-sm text-gray-400">{{ globalSearchTotal }} Nachrichten gefunden</span>
+          </div>
+
+          <div class="divide-y divide-dark-600 max-h-[600px] overflow-y-auto">
+            <div
+              v-for="msg in globalSearchResults"
+              :key="msg.id"
+              class="p-4 hover:bg-dark-700"
+            >
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
+                  <UserIcon class="w-5 h-5 text-gray-400" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-white">{{ msg.author_username }}</span>
+                    <span class="text-xs text-gray-500">{{ formatDate(msg.message_timestamp) }}</span>
+                    <span class="text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded">{{ msg.backup_name }}</span>
+                  </div>
+                  <p class="text-gray-300 mt-1 whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                  <div v-if="msg.has_attachments" class="flex items-center gap-1 mt-2 text-sm text-gray-400">
+                    <PhotoIcon class="w-4 h-4" />
+                    {{ msg.attachment_count }} Anhänge
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Search Results -->
+        <div v-if="activeTab === 'search' && globalSearchQuery.length >= 2 && globalSearchResults.length === 0 && !isSearching" class="card p-12 text-center">
+          <MagnifyingGlassIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+          <h3 class="text-xl font-medium text-white mb-2">Keine Ergebnisse</h3>
+          <p class="text-gray-400">Keine Nachrichten mit "{{ globalSearchQuery }}" gefunden.</p>
+        </div>
+
+        <!-- Links Panel -->
+        <div v-if="activeTab === 'links'" class="card">
+          <div class="p-4 border-b border-dark-600 flex items-center justify-between">
+            <h3 class="text-lg font-medium text-white">
+              <LinkIcon class="w-5 h-5 inline mr-2" />
+              Link-Sammlung
+            </h3>
+            <span class="text-sm text-gray-400">{{ links.length }} Links gefunden</span>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="isLoadingLinks" class="p-8 text-center">
+            <ArrowPathIcon class="w-8 h-8 mx-auto text-primary-400 animate-spin" />
+            <p class="text-gray-400 mt-2">Lade Links...</p>
+          </div>
+
+          <!-- Links List -->
+          <div v-else-if="links.length > 0" class="divide-y divide-dark-600 max-h-[600px] overflow-y-auto">
+            <div v-for="link in links" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
+              <div class="flex items-start gap-3">
+                <LinkIcon class="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
+                <div class="flex-1 min-w-0">
+                  <a
+                    :href="link.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-400 hover:text-primary-300 break-all text-sm"
+                  >
+                    {{ link.url }}
+                  </a>
+                  <div class="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <span>{{ link.author_username }}</span>
+                    <span>{{ formatDate(link.message_timestamp) }}</span>
+                    <span v-if="link.backup_name" class="bg-dark-600 px-2 py-0.5 rounded">{{ link.backup_name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Links -->
+          <div v-else class="p-12 text-center">
+            <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+            <h3 class="text-xl font-medium text-white mb-2">Keine Links gefunden</h3>
+            <p class="text-gray-400">Erstelle zuerst ein Backup um Links zu sammeln.</p>
+          </div>
+        </div>
+
         <!-- Selected DM User Info -->
         <div v-if="selectedDM" class="card">
           <div class="p-6">

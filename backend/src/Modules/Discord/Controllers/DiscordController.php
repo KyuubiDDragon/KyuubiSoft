@@ -762,6 +762,40 @@ class DiscordController
     }
 
     // ========================================================================
+    // Links
+    // ========================================================================
+
+    public function getLinks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $queryParams = $request->getQueryParams();
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        // Optional filter by backup ID
+        $backupId = $queryParams['backup_id'] ?? null;
+
+        if ($backupId) {
+            // Verify backup belongs to user
+            $backup = $this->backupRepository->findById($backupId);
+            if (!$backup) {
+                throw new NotFoundException('Backup not found');
+            }
+            $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
+            if (!$account) {
+                throw new NotFoundException('Backup not found');
+            }
+            $links = $this->backupRepository->getLinksFromBackup($backupId, $perPage, $offset);
+        } else {
+            $links = $this->backupRepository->getAllLinksForUser($userId, $perPage, $offset);
+        }
+
+        return JsonResponse::success(['items' => $links]);
+    }
+
+    // ========================================================================
     // Private Methods
     // ========================================================================
 
@@ -962,15 +996,26 @@ class DiscordController
     private function encrypt(string $data): string
     {
         $iv = random_bytes(16);
-        $encrypted = openssl_encrypt($data, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+        $encrypted = openssl_encrypt($data, 'AES-256-CBC', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $encrypted);
     }
 
     private function decrypt(string $data): string
     {
-        $data = base64_decode($data);
-        $iv = substr($data, 0, 16);
-        $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+        $decoded = base64_decode($data);
+        if ($decoded === false || strlen($decoded) < 17) {
+            throw new \RuntimeException('Invalid encrypted data');
+        }
+
+        $iv = substr($decoded, 0, 16);
+        $encrypted = substr($decoded, 16);
+
+        $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
+
+        if ($decrypted === false) {
+            throw new \RuntimeException('Decryption failed - check APP_KEY');
+        }
+
+        return $decrypted;
     }
 }

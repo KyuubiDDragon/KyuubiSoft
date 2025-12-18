@@ -170,7 +170,7 @@ class DiscordAccountRepository
                     (SELECT COUNT(*) FROM discord_backups b WHERE b.channel_id = c.id) as backup_count
              FROM discord_channels c
              WHERE c.account_id = ? AND c.type IN (\'dm\', \'group_dm\')
-             ORDER BY c.cached_at DESC',
+             ORDER BY COALESCE(CAST(c.last_message_id AS UNSIGNED), 0) DESC, c.cached_at DESC',
             [$accountId]
         );
     }

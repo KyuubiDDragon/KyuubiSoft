@@ -1157,6 +1157,9 @@ class Router
                 // Global Search
                 $protected->get('/discord/search', [DiscordController::class, 'searchMessages'])
                     ->add(new PermissionMiddleware('discord.view_messages'));
+                // Links
+                $protected->get('/discord/links', [DiscordController::class, 'getLinks'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
                 // Media
                 $protected->get('/discord/media', [DiscordController::class, 'getMedia'])
                     ->add(new PermissionMiddleware('discord.download_media'));

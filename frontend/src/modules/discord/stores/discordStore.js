@@ -168,6 +168,14 @@ export const useDiscordStore = defineStore('discord', () => {
     return response.data.data
   }
 
+  // Links
+  async function loadLinks(page = 1, perPage = 50, backupId = null) {
+    const params = { page, per_page: perPage }
+    if (backupId) params.backup_id = backupId
+    const response = await api.get('/api/v1/discord/links', { params })
+    return response.data.data
+  }
+
   // Media
   async function loadMedia(page = 1, perPage = 50) {
     const response = await api.get('/api/v1/discord/media', {
@@ -262,6 +270,7 @@ export const useDiscordStore = defineStore('discord', () => {
     deleteBackup,
     loadBackupMessages,
     searchMessages,
+    loadLinks,
     loadMedia,
     searchOwnMessages,
     createDeleteJob,

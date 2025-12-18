@@ -335,7 +335,7 @@ const allNavigationGroups = [
   },
 
   // Discord Manager
-  { id: 'discord', name: 'Discord Manager', href: '/discord', icon: ChatBubbleLeftRightIcon, permission: 'discord.view' },
+  { id: 'discord', name: 'Discord Manager', href: '/discord', icon: ChatBubbleLeftRightIcon, feature: 'discord', permission: 'discord.view' },
 
   // Administration
   {

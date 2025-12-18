@@ -211,6 +211,8 @@ class DiscordAccountRepository
                 'position' => $channelData['position'] ?? 0,
                 'recipient_username' => $channelData['recipient_username'] ?? null,
                 'recipient_avatar' => $channelData['recipient_avatar'] ?? null,
+                'recipient_id' => $channelData['recipient_id'] ?? null,
+                'last_message_id' => $channelData['last_message_id'] ?? null,
                 'cached_at' => date('Y-m-d H:i:s'),
             ], ['id' => $existing['id']]);
 
@@ -230,6 +232,8 @@ class DiscordAccountRepository
             'position' => $channelData['position'] ?? 0,
             'recipient_username' => $channelData['recipient_username'] ?? null,
             'recipient_avatar' => $channelData['recipient_avatar'] ?? null,
+            'recipient_id' => $channelData['recipient_id'] ?? null,
+            'last_message_id' => $channelData['last_message_id'] ?? null,
             'is_favorite' => 0,
             'cached_at' => date('Y-m-d H:i:s'),
         ]);

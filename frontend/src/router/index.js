@@ -63,6 +63,7 @@ const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue'
 const GitRepositoryView = () => import('@/modules/git/views/GitRepositoryView.vue')
 const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.vue')
 const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
+const DiscordManagerView = () => import('@/modules/discord/views/DiscordManagerView.vue')
 
 const routes = [
   // Auth routes
@@ -294,6 +295,12 @@ const routes = [
     path: '/chat',
     name: 'chat',
     component: ChatView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/discord',
+    name: 'discord',
+    component: DiscordManagerView,
     meta: { requiresAuth: true },
   },
   {

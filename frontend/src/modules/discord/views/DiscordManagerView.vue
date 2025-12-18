@@ -1,0 +1,840 @@
+<script setup>
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useDiscordStore } from '../stores/discordStore'
+import { useUiStore } from '@/stores/ui'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import {
+  PlusIcon,
+  ArrowPathIcon,
+  TrashIcon,
+  StarIcon,
+  ChatBubbleLeftRightIcon,
+  CloudArrowDownIcon,
+  MagnifyingGlassIcon,
+  FolderIcon,
+  PhotoIcon,
+  DocumentTextIcon,
+  XMarkIcon,
+  ChevronRightIcon,
+  ServerIcon,
+  HashtagIcon,
+  UserIcon,
+} from '@heroicons/vue/24/outline'
+import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
+
+const discordStore = useDiscordStore()
+const uiStore = useUiStore()
+const { confirm } = useConfirmDialog()
+
+// State
+const activeTab = ref('servers')
+const showAddAccountModal = ref(false)
+const showBackupModal = ref(false)
+const showDeleteModal = ref(false)
+const showMessagesModal = ref(false)
+const selectedBackup = ref(null)
+const backupMessages = ref([])
+const messageSearch = ref('')
+
+// Add Account Form
+const tokenInput = ref('')
+const isAddingAccount = ref(false)
+
+// Backup Form
+const backupForm = reactive({
+  account_id: '',
+  channel_id: '',
+  server_id: '',
+  include_media: true,
+  include_reactions: true,
+  include_threads: false,
+  include_embeds: true,
+  date_from: '',
+  date_to: '',
+})
+
+// Delete Form
+const deleteForm = reactive({
+  account_id: '',
+  discord_channel_id: '',
+  channel_name: '',
+  date_from: '',
+  date_to: '',
+  keyword_filter: '',
+})
+
+// Computed
+const accounts = computed(() => discordStore.accounts)
+const servers = computed(() => discordStore.servers)
+const dmChannels = computed(() => discordStore.dmChannels)
+const backups = computed(() => discordStore.backups)
+const deleteJobs = computed(() => discordStore.deleteJobs)
+const isLoading = computed(() => discordStore.isLoading)
+const isSyncing = computed(() => discordStore.isSyncing)
+const selectedServer = computed(() => discordStore.selectedServer)
+
+// Lifecycle
+onMounted(async () => {
+  await discordStore.loadAccounts()
+  if (discordStore.selectedAccount) {
+    await Promise.all([
+      discordStore.loadServers(discordStore.selectedAccount),
+      discordStore.loadDMChannels(discordStore.selectedAccount),
+      discordStore.loadBackups(),
+      discordStore.loadDeleteJobs(),
+    ])
+  }
+})
+
+// Watch for account change
+watch(() => discordStore.selectedAccount, async (newVal) => {
+  if (newVal) {
+    await Promise.all([
+      discordStore.loadServers(newVal),
+      discordStore.loadDMChannels(newVal),
+    ])
+  }
+})
+
+// Methods
+async function addAccount() {
+  if (!tokenInput.value.trim()) {
+    uiStore.showError('Bitte Token eingeben')
+    return
+  }
+
+  isAddingAccount.value = true
+  try {
+    await discordStore.addAccount(tokenInput.value.trim())
+    await discordStore.syncAccount(discordStore.selectedAccount)
+    uiStore.showSuccess('Discord Account hinzugefügt')
+    tokenInput.value = ''
+    showAddAccountModal.value = false
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+  } finally {
+    isAddingAccount.value = false
+  }
+}
+
+async function removeAccount(account) {
+  if (!await confirm({
+    title: 'Account entfernen?',
+    message: `"${account.discord_username}" wirklich entfernen? Alle zugehörigen Backups werden ebenfalls gelöscht.`,
+    type: 'danger'
+  })) return
+
+  try {
+    await discordStore.deleteAccount(account.id)
+    uiStore.showSuccess('Account entfernt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+async function syncAccount(accountId) {
+  try {
+    const result = await discordStore.syncAccount(accountId)
+    uiStore.showSuccess(`${result.servers_synced} Server und ${result.dm_channels_synced} DMs synchronisiert`)
+  } catch (error) {
+    uiStore.showError('Fehler beim Synchronisieren')
+  }
+}
+
+async function selectServer(server) {
+  await discordStore.loadServerChannels(server.id)
+}
+
+async function toggleFavorite(server) {
+  await discordStore.toggleServerFavorite(server.id)
+}
+
+function openBackupModal(channel = null, server = null) {
+  backupForm.account_id = discordStore.selectedAccount
+  backupForm.channel_id = channel?.id || ''
+  backupForm.server_id = server?.id || ''
+  backupForm.include_media = true
+  backupForm.include_reactions = true
+  backupForm.include_threads = false
+  backupForm.include_embeds = true
+  backupForm.date_from = ''
+  backupForm.date_to = ''
+  showBackupModal.value = true
+}
+
+async function createBackup() {
+  try {
+    const data = {
+      account_id: backupForm.account_id,
+      include_media: backupForm.include_media,
+      include_reactions: backupForm.include_reactions,
+      include_threads: backupForm.include_threads,
+      include_embeds: backupForm.include_embeds,
+    }
+
+    if (backupForm.channel_id) {
+      data.channel_id = backupForm.channel_id
+    } else if (backupForm.server_id) {
+      data.server_id = backupForm.server_id
+    }
+
+    if (backupForm.date_from) data.date_from = backupForm.date_from
+    if (backupForm.date_to) data.date_to = backupForm.date_to
+
+    await discordStore.createBackup(data)
+    uiStore.showSuccess('Backup gestartet')
+    showBackupModal.value = false
+  } catch (error) {
+    uiStore.showError('Fehler beim Erstellen des Backups')
+  }
+}
+
+async function deleteBackup(backup) {
+  if (!await confirm({
+    title: 'Backup löschen?',
+    message: `Backup von "${backup.target_name}" wirklich löschen?`,
+    type: 'danger'
+  })) return
+
+  try {
+    await discordStore.deleteBackup(backup.id)
+    uiStore.showSuccess('Backup gelöscht')
+  } catch (error) {
+    uiStore.showError('Fehler beim Löschen')
+  }
+}
+
+async function viewBackupMessages(backup) {
+  selectedBackup.value = backup
+  messageSearch.value = ''
+  try {
+    const result = await discordStore.loadBackupMessages(backup.id)
+    backupMessages.value = result.items || []
+    showMessagesModal.value = true
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Nachrichten')
+  }
+}
+
+async function searchMessages() {
+  if (!selectedBackup.value) return
+  try {
+    const result = await discordStore.loadBackupMessages(
+      selectedBackup.value.id,
+      1,
+      50,
+      messageSearch.value || null
+    )
+    backupMessages.value = result.items || []
+  } catch (error) {
+    uiStore.showError('Fehler bei der Suche')
+  }
+}
+
+function openDeleteModal(channel) {
+  deleteForm.account_id = discordStore.selectedAccount
+  deleteForm.discord_channel_id = channel.discord_channel_id
+  deleteForm.channel_name = channel.name
+  deleteForm.date_from = ''
+  deleteForm.date_to = ''
+  deleteForm.keyword_filter = ''
+  showDeleteModal.value = true
+}
+
+async function createDeleteJob() {
+  if (!await confirm({
+    title: 'Nachrichten löschen?',
+    message: 'Diese Aktion kann nicht rückgängig gemacht werden! Deine Nachrichten werden permanent gelöscht.',
+    type: 'danger'
+  })) return
+
+  try {
+    const data = {
+      account_id: deleteForm.account_id,
+      discord_channel_id: deleteForm.discord_channel_id,
+    }
+
+    if (deleteForm.date_from) data.date_from = deleteForm.date_from
+    if (deleteForm.date_to) data.date_to = deleteForm.date_to
+    if (deleteForm.keyword_filter) data.keyword_filter = deleteForm.keyword_filter
+
+    await discordStore.createDeleteJob(data)
+    uiStore.showSuccess('Lösch-Job gestartet')
+    showDeleteModal.value = false
+  } catch (error) {
+    uiStore.showError('Fehler beim Erstellen des Jobs')
+  }
+}
+
+async function cancelDeleteJob(job) {
+  try {
+    await discordStore.cancelDeleteJob(job.id)
+    uiStore.showSuccess('Job abgebrochen')
+  } catch (error) {
+    uiStore.showError('Fehler beim Abbrechen')
+  }
+}
+
+function getStatusColor(status) {
+  switch (status) {
+    case 'completed': return 'text-green-400'
+    case 'running': return 'text-blue-400'
+    case 'pending': return 'text-yellow-400'
+    case 'failed': return 'text-red-400'
+    case 'cancelled': return 'text-gray-400'
+    default: return 'text-gray-400'
+  }
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case 'completed': return 'Abgeschlossen'
+    case 'running': return 'Läuft'
+    case 'pending': return 'Wartend'
+    case 'failed': return 'Fehlgeschlagen'
+    case 'cancelled': return 'Abgebrochen'
+    default: return status
+  }
+}
+
+function formatDate(date) {
+  if (!date) return '-'
+  return new Date(date).toLocaleString('de-DE')
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let i = 0
+  while (bytes >= 1024 && i < units.length - 1) {
+    bytes /= 1024
+    i++
+  }
+  return `${bytes.toFixed(1)} ${units[i]}`
+}
+</script>
+
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Discord Manager</h1>
+        <p class="text-gray-400 mt-1">Backups erstellen, Medien herunterladen, Nachrichten verwalten</p>
+      </div>
+
+      <div class="flex gap-3">
+        <button @click="showAddAccountModal = true" class="btn-primary">
+          <PlusIcon class="w-5 h-5 mr-2" />
+          Account hinzufügen
+        </button>
+      </div>
+    </div>
+
+    <!-- Account Selector -->
+    <div v-if="accounts.length > 0" class="card p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <label class="text-sm text-gray-400">Account:</label>
+          <select
+            v-model="discordStore.selectedAccount"
+            class="input w-64"
+          >
+            <option v-for="account in accounts" :key="account.id" :value="account.id">
+              {{ account.discord_username }}#{{ account.discord_discriminator }}
+            </option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            @click="syncAccount(discordStore.selectedAccount)"
+            :disabled="isSyncing"
+            class="btn-secondary"
+          >
+            <ArrowPathIcon class="w-5 h-5 mr-2" :class="{ 'animate-spin': isSyncing }" />
+            Sync
+          </button>
+          <button
+            @click="removeAccount(accounts.find(a => a.id === discordStore.selectedAccount))"
+            class="btn-danger"
+          >
+            <TrashIcon class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Account State -->
+    <div v-if="accounts.length === 0 && !isLoading" class="card p-12 text-center">
+      <ChatBubbleLeftRightIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+      <h3 class="text-xl font-medium text-white mb-2">Kein Discord Account verbunden</h3>
+      <p class="text-gray-400 mb-6">Füge deinen Discord User Token hinzu, um loszulegen.</p>
+      <button @click="showAddAccountModal = true" class="btn-primary">
+        <PlusIcon class="w-5 h-5 mr-2" />
+        Account hinzufügen
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div v-if="accounts.length > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Server/DM Browser -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- Tabs -->
+        <div class="flex border-b border-dark-600">
+          <button
+            @click="activeTab = 'servers'"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'servers' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <ServerIcon class="w-4 h-4 inline mr-1" />
+            Server
+          </button>
+          <button
+            @click="activeTab = 'dms'"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'dms' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <UserIcon class="w-4 h-4 inline mr-1" />
+            DMs
+          </button>
+        </div>
+
+        <!-- Server List -->
+        <div v-if="activeTab === 'servers'" class="card divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+          <div
+            v-for="server in servers"
+            :key="server.id"
+            @click="selectServer(server)"
+            :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedServer?.id === server.id ? 'bg-dark-700' : '']"
+          >
+            <div class="flex items-center gap-3">
+              <img
+                v-if="server.icon_url"
+                :src="server.icon_url"
+                class="w-10 h-10 rounded-full"
+                alt=""
+              />
+              <div v-else class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+                <ServerIcon class="w-5 h-5 text-gray-400" />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-white truncate">{{ server.name }}</span>
+                  <button @click.stop="toggleFavorite(server)" class="text-gray-400 hover:text-yellow-400">
+                    <StarSolidIcon v-if="server.is_favorite" class="w-4 h-4 text-yellow-400" />
+                    <StarIcon v-else class="w-4 h-4" />
+                  </button>
+                </div>
+                <span class="text-sm text-gray-500">{{ server.channel_count }} Channels</span>
+              </div>
+
+              <ChevronRightIcon class="w-5 h-5 text-gray-500" />
+            </div>
+          </div>
+
+          <div v-if="servers.length === 0" class="p-8 text-center text-gray-500">
+            Keine Server gefunden
+          </div>
+        </div>
+
+        <!-- DM List -->
+        <div v-if="activeTab === 'dms'" class="card divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+          <div
+            v-for="dm in dmChannels"
+            :key="dm.id"
+            class="p-4 hover:bg-dark-700 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+                <UserIcon class="w-5 h-5 text-gray-400" />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-medium text-white truncate block">{{ dm.recipient_username || dm.name }}</span>
+                <span class="text-sm text-gray-500">{{ dm.backup_count || 0 }} Backups</span>
+              </div>
+
+              <div class="flex gap-2">
+                <button @click="openBackupModal(dm)" class="btn-sm btn-secondary" title="Backup">
+                  <CloudArrowDownIcon class="w-4 h-4" />
+                </button>
+                <button @click="openDeleteModal(dm)" class="btn-sm btn-danger" title="Nachrichten löschen">
+                  <TrashIcon class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="dmChannels.length === 0" class="p-8 text-center text-gray-500">
+            Keine DMs gefunden
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Channel Details / Backups -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Selected Server Channels -->
+        <div v-if="selectedServer" class="card">
+          <div class="p-4 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img
+                  v-if="selectedServer.icon_url"
+                  :src="selectedServer.icon_url"
+                  class="w-10 h-10 rounded-full"
+                  alt=""
+                />
+                <div>
+                  <h3 class="font-semibold text-white">{{ selectedServer.name }}</h3>
+                  <span class="text-sm text-gray-400">{{ selectedServer.channels?.length || 0 }} Channels</span>
+                </div>
+              </div>
+              <button @click="openBackupModal(null, selectedServer)" class="btn-primary">
+                <CloudArrowDownIcon class="w-5 h-5 mr-2" />
+                Server Backup
+              </button>
+            </div>
+          </div>
+
+          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+            <div
+              v-for="channel in selectedServer.channels"
+              :key="channel.id"
+              class="p-4 hover:bg-dark-700"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <HashtagIcon class="w-5 h-5 text-gray-400" />
+                  <span class="text-white">{{ channel.name }}</span>
+                  <span class="text-xs text-gray-500 bg-dark-600 px-2 py-0.5 rounded">{{ channel.type }}</span>
+                </div>
+
+                <div class="flex gap-2">
+                  <button @click="openBackupModal(channel)" class="btn-sm btn-secondary" title="Backup">
+                    <CloudArrowDownIcon class="w-4 h-4" />
+                  </button>
+                  <button @click="openDeleteModal(channel)" class="btn-sm btn-danger" title="Nachrichten löschen">
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Backups -->
+        <div class="card">
+          <div class="p-4 border-b border-dark-600 flex items-center justify-between">
+            <h3 class="font-semibold text-white">Backups</h3>
+            <span class="text-sm text-gray-400">{{ backups.length }} Backups</span>
+          </div>
+
+          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+            <div
+              v-for="backup in backups"
+              :key="backup.id"
+              class="p-4"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white">{{ backup.target_name }}</span>
+                    <span :class="['text-xs px-2 py-0.5 rounded', getStatusColor(backup.status)]">
+                      {{ getStatusLabel(backup.status) }}
+                    </span>
+                  </div>
+                  <div class="text-sm text-gray-500 mt-1">
+                    {{ formatDate(backup.created_at) }} &bull;
+                    {{ backup.messages_processed }} Nachrichten &bull;
+                    {{ backup.media_count }} Medien ({{ formatSize(backup.media_size) }})
+                  </div>
+                  <div v-if="backup.status === 'running'" class="mt-2">
+                    <div class="w-full bg-dark-600 rounded-full h-2">
+                      <div
+                        class="bg-primary-500 h-2 rounded-full transition-all"
+                        :style="{ width: backup.progress_percent + '%' }"
+                      ></div>
+                    </div>
+                    <span class="text-xs text-gray-400">{{ backup.current_action || 'Verarbeite...' }}</span>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <button
+                    v-if="backup.status === 'completed'"
+                    @click="viewBackupMessages(backup)"
+                    class="btn-sm btn-secondary"
+                    title="Nachrichten anzeigen"
+                  >
+                    <DocumentTextIcon class="w-4 h-4" />
+                  </button>
+                  <button @click="deleteBackup(backup)" class="btn-sm btn-danger" title="Löschen">
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="backups.length === 0" class="p-8 text-center text-gray-500">
+              Keine Backups vorhanden
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete Jobs -->
+        <div v-if="deleteJobs.length > 0" class="card">
+          <div class="p-4 border-b border-dark-600">
+            <h3 class="font-semibold text-white">Lösch-Jobs</h3>
+          </div>
+
+          <div class="divide-y divide-dark-600">
+            <div
+              v-for="job in deleteJobs"
+              :key="job.id"
+              class="p-4"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white">{{ job.channel_name }}</span>
+                    <span :class="['text-xs px-2 py-0.5 rounded', getStatusColor(job.status)]">
+                      {{ getStatusLabel(job.status) }}
+                    </span>
+                  </div>
+                  <div class="text-sm text-gray-500 mt-1">
+                    {{ job.deleted_messages }} / {{ job.total_messages }} gelöscht
+                    <span v-if="job.failed_messages > 0" class="text-red-400">
+                      ({{ job.failed_messages }} fehlgeschlagen)
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  v-if="job.status === 'running' || job.status === 'pending'"
+                  @click="cancelDeleteJob(job)"
+                  class="btn-sm btn-danger"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Account Modal -->
+    <Teleport to="body">
+      <div v-if="showAddAccountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Discord Account hinzufügen</h2>
+              <button @click="showAddAccountModal = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+              <p class="text-sm text-yellow-400">
+                <strong>Hinweis:</strong> Die Verwendung von User Tokens ist gegen die Discord ToS.
+                Verwende diese Funktion nur für deine eigenen Daten und auf eigenes Risiko.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Discord User Token</label>
+              <input
+                v-model="tokenInput"
+                type="password"
+                class="input w-full"
+                placeholder="Dein Discord User Token..."
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Öffne Discord im Browser → F12 → Network → Filtere nach "api" → Kopiere den "Authorization" Header
+              </p>
+            </div>
+          </div>
+
+          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+            <button @click="showAddAccountModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="addAccount" :disabled="isAddingAccount" class="btn-primary">
+              <ArrowPathIcon v-if="isAddingAccount" class="w-5 h-5 mr-2 animate-spin" />
+              Hinzufügen
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Backup Modal -->
+    <Teleport to="body">
+      <div v-if="showBackupModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Backup erstellen</h2>
+              <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="backupForm.include_media" type="checkbox" class="checkbox" />
+                <span class="text-white">Medien herunterladen</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="backupForm.include_reactions" type="checkbox" class="checkbox" />
+                <span class="text-white">Reaktionen</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="backupForm.include_embeds" type="checkbox" class="checkbox" />
+                <span class="text-white">Embeds</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="backupForm.include_threads" type="checkbox" class="checkbox" />
+                <span class="text-white">Threads</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Von (optional)</label>
+                <input v-model="backupForm.date_from" type="datetime-local" class="input w-full" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Bis (optional)</label>
+                <input v-model="backupForm.date_to" type="datetime-local" class="input w-full" />
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+            <button @click="showBackupModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="createBackup" class="btn-primary">
+              <CloudArrowDownIcon class="w-5 h-5 mr-2" />
+              Backup starten
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete Modal -->
+    <Teleport to="body">
+      <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Nachrichten löschen</h2>
+              <button @click="showDeleteModal = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p class="text-sm text-red-400">
+                <strong>Warnung:</strong> Diese Aktion löscht permanent alle deine Nachrichten im Channel
+                <strong>{{ deleteForm.channel_name }}</strong>. Dies kann nicht rückgängig gemacht werden!
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Von (optional)</label>
+                <input v-model="deleteForm.date_from" type="datetime-local" class="input w-full" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Bis (optional)</label>
+                <input v-model="deleteForm.date_to" type="datetime-local" class="input w-full" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Keyword Filter (optional)</label>
+              <input
+                v-model="deleteForm.keyword_filter"
+                type="text"
+                class="input w-full"
+                placeholder="Nur Nachrichten mit diesem Text löschen..."
+              />
+            </div>
+          </div>
+
+          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+            <button @click="showDeleteModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="createDeleteJob" class="btn-danger">
+              <TrashIcon class="w-5 h-5 mr-2" />
+              Löschen starten
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Messages Modal -->
+    <Teleport to="body">
+      <div v-if="showMessagesModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+          <div class="p-6 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Backup: {{ selectedBackup?.target_name }}</h2>
+              <button @click="showMessagesModal = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-6 h-6" />
+              </button>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <input
+                v-model="messageSearch"
+                type="text"
+                class="input flex-1"
+                placeholder="Nachrichten durchsuchen..."
+                @keyup.enter="searchMessages"
+              />
+              <button @click="searchMessages" class="btn-secondary">
+                <MagnifyingGlassIcon class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div
+              v-for="msg in backupMessages"
+              :key="msg.id"
+              class="bg-dark-700 rounded-lg p-4"
+            >
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
+                  <UserIcon class="w-5 h-5 text-gray-400" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white">{{ msg.author_username }}</span>
+                    <span class="text-xs text-gray-500">{{ formatDate(msg.message_timestamp) }}</span>
+                  </div>
+                  <p class="text-gray-300 mt-1 whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                  <div v-if="msg.has_attachments" class="flex items-center gap-1 mt-2 text-sm text-gray-400">
+                    <PhotoIcon class="w-4 h-4" />
+                    {{ msg.attachment_count }} Anhänge
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="backupMessages.length === 0" class="text-center text-gray-500 py-8">
+              Keine Nachrichten gefunden
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>

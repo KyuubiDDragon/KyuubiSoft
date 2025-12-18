@@ -67,6 +67,7 @@ use App\Modules\Notes\Controllers\NoteController;
 use App\Modules\Notes\Controllers\DatabaseController;
 use App\Modules\Notes\Controllers\CollaborationController;
 use App\Modules\Notes\Controllers\PublicNoteController;
+use App\Modules\Discord\Controllers\DiscordController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1120,6 +1121,53 @@ class Router
                     ->add(new FeatureMiddleware('galleries', null, 'manage'));
                 $protected->delete('/gallery-categories/{id}', [PublicGalleryController::class, 'deleteCategory'])
                     ->add(new FeatureMiddleware('galleries', null, 'manage'));
+
+                // Discord Manager
+                // Accounts
+                $protected->get('/discord/accounts', [DiscordController::class, 'getAccounts'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->post('/discord/accounts', [DiscordController::class, 'addAccount'])
+                    ->add(new PermissionMiddleware('discord.manage_accounts'));
+                $protected->delete('/discord/accounts/{id}', [DiscordController::class, 'deleteAccount'])
+                    ->add(new PermissionMiddleware('discord.manage_accounts'));
+                $protected->post('/discord/accounts/{id}/sync', [DiscordController::class, 'syncAccount'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                // Servers & Channels
+                $protected->get('/discord/servers', [DiscordController::class, 'getServers'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->get('/discord/servers/{id}/channels', [DiscordController::class, 'getServerChannels'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->post('/discord/servers/{id}/favorite', [DiscordController::class, 'toggleServerFavorite'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->get('/discord/dm-channels', [DiscordController::class, 'getDMChannels'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                // Backups
+                $protected->get('/discord/backups', [DiscordController::class, 'getBackups'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->post('/discord/backups', [DiscordController::class, 'createBackup'])
+                    ->add(new PermissionMiddleware('discord.create_backups'));
+                $protected->get('/discord/backups/{id}', [DiscordController::class, 'getBackup'])
+                    ->add(new PermissionMiddleware('discord.view'));
+                $protected->delete('/discord/backups/{id}', [DiscordController::class, 'deleteBackup'])
+                    ->add(new PermissionMiddleware('discord.delete_backups'));
+                $protected->get('/discord/backups/{id}/messages', [DiscordController::class, 'getBackupMessages'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
+                // Media
+                $protected->get('/discord/media', [DiscordController::class, 'getMedia'])
+                    ->add(new PermissionMiddleware('discord.download_media'));
+                $protected->get('/discord/media/{id}', [DiscordController::class, 'serveMedia'])
+                    ->add(new PermissionMiddleware('discord.download_media'));
+                // Message Deletion
+                $protected->get('/discord/messages/search', [DiscordController::class, 'searchOwnMessages'])
+                    ->add(new PermissionMiddleware('discord.delete_messages'));
+                $protected->post('/discord/delete-jobs', [DiscordController::class, 'createDeleteJob'])
+                    ->add(new PermissionMiddleware('discord.delete_messages'));
+                $protected->get('/discord/delete-jobs', [DiscordController::class, 'getDeleteJobs'])
+                    ->add(new PermissionMiddleware('discord.delete_messages'));
+                $protected->get('/discord/delete-jobs/{id}', [DiscordController::class, 'getDeleteJob'])
+                    ->add(new PermissionMiddleware('discord.delete_messages'));
+                $protected->post('/discord/delete-jobs/{id}/cancel', [DiscordController::class, 'cancelDeleteJob'])
+                    ->add(new PermissionMiddleware('discord.delete_messages'));
 
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 

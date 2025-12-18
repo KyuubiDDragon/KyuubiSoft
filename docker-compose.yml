@@ -34,6 +34,7 @@ services:
       - ./backend/storage/logs:/var/www/html/storage/logs
       - ./backend/storage/cache:/var/www/html/storage/cache
       - ./backups:/var/www/html/storage/backups
+      - ./storage:/var/www/storage
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       APP_ENV: ${APP_ENV:-development}
@@ -49,6 +50,8 @@ services:
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-604800}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      STORAGE_PATH: /var/www/storage
+      APP_KEY: ${APP_KEY:-your-32-character-encryption-key}
     depends_on:
       mysql:
         condition: service_healthy
@@ -114,6 +117,7 @@ services:
       - ./backend:/var/www/html
       - ./backend/storage/logs:/var/www/html/storage/logs
       - ./backups:/var/www/html/storage/backups
+      - ./storage:/var/www/storage
     environment:
       APP_ENV: ${APP_ENV:-development}
       DB_HOST: mysql
@@ -121,6 +125,8 @@ services:
       DB_DATABASE: ${DB_DATABASE:-kyuubisoft}
       DB_USERNAME: ${DB_USERNAME:-kyuubisoft}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
+      STORAGE_PATH: /var/www/storage
+      APP_KEY: ${APP_KEY:-your-32-character-encryption-key}
     command: /bin/sh -c "while true; do php /var/www/html/bin/uptime-check.php >> /var/www/html/storage/logs/scheduler.log 2>&1; sleep 60; done"
     depends_on:
       mysql:

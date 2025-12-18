@@ -56,7 +56,7 @@ class DiscordAccountRepository
             'discord_avatar' => $data['discord_avatar'] ?? null,
             'discord_email' => $data['discord_email'] ?? null,
             'token_encrypted' => $data['token_encrypted'],
-            'is_active' => $data['is_active'] ?? true,
+            'is_active' => $data['is_active'] ?? 1,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
@@ -134,7 +134,7 @@ class DiscordAccountRepository
             'icon' => $serverData['icon'] ?? null,
             'owner_id' => $serverData['owner_id'] ?? null,
             'member_count' => $serverData['member_count'] ?? null,
-            'is_favorite' => false,
+            'is_favorite' => 0,
             'cached_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -230,7 +230,7 @@ class DiscordAccountRepository
             'position' => $channelData['position'] ?? 0,
             'recipient_username' => $channelData['recipient_username'] ?? null,
             'recipient_avatar' => $channelData['recipient_avatar'] ?? null,
-            'is_favorite' => false,
+            'is_favorite' => 0,
             'cached_at' => date('Y-m-d H:i:s'),
         ]);
 

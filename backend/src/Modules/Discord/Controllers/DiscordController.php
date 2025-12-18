@@ -83,7 +83,7 @@ class DiscordController
                 'discord_avatar' => $discordUser['avatar'],
                 'discord_email' => $discordUser['email'] ?? null,
                 'token_encrypted' => $this->encrypt($token),
-                'is_active' => true,
+                'is_active' => 1,
             ]);
 
             $account = $this->accountRepository->findById($existing['id']);

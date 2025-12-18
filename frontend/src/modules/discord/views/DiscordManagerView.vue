@@ -73,6 +73,19 @@ const isLoading = computed(() => discordStore.isLoading)
 const isSyncing = computed(() => discordStore.isSyncing)
 const selectedServer = computed(() => discordStore.selectedServer)
 
+// Selected DM state
+const selectedDM = ref(null)
+
+// Sorted DM channels (by last_message_id descending - newer messages have higher IDs)
+const sortedDMChannels = computed(() => {
+  return [...dmChannels.value].sort((a, b) => {
+    // Discord snowflake IDs: higher = more recent
+    const aId = BigInt(a.last_message_id || a.discord_channel_id || '0')
+    const bId = BigInt(b.last_message_id || b.discord_channel_id || '0')
+    return bId > aId ? 1 : bId < aId ? -1 : 0
+  })
+})
+
 // Lifecycle
 onMounted(async () => {
   await discordStore.loadAccounts()
@@ -142,7 +155,13 @@ async function syncAccount(accountId) {
 }
 
 async function selectServer(server) {
+  selectedDM.value = null // Clear DM selection
   await discordStore.loadServerChannels(server.id)
+}
+
+function selectDM(dm) {
+  discordStore.selectedServer = null // Clear server selection
+  selectedDM.value = dm
 }
 
 async function toggleFavorite(server) {
@@ -440,13 +459,20 @@ function formatSize(bytes) {
         <!-- DM List -->
         <div v-if="activeTab === 'dms'" class="card divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
           <div
-            v-for="dm in dmChannels"
+            v-for="dm in sortedDMChannels"
             :key="dm.id"
-            class="p-4 hover:bg-dark-700 transition-colors"
+            @click="selectDM(dm)"
+            :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedDM?.id === dm.id ? 'bg-dark-700' : '']"
           >
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
-                <UserIcon class="w-5 h-5 text-gray-400" />
+              <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="dm.recipient_avatar"
+                  :src="`https://cdn.discordapp.com/avatars/${dm.recipient_id}/${dm.recipient_avatar}.png?size=64`"
+                  class="w-full h-full object-cover"
+                  alt=""
+                />
+                <UserIcon v-else class="w-5 h-5 text-gray-400" />
               </div>
 
               <div class="flex-1 min-w-0">
@@ -454,18 +480,11 @@ function formatSize(bytes) {
                 <span class="text-sm text-gray-500">{{ dm.backup_count || 0 }} Backups</span>
               </div>
 
-              <div class="flex gap-2">
-                <button @click="openBackupModal(dm)" class="btn-sm btn-secondary" title="Backup">
-                  <CloudArrowDownIcon class="w-4 h-4" />
-                </button>
-                <button @click="openDeleteModal(dm)" class="btn-sm btn-danger" title="Nachrichten löschen">
-                  <TrashIcon class="w-4 h-4" />
-                </button>
-              </div>
+              <ChevronRightIcon class="w-5 h-5 text-gray-500" />
             </div>
           </div>
 
-          <div v-if="dmChannels.length === 0" class="p-8 text-center text-gray-500">
+          <div v-if="sortedDMChannels.length === 0" class="p-8 text-center text-gray-500">
             Keine DMs gefunden
           </div>
         </div>
@@ -473,6 +492,60 @@ function formatSize(bytes) {
 
       <!-- Right: Channel Details / Backups -->
       <div class="lg:col-span-2 space-y-6">
+        <!-- Selected DM User Info -->
+        <div v-if="selectedDM" class="card">
+          <div class="p-6">
+            <div class="flex items-start gap-6">
+              <!-- Avatar -->
+              <div class="w-20 h-20 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <img
+                  v-if="selectedDM.recipient_avatar"
+                  :src="`https://cdn.discordapp.com/avatars/${selectedDM.recipient_id}/${selectedDM.recipient_avatar}.png?size=128`"
+                  class="w-full h-full object-cover"
+                  alt=""
+                />
+                <UserIcon v-else class="w-10 h-10 text-gray-400" />
+              </div>
+
+              <!-- User Info -->
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-white">{{ selectedDM.recipient_username || selectedDM.name }}</h3>
+                <p class="text-gray-400 mt-1">
+                  <span v-if="selectedDM.type === 'dm'">Direktnachricht</span>
+                  <span v-else-if="selectedDM.type === 'group_dm'">Gruppen-DM</span>
+                </p>
+
+                <div class="mt-4 flex flex-wrap gap-4 text-sm">
+                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                    <span class="text-gray-500">Discord ID</span>
+                    <p class="text-white font-mono">{{ selectedDM.recipient_id || selectedDM.discord_channel_id }}</p>
+                  </div>
+                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                    <span class="text-gray-500">Backups</span>
+                    <p class="text-white">{{ selectedDM.backup_count || 0 }}</p>
+                  </div>
+                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                    <span class="text-gray-500">Synchronisiert</span>
+                    <p class="text-white">{{ formatDate(selectedDM.cached_at) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-6 flex gap-3">
+              <button @click="openBackupModal(selectedDM)" class="btn-primary">
+                <CloudArrowDownIcon class="w-5 h-5 mr-2" />
+                Chat Backup erstellen
+              </button>
+              <button @click="openDeleteModal(selectedDM)" class="btn-danger">
+                <TrashIcon class="w-5 h-5 mr-2" />
+                Meine Nachrichten löschen
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Selected Server Channels -->
         <div v-if="selectedServer" class="card">
           <div class="p-4 border-b border-dark-600">

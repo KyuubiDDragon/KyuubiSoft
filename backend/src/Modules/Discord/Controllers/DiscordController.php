@@ -158,11 +158,13 @@ class DiscordController
         foreach ($dmChannels as $dm) {
             $recipientName = 'Unknown';
             $recipientAvatar = null;
+            $recipientId = null;
 
             if (!empty($dm['recipients'])) {
                 $recipient = $dm['recipients'][0];
                 $recipientName = $recipient['username'] ?? 'Unknown';
                 $recipientAvatar = $recipient['avatar'] ?? null;
+                $recipientId = $recipient['id'] ?? null;
             }
 
             $this->accountRepository->upsertChannel($accountId, null, [
@@ -171,6 +173,8 @@ class DiscordController
                 'type' => $dm['type'],
                 'recipient_username' => $recipientName,
                 'recipient_avatar' => $recipientAvatar,
+                'recipient_id' => $recipientId,
+                'last_message_id' => $dm['last_message_id'] ?? null,
             ]);
         }
 

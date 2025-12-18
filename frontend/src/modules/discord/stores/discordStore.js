@@ -161,6 +161,13 @@ export const useDiscordStore = defineStore('discord', () => {
     return response.data.data
   }
 
+  // Global Search
+  async function searchMessages(query, page = 1, perPage = 50) {
+    const params = { q: query, page, per_page: perPage }
+    const response = await api.get('/api/v1/discord/search', { params })
+    return response.data.data
+  }
+
   // Media
   async function loadMedia(page = 1, perPage = 50) {
     const response = await api.get('/api/v1/discord/media', {
@@ -254,6 +261,7 @@ export const useDiscordStore = defineStore('discord', () => {
     getBackup,
     deleteBackup,
     loadBackupMessages,
+    searchMessages,
     loadMedia,
     searchOwnMessages,
     createDeleteJob,

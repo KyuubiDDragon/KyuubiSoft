@@ -230,6 +230,53 @@ class DiscordBackupRepository
         );
     }
 
+    /**
+     * Search messages across all backups for a user
+     */
+    public function searchAllMessages(string $userId, string $search, int $limit = 50, int $offset = 0): array
+    {
+        $sql = 'SELECT m.*, b.target_name as backup_name, b.type as backup_type
+                FROM discord_messages m
+                INNER JOIN discord_backups b ON m.backup_id = b.id
+                INNER JOIN discord_accounts a ON b.account_id = a.id
+                WHERE a.user_id = ?';
+        $params = [$userId];
+        $types = [\PDO::PARAM_STR];
+
+        if ($search) {
+            $sql .= ' AND MATCH(m.content) AGAINST(? IN BOOLEAN MODE)';
+            $params[] = $search;
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        $sql .= ' ORDER BY m.message_timestamp DESC LIMIT ? OFFSET ?';
+        $params[] = $limit;
+        $params[] = $offset;
+        $types[] = \PDO::PARAM_INT;
+        $types[] = \PDO::PARAM_INT;
+
+        return $this->db->fetchAllAssociative($sql, $params, $types);
+    }
+
+    public function countSearchResults(string $userId, string $search): int
+    {
+        $sql = 'SELECT COUNT(*)
+                FROM discord_messages m
+                INNER JOIN discord_backups b ON m.backup_id = b.id
+                INNER JOIN discord_accounts a ON b.account_id = a.id
+                WHERE a.user_id = ?';
+        $params = [$userId];
+        $types = [\PDO::PARAM_STR];
+
+        if ($search) {
+            $sql .= ' AND MATCH(m.content) AGAINST(? IN BOOLEAN MODE)';
+            $params[] = $search;
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        return (int) $this->db->fetchOne($sql, $params, $types);
+    }
+
     // Media methods
     public function insertMedia(string $backupId, array $mediaData): string
     {

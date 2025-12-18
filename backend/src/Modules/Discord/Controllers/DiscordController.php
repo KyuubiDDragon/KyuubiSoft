@@ -541,6 +541,36 @@ class DiscordController
         return JsonResponse::paginated($messages, $total, $page, $perPage);
     }
 
+    /**
+     * Search across all backed up messages
+     */
+    public function searchMessages(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $queryParams = $request->getQueryParams();
+
+        $search = $queryParams['q'] ?? $queryParams['search'] ?? '';
+        if (strlen($search) < 2) {
+            return JsonResponse::success(['items' => [], 'total' => 0], 'Search query too short');
+        }
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $messages = $this->backupRepository->searchAllMessages($userId, $search, $perPage, $offset);
+        $total = $this->backupRepository->countSearchResults($userId, $search);
+
+        // Decode raw_data for each message
+        foreach ($messages as &$msg) {
+            if (!empty($msg['raw_data'])) {
+                $msg['raw_data'] = json_decode($msg['raw_data'], true);
+            }
+        }
+
+        return JsonResponse::paginated($messages, $total, $page, $perPage);
+    }
+
     // ========================================================================
     // Media
     // ========================================================================

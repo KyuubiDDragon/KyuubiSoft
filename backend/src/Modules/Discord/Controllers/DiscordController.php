@@ -443,10 +443,17 @@ class DiscordController
             'date_to' => $data['date_to'] ?? null,
         ]);
 
-        // Start backup process (in real implementation, this would be a background job)
-        $this->processBackup($backup['id'], $token);
+        // Process backup synchronously (for now - should be background job for large backups)
+        try {
+            $this->processBackup($backup['id'], $token);
+        } catch (\Exception $e) {
+            // Log error but don't fail the request - backup status will show the error
+            error_log('Discord backup error: ' . $e->getMessage());
+        }
 
-        return JsonResponse::created($backup, 'Backup started');
+        // Return updated backup data
+        $updatedBackup = $this->backupRepository->findById($backup['id']);
+        return JsonResponse::created($updatedBackup, 'Backup ' . ($updatedBackup['status'] === 'completed' ? 'completed' : 'started'));
     }
 
     public function getBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -743,24 +750,57 @@ class DiscordController
                 throw new \RuntimeException('No channel specified for backup');
             }
 
+            // Parse date filters
+            $dateFrom = $backup['date_from'] ? strtotime($backup['date_from']) : null;
+            $dateTo = $backup['date_to'] ? strtotime($backup['date_to']) : null;
+
             $messageCount = 0;
             $mediaCount = 0;
             $mediaSize = 0;
+            $skippedByDate = 0;
 
+            // Create media directory if needed
             $mediaDir = $this->storagePath . '/discord/media/' . $backupId;
-            if (!is_dir($mediaDir)) {
-                mkdir($mediaDir, 0755, true);
+            if ($backup['include_media']) {
+                if (!is_dir($this->storagePath)) {
+                    if (!@mkdir($this->storagePath, 0755, true)) {
+                        throw new \RuntimeException('Cannot create storage directory: ' . $this->storagePath);
+                    }
+                }
+                if (!is_dir($mediaDir)) {
+                    if (!@mkdir($mediaDir, 0755, true)) {
+                        throw new \RuntimeException('Cannot create media directory: ' . $mediaDir);
+                    }
+                }
             }
+
+            $this->backupRepository->updateProgress($backupId, 0, 0, "Fetching messages from Discord...");
 
             // Get messages
             foreach ($this->discordApi->getAllChannelMessages($token, $discordChannelId) as $message) {
+                // Apply date filter
+                $messageTime = strtotime($message['timestamp']);
+
+                if ($dateFrom && $messageTime < $dateFrom) {
+                    $skippedByDate++;
+                    // Messages are returned newest first, so if we're past date_from, we can stop
+                    // Actually no - getAllChannelMessages uses 'before' pagination, so oldest comes last
+                    // We need to continue and skip
+                    continue;
+                }
+
+                if ($dateTo && $messageTime > $dateTo) {
+                    $skippedByDate++;
+                    continue;
+                }
+
                 // Store message
                 $this->backupRepository->insertMessage($backupId, $message);
                 $messageCount++;
 
-                // Update progress every 100 messages
-                if ($messageCount % 100 === 0) {
-                    $this->backupRepository->updateProgress($backupId, $messageCount, $messageCount, "Processing messages...");
+                // Update progress every 50 messages
+                if ($messageCount % 50 === 0) {
+                    $this->backupRepository->updateProgress($backupId, $messageCount, $messageCount, "Processed {$messageCount} messages...");
                 }
 
                 // Download media if enabled
@@ -800,6 +840,7 @@ class DiscordController
             $this->backupRepository->updateStatus($backupId, 'completed');
 
         } catch (\Exception $e) {
+            error_log('Discord backup failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             $this->backupRepository->updateStatus($backupId, 'failed', $e->getMessage());
         }
     }

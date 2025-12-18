@@ -183,6 +183,21 @@ class FeatureService
                 'public' => ['full'],
             ],
         ],
+        'discord' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_DISCORD',
+            'description' => 'Discord Manager (Chat backups, media download, message deletion)',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage_accounts' => ['full'],
+                'create_backups' => ['full'],
+                'delete_backups' => ['full'],
+                'view_messages' => ['full'],
+                'delete_messages' => ['full'],
+                'download_media' => ['full'],
+            ],
+        ],
     ];
 
     private array $featureCache = [];

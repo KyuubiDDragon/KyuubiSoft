@@ -75,6 +75,15 @@ export const useFeatureStore = defineStore('features', () => {
       view: ['full'],
       manage: ['full'],
     },
+    discord: {
+      view: ['full'],
+      manage_accounts: ['full'],
+      create_backups: ['full'],
+      delete_backups: ['full'],
+      view_messages: ['full'],
+      delete_messages: ['full'],
+      download_media: ['full'],
+    },
   }
 
   // Getters
@@ -216,6 +225,11 @@ export const useFeatureStore = defineStore('features', () => {
         api_tester: 'full',
         youtube: 'full',
         passwords: 'full',
+        git: 'full',
+        ssl: 'full',
+        galleries: 'full',
+        notes: 'full',
+        discord: 'full',
       }
       isLoaded.value = true
     } finally {

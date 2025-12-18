@@ -1137,6 +1137,8 @@ class Router
                     ->add(new PermissionMiddleware('discord.view'));
                 $protected->get('/discord/servers/{id}/channels', [DiscordController::class, 'getServerChannels'])
                     ->add(new PermissionMiddleware('discord.view'));
+                $protected->post('/discord/servers/{id}/sync', [DiscordController::class, 'syncServerChannels'])
+                    ->add(new PermissionMiddleware('discord.view'));
                 $protected->post('/discord/servers/{id}/favorite', [DiscordController::class, 'toggleServerFavorite'])
                     ->add(new PermissionMiddleware('discord.view'));
                 $protected->get('/discord/dm-channels', [DiscordController::class, 'getDMChannels'])

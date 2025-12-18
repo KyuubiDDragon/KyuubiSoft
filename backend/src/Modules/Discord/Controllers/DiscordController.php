@@ -137,12 +137,12 @@ class DiscordController
 
         $token = $this->decrypt($account['token_encrypted']);
 
-        // Sync guilds
+        // Sync guilds (servers only - channels are lazy loaded per server)
         $guilds = $this->discordApi->getGuilds($token);
         $guildIds = [];
 
         foreach ($guilds as $guild) {
-            $serverId = $this->accountRepository->upsertServer($accountId, [
+            $this->accountRepository->upsertServer($accountId, [
                 'discord_guild_id' => $guild['id'],
                 'name' => $guild['name'],
                 'icon' => $guild['icon'],
@@ -151,26 +151,6 @@ class DiscordController
             ]);
 
             $guildIds[] = $guild['id'];
-
-            // Sync channels for this guild
-            try {
-                $channels = $this->discordApi->getGuildChannels($token, $guild['id']);
-                foreach ($channels as $channel) {
-                    if (in_array($channel['type'], [0, 5, 15])) { // text, announcement, forum
-                        $this->accountRepository->upsertChannel($accountId, $serverId, [
-                            'discord_channel_id' => $channel['id'],
-                            'discord_guild_id' => $guild['id'],
-                            'name' => $channel['name'],
-                            'type' => $channel['type'],
-                            'parent_id' => $channel['parent_id'] ?? null,
-                            'position' => $channel['position'] ?? 0,
-                        ]);
-                    }
-                }
-            } catch (\Exception $e) {
-                // Skip guilds we don't have access to
-                continue;
-            }
         }
 
         // Sync DM channels
@@ -203,6 +183,52 @@ class DiscordController
             'servers_synced' => count($guilds),
             'dm_channels_synced' => count($dmChannels),
         ], 'Account synced successfully');
+    }
+
+    /**
+     * Sync channels for a specific server (lazy loading)
+     */
+    public function syncServerChannels(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $serverId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $server = $this->accountRepository->findServerById($serverId);
+        if (!$server) {
+            throw new NotFoundException('Server not found');
+        }
+
+        $account = $this->accountRepository->findByIdAndUser($server['account_id'], $userId);
+        if (!$account) {
+            throw new NotFoundException('Discord account not found');
+        }
+
+        $token = $this->decrypt($account['token_encrypted']);
+
+        try {
+            $channels = $this->discordApi->getGuildChannels($token, $server['discord_guild_id']);
+            $channelCount = 0;
+
+            foreach ($channels as $channel) {
+                if (in_array($channel['type'], [0, 5, 15])) { // text, announcement, forum
+                    $this->accountRepository->upsertChannel($account['id'], $serverId, [
+                        'discord_channel_id' => $channel['id'],
+                        'discord_guild_id' => $server['discord_guild_id'],
+                        'name' => $channel['name'],
+                        'type' => $channel['type'],
+                        'parent_id' => $channel['parent_id'] ?? null,
+                        'position' => $channel['position'] ?? 0,
+                    ]);
+                    $channelCount++;
+                }
+            }
+
+            return JsonResponse::success([
+                'channels_synced' => $channelCount,
+            ], 'Server channels synced successfully');
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to sync channels: ' . $e->getMessage());
+        }
     }
 
     // ========================================================================

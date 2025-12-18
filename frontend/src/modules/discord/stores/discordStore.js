@@ -102,6 +102,17 @@ export const useDiscordStore = defineStore('discord', () => {
     return response.data.data
   }
 
+  async function syncServerChannels(serverId) {
+    isSyncing.value = true
+    try {
+      await api.post(`/api/v1/discord/servers/${serverId}/sync`)
+      // Reload channels after sync
+      return await loadServerChannels(serverId)
+    } finally {
+      isSyncing.value = false
+    }
+  }
+
   async function toggleServerFavorite(serverId) {
     await api.post(`/api/v1/discord/servers/${serverId}/favorite`)
     const server = servers.value.find(s => s.id === serverId)
@@ -235,6 +246,7 @@ export const useDiscordStore = defineStore('discord', () => {
     syncAccount,
     loadServers,
     loadServerChannels,
+    syncServerChannels,
     toggleServerFavorite,
     loadDMChannels,
     loadBackups,

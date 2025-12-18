@@ -50,6 +50,7 @@ services:
       - "${DOCKER_GID:-999}"
     volumes:
       - backend_storage:/var/www/html/storage
+      - discord_storage:/var/www/storage
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       APP_ENV: ${APP_ENV:-production}
@@ -67,6 +68,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://dev.kyuubisoft.com}
+      STORAGE_PATH: /var/www/storage
+      APP_KEY: ${APP_KEY}
     healthcheck:
       test: ["CMD-SHELL", "FCGI_CONNECT=localhost:9000 php-fpm-healthcheck || exit 1"]
       interval: 30s
@@ -158,6 +161,7 @@ services:
     container_name: kyuubisoft_scheduler
     volumes:
       - backend_storage:/var/www/html/storage
+      - discord_storage:/var/www/storage
     environment:
       APP_ENV: ${APP_ENV:-production}
       DB_HOST: mysql
@@ -165,6 +169,8 @@ services:
       DB_DATABASE: ${DB_DATABASE:-kyuubisoft}
       DB_USERNAME: ${DB_USERNAME:-kyuubisoft}
       DB_PASSWORD: ${DB_PASSWORD}
+      STORAGE_PATH: /var/www/storage
+      APP_KEY: ${APP_KEY}
     command: /bin/sh -c "while true; do php /var/www/html/bin/uptime-check.php >> /var/www/html/storage/logs/scheduler.log 2>&1; sleep 60; done"
     depends_on:
       mysql:
@@ -204,4 +210,5 @@ volumes:
   redis_data:
   frontend_dist:
   backend_storage:
+  discord_storage:
   clamav_data:

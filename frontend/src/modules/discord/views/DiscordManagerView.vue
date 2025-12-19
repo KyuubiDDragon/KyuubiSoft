@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useDiscordStore } from '../stores/discordStore'
 import { useUiStore } from '@/stores/ui'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -54,6 +54,50 @@ const isSearching = ref(false)
 // Links
 const links = ref([])
 const isLoadingLinks = ref(false)
+
+// Active Backups (for progress tracking)
+const activeBackups = ref([])
+let backupPollInterval = null
+
+function startBackupPolling() {
+  if (backupPollInterval) return
+  backupPollInterval = setInterval(pollActiveBackups, 2000) // Poll every 2 seconds
+}
+
+function stopBackupPolling() {
+  if (backupPollInterval) {
+    clearInterval(backupPollInterval)
+    backupPollInterval = null
+  }
+}
+
+async function pollActiveBackups() {
+  if (activeBackups.value.length === 0) {
+    stopBackupPolling()
+    return
+  }
+
+  for (let i = activeBackups.value.length - 1; i >= 0; i--) {
+    const backup = activeBackups.value[i]
+    try {
+      const updated = await discordStore.getBackup(backup.id)
+      if (updated.status === 'completed') {
+        uiStore.showSuccess(`Backup "${updated.target_name}" abgeschlossen`)
+        activeBackups.value.splice(i, 1)
+        discordStore.loadBackups() // Refresh backups list
+      } else if (updated.status === 'failed') {
+        uiStore.showError(`Backup "${updated.target_name}" fehlgeschlagen: ${updated.error_message || 'Unbekannter Fehler'}`)
+        activeBackups.value.splice(i, 1)
+        discordStore.loadBackups()
+      } else {
+        // Update progress
+        activeBackups.value[i] = updated
+      }
+    } catch (error) {
+      console.error('Failed to poll backup status:', error)
+    }
+  }
+}
 
 // Lightbox
 const showLightbox = ref(false)
@@ -173,6 +217,10 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  stopBackupPolling()
+})
+
 // Watch for account change
 watch(() => discordStore.selectedAccount, async (newVal) => {
   if (newVal) {
@@ -287,6 +335,7 @@ async function createBackup() {
   try {
     const data = {
       account_id: backupForm.account_id,
+      backup_mode: backupForm.backup_mode,
       include_media: backupForm.include_media,
       include_reactions: backupForm.include_reactions,
       include_threads: backupForm.include_threads,
@@ -302,9 +351,21 @@ async function createBackup() {
     if (backupForm.date_from) data.date_from = backupForm.date_from
     if (backupForm.date_to) data.date_to = backupForm.date_to
 
-    await discordStore.createBackup(data)
-    uiStore.showSuccess('Backup gestartet')
+    // Close modal immediately
     showBackupModal.value = false
+
+    const backup = await discordStore.createBackup(data)
+
+    // If backup is still running, add to active backups for progress tracking
+    if (backup && (backup.status === 'pending' || backup.status === 'running')) {
+      activeBackups.value.push(backup)
+      startBackupPolling()
+    } else if (backup && backup.status === 'completed') {
+      uiStore.showSuccess('Backup abgeschlossen')
+      discordStore.loadBackups()
+    } else if (backup && backup.status === 'failed') {
+      uiStore.showError(`Backup fehlgeschlagen: ${backup.error_message || 'Unbekannter Fehler'}`)
+    }
   } catch (error) {
     uiStore.showError('Fehler beim Erstellen des Backups')
   }
@@ -470,8 +531,50 @@ function formatSize(bytes) {
 
 <template>
   <div class="space-y-6">
+    <!-- Active Backup Progress Bar -->
+    <div v-if="activeBackups.length > 0" class="fixed top-0 left-0 right-0 z-50">
+      <div
+        v-for="backup in activeBackups"
+        :key="backup.id"
+        class="bg-dark-800 border-b border-dark-600 shadow-lg"
+      >
+        <div class="max-w-7xl mx-auto px-4 py-3">
+          <div class="flex items-center gap-4">
+            <div class="flex-shrink-0">
+              <ArrowPathIcon class="w-5 h-5 text-primary-400 animate-spin" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-white truncate">
+                  Backup: {{ backup.target_name }}
+                </span>
+                <span class="text-xs text-gray-400">
+                  {{ backup.progress_percent || 0 }}%
+                </span>
+              </div>
+              <div class="w-full bg-dark-600 rounded-full h-2">
+                <div
+                  class="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: `${backup.progress_percent || 0}%` }"
+                />
+              </div>
+              <div class="flex items-center justify-between mt-1">
+                <span class="text-xs text-gray-500">
+                  {{ backup.current_action || 'Wird verarbeitet...' }}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ backup.messages_processed || 0 }} Nachrichten
+                  <span v-if="backup.media_count"> • {{ backup.media_count }} Medien</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4" :class="{ 'mt-20': activeBackups.length > 0 }">
       <div>
         <h1 class="text-2xl font-bold text-white">Discord Manager</h1>
         <p class="text-gray-400 mt-1">Backups erstellen, Medien herunterladen, Nachrichten verwalten</p>

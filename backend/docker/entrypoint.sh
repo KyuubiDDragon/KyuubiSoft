@@ -17,5 +17,12 @@ if [ -S /var/run/docker.sock ]; then
     echo "Docker socket configured with GID: $DOCKER_SOCK_GID"
 fi
 
+# Create storage directories with proper permissions
+STORAGE_PATH="${STORAGE_PATH:-/var/www/storage}"
+mkdir -p "$STORAGE_PATH/discord/media"
+chown -R www-data:www-data "$STORAGE_PATH"
+chmod -R 775 "$STORAGE_PATH"
+echo "Storage directory configured: $STORAGE_PATH"
+
 # Execute the main command
 exec "$@"

@@ -16,10 +16,12 @@ import {
   DocumentTextIcon,
   XMarkIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
   ServerIcon,
   HashtagIcon,
   UserIcon,
   LinkIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 
@@ -52,6 +54,36 @@ const isSearching = ref(false)
 // Links
 const links = ref([])
 const isLoadingLinks = ref(false)
+
+// Lightbox
+const showLightbox = ref(false)
+const lightboxMedia = ref(null)
+const lightboxIndex = ref(0)
+
+function openLightbox(media, index = 0) {
+  lightboxMedia.value = media
+  lightboxIndex.value = index
+  showLightbox.value = true
+}
+
+function closeLightbox() {
+  showLightbox.value = false
+  lightboxMedia.value = null
+}
+
+function nextMedia() {
+  if (lightboxIndex.value < channelMedia.value.length - 1) {
+    lightboxIndex.value++
+    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+  }
+}
+
+function prevMedia() {
+  if (lightboxIndex.value > 0) {
+    lightboxIndex.value--
+    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+  }
+}
 
 // List Search Filters
 const serverSearchQuery = ref('')
@@ -831,12 +863,11 @@ function formatSize(bytes) {
               Bilder & Medien ({{ channelMedia.length }})
             </h4>
             <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[300px] overflow-y-auto">
-              <a
-                v-for="media in channelMedia"
+              <div
+                v-for="(media, index) in channelMedia"
                 :key="media.id"
-                :href="getMediaUrl(media.id)"
-                target="_blank"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
+                @click="openLightbox(media, index)"
+                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer"
               >
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
@@ -848,7 +879,7 @@ function formatSize(bytes) {
                 <div v-else class="w-full h-full flex items-center justify-center">
                   <DocumentTextIcon class="w-8 h-8 text-gray-500" />
                 </div>
-              </a>
+              </div>
             </div>
           </div>
 
@@ -1310,6 +1341,90 @@ function formatSize(bytes) {
             <div v-if="backupMessages.length === 0" class="text-center text-gray-500 py-8">
               Keine Nachrichten gefunden
             </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Lightbox Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showLightbox && lightboxMedia"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100]"
+        @click.self="closeLightbox"
+        @keyup.escape="closeLightbox"
+        @keyup.left="prevMedia"
+        @keyup.right="nextMedia"
+      >
+        <!-- Close Button -->
+        <button
+          @click="closeLightbox"
+          class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10"
+        >
+          <XMarkIcon class="w-8 h-8" />
+        </button>
+
+        <!-- Download Button -->
+        <a
+          :href="getMediaUrl(lightboxMedia.id)"
+          download
+          class="absolute top-4 right-16 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10"
+          @click.stop
+        >
+          <ArrowDownTrayIcon class="w-8 h-8" />
+        </a>
+
+        <!-- Previous Button -->
+        <button
+          v-if="lightboxIndex > 0"
+          @click="prevMedia"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ChevronLeftIcon class="w-10 h-10" />
+        </button>
+
+        <!-- Next Button -->
+        <button
+          v-if="lightboxIndex < channelMedia.length - 1"
+          @click="nextMedia"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ChevronRightIcon class="w-10 h-10" />
+        </button>
+
+        <!-- Image -->
+        <div class="max-w-[90vw] max-h-[90vh] flex flex-col items-center">
+          <img
+            v-if="lightboxMedia.mime_type?.startsWith('image/')"
+            :src="getMediaUrl(lightboxMedia.id)"
+            class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            :alt="lightboxMedia.filename"
+          />
+          <video
+            v-else-if="lightboxMedia.mime_type?.startsWith('video/')"
+            :src="getMediaUrl(lightboxMedia.id)"
+            class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+            controls
+            autoplay
+          />
+          <div v-else class="bg-dark-800 rounded-lg p-8 text-center">
+            <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p class="text-white font-medium">{{ lightboxMedia.filename }}</p>
+            <a
+              :href="getMediaUrl(lightboxMedia.id)"
+              download
+              class="btn-primary mt-4 inline-flex items-center"
+              @click.stop
+            >
+              <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
+              Herunterladen
+            </a>
+          </div>
+
+          <!-- File Info -->
+          <div class="mt-4 text-center text-white/70 text-sm">
+            <p class="font-medium text-white">{{ lightboxMedia.filename }}</p>
+            <p class="mt-1">{{ lightboxIndex + 1 }} / {{ channelMedia.length }}</p>
           </div>
         </div>
       </div>

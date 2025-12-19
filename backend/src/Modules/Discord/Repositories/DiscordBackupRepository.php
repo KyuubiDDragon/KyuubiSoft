@@ -464,6 +464,30 @@ class DiscordBackupRepository
         return $links;
     }
 
+    public function countMediaByChannel(string $discordChannelId, string $userId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*)
+             FROM discord_media m
+             INNER JOIN discord_backups b ON m.backup_id = b.id
+             INNER JOIN discord_accounts a ON b.account_id = a.id
+             WHERE b.discord_channel_id = ? AND a.user_id = ?',
+            [$discordChannelId, $userId]
+        );
+    }
+
+    public function countLinksInChannel(string $discordChannelId, string $userId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*)
+             FROM discord_messages m
+             INNER JOIN discord_backups b ON m.backup_id = b.id
+             INNER JOIN discord_accounts a ON b.account_id = a.id
+             WHERE b.discord_channel_id = ? AND a.user_id = ? AND m.content REGEXP \'https?://[^[:space:]]+\'',
+            [$discordChannelId, $userId]
+        );
+    }
+
     // Delete job methods
     public function createDeleteJob(array $data): array
     {

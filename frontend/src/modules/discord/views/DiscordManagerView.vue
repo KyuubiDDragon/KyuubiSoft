@@ -214,16 +214,16 @@ function closeLightbox() {
 }
 
 function nextMedia() {
-  if (lightboxIndex.value < channelMedia.value.length - 1) {
+  if (lightboxIndex.value < filteredChannelMedia.value.length - 1) {
     lightboxIndex.value++
-    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+    lightboxMedia.value = filteredChannelMedia.value[lightboxIndex.value]
   }
 }
 
 function prevMedia() {
   if (lightboxIndex.value > 0) {
     lightboxIndex.value--
-    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+    lightboxMedia.value = filteredChannelMedia.value[lightboxIndex.value]
   }
 }
 
@@ -274,6 +274,53 @@ const selectedDM = ref(null)
 const channelMedia = ref([])
 const channelLinks = ref([])
 const isLoadingChannelData = ref(false)
+
+// Media pagination and filtering
+const channelMediaTotal = ref(0)
+const channelMediaPage = ref(1)
+const channelMediaHasMore = ref(false)
+const isLoadingMoreMedia = ref(false)
+const mediaSearchQuery = ref('')
+const mediaTypeFilter = ref('all') // 'all', 'image', 'video', 'other'
+
+// Filtered media based on search and type
+const filteredChannelMedia = computed(() => {
+  let result = channelMedia.value
+
+  // Filter by search query (filename)
+  if (mediaSearchQuery.value.trim()) {
+    const query = mediaSearchQuery.value.toLowerCase()
+    result = result.filter(m =>
+      m.filename?.toLowerCase().includes(query) ||
+      m.mime_type?.toLowerCase().includes(query)
+    )
+  }
+
+  // Filter by type
+  if (mediaTypeFilter.value !== 'all') {
+    result = result.filter(m => {
+      const mime = m.mime_type || ''
+      if (mediaTypeFilter.value === 'image') return mime.startsWith('image/')
+      if (mediaTypeFilter.value === 'video') return mime.startsWith('video/')
+      if (mediaTypeFilter.value === 'other') return !mime.startsWith('image/') && !mime.startsWith('video/')
+      return true
+    })
+  }
+
+  return result
+})
+
+// Media type counts for filter buttons
+const mediaTypeCounts = computed(() => {
+  const counts = { all: channelMedia.value.length, image: 0, video: 0, other: 0 }
+  channelMedia.value.forEach(m => {
+    const mime = m.mime_type || ''
+    if (mime.startsWith('image/')) counts.image++
+    else if (mime.startsWith('video/')) counts.video++
+    else counts.other++
+  })
+  return counts
+})
 
 // Filtered servers (by search query)
 const filteredServers = computed(() => {
@@ -393,22 +440,52 @@ async function selectDM(dm) {
   selectedDM.value = dm
   channelMedia.value = []
   channelLinks.value = []
+  channelMediaPage.value = 1
+  channelMediaTotal.value = 0
+  channelMediaHasMore.value = false
+  mediaSearchQuery.value = ''
+  mediaTypeFilter.value = 'all'
 
   // Load media and links for this channel
   if (dm.discord_channel_id) {
     isLoadingChannelData.value = true
     try {
       const [mediaResult, linksResult] = await Promise.all([
-        discordStore.loadChannelMedia(dm.discord_channel_id),
-        discordStore.loadChannelLinks(dm.discord_channel_id)
+        discordStore.loadChannelMedia(dm.discord_channel_id, 1, 100),
+        discordStore.loadChannelLinks(dm.discord_channel_id, 1, 100)
       ])
       channelMedia.value = mediaResult?.items || []
+      channelMediaTotal.value = mediaResult?.total || 0
+      channelMediaHasMore.value = mediaResult?.has_more || false
       channelLinks.value = linksResult?.items || []
     } catch (error) {
       console.error('Failed to load channel data:', error)
     } finally {
       isLoadingChannelData.value = false
     }
+  }
+}
+
+async function loadMoreMedia() {
+  if (!selectedDM.value?.discord_channel_id || isLoadingMoreMedia.value || !channelMediaHasMore.value) return
+
+  isLoadingMoreMedia.value = true
+  try {
+    channelMediaPage.value++
+    const result = await discordStore.loadChannelMedia(
+      selectedDM.value.discord_channel_id,
+      channelMediaPage.value,
+      100
+    )
+    if (result?.items) {
+      channelMedia.value = [...channelMedia.value, ...result.items]
+      channelMediaHasMore.value = result.has_more || false
+    }
+  } catch (error) {
+    console.error('Failed to load more media:', error)
+    channelMediaPage.value-- // Revert page on error
+  } finally {
+    isLoadingMoreMedia.value = false
   }
 }
 
@@ -1117,28 +1194,142 @@ function formatSize(bytes) {
 
           <!-- Media Gallery -->
           <div v-else-if="channelMedia.length > 0" class="p-6 border-t border-dark-600">
-            <h4 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
-              <PhotoIcon class="w-5 h-5" />
-              Bilder & Medien ({{ channelMedia.length }})
-            </h4>
-            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[300px] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-lg font-medium text-white flex items-center gap-2">
+                <PhotoIcon class="w-5 h-5" />
+                Bilder & Medien
+              </h4>
+              <span class="text-sm text-gray-400">
+                {{ filteredChannelMedia.length }} von {{ channelMediaTotal }} Medien
+              </span>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="mediaSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Nach Dateiname suchen..."
+              />
+              <button
+                v-if="mediaSearchQuery"
+                @click="mediaSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <XCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button
+                @click="mediaTypeFilter = 'all'"
+                :class="[
+                  'text-xs px-3 py-1.5 rounded-full transition-colors',
+                  mediaTypeFilter === 'all'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                Alle ({{ mediaTypeCounts.all }})
+              </button>
+              <button
+                @click="mediaTypeFilter = 'image'"
+                :class="[
+                  'text-xs px-3 py-1.5 rounded-full transition-colors',
+                  mediaTypeFilter === 'image'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                Bilder ({{ mediaTypeCounts.image }})
+              </button>
+              <button
+                @click="mediaTypeFilter = 'video'"
+                :class="[
+                  'text-xs px-3 py-1.5 rounded-full transition-colors',
+                  mediaTypeFilter === 'video'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                Videos ({{ mediaTypeCounts.video }})
+              </button>
+              <button
+                v-if="mediaTypeCounts.other > 0"
+                @click="mediaTypeFilter = 'other'"
+                :class="[
+                  'text-xs px-3 py-1.5 rounded-full transition-colors',
+                  mediaTypeFilter === 'other'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                Andere ({{ mediaTypeCounts.other }})
+              </button>
+            </div>
+
+            <!-- Media Grid -->
+            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto">
               <div
-                v-for="(media, index) in channelMedia"
+                v-for="(media, index) in filteredChannelMedia"
                 :key="media.id"
                 @click="openLightbox(media, index)"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer"
+                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative group"
               >
+                <!-- Loading placeholder -->
+                <div class="absolute inset-0 flex items-center justify-center bg-dark-700 media-placeholder">
+                  <ArrowPathIcon class="w-6 h-6 text-gray-500 animate-spin" />
+                </div>
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
                   :src="getMediaUrl(media.id)"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover relative z-10"
                   :alt="media.filename"
                   loading="lazy"
+                  @load="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
+                  @error="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center">
+                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800 relative z-10">
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="w-full h-full flex items-center justify-center relative z-10">
                   <DocumentTextIcon class="w-8 h-8 text-gray-500" />
                 </div>
+                <!-- Filename tooltip on hover -->
+                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                  {{ media.filename }}
+                </div>
               </div>
+            </div>
+
+            <!-- No results after filter -->
+            <div v-if="filteredChannelMedia.length === 0 && channelMedia.length > 0" class="text-center text-gray-500 py-4">
+              <MagnifyingGlassIcon class="w-8 h-8 mx-auto mb-2" />
+              <p class="text-sm">Keine Medien gefunden</p>
+              <button @click="mediaSearchQuery = ''; mediaTypeFilter = 'all'" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
+                Filter zurücksetzen
+              </button>
+            </div>
+
+            <!-- Load More Button -->
+            <div v-if="channelMediaHasMore" class="mt-4 text-center">
+              <button
+                @click="loadMoreMedia"
+                :disabled="isLoadingMoreMedia"
+                class="btn-secondary"
+              >
+                <ArrowPathIcon v-if="isLoadingMoreMedia" class="w-4 h-4 mr-2 animate-spin" />
+                <span v-else>Mehr laden ({{ channelMedia.length }} / {{ channelMediaTotal }})</span>
+              </button>
             </div>
           </div>
 
@@ -1707,7 +1898,7 @@ function formatSize(bytes) {
 
         <!-- Next Button -->
         <button
-          v-if="lightboxIndex < channelMedia.length - 1"
+          v-if="lightboxIndex < filteredChannelMedia.length - 1"
           @click="nextMedia"
           class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
         >
@@ -1746,7 +1937,7 @@ function formatSize(bytes) {
           <!-- File Info -->
           <div class="mt-4 text-center text-white/70 text-sm">
             <p class="font-medium text-white">{{ lightboxMedia.filename }}</p>
-            <p class="mt-1">{{ lightboxIndex + 1 }} / {{ channelMedia.length }}</p>
+            <p class="mt-1">{{ lightboxIndex + 1 }} / {{ filteredChannelMedia.length }}</p>
           </div>
         </div>
       </div>

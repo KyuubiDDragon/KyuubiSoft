@@ -192,6 +192,15 @@ async function syncAccount(accountId) {
 async function selectServer(server) {
   selectedDM.value = null // Clear DM selection
   await discordStore.loadServerChannels(server.id)
+
+  // If no channels found, sync them from Discord
+  if (!discordStore.selectedServer?.channels?.length) {
+    try {
+      await discordStore.syncServerChannels(server.id)
+    } catch (error) {
+      console.error('Failed to sync server channels:', error)
+    }
+  }
 }
 
 async function selectDM(dm) {

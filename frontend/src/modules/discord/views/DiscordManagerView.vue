@@ -27,6 +27,12 @@ const discordStore = useDiscordStore()
 const uiStore = useUiStore()
 const { confirm } = useConfirmDialog()
 
+// Helper for authenticated media URLs
+function getMediaUrl(mediaId) {
+  const token = localStorage.getItem('access_token')
+  return `/api/v1/discord/media/${mediaId}?token=${encodeURIComponent(token)}`
+}
+
 // State
 const activeTab = ref('servers')
 const showAddAccountModal = ref(false)
@@ -827,13 +833,13 @@ function formatSize(bytes) {
               <a
                 v-for="media in channelMedia"
                 :key="media.id"
-                :href="`/api/v1/discord/media/${media.id}`"
+                :href="getMediaUrl(media.id)"
                 target="_blank"
                 class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
               >
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
-                  :src="`/api/v1/discord/media/${media.id}`"
+                  :src="getMediaUrl(media.id)"
                   class="w-full h-full object-cover"
                   :alt="media.filename"
                   loading="lazy"

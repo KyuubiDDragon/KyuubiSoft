@@ -61,6 +61,12 @@ class AuthMiddleware implements MiddlewareInterface
             return $cookies['access_token'];
         }
 
+        // Also check for token in query parameter (for media/file downloads)
+        $queryParams = $request->getQueryParams();
+        if (isset($queryParams['token'])) {
+            return $queryParams['token'];
+        }
+
         return null;
     }
 }

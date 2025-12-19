@@ -1230,7 +1230,10 @@ class DiscordController
             throw new NotFoundException('Discord bot not found');
         }
 
-        if (empty($data['server_id']) && empty($data['discord_guild_id'])) {
+        // Accept multiple parameter names for server_id
+        $serverId = $data['server_id'] ?? $data['bot_server_id'] ?? $data['serverId'] ?? null;
+
+        if (empty($serverId) && empty($data['discord_guild_id'])) {
             throw new ValidationException('Server ID or Discord Guild ID is required');
         }
 
@@ -1238,14 +1241,14 @@ class DiscordController
 
         // Get server info
         $server = null;
-        if (!empty($data['server_id'])) {
-            $server = $this->botRepository->findBotServerById($data['server_id']);
+        if (!empty($serverId)) {
+            $server = $this->botRepository->findBotServerById($serverId);
             if (!$server || $server['bot_id'] !== $botId) {
                 throw new NotFoundException('Server not found');
             }
         }
 
-        $discordGuildId = $server ? $server['discord_guild_id'] : $data['discord_guild_id'];
+        $discordGuildId = $server ? $server['discord_guild_id'] : ($data['discord_guild_id'] ?? null);
         $targetName = $server ? $server['name'] : 'Unknown Server';
         $type = $data['type'] ?? 'full_server';
 
@@ -1254,7 +1257,7 @@ class DiscordController
         $channelId = null;
 
         if ($type === 'channel' && !empty($data['channel_id'])) {
-            $channels = $this->botRepository->findChannelsByBotServer($data['server_id']);
+            $channels = $this->botRepository->findChannelsByBotServer($serverId);
             foreach ($channels as $ch) {
                 if ($ch['id'] === $data['channel_id']) {
                     $discordChannelId = $ch['discord_channel_id'];

@@ -373,7 +373,7 @@ class DiscordBackupRepository
             'mime_type' => $mediaData['content_type'] ?? null,
             'width' => $mediaData['width'] ?? null,
             'height' => $mediaData['height'] ?? null,
-            'is_spoiler' => $mediaData['spoiler'] ?? false,
+            'is_spoiler' => !empty($mediaData['spoiler']) ? 1 : 0,
             'downloaded_at' => date('Y-m-d H:i:s'),
         ]);
 

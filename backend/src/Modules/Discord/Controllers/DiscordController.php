@@ -540,7 +540,13 @@ class DiscordController
             }
         }
 
-        return JsonResponse::paginated($messages, $total, $page, $perPage);
+        return JsonResponse::success([
+            'items' => $messages,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'owner_discord_id' => $account['discord_user_id'],
+        ]);
     }
 
     /**

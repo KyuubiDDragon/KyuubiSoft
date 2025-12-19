@@ -379,6 +379,21 @@ const mediaTypeCounts = computed(() => {
   return counts
 })
 
+// Chunk media into rows for virtual scrolling (8 items per row)
+const ITEMS_PER_ROW = 8
+const mediaRows = computed(() => {
+  const rows = []
+  const items = filteredChannelMedia.value
+  for (let i = 0; i < items.length; i += ITEMS_PER_ROW) {
+    rows.push({
+      id: `row-${i}`,
+      items: items.slice(i, i + ITEMS_PER_ROW),
+      startIndex: i
+    })
+  }
+  return rows
+})
+
 // Filtered servers (by search query)
 const filteredServers = computed(() => {
   const query = serverSearchQuery.value.toLowerCase().trim()
@@ -1311,45 +1326,53 @@ function formatSize(bytes) {
               </button>
             </div>
 
-            <!-- Media Grid -->
-            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto" style="contain: strict;">
-              <div
-                v-for="(media, index) in filteredChannelMedia"
-                :key="media.id"
-                @click="openLightbox(media, index)"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative group"
-                style="content-visibility: auto; contain-intrinsic-size: 1px 80px;"
-              >
-                <!-- Loading placeholder -->
-                <div class="absolute inset-0 flex items-center justify-center bg-dark-700 media-placeholder">
-                  <ArrowPathIcon class="w-6 h-6 text-gray-500 animate-spin" />
-                </div>
-                <img
-                  v-if="media.mime_type?.startsWith('image/')"
-                  :ref="el => el && lazyLoadImage(el, media)"
-                  class="w-full h-full object-cover relative z-10"
-                  :alt="media.filename"
-                  @load="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
-                  @error="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
-                />
-                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800 relative z-10">
-                  <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
+            <!-- Media Grid with Virtual Scrolling -->
+            <RecycleScroller
+              v-if="mediaRows.length > 0"
+              class="h-[400px]"
+              :items="mediaRows"
+              :item-size="56"
+              key-field="id"
+              v-slot="{ item: row }"
+            >
+              <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 pb-2">
+                <div
+                  v-for="(media, idx) in row.items"
+                  :key="media.id"
+                  @click="openLightbox(media, row.startIndex + idx)"
+                  class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative group"
+                >
+                  <!-- Loading placeholder -->
+                  <div class="absolute inset-0 flex items-center justify-center bg-dark-700 media-placeholder">
+                    <ArrowPathIcon class="w-6 h-6 text-gray-500 animate-spin" />
+                  </div>
+                  <img
+                    v-if="media.mime_type?.startsWith('image/')"
+                    :ref="el => el && lazyLoadImage(el, media)"
+                    class="w-full h-full object-cover relative z-10"
+                    :alt="media.filename"
+                    @load="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
+                    @error="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
+                  />
+                  <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800 relative z-10">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div v-else class="w-full h-full flex items-center justify-center relative z-10">
-                  <DocumentTextIcon class="w-8 h-8 text-gray-500" />
-                </div>
-                <!-- Filename tooltip on hover -->
-                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                  {{ media.filename }}
+                  <div v-else class="w-full h-full flex items-center justify-center relative z-10">
+                    <DocumentTextIcon class="w-8 h-8 text-gray-500" />
+                  </div>
+                  <!-- Filename tooltip on hover -->
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    {{ media.filename }}
+                  </div>
                 </div>
               </div>
-            </div>
+            </RecycleScroller>
 
             <!-- No results after filter -->
             <div v-if="filteredChannelMedia.length === 0 && channelMedia.length > 0" class="text-center text-gray-500 py-4">

@@ -43,6 +43,57 @@ function getMediaUrl(media) {
   return `/api/v1/discord/media/${mediaId}?token=${encodeURIComponent(token)}`
 }
 
+// Lazy loading with Intersection Observer
+const imageObserver = ref(null)
+
+onMounted(async () => {
+  // Setup Intersection Observer for lazy loading images
+  imageObserver.value = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target
+        const src = img.dataset.src
+        if (src) {
+          img.src = src
+          img.removeAttribute('data-src')
+          imageObserver.value.unobserve(img)
+        }
+      }
+    })
+  }, {
+    rootMargin: '100px', // Start loading 100px before visible
+    threshold: 0.1
+  })
+
+  await discordStore.loadAccounts()
+  if (discordStore.selectedAccount) {
+    await Promise.all([
+      discordStore.loadServers(discordStore.selectedAccount),
+      discordStore.loadDMChannels(discordStore.selectedAccount),
+      discordStore.loadBackups(),
+      discordStore.loadDeleteJobs(),
+    ])
+  }
+})
+
+onUnmounted(() => {
+  stopBackupPolling()
+  if (imageObserver.value) {
+    imageObserver.value.disconnect()
+  }
+})
+
+// Directive for lazy loading
+function lazyLoadImage(el, media) {
+  if (imageObserver.value && media?.signed_url) {
+    el.dataset.src = getMediaUrl(media)
+    el.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' // 1x1 transparent gif
+    imageObserver.value.observe(el)
+  } else {
+    el.src = getMediaUrl(media)
+  }
+}
+
 // State
 const activeTab = ref('servers')
 const showAddAccountModal = ref(false)
@@ -355,23 +406,6 @@ const sortedDMChannels = computed(() => {
   })
 })
 
-// Lifecycle
-onMounted(async () => {
-  await discordStore.loadAccounts()
-  if (discordStore.selectedAccount) {
-    await Promise.all([
-      discordStore.loadServers(discordStore.selectedAccount),
-      discordStore.loadDMChannels(discordStore.selectedAccount),
-      discordStore.loadBackups(),
-      discordStore.loadDeleteJobs(),
-    ])
-  }
-})
-
-onUnmounted(() => {
-  stopBackupPolling()
-})
-
 // Watch for account change
 watch(() => discordStore.selectedAccount, async (newVal) => {
   if (newVal) {
@@ -457,8 +491,8 @@ async function selectDM(dm) {
     isLoadingChannelData.value = true
     try {
       const [mediaResult, linksResult] = await Promise.all([
-        discordStore.loadChannelMedia(dm.discord_channel_id, 1, 100),
-        discordStore.loadChannelLinks(dm.discord_channel_id, 1, 100)
+        discordStore.loadChannelMedia(dm.discord_channel_id, 1, 50),
+        discordStore.loadChannelLinks(dm.discord_channel_id, 1, 50)
       ])
       channelMedia.value = mediaResult?.items || []
       channelMediaTotal.value = mediaResult?.total || 0
@@ -481,7 +515,7 @@ async function loadMoreMedia() {
     const result = await discordStore.loadChannelMedia(
       selectedDM.value.discord_channel_id,
       channelMediaPage.value,
-      100
+      50
     )
     if (result?.items) {
       channelMedia.value = [...channelMedia.value, ...result.items]
@@ -1291,10 +1325,9 @@ function formatSize(bytes) {
                 </div>
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
-                  :src="getMediaUrl(media)"
+                  :ref="el => el && lazyLoadImage(el, media)"
                   class="w-full h-full object-cover relative z-10"
                   :alt="media.filename"
-                  loading="lazy"
                   @load="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
                   @error="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
                 />

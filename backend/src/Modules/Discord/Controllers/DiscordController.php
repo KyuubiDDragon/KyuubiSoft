@@ -820,12 +820,19 @@ class DiscordController
         $queryParams = $request->getQueryParams();
 
         $page = max(1, (int) ($queryParams['page'] ?? 1));
-        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $perPage = min(200, max(1, (int) ($queryParams['per_page'] ?? 50)));
         $offset = ($page - 1) * $perPage;
 
         $media = $this->backupRepository->findMediaByChannel($channelId, $userId, $perPage, $offset);
+        $total = $this->backupRepository->countMediaByChannel($channelId, $userId);
 
-        return JsonResponse::success(['items' => $media]);
+        return JsonResponse::success([
+            'items' => $media,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => ($offset + count($media)) < $total,
+        ]);
     }
 
     public function getChannelLinks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -835,12 +842,19 @@ class DiscordController
         $queryParams = $request->getQueryParams();
 
         $page = max(1, (int) ($queryParams['page'] ?? 1));
-        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $perPage = min(200, max(1, (int) ($queryParams['per_page'] ?? 50)));
         $offset = ($page - 1) * $perPage;
 
         $links = $this->backupRepository->getLinksFromChannel($channelId, $userId, $perPage, $offset);
+        $total = $this->backupRepository->countLinksInChannel($channelId, $userId);
 
-        return JsonResponse::success(['items' => $links]);
+        return JsonResponse::success([
+            'items' => $links,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => ($offset + count($links)) < $total,
+        ]);
     }
 
     // ========================================================================

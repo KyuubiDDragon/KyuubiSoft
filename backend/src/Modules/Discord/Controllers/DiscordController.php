@@ -1229,8 +1229,10 @@ class DiscordController
         $backup = $this->backupRepository->create([
             'account_id' => null, // No user account for bot backups
             'bot_id' => $botId,
-            'server_id' => $server ? $server['id'] : null,
-            'channel_id' => $channelId,
+            'server_id' => null,      // Not used for bot backups (references discord_servers)
+            'bot_server_id' => $server ? $server['id'] : null,  // References discord_bot_servers
+            'channel_id' => null,     // Not used for bot backups (references discord_channels)
+            'bot_channel_id' => $channelId,  // References discord_bot_channels
             'discord_guild_id' => $discordGuildId,
             'discord_channel_id' => $discordChannelId,
             'target_name' => $targetName,

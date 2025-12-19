@@ -1289,13 +1289,13 @@ class DiscordController
             'date_to' => $data['date_to'] ?? null,
         ]);
 
-        // Spawn background process for backup
+        // Spawn background process for backup (same method as user token backup which works)
         $encryptedToken = $bot['bot_token_encrypted'];
         $backupId = $backup['id'];
         $scriptPath = dirname(__DIR__, 4) . '/bin/process-discord-backup.php';
         $logPath = dirname(__DIR__, 4) . '/storage/logs/backup-' . $backupId . '.log';
 
-        // Run backup processor in background
+        // Run backup processor in background with nohup to survive PHP-FPM shutdown
         $cmd = sprintf(
             'nohup php %s %s %s bot > %s 2>&1 &',
             escapeshellarg($scriptPath),
@@ -1304,6 +1304,8 @@ class DiscordController
             escapeshellarg($logPath)
         );
         exec($cmd);
+
+        error_log("Started bot backup process: $cmd");
 
         return JsonResponse::created($backup, 'Bot backup started');
     }

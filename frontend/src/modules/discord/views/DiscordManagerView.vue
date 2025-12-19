@@ -22,6 +22,8 @@ import {
   UserIcon,
   LinkIcon,
   ArrowDownTrayIcon,
+  FunnelIcon,
+  XCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 
@@ -54,6 +56,102 @@ const isSearching = ref(false)
 // Links
 const links = ref([])
 const isLoadingLinks = ref(false)
+const linkSearchQuery = ref('')
+const hiddenDomains = ref(['tenor.com', 'giphy.com', 'media.discordapp.net'])
+
+// Common domains that are usually just media/GIFs
+const mediaDomains = ['tenor.com', 'giphy.com', 'media.discordapp.net', 'cdn.discordapp.com', 'imgur.com', 'gfycat.com']
+
+function getDomain(url) {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return ''
+  }
+}
+
+function toggleDomain(domain) {
+  const idx = hiddenDomains.value.indexOf(domain)
+  if (idx >= 0) {
+    hiddenDomains.value.splice(idx, 1)
+  } else {
+    hiddenDomains.value.push(domain)
+  }
+}
+
+const filteredLinks = computed(() => {
+  let result = links.value
+
+  // Apply search filter
+  if (linkSearchQuery.value.trim()) {
+    const query = linkSearchQuery.value.toLowerCase()
+    result = result.filter(link =>
+      link.url.toLowerCase().includes(query) ||
+      link.author_username?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply domain filter
+  if (hiddenDomains.value.length > 0) {
+    result = result.filter(link => {
+      const domain = getDomain(link.url)
+      return !hiddenDomains.value.some(hidden => domain.includes(hidden))
+    })
+  }
+
+  return result
+})
+
+const filteredChannelLinks = computed(() => {
+  let result = channelLinks.value
+
+  // Apply search filter
+  if (linkSearchQuery.value.trim()) {
+    const query = linkSearchQuery.value.toLowerCase()
+    result = result.filter(link =>
+      link.url.toLowerCase().includes(query) ||
+      link.author_username?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply domain filter
+  if (hiddenDomains.value.length > 0) {
+    result = result.filter(link => {
+      const domain = getDomain(link.url)
+      return !hiddenDomains.value.some(hidden => domain.includes(hidden))
+    })
+  }
+
+  return result
+})
+
+// Get unique domains from links for filter buttons
+const linkDomains = computed(() => {
+  const domains = {}
+  links.value.forEach(link => {
+    const domain = getDomain(link.url)
+    if (domain) {
+      domains[domain] = (domains[domain] || 0) + 1
+    }
+  })
+  return Object.entries(domains)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+})
+
+// Get unique domains from channel links for filter buttons
+const channelLinkDomains = computed(() => {
+  const domains = {}
+  channelLinks.value.forEach(link => {
+    const domain = getDomain(link.url)
+    if (domain) {
+      domains[domain] = (domains[domain] || 0) + 1
+    }
+  })
+  return Object.entries(domains)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+})
 
 // Active Backups (for progress tracking)
 const activeBackups = ref([])
@@ -853,12 +951,61 @@ function formatSize(bytes) {
 
         <!-- Links Panel -->
         <div v-if="activeTab === 'links'" class="card">
-          <div class="p-4 border-b border-dark-600 flex items-center justify-between">
-            <h3 class="text-lg font-medium text-white">
-              <LinkIcon class="w-5 h-5 inline mr-2" />
-              Link-Sammlung
-            </h3>
-            <span class="text-sm text-gray-400">{{ links.length }} Links gefunden</span>
+          <div class="p-4 border-b border-dark-600">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-medium text-white">
+                <LinkIcon class="w-5 h-5 inline mr-2" />
+                Link-Sammlung
+              </h3>
+              <span class="text-sm text-gray-400">
+                {{ filteredLinks.length }} von {{ links.length }} Links
+              </span>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="linkSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Links durchsuchen..."
+              />
+              <button
+                v-if="linkSearchQuery"
+                @click="linkSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <XCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Domain Filters -->
+            <div v-if="linkDomains.length > 0" class="flex flex-wrap gap-2">
+              <span class="text-xs text-gray-500 flex items-center gap-1">
+                <FunnelIcon class="w-3 h-3" /> Filter:
+              </span>
+              <button
+                v-for="[domain, count] in linkDomains"
+                :key="domain"
+                @click="toggleDomain(domain)"
+                :class="[
+                  'text-xs px-2 py-1 rounded-full transition-colors',
+                  hiddenDomains.includes(domain)
+                    ? 'bg-red-500/20 text-red-400 line-through'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                {{ domain }} ({{ count }})
+              </button>
+              <button
+                v-if="hiddenDomains.length > 0"
+                @click="hiddenDomains = []"
+                class="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-400 hover:bg-primary-500/30"
+              >
+                Alle zeigen
+              </button>
+            </div>
           </div>
 
           <!-- Loading -->
@@ -868,8 +1015,8 @@ function formatSize(bytes) {
           </div>
 
           <!-- Links List -->
-          <div v-else-if="links.length > 0" class="divide-y divide-dark-600 max-h-[600px] overflow-y-auto">
-            <div v-for="link in links" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
+          <div v-else-if="filteredLinks.length > 0" class="divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+            <div v-for="link in filteredLinks" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
               <div class="flex items-start gap-3">
                 <LinkIcon class="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
@@ -882,16 +1029,25 @@ function formatSize(bytes) {
                     {{ link.url }}
                   </a>
                   <div class="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
                     <span>{{ link.author_username }}</span>
                     <span>{{ formatDate(link.message_timestamp) }}</span>
-                    <span v-if="link.backup_name" class="bg-dark-600 px-2 py-0.5 rounded">{{ link.backup_name }}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- No Links -->
+          <!-- No Links (after filter) -->
+          <div v-else-if="links.length > 0" class="p-8 text-center">
+            <FunnelIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
+            <p class="text-gray-400">Keine Links mit aktuellem Filter gefunden.</p>
+            <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
+              Filter zurücksetzen
+            </button>
+          </div>
+
+          <!-- No Links at all -->
           <div v-else class="p-12 text-center">
             <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
             <h3 class="text-xl font-medium text-white mb-2">Keine Links gefunden</h3>
@@ -988,13 +1144,65 @@ function formatSize(bytes) {
 
           <!-- Links -->
           <div v-if="channelLinks.length > 0" class="p-6 border-t border-dark-600">
-            <h4 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
-              <LinkIcon class="w-5 h-5" />
-              Links ({{ channelLinks.length }})
-            </h4>
-            <div class="space-y-2 max-h-[200px] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-lg font-medium text-white flex items-center gap-2">
+                <LinkIcon class="w-5 h-5" />
+                Links
+              </h4>
+              <span class="text-sm text-gray-400">
+                {{ filteredChannelLinks.length }} von {{ channelLinks.length }} Links
+              </span>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="linkSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Links durchsuchen..."
+              />
+              <button
+                v-if="linkSearchQuery"
+                @click="linkSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <XCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Domain Filters -->
+            <div v-if="channelLinkDomains.length > 0" class="flex flex-wrap gap-2 mb-3">
+              <span class="text-xs text-gray-500 flex items-center gap-1">
+                <FunnelIcon class="w-3 h-3" /> Filter:
+              </span>
+              <button
+                v-for="[domain, count] in channelLinkDomains"
+                :key="domain"
+                @click="toggleDomain(domain)"
+                :class="[
+                  'text-xs px-2 py-1 rounded-full transition-colors',
+                  hiddenDomains.includes(domain)
+                    ? 'bg-red-500/20 text-red-400 line-through'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                {{ domain }} ({{ count }})
+              </button>
+              <button
+                v-if="hiddenDomains.length > 0"
+                @click="hiddenDomains = []"
+                class="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-400 hover:bg-primary-500/30"
+              >
+                Alle zeigen
+              </button>
+            </div>
+
+            <!-- Links List -->
+            <div v-if="filteredChannelLinks.length > 0" class="space-y-2 max-h-[250px] overflow-y-auto">
               <a
-                v-for="link in channelLinks"
+                v-for="link in filteredChannelLinks"
                 :key="link.url + link.message_id"
                 :href="link.url"
                 target="_blank"
@@ -1002,10 +1210,21 @@ function formatSize(bytes) {
                 class="block p-2 bg-dark-700 rounded hover:bg-dark-600 transition-colors"
               >
                 <span class="text-primary-400 text-sm break-all">{{ link.url }}</span>
-                <div class="text-xs text-gray-500 mt-1">
-                  {{ link.author_username }} - {{ formatDate(link.message_timestamp) }}
+                <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                  <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
+                  <span>{{ link.author_username }}</span>
+                  <span>{{ formatDate(link.message_timestamp) }}</span>
                 </div>
               </a>
+            </div>
+
+            <!-- No Links after filter -->
+            <div v-else class="text-center text-gray-500 py-4">
+              <FunnelIcon class="w-8 h-8 mx-auto mb-2" />
+              <p class="text-sm">Keine Links mit aktuellem Filter</p>
+              <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
+                Filter zurücksetzen
+              </button>
             </div>
           </div>
 

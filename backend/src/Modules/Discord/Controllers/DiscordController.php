@@ -1130,7 +1130,7 @@ class DiscordController
 
         $baseUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
         return sprintf(
-            '%s/api/discord/media/%s/signed?expires=%d&signature=%s',
+            '%s/api/v1/discord/media/%s/signed?expires=%d&signature=%s',
             $baseUrl,
             urlencode($mediaId),
             $expires,

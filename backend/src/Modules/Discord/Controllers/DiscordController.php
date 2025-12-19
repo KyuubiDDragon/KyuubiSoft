@@ -881,9 +881,13 @@ class DiscordController
                 'is_active' => 1,
             ]);
 
+            // Auto-sync servers after update
+            $this->syncBotServersInternal($existing['id'], $botToken);
+
             $bot = $this->botRepository->findBotById($existing['id']);
             unset($bot['bot_token_encrypted'], $bot['client_secret_encrypted']);
             $bot['avatar_url'] = $this->botApi->getAvatarUrl($bot['bot_user_id'], $bot['bot_avatar']);
+            $bot['servers'] = $this->botRepository->findServersByBot($existing['id']);
 
             return JsonResponse::success($bot, 'Discord bot updated');
         }
@@ -900,8 +904,12 @@ class DiscordController
             'bot_avatar' => $botUser['avatar'],
         ]);
 
+        // Auto-sync servers after creation
+        $this->syncBotServersInternal($bot['id'], $botToken);
+
         unset($bot['bot_token_encrypted'], $bot['client_secret_encrypted']);
         $bot['avatar_url'] = $this->botApi->getAvatarUrl($bot['bot_user_id'], $bot['bot_avatar']);
+        $bot['servers'] = $this->botRepository->findServersByBot($bot['id']);
 
         return JsonResponse::created($bot, 'Discord bot added successfully');
     }
@@ -1004,6 +1012,37 @@ class DiscordController
         return JsonResponse::success([
             'servers_synced' => count($guilds),
         ], 'Bot synced successfully');
+    }
+
+    /**
+     * Internal method to sync bot servers (used by addBot for auto-sync)
+     */
+    private function syncBotServersInternal(string $botId, string $token): int
+    {
+        try {
+            $guilds = $this->botApi->getGuilds($token);
+            $guildIds = [];
+
+            foreach ($guilds as $guild) {
+                $this->botRepository->upsertBotServer($botId, [
+                    'discord_guild_id' => $guild['id'],
+                    'name' => $guild['name'],
+                    'icon' => $guild['icon'],
+                    'owner_id' => $guild['owner'] ? $guild['id'] : null,
+                    'permissions' => $guild['permissions'] ?? 0,
+                ]);
+                $guildIds[] = $guild['id'];
+            }
+
+            $this->botRepository->cleanupOldBotServers($botId, $guildIds);
+            $this->botRepository->updateBotLastSync($botId);
+
+            return count($guilds);
+        } catch (\Exception $e) {
+            // Log error but don't fail the bot creation
+            error_log("Failed to auto-sync bot servers: " . $e->getMessage());
+            return 0;
+        }
     }
 
     public function getBotInviteUrl(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

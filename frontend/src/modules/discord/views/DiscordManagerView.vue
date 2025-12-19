@@ -1279,14 +1279,20 @@ function formatSize(bytes) {
                 @click="openLightbox(media, index)"
                 class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative group"
               >
+                <!-- Loading placeholder -->
+                <div class="absolute inset-0 flex items-center justify-center bg-dark-700 media-placeholder">
+                  <ArrowPathIcon class="w-6 h-6 text-gray-500 animate-spin" />
+                </div>
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
                   :src="getMediaUrl(media.id)"
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover relative z-10"
                   :alt="media.filename"
                   loading="lazy"
+                  @load="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
+                  @error="$event.target.parentElement.querySelector('.media-placeholder')?.classList.add('hidden')"
                 />
-                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800">
+                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800 relative z-10">
                   <div class="absolute inset-0 flex items-center justify-center">
                     <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                       <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -1295,11 +1301,11 @@ function formatSize(bytes) {
                     </div>
                   </div>
                 </div>
-                <div v-else class="w-full h-full flex items-center justify-center">
+                <div v-else class="w-full h-full flex items-center justify-center relative z-10">
                   <DocumentTextIcon class="w-8 h-8 text-gray-500" />
                 </div>
                 <!-- Filename tooltip on hover -->
-                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity z-20">
                   {{ media.filename }}
                 </div>
               </div>

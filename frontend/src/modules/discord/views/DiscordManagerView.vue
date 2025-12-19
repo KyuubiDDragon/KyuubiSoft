@@ -31,9 +31,15 @@ const discordStore = useDiscordStore()
 const uiStore = useUiStore()
 const { confirm } = useConfirmDialog()
 
-// Helper for authenticated media URLs
-function getMediaUrl(mediaId) {
+// Helper for authenticated media URLs (fallback if signed_url not available)
+function getMediaUrl(media) {
+  // Prefer signed URL (shorter, more secure, no JWT in URL)
+  if (media?.signed_url) {
+    return media.signed_url
+  }
+  // Fallback to JWT-based URL
   const token = localStorage.getItem('access_token')
+  const mediaId = typeof media === 'string' ? media : media?.id
   return `/api/v1/discord/media/${mediaId}?token=${encodeURIComponent(token)}`
 }
 
@@ -1285,7 +1291,7 @@ function formatSize(bytes) {
                 </div>
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
-                  :src="getMediaUrl(media.id)"
+                  :src="getMediaUrl(media)"
                   class="w-full h-full object-cover relative z-10"
                   :alt="media.filename"
                   loading="lazy"
@@ -1879,7 +1885,7 @@ function formatSize(bytes) {
 
         <!-- Download Button -->
         <a
-          :href="getMediaUrl(lightboxMedia.id)"
+          :href="getMediaUrl(lightboxMedia)"
           download
           class="absolute top-4 right-16 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10"
           @click.stop
@@ -1909,13 +1915,13 @@ function formatSize(bytes) {
         <div class="max-w-[90vw] max-h-[90vh] flex flex-col items-center">
           <img
             v-if="lightboxMedia.mime_type?.startsWith('image/')"
-            :src="getMediaUrl(lightboxMedia.id)"
+            :src="getMediaUrl(lightboxMedia)"
             class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
             :alt="lightboxMedia.filename"
           />
           <video
             v-else-if="lightboxMedia.mime_type?.startsWith('video/')"
-            :src="getMediaUrl(lightboxMedia.id)"
+            :src="getMediaUrl(lightboxMedia)"
             class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
             controls
             autoplay
@@ -1924,7 +1930,7 @@ function formatSize(bytes) {
             <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p class="text-white font-medium">{{ lightboxMedia.filename }}</p>
             <a
-              :href="getMediaUrl(lightboxMedia.id)"
+              :href="getMediaUrl(lightboxMedia)"
               download
               class="btn-primary mt-4 inline-flex items-center"
               @click.stop

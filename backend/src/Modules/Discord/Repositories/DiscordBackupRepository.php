@@ -64,18 +64,23 @@ class DiscordBackupRepository
     {
         return $this->db->fetchAllAssociative(
             'SELECT b.*,
-                    s.name as server_name, s.icon as server_icon,
+                    COALESCE(s.name, bs.name) as server_name,
+                    COALESCE(s.icon, bs.icon) as server_icon,
                     c.name as channel_name, c.type as channel_type,
-                    a.discord_username as account_name
+                    a.discord_username as account_name,
+                    bot.bot_username as bot_name,
+                    CASE WHEN b.bot_id IS NOT NULL THEN "bot" ELSE "token" END as source_type
              FROM discord_backups b
-             INNER JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
              LEFT JOIN discord_servers s ON b.server_id = s.id
+             LEFT JOIN discord_bot_servers bs ON b.bot_server_id = bs.id
              LEFT JOIN discord_channels c ON b.channel_id = c.id
-             WHERE a.user_id = ?
+             WHERE (a.user_id = ? OR bot.user_id = ?)
              ORDER BY b.created_at DESC
              LIMIT ? OFFSET ?',
-            [$userId, $limit, $offset],
-            [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+            [$userId, $userId, $limit, $offset],
+            [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
         );
     }
 
@@ -83,9 +88,10 @@ class DiscordBackupRepository
     {
         return (int) $this->db->fetchOne(
             'SELECT COUNT(*) FROM discord_backups b
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE a.user_id = ?',
-            [$userId]
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE (a.user_id = ? OR bot.user_id = ?)',
+            [$userId, $userId]
         );
     }
 

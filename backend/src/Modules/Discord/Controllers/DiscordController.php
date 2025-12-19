@@ -446,17 +446,26 @@ class DiscordController
             'date_to' => $data['date_to'] ?? null,
         ]);
 
-        // Process backup synchronously (for now - should be background job for large backups)
-        try {
-            $this->processBackup($backup['id'], $token);
-        } catch (\Exception $e) {
-            // Log error but don't fail the request - backup status will show the error
-            error_log('Discord backup error: ' . $e->getMessage());
-        }
+        // Spawn background process for backup (avoids PHP-FPM timeout)
+        $encryptedToken = $account['token_encrypted'];
+        $backupId = $backup['id'];
+        $scriptPath = dirname(__DIR__, 4) . '/bin/process-discord-backup.php';
+        $logPath = dirname(__DIR__, 4) . '/storage/logs/backup-' . $backupId . '.log';
 
-        // Return updated backup data
-        $updatedBackup = $this->backupRepository->findById($backup['id']);
-        return JsonResponse::created($updatedBackup, 'Backup ' . ($updatedBackup['status'] === 'completed' ? 'completed' : 'started'));
+        // Run backup processor in background with nohup to survive PHP-FPM shutdown
+        $cmd = sprintf(
+            'nohup php %s %s %s > %s 2>&1 &',
+            escapeshellarg($scriptPath),
+            escapeshellarg($backupId),
+            escapeshellarg($encryptedToken),
+            escapeshellarg($logPath)
+        );
+        exec($cmd);
+
+        error_log("Started backup process: $cmd");
+
+        // Return immediately with pending status
+        return JsonResponse::created($backup, 'Backup started');
     }
 
     public function getBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

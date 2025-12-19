@@ -1312,12 +1312,13 @@ function formatSize(bytes) {
             </div>
 
             <!-- Media Grid -->
-            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto">
+            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto" style="contain: strict;">
               <div
                 v-for="(media, index) in filteredChannelMedia"
                 :key="media.id"
                 @click="openLightbox(media, index)"
                 class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer relative group"
+                style="content-visibility: auto; contain-intrinsic-size: 1px 80px;"
               >
                 <!-- Loading placeholder -->
                 <div class="absolute inset-0 flex items-center justify-center bg-dark-700 media-placeholder">

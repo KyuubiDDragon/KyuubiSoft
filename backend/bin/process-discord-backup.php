@@ -33,9 +33,9 @@ if ($argc < 3) {
 $backupId = $argv[1];
 $encryptedToken = $argv[2];
 
-// Validate backup ID
-if (!ctype_digit($backupId)) {
-    fwrite(STDERR, "Invalid backup ID\n");
+// Validate backup ID (UUID format)
+if (!preg_match('/^[a-f0-9\-]{36}$/i', $backupId)) {
+    fwrite(STDERR, "Invalid backup ID format\n");
     exit(1);
 }
 

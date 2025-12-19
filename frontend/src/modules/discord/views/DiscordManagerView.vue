@@ -83,6 +83,7 @@ const selectedBot = ref(null)
 const selectedBotServer = ref(null)
 const botSearchQuery = ref('')
 const isSyncingBot = ref(false)
+const isStartingBotBackup = ref(false)
 
 // Global Search
 const globalSearchQuery = ref('')
@@ -790,6 +791,32 @@ async function toggleBotServerFavorite(server) {
 
 function onBotAdded(bot) {
   selectBot(bot)
+}
+
+async function startBotServerBackup() {
+  if (!selectedBot.value || !selectedBotServer.value) return
+
+  isStartingBotBackup.value = true
+  try {
+    const backup = await discordStore.createBotBackup(selectedBot.value.id, {
+      server_id: selectedBotServer.value.id,
+      type: 'full_server',
+      backup_mode: 'full',
+      include_media: true,
+      include_reactions: true,
+      include_threads: false,
+      include_embeds: true,
+    })
+
+    uiStore.showSuccess(`Server Backup gestartet: ${selectedBotServer.value.name}`)
+
+    // Start polling for backup progress
+    startBackupPolling()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Starten des Backups')
+  } finally {
+    isStartingBotBackup.value = false
+  }
 }
 
 const filteredBots = computed(() => {
@@ -1706,9 +1733,10 @@ const filteredBots = computed(() => {
                   <span class="text-sm text-gray-400">{{ selectedBotServer.channels?.length || 0 }} Channels</span>
                 </div>
               </div>
-              <button class="btn-primary" disabled>
-                <CloudArrowDownIcon class="w-5 h-5 mr-2" />
-                Server Backup (bald)
+              <button @click="startBotServerBackup" class="btn-primary" :disabled="isStartingBotBackup">
+                <ArrowPathIcon v-if="isStartingBotBackup" class="w-5 h-5 mr-2 animate-spin" />
+                <CloudArrowDownIcon v-else class="w-5 h-5 mr-2" />
+                Server Backup
               </button>
             </div>
           </div>

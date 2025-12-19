@@ -437,6 +437,7 @@ class DiscordController
             'discord_channel_id' => $discordChannelId,
             'target_name' => $targetName,
             'type' => $type,
+            'backup_mode' => $data['backup_mode'] ?? 'full',
             'include_media' => $data['include_media'] ?? true,
             'include_reactions' => $data['include_reactions'] ?? true,
             'include_threads' => $data['include_threads'] ?? false,
@@ -860,10 +861,13 @@ class DiscordController
             $mediaCount = 0;
             $mediaSize = 0;
             $skippedByDate = 0;
+            $backupMode = $backup['backup_mode'] ?? 'full';
 
-            // Create media directory if needed
+            // Create media directory if needed (for full with media or media_only mode)
             $mediaDir = $this->storagePath . '/discord/media/' . $backupId;
-            if ($backup['include_media']) {
+            $needsMediaDir = $backupMode === 'media_only' || ($backupMode === 'full' && $backup['include_media']);
+
+            if ($needsMediaDir) {
                 if (!is_dir($this->storagePath)) {
                     if (!@mkdir($this->storagePath, 0755, true)) {
                         throw new \RuntimeException('Cannot create storage directory: ' . $this->storagePath);
@@ -875,6 +879,7 @@ class DiscordController
                     }
                 }
             }
+            $linksCount = 0;
 
             $this->backupRepository->updateProgress($backupId, 0, 0, "Fetching messages from Discord...");
 
@@ -885,9 +890,6 @@ class DiscordController
 
                 if ($dateFrom && $messageTime < $dateFrom) {
                     $skippedByDate++;
-                    // Messages are returned newest first, so if we're past date_from, we can stop
-                    // Actually no - getAllChannelMessages uses 'before' pagination, so oldest comes last
-                    // We need to continue and skip
                     continue;
                 }
 
@@ -896,8 +898,10 @@ class DiscordController
                     continue;
                 }
 
-                // Store message
-                $this->backupRepository->insertMessage($backupId, $message);
+                // Store message only for full backup mode
+                if ($backupMode === 'full') {
+                    $this->backupRepository->insertMessage($backupId, $message);
+                }
                 $messageCount++;
 
                 // Update progress every 50 messages
@@ -905,29 +909,41 @@ class DiscordController
                     $this->backupRepository->updateProgress($backupId, $messageCount, $messageCount, "Processed {$messageCount} messages...");
                 }
 
-                // Download media if enabled
-                if ($backup['include_media'] && !empty($message['attachments'])) {
-                    foreach ($message['attachments'] as $attachment) {
-                        $filename = $attachment['id'] . '_' . $attachment['filename'];
-                        $localPath = $mediaDir . '/' . $filename;
+                // Download media for full or media_only mode
+                if (($backupMode === 'full' && $backup['include_media']) || $backupMode === 'media_only') {
+                    if (!empty($message['attachments'])) {
+                        foreach ($message['attachments'] as $attachment) {
+                            $filename = $attachment['id'] . '_' . $attachment['filename'];
+                            $localPath = $mediaDir . '/' . $filename;
 
-                        if ($this->discordApi->downloadAttachment($attachment['url'], $localPath)) {
-                            $this->backupRepository->insertMedia($backupId, [
-                                'message_id' => $message['id'],
-                                'attachment_id' => $attachment['id'],
-                                'url' => $attachment['url'],
-                                'local_path' => $localPath,
-                                'filename' => $attachment['filename'],
-                                'size' => $attachment['size'] ?? null,
-                                'content_type' => $attachment['content_type'] ?? null,
-                                'width' => $attachment['width'] ?? null,
-                                'height' => $attachment['height'] ?? null,
-                                'spoiler' => str_starts_with($attachment['filename'], 'SPOILER_'),
-                            ]);
+                            if ($this->discordApi->downloadAttachment($attachment['url'], $localPath)) {
+                                $this->backupRepository->insertMedia($backupId, [
+                                    'message_id' => $message['id'],
+                                    'attachment_id' => $attachment['id'],
+                                    'url' => $attachment['url'],
+                                    'local_path' => $localPath,
+                                    'filename' => $attachment['filename'],
+                                    'size' => $attachment['size'] ?? null,
+                                    'content_type' => $attachment['content_type'] ?? null,
+                                    'width' => $attachment['width'] ?? null,
+                                    'height' => $attachment['height'] ?? null,
+                                    'spoiler' => str_starts_with($attachment['filename'], 'SPOILER_'),
+                                ]);
 
-                            $mediaCount++;
-                            $mediaSize += $attachment['size'] ?? 0;
+                                $mediaCount++;
+                                $mediaSize += $attachment['size'] ?? 0;
+                            }
                         }
+                    }
+                }
+
+                // For links_only mode, we still need to store minimal message data for link extraction
+                if ($backupMode === 'links_only' && !empty($message['content'])) {
+                    // Check if message contains links
+                    if (preg_match('/https?:\/\/[^\s]+/i', $message['content'])) {
+                        // Store only messages with links
+                        $this->backupRepository->insertMessage($backupId, $message);
+                        $linksCount++;
                     }
                 }
             }

@@ -66,6 +66,7 @@ const backupForm = reactive({
   account_id: '',
   channel_id: '',
   server_id: '',
+  backup_mode: 'full', // 'full', 'media_only', 'links_only'
   include_media: true,
   include_reactions: true,
   include_threads: false,
@@ -1090,7 +1091,56 @@ function formatSize(bytes) {
           </div>
 
           <div class="p-6 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Backup Mode -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Backup-Modus</label>
+              <div class="grid grid-cols-3 gap-2">
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'full'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="full" class="sr-only" />
+                  <ChatBubbleLeftRightIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'full' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'full' ? 'text-white' : 'text-gray-400'">Komplett</span>
+                </label>
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'media_only'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="media_only" class="sr-only" />
+                  <PhotoIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'media_only' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'media_only' ? 'text-white' : 'text-gray-400'">Nur Medien</span>
+                </label>
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'links_only'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="links_only" class="sr-only" />
+                  <LinkIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'links_only' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'links_only' ? 'text-white' : 'text-gray-400'">Nur Links</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">
+                <span v-if="backupForm.backup_mode === 'full'">Alle Nachrichten, Medien und Links werden gesichert.</span>
+                <span v-else-if="backupForm.backup_mode === 'media_only'">Nur Bilder und Dateien werden heruntergeladen.</span>
+                <span v-else>Nur Links aus den Nachrichten werden extrahiert.</span>
+              </p>
+            </div>
+
+            <!-- Options (only for full mode) -->
+            <div v-if="backupForm.backup_mode === 'full'" class="grid grid-cols-2 gap-4">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="backupForm.include_media" type="checkbox" class="checkbox" />
                 <span class="text-white">Medien herunterladen</span>

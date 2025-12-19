@@ -102,6 +102,7 @@ class DiscordBackupRepository
             'discord_channel_id' => $data['discord_channel_id'] ?? null,
             'target_name' => $data['target_name'],
             'type' => $data['type'] ?? 'channel',
+            'backup_mode' => $data['backup_mode'] ?? 'full',
             'include_media' => !empty($data['include_media']) ? 1 : 0,
             'include_reactions' => !empty($data['include_reactions']) ? 1 : 0,
             'include_threads' => !empty($data['include_threads']) ? 1 : 0,

@@ -169,6 +169,19 @@ function processBotBackup(
         $type = $backup['type'] ?? 'channel';
         $discordGuildId = $backup['discord_guild_id'];
 
+        // If discord_guild_id is not set, try to get it from bot_server_id
+        if (!$discordGuildId && !empty($backup['bot_server_id'])) {
+            $botServer = $db->fetchAssociative(
+                'SELECT discord_guild_id FROM discord_bot_servers WHERE id = ?',
+                [$backup['bot_server_id']]
+            );
+            if ($botServer) {
+                $discordGuildId = $botServer['discord_guild_id'];
+                // Update the backup record with the discord_guild_id
+                $db->update('discord_backups', ['discord_guild_id' => $discordGuildId], ['id' => $backupId]);
+            }
+        }
+
         if ($type === 'full_server' && $discordGuildId) {
             // Full server backup
             processFullServerBackup($backupId, $token, $discordGuildId, $backup, $backupRepository, $discordApi, $storagePath, $db);

@@ -120,6 +120,7 @@ class DiscordBackupRepository
             'id' => $id,
             'account_id' => $data['account_id'] ?? null,
             'bot_id' => $data['bot_id'] ?? null,
+            'bot_server_id' => $data['bot_server_id'] ?? null,
             'server_id' => $data['server_id'] ?? null,
             'channel_id' => $data['channel_id'] ?? null,
             'discord_guild_id' => $data['discord_guild_id'] ?? null,

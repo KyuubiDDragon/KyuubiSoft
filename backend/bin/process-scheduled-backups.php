@@ -80,7 +80,8 @@ foreach ($schedules as $schedule) {
         $backup = $backupRepository->create([
             'account_id' => null,
             'bot_id' => $botId,
-            'server_id' => $serverId,
+            'server_id' => null,           // Not used for bot backups (references discord_servers)
+            'bot_server_id' => $serverId,  // References discord_bot_servers
             'discord_guild_id' => $guildId,
             'discord_channel_id' => null,
             'target_name' => $serverName . ' (Scheduled)',

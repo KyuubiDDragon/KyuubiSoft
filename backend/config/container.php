@@ -467,6 +467,11 @@ return [
         return new \App\Modules\Discord\Services\DiscordApiService();
     },
 
+    // Discord Bot API Service
+    \App\Modules\Discord\Services\DiscordBotApiService::class => function (ContainerInterface $c): \App\Modules\Discord\Services\DiscordBotApiService {
+        return new \App\Modules\Discord\Services\DiscordBotApiService();
+    },
+
     // Discord Account Repository
     \App\Modules\Discord\Repositories\DiscordAccountRepository::class => function (ContainerInterface $c): \App\Modules\Discord\Repositories\DiscordAccountRepository {
         return new \App\Modules\Discord\Repositories\DiscordAccountRepository(
@@ -481,13 +486,22 @@ return [
         );
     },
 
+    // Discord Bot Repository
+    \App\Modules\Discord\Repositories\DiscordBotRepository::class => function (ContainerInterface $c): \App\Modules\Discord\Repositories\DiscordBotRepository {
+        return new \App\Modules\Discord\Repositories\DiscordBotRepository(
+            $c->get(DBALConnection::class)
+        );
+    },
+
     // Discord Controller
     \App\Modules\Discord\Controllers\DiscordController::class => function (ContainerInterface $c): \App\Modules\Discord\Controllers\DiscordController {
         return new \App\Modules\Discord\Controllers\DiscordController(
             $c->get(DBALConnection::class),
             $c->get(\App\Modules\Discord\Services\DiscordApiService::class),
+            $c->get(\App\Modules\Discord\Services\DiscordBotApiService::class),
             $c->get(\App\Modules\Discord\Repositories\DiscordAccountRepository::class),
-            $c->get(\App\Modules\Discord\Repositories\DiscordBackupRepository::class)
+            $c->get(\App\Modules\Discord\Repositories\DiscordBackupRepository::class),
+            $c->get(\App\Modules\Discord\Repositories\DiscordBotRepository::class)
         );
     },
 ];

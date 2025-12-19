@@ -1182,6 +1182,38 @@ class Router
                 $protected->post('/discord/delete-jobs/{id}/cancel', [DiscordController::class, 'cancelDeleteJob'])
                     ->add(new PermissionMiddleware('discord.delete_messages'));
 
+                // Discord Bots
+                $protected->get('/discord/bots', [DiscordController::class, 'getBots'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->post('/discord/bots', [DiscordController::class, 'addBot'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->post('/discord/bots/validate', [DiscordController::class, 'validateBot'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->get('/discord/bots/{id}', [DiscordController::class, 'getBot'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->delete('/discord/bots/{id}', [DiscordController::class, 'deleteBot'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->post('/discord/bots/{id}/sync', [DiscordController::class, 'syncBot'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->get('/discord/bots/{id}/invite', [DiscordController::class, 'getBotInviteUrl'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+
+                // Discord Bot Servers
+                $protected->get('/discord/bots/{botId}/servers', [DiscordController::class, 'getBotServers'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->get('/discord/bots/{botId}/servers/{serverId}', [DiscordController::class, 'getBotServer'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->post('/discord/bots/{botId}/servers/{serverId}/sync', [DiscordController::class, 'syncBotServerChannels'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+                $protected->post('/discord/bots/{botId}/servers/{serverId}/favorite', [DiscordController::class, 'toggleBotServerFavorite'])
+                    ->add(new PermissionMiddleware('discord.manage_bots'));
+
+                // Discord Bot Backups
+                $protected->get('/discord/bots/{botId}/backups', [DiscordController::class, 'getBotBackups'])
+                    ->add(new PermissionMiddleware('discord.create_backups'));
+                $protected->post('/discord/bots/{botId}/backups', [DiscordController::class, 'createBotBackup'])
+                    ->add(new PermissionMiddleware('discord.create_backups'));
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 
             // Discord signed media (no auth required - protected by HMAC signature)

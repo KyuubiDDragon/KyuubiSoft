@@ -8,8 +8,10 @@ use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Modules\Discord\Services\DiscordApiService;
+use App\Modules\Discord\Services\DiscordBotApiService;
 use App\Modules\Discord\Repositories\DiscordAccountRepository;
 use App\Modules\Discord\Repositories\DiscordBackupRepository;
+use App\Modules\Discord\Repositories\DiscordBotRepository;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -24,8 +26,10 @@ class DiscordController
     public function __construct(
         private readonly Connection $db,
         private readonly DiscordApiService $discordApi,
+        private readonly DiscordBotApiService $botApi,
         private readonly DiscordAccountRepository $accountRepository,
-        private readonly DiscordBackupRepository $backupRepository
+        private readonly DiscordBackupRepository $backupRepository,
+        private readonly DiscordBotRepository $botRepository
     ) {
         // Hash the APP_KEY to ensure it's exactly 32 bytes for AES-256-CBC
         $appKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
@@ -821,6 +825,464 @@ class DiscordController
         $this->backupRepository->updateDeleteJobStatus($jobId, 'cancelled');
 
         return JsonResponse::success(null, 'Delete job cancelled');
+    }
+
+    // ========================================================================
+    // Bot Management
+    // ========================================================================
+
+    public function getBots(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $bots = $this->botRepository->findAllBotsByUser($userId);
+
+        foreach ($bots as &$bot) {
+            $bot['avatar_url'] = $this->botApi->getAvatarUrl(
+                $bot['bot_user_id'],
+                $bot['bot_avatar']
+            );
+        }
+
+        return JsonResponse::success(['items' => $bots]);
+    }
+
+    public function addBot(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+
+        if (empty($data['client_id']) || empty($data['bot_token'])) {
+            throw new ValidationException('Client ID and Bot Token are required');
+        }
+
+        $clientId = trim($data['client_id']);
+        $botToken = trim($data['bot_token']);
+        $clientSecret = isset($data['client_secret']) ? trim($data['client_secret']) : null;
+
+        // Validate bot token with Discord API
+        $botUser = $this->botApi->validateToken($botToken);
+
+        if (!$botUser) {
+            throw new ValidationException('Invalid Bot Token. Please check your token and try again.');
+        }
+
+        // Check if bot already exists
+        $existing = $this->botRepository->findBotByClientId($userId, $clientId);
+
+        if ($existing) {
+            // Update existing bot
+            $this->botRepository->updateBot($existing['id'], [
+                'bot_token_encrypted' => $this->encrypt($botToken),
+                'client_secret_encrypted' => $clientSecret ? $this->encrypt($clientSecret) : null,
+                'bot_user_id' => $botUser['id'],
+                'bot_username' => $botUser['username'],
+                'bot_discriminator' => $botUser['discriminator'] ?? '0',
+                'bot_avatar' => $botUser['avatar'],
+                'is_active' => 1,
+            ]);
+
+            $bot = $this->botRepository->findBotById($existing['id']);
+            unset($bot['bot_token_encrypted'], $bot['client_secret_encrypted']);
+            $bot['avatar_url'] = $this->botApi->getAvatarUrl($bot['bot_user_id'], $bot['bot_avatar']);
+
+            return JsonResponse::success($bot, 'Discord bot updated');
+        }
+
+        // Create new bot
+        $bot = $this->botRepository->createBot([
+            'user_id' => $userId,
+            'client_id' => $clientId,
+            'client_secret_encrypted' => $clientSecret ? $this->encrypt($clientSecret) : null,
+            'bot_token_encrypted' => $this->encrypt($botToken),
+            'bot_user_id' => $botUser['id'],
+            'bot_username' => $botUser['username'],
+            'bot_discriminator' => $botUser['discriminator'] ?? '0',
+            'bot_avatar' => $botUser['avatar'],
+        ]);
+
+        unset($bot['bot_token_encrypted'], $bot['client_secret_encrypted']);
+        $bot['avatar_url'] = $this->botApi->getAvatarUrl($bot['bot_user_id'], $bot['bot_avatar']);
+
+        return JsonResponse::created($bot, 'Discord bot added successfully');
+    }
+
+    public function getBot(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        unset($bot['bot_token_encrypted'], $bot['client_secret_encrypted']);
+        $bot['avatar_url'] = $this->botApi->getAvatarUrl($bot['bot_user_id'], $bot['bot_avatar']);
+        $bot['servers'] = $this->botRepository->findServersByBot($botId);
+
+        foreach ($bot['servers'] as &$server) {
+            $server['icon_url'] = $this->botApi->getGuildIconUrl(
+                $server['discord_guild_id'],
+                $server['icon']
+            );
+        }
+
+        return JsonResponse::success($bot);
+    }
+
+    public function deleteBot(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $this->botRepository->deleteBot($botId);
+
+        return JsonResponse::success(null, 'Discord bot deleted');
+    }
+
+    public function validateBot(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $data = $request->getParsedBody() ?? [];
+
+        if (empty($data['bot_token'])) {
+            throw new ValidationException('Bot Token is required');
+        }
+
+        $botUser = $this->botApi->validateToken(trim($data['bot_token']));
+
+        if (!$botUser) {
+            throw new ValidationException('Invalid Bot Token');
+        }
+
+        return JsonResponse::success([
+            'id' => $botUser['id'],
+            'username' => $botUser['username'],
+            'discriminator' => $botUser['discriminator'] ?? '0',
+            'avatar' => $botUser['avatar'],
+            'avatar_url' => $this->botApi->getAvatarUrl($botUser['id'], $botUser['avatar']),
+        ], 'Bot token is valid');
+    }
+
+    public function syncBot(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $token = $this->decrypt($bot['bot_token_encrypted']);
+
+        // Get all guilds the bot is in
+        $guilds = $this->botApi->getGuilds($token);
+        $guildIds = [];
+
+        foreach ($guilds as $guild) {
+            $this->botRepository->upsertBotServer($botId, [
+                'discord_guild_id' => $guild['id'],
+                'name' => $guild['name'],
+                'icon' => $guild['icon'],
+                'owner_id' => $guild['owner'] ? $guild['id'] : null,
+                'permissions' => $guild['permissions'] ?? 0,
+            ]);
+
+            $guildIds[] = $guild['id'];
+        }
+
+        // Cleanup old servers that bot is no longer in
+        $this->botRepository->cleanupOldBotServers($botId, $guildIds);
+
+        $this->botRepository->updateBotLastSync($botId);
+
+        return JsonResponse::success([
+            'servers_synced' => count($guilds),
+        ], 'Bot synced successfully');
+    }
+
+    public function getBotInviteUrl(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $queryParams = $request->getQueryParams();
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        // Default permissions for backup functionality
+        $defaultPermissions = [
+            'VIEW_CHANNEL',
+            'READ_MESSAGE_HISTORY',
+        ];
+
+        // Extended permissions if requested
+        if (!empty($queryParams['extended'])) {
+            $defaultPermissions = array_merge($defaultPermissions, [
+                'MANAGE_WEBHOOKS',
+                'MANAGE_ROLES',
+                'MANAGE_CHANNELS',
+                'MANAGE_EMOJIS',
+            ]);
+        }
+
+        $guildId = $queryParams['guild_id'] ?? null;
+        $inviteUrl = $this->botApi->generateInviteUrl($bot['client_id'], $defaultPermissions, $guildId);
+
+        return JsonResponse::success([
+            'invite_url' => $inviteUrl,
+            'permissions' => $defaultPermissions,
+        ]);
+    }
+
+    // ========================================================================
+    // Bot Server Management
+    // ========================================================================
+
+    public function getBotServers(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $servers = $this->botRepository->findServersByBot($botId);
+
+        foreach ($servers as &$server) {
+            $server['icon_url'] = $this->botApi->getGuildIconUrl(
+                $server['discord_guild_id'],
+                $server['icon']
+            );
+            $server['permissions_list'] = $this->botApi->parsePermissions((int) $server['permissions']);
+        }
+
+        return JsonResponse::success(['items' => $servers]);
+    }
+
+    public function getBotServer(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+        $serverId = RouteContext::fromRequest($request)->getRoute()->getArgument('serverId');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $server = $this->botRepository->findBotServerById($serverId);
+        if (!$server || $server['bot_id'] !== $botId) {
+            throw new NotFoundException('Server not found');
+        }
+
+        $server['icon_url'] = $this->botApi->getGuildIconUrl(
+            $server['discord_guild_id'],
+            $server['icon']
+        );
+        $server['permissions_list'] = $this->botApi->parsePermissions((int) $server['permissions']);
+        $server['channels'] = $this->botRepository->findChannelsByBotServer($serverId);
+
+        return JsonResponse::success($server);
+    }
+
+    public function syncBotServerChannels(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+        $serverId = RouteContext::fromRequest($request)->getRoute()->getArgument('serverId');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $server = $this->botRepository->findBotServerById($serverId);
+        if (!$server || $server['bot_id'] !== $botId) {
+            throw new NotFoundException('Server not found');
+        }
+
+        $token = $this->decrypt($bot['bot_token_encrypted']);
+
+        try {
+            $channels = $this->botApi->getGuildChannels($token, $server['discord_guild_id']);
+            $channelCount = 0;
+
+            // Clear old channels first
+            $this->botRepository->deleteChannelsByBotServer($serverId);
+
+            foreach ($channels as $channel) {
+                // Only sync text-based channels
+                if (in_array($channel['type'], [0, 5, 15, 10, 11, 12])) { // text, announcement, forum, threads
+                    $this->botRepository->upsertBotChannel($botId, $serverId, [
+                        'discord_channel_id' => $channel['id'],
+                        'name' => $channel['name'],
+                        'type' => $channel['type'],
+                        'parent_id' => $channel['parent_id'] ?? null,
+                        'position' => $channel['position'] ?? 0,
+                        'topic' => $channel['topic'] ?? null,
+                        'permission_overwrites' => $channel['permission_overwrites'] ?? null,
+                    ]);
+                    $channelCount++;
+                }
+            }
+
+            // Also get guild details with member count
+            $guildDetails = $this->botApi->getGuild($token, $server['discord_guild_id']);
+            $this->botRepository->upsertBotServer($botId, [
+                'discord_guild_id' => $server['discord_guild_id'],
+                'name' => $guildDetails['name'],
+                'icon' => $guildDetails['icon'],
+                'owner_id' => $guildDetails['owner_id'] ?? null,
+                'member_count' => $guildDetails['approximate_member_count'] ?? null,
+                'permissions' => $server['permissions'],
+            ]);
+
+            return JsonResponse::success([
+                'channels_synced' => $channelCount,
+            ], 'Server channels synced successfully');
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to sync channels: ' . $e->getMessage());
+        }
+    }
+
+    public function toggleBotServerFavorite(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+        $serverId = RouteContext::fromRequest($request)->getRoute()->getArgument('serverId');
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $server = $this->botRepository->findBotServerById($serverId);
+        if (!$server || $server['bot_id'] !== $botId) {
+            throw new NotFoundException('Server not found');
+        }
+
+        $this->botRepository->toggleBotServerFavorite($serverId);
+
+        return JsonResponse::success(null, 'Favorite toggled');
+    }
+
+    // ========================================================================
+    // Bot Backups
+    // ========================================================================
+
+    public function createBotBackup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+        $data = $request->getParsedBody() ?? [];
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        if (empty($data['server_id']) && empty($data['discord_guild_id'])) {
+            throw new ValidationException('Server ID or Discord Guild ID is required');
+        }
+
+        $token = $this->decrypt($bot['bot_token_encrypted']);
+
+        // Get server info
+        $server = null;
+        if (!empty($data['server_id'])) {
+            $server = $this->botRepository->findBotServerById($data['server_id']);
+            if (!$server || $server['bot_id'] !== $botId) {
+                throw new NotFoundException('Server not found');
+            }
+        }
+
+        $discordGuildId = $server ? $server['discord_guild_id'] : $data['discord_guild_id'];
+        $targetName = $server ? $server['name'] : 'Unknown Server';
+        $type = $data['type'] ?? 'full_server';
+
+        // Determine channel for channel backup
+        $discordChannelId = null;
+        $channelId = null;
+
+        if ($type === 'channel' && !empty($data['channel_id'])) {
+            $channels = $this->botRepository->findChannelsByBotServer($data['server_id']);
+            foreach ($channels as $ch) {
+                if ($ch['id'] === $data['channel_id']) {
+                    $discordChannelId = $ch['discord_channel_id'];
+                    $targetName = $server['name'] . ' / #' . $ch['name'];
+                    $channelId = $ch['id'];
+                    break;
+                }
+            }
+        }
+
+        $backup = $this->backupRepository->create([
+            'account_id' => null, // No user account for bot backups
+            'bot_id' => $botId,
+            'server_id' => $server ? $server['id'] : null,
+            'channel_id' => $channelId,
+            'discord_guild_id' => $discordGuildId,
+            'discord_channel_id' => $discordChannelId,
+            'target_name' => $targetName,
+            'type' => $type,
+            'source_type' => 'bot',
+            'backup_mode' => $data['backup_mode'] ?? 'full',
+            'include_media' => $data['include_media'] ?? true,
+            'include_reactions' => $data['include_reactions'] ?? true,
+            'include_threads' => $data['include_threads'] ?? false,
+            'include_embeds' => $data['include_embeds'] ?? true,
+            'date_from' => $data['date_from'] ?? null,
+            'date_to' => $data['date_to'] ?? null,
+        ]);
+
+        // Spawn background process for backup
+        $encryptedToken = $bot['bot_token_encrypted'];
+        $backupId = $backup['id'];
+        $scriptPath = dirname(__DIR__, 4) . '/bin/process-discord-backup.php';
+        $logPath = dirname(__DIR__, 4) . '/storage/logs/backup-' . $backupId . '.log';
+
+        // Run backup processor in background
+        $cmd = sprintf(
+            'nohup php %s %s %s bot > %s 2>&1 &',
+            escapeshellarg($scriptPath),
+            escapeshellarg($backupId),
+            escapeshellarg($encryptedToken),
+            escapeshellarg($logPath)
+        );
+        exec($cmd);
+
+        return JsonResponse::created($backup, 'Bot backup started');
+    }
+
+    public function getBotBackups(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $botId = RouteContext::fromRequest($request)->getRoute()->getArgument('botId');
+        $queryParams = $request->getQueryParams();
+
+        $bot = $this->botRepository->findBotByIdAndUser($botId, $userId);
+        if (!$bot) {
+            throw new NotFoundException('Discord bot not found');
+        }
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $backups = $this->backupRepository->findByBotId($botId, $perPage, $offset);
+        $total = $this->backupRepository->countByBotId($botId);
+
+        return JsonResponse::paginated($backups, $total, $page, $perPage);
     }
 
     // ========================================================================

@@ -24,8 +24,11 @@ import {
   ArrowDownTrayIcon,
   FunnelIcon,
   XCircleIcon,
+  CpuChipIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
+import AddBotModal from '../components/AddBotModal.vue'
 
 const discordStore = useDiscordStore()
 const uiStore = useUiStore()
@@ -44,7 +47,10 @@ function getMediaUrl(media) {
 }
 
 onMounted(async () => {
-  await discordStore.loadAccounts()
+  await Promise.all([
+    discordStore.loadAccounts(),
+    discordStore.loadBots(),
+  ])
   if (discordStore.selectedAccount) {
     await Promise.all([
       discordStore.loadServers(discordStore.selectedAccount),
@@ -62,12 +68,22 @@ onUnmounted(() => {
 // State
 const activeTab = ref('servers')
 const showAddAccountModal = ref(false)
+const showAddBotModal = ref(false)
 const showBackupModal = ref(false)
 const showDeleteModal = ref(false)
 const showMessagesModal = ref(false)
 const selectedBackup = ref(null)
 const backupMessages = ref([])
 const messageSearch = ref('')
+
+// Bot State
+const bots = computed(() => discordStore.bots)
+const botServers = computed(() => discordStore.botServers)
+const selectedBot = ref(null)
+const selectedBotServer = ref(null)
+const botSearchQuery = ref('')
+const isSyncingBot = ref(false)
+const isStartingBotBackup = ref(false)
 
 // Global Search
 const globalSearchQuery = ref('')
@@ -707,6 +723,107 @@ function formatSize(bytes) {
   }
   return `${bytes.toFixed(1)} ${units[i]}`
 }
+
+// ========== Bot Functions ==========
+
+async function loadBots() {
+  await discordStore.loadBots()
+}
+
+async function selectBot(bot) {
+  selectedBot.value = bot
+  selectedBotServer.value = null
+  await discordStore.loadBotServers(bot.id)
+}
+
+async function syncBot(bot) {
+  isSyncingBot.value = true
+  try {
+    const result = await discordStore.syncBot(bot.id)
+    uiStore.showSuccess(`${result.servers_synced} Server synchronisiert`)
+  } catch (error) {
+    uiStore.showError('Fehler beim Synchronisieren')
+  } finally {
+    isSyncingBot.value = false
+  }
+}
+
+async function removeBot(bot) {
+  if (!await confirm({
+    title: 'Bot entfernen?',
+    message: `"${bot.bot_username}" wirklich entfernen?`,
+    type: 'danger'
+  })) return
+
+  try {
+    await discordStore.deleteBot(bot.id)
+    selectedBot.value = null
+    uiStore.showSuccess('Bot entfernt')
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+async function copyInviteUrl(bot, extended = false) {
+  try {
+    const result = await discordStore.getBotInviteUrl(bot.id, extended)
+    await navigator.clipboard.writeText(result.invite_url)
+    uiStore.showSuccess('Invite-Link kopiert!')
+  } catch (error) {
+    uiStore.showError('Fehler beim Kopieren')
+  }
+}
+
+async function selectBotServer(server) {
+  selectedBotServer.value = server
+  try {
+    await discordStore.syncBotServerChannels(selectedBot.value.id, server.id)
+    const details = await discordStore.getBotServer(selectedBot.value.id, server.id)
+    selectedBotServer.value = details
+  } catch (error) {
+    console.error('Failed to load bot server:', error)
+  }
+}
+
+async function toggleBotServerFavorite(server) {
+  await discordStore.toggleBotServerFavorite(selectedBot.value.id, server.id)
+}
+
+function onBotAdded(bot) {
+  selectBot(bot)
+}
+
+async function startBotServerBackup() {
+  if (!selectedBot.value || !selectedBotServer.value) return
+
+  isStartingBotBackup.value = true
+  try {
+    const backup = await discordStore.createBotBackup(selectedBot.value.id, {
+      server_id: selectedBotServer.value.id,
+      type: 'full_server',
+      backup_mode: 'full',
+      include_media: true,
+      include_reactions: true,
+      include_threads: false,
+      include_embeds: true,
+    })
+
+    uiStore.showSuccess(`Server Backup gestartet: ${selectedBotServer.value.name}`)
+
+    // Start polling for backup progress
+    startBackupPolling()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Starten des Backups')
+  } finally {
+    isStartingBotBackup.value = false
+  }
+}
+
+const filteredBots = computed(() => {
+  const query = botSearchQuery.value.toLowerCase().trim()
+  if (!query) return bots.value
+  return bots.value.filter(b => b.bot_username?.toLowerCase().includes(query))
+})
 </script>
 
 <template>
@@ -847,6 +964,13 @@ function formatSize(bytes) {
             <LinkIcon class="w-4 h-4 inline mr-1" />
             Links
           </button>
+          <button
+            @click="activeTab = 'bots'"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'bots' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <CpuChipIcon class="w-4 h-4 inline mr-1" />
+            Bots
+          </button>
         </div>
 
         <!-- Server List -->
@@ -954,6 +1078,93 @@ function formatSize(bytes) {
             </div>
             <div v-else-if="dmChannels.length === 0" class="p-8 text-center text-gray-500">
               Keine DMs gefunden
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot List -->
+        <div v-if="activeTab === 'bots'" class="card">
+          <!-- Header with Add Button -->
+          <div class="p-3 border-b border-dark-600 flex items-center justify-between">
+            <div class="relative flex-1 mr-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="botSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Bot suchen..."
+              />
+            </div>
+            <button @click="showAddBotModal = true" class="btn-primary btn-sm">
+              <PlusIcon class="w-4 h-4 mr-1" />
+              Bot
+            </button>
+          </div>
+
+          <!-- Bot List -->
+          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+            <div
+              v-for="bot in filteredBots"
+              :key="bot.id"
+              @click="selectBot(bot)"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBot?.id === bot.id ? 'bg-dark-700' : '']"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                  <img
+                    v-if="bot.avatar_url"
+                    :src="bot.avatar_url"
+                    class="w-full h-full object-cover"
+                    alt=""
+                  />
+                  <CpuChipIcon v-else class="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white truncate">{{ bot.bot_username }}</span>
+                    <span class="text-xs text-gray-500">#{{ bot.bot_discriminator }}</span>
+                  </div>
+                  <span class="text-sm text-gray-500">{{ bot.server_count || 0 }} Server</span>
+                </div>
+
+                <div class="flex gap-1">
+                  <button
+                    @click.stop="syncBot(bot)"
+                    :disabled="isSyncingBot"
+                    class="p-1.5 text-gray-400 hover:text-white rounded hover:bg-dark-600"
+                    title="Server synchronisieren"
+                  >
+                    <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': isSyncingBot }" />
+                  </button>
+                  <button
+                    @click.stop="copyInviteUrl(bot)"
+                    class="p-1.5 text-gray-400 hover:text-primary-400 rounded hover:bg-dark-600"
+                    title="Invite-Link kopieren"
+                  >
+                    <ClipboardDocumentIcon class="w-4 h-4" />
+                  </button>
+                  <button
+                    @click.stop="removeBot(bot)"
+                    class="p-1.5 text-gray-400 hover:text-red-400 rounded hover:bg-dark-600"
+                    title="Bot entfernen"
+                  >
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="filteredBots.length === 0 && botSearchQuery" class="p-8 text-center text-gray-500">
+              Keine Bots mit "{{ botSearchQuery }}" gefunden
+            </div>
+            <div v-else-if="bots.length === 0" class="p-8 text-center text-gray-500">
+              <CpuChipIcon class="w-12 h-12 mx-auto mb-3 text-gray-600" />
+              <p class="mb-3">Noch keine Bots hinzugefügt</p>
+              <button @click="showAddBotModal = true" class="btn-primary btn-sm">
+                <PlusIcon class="w-4 h-4 mr-1" />
+                Bot hinzufügen
+              </button>
             </div>
           </div>
         </div>
@@ -1425,6 +1636,127 @@ function formatSize(bytes) {
           <!-- No Data Yet -->
           <div v-if="!isLoadingChannelData && channelMedia.length === 0 && channelLinks.length === 0" class="p-6 border-t border-dark-600 text-center text-gray-500">
             <p>Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.</p>
+          </div>
+        </div>
+
+        <!-- Selected Bot with Servers -->
+        <div v-if="activeTab === 'bots' && selectedBot" class="card">
+          <div class="p-4 border-b border-dark-600">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-full bg-dark-600 overflow-hidden flex-shrink-0">
+                <img
+                  v-if="selectedBot.avatar_url"
+                  :src="selectedBot.avatar_url"
+                  class="w-full h-full object-cover"
+                  alt=""
+                />
+                <CpuChipIcon v-else class="w-8 h-8 text-gray-400 m-auto mt-3" />
+              </div>
+              <div class="flex-1">
+                <h3 class="text-xl font-bold text-white">
+                  {{ selectedBot.bot_username }}
+                  <span class="text-gray-500 font-normal text-base">#{{ selectedBot.bot_discriminator }}</span>
+                </h3>
+                <p class="text-gray-400 text-sm">{{ botServers.length }} Server</p>
+              </div>
+              <div class="flex gap-2">
+                <button @click="copyInviteUrl(selectedBot)" class="btn-secondary btn-sm">
+                  <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
+                  Invite-Link
+                </button>
+                <button @click="copyInviteUrl(selectedBot, true)" class="btn-secondary btn-sm" title="Invite mit erweiterten Rechten">
+                  <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
+                  Extended
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot Server List -->
+          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+            <div
+              v-for="server in botServers"
+              :key="server.id"
+              @click="selectBotServer(server)"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBotServer?.id === server.id ? 'bg-dark-700' : '']"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                  <img
+                    v-if="server.icon_url"
+                    :src="server.icon_url"
+                    class="w-full h-full object-cover"
+                    alt=""
+                  />
+                  <ServerIcon v-else class="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white truncate">{{ server.name }}</span>
+                    <button @click.stop="toggleBotServerFavorite(server)" class="text-gray-400 hover:text-yellow-400">
+                      <StarSolidIcon v-if="server.is_favorite" class="w-4 h-4 text-yellow-400" />
+                      <StarIcon v-else class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <span v-if="server.member_count">{{ server.member_count }} Mitglieder</span>
+                    <span v-if="server.channel_count">{{ server.channel_count }} Channels</span>
+                  </div>
+                </div>
+
+                <ChevronRightIcon class="w-5 h-5 text-gray-500" />
+              </div>
+            </div>
+
+            <div v-if="botServers.length === 0" class="p-8 text-center text-gray-500">
+              <ServerIcon class="w-12 h-12 mx-auto mb-3 text-gray-600" />
+              <p class="mb-2">Bot ist auf keinem Server</p>
+              <p class="text-sm">Klicke auf "Invite-Link" um den Bot einzuladen</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Bot Server Channels -->
+        <div v-if="activeTab === 'bots' && selectedBotServer" class="card">
+          <div class="p-4 border-b border-dark-600">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img
+                  v-if="selectedBotServer.icon_url"
+                  :src="selectedBotServer.icon_url"
+                  class="w-10 h-10 rounded-full"
+                  alt=""
+                />
+                <div>
+                  <h3 class="font-semibold text-white">{{ selectedBotServer.name }}</h3>
+                  <span class="text-sm text-gray-400">{{ selectedBotServer.channels?.length || 0 }} Channels</span>
+                </div>
+              </div>
+              <button @click="startBotServerBackup" class="btn-primary" :disabled="isStartingBotBackup">
+                <ArrowPathIcon v-if="isStartingBotBackup" class="w-5 h-5 mr-2 animate-spin" />
+                <CloudArrowDownIcon v-else class="w-5 h-5 mr-2" />
+                Server Backup
+              </button>
+            </div>
+          </div>
+
+          <div class="divide-y divide-dark-600 max-h-[300px] overflow-y-auto">
+            <div
+              v-for="channel in selectedBotServer.channels"
+              :key="channel.id"
+              class="p-4 hover:bg-dark-700"
+            >
+              <div class="flex items-center gap-3">
+                <HashtagIcon class="w-5 h-5 text-gray-400" />
+                <span class="text-white">{{ channel.name }}</span>
+                <span class="text-xs text-gray-500 bg-dark-600 px-2 py-0.5 rounded">{{ channel.type }}</span>
+              </div>
+            </div>
+
+            <div v-if="!selectedBotServer.channels?.length" class="p-8 text-center text-gray-500">
+              Keine Channels gefunden
+            </div>
           </div>
         </div>
 
@@ -1945,5 +2277,12 @@ function formatSize(bytes) {
         </div>
       </div>
     </Teleport>
+
+    <!-- Add Bot Modal -->
+    <AddBotModal
+      :show="showAddBotModal"
+      @close="showAddBotModal = false"
+      @added="onBotAdded"
+    />
   </div>
 </template>

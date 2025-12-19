@@ -266,8 +266,9 @@ class DiscordBackupRepository
         $sql = 'SELECT m.*, b.target_name as backup_name, b.type as backup_type
                 FROM discord_messages m
                 INNER JOIN discord_backups b ON m.backup_id = b.id
-                INNER JOIN discord_accounts a ON b.account_id = a.id
-                WHERE a.user_id = ?';
+                LEFT JOIN discord_accounts a ON b.account_id = a.id
+                LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+                WHERE COALESCE(a.user_id, bot.user_id) = ?';
         $params = [$userId];
         $types = [\PDO::PARAM_STR];
 
@@ -291,8 +292,9 @@ class DiscordBackupRepository
         $sql = 'SELECT COUNT(*)
                 FROM discord_messages m
                 INNER JOIN discord_backups b ON m.backup_id = b.id
-                INNER JOIN discord_accounts a ON b.account_id = a.id
-                WHERE a.user_id = ?';
+                LEFT JOIN discord_accounts a ON b.account_id = a.id
+                LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+                WHERE COALESCE(a.user_id, bot.user_id) = ?';
         $params = [$userId];
         $types = [\PDO::PARAM_STR];
 
@@ -423,8 +425,9 @@ class DiscordBackupRepository
             'SELECT m.*, b.target_name as backup_name
              FROM discord_media m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE a.user_id = ?
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE COALESCE(a.user_id, bot.user_id) = ?
              ORDER BY m.downloaded_at DESC
              LIMIT ? OFFSET ?',
             [$userId, $limit, $offset],
@@ -435,10 +438,12 @@ class DiscordBackupRepository
     public function findMediaById(string $id): ?array
     {
         $result = $this->db->fetchAssociative(
-            'SELECT m.*, b.account_id, a.user_id
+            'SELECT m.*, b.account_id, b.bot_id,
+                    COALESCE(a.user_id, bot.user_id) as user_id
              FROM discord_media m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
              WHERE m.id = ?',
             [$id]
         );
@@ -451,8 +456,9 @@ class DiscordBackupRepository
             'SELECT m.*, b.target_name as backup_name
              FROM discord_media m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE b.discord_channel_id = ? AND a.user_id = ?
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE b.discord_channel_id = ? AND COALESCE(a.user_id, bot.user_id) = ?
              ORDER BY m.downloaded_at DESC
              LIMIT ? OFFSET ?',
             [$discordChannelId, $userId, $limit, $offset],
@@ -466,8 +472,9 @@ class DiscordBackupRepository
             'SELECT m.content, m.author_username, m.message_timestamp, m.discord_message_id, b.target_name as backup_name
              FROM discord_messages m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE b.discord_channel_id = ? AND a.user_id = ? AND m.content REGEXP \'https?://[^[:space:]]+\'
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE b.discord_channel_id = ? AND COALESCE(a.user_id, bot.user_id) = ? AND m.content REGEXP \'https?://[^[:space:]]+\'
              ORDER BY m.message_timestamp DESC
              LIMIT ? OFFSET ?',
             [$discordChannelId, $userId, $limit, $offset],
@@ -497,8 +504,9 @@ class DiscordBackupRepository
             'SELECT COUNT(*)
              FROM discord_media m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE b.discord_channel_id = ? AND a.user_id = ?',
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE b.discord_channel_id = ? AND COALESCE(a.user_id, bot.user_id) = ?',
             [$discordChannelId, $userId]
         );
     }
@@ -509,8 +517,9 @@ class DiscordBackupRepository
             'SELECT COUNT(*)
              FROM discord_messages m
              INNER JOIN discord_backups b ON m.backup_id = b.id
-             INNER JOIN discord_accounts a ON b.account_id = a.id
-             WHERE b.discord_channel_id = ? AND a.user_id = ? AND m.content REGEXP \'https?://[^[:space:]]+\'',
+             LEFT JOIN discord_accounts a ON b.account_id = a.id
+             LEFT JOIN discord_bots bot ON b.bot_id = bot.id
+             WHERE b.discord_channel_id = ? AND COALESCE(a.user_id, bot.user_id) = ? AND m.content REGEXP \'https?://[^[:space:]]+\'',
             [$discordChannelId, $userId]
         );
     }

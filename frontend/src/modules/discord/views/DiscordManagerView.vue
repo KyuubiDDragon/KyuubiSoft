@@ -820,11 +820,6 @@ function getStatusLabel(status) {
   }
 }
 
-function formatDate(date) {
-  if (!date) return '-'
-  return new Date(date).toLocaleString('de-DE')
-}
-
 function formatSize(bytes) {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']

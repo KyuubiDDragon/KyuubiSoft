@@ -27,7 +27,9 @@ class DiscordController
         private readonly DiscordAccountRepository $accountRepository,
         private readonly DiscordBackupRepository $backupRepository
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        // Hash the APP_KEY to ensure it's exactly 32 bytes for AES-256-CBC
+        $appKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = hash('sha256', $appKey, true);
         $this->storagePath = $_ENV['STORAGE_PATH'] ?? '/var/www/storage';
     }
 

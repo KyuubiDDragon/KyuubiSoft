@@ -89,19 +89,44 @@ class DiscordBackupRepository
         );
     }
 
+    public function findByBotId(string $botId, int $limit = 50, int $offset = 0): array
+    {
+        return $this->db->fetchAllAssociative(
+            'SELECT b.*,
+                    bs.name as server_name, bs.icon as server_icon
+             FROM discord_backups b
+             LEFT JOIN discord_bot_servers bs ON b.discord_guild_id = bs.discord_guild_id AND bs.bot_id = b.bot_id
+             WHERE b.bot_id = ?
+             ORDER BY b.created_at DESC
+             LIMIT ? OFFSET ?',
+            [$botId, $limit, $offset],
+            [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+        );
+    }
+
+    public function countByBotId(string $botId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM discord_backups WHERE bot_id = ?',
+            [$botId]
+        );
+    }
+
     public function create(array $data): array
     {
         $id = $data['id'] ?? Uuid::uuid4()->toString();
 
         $this->db->insert('discord_backups', [
             'id' => $id,
-            'account_id' => $data['account_id'],
+            'account_id' => $data['account_id'] ?? null,
+            'bot_id' => $data['bot_id'] ?? null,
             'server_id' => $data['server_id'] ?? null,
             'channel_id' => $data['channel_id'] ?? null,
             'discord_guild_id' => $data['discord_guild_id'] ?? null,
             'discord_channel_id' => $data['discord_channel_id'] ?? null,
             'target_name' => $data['target_name'],
             'type' => $data['type'] ?? 'channel',
+            'source_type' => $data['source_type'] ?? 'user_token',
             'backup_mode' => $data['backup_mode'] ?? 'full',
             'include_media' => !empty($data['include_media']) ? 1 : 0,
             'include_reactions' => !empty($data['include_reactions']) ? 1 : 0,

@@ -11,6 +11,12 @@ export const useDiscordStore = defineStore('discord', () => {
   const deleteJobs = ref([])
   const media = ref([])
 
+  // Bot State
+  const bots = ref([])
+  const selectedBot = ref(null)
+  const botServers = ref([])
+  const selectedBotServer = ref(null)
+
   const selectedAccount = ref(null)
   const selectedServer = ref(null)
   const selectedChannel = ref(null)
@@ -234,6 +240,114 @@ export const useDiscordStore = defineStore('discord', () => {
     }
   }
 
+  // ========== Bot Functions ==========
+
+  async function loadBots() {
+    isLoading.value = true
+    try {
+      const response = await api.get('/api/v1/discord/bots')
+      bots.value = response.data.data?.items || []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function validateBot(botToken) {
+    const response = await api.post('/api/v1/discord/bots/validate', { bot_token: botToken })
+    return response.data.data
+  }
+
+  async function addBot(data) {
+    const response = await api.post('/api/v1/discord/bots', data)
+    const bot = response.data.data
+
+    const existingIndex = bots.value.findIndex(b => b.id === bot.id)
+    if (existingIndex >= 0) {
+      bots.value[existingIndex] = bot
+    } else {
+      bots.value.push(bot)
+    }
+
+    return bot
+  }
+
+  async function getBot(botId) {
+    const response = await api.get(`/api/v1/discord/bots/${botId}`)
+    return response.data.data
+  }
+
+  async function deleteBot(botId) {
+    await api.delete(`/api/v1/discord/bots/${botId}`)
+    bots.value = bots.value.filter(b => b.id !== botId)
+
+    if (selectedBot.value === botId) {
+      selectedBot.value = null
+      botServers.value = []
+      selectedBotServer.value = null
+    }
+  }
+
+  async function syncBot(botId) {
+    isSyncing.value = true
+    try {
+      const response = await api.post(`/api/v1/discord/bots/${botId}/sync`)
+      await loadBotServers(botId)
+      return response.data.data
+    } finally {
+      isSyncing.value = false
+    }
+  }
+
+  async function getBotInviteUrl(botId, extended = false) {
+    const params = extended ? { extended: true } : {}
+    const response = await api.get(`/api/v1/discord/bots/${botId}/invite`, { params })
+    return response.data.data
+  }
+
+  async function loadBotServers(botId) {
+    const response = await api.get(`/api/v1/discord/bots/${botId}/servers`)
+    botServers.value = response.data.data?.items || []
+    return botServers.value
+  }
+
+  async function getBotServer(botId, serverId) {
+    const response = await api.get(`/api/v1/discord/bots/${botId}/servers/${serverId}`)
+    selectedBotServer.value = response.data.data
+    return response.data.data
+  }
+
+  async function syncBotServerChannels(botId, serverId) {
+    isSyncing.value = true
+    try {
+      const response = await api.post(`/api/v1/discord/bots/${botId}/servers/${serverId}/sync`)
+      return response.data.data
+    } finally {
+      isSyncing.value = false
+    }
+  }
+
+  async function toggleBotServerFavorite(botId, serverId) {
+    await api.post(`/api/v1/discord/bots/${botId}/servers/${serverId}/favorite`)
+    const server = botServers.value.find(s => s.id === serverId)
+    if (server) {
+      server.is_favorite = !server.is_favorite
+    }
+  }
+
+  async function createBotBackup(botId, data) {
+    const response = await api.post(`/api/v1/discord/bots/${botId}/backups`, data)
+    const backup = response.data.data
+    backups.value.unshift(backup)
+    return backup
+  }
+
+  async function loadBotBackups(botId, page = 1, perPage = 50) {
+    const response = await api.get(`/api/v1/discord/bots/${botId}/backups`, {
+      params: { page, per_page: perPage }
+    })
+    return response.data.data
+  }
+
   // Reset
   function reset() {
     accounts.value = []
@@ -242,9 +356,13 @@ export const useDiscordStore = defineStore('discord', () => {
     backups.value = []
     deleteJobs.value = []
     media.value = []
+    bots.value = []
+    botServers.value = []
     selectedAccount.value = null
     selectedServer.value = null
     selectedChannel.value = null
+    selectedBot.value = null
+    selectedBotServer.value = null
   }
 
   return {
@@ -255,9 +373,13 @@ export const useDiscordStore = defineStore('discord', () => {
     backups,
     deleteJobs,
     media,
+    bots,
+    botServers,
     selectedAccount,
     selectedServer,
     selectedChannel,
+    selectedBot,
+    selectedBotServer,
     isLoading,
     isSyncing,
 
@@ -294,6 +416,20 @@ export const useDiscordStore = defineStore('discord', () => {
     loadDeleteJobs,
     getDeleteJob,
     cancelDeleteJob,
+    // Bot Actions
+    loadBots,
+    validateBot,
+    addBot,
+    getBot,
+    deleteBot,
+    syncBot,
+    getBotInviteUrl,
+    loadBotServers,
+    getBotServer,
+    syncBotServerChannels,
+    toggleBotServerFavorite,
+    createBotBackup,
+    loadBotBackups,
     reset,
   }
 })

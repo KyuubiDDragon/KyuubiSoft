@@ -100,6 +100,118 @@ const hiddenDomains = ref(['tenor.com', 'giphy.com', 'media.discordapp.net'])
 // Common domains that are usually just media/GIFs
 const mediaDomains = ['tenor.com', 'giphy.com', 'media.discordapp.net', 'cdn.discordapp.com', 'imgur.com', 'gfycat.com']
 
+// Backups Tab State
+const allBackups = ref([])
+const backupSearchQuery = ref('')
+const backupStatusFilter = ref('')
+const selectedViewBackup = ref(null)
+const isLoadingAllBackups = ref(false)
+
+// Filtered Backups for the Backups Tab
+const filteredAllBackups = computed(() => {
+  let result = allBackups.value
+
+  // Apply search filter
+  if (backupSearchQuery.value.trim()) {
+    const query = backupSearchQuery.value.toLowerCase()
+    result = result.filter(backup =>
+      backup.target_name?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply status filter
+  if (backupStatusFilter.value) {
+    result = result.filter(backup => backup.status === backupStatusFilter.value)
+  }
+
+  return result
+})
+
+// Load all backups (both user token and bot)
+async function loadAllBackups() {
+  isLoadingAllBackups.value = true
+  try {
+    // Load user token backups
+    await discordStore.loadBackups()
+
+    // Load bot backups for all bots
+    const botBackups = []
+    for (const bot of discordStore.bots) {
+      try {
+        const backups = await discordStore.loadBotBackups(bot.id)
+        if (backups) {
+          botBackups.push(...backups)
+        }
+      } catch (e) {
+        console.error('Failed to load bot backups:', e)
+      }
+    }
+
+    // Combine all backups and sort by date
+    allBackups.value = [...discordStore.backups, ...botBackups]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  } catch (error) {
+    console.error('Failed to load backups:', error)
+  } finally {
+    isLoadingAllBackups.value = false
+  }
+}
+
+function selectBackupForView(backup) {
+  selectedViewBackup.value = backup
+}
+
+async function deleteBackupConfirm(backup) {
+  const confirmed = await confirm({
+    title: 'Backup löschen',
+    message: `Möchtest du das Backup "${backup.target_name}" wirklich löschen? Alle gesicherten Nachrichten und Medien werden unwiderruflich gelöscht.`,
+    confirmText: 'Löschen',
+    confirmClass: 'btn-danger',
+  })
+
+  if (confirmed) {
+    await discordStore.deleteBackup(backup.id)
+    allBackups.value = allBackups.value.filter(b => b.id !== backup.id)
+    if (selectedViewBackup.value?.id === backup.id) {
+      selectedViewBackup.value = null
+    }
+  }
+}
+
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case 'completed': return 'bg-green-500/20 text-green-400'
+    case 'running': return 'bg-blue-500/20 text-blue-400'
+    case 'pending': return 'bg-yellow-500/20 text-yellow-400'
+    case 'failed': return 'bg-red-500/20 text-red-400'
+    case 'cancelled': return 'bg-gray-500/20 text-gray-400'
+    default: return 'bg-gray-500/20 text-gray-400'
+  }
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'completed': return 'Abgeschlossen'
+    case 'running': return 'Läuft'
+    case 'pending': return 'Wartend'
+    case 'failed': return 'Fehlgeschlagen'
+    case 'cancelled': return 'Abgebrochen'
+    default: return status
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 function getDomain(url) {
   try {
     return new URL(url).hostname.replace('www.', '')
@@ -708,11 +820,6 @@ function getStatusLabel(status) {
   }
 }
 
-function formatDate(date) {
-  if (!date) return '-'
-  return new Date(date).toLocaleString('de-DE')
-}
-
 function formatSize(bytes) {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -965,6 +1072,13 @@ const filteredBots = computed(() => {
             Links
           </button>
           <button
+            @click="activeTab = 'backups'; loadAllBackups()"
+            :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'backups' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
+          >
+            <CloudArrowDownIcon class="w-4 h-4 inline mr-1" />
+            Backups
+          </button>
+          <button
             @click="activeTab = 'bots'"
             :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'bots' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
           >
@@ -1082,11 +1196,156 @@ const filteredBots = computed(() => {
           </div>
         </div>
 
+        <!-- Backups List -->
+        <div v-if="activeTab === 'backups'" class="card">
+          <!-- Header -->
+          <div class="p-4 border-b border-dark-600 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-white flex items-center gap-2">
+                <CloudArrowDownIcon class="w-5 h-5 text-primary-400" />
+                Alle Backups
+              </h3>
+              <span class="text-sm text-gray-400">{{ filteredAllBackups.length }} von {{ allBackups.length }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative flex-1">
+                <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  v-model="backupSearchQuery"
+                  type="text"
+                  class="input pl-9 py-2 text-sm w-full"
+                  placeholder="Backup suchen..."
+                />
+              </div>
+              <select v-model="backupStatusFilter" class="input py-2 text-sm w-36">
+                <option value="">Alle Status</option>
+                <option value="completed">Abgeschlossen</option>
+                <option value="running">Läuft</option>
+                <option value="pending">Wartend</option>
+                <option value="failed">Fehlgeschlagen</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Backup List -->
+          <div class="divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+            <div
+              v-for="backup in filteredAllBackups"
+              :key="backup.id"
+              @click="selectBackupForView(backup)"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedViewBackup?.id === backup.id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
+            >
+              <div class="flex items-center gap-3">
+                <!-- Source Type Icon -->
+                <div :class="[
+                  'w-10 h-10 rounded-xl flex items-center justify-center',
+                  backup.source_type === 'bot' ? 'bg-primary-500/20' : 'bg-blue-500/20'
+                ]">
+                  <CpuChipIcon v-if="backup.source_type === 'bot'" class="w-5 h-5 text-primary-400" />
+                  <UserIcon v-else class="w-5 h-5 text-blue-400" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-white truncate">{{ backup.target_name }}</span>
+                    <span :class="[
+                      'text-xs px-2 py-0.5 rounded-full',
+                      backup.source_type === 'bot' ? 'bg-primary-500/20 text-primary-400' : 'bg-blue-500/20 text-blue-400'
+                    ]">
+                      {{ backup.source_type === 'bot' ? 'Bot' : 'Token' }}
+                    </span>
+                    <span :class="getStatusBadgeClass(backup.status)" class="text-xs px-2 py-0.5 rounded-full">
+                      {{ getStatusText(backup.status) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                    <span>{{ formatDate(backup.created_at) }}</span>
+                    <span class="flex items-center gap-1">
+                      <ChatBubbleLeftRightIcon class="w-3.5 h-3.5" />
+                      {{ (backup.messages_total || backup.messages_processed || 0).toLocaleString() }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <PhotoIcon class="w-3.5 h-3.5" />
+                      {{ backup.media_count || 0 }}
+                    </span>
+                    <span v-if="backup.media_size" class="flex items-center gap-1">
+                      <FolderIcon class="w-3.5 h-3.5" />
+                      {{ formatSize(backup.media_size) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex gap-1">
+                  <button
+                    v-if="backup.status === 'completed'"
+                    @click.stop="viewBackupMessages(backup)"
+                    class="p-2 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    title="Nachrichten anzeigen"
+                  >
+                    <ChatBubbleLeftRightIcon class="w-5 h-5" />
+                  </button>
+                  <button
+                    @click.stop="deleteBackupConfirm(backup)"
+                    class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    title="Backup löschen"
+                  >
+                    <TrashIcon class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Progress Bar for Running Backups -->
+              <div v-if="backup.status === 'running'" class="mt-3 ml-13">
+                <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                  <span class="flex items-center gap-2">
+                    <ArrowPathIcon class="w-3 h-3 animate-spin" />
+                    {{ backup.current_action || 'Verarbeite...' }}
+                  </span>
+                  <span class="font-medium">{{ backup.progress_percent }}%</span>
+                </div>
+                <div class="w-full bg-dark-600 rounded-full h-2">
+                  <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-2 rounded-full transition-all" :style="{ width: backup.progress_percent + '%' }"></div>
+                </div>
+              </div>
+
+              <!-- Error Message for Failed Backups -->
+              <div v-if="backup.status === 'failed' && backup.error_message" class="mt-2 ml-13">
+                <p class="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                  {{ backup.error_message }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="filteredAllBackups.length === 0 && backupSearchQuery" class="p-8 text-center text-gray-500">
+              <MagnifyingGlassIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
+              <p>Keine Backups mit "{{ backupSearchQuery }}" gefunden</p>
+              <button @click="backupSearchQuery = ''; backupStatusFilter = ''" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
+                Filter zurücksetzen
+              </button>
+            </div>
+            <div v-else-if="allBackups.length === 0" class="p-12 text-center text-gray-500">
+              <CloudArrowDownIcon class="w-16 h-16 mx-auto mb-4 text-gray-600" />
+              <h4 class="text-lg font-medium text-white mb-2">Noch keine Backups</h4>
+              <p class="text-sm">Erstelle dein erstes Backup über einen Server oder Bot</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Bot List -->
         <div v-if="activeTab === 'bots'" class="card">
           <!-- Header with Add Button -->
-          <div class="p-3 border-b border-dark-600 flex items-center justify-between">
-            <div class="relative flex-1 mr-3">
+          <div class="p-4 border-b border-dark-600 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-white flex items-center gap-2">
+                <CpuChipIcon class="w-5 h-5 text-primary-400" />
+                Discord Bots
+              </h3>
+              <button @click="showAddBotModal = true" class="btn-primary btn-sm">
+                <PlusIcon class="w-4 h-4 mr-1" />
+                Bot
+              </button>
+            </div>
+            <div class="relative">
               <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
                 v-model="botSearchQuery"
@@ -1095,10 +1354,6 @@ const filteredBots = computed(() => {
                 placeholder="Bot suchen..."
               />
             </div>
-            <button @click="showAddBotModal = true" class="btn-primary btn-sm">
-              <PlusIcon class="w-4 h-4 mr-1" />
-              Bot
-            </button>
           </div>
 
           <!-- Bot List -->
@@ -1107,46 +1362,51 @@ const filteredBots = computed(() => {
               v-for="bot in filteredBots"
               :key="bot.id"
               @click="selectBot(bot)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBot?.id === bot.id ? 'bg-dark-700' : '']"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBot?.id === bot.id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
             >
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                <div class="w-11 h-11 rounded-xl bg-primary-500/20 flex items-center justify-center overflow-hidden">
                   <img
                     v-if="bot.avatar_url"
                     :src="bot.avatar_url"
                     class="w-full h-full object-cover"
                     alt=""
                   />
-                  <CpuChipIcon v-else class="w-5 h-5 text-gray-400" />
+                  <CpuChipIcon v-else class="w-6 h-6 text-primary-400" />
                 </div>
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
                     <span class="font-medium text-white truncate">{{ bot.bot_username }}</span>
-                    <span class="text-xs text-gray-500">#{{ bot.bot_discriminator }}</span>
+                    <span v-if="bot.is_active" class="w-2 h-2 rounded-full bg-green-400" title="Online"></span>
                   </div>
-                  <span class="text-sm text-gray-500">{{ bot.server_count || 0 }} Server</span>
+                  <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <span class="flex items-center gap-1">
+                      <ServerIcon class="w-3.5 h-3.5" />
+                      {{ bot.server_count || 0 }} Server
+                    </span>
+                  </div>
                 </div>
 
                 <div class="flex gap-1">
                   <button
                     @click.stop="syncBot(bot)"
                     :disabled="isSyncingBot"
-                    class="p-1.5 text-gray-400 hover:text-white rounded hover:bg-dark-600"
+                    class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-600 transition-colors"
                     title="Server synchronisieren"
                   >
                     <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': isSyncingBot }" />
                   </button>
                   <button
                     @click.stop="copyInviteUrl(bot)"
-                    class="p-1.5 text-gray-400 hover:text-primary-400 rounded hover:bg-dark-600"
+                    class="p-1.5 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-dark-600 transition-colors"
                     title="Invite-Link kopieren"
                   >
                     <ClipboardDocumentIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click.stop="removeBot(bot)"
-                    class="p-1.5 text-gray-400 hover:text-red-400 rounded hover:bg-dark-600"
+                    class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-600 transition-colors"
                     title="Bot entfernen"
                   >
                     <TrashIcon class="w-4 h-4" />
@@ -1156,13 +1416,17 @@ const filteredBots = computed(() => {
             </div>
 
             <div v-if="filteredBots.length === 0 && botSearchQuery" class="p-8 text-center text-gray-500">
-              Keine Bots mit "{{ botSearchQuery }}" gefunden
+              <MagnifyingGlassIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
+              <p>Keine Bots mit "{{ botSearchQuery }}" gefunden</p>
             </div>
-            <div v-else-if="bots.length === 0" class="p-8 text-center text-gray-500">
-              <CpuChipIcon class="w-12 h-12 mx-auto mb-3 text-gray-600" />
-              <p class="mb-3">Noch keine Bots hinzugefügt</p>
-              <button @click="showAddBotModal = true" class="btn-primary btn-sm">
-                <PlusIcon class="w-4 h-4 mr-1" />
+            <div v-else-if="bots.length === 0" class="p-10 text-center">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-500/20 flex items-center justify-center">
+                <CpuChipIcon class="w-8 h-8 text-primary-400" />
+              </div>
+              <h4 class="text-lg font-medium text-white mb-2">Kein Bot konfiguriert</h4>
+              <p class="text-sm text-gray-400 mb-4">Füge einen Discord Bot hinzu um Server zu sichern</p>
+              <button @click="showAddBotModal = true" class="btn-primary">
+                <PlusIcon class="w-5 h-5 mr-2" />
                 Bot hinzufügen
               </button>
             </div>
@@ -1717,45 +1981,159 @@ const filteredBots = computed(() => {
           </div>
         </div>
 
-        <!-- Selected Bot Server Channels -->
-        <div v-if="activeTab === 'bots' && selectedBotServer" class="card">
-          <div class="p-4 border-b border-dark-600">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <img
-                  v-if="selectedBotServer.icon_url"
-                  :src="selectedBotServer.icon_url"
-                  class="w-10 h-10 rounded-full"
-                  alt=""
-                />
-                <div>
-                  <h3 class="font-semibold text-white">{{ selectedBotServer.name }}</h3>
-                  <span class="text-sm text-gray-400">{{ selectedBotServer.channels?.length || 0 }} Channels</span>
+        <!-- Selected Bot Server Details -->
+        <div v-if="activeTab === 'bots' && selectedBotServer" class="space-y-4">
+          <!-- Server Header Card -->
+          <div class="card overflow-hidden">
+            <!-- Banner Area with Gradient -->
+            <div class="h-24 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
+              <div class="absolute -bottom-10 left-6">
+                <div class="w-20 h-20 rounded-2xl bg-dark-700 border-4 border-dark-800 flex items-center justify-center overflow-hidden shadow-lg">
+                  <img
+                    v-if="selectedBotServer.icon_url"
+                    :src="selectedBotServer.icon_url"
+                    class="w-full h-full object-cover"
+                    alt=""
+                  />
+                  <ServerIcon v-else class="w-10 h-10 text-gray-400" />
                 </div>
               </div>
-              <button @click="startBotServerBackup" class="btn-primary" :disabled="isStartingBotBackup">
+            </div>
+
+            <div class="pt-12 pb-4 px-6">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="text-2xl font-bold text-white">{{ selectedBotServer.name }}</h3>
+                  <div class="flex items-center gap-3 mt-2 text-sm text-gray-400">
+                    <span class="flex items-center gap-1">
+                      <HashtagIcon class="w-4 h-4" />
+                      {{ selectedBotServer.channels?.length || 0 }} Channels
+                    </span>
+                    <span v-if="selectedBotServer.member_count" class="flex items-center gap-1">
+                      <UserIcon class="w-4 h-4" />
+                      {{ selectedBotServer.member_count.toLocaleString() }} Mitglieder
+                    </span>
+                  </div>
+                </div>
+                <button
+                  @click.stop="toggleBotServerFavorite(selectedBotServer)"
+                  class="p-2 rounded-lg hover:bg-dark-600 transition-colors"
+                  :title="selectedBotServer.is_favorite ? 'Favorit entfernen' : 'Als Favorit markieren'"
+                >
+                  <StarSolidIcon v-if="selectedBotServer.is_favorite" class="w-6 h-6 text-yellow-400" />
+                  <StarIcon v-else class="w-6 h-6 text-gray-400 hover:text-yellow-400" />
+                </button>
+              </div>
+
+              <!-- Discord Guild ID -->
+              <div class="mt-4 flex items-center gap-2">
+                <span class="text-xs text-gray-500">Guild ID:</span>
+                <code class="text-xs text-gray-400 bg-dark-700 px-2 py-1 rounded font-mono">{{ selectedBotServer.discord_guild_id }}</code>
+                <button
+                  @click="navigator.clipboard.writeText(selectedBotServer.discord_guild_id); uiStore.showSuccess('Guild ID kopiert!')"
+                  class="p-1 text-gray-500 hover:text-primary-400 rounded"
+                  title="Guild ID kopieren"
+                >
+                  <ClipboardDocumentIcon class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Server Stats -->
+            <div class="grid grid-cols-4 divide-x divide-dark-600 border-t border-dark-600 bg-dark-800/50">
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ selectedBotServer.channels?.length || 0 }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Channels</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-primary-400">{{ selectedBotServer.backup_count || 0 }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Backups</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ selectedBotServer.total_messages?.toLocaleString() || '0' }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Nachrichten</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-sm font-medium text-white">
+                  {{ selectedBotServer.last_backup_at ? formatDate(selectedBotServer.last_backup_at) : '-' }}
+                </div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Letztes Backup</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Backup Button Card -->
+          <div class="card p-5 bg-gradient-to-r from-dark-800 to-dark-700 border border-dark-600">
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
+                  <CloudArrowDownIcon class="w-6 h-6 text-primary-400" />
+                </div>
+                <div>
+                  <h4 class="font-semibold text-white">Server Backup starten</h4>
+                  <p class="text-sm text-gray-400">Alle Channels, Nachrichten, Medien & Einstellungen sichern</p>
+                </div>
+              </div>
+              <button @click="startBotServerBackup" class="btn-primary px-6" :disabled="isStartingBotBackup">
                 <ArrowPathIcon v-if="isStartingBotBackup" class="w-5 h-5 mr-2 animate-spin" />
-                <CloudArrowDownIcon v-else class="w-5 h-5 mr-2" />
-                Server Backup
+                <template v-else>Backup starten</template>
               </button>
             </div>
           </div>
 
-          <div class="divide-y divide-dark-600 max-h-[300px] overflow-y-auto">
-            <div
-              v-for="channel in selectedBotServer.channels"
-              :key="channel.id"
-              class="p-4 hover:bg-dark-700"
-            >
-              <div class="flex items-center gap-3">
+          <!-- Channels List -->
+          <div class="card">
+            <div class="p-4 border-b border-dark-600 flex items-center justify-between">
+              <h4 class="font-medium text-white flex items-center gap-2">
                 <HashtagIcon class="w-5 h-5 text-gray-400" />
-                <span class="text-white">{{ channel.name }}</span>
-                <span class="text-xs text-gray-500 bg-dark-600 px-2 py-0.5 rounded">{{ channel.type }}</span>
-              </div>
+                Channels
+              </h4>
+              <span class="text-sm text-gray-500">{{ selectedBotServer.channels?.length || 0 }} verfügbar</span>
             </div>
+            <div class="divide-y divide-dark-600 max-h-[350px] overflow-y-auto">
+              <div
+                v-for="channel in selectedBotServer.channels"
+                :key="channel.id"
+                class="p-3 hover:bg-dark-700 transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <div :class="[
+                    'w-8 h-8 rounded-lg flex items-center justify-center',
+                    channel.type === 'text' ? 'bg-gray-500/20' :
+                    channel.type === 'voice' ? 'bg-green-500/20' :
+                    channel.type === 'announcement' ? 'bg-yellow-500/20' :
+                    channel.type === 'forum' ? 'bg-blue-500/20' :
+                    channel.type === 'stage' ? 'bg-purple-500/20' :
+                    'bg-dark-600'
+                  ]">
+                    <HashtagIcon :class="[
+                      'w-4 h-4',
+                      channel.type === 'text' ? 'text-gray-400' :
+                      channel.type === 'voice' ? 'text-green-400' :
+                      channel.type === 'announcement' ? 'text-yellow-400' :
+                      channel.type === 'forum' ? 'text-blue-400' :
+                      channel.type === 'stage' ? 'text-purple-400' :
+                      'text-gray-400'
+                    ]" />
+                  </div>
+                  <span class="text-white flex-1">{{ channel.name }}</span>
+                  <span :class="[
+                    'text-xs px-2 py-0.5 rounded-full',
+                    channel.type === 'text' ? 'bg-gray-500/20 text-gray-400' :
+                    channel.type === 'voice' ? 'bg-green-500/20 text-green-400' :
+                    channel.type === 'announcement' ? 'bg-yellow-500/20 text-yellow-400' :
+                    channel.type === 'forum' ? 'bg-blue-500/20 text-blue-400' :
+                    channel.type === 'stage' ? 'bg-purple-500/20 text-purple-400' :
+                    'bg-dark-600 text-gray-500'
+                  ]">{{ channel.type }}</span>
+                </div>
+              </div>
 
-            <div v-if="!selectedBotServer.channels?.length" class="p-8 text-center text-gray-500">
-              Keine Channels gefunden
+              <div v-if="!selectedBotServer.channels?.length" class="p-8 text-center text-gray-500">
+                <HashtagIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
+                <p>Keine Channels gefunden</p>
+                <p class="text-sm mt-1">Synchronisiere den Bot um Channels zu laden</p>
+              </div>
             </div>
           </div>
         </div>

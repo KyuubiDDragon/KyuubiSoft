@@ -47,6 +47,10 @@ const isSearching = ref(false)
 const links = ref([])
 const isLoadingLinks = ref(false)
 
+// List Search Filters
+const serverSearchQuery = ref('')
+const dmSearchQuery = ref('')
+
 // Add Account Form
 const tokenInput = ref('')
 const isAddingAccount = ref(false)
@@ -87,9 +91,26 @@ const selectedServer = computed(() => discordStore.selectedServer)
 // Selected DM state
 const selectedDM = ref(null)
 
-// Sorted DM channels (by last_message_id descending - newer messages have higher IDs)
+// Filtered servers (by search query)
+const filteredServers = computed(() => {
+  const query = serverSearchQuery.value.toLowerCase().trim()
+  if (!query) return servers.value
+  return servers.value.filter(s => s.name.toLowerCase().includes(query))
+})
+
+// Sorted and filtered DM channels (by last_message_id descending - newer messages have higher IDs)
 const sortedDMChannels = computed(() => {
-  return [...dmChannels.value].sort((a, b) => {
+  const query = dmSearchQuery.value.toLowerCase().trim()
+  let filtered = [...dmChannels.value]
+
+  if (query) {
+    filtered = filtered.filter(dm => {
+      const name = (dm.recipient_username || dm.name || '').toLowerCase()
+      return name.includes(query)
+    })
+  }
+
+  return filtered.sort((a, b) => {
     // Discord snowflake IDs: higher = more recent
     const aId = BigInt(a.last_message_id || a.discord_channel_id || '0')
     const bId = BigInt(b.last_message_id || b.discord_channel_id || '0')
@@ -473,74 +494,111 @@ function formatSize(bytes) {
         </div>
 
         <!-- Server List -->
-        <div v-if="activeTab === 'servers'" class="card divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
-          <div
-            v-for="server in servers"
-            :key="server.id"
-            @click="selectServer(server)"
-            :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedServer?.id === server.id ? 'bg-dark-700' : '']"
-          >
-            <div class="flex items-center gap-3">
-              <img
-                v-if="server.icon_url"
-                :src="server.icon_url"
-                class="w-10 h-10 rounded-full"
-                alt=""
+        <div v-if="activeTab === 'servers'" class="card">
+          <!-- Search Input -->
+          <div class="p-3 border-b border-dark-600">
+            <div class="relative">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="serverSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Server suchen..."
               />
-              <div v-else class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
-                <ServerIcon class="w-5 h-5 text-gray-400" />
-              </div>
-
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-white truncate">{{ server.name }}</span>
-                  <button @click.stop="toggleFavorite(server)" class="text-gray-400 hover:text-yellow-400">
-                    <StarSolidIcon v-if="server.is_favorite" class="w-4 h-4 text-yellow-400" />
-                    <StarIcon v-else class="w-4 h-4" />
-                  </button>
-                </div>
-                <span class="text-sm text-gray-500">{{ server.channel_count }} Channels</span>
-              </div>
-
-              <ChevronRightIcon class="w-5 h-5 text-gray-500" />
             </div>
           </div>
 
-          <div v-if="servers.length === 0" class="p-8 text-center text-gray-500">
-            Keine Server gefunden
+          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+            <div
+              v-for="server in filteredServers"
+              :key="server.id"
+              @click="selectServer(server)"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedServer?.id === server.id ? 'bg-dark-700' : '']"
+            >
+              <div class="flex items-center gap-3">
+                <img
+                  v-if="server.icon_url"
+                  :src="server.icon_url"
+                  class="w-10 h-10 rounded-full"
+                  alt=""
+                />
+                <div v-else class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+                  <ServerIcon class="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-white truncate">{{ server.name }}</span>
+                    <button @click.stop="toggleFavorite(server)" class="text-gray-400 hover:text-yellow-400">
+                      <StarSolidIcon v-if="server.is_favorite" class="w-4 h-4 text-yellow-400" />
+                      <StarIcon v-else class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span class="text-sm text-gray-500">{{ server.channel_count }} Channels</span>
+                </div>
+
+                <ChevronRightIcon class="w-5 h-5 text-gray-500" />
+              </div>
+            </div>
+
+            <div v-if="filteredServers.length === 0 && serverSearchQuery" class="p-8 text-center text-gray-500">
+              Keine Server mit "{{ serverSearchQuery }}" gefunden
+            </div>
+            <div v-else-if="servers.length === 0" class="p-8 text-center text-gray-500">
+              Keine Server gefunden
+            </div>
           </div>
         </div>
 
         <!-- DM List -->
-        <div v-if="activeTab === 'dms'" class="card divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
-          <div
-            v-for="dm in sortedDMChannels"
-            :key="dm.id"
-            @click="selectDM(dm)"
-            :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedDM?.id === dm.id ? 'bg-dark-700' : '']"
-          >
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
-                <img
-                  v-if="dm.recipient_avatar"
-                  :src="`https://cdn.discordapp.com/avatars/${dm.recipient_id}/${dm.recipient_avatar}.png?size=64`"
-                  class="w-full h-full object-cover"
-                  alt=""
-                />
-                <UserIcon v-else class="w-5 h-5 text-gray-400" />
-              </div>
-
-              <div class="flex-1 min-w-0">
-                <span class="font-medium text-white truncate block">{{ dm.recipient_username || dm.name }}</span>
-                <span class="text-sm text-gray-500">{{ dm.backup_count || 0 }} Backups</span>
-              </div>
-
-              <ChevronRightIcon class="w-5 h-5 text-gray-500" />
+        <div v-if="activeTab === 'dms'" class="card">
+          <!-- Search Input -->
+          <div class="p-3 border-b border-dark-600">
+            <div class="relative">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="dmSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="DM suchen..."
+              />
             </div>
           </div>
 
-          <div v-if="sortedDMChannels.length === 0" class="p-8 text-center text-gray-500">
-            Keine DMs gefunden
+          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+            <div
+              v-for="dm in sortedDMChannels"
+              :key="dm.id"
+              @click="selectDM(dm)"
+              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedDM?.id === dm.id ? 'bg-dark-700' : '']"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                  <img
+                    v-if="dm.recipient_avatar && dm.recipient_id"
+                    :src="`https://cdn.discordapp.com/avatars/${dm.recipient_id}/${dm.recipient_avatar}.png?size=64`"
+                    class="w-full h-full object-cover"
+                    alt=""
+                    @error="$event.target.style.display='none'"
+                  />
+                  <UserIcon v-else class="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <span class="font-medium text-white truncate block">{{ dm.recipient_username || dm.name }}</span>
+                  <span class="text-sm text-gray-500">{{ dm.backup_count || 0 }} Backups</span>
+                </div>
+
+                <ChevronRightIcon class="w-5 h-5 text-gray-500" />
+              </div>
+            </div>
+
+            <div v-if="sortedDMChannels.length === 0 && dmSearchQuery" class="p-8 text-center text-gray-500">
+              Keine DMs mit "{{ dmSearchQuery }}" gefunden
+            </div>
+            <div v-else-if="dmChannels.length === 0" class="p-8 text-center text-gray-500">
+              Keine DMs gefunden
+            </div>
           </div>
         </div>
 
@@ -672,10 +730,11 @@ function formatSize(bytes) {
               <!-- Avatar -->
               <div class="w-20 h-20 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img
-                  v-if="selectedDM.recipient_avatar"
+                  v-if="selectedDM.recipient_avatar && selectedDM.recipient_id"
                   :src="`https://cdn.discordapp.com/avatars/${selectedDM.recipient_id}/${selectedDM.recipient_avatar}.png?size=128`"
                   class="w-full h-full object-cover"
                   alt=""
+                  @error="$event.target.style.display='none'"
                 />
                 <UserIcon v-else class="w-10 h-10 text-gray-400" />
               </div>

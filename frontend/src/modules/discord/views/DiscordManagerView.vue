@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useDiscordStore } from '../stores/discordStore'
 import { useUiStore } from '@/stores/ui'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -16,10 +16,14 @@ import {
   DocumentTextIcon,
   XMarkIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
   ServerIcon,
   HashtagIcon,
   UserIcon,
   LinkIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  XCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 
@@ -52,6 +56,176 @@ const isSearching = ref(false)
 // Links
 const links = ref([])
 const isLoadingLinks = ref(false)
+const linkSearchQuery = ref('')
+const hiddenDomains = ref(['tenor.com', 'giphy.com', 'media.discordapp.net'])
+
+// Common domains that are usually just media/GIFs
+const mediaDomains = ['tenor.com', 'giphy.com', 'media.discordapp.net', 'cdn.discordapp.com', 'imgur.com', 'gfycat.com']
+
+function getDomain(url) {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return ''
+  }
+}
+
+function toggleDomain(domain) {
+  const idx = hiddenDomains.value.indexOf(domain)
+  if (idx >= 0) {
+    hiddenDomains.value.splice(idx, 1)
+  } else {
+    hiddenDomains.value.push(domain)
+  }
+}
+
+const filteredLinks = computed(() => {
+  let result = links.value
+
+  // Apply search filter
+  if (linkSearchQuery.value.trim()) {
+    const query = linkSearchQuery.value.toLowerCase()
+    result = result.filter(link =>
+      link.url.toLowerCase().includes(query) ||
+      link.author_username?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply domain filter
+  if (hiddenDomains.value.length > 0) {
+    result = result.filter(link => {
+      const domain = getDomain(link.url)
+      return !hiddenDomains.value.some(hidden => domain.includes(hidden))
+    })
+  }
+
+  return result
+})
+
+const filteredChannelLinks = computed(() => {
+  let result = channelLinks.value
+
+  // Apply search filter
+  if (linkSearchQuery.value.trim()) {
+    const query = linkSearchQuery.value.toLowerCase()
+    result = result.filter(link =>
+      link.url.toLowerCase().includes(query) ||
+      link.author_username?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply domain filter
+  if (hiddenDomains.value.length > 0) {
+    result = result.filter(link => {
+      const domain = getDomain(link.url)
+      return !hiddenDomains.value.some(hidden => domain.includes(hidden))
+    })
+  }
+
+  return result
+})
+
+// Get unique domains from links for filter buttons
+const linkDomains = computed(() => {
+  const domains = {}
+  links.value.forEach(link => {
+    const domain = getDomain(link.url)
+    if (domain) {
+      domains[domain] = (domains[domain] || 0) + 1
+    }
+  })
+  return Object.entries(domains)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+})
+
+// Get unique domains from channel links for filter buttons
+const channelLinkDomains = computed(() => {
+  const domains = {}
+  channelLinks.value.forEach(link => {
+    const domain = getDomain(link.url)
+    if (domain) {
+      domains[domain] = (domains[domain] || 0) + 1
+    }
+  })
+  return Object.entries(domains)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+})
+
+// Active Backups (for progress tracking)
+const activeBackups = ref([])
+let backupPollInterval = null
+
+function startBackupPolling() {
+  if (backupPollInterval) return
+  backupPollInterval = setInterval(pollActiveBackups, 2000) // Poll every 2 seconds
+}
+
+function stopBackupPolling() {
+  if (backupPollInterval) {
+    clearInterval(backupPollInterval)
+    backupPollInterval = null
+  }
+}
+
+async function pollActiveBackups() {
+  if (activeBackups.value.length === 0) {
+    stopBackupPolling()
+    return
+  }
+
+  for (let i = activeBackups.value.length - 1; i >= 0; i--) {
+    const backup = activeBackups.value[i]
+    try {
+      const updated = await discordStore.getBackup(backup.id)
+      if (updated.status === 'completed') {
+        uiStore.showSuccess(`Backup "${updated.target_name}" abgeschlossen`)
+        activeBackups.value.splice(i, 1)
+        discordStore.loadBackups() // Refresh backups list
+      } else if (updated.status === 'failed') {
+        uiStore.showError(`Backup "${updated.target_name}" fehlgeschlagen: ${updated.error_message || 'Unbekannter Fehler'}`)
+        activeBackups.value.splice(i, 1)
+        discordStore.loadBackups()
+      } else {
+        // Update progress
+        activeBackups.value[i] = updated
+      }
+    } catch (error) {
+      console.error('Failed to poll backup status:', error)
+    }
+  }
+}
+
+// Lightbox
+const showLightbox = ref(false)
+const lightboxMedia = ref(null)
+const lightboxIndex = ref(0)
+
+function openLightbox(media, index = 0) {
+  lightboxMedia.value = media
+  lightboxIndex.value = index
+  showLightbox.value = true
+}
+
+function closeLightbox() {
+  showLightbox.value = false
+  lightboxMedia.value = null
+}
+
+function nextMedia() {
+  if (lightboxIndex.value < channelMedia.value.length - 1) {
+    lightboxIndex.value++
+    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+  }
+}
+
+function prevMedia() {
+  if (lightboxIndex.value > 0) {
+    lightboxIndex.value--
+    lightboxMedia.value = channelMedia.value[lightboxIndex.value]
+  }
+}
 
 // List Search Filters
 const serverSearchQuery = ref('')
@@ -139,6 +313,10 @@ onMounted(async () => {
       discordStore.loadDeleteJobs(),
     ])
   }
+})
+
+onUnmounted(() => {
+  stopBackupPolling()
 })
 
 // Watch for account change
@@ -255,6 +433,7 @@ async function createBackup() {
   try {
     const data = {
       account_id: backupForm.account_id,
+      backup_mode: backupForm.backup_mode,
       include_media: backupForm.include_media,
       include_reactions: backupForm.include_reactions,
       include_threads: backupForm.include_threads,
@@ -270,9 +449,21 @@ async function createBackup() {
     if (backupForm.date_from) data.date_from = backupForm.date_from
     if (backupForm.date_to) data.date_to = backupForm.date_to
 
-    await discordStore.createBackup(data)
-    uiStore.showSuccess('Backup gestartet')
+    // Close modal immediately
     showBackupModal.value = false
+
+    const backup = await discordStore.createBackup(data)
+
+    // If backup is still running, add to active backups for progress tracking
+    if (backup && (backup.status === 'pending' || backup.status === 'running')) {
+      activeBackups.value.push(backup)
+      startBackupPolling()
+    } else if (backup && backup.status === 'completed') {
+      uiStore.showSuccess('Backup abgeschlossen')
+      discordStore.loadBackups()
+    } else if (backup && backup.status === 'failed') {
+      uiStore.showError(`Backup fehlgeschlagen: ${backup.error_message || 'Unbekannter Fehler'}`)
+    }
   } catch (error) {
     uiStore.showError('Fehler beim Erstellen des Backups')
   }
@@ -438,8 +629,50 @@ function formatSize(bytes) {
 
 <template>
   <div class="space-y-6">
+    <!-- Active Backup Progress Bar -->
+    <div v-if="activeBackups.length > 0" class="fixed top-0 left-0 right-0 z-50">
+      <div
+        v-for="backup in activeBackups"
+        :key="backup.id"
+        class="bg-dark-800 border-b border-dark-600 shadow-lg"
+      >
+        <div class="max-w-7xl mx-auto px-4 py-3">
+          <div class="flex items-center gap-4">
+            <div class="flex-shrink-0">
+              <ArrowPathIcon class="w-5 h-5 text-primary-400 animate-spin" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-white truncate">
+                  Backup: {{ backup.target_name }}
+                </span>
+                <span class="text-xs text-gray-400">
+                  {{ backup.progress_percent || 0 }}%
+                </span>
+              </div>
+              <div class="w-full bg-dark-600 rounded-full h-2">
+                <div
+                  class="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: `${backup.progress_percent || 0}%` }"
+                />
+              </div>
+              <div class="flex items-center justify-between mt-1">
+                <span class="text-xs text-gray-500">
+                  {{ backup.current_action || 'Wird verarbeitet...' }}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ backup.messages_processed || 0 }} Nachrichten
+                  <span v-if="backup.media_count"> • {{ backup.media_count }} Medien</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4" :class="{ 'mt-20': activeBackups.length > 0 }">
       <div>
         <h1 class="text-2xl font-bold text-white">Discord Manager</h1>
         <p class="text-gray-400 mt-1">Backups erstellen, Medien herunterladen, Nachrichten verwalten</p>
@@ -718,12 +951,61 @@ function formatSize(bytes) {
 
         <!-- Links Panel -->
         <div v-if="activeTab === 'links'" class="card">
-          <div class="p-4 border-b border-dark-600 flex items-center justify-between">
-            <h3 class="text-lg font-medium text-white">
-              <LinkIcon class="w-5 h-5 inline mr-2" />
-              Link-Sammlung
-            </h3>
-            <span class="text-sm text-gray-400">{{ links.length }} Links gefunden</span>
+          <div class="p-4 border-b border-dark-600">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-medium text-white">
+                <LinkIcon class="w-5 h-5 inline mr-2" />
+                Link-Sammlung
+              </h3>
+              <span class="text-sm text-gray-400">
+                {{ filteredLinks.length }} von {{ links.length }} Links
+              </span>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="linkSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Links durchsuchen..."
+              />
+              <button
+                v-if="linkSearchQuery"
+                @click="linkSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <XCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Domain Filters -->
+            <div v-if="linkDomains.length > 0" class="flex flex-wrap gap-2">
+              <span class="text-xs text-gray-500 flex items-center gap-1">
+                <FunnelIcon class="w-3 h-3" /> Filter:
+              </span>
+              <button
+                v-for="[domain, count] in linkDomains"
+                :key="domain"
+                @click="toggleDomain(domain)"
+                :class="[
+                  'text-xs px-2 py-1 rounded-full transition-colors',
+                  hiddenDomains.includes(domain)
+                    ? 'bg-red-500/20 text-red-400 line-through'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                {{ domain }} ({{ count }})
+              </button>
+              <button
+                v-if="hiddenDomains.length > 0"
+                @click="hiddenDomains = []"
+                class="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-400 hover:bg-primary-500/30"
+              >
+                Alle zeigen
+              </button>
+            </div>
           </div>
 
           <!-- Loading -->
@@ -733,8 +1015,8 @@ function formatSize(bytes) {
           </div>
 
           <!-- Links List -->
-          <div v-else-if="links.length > 0" class="divide-y divide-dark-600 max-h-[600px] overflow-y-auto">
-            <div v-for="link in links" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
+          <div v-else-if="filteredLinks.length > 0" class="divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+            <div v-for="link in filteredLinks" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
               <div class="flex items-start gap-3">
                 <LinkIcon class="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
@@ -747,16 +1029,25 @@ function formatSize(bytes) {
                     {{ link.url }}
                   </a>
                   <div class="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                    <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
                     <span>{{ link.author_username }}</span>
                     <span>{{ formatDate(link.message_timestamp) }}</span>
-                    <span v-if="link.backup_name" class="bg-dark-600 px-2 py-0.5 rounded">{{ link.backup_name }}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- No Links -->
+          <!-- No Links (after filter) -->
+          <div v-else-if="links.length > 0" class="p-8 text-center">
+            <FunnelIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
+            <p class="text-gray-400">Keine Links mit aktuellem Filter gefunden.</p>
+            <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
+              Filter zurücksetzen
+            </button>
+          </div>
+
+          <!-- No Links at all -->
           <div v-else class="p-12 text-center">
             <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
             <h3 class="text-xl font-medium text-white mb-2">Keine Links gefunden</h3>
@@ -831,12 +1122,11 @@ function formatSize(bytes) {
               Bilder & Medien ({{ channelMedia.length }})
             </h4>
             <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[300px] overflow-y-auto">
-              <a
-                v-for="media in channelMedia"
+              <div
+                v-for="(media, index) in channelMedia"
                 :key="media.id"
-                :href="getMediaUrl(media.id)"
-                target="_blank"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
+                @click="openLightbox(media, index)"
+                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all cursor-pointer"
               >
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
@@ -848,19 +1138,71 @@ function formatSize(bytes) {
                 <div v-else class="w-full h-full flex items-center justify-center">
                   <DocumentTextIcon class="w-8 h-8 text-gray-500" />
                 </div>
-              </a>
+              </div>
             </div>
           </div>
 
           <!-- Links -->
           <div v-if="channelLinks.length > 0" class="p-6 border-t border-dark-600">
-            <h4 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
-              <LinkIcon class="w-5 h-5" />
-              Links ({{ channelLinks.length }})
-            </h4>
-            <div class="space-y-2 max-h-[200px] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-lg font-medium text-white flex items-center gap-2">
+                <LinkIcon class="w-5 h-5" />
+                Links
+              </h4>
+              <span class="text-sm text-gray-400">
+                {{ filteredChannelLinks.length }} von {{ channelLinks.length }} Links
+              </span>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-3">
+              <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                v-model="linkSearchQuery"
+                type="text"
+                class="input pl-9 py-2 text-sm w-full"
+                placeholder="Links durchsuchen..."
+              />
+              <button
+                v-if="linkSearchQuery"
+                @click="linkSearchQuery = ''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <XCircleIcon class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Domain Filters -->
+            <div v-if="channelLinkDomains.length > 0" class="flex flex-wrap gap-2 mb-3">
+              <span class="text-xs text-gray-500 flex items-center gap-1">
+                <FunnelIcon class="w-3 h-3" /> Filter:
+              </span>
+              <button
+                v-for="[domain, count] in channelLinkDomains"
+                :key="domain"
+                @click="toggleDomain(domain)"
+                :class="[
+                  'text-xs px-2 py-1 rounded-full transition-colors',
+                  hiddenDomains.includes(domain)
+                    ? 'bg-red-500/20 text-red-400 line-through'
+                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                ]"
+              >
+                {{ domain }} ({{ count }})
+              </button>
+              <button
+                v-if="hiddenDomains.length > 0"
+                @click="hiddenDomains = []"
+                class="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-400 hover:bg-primary-500/30"
+              >
+                Alle zeigen
+              </button>
+            </div>
+
+            <!-- Links List -->
+            <div v-if="filteredChannelLinks.length > 0" class="space-y-2 max-h-[250px] overflow-y-auto">
               <a
-                v-for="link in channelLinks"
+                v-for="link in filteredChannelLinks"
                 :key="link.url + link.message_id"
                 :href="link.url"
                 target="_blank"
@@ -868,10 +1210,21 @@ function formatSize(bytes) {
                 class="block p-2 bg-dark-700 rounded hover:bg-dark-600 transition-colors"
               >
                 <span class="text-primary-400 text-sm break-all">{{ link.url }}</span>
-                <div class="text-xs text-gray-500 mt-1">
-                  {{ link.author_username }} - {{ formatDate(link.message_timestamp) }}
+                <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                  <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
+                  <span>{{ link.author_username }}</span>
+                  <span>{{ formatDate(link.message_timestamp) }}</span>
                 </div>
               </a>
+            </div>
+
+            <!-- No Links after filter -->
+            <div v-else class="text-center text-gray-500 py-4">
+              <FunnelIcon class="w-8 h-8 mx-auto mb-2" />
+              <p class="text-sm">Keine Links mit aktuellem Filter</p>
+              <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
+                Filter zurücksetzen
+              </button>
             </div>
           </div>
 
@@ -1310,6 +1663,90 @@ function formatSize(bytes) {
             <div v-if="backupMessages.length === 0" class="text-center text-gray-500 py-8">
               Keine Nachrichten gefunden
             </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Lightbox Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showLightbox && lightboxMedia"
+        class="fixed inset-0 bg-black/90 flex items-center justify-center z-[100]"
+        @click.self="closeLightbox"
+        @keyup.escape="closeLightbox"
+        @keyup.left="prevMedia"
+        @keyup.right="nextMedia"
+      >
+        <!-- Close Button -->
+        <button
+          @click="closeLightbox"
+          class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10"
+        >
+          <XMarkIcon class="w-8 h-8" />
+        </button>
+
+        <!-- Download Button -->
+        <a
+          :href="getMediaUrl(lightboxMedia.id)"
+          download
+          class="absolute top-4 right-16 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10"
+          @click.stop
+        >
+          <ArrowDownTrayIcon class="w-8 h-8" />
+        </a>
+
+        <!-- Previous Button -->
+        <button
+          v-if="lightboxIndex > 0"
+          @click="prevMedia"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ChevronLeftIcon class="w-10 h-10" />
+        </button>
+
+        <!-- Next Button -->
+        <button
+          v-if="lightboxIndex < channelMedia.length - 1"
+          @click="nextMedia"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ChevronRightIcon class="w-10 h-10" />
+        </button>
+
+        <!-- Image -->
+        <div class="max-w-[90vw] max-h-[90vh] flex flex-col items-center">
+          <img
+            v-if="lightboxMedia.mime_type?.startsWith('image/')"
+            :src="getMediaUrl(lightboxMedia.id)"
+            class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            :alt="lightboxMedia.filename"
+          />
+          <video
+            v-else-if="lightboxMedia.mime_type?.startsWith('video/')"
+            :src="getMediaUrl(lightboxMedia.id)"
+            class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+            controls
+            autoplay
+          />
+          <div v-else class="bg-dark-800 rounded-lg p-8 text-center">
+            <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p class="text-white font-medium">{{ lightboxMedia.filename }}</p>
+            <a
+              :href="getMediaUrl(lightboxMedia.id)"
+              download
+              class="btn-primary mt-4 inline-flex items-center"
+              @click.stop
+            >
+              <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
+              Herunterladen
+            </a>
+          </div>
+
+          <!-- File Info -->
+          <div class="mt-4 text-center text-white/70 text-sm">
+            <p class="font-medium text-white">{{ lightboxMedia.filename }}</p>
+            <p class="mt-1">{{ lightboxIndex + 1 }} / {{ channelMedia.length }}</p>
           </div>
         </div>
       </div>

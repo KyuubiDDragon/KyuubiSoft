@@ -1160,6 +1160,11 @@ class Router
                 // Links
                 $protected->get('/discord/links', [DiscordController::class, 'getLinks'])
                     ->add(new PermissionMiddleware('discord.view_messages'));
+                // Channel-specific media and links
+                $protected->get('/discord/channels/{channelId}/media', [DiscordController::class, 'getChannelMedia'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
+                $protected->get('/discord/channels/{channelId}/links', [DiscordController::class, 'getChannelLinks'])
+                    ->add(new PermissionMiddleware('discord.view_messages'));
                 // Media
                 $protected->get('/discord/media', [DiscordController::class, 'getMedia'])
                     ->add(new PermissionMiddleware('discord.download_media'));

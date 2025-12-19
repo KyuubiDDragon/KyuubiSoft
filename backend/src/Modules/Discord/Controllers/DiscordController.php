@@ -797,6 +797,36 @@ class DiscordController
         return JsonResponse::success(['items' => $links]);
     }
 
+    public function getChannelMedia(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $channelId = RouteContext::fromRequest($request)->getRoute()->getArgument('channelId');
+        $queryParams = $request->getQueryParams();
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $media = $this->backupRepository->findMediaByChannel($channelId, $userId, $perPage, $offset);
+
+        return JsonResponse::success(['items' => $media]);
+    }
+
+    public function getChannelLinks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $channelId = RouteContext::fromRequest($request)->getRoute()->getArgument('channelId');
+        $queryParams = $request->getQueryParams();
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $links = $this->backupRepository->getLinksFromChannel($channelId, $userId, $perPage, $offset);
+
+        return JsonResponse::success(['items' => $links]);
+    }
+
     // ========================================================================
     // Private Methods
     // ========================================================================

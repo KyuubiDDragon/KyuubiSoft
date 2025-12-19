@@ -27,6 +27,12 @@ const discordStore = useDiscordStore()
 const uiStore = useUiStore()
 const { confirm } = useConfirmDialog()
 
+// Helper for authenticated media URLs
+function getMediaUrl(mediaId) {
+  const token = localStorage.getItem('access_token')
+  return `/api/v1/discord/media/${mediaId}?token=${encodeURIComponent(token)}`
+}
+
 // State
 const activeTab = ref('servers')
 const showAddAccountModal = ref(false)
@@ -60,6 +66,7 @@ const backupForm = reactive({
   account_id: '',
   channel_id: '',
   server_id: '',
+  backup_mode: 'full', // 'full', 'media_only', 'links_only'
   include_media: true,
   include_reactions: true,
   include_threads: false,
@@ -286,12 +293,15 @@ async function deleteBackup(backup) {
   }
 }
 
+const ownerDiscordId = ref(null)
+
 async function viewBackupMessages(backup) {
   selectedBackup.value = backup
   messageSearch.value = ''
   try {
     const result = await discordStore.loadBackupMessages(backup.id)
     backupMessages.value = result.items || []
+    ownerDiscordId.value = result.owner_discord_id || null
     showMessagesModal.value = true
   } catch (error) {
     uiStore.showError('Fehler beim Laden der Nachrichten')
@@ -824,13 +834,13 @@ function formatSize(bytes) {
               <a
                 v-for="media in channelMedia"
                 :key="media.id"
-                :href="`/api/v1/discord/media/${media.id}`"
+                :href="getMediaUrl(media.id)"
                 target="_blank"
                 class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
               >
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
-                  :src="`/api/v1/discord/media/${media.id}`"
+                  :src="getMediaUrl(media.id)"
                   class="w-full h-full object-cover"
                   :alt="media.filename"
                   loading="lazy"
@@ -1081,7 +1091,56 @@ function formatSize(bytes) {
           </div>
 
           <div class="p-6 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Backup Mode -->
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Backup-Modus</label>
+              <div class="grid grid-cols-3 gap-2">
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'full'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="full" class="sr-only" />
+                  <ChatBubbleLeftRightIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'full' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'full' ? 'text-white' : 'text-gray-400'">Komplett</span>
+                </label>
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'media_only'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="media_only" class="sr-only" />
+                  <PhotoIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'media_only' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'media_only' ? 'text-white' : 'text-gray-400'">Nur Medien</span>
+                </label>
+                <label
+                  :class="[
+                    'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
+                    backupForm.backup_mode === 'links_only'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-600 hover:border-dark-500'
+                  ]"
+                >
+                  <input v-model="backupForm.backup_mode" type="radio" value="links_only" class="sr-only" />
+                  <LinkIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'links_only' ? 'text-primary-400' : 'text-gray-400'" />
+                  <span class="text-sm" :class="backupForm.backup_mode === 'links_only' ? 'text-white' : 'text-gray-400'">Nur Links</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">
+                <span v-if="backupForm.backup_mode === 'full'">Alle Nachrichten, Medien und Links werden gesichert.</span>
+                <span v-else-if="backupForm.backup_mode === 'media_only'">Nur Bilder und Dateien werden heruntergeladen.</span>
+                <span v-else>Nur Links aus den Nachrichten werden extrahiert.</span>
+              </p>
+            </div>
+
+            <!-- Options (only for full mode) -->
+            <div v-if="backupForm.backup_mode === 'full'" class="grid grid-cols-2 gap-4">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="backupForm.include_media" type="checkbox" class="checkbox" />
                 <span class="text-white">Medien herunterladen</span>
@@ -1203,26 +1262,47 @@ function formatSize(bytes) {
             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-dark-900">
             <div
               v-for="msg in backupMessages"
               :key="msg.id"
-              class="bg-dark-700 rounded-lg p-4"
+              :class="[
+                'flex',
+                msg.discord_author_id === ownerDiscordId ? 'justify-end' : 'justify-start'
+              ]"
             >
-              <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
-                  <UserIcon class="w-5 h-5 text-gray-400" />
+              <div
+                :class="[
+                  'max-w-[75%] rounded-2xl px-4 py-2',
+                  msg.discord_author_id === ownerDiscordId
+                    ? 'bg-primary-600 text-white rounded-br-sm'
+                    : 'bg-dark-700 text-gray-100 rounded-bl-sm'
+                ]"
+              >
+                <!-- Author name (only for incoming messages) -->
+                <div v-if="msg.discord_author_id !== ownerDiscordId" class="text-xs text-primary-400 font-medium mb-1">
+                  {{ msg.author_username }}
                 </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-white">{{ msg.author_username }}</span>
-                    <span class="text-xs text-gray-500">{{ formatDate(msg.message_timestamp) }}</span>
-                  </div>
-                  <p class="text-gray-300 mt-1 whitespace-pre-wrap break-words">{{ msg.content }}</p>
-                  <div v-if="msg.has_attachments" class="flex items-center gap-1 mt-2 text-sm text-gray-400">
-                    <PhotoIcon class="w-4 h-4" />
+
+                <!-- Message content -->
+                <p class="whitespace-pre-wrap break-words text-sm">{{ msg.content || '[Kein Text]' }}</p>
+
+                <!-- Attachments -->
+                <div v-if="msg.has_attachments" class="mt-2">
+                  <div class="flex items-center gap-1 text-xs opacity-75">
+                    <PhotoIcon class="w-3 h-3" />
                     {{ msg.attachment_count }} Anhänge
                   </div>
+                </div>
+
+                <!-- Timestamp -->
+                <div
+                  :class="[
+                    'text-[10px] mt-1',
+                    msg.discord_author_id === ownerDiscordId ? 'text-primary-200' : 'text-gray-500'
+                  ]"
+                >
+                  {{ formatDate(msg.message_timestamp) }}
                 </div>
               </div>
             </div>

@@ -1289,39 +1289,23 @@ class DiscordController
             'date_to' => $data['date_to'] ?? null,
         ]);
 
-        // Spawn background process for backup
+        // Spawn background process for backup (same method as user token backup which works)
         $encryptedToken = $bot['bot_token_encrypted'];
         $backupId = $backup['id'];
         $scriptPath = dirname(__DIR__, 4) . '/bin/process-discord-backup.php';
         $logPath = dirname(__DIR__, 4) . '/storage/logs/backup-' . $backupId . '.log';
 
-        // Ensure log directory exists
-        $logDir = dirname($logPath);
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
-        }
-
-        // Run backup processor in background
-        // Use different methods depending on availability
+        // Run backup processor in background with nohup to survive PHP-FPM shutdown
         $cmd = sprintf(
-            'php %s %s %s bot > %s 2>&1',
+            'nohup php %s %s %s bot > %s 2>&1 &',
             escapeshellarg($scriptPath),
             escapeshellarg($backupId),
             escapeshellarg($encryptedToken),
             escapeshellarg($logPath)
         );
+        exec($cmd);
 
-        // Try to start in background (works in most Linux environments including Docker)
-        if (function_exists('shell_exec')) {
-            shell_exec('(' . $cmd . ') &');
-        } elseif (function_exists('exec')) {
-            exec('(' . $cmd . ') > /dev/null 2>&1 &');
-        } elseif (function_exists('popen')) {
-            $handle = popen($cmd . ' &', 'r');
-            if ($handle) {
-                pclose($handle);
-            }
-        }
+        error_log("Started bot backup process: $cmd");
 
         return JsonResponse::created($backup, 'Bot backup started');
     }

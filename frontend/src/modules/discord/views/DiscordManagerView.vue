@@ -456,8 +456,8 @@ async function selectDM(dm) {
     isLoadingChannelData.value = true
     try {
       const [mediaResult, linksResult] = await Promise.all([
-        discordStore.loadChannelMedia(dm.discord_channel_id, 1, 50),
-        discordStore.loadChannelLinks(dm.discord_channel_id, 1, 50)
+        discordStore.loadChannelMedia(dm.discord_channel_id, 1, 30),
+        discordStore.loadChannelLinks(dm.discord_channel_id, 1, 30)
       ])
       channelMedia.value = mediaResult?.items || []
       channelMediaTotal.value = mediaResult?.total || 0
@@ -480,7 +480,7 @@ async function loadMoreMedia() {
     const result = await discordStore.loadChannelMedia(
       selectedDM.value.discord_channel_id,
       channelMediaPage.value,
-      50
+      30
     )
     if (result?.items) {
       channelMedia.value = [...channelMedia.value, ...result.items]
@@ -1280,17 +1280,19 @@ function formatSize(bytes) {
             <div
               v-if="filteredChannelMedia.length > 0"
               class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[400px] overflow-y-auto"
+              style="contain: layout style paint;"
             >
               <div
                 v-for="(media, index) in filteredChannelMedia"
                 :key="media.id"
                 @click="openLightbox(media, index)"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 cursor-pointer relative group"
+                class="aspect-square bg-dark-700 rounded-lg overflow-hidden cursor-pointer relative group will-change-transform transform-gpu transition-transform duration-150 hover:scale-105 hover:z-10"
+                style="contain: layout style paint;"
               >
                 <img
                   v-if="media.mime_type?.startsWith('image/')"
-                  :src="getMediaUrl(media)"
-                  class="w-full h-full object-cover"
+                  :src="media.signed_url || getMediaUrl(media)"
+                  class="w-full h-full object-cover pointer-events-none"
                   :alt="media.filename"
                   loading="lazy"
                   decoding="async"
@@ -1306,7 +1308,7 @@ function formatSize(bytes) {
                   <DocumentTextIcon class="w-8 h-8 text-gray-500" />
                 </div>
                 <!-- Filename tooltip on hover -->
-                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate opacity-0 group-hover:opacity-100 pointer-events-none">
                   {{ media.filename }}
                 </div>
               </div>

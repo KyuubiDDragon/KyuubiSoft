@@ -1,18 +1,15 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import VueVirtualScroller from 'vue-virtual-scroller'
 import App from './App.vue'
 import router from './router'
 import i18n from './locales'
 import './assets/styles/main.css'
-import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.use(i18n)
-app.use(VueVirtualScroller)
 
 // Global error handler
 app.config.errorHandler = (err, instance, info) => {

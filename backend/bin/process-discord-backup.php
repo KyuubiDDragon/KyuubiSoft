@@ -13,6 +13,7 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use Dotenv\Dotenv;
+use Doctrine\DBAL\DriverManager;
 use App\Modules\Discord\Repositories\DiscordBackupRepository;
 use App\Modules\Discord\Services\DiscordApiService;
 
@@ -39,26 +40,21 @@ if (!preg_match('/^[a-f0-9\-]{36}$/i', $backupId)) {
     exit(1);
 }
 
-// Database connection
-$config = [
-    'host' => $_ENV['DB_HOST'] ?? 'mysql',
-    'port' => $_ENV['DB_PORT'] ?? 3306,
+// Database connection using Doctrine DBAL
+$connectionParams = [
     'dbname' => $_ENV['DB_DATABASE'] ?? 'kyuubisoft',
     'user' => $_ENV['DB_USERNAME'] ?? 'kyuubisoft',
     'password' => $_ENV['DB_PASSWORD'] ?? 'secret',
+    'host' => $_ENV['DB_HOST'] ?? 'mysql',
+    'port' => $_ENV['DB_PORT'] ?? 3306,
+    'driver' => 'pdo_mysql',
+    'charset' => 'utf8mb4',
 ];
 
 try {
-    $pdo = new PDO(
-        sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $config['host'], $config['port'], $config['dbname']),
-        $config['user'],
-        $config['password'],
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]
-    );
-} catch (PDOException $e) {
+    $db = DriverManager::getConnection($connectionParams);
+    $db->connect();
+} catch (\Exception $e) {
     fwrite(STDERR, "Database connection failed: " . $e->getMessage() . "\n");
     exit(1);
 }
@@ -70,15 +66,15 @@ $encryptionKey = hash('sha256', $appKey, true);
 function decrypt(string $encrypted, string $key): ?string
 {
     $data = base64_decode($encrypted);
-    if ($data === false) {
+    if ($data === false || strlen($data) < 17) {
         return null;
     }
 
     $ivLength = openssl_cipher_iv_length('aes-256-cbc');
     $iv = substr($data, 0, $ivLength);
-    $encrypted = substr($data, $ivLength);
+    $encryptedData = substr($data, $ivLength);
 
-    $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+    $decrypted = openssl_decrypt($encryptedData, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
     return $decrypted !== false ? $decrypted : null;
 }
 
@@ -92,7 +88,7 @@ if (!$token) {
 $storagePath = $_ENV['STORAGE_PATH'] ?? '/var/www/storage';
 
 // Initialize services
-$backupRepository = new DiscordBackupRepository($pdo);
+$backupRepository = new DiscordBackupRepository($db);
 $discordApi = new DiscordApiService();
 
 echo "Processing backup ID: $backupId\n";

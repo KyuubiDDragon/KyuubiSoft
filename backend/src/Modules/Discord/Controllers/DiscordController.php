@@ -634,6 +634,50 @@ class DiscordController
         return $response;
     }
 
+    /**
+     * Serve media file using signed URL (no JWT required)
+     * This endpoint is public but protected by HMAC signature
+     */
+    public function serveSignedMedia(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $mediaId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $queryParams = $request->getQueryParams();
+
+        $expires = (int) ($queryParams['expires'] ?? 0);
+        $signature = $queryParams['signature'] ?? '';
+
+        if (empty($signature) || empty($expires)) {
+            throw new ValidationException('Missing signature or expiration');
+        }
+
+        if (!$this->validateMediaSignature($mediaId, $expires, $signature)) {
+            throw new ValidationException('Invalid or expired signature');
+        }
+
+        $media = $this->backupRepository->findMediaById($mediaId);
+        if (!$media) {
+            throw new NotFoundException('Media not found');
+        }
+
+        if (!file_exists($media['local_path'])) {
+            throw new NotFoundException('Media file not found');
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($media['local_path']);
+
+        // Add cache headers since signed URLs are time-limited
+        $response = $response
+            ->withHeader('Content-Type', $mimeType)
+            ->withHeader('Content-Disposition', 'inline; filename="' . $media['filename'] . '"')
+            ->withHeader('Content-Length', (string) filesize($media['local_path']))
+            ->withHeader('Cache-Control', 'private, max-age=86400');
+
+        $response->getBody()->write(file_get_contents($media['local_path']));
+
+        return $response;
+    }
+
     // ========================================================================
     // Message Deletion
     // ========================================================================
@@ -825,6 +869,11 @@ class DiscordController
 
         $media = $this->backupRepository->findMediaByChannel($channelId, $userId, $perPage, $offset);
         $total = $this->backupRepository->countMediaByChannel($channelId, $userId);
+
+        // Add signed URLs to each media item (valid for 24 hours)
+        foreach ($media as &$item) {
+            $item['signed_url'] = $this->generateSignedMediaUrl($item['id']);
+        }
 
         return JsonResponse::success([
             'items' => $media,
@@ -1068,6 +1117,48 @@ class DiscordController
         }
 
         return rmdir($dir);
+    }
+
+    /**
+     * Generate a signed URL for media access (no JWT required)
+     * URLs are valid for 24 hours by default
+     */
+    private function generateSignedMediaUrl(string $mediaId, int $validitySeconds = 86400): string
+    {
+        $expires = time() + $validitySeconds;
+        $signature = $this->generateMediaSignature($mediaId, $expires);
+
+        $baseUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
+        return sprintf(
+            '%s/api/discord/media/%s/signed?expires=%d&signature=%s',
+            $baseUrl,
+            urlencode($mediaId),
+            $expires,
+            urlencode($signature)
+        );
+    }
+
+    /**
+     * Generate HMAC signature for media access
+     */
+    private function generateMediaSignature(string $mediaId, int $expires): string
+    {
+        $data = $mediaId . ':' . $expires;
+        return hash_hmac('sha256', $data, $this->encryptionKey);
+    }
+
+    /**
+     * Validate media signature
+     */
+    private function validateMediaSignature(string $mediaId, int $expires, string $signature): bool
+    {
+        // Check if signature has expired
+        if ($expires < time()) {
+            return false;
+        }
+
+        $expectedSignature = $this->generateMediaSignature($mediaId, $expires);
+        return hash_equals($expectedSignature, $signature);
     }
 
     private function encrypt(string $data): string

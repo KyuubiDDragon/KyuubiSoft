@@ -90,6 +90,9 @@ const selectedServer = computed(() => discordStore.selectedServer)
 
 // Selected DM state
 const selectedDM = ref(null)
+const channelMedia = ref([])
+const channelLinks = ref([])
+const isLoadingChannelData = ref(false)
 
 // Filtered servers (by search query)
 const filteredServers = computed(() => {
@@ -191,9 +194,28 @@ async function selectServer(server) {
   await discordStore.loadServerChannels(server.id)
 }
 
-function selectDM(dm) {
+async function selectDM(dm) {
   discordStore.selectedServer = null // Clear server selection
   selectedDM.value = dm
+  channelMedia.value = []
+  channelLinks.value = []
+
+  // Load media and links for this channel
+  if (dm.discord_channel_id) {
+    isLoadingChannelData.value = true
+    try {
+      const [mediaResult, linksResult] = await Promise.all([
+        discordStore.loadChannelMedia(dm.discord_channel_id),
+        discordStore.loadChannelLinks(dm.discord_channel_id)
+      ])
+      channelMedia.value = mediaResult?.items || []
+      channelLinks.value = linksResult?.items || []
+    } catch (error) {
+      console.error('Failed to load channel data:', error)
+    } finally {
+      isLoadingChannelData.value = false
+    }
+  }
 }
 
 async function toggleFavorite(server) {
@@ -775,6 +797,68 @@ function formatSize(bytes) {
                 Meine Nachrichten löschen
               </button>
             </div>
+          </div>
+
+          <!-- Loading Channel Data -->
+          <div v-if="isLoadingChannelData" class="p-6 border-t border-dark-600 text-center">
+            <ArrowPathIcon class="w-6 h-6 mx-auto text-primary-400 animate-spin" />
+            <p class="text-gray-400 text-sm mt-2">Lade Medien & Links...</p>
+          </div>
+
+          <!-- Media Gallery -->
+          <div v-else-if="channelMedia.length > 0" class="p-6 border-t border-dark-600">
+            <h4 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
+              <PhotoIcon class="w-5 h-5" />
+              Bilder & Medien ({{ channelMedia.length }})
+            </h4>
+            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[300px] overflow-y-auto">
+              <a
+                v-for="media in channelMedia"
+                :key="media.id"
+                :href="`/api/v1/discord/media/${media.id}`"
+                target="_blank"
+                class="aspect-square bg-dark-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
+              >
+                <img
+                  v-if="media.mime_type?.startsWith('image/')"
+                  :src="`/api/v1/discord/media/${media.id}`"
+                  class="w-full h-full object-cover"
+                  :alt="media.filename"
+                  loading="lazy"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center">
+                  <DocumentTextIcon class="w-8 h-8 text-gray-500" />
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Links -->
+          <div v-if="channelLinks.length > 0" class="p-6 border-t border-dark-600">
+            <h4 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
+              <LinkIcon class="w-5 h-5" />
+              Links ({{ channelLinks.length }})
+            </h4>
+            <div class="space-y-2 max-h-[200px] overflow-y-auto">
+              <a
+                v-for="link in channelLinks"
+                :key="link.url + link.message_id"
+                :href="link.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block p-2 bg-dark-700 rounded hover:bg-dark-600 transition-colors"
+              >
+                <span class="text-primary-400 text-sm break-all">{{ link.url }}</span>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ link.author_username }} - {{ formatDate(link.message_timestamp) }}
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- No Data Yet -->
+          <div v-if="!isLoadingChannelData && channelMedia.length === 0 && channelLinks.length === 0" class="p-6 border-t border-dark-600 text-center text-gray-500">
+            <p>Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.</p>
           </div>
         </div>
 

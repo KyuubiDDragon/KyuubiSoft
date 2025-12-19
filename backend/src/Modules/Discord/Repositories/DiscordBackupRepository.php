@@ -102,10 +102,10 @@ class DiscordBackupRepository
             'discord_channel_id' => $data['discord_channel_id'] ?? null,
             'target_name' => $data['target_name'],
             'type' => $data['type'] ?? 'channel',
-            'include_media' => $data['include_media'] ?? true,
-            'include_reactions' => $data['include_reactions'] ?? true,
-            'include_threads' => $data['include_threads'] ?? false,
-            'include_embeds' => $data['include_embeds'] ?? true,
+            'include_media' => !empty($data['include_media']) ? 1 : 0,
+            'include_reactions' => !empty($data['include_reactions']) ? 1 : 0,
+            'include_threads' => !empty($data['include_threads']) ? 1 : 0,
+            'include_embeds' => !empty($data['include_embeds']) ? 1 : 0,
             'date_from' => $data['date_from'] ?? null,
             'date_to' => $data['date_to'] ?? null,
             'status' => 'pending',
@@ -415,6 +415,52 @@ class DiscordBackupRepository
             [$id]
         );
         return $result ?: null;
+    }
+
+    public function findMediaByChannel(string $discordChannelId, string $userId, int $limit = 50, int $offset = 0): array
+    {
+        return $this->db->fetchAllAssociative(
+            'SELECT m.*, b.target_name as backup_name
+             FROM discord_media m
+             INNER JOIN discord_backups b ON m.backup_id = b.id
+             INNER JOIN discord_accounts a ON b.account_id = a.id
+             WHERE b.discord_channel_id = ? AND a.user_id = ?
+             ORDER BY m.downloaded_at DESC
+             LIMIT ? OFFSET ?',
+            [$discordChannelId, $userId, $limit, $offset],
+            [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+        );
+    }
+
+    public function getLinksFromChannel(string $discordChannelId, string $userId, int $limit = 50, int $offset = 0): array
+    {
+        $messages = $this->db->fetchAllAssociative(
+            'SELECT m.content, m.author_username, m.message_timestamp, m.discord_message_id, b.target_name as backup_name
+             FROM discord_messages m
+             INNER JOIN discord_backups b ON m.backup_id = b.id
+             INNER JOIN discord_accounts a ON b.account_id = a.id
+             WHERE b.discord_channel_id = ? AND a.user_id = ? AND m.content REGEXP \'https?://[^[:space:]]+\'
+             ORDER BY m.message_timestamp DESC
+             LIMIT ? OFFSET ?',
+            [$discordChannelId, $userId, $limit, $offset],
+            [\PDO::PARAM_STR, \PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_INT]
+        );
+
+        $links = [];
+        foreach ($messages as $msg) {
+            preg_match_all('/https?:\/\/[^\s<>"{}|\\^`\[\]]+/i', $msg['content'], $matches);
+            foreach ($matches[0] as $url) {
+                $links[] = [
+                    'url' => rtrim($url, '.,;:!?)\'">'),
+                    'author_username' => $msg['author_username'],
+                    'message_timestamp' => $msg['message_timestamp'],
+                    'message_id' => $msg['discord_message_id'],
+                    'backup_name' => $msg['backup_name'],
+                ];
+            }
+        }
+
+        return $links;
     }
 
     // Delete job methods

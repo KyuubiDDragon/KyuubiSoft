@@ -176,6 +176,21 @@ export const useDiscordStore = defineStore('discord', () => {
     return response.data.data
   }
 
+  // Channel-specific media and links
+  async function loadChannelMedia(channelId, page = 1, perPage = 50) {
+    const response = await api.get(`/api/v1/discord/channels/${channelId}/media`, {
+      params: { page, per_page: perPage }
+    })
+    return response.data.data
+  }
+
+  async function loadChannelLinks(channelId, page = 1, perPage = 50) {
+    const response = await api.get(`/api/v1/discord/channels/${channelId}/links`, {
+      params: { page, per_page: perPage }
+    })
+    return response.data.data
+  }
+
   // Media
   async function loadMedia(page = 1, perPage = 50) {
     const response = await api.get('/api/v1/discord/media', {
@@ -271,6 +286,8 @@ export const useDiscordStore = defineStore('discord', () => {
     loadBackupMessages,
     searchMessages,
     loadLinks,
+    loadChannelMedia,
+    loadChannelLinks,
     loadMedia,
     searchOwnMessages,
     createDeleteJob,

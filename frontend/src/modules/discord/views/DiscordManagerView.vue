@@ -2187,65 +2187,6 @@ const filteredBots = computed(() => {
           </div>
         </div>
 
-        <!-- Recent Backups -->
-        <div class="card">
-          <div class="p-4 border-b border-dark-600 flex items-center justify-between">
-            <h3 class="font-semibold text-white">Backups</h3>
-            <span class="text-sm text-gray-400">{{ backups.length }} Backups</span>
-          </div>
-
-          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
-            <div
-              v-for="backup in backups"
-              :key="backup.id"
-              class="p-4"
-            >
-              <div class="flex items-start justify-between">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-white">{{ backup.target_name }}</span>
-                    <span :class="['text-xs px-2 py-0.5 rounded', getStatusColor(backup.status)]">
-                      {{ getStatusLabel(backup.status) }}
-                    </span>
-                  </div>
-                  <div class="text-sm text-gray-500 mt-1">
-                    {{ formatDate(backup.created_at) }} &bull;
-                    {{ backup.messages_processed }} Nachrichten &bull;
-                    {{ backup.media_count }} Medien ({{ formatSize(backup.media_size) }})
-                  </div>
-                  <div v-if="backup.status === 'running'" class="mt-2">
-                    <div class="w-full bg-dark-600 rounded-full h-2">
-                      <div
-                        class="bg-primary-500 h-2 rounded-full transition-all"
-                        :style="{ width: backup.progress_percent + '%' }"
-                      ></div>
-                    </div>
-                    <span class="text-xs text-gray-400">{{ backup.current_action || 'Verarbeite...' }}</span>
-                  </div>
-                </div>
-
-                <div class="flex gap-2">
-                  <button
-                    v-if="backup.status === 'completed'"
-                    @click="viewBackupMessages(backup)"
-                    class="btn-sm btn-secondary"
-                    title="Nachrichten anzeigen"
-                  >
-                    <DocumentTextIcon class="w-4 h-4" />
-                  </button>
-                  <button @click="deleteBackup(backup)" class="btn-sm btn-danger" title="Löschen">
-                    <TrashIcon class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="backups.length === 0" class="p-8 text-center text-gray-500">
-              Keine Backups vorhanden
-            </div>
-          </div>
-        </div>
-
         <!-- Delete Jobs -->
         <div v-if="deleteJobs.length > 0" class="card">
           <div class="p-4 border-b border-dark-600">

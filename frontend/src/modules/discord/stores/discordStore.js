@@ -159,11 +159,31 @@ export const useDiscordStore = defineStore('discord', () => {
     backups.value = backups.value.filter(b => b.id !== backupId)
   }
 
-  async function loadBackupMessages(backupId, page = 1, perPage = 50, search = null) {
+  async function loadBackupMessages(backupId, page = 1, perPage = 50, search = null, channelId = null) {
     const params = { page, per_page: perPage }
     if (search) params.search = search
+    if (channelId) params.channel_id = channelId
 
     const response = await api.get(`/api/v1/discord/backups/${backupId}/messages`, { params })
+    return response.data.data
+  }
+
+  async function loadBackupChannels(backupId) {
+    const response = await api.get(`/api/v1/discord/backups/${backupId}/channels`)
+    return response.data.data
+  }
+
+  async function loadBackupMedia(backupId, page = 1, perPage = 50) {
+    const response = await api.get(`/api/v1/discord/backups/${backupId}/media`, {
+      params: { page, per_page: perPage }
+    })
+    return response.data.data
+  }
+
+  async function loadBackupLinks(backupId, page = 1, perPage = 50) {
+    const response = await api.get(`/api/v1/discord/backups/${backupId}/links`, {
+      params: { page, per_page: perPage }
+    })
     return response.data.data
   }
 
@@ -406,6 +426,9 @@ export const useDiscordStore = defineStore('discord', () => {
     getBackup,
     deleteBackup,
     loadBackupMessages,
+    loadBackupChannels,
+    loadBackupMedia,
+    loadBackupLinks,
     searchMessages,
     loadLinks,
     loadChannelMedia,

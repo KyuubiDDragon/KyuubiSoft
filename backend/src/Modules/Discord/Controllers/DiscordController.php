@@ -502,8 +502,18 @@ class DiscordController
             throw new NotFoundException('Backup not found');
         }
 
-        $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
-        if (!$account) {
+        // Check ownership - either via account or via bot
+        $hasAccess = false;
+        if ($backup['account_id']) {
+            $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
+            $hasAccess = $account !== null;
+        }
+        if (!$hasAccess && $backup['bot_id']) {
+            $bot = $this->botRepository->findByIdAndUser($backup['bot_id'], $userId);
+            $hasAccess = $bot !== null;
+        }
+
+        if (!$hasAccess) {
             throw new NotFoundException('Backup not found');
         }
 

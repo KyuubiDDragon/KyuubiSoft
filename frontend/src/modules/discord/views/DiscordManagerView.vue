@@ -1506,6 +1506,150 @@ const filteredBots = computed(() => {
           <p class="text-gray-400">Keine Nachrichten mit "{{ globalSearchQuery }}" gefunden.</p>
         </div>
 
+        <!-- Backup Details Panel -->
+        <div v-if="activeTab === 'backups' && selectedViewBackup" class="space-y-4">
+          <!-- Backup Header -->
+          <div class="card overflow-hidden">
+            <div class="h-20 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
+              <div class="absolute -bottom-8 left-6">
+                <div :class="[
+                  'w-16 h-16 rounded-2xl border-4 border-dark-800 flex items-center justify-center shadow-lg',
+                  selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/30' : 'bg-blue-500/30'
+                ]">
+                  <CpuChipIcon v-if="selectedViewBackup.source_type === 'bot'" class="w-8 h-8 text-primary-400" />
+                  <UserIcon v-else class="w-8 h-8 text-blue-400" />
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-10 pb-4 px-6">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="text-xl font-bold text-white">{{ selectedViewBackup.target_name }}</h3>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span :class="[
+                      'text-xs px-2 py-0.5 rounded-full',
+                      selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/20 text-primary-400' : 'bg-blue-500/20 text-blue-400'
+                    ]">
+                      {{ selectedViewBackup.source_type === 'bot' ? 'Bot Backup' : 'Token Backup' }}
+                    </span>
+                    <span :class="getStatusBadgeClass(selectedViewBackup.status)" class="text-xs px-2 py-0.5 rounded-full">
+                      {{ getStatusText(selectedViewBackup.status) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    v-if="selectedViewBackup.status === 'completed'"
+                    @click="viewBackupMessages(selectedViewBackup)"
+                    class="btn-secondary"
+                  >
+                    <ChatBubbleLeftRightIcon class="w-5 h-5 mr-2" />
+                    Nachrichten
+                  </button>
+                  <button
+                    @click="deleteBackupConfirm(selectedViewBackup)"
+                    class="btn-danger"
+                  >
+                    <TrashIcon class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-4 divide-x divide-dark-600 border-t border-dark-600 bg-dark-800/50">
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ (selectedViewBackup.messages_total || selectedViewBackup.messages_processed || 0).toLocaleString() }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Nachrichten</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-primary-400">{{ selectedViewBackup.media_count || 0 }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Medien</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-2xl font-bold text-white">{{ formatSize(selectedViewBackup.media_size || 0) }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Größe</div>
+              </div>
+              <div class="p-4 text-center">
+                <div class="text-sm font-medium text-white">{{ formatDate(selectedViewBackup.created_at) }}</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Erstellt</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress for Running Backups -->
+          <div v-if="selectedViewBackup.status === 'running'" class="card p-5">
+            <div class="flex items-center gap-4 mb-3">
+              <ArrowPathIcon class="w-6 h-6 text-primary-400 animate-spin" />
+              <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                  <span class="text-white font-medium">{{ selectedViewBackup.current_action || 'Verarbeite...' }}</span>
+                  <span class="text-primary-400 font-bold">{{ selectedViewBackup.progress_percent || 0 }}%</span>
+                </div>
+                <div class="w-full bg-dark-600 rounded-full h-3">
+                  <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-3 rounded-full transition-all" :style="{ width: (selectedViewBackup.progress_percent || 0) + '%' }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error for Failed Backups -->
+          <div v-if="selectedViewBackup.status === 'failed'" class="card p-5 border border-red-500/30 bg-red-500/10">
+            <div class="flex items-start gap-3">
+              <XCircleIcon class="w-6 h-6 text-red-400 flex-shrink-0" />
+              <div>
+                <h4 class="font-medium text-red-400">Backup fehlgeschlagen</h4>
+                <p class="text-sm text-red-300 mt-1">{{ selectedViewBackup.error_message || 'Unbekannter Fehler' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Backup Info -->
+          <div class="card">
+            <div class="p-4 border-b border-dark-600">
+              <h4 class="font-medium text-white">Details</h4>
+            </div>
+            <div class="p-4 space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Backup ID</span>
+                <code class="text-xs text-gray-300 bg-dark-700 px-2 py-1 rounded font-mono">{{ selectedViewBackup.id }}</code>
+              </div>
+              <div v-if="selectedViewBackup.bot_name" class="flex justify-between">
+                <span class="text-gray-400">Bot</span>
+                <span class="text-white">{{ selectedViewBackup.bot_name }}</span>
+              </div>
+              <div v-if="selectedViewBackup.account_name" class="flex justify-between">
+                <span class="text-gray-400">Account</span>
+                <span class="text-white">{{ selectedViewBackup.account_name }}</span>
+              </div>
+              <div v-if="selectedViewBackup.server_name" class="flex justify-between">
+                <span class="text-gray-400">Server</span>
+                <span class="text-white">{{ selectedViewBackup.server_name }}</span>
+              </div>
+              <div v-if="selectedViewBackup.channel_name" class="flex justify-between">
+                <span class="text-gray-400">Channel</span>
+                <span class="text-white">#{{ selectedViewBackup.channel_name }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Backup-Modus</span>
+                <span class="text-white">{{ selectedViewBackup.backup_mode === 'full' ? 'Komplett' : selectedViewBackup.backup_mode === 'media_only' ? 'Nur Medien' : 'Nur Links' }}</span>
+              </div>
+              <div v-if="selectedViewBackup.completed_at" class="flex justify-between">
+                <span class="text-gray-400">Abgeschlossen</span>
+                <span class="text-white">{{ formatDate(selectedViewBackup.completed_at) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Backup Selected -->
+        <div v-if="activeTab === 'backups' && !selectedViewBackup && allBackups.length > 0" class="card p-12 text-center">
+          <CloudArrowDownIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
+          <h3 class="text-xl font-medium text-white mb-2">Backup auswählen</h3>
+          <p class="text-gray-400">Klicke auf ein Backup links um die Details anzuzeigen.</p>
+        </div>
+
         <!-- Links Panel -->
         <div v-if="activeTab === 'links'" class="card">
           <div class="p-4 border-b border-dark-600">

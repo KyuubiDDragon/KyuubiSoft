@@ -546,6 +546,99 @@ class DiscordController
 
         // Check ownership - either via account or via bot
         $hasAccess = false;
+        $ownerDiscordId = null;
+        if ($backup['account_id']) {
+            $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
+            $hasAccess = $account !== null;
+            if ($account) {
+                $ownerDiscordId = $account['discord_user_id'];
+            }
+        }
+        if (!$hasAccess && $backup['bot_id']) {
+            $bot = $this->botRepository->findBotByIdAndUser($backup['bot_id'], $userId);
+            $hasAccess = $bot !== null;
+            if ($bot) {
+                $ownerDiscordId = $bot['bot_user_id'];
+            }
+        }
+
+        if (!$hasAccess) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+        $search = $queryParams['search'] ?? null;
+        $channelId = $queryParams['channel_id'] ?? null;
+
+        if ($channelId) {
+            $messages = $this->backupRepository->findMessagesByBackupAndChannel($backupId, $channelId, $perPage, $offset, $search);
+            $total = $this->backupRepository->countMessagesByBackupAndChannel($backupId, $channelId);
+        } else {
+            $messages = $this->backupRepository->findMessagesByBackup($backupId, $perPage, $offset, $search);
+            $total = $this->backupRepository->countMessagesByBackup($backupId);
+        }
+
+        // Decode raw_data for each message
+        foreach ($messages as &$msg) {
+            if ($msg['raw_data']) {
+                $msg['raw_data'] = json_decode($msg['raw_data'], true);
+            }
+        }
+
+        return JsonResponse::success([
+            'items' => $messages,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'owner_discord_id' => $ownerDiscordId,
+        ]);
+    }
+
+    public function getBackupChannels(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $backupId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $backup = $this->backupRepository->findById($backupId);
+        if (!$backup) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        // Check ownership
+        $hasAccess = false;
+        if ($backup['account_id']) {
+            $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
+            $hasAccess = $account !== null;
+        }
+        if (!$hasAccess && $backup['bot_id']) {
+            $bot = $this->botRepository->findBotByIdAndUser($backup['bot_id'], $userId);
+            $hasAccess = $bot !== null;
+        }
+
+        if (!$hasAccess) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        $channels = $this->backupRepository->findChannelsByBackup($backupId);
+
+        return JsonResponse::success(['items' => $channels]);
+    }
+
+    public function getBackupMedia(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $backupId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $queryParams = $request->getQueryParams();
+
+        $backup = $this->backupRepository->findById($backupId);
+        if (!$backup) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        // Check ownership
+        $hasAccess = false;
         if ($backup['account_id']) {
             $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
             $hasAccess = $account !== null;
@@ -562,24 +655,62 @@ class DiscordController
         $page = max(1, (int) ($queryParams['page'] ?? 1));
         $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
         $offset = ($page - 1) * $perPage;
-        $search = $queryParams['search'] ?? null;
 
-        $messages = $this->backupRepository->findMessagesByBackup($backupId, $perPage, $offset, $search);
-        $total = $this->backupRepository->countMessagesByBackup($backupId);
+        $media = $this->backupRepository->findMediaByBackup($backupId, $perPage, $offset);
+        $total = $this->backupRepository->countMediaByBackup($backupId);
 
-        // Decode raw_data for each message
-        foreach ($messages as &$msg) {
-            if ($msg['raw_data']) {
-                $msg['raw_data'] = json_decode($msg['raw_data'], true);
-            }
+        // Add signed URLs for media
+        foreach ($media as &$item) {
+            $item['signed_url'] = '/api/v1/discord/media/' . $item['id'] . '/signed';
         }
 
         return JsonResponse::success([
-            'items' => $messages,
+            'items' => $media,
             'total' => $total,
             'page' => $page,
             'per_page' => $perPage,
-            'owner_discord_id' => $account['discord_user_id'],
+            'has_more' => ($offset + count($media)) < $total,
+        ]);
+    }
+
+    public function getBackupLinks(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $backupId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $queryParams = $request->getQueryParams();
+
+        $backup = $this->backupRepository->findById($backupId);
+        if (!$backup) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        // Check ownership
+        $hasAccess = false;
+        if ($backup['account_id']) {
+            $account = $this->accountRepository->findByIdAndUser($backup['account_id'], $userId);
+            $hasAccess = $account !== null;
+        }
+        if (!$hasAccess && $backup['bot_id']) {
+            $bot = $this->botRepository->findBotByIdAndUser($backup['bot_id'], $userId);
+            $hasAccess = $bot !== null;
+        }
+
+        if (!$hasAccess) {
+            throw new NotFoundException('Backup not found');
+        }
+
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $perPage = min(100, max(1, (int) ($queryParams['per_page'] ?? 50)));
+        $offset = ($page - 1) * $perPage;
+
+        $links = $this->backupRepository->getLinksFromBackup($backupId, $perPage, $offset);
+        $total = $this->backupRepository->countLinksByBackup($backupId);
+
+        return JsonResponse::success([
+            'items' => $links,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
         ]);
     }
 

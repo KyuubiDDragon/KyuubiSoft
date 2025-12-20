@@ -265,6 +265,76 @@ class DiscordBackupRepository
     }
 
     /**
+     * Get all channels from a backup with message and media counts
+     */
+    public function findChannelsByBackup(string $backupId): array
+    {
+        return $this->db->fetchAllAssociative(
+            'SELECT
+                m.discord_channel_id,
+                MAX(m.author_username) as channel_name,
+                COUNT(DISTINCT m.id) as message_count,
+                COUNT(DISTINCT med.id) as media_count,
+                MIN(m.message_timestamp) as first_message_at,
+                MAX(m.message_timestamp) as last_message_at
+             FROM discord_messages m
+             LEFT JOIN discord_media med ON med.backup_id = m.backup_id AND med.discord_message_id = m.discord_message_id
+             WHERE m.backup_id = ?
+             GROUP BY m.discord_channel_id
+             ORDER BY last_message_at DESC',
+            [$backupId]
+        );
+    }
+
+    /**
+     * Get messages for a specific channel within a backup
+     */
+    public function findMessagesByBackupAndChannel(string $backupId, string $channelId, int $limit = 100, int $offset = 0, ?string $search = null): array
+    {
+        $sql = 'SELECT * FROM discord_messages WHERE backup_id = ? AND discord_channel_id = ?';
+        $params = [$backupId, $channelId];
+        $types = [\PDO::PARAM_STR, \PDO::PARAM_STR];
+
+        if ($search) {
+            $sql .= ' AND content LIKE ?';
+            $params[] = '%' . $search . '%';
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        $sql .= ' ORDER BY message_timestamp DESC LIMIT ? OFFSET ?';
+        $params[] = $limit;
+        $params[] = $offset;
+        $types[] = \PDO::PARAM_INT;
+        $types[] = \PDO::PARAM_INT;
+
+        return $this->db->fetchAllAssociative($sql, $params, $types);
+    }
+
+    public function countMessagesByBackupAndChannel(string $backupId, string $channelId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM discord_messages WHERE backup_id = ? AND discord_channel_id = ?',
+            [$backupId, $channelId]
+        );
+    }
+
+    public function countMediaByBackup(string $backupId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM discord_media WHERE backup_id = ?',
+            [$backupId]
+        );
+    }
+
+    public function countLinksByBackup(string $backupId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*) FROM discord_messages WHERE backup_id = ? AND content REGEXP \'https?://[^[:space:]]+\'',
+            [$backupId]
+        );
+    }
+
+    /**
      * Search messages across all backups for a user
      */
     public function searchAllMessages(string $userId, string $search, int $limit = 50, int $offset = 0): array

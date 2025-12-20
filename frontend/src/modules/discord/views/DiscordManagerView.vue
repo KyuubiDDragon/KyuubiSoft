@@ -107,6 +107,15 @@ const backupStatusFilter = ref('')
 const selectedViewBackup = ref(null)
 const isLoadingAllBackups = ref(false)
 
+// Backup Details State
+const backupChannels = ref([])
+const backupMedia = ref([])
+const backupLinks = ref([])
+const selectedBackupChannel = ref(null)
+const backupChannelMessages = ref([])
+const isLoadingBackupDetails = ref(false)
+const backupDetailTab = ref('channels') // channels, media, links
+
 // Filtered Backups for the Backups Tab
 const filteredAllBackups = computed(() => {
   let result = allBackups.value
@@ -157,8 +166,53 @@ async function loadAllBackups() {
   }
 }
 
-function selectBackupForView(backup) {
+async function selectBackupForView(backup) {
   selectedViewBackup.value = backup
+  selectedBackupChannel.value = null
+  backupChannelMessages.value = []
+  backupDetailTab.value = 'channels'
+
+  if (!backup) return
+
+  isLoadingBackupDetails.value = true
+  try {
+    // Load channels, media, and links in parallel
+    const [channelsData, mediaData, linksData] = await Promise.all([
+      discordStore.loadBackupChannels(backup.id),
+      discordStore.loadBackupMedia(backup.id),
+      discordStore.loadBackupLinks(backup.id),
+    ])
+
+    backupChannels.value = channelsData?.items || []
+    backupMedia.value = mediaData?.items || []
+    backupLinks.value = linksData?.items || []
+  } catch (error) {
+    console.error('Failed to load backup details:', error)
+    backupChannels.value = []
+    backupMedia.value = []
+    backupLinks.value = []
+  } finally {
+    isLoadingBackupDetails.value = false
+  }
+}
+
+async function selectBackupChannel(channel) {
+  selectedBackupChannel.value = channel
+  if (!channel || !selectedViewBackup.value) return
+
+  try {
+    const data = await discordStore.loadBackupMessages(
+      selectedViewBackup.value.id,
+      1,
+      100,
+      null,
+      channel.discord_channel_id
+    )
+    backupChannelMessages.value = data?.items || []
+  } catch (error) {
+    console.error('Failed to load channel messages:', error)
+    backupChannelMessages.value = []
+  }
 }
 
 async function deleteBackupConfirm(backup) {
@@ -1510,134 +1564,228 @@ const filteredBots = computed(() => {
         <div v-if="activeTab === 'backups' && selectedViewBackup" class="space-y-4">
           <!-- Backup Header -->
           <div class="card overflow-hidden">
-            <div class="h-20 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
-              <div class="absolute -bottom-8 left-6">
+            <div class="h-16 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
+              <div class="absolute -bottom-6 left-4">
                 <div :class="[
-                  'w-16 h-16 rounded-2xl border-4 border-dark-800 flex items-center justify-center shadow-lg',
+                  'w-12 h-12 rounded-xl border-4 border-dark-800 flex items-center justify-center shadow-lg',
                   selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/30' : 'bg-blue-500/30'
                 ]">
-                  <CpuChipIcon v-if="selectedViewBackup.source_type === 'bot'" class="w-8 h-8 text-primary-400" />
-                  <UserIcon v-else class="w-8 h-8 text-blue-400" />
+                  <CpuChipIcon v-if="selectedViewBackup.source_type === 'bot'" class="w-6 h-6 text-primary-400" />
+                  <UserIcon v-else class="w-6 h-6 text-blue-400" />
                 </div>
               </div>
+              <button
+                @click="deleteBackupConfirm(selectedViewBackup)"
+                class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-800/50"
+                title="Backup löschen"
+              >
+                <TrashIcon class="w-5 h-5" />
+              </button>
             </div>
 
-            <div class="pt-10 pb-4 px-6">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="text-xl font-bold text-white">{{ selectedViewBackup.target_name }}</h3>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span :class="[
-                      'text-xs px-2 py-0.5 rounded-full',
-                      selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/20 text-primary-400' : 'bg-blue-500/20 text-blue-400'
-                    ]">
-                      {{ selectedViewBackup.source_type === 'bot' ? 'Bot Backup' : 'Token Backup' }}
-                    </span>
-                    <span :class="getStatusBadgeClass(selectedViewBackup.status)" class="text-xs px-2 py-0.5 rounded-full">
-                      {{ getStatusText(selectedViewBackup.status) }}
-                    </span>
-                  </div>
-                </div>
-                <div class="flex gap-2">
-                  <button
-                    v-if="selectedViewBackup.status === 'completed'"
-                    @click="viewBackupMessages(selectedViewBackup)"
-                    class="btn-secondary"
-                  >
-                    <ChatBubbleLeftRightIcon class="w-5 h-5 mr-2" />
-                    Nachrichten
-                  </button>
-                  <button
-                    @click="deleteBackupConfirm(selectedViewBackup)"
-                    class="btn-danger"
-                  >
-                    <TrashIcon class="w-5 h-5" />
-                  </button>
-                </div>
+            <div class="pt-8 pb-3 px-4">
+              <h3 class="text-lg font-bold text-white">{{ selectedViewBackup.target_name }}</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span :class="[
+                  'text-xs px-2 py-0.5 rounded-full',
+                  selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/20 text-primary-400' : 'bg-blue-500/20 text-blue-400'
+                ]">
+                  {{ selectedViewBackup.source_type === 'bot' ? 'Bot' : 'Token' }}
+                </span>
+                <span :class="getStatusBadgeClass(selectedViewBackup.status)" class="text-xs px-2 py-0.5 rounded-full">
+                  {{ getStatusText(selectedViewBackup.status) }}
+                </span>
+                <span class="text-xs text-gray-500">{{ formatDate(selectedViewBackup.created_at) }}</span>
               </div>
             </div>
 
             <!-- Stats -->
             <div class="grid grid-cols-4 divide-x divide-dark-600 border-t border-dark-600 bg-dark-800/50">
-              <div class="p-4 text-center">
-                <div class="text-2xl font-bold text-white">{{ (selectedViewBackup.messages_total || selectedViewBackup.messages_processed || 0).toLocaleString() }}</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Nachrichten</div>
+              <div class="p-3 text-center">
+                <div class="text-xl font-bold text-white">{{ backupChannels.length }}</div>
+                <div class="text-xs text-gray-500">Channels</div>
               </div>
-              <div class="p-4 text-center">
-                <div class="text-2xl font-bold text-primary-400">{{ selectedViewBackup.media_count || 0 }}</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Medien</div>
+              <div class="p-3 text-center">
+                <div class="text-xl font-bold text-white">{{ (selectedViewBackup.messages_total || selectedViewBackup.messages_processed || 0).toLocaleString() }}</div>
+                <div class="text-xs text-gray-500">Nachrichten</div>
               </div>
-              <div class="p-4 text-center">
-                <div class="text-2xl font-bold text-white">{{ formatSize(selectedViewBackup.media_size || 0) }}</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Größe</div>
+              <div class="p-3 text-center">
+                <div class="text-xl font-bold text-primary-400">{{ backupMedia.length }}</div>
+                <div class="text-xs text-gray-500">Medien</div>
               </div>
-              <div class="p-4 text-center">
-                <div class="text-sm font-medium text-white">{{ formatDate(selectedViewBackup.created_at) }}</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Erstellt</div>
+              <div class="p-3 text-center">
+                <div class="text-xl font-bold text-white">{{ backupLinks.length }}</div>
+                <div class="text-xs text-gray-500">Links</div>
               </div>
             </div>
           </div>
 
           <!-- Progress for Running Backups -->
-          <div v-if="selectedViewBackup.status === 'running'" class="card p-5">
-            <div class="flex items-center gap-4 mb-3">
-              <ArrowPathIcon class="w-6 h-6 text-primary-400 animate-spin" />
+          <div v-if="selectedViewBackup.status === 'running'" class="card p-4">
+            <div class="flex items-center gap-3">
+              <ArrowPathIcon class="w-5 h-5 text-primary-400 animate-spin" />
               <div class="flex-1">
-                <div class="flex justify-between mb-1">
-                  <span class="text-white font-medium">{{ selectedViewBackup.current_action || 'Verarbeite...' }}</span>
+                <div class="flex justify-between mb-1 text-sm">
+                  <span class="text-white">{{ selectedViewBackup.current_action || 'Verarbeite...' }}</span>
                   <span class="text-primary-400 font-bold">{{ selectedViewBackup.progress_percent || 0 }}%</span>
                 </div>
-                <div class="w-full bg-dark-600 rounded-full h-3">
-                  <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-3 rounded-full transition-all" :style="{ width: (selectedViewBackup.progress_percent || 0) + '%' }"></div>
+                <div class="w-full bg-dark-600 rounded-full h-2">
+                  <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-2 rounded-full transition-all" :style="{ width: (selectedViewBackup.progress_percent || 0) + '%' }"></div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Error for Failed Backups -->
-          <div v-if="selectedViewBackup.status === 'failed'" class="card p-5 border border-red-500/30 bg-red-500/10">
-            <div class="flex items-start gap-3">
-              <XCircleIcon class="w-6 h-6 text-red-400 flex-shrink-0" />
+          <div v-if="selectedViewBackup.status === 'failed'" class="card p-4 border border-red-500/30 bg-red-500/10">
+            <div class="flex items-start gap-2">
+              <XCircleIcon class="w-5 h-5 text-red-400 flex-shrink-0" />
               <div>
-                <h4 class="font-medium text-red-400">Backup fehlgeschlagen</h4>
-                <p class="text-sm text-red-300 mt-1">{{ selectedViewBackup.error_message || 'Unbekannter Fehler' }}</p>
+                <h4 class="font-medium text-red-400 text-sm">Backup fehlgeschlagen</h4>
+                <p class="text-xs text-red-300 mt-1">{{ selectedViewBackup.error_message || 'Unbekannter Fehler' }}</p>
               </div>
             </div>
           </div>
 
-          <!-- Backup Info -->
-          <div class="card">
-            <div class="p-4 border-b border-dark-600">
-              <h4 class="font-medium text-white">Details</h4>
+          <!-- Content Tabs -->
+          <div v-if="selectedViewBackup.status === 'completed'" class="card">
+            <!-- Tab Headers -->
+            <div class="flex border-b border-dark-600">
+              <button
+                @click="backupDetailTab = 'channels'"
+                :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'channels' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
+              >
+                <HashtagIcon class="w-4 h-4 inline mr-1" />
+                Channels ({{ backupChannels.length }})
+              </button>
+              <button
+                @click="backupDetailTab = 'media'"
+                :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'media' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
+              >
+                <PhotoIcon class="w-4 h-4 inline mr-1" />
+                Medien ({{ backupMedia.length }})
+              </button>
+              <button
+                @click="backupDetailTab = 'links'"
+                :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'links' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
+              >
+                <LinkIcon class="w-4 h-4 inline mr-1" />
+                Links ({{ backupLinks.length }})
+              </button>
             </div>
-            <div class="p-4 space-y-3">
-              <div class="flex justify-between">
-                <span class="text-gray-400">Backup ID</span>
-                <code class="text-xs text-gray-300 bg-dark-700 px-2 py-1 rounded font-mono">{{ selectedViewBackup.id }}</code>
+
+            <!-- Loading State -->
+            <div v-if="isLoadingBackupDetails" class="p-8 text-center">
+              <ArrowPathIcon class="w-8 h-8 mx-auto text-primary-400 animate-spin" />
+              <p class="text-gray-400 mt-2">Lade Backup-Daten...</p>
+            </div>
+
+            <!-- Channels Tab -->
+            <div v-else-if="backupDetailTab === 'channels'" class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+              <div
+                v-for="channel in backupChannels"
+                :key="channel.discord_channel_id"
+                @click="selectBackupChannel(channel)"
+                :class="['p-3 cursor-pointer hover:bg-dark-700 transition-colors', selectedBackupChannel?.discord_channel_id === channel.discord_channel_id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <HashtagIcon class="w-4 h-4 text-gray-400" />
+                    <span class="text-white">{{ channel.channel_name || channel.discord_channel_id }}</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-xs text-gray-500">
+                    <span>{{ channel.message_count }} Nachrichten</span>
+                    <span v-if="channel.media_count">{{ channel.media_count }} Medien</span>
+                    <ChevronRightIcon class="w-4 h-4" />
+                  </div>
+                </div>
               </div>
-              <div v-if="selectedViewBackup.bot_name" class="flex justify-between">
-                <span class="text-gray-400">Bot</span>
-                <span class="text-white">{{ selectedViewBackup.bot_name }}</span>
+              <div v-if="backupChannels.length === 0" class="p-8 text-center text-gray-500">
+                <HashtagIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
+                <p>Keine Channels gefunden</p>
               </div>
-              <div v-if="selectedViewBackup.account_name" class="flex justify-between">
-                <span class="text-gray-400">Account</span>
-                <span class="text-white">{{ selectedViewBackup.account_name }}</span>
+            </div>
+
+            <!-- Media Tab -->
+            <div v-else-if="backupDetailTab === 'media'" class="p-4">
+              <div v-if="backupMedia.length > 0" class="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+                <div
+                  v-for="media in backupMedia"
+                  :key="media.id"
+                  @click="openLightbox(media, backupMedia)"
+                  class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-dark-700"
+                >
+                  <img
+                    v-if="media.mime_type?.startsWith('image/')"
+                    :src="getMediaUrl(media)"
+                    class="w-full h-full object-cover"
+                    :alt="media.filename"
+                    loading="lazy"
+                  />
+                  <div v-else class="w-full h-full flex items-center justify-center">
+                    <DocumentTextIcon class="w-8 h-8 text-gray-400" />
+                  </div>
+                </div>
               </div>
-              <div v-if="selectedViewBackup.server_name" class="flex justify-between">
-                <span class="text-gray-400">Server</span>
-                <span class="text-white">{{ selectedViewBackup.server_name }}</span>
+              <div v-else class="p-8 text-center text-gray-500">
+                <PhotoIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
+                <p>Keine Medien gefunden</p>
               </div>
-              <div v-if="selectedViewBackup.channel_name" class="flex justify-between">
-                <span class="text-gray-400">Channel</span>
-                <span class="text-white">#{{ selectedViewBackup.channel_name }}</span>
+            </div>
+
+            <!-- Links Tab -->
+            <div v-else-if="backupDetailTab === 'links'" class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+              <div
+                v-for="(link, index) in backupLinks"
+                :key="index"
+                class="p-3 hover:bg-dark-700"
+              >
+                <a
+                  :href="link.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary-400 hover:text-primary-300 text-sm break-all"
+                >
+                  {{ link.url }}
+                </a>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ link.author_username }} • {{ formatDate(link.message_timestamp) }}
+                </div>
               </div>
-              <div class="flex justify-between">
-                <span class="text-gray-400">Backup-Modus</span>
-                <span class="text-white">{{ selectedViewBackup.backup_mode === 'full' ? 'Komplett' : selectedViewBackup.backup_mode === 'media_only' ? 'Nur Medien' : 'Nur Links' }}</span>
+              <div v-if="backupLinks.length === 0" class="p-8 text-center text-gray-500">
+                <LinkIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
+                <p>Keine Links gefunden</p>
               </div>
-              <div v-if="selectedViewBackup.completed_at" class="flex justify-between">
-                <span class="text-gray-400">Abgeschlossen</span>
-                <span class="text-white">{{ formatDate(selectedViewBackup.completed_at) }}</span>
+            </div>
+          </div>
+
+          <!-- Channel Messages Panel -->
+          <div v-if="selectedBackupChannel && backupChannelMessages.length > 0" class="card">
+            <div class="p-3 border-b border-dark-600 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <button @click="selectedBackupChannel = null" class="p-1 text-gray-400 hover:text-white rounded">
+                  <ChevronLeftIcon class="w-4 h-4" />
+                </button>
+                <HashtagIcon class="w-4 h-4 text-gray-400" />
+                <span class="text-white font-medium">{{ selectedBackupChannel.channel_name || selectedBackupChannel.discord_channel_id }}</span>
+              </div>
+              <span class="text-xs text-gray-500">{{ backupChannelMessages.length }} Nachrichten</span>
+            </div>
+            <div class="max-h-[350px] overflow-y-auto p-3 space-y-2 bg-dark-900">
+              <div
+                v-for="msg in backupChannelMessages"
+                :key="msg.id"
+                class="bg-dark-700 rounded-lg p-3"
+              >
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-medium text-primary-400 text-sm">{{ msg.author_username }}</span>
+                  <span class="text-xs text-gray-500">{{ formatDate(msg.message_timestamp) }}</span>
+                </div>
+                <p class="text-gray-300 text-sm whitespace-pre-wrap break-words">{{ msg.content || '[Kein Text]' }}</p>
+                <div v-if="msg.has_attachments" class="mt-2 flex items-center gap-1 text-xs text-gray-400">
+                  <PhotoIcon class="w-3 h-3" />
+                  {{ msg.attachment_count }} Anhänge
+                </div>
               </div>
             </div>
           </div>

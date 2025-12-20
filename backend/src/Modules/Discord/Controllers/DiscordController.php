@@ -661,7 +661,7 @@ class DiscordController
 
         // Add signed URLs for media
         foreach ($media as &$item) {
-            $item['signed_url'] = '/api/v1/discord/media/' . $item['id'] . '/signed';
+            $item['signed_url'] = $this->generateSignedMediaUrl($item['id']);
         }
 
         return JsonResponse::success([

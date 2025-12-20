@@ -69,6 +69,7 @@ const editingCategory = ref(null)
 const newPassword = ref('')
 const uploadingEntryId = ref(null)
 const previewImage = ref(null)
+const expandedNotes = ref(new Set())
 
 // Computed
 const checklistId = computed(() => route.params.id)
@@ -751,7 +752,13 @@ watch(() => route.params.id, () => {
                           {{ getStatusLabel(entry.status) }}
                         </span>
                         <span class="text-white">{{ entry.tester_name }}</span>
-                        <span v-if="entry.notes" class="text-gray-400 truncate flex-1">{{ entry.notes }}</span>
+                        <span
+                          v-if="entry.notes"
+                          class="text-gray-400 flex-1 cursor-pointer hover:text-gray-300 transition-colors"
+                          :class="{ 'truncate': !expandedNotes.has(entry.id) }"
+                          :title="expandedNotes.has(entry.id) ? 'Klicken zum Einklappen' : 'Klicken zum Ausklappen'"
+                          @click="expandedNotes.has(entry.id) ? expandedNotes.delete(entry.id) : expandedNotes.add(entry.id)"
+                        >{{ entry.notes }}</span>
                         <span class="text-gray-500 text-xs">{{ formatDate(entry.created_at) }}</span>
 
                         <!-- Entry Actions -->

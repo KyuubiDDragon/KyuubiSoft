@@ -272,15 +272,20 @@ class DiscordBackupRepository
         return $this->db->fetchAllAssociative(
             'SELECT
                 m.discord_channel_id,
-                MAX(m.author_username) as channel_name,
+                COALESCE(bc.name, c.name, CONCAT("#", m.discord_channel_id)) as channel_name,
+                bc.type as bot_channel_type,
+                c.type as account_channel_type,
                 COUNT(DISTINCT m.id) as message_count,
                 COUNT(DISTINCT med.id) as media_count,
                 MIN(m.message_timestamp) as first_message_at,
                 MAX(m.message_timestamp) as last_message_at
              FROM discord_messages m
+             JOIN discord_backups b ON b.id = m.backup_id
+             LEFT JOIN discord_bot_channels bc ON bc.discord_channel_id = m.discord_channel_id AND bc.bot_id = b.bot_id
+             LEFT JOIN discord_channels c ON c.discord_channel_id = m.discord_channel_id AND c.account_id = b.account_id
              LEFT JOIN discord_media med ON med.backup_id = m.backup_id AND med.discord_message_id = m.discord_message_id
              WHERE m.backup_id = ?
-             GROUP BY m.discord_channel_id
+             GROUP BY m.discord_channel_id, bc.name, c.name, bc.type, c.type
              ORDER BY last_message_at DESC',
             [$backupId]
         );

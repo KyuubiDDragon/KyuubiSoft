@@ -163,6 +163,14 @@ class Router
                 $protected->get('/admin/permissions', [UserController::class, 'getPermissions'])
                     ->add(new PermissionMiddleware('users.read'));
 
+                // User Approval (Admin)
+                $protected->get('/admin/users/pending', [UserController::class, 'getPendingUsers'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->post('/users/{id}/approve', [UserController::class, 'approve'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->post('/users/{id}/reject', [UserController::class, 'reject'])
+                    ->add(new PermissionMiddleware('users.write'));
+
                 // Lists
                 $protected->get('/lists', [ListController::class, 'index']);
                 $protected->post('/lists', [ListController::class, 'create']);

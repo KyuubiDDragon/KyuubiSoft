@@ -102,8 +102,20 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/api/v1/auth/register', userData)
       const data = response.data.data
 
-      setTokens(data.access_token, data.refresh_token)
-      user.value = data.user
+      // Check if registration requires approval
+      if (data.pending_approval) {
+        return {
+          success: true,
+          pendingApproval: true,
+          message: data.message
+        }
+      }
+
+      // Legacy: if tokens are returned (admin-created users)
+      if (data.access_token) {
+        setTokens(data.access_token, data.refresh_token)
+        user.value = data.user
+      }
 
       return { success: true }
     } finally {

@@ -3,7 +3,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon, ClockIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -20,6 +20,7 @@ const showPassword = ref(false)
 const showPasswordConfirm = ref(false)
 const errors = ref({})
 const isLoading = ref(false)
+const pendingApproval = ref(false)
 
 // Password strength checks
 const passwordChecks = ref({
@@ -71,15 +72,20 @@ async function handleSubmit() {
   isLoading.value = true
 
   try {
-    await authStore.register({
+    const result = await authStore.register({
       email: form.email,
       username: form.username || undefined,
       password: form.password,
       password_confirmation: form.passwordConfirmation,
     })
 
-    uiStore.showSuccess('Registrierung erfolgreich!')
-    router.push('/')
+    if (result.pendingApproval) {
+      pendingApproval.value = true
+      uiStore.showSuccess('Registrierung erfolgreich!')
+    } else {
+      uiStore.showSuccess('Registrierung erfolgreich!')
+      router.push('/')
+    }
   } catch (error) {
     const message = error.response?.data?.error || 'Registrierung fehlgeschlagen'
     errors.value.general = message
@@ -92,10 +98,34 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <h2 class="text-2xl font-bold text-white mb-2">Registrieren</h2>
-    <p class="text-gray-400 mb-6">Erstelle ein neues Konto</p>
+    <!-- Pending Approval Message -->
+    <div v-if="pendingApproval" class="text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10 mb-4">
+        <ClockIcon class="w-8 h-8 text-yellow-400" />
+      </div>
+      <h2 class="text-2xl font-bold text-white mb-2">Registrierung erfolgreich!</h2>
+      <p class="text-gray-400 mb-6">
+        Dein Konto muss erst von einem Administrator freigeschaltet werden.
+        Du wirst benachrichtigt, sobald dein Konto aktiviert wurde.
+      </p>
+      <div class="bg-gray-800/50 rounded-lg p-4 text-left">
+        <p class="text-sm text-gray-400">
+          <span class="font-medium text-gray-300">Was passiert als nächstes?</span><br>
+          Ein Administrator wird deine Registrierung prüfen und dein Konto freischalten.
+          Danach kannst du dich mit deinen Zugangsdaten anmelden.
+        </p>
+      </div>
+      <RouterLink to="/login" class="btn-primary w-full mt-6 inline-block text-center">
+        Zurück zum Login
+      </RouterLink>
+    </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-5">
+    <!-- Registration Form -->
+    <template v-else>
+      <h2 class="text-2xl font-bold text-white mb-2">Registrieren</h2>
+      <p class="text-gray-400 mb-6">Erstelle ein neues Konto</p>
+
+      <form @submit.prevent="handleSubmit" class="space-y-5">
       <!-- General error -->
       <div
         v-if="errors.general"
@@ -233,5 +263,6 @@ async function handleSubmit() {
         Anmelden
       </RouterLink>
     </p>
+    </template>
   </div>
 </template>

@@ -231,10 +231,10 @@ function isGroupExpanded(groupId) {
 // Navigation mit Gruppen
 const allNavigationGroups = [
   // Dashboard - Standalone
-  { id: 'dashboard', name: 'Dashboard', href: '/', icon: HomeIcon },
+  { id: 'dashboard', name: 'Dashboard', href: '/', icon: HomeIcon, permission: 'dashboard.view' },
 
   // News - Standalone
-  { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon },
+  { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon, permission: 'news.view' },
 
   // Inhalte
   {
@@ -242,11 +242,11 @@ const allNavigationGroups = [
     name: 'Inhalte',
     icon: DocumentDuplicateIcon,
     children: [
-      { name: 'Listen', href: '/lists', icon: ListBulletIcon },
-      { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon },
-      { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes' },
-      { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon },
-      { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
+      { name: 'Listen', href: '/lists', icon: ListBulletIcon, permission: 'lists.view' },
+      { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon, permission: 'documents.view' },
+      { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes', permission: 'notes.view' },
+      { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, permission: 'snippets.view' },
+      { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, permission: 'bookmarks.view' },
     ],
   },
 
@@ -256,11 +256,11 @@ const allNavigationGroups = [
     name: 'KyuubiCloud',
     icon: CloudIcon,
     children: [
-      { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon },
-      { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon },
-      { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon },
-      { name: 'Short Links', href: '/links', icon: LinkIcon },
-      { name: 'Galerien', href: '/galleries', icon: PhotoIcon, feature: 'galleries' },
+      { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon, permission: 'storage.view' },
+      { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon, permission: 'storage.share' },
+      { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon, permission: 'checklists.view' },
+      { name: 'Short Links', href: '/links', icon: LinkIcon, permission: 'links.view' },
+      { name: 'Galerien', href: '/galleries', icon: PhotoIcon, feature: 'galleries', permission: 'galleries.view' },
     ],
   },
 
@@ -270,11 +270,11 @@ const allNavigationGroups = [
     name: 'Projektmanagement',
     icon: BriefcaseIcon,
     children: [
-      { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon },
-      { name: 'Projekte', href: '/projects', icon: FolderIcon },
-      { name: 'Kalender', href: '/calendar', icon: CalendarIcon },
-      { name: 'Zeiterfassung', href: '/time', icon: ClockIcon },
-      { name: 'Wiederkehrend', href: '/recurring-tasks', icon: ArrowPathIcon },
+      { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon, permission: 'kanban.view' },
+      { name: 'Projekte', href: '/projects', icon: FolderIcon, permission: 'projects.view' },
+      { name: 'Kalender', href: '/calendar', icon: CalendarIcon, permission: 'calendar.view' },
+      { name: 'Zeiterfassung', href: '/time', icon: ClockIcon, permission: 'time.view' },
+      { name: 'Wiederkehrend', href: '/recurring-tasks', icon: ArrowPathIcon, permission: 'recurring.view' },
     ],
   },
 
@@ -284,14 +284,14 @@ const allNavigationGroups = [
     name: 'Entwicklung & Tools',
     icon: CommandLineIcon,
     children: [
-      { name: 'Verbindungen', href: '/connections', icon: ServerIcon },
-      { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server' },
-      { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git' },
-      { name: 'Webhooks', href: '/webhooks', icon: BellIcon },
-      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime' },
-      { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl' },
+      { name: 'Verbindungen', href: '/connections', icon: ServerIcon, permission: 'connections.view' },
+      { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server', permission: 'server.view' },
+      { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git', permission: 'git.view' },
+      { name: 'Webhooks', href: '/webhooks', icon: BellIcon, permission: 'webhooks.view' },
+      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
+      { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl', permission: 'ssl.view' },
       { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
-      { name: 'Workflows', href: '/workflows', icon: BoltIcon },
+      { name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
     ],
   },
 
@@ -300,14 +300,15 @@ const allNavigationGroups = [
     id: 'docker',
     name: 'Docker',
     icon: CubeIcon,
-    feature: 'docker', // Whole group requires docker feature
+    feature: 'docker',
+    permission: 'docker.view',
     children: [
-      { name: 'Container Manager', href: '/docker', icon: ServerIcon },
-      { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon },
-      { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon },
-      { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon },
-      { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon },
-      { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon },
+      { name: 'Container Manager', href: '/docker', icon: ServerIcon, permission: 'docker.view' },
+      { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon, permission: 'docker.hosts' },
+      { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon, permission: 'docker.view' },
+      { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon, permission: 'docker.view' },
+      { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon, permission: 'docker.view' },
+      { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon, permission: 'docker.view' },
     ],
   },
 
@@ -317,9 +318,10 @@ const allNavigationGroups = [
     name: 'Support',
     icon: TicketIcon,
     feature: 'tickets',
+    permission: 'tickets.view',
     children: [
-      { name: 'Tickets', href: '/tickets', icon: TicketIcon },
-      { name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, roles: ['owner', 'admin'] },
+      { name: 'Tickets', href: '/tickets', icon: TicketIcon, permission: 'tickets.view' },
+      { name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, permission: 'tickets.manage' },
     ],
   },
 
@@ -329,8 +331,9 @@ const allNavigationGroups = [
     name: 'Business',
     icon: CurrencyDollarIcon,
     feature: 'invoices',
+    permission: 'invoices.view',
     children: [
-      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon },
+      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, permission: 'invoices.view' },
     ],
   },
 
@@ -343,16 +346,16 @@ const allNavigationGroups = [
     name: 'Administration',
     icon: Cog6ToothIcon,
     children: [
-      { name: 'Passwörter', href: '/passwords', icon: KeyIcon },
-      { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon },
-      { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon },
-      { name: 'Benutzer', href: '/users', icon: UsersIcon, roles: ['owner', 'admin'] },
-      { name: 'System', href: '/system', icon: ShieldCheckIcon, roles: ['owner'] },
+      { name: 'Passwörter', href: '/passwords', icon: KeyIcon, permission: 'passwords.view' },
+      { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, permission: 'backups.view' },
+      { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, permission: 'settings.view' },
+      { name: 'Benutzer', href: '/users', icon: UsersIcon, permission: 'users.view' },
+      { name: 'System', href: '/system', icon: ShieldCheckIcon, permission: 'system.admin' },
     ],
   },
 
   // Wiki / Knowledge Base (am Ende)
-  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon },
+  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon, permission: 'wiki.view' },
 ]
 
 // Filter navigation based on user permissions and features
@@ -362,20 +365,13 @@ function filterItem(item) {
     return false
   }
 
-  // Check feature permission (User-Level) - combines with instance check
-  // If item has a feature, also check if user has permission for it
-  if (item.feature && item.checkPermission !== false) {
-    const permission = item.featurePermission || `${item.feature}.view`
-    if (!authStore.hasPermission(permission)) {
-      return false
-    }
-  }
-
-  // Check explicit role/permission requirements
-  if (item.roles && !item.roles.some(role => authStore.hasRole(role))) {
+  // Check explicit permission requirement
+  if (item.permission && !authStore.hasPermission(item.permission)) {
     return false
   }
-  if (item.permission && !authStore.hasPermission(item.permission)) {
+
+  // Check explicit role requirements (legacy support)
+  if (item.roles && !item.roles.some(role => authStore.hasRole(role))) {
     return false
   }
 
@@ -387,6 +383,10 @@ const navigationGroups = computed(() => {
     .map(group => {
       // Check group-level feature flag first
       if (group.feature && !featureStore.isEnabled(group.feature)) {
+        return null
+      }
+      // Check group-level permission
+      if (group.permission && !authStore.hasPermission(group.permission)) {
         return null
       }
       if (group.children) {

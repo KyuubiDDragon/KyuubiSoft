@@ -34,7 +34,7 @@ class ErrorMiddleware implements MiddlewareInterface
             ]);
         } catch (AuthException $e) {
             return $this->jsonResponse(401, [
-                'error' => 'Authentication failed',
+                'error' => $e->getMessage(),
                 'message' => $e->getMessage(),
             ]);
         } catch (ForbiddenException $e) {

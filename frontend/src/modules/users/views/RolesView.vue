@@ -527,7 +527,7 @@ function canDeleteRole(role) {
             <!-- System role warning -->
             <div v-if="selectedRole?.is_system" class="mb-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
               <p class="text-sm text-yellow-400">
-                Dies ist eine Systemrolle. Berechtigungen können nicht geändert werden.
+                Dies ist eine geschützte Systemrolle ({{ selectedRole?.name }}). Berechtigungen können nicht geändert werden.
               </p>
             </div>
 

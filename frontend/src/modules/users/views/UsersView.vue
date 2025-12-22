@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon, ClockIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon, ClockIcon, CheckIcon, KeyIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -11,15 +11,24 @@ const users = ref([])
 const pendingUsers = ref([])
 const roles = ref([])
 const projects = ref([])
+const allPermissions = ref([])
+const groupedPermissions = ref({})
 const isLoading = ref(true)
 const error = ref(null)
 
 // Modal states
 const showUserModal = ref(false)
 const showDeleteModal = ref(false)
+const showPermissionsModal = ref(false)
 const isEditing = ref(false)
 const isSaving = ref(false)
 const selectedUser = ref(null)
+
+// Permissions modal state
+const userDirectPermissions = ref([])
+const userRolePermissions = ref([])
+const permissionSearch = ref('')
+const isLoadingPermissions = ref(false)
 
 // Form data
 const formData = ref({
@@ -43,7 +52,7 @@ function toBool(value) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadUsers(), loadPendingUsers(), loadRoles(), loadProjects()])
+  await Promise.all([loadUsers(), loadPendingUsers(), loadRoles(), loadProjects(), loadAllPermissions()])
 })
 
 async function loadUsers() {
@@ -113,6 +122,17 @@ async function loadProjects() {
   }
 }
 
+async function loadAllPermissions() {
+  try {
+    const response = await api.get('/api/v1/admin/permissions')
+    const data = response.data.data || {}
+    allPermissions.value = data.permissions || []
+    groupedPermissions.value = data.grouped || {}
+  } catch (err) {
+    console.error('Failed to load permissions:', err)
+  }
+}
+
 function openCreateModal() {
   isEditing.value = false
   selectedUser.value = null
@@ -169,7 +189,109 @@ function openDeleteModal(user) {
 function closeModals() {
   showUserModal.value = false
   showDeleteModal.value = false
+  showPermissionsModal.value = false
   selectedUser.value = null
+  userDirectPermissions.value = []
+  userRolePermissions.value = []
+  permissionSearch.value = ''
+}
+
+// Permission Modal Functions
+async function openPermissionsModal(user) {
+  selectedUser.value = user
+  showPermissionsModal.value = true
+  await loadUserPermissions()
+}
+
+async function loadUserPermissions() {
+  if (!selectedUser.value) return
+  isLoadingPermissions.value = true
+  try {
+    const response = await api.get(`/api/v1/users/${selectedUser.value.id}/permissions`)
+    const data = response.data.data || {}
+    userDirectPermissions.value = data.direct_permissions || []
+    userRolePermissions.value = data.role_permissions || []
+  } catch (err) {
+    console.error('Failed to load user permissions:', err)
+    uiStore.showError('Fehler beim Laden der Berechtigungen')
+  } finally {
+    isLoadingPermissions.value = false
+  }
+}
+
+async function assignPermissionToUser(permissionName) {
+  if (!selectedUser.value) return
+  try {
+    await api.post(`/api/v1/users/${selectedUser.value.id}/permissions`, {
+      permission: permissionName
+    })
+    uiStore.showSuccess('Berechtigung hinzugefügt')
+    await loadUserPermissions()
+  } catch (err) {
+    console.error('Failed to assign permission:', err)
+    uiStore.showError(err.response?.data?.error || 'Fehler beim Hinzufügen der Berechtigung')
+  }
+}
+
+async function removePermissionFromUser(permissionName) {
+  if (!selectedUser.value) return
+  try {
+    await api.delete(`/api/v1/users/${selectedUser.value.id}/permissions/${encodeURIComponent(permissionName)}`)
+    uiStore.showSuccess('Berechtigung entfernt')
+    await loadUserPermissions()
+  } catch (err) {
+    console.error('Failed to remove permission:', err)
+    uiStore.showError(err.response?.data?.error || 'Fehler beim Entfernen der Berechtigung')
+  }
+}
+
+function isPermissionDirectlyAssigned(permissionName) {
+  return userDirectPermissions.value.includes(permissionName)
+}
+
+function isPermissionFromRole(permissionName) {
+  return userRolePermissions.value.includes(permissionName)
+}
+
+function getFilteredPermissions() {
+  if (!permissionSearch.value.trim()) {
+    return groupedPermissions.value
+  }
+  const search = permissionSearch.value.toLowerCase()
+  const filtered = {}
+  for (const [module, permissions] of Object.entries(groupedPermissions.value)) {
+    const matchingPerms = permissions.filter(p =>
+      p.name.toLowerCase().includes(search) ||
+      p.description?.toLowerCase().includes(search) ||
+      module.toLowerCase().includes(search)
+    )
+    if (matchingPerms.length > 0) {
+      filtered[module] = matchingPerms
+    }
+  }
+  return filtered
+}
+
+function getModuleLabel(module) {
+  const labels = {
+    users: 'Benutzer',
+    docker: 'Docker',
+    tickets: 'Tickets',
+    backups: 'Backups',
+    kanban: 'Kanban',
+    storage: 'Speicher',
+    passwords: 'Passwörter',
+    wiki: 'Wiki',
+    notes: 'Notizen',
+    calendar: 'Kalender',
+    logs: 'Logs',
+    mails: 'Mails',
+    projects: 'Projekte',
+    settings: 'Einstellungen',
+    features: 'Features',
+    general: 'Allgemein',
+  }
+  return labels[module] || module
 }
 
 async function saveUser() {
@@ -454,8 +576,16 @@ function canDeleteUser(user) {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button
+                @click="openPermissionsModal(user)"
+                class="text-yellow-400 hover:text-yellow-300 mr-3"
+                title="Berechtigungen verwalten"
+              >
+                <KeyIcon class="w-5 h-5 inline" />
+              </button>
+              <button
                 @click="openEditModal(user)"
                 class="text-primary-400 hover:text-primary-300 mr-3"
+                title="Benutzer bearbeiten"
               >
                 <PencilIcon class="w-5 h-5 inline" />
               </button>
@@ -463,6 +593,7 @@ function canDeleteUser(user) {
                 v-if="canDeleteUser(user)"
                 @click="openDeleteModal(user)"
                 class="text-red-400 hover:text-red-300"
+                title="Benutzer löschen"
               >
                 <TrashIcon class="w-5 h-5 inline" />
               </button>
@@ -677,6 +808,149 @@ function canDeleteUser(user) {
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
             >
               {{ isSaving ? 'Löschen...' : 'Löschen' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Permissions Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showPermissionsModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      >
+        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between p-4 border-b border-dark-700 flex-shrink-0">
+            <div>
+              <h3 class="text-lg font-semibold text-white">
+                Berechtigungen verwalten
+              </h3>
+              <p class="text-sm text-gray-400">
+                {{ selectedUser?.username }} ({{ selectedUser?.email }})
+              </p>
+            </div>
+            <button @click="closeModals" class="text-gray-400 hover:text-white">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-4 flex-1 overflow-hidden flex flex-col">
+            <!-- Loading -->
+            <div v-if="isLoadingPermissions" class="flex justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            </div>
+
+            <template v-else>
+              <!-- Currently Assigned Permissions Info -->
+              <div class="mb-4 p-3 bg-dark-700 rounded-lg">
+                <div class="flex items-center gap-4 text-sm">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                    <span class="text-gray-300">Direkt zugewiesen: {{ userDirectPermissions.length }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    <span class="text-gray-300">Von Rollen: {{ userRolePermissions.length }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Search -->
+              <div class="mb-4 flex-shrink-0">
+                <input
+                  v-model="permissionSearch"
+                  type="text"
+                  placeholder="Berechtigungen suchen..."
+                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                />
+              </div>
+
+              <!-- Permission Groups -->
+              <div class="flex-1 overflow-y-auto space-y-4">
+                <div
+                  v-for="(permissions, module) in getFilteredPermissions()"
+                  :key="module"
+                  class="bg-dark-700 rounded-lg overflow-hidden"
+                >
+                  <div class="px-4 py-2 bg-dark-600 border-b border-dark-500">
+                    <h4 class="text-sm font-medium text-white">{{ getModuleLabel(module) }}</h4>
+                  </div>
+                  <div class="p-2 space-y-1">
+                    <div
+                      v-for="permission in permissions"
+                      :key="permission.name"
+                      class="flex items-center justify-between p-2 rounded hover:bg-dark-600"
+                    >
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm text-white font-mono">{{ permission.name }}</span>
+                          <!-- Status indicators -->
+                          <span
+                            v-if="isPermissionDirectlyAssigned(permission.name)"
+                            class="px-1.5 py-0.5 text-xs rounded bg-yellow-600 text-white"
+                          >
+                            Direkt
+                          </span>
+                          <span
+                            v-else-if="isPermissionFromRole(permission.name)"
+                            class="px-1.5 py-0.5 text-xs rounded bg-blue-600 text-white"
+                          >
+                            Rolle
+                          </span>
+                        </div>
+                        <p v-if="permission.description" class="text-xs text-gray-500 truncate">
+                          {{ permission.description }}
+                        </p>
+                      </div>
+                      <div class="flex-shrink-0 ml-4">
+                        <!-- If directly assigned, show remove button -->
+                        <button
+                          v-if="isPermissionDirectlyAssigned(permission.name)"
+                          @click="removePermissionFromUser(permission.name)"
+                          class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                          Entfernen
+                        </button>
+                        <!-- If from role, show disabled info -->
+                        <span
+                          v-else-if="isPermissionFromRole(permission.name)"
+                          class="px-3 py-1 text-sm text-gray-500"
+                        >
+                          Von Rolle
+                        </span>
+                        <!-- If not assigned, show add button -->
+                        <button
+                          v-else
+                          @click="assignPermissionToUser(permission.name)"
+                          class="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
+                        >
+                          Hinzufügen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="Object.keys(getFilteredPermissions()).length === 0"
+                  class="text-center py-8 text-gray-500"
+                >
+                  Keine Berechtigungen gefunden
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex justify-end p-4 border-t border-dark-700 flex-shrink-0">
+            <button
+              @click="closeModals"
+              class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
+            >
+              Schließen
             </button>
           </div>
         </div>

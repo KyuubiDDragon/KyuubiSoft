@@ -350,6 +350,7 @@ const allNavigationGroups = [
       { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, permission: 'backups.view' },
       { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, permission: 'settings.view' },
       { name: 'Benutzer', href: '/users', icon: UsersIcon, permission: 'users.view' },
+      { name: 'Rollen', href: '/roles', icon: ShieldCheckIcon, permission: 'users.write' },
       { name: 'System', href: '/system', icon: ShieldCheckIcon, permission: 'system.admin' },
     ],
   },

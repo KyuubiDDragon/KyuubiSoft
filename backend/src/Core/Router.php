@@ -11,6 +11,7 @@ use App\Core\Middleware\PermissionMiddleware;
 use App\Modules\System\Controllers\FeaturesController;
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Users\Controllers\UserController;
+use App\Modules\Users\Controllers\RolesController;
 use App\Modules\Lists\Controllers\ListController;
 use App\Modules\Documents\Controllers\DocumentController;
 use App\Modules\Settings\Controllers\SettingsController;
@@ -177,6 +178,24 @@ class Router
                 $protected->post('/users/{id}/permissions', [UserController::class, 'assignUserPermission'])
                     ->add(new PermissionMiddleware('users.write'));
                 $protected->delete('/users/{id}/permissions/{permission}', [UserController::class, 'removeUserPermission'])
+                    ->add(new PermissionMiddleware('users.write'));
+
+                // Roles Management
+                $protected->get('/roles', [RolesController::class, 'index'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/roles', [RolesController::class, 'create'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->get('/roles/{id}', [RolesController::class, 'show'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->put('/roles/{id}', [RolesController::class, 'update'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->delete('/roles/{id}', [RolesController::class, 'delete'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->get('/roles/{id}/permissions', [RolesController::class, 'getPermissions'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/roles/{id}/permissions', [RolesController::class, 'addPermission'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->delete('/roles/{id}/permissions/{permission}', [RolesController::class, 'removePermission'])
                     ->add(new PermissionMiddleware('users.write'));
 
                 // Lists

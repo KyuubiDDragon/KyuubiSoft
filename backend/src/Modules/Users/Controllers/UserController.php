@@ -377,6 +377,90 @@ class UserController
     }
 
     /**
+     * Approve a pending user registration
+     */
+    public function approve(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Check if user is actually pending
+        $roles = $this->rbacManager->getUserRoles($userId);
+        if (!in_array('pending', $roles)) {
+            throw new ValidationException('Dieser Benutzer ist bereits freigeschaltet');
+        }
+
+        // Activate user
+        $this->userRepository->update($userId, [
+            'is_active' => 1,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Remove pending role and assign user role
+        $this->rbacManager->removeRole($userId, 'pending');
+        $this->rbacManager->assignRole($userId, 'user', $currentUserId);
+
+        $updatedUser = $this->userRepository->findById($userId);
+        unset($updatedUser['password_hash'], $updatedUser['two_factor_secret']);
+        $updatedUser['roles'] = $this->rbacManager->getUserRoles($userId);
+
+        return JsonResponse::success($updatedUser, 'Benutzer erfolgreich freigeschaltet');
+    }
+
+    /**
+     * Reject a pending user registration (delete the user)
+     */
+    public function reject(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Check if user is actually pending
+        $roles = $this->rbacManager->getUserRoles($userId);
+        if (!in_array('pending', $roles)) {
+            throw new ValidationException('Dieser Benutzer ist bereits freigeschaltet und kann nicht abgelehnt werden');
+        }
+
+        // Delete the pending user
+        $this->userRepository->delete($userId);
+
+        return JsonResponse::success(null, 'Registrierungsanfrage abgelehnt');
+    }
+
+    /**
+     * Get all pending users awaiting approval
+     */
+    public function getPendingUsers(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $users = $this->userRepository->findAll(1000, 0);
+
+        // Filter to only pending users
+        $pendingUsers = [];
+        foreach ($users as $user) {
+            $roles = $this->rbacManager->getUserRoles($user['id']);
+            if (in_array('pending', $roles)) {
+                unset($user['password_hash'], $user['two_factor_secret'], $user['two_factor_temp_secret']);
+                $user['roles'] = $roles;
+                $pendingUsers[] = $user;
+            }
+        }
+
+        return JsonResponse::success([
+            'users' => $pendingUsers,
+            'total' => count($pendingUsers),
+        ]);
+    }
+
+    /**
      * Create a new user (admin only)
      */
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

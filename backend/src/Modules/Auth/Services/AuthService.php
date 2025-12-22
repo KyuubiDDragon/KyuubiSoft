@@ -42,7 +42,7 @@ class AuthService
             throw new AuthException(implode(', ', $passwordErrors));
         }
 
-        // Create user
+        // Create user (inactive until approved by admin)
         $userId = Uuid::uuid4()->toString();
         $passwordHash = $this->passwordHasher->hash($request->password);
 
@@ -51,38 +51,23 @@ class AuthService
             'email' => $request->email,
             'username' => $request->username ?? explode('@', $request->email)[0],
             'password_hash' => $passwordHash,
-            'is_active' => 1,
+            'is_active' => 0, // Not active until approved
             'is_verified' => 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
-        // Assign default role
-        $this->rbacManager->assignRole($userId, 'user');
+        // Assign pending role (no permissions)
+        $this->rbacManager->assignRole($userId, 'pending');
 
-        // Generate tokens
-        $roles = $this->rbacManager->getUserRoles($userId);
-        $permissions = $this->rbacManager->getUserPermissions($userId);
-
-        $accessToken = $this->jwtManager->generateAccessToken(
-            $userId,
-            $request->email,
-            $roles,
-            $permissions
-        );
-
-        $refreshData = $this->jwtManager->generateRefreshToken($userId);
-        $this->refreshTokenRepository->store($userId, $refreshData['token_id'], $refreshData['expires_at']);
-
-        // Add roles and permissions to user object
-        $user['roles'] = $roles;
-        $user['permissions'] = $permissions;
+        // Don't generate tokens - user must wait for admin approval
+        $user['roles'] = ['pending'];
+        $user['permissions'] = [];
 
         return [
+            'pending_approval' => true,
+            'message' => 'Registrierung erfolgreich. Dein Konto muss erst von einem Administrator freigeschaltet werden.',
             'user' => $this->sanitizeUser($user),
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshData['token'],
-            'expires_in' => $this->jwtManager->getAccessTtl(),
         ];
     }
 
@@ -100,7 +85,12 @@ class AuthService
         }
 
         if (!$user['is_active']) {
-            throw new AuthException('Account is disabled');
+            // Check if user has pending role (awaiting approval)
+            $roles = $this->rbacManager->getUserRoles($user['id']);
+            if (in_array('pending', $roles)) {
+                throw new AuthException('Dein Konto wurde noch nicht freigeschaltet. Bitte warte auf die Genehmigung durch einen Administrator.');
+            }
+            throw new AuthException('Dein Konto wurde deaktiviert. Bitte kontaktiere einen Administrator.');
         }
 
         // Check 2FA if enabled

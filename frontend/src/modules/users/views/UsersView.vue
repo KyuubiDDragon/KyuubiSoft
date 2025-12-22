@@ -2,10 +2,13 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/core/api/axios'
 import { useAuthStore } from '@/stores/auth'
-import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
+import { useUiStore } from '@/stores/ui'
+import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon, ClockIcon, CheckIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
+const uiStore = useUiStore()
 const users = ref([])
+const pendingUsers = ref([])
 const roles = ref([])
 const projects = ref([])
 const isLoading = ref(true)
@@ -40,7 +43,7 @@ function toBool(value) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadUsers(), loadRoles(), loadProjects()])
+  await Promise.all([loadUsers(), loadPendingUsers(), loadRoles(), loadProjects()])
 })
 
 async function loadUsers() {
@@ -55,6 +58,40 @@ async function loadUsers() {
     console.error(err)
   } finally {
     isLoading.value = false
+  }
+}
+
+async function loadPendingUsers() {
+  try {
+    const response = await api.get('/api/v1/admin/users/pending')
+    pendingUsers.value = response.data.data?.users || []
+  } catch (err) {
+    console.error('Failed to load pending users:', err)
+  }
+}
+
+async function approveUser(user) {
+  try {
+    await api.post(`/api/v1/users/${user.id}/approve`)
+    uiStore.showSuccess(`${user.username || user.email} wurde freigeschaltet`)
+    await Promise.all([loadUsers(), loadPendingUsers()])
+  } catch (err) {
+    console.error('Approve error:', err)
+    uiStore.showError(err.response?.data?.error || 'Fehler beim Freischalten')
+  }
+}
+
+async function rejectUser(user) {
+  if (!confirm(`Möchtest du die Registrierung von "${user.username || user.email}" wirklich ablehnen? Der Benutzer wird gelöscht.`)) {
+    return
+  }
+  try {
+    await api.post(`/api/v1/users/${user.id}/reject`)
+    uiStore.showSuccess('Registrierung abgelehnt')
+    await loadPendingUsers()
+  } catch (err) {
+    console.error('Reject error:', err)
+    uiStore.showError(err.response?.data?.error || 'Fehler beim Ablehnen')
   }
 }
 
@@ -220,6 +257,7 @@ function getRoleBadgeClass(role) {
     editor: 'bg-blue-600 text-white',
     user: 'bg-green-600 text-white',
     viewer: 'bg-gray-600 text-white',
+    pending: 'bg-yellow-600 text-white',
   }
   return classes[role] || 'bg-gray-500 text-white'
 }
@@ -275,8 +313,59 @@ function canDeleteUser(user) {
       <p class="text-red-400">{{ error }}</p>
     </div>
 
+    <!-- Pending Users Section -->
+    <div v-if="pendingUsers.length > 0 && !isLoading" class="bg-yellow-900/20 border border-yellow-700/50 rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-yellow-700/50 flex items-center gap-3">
+        <ClockIcon class="w-5 h-5 text-yellow-400" />
+        <h2 class="text-lg font-semibold text-yellow-400">Wartende Registrierungen</h2>
+        <span class="bg-yellow-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {{ pendingUsers.length }}
+        </span>
+      </div>
+      <div class="divide-y divide-yellow-700/30">
+        <div
+          v-for="user in pendingUsers"
+          :key="user.id"
+          class="px-6 py-4 flex items-center justify-between hover:bg-yellow-900/10"
+        >
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-yellow-600 flex items-center justify-center">
+              <span class="text-sm font-semibold text-white">
+                {{ user.username?.[0]?.toUpperCase() || 'U' }}
+              </span>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white">{{ user.username }}</div>
+              <div class="text-sm text-gray-400">{{ user.email }}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-sm text-gray-500">
+              Registriert am {{ new Date(user.created_at).toLocaleDateString('de-DE') }}
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="approveUser(user)"
+                class="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <CheckIcon class="w-4 h-4" />
+                Freischalten
+              </button>
+              <button
+                @click="rejectUser(user)"
+                class="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <XMarkIcon class="w-4 h-4" />
+                Ablehnen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Users Table -->
-    <div v-else class="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden">
+    <div v-if="!isLoading && !error" class="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden">
       <table class="w-full">
         <thead class="bg-dark-700">
           <tr>

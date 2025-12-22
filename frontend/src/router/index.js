@@ -36,6 +36,7 @@ const ServerView = () => import('@/modules/server/views/ServerView.vue')
 const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
 const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
 const UsersView = () => import('@/modules/users/views/UsersView.vue')
+const RolesView = () => import('@/modules/users/views/RolesView.vue')
 const SystemView = () => import('@/modules/system/views/SystemView.vue')
 const TicketsView = () => import('@/modules/tickets/views/TicketsView.vue')
 const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.vue')
@@ -345,6 +346,12 @@ const routes = [
     path: '/users',
     name: 'users',
     component: UsersView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/roles',
+    name: 'roles',
+    component: RolesView,
     meta: { requiresAuth: true, roles: ['owner', 'admin'] },
   },
   {

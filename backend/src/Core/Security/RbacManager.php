@@ -240,9 +240,203 @@ class RbacManager
     {
         return $this->cache->remember(self::CACHE_PREFIX . 'all_roles', self::CACHE_TTL, function () {
             return $this->db->fetchAllAssociative(
-                'SELECT id, name, description, hierarchy_level FROM roles ORDER BY hierarchy_level DESC'
+                'SELECT id, name, description, hierarchy_level, is_system FROM roles ORDER BY hierarchy_level DESC'
             );
         });
+    }
+
+    /**
+     * Get a single role by ID
+     */
+    public function getRoleById(int $roleId): ?array
+    {
+        $role = $this->db->fetchAssociative(
+            'SELECT id, name, description, hierarchy_level, is_system FROM roles WHERE id = ?',
+            [$roleId]
+        );
+        return $role ?: null;
+    }
+
+    /**
+     * Get a single role by name
+     */
+    public function getRoleByName(string $name): ?array
+    {
+        $role = $this->db->fetchAssociative(
+            'SELECT id, name, description, hierarchy_level, is_system FROM roles WHERE name = ?',
+            [$name]
+        );
+        return $role ?: null;
+    }
+
+    /**
+     * Create a new role
+     */
+    public function createRole(string $name, string $description = '', int $hierarchyLevel = 50): int
+    {
+        $this->db->insert('roles', [
+            'name' => $name,
+            'description' => $description,
+            'hierarchy_level' => $hierarchyLevel,
+            'is_system' => 0,
+        ]);
+
+        $this->clearRolesCache();
+        return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Update a role
+     */
+    public function updateRole(int $roleId, array $data): bool
+    {
+        $updateData = [];
+        if (isset($data['name'])) {
+            $updateData['name'] = $data['name'];
+        }
+        if (isset($data['description'])) {
+            $updateData['description'] = $data['description'];
+        }
+        if (isset($data['hierarchy_level'])) {
+            $updateData['hierarchy_level'] = $data['hierarchy_level'];
+        }
+
+        if (empty($updateData)) {
+            return false;
+        }
+
+        $this->db->update('roles', $updateData, ['id' => $roleId]);
+        $this->clearRolesCache();
+        return true;
+    }
+
+    /**
+     * Delete a role
+     */
+    public function deleteRole(int $roleId): bool
+    {
+        // First remove all user-role assignments
+        $this->db->delete('user_roles', ['role_id' => $roleId]);
+        // Then remove all role-permission assignments
+        $this->db->delete('role_permissions', ['role_id' => $roleId]);
+        // Finally delete the role
+        $this->db->delete('roles', ['id' => $roleId]);
+
+        $this->clearRolesCache();
+        return true;
+    }
+
+    /**
+     * Get all permissions assigned to a role
+     */
+    public function getRolePermissions(int $roleId): array
+    {
+        return $this->db->fetchFirstColumn(
+            'SELECT p.name
+             FROM permissions p
+             INNER JOIN role_permissions rp ON p.id = rp.permission_id
+             WHERE rp.role_id = ?
+             ORDER BY p.module, p.name',
+            [$roleId]
+        );
+    }
+
+    /**
+     * Assign a permission to a role
+     */
+    public function assignPermissionToRole(int $roleId, string $permissionName): bool
+    {
+        $permission = $this->db->fetchAssociative(
+            'SELECT id FROM permissions WHERE name = ?',
+            [$permissionName]
+        );
+
+        if (!$permission) {
+            return false;
+        }
+
+        // Check if already assigned
+        $existing = $this->db->fetchOne(
+            'SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?',
+            [$roleId, $permission['id']]
+        );
+
+        if ($existing) {
+            return true;
+        }
+
+        $this->db->insert('role_permissions', [
+            'role_id' => $roleId,
+            'permission_id' => $permission['id'],
+        ]);
+
+        $this->clearRolesCache();
+        return true;
+    }
+
+    /**
+     * Remove a permission from a role
+     */
+    public function removePermissionFromRole(int $roleId, string $permissionName): bool
+    {
+        $permission = $this->db->fetchAssociative(
+            'SELECT id FROM permissions WHERE name = ?',
+            [$permissionName]
+        );
+
+        if (!$permission) {
+            return false;
+        }
+
+        $this->db->delete('role_permissions', [
+            'role_id' => $roleId,
+            'permission_id' => $permission['id'],
+        ]);
+
+        $this->clearRolesCache();
+        return true;
+    }
+
+    /**
+     * Set all permissions for a role (replaces existing)
+     */
+    public function setRolePermissions(int $roleId, array $permissionNames): bool
+    {
+        // Remove all existing permissions
+        $this->db->delete('role_permissions', ['role_id' => $roleId]);
+
+        // Add new permissions
+        foreach ($permissionNames as $permissionName) {
+            $permission = $this->db->fetchAssociative(
+                'SELECT id FROM permissions WHERE name = ?',
+                [$permissionName]
+            );
+
+            if ($permission) {
+                $this->db->insert('role_permissions', [
+                    'role_id' => $roleId,
+                    'permission_id' => $permission['id'],
+                ]);
+            }
+        }
+
+        $this->clearRolesCache();
+        return true;
+    }
+
+    /**
+     * Get users with a specific role
+     */
+    public function getUsersWithRole(int $roleId): array
+    {
+        return $this->db->fetchAllAssociative(
+            'SELECT u.id, u.username, u.email
+             FROM users u
+             INNER JOIN user_roles ur ON u.id = ur.user_id
+             WHERE ur.role_id = ?
+             ORDER BY u.username',
+            [$roleId]
+        );
     }
 
     /**
@@ -264,5 +458,13 @@ class RbacManager
     {
         $this->cache->delete(self::CACHE_PREFIX . "user_roles:{$userId}");
         $this->cache->delete(self::CACHE_PREFIX . "user_permissions:{$userId}");
+    }
+
+    /**
+     * Clear roles cache
+     */
+    public function clearRolesCache(): void
+    {
+        $this->cache->delete(self::CACHE_PREFIX . 'all_roles');
     }
 }

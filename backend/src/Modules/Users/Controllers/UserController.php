@@ -521,4 +521,107 @@ class UserController
 
         return JsonResponse::success($user, 'User created successfully');
     }
+
+    // ============================================
+    // Direct User Permission Management
+    // ============================================
+
+    /**
+     * Get direct permissions assigned to a specific user (not from roles)
+     */
+    public function getUserDirectPermissions(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        $directPermissions = $this->rbacManager->getUserDirectPermissions($userId);
+        $allPermissions = $this->rbacManager->getUserPermissions($userId);
+        $rolePermissions = array_values(array_diff($allPermissions, $directPermissions));
+
+        return JsonResponse::success([
+            'direct_permissions' => $directPermissions,
+            'role_permissions' => $rolePermissions,
+            'all_permissions' => $allPermissions,
+        ]);
+    }
+
+    /**
+     * Assign a permission directly to a user
+     */
+    public function assignUserPermission(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $permissionName = $data['permission'] ?? '';
+
+        if (empty($permissionName)) {
+            throw new ValidationException('Permission name is required');
+        }
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Only owners and admins can assign permissions
+        if (!$this->rbacManager->hasPermission($currentUserId, 'users.write')) {
+            throw new ForbiddenException('Du hast keine Berechtigung, Berechtigungen zu vergeben');
+        }
+
+        // Check if current user has this permission (can't give what you don't have)
+        if (!$this->rbacManager->hasPermission($currentUserId, $permissionName) &&
+            !$this->rbacManager->hasRole($currentUserId, 'owner')) {
+            throw new ForbiddenException('Du kannst nur Berechtigungen vergeben, die du selbst besitzt');
+        }
+
+        $success = $this->rbacManager->assignPermission($userId, $permissionName, $currentUserId);
+
+        if (!$success) {
+            throw new ValidationException('Berechtigung existiert nicht');
+        }
+
+        $directPermissions = $this->rbacManager->getUserDirectPermissions($userId);
+
+        return JsonResponse::success([
+            'direct_permissions' => $directPermissions,
+        ], 'Berechtigung erfolgreich zugewiesen');
+    }
+
+    /**
+     * Remove a direct permission from a user
+     */
+    public function removeUserPermission(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $currentUserId = $request->getAttribute('user_id');
+        $userId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $permissionName = RouteContext::fromRequest($request)->getRoute()->getArgument('permission');
+
+        $user = $this->userRepository->findById($userId);
+        if (!$user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Only owners and admins can remove permissions
+        if (!$this->rbacManager->hasPermission($currentUserId, 'users.write')) {
+            throw new ForbiddenException('Du hast keine Berechtigung, Berechtigungen zu entfernen');
+        }
+
+        $success = $this->rbacManager->removePermission($userId, $permissionName);
+
+        if (!$success) {
+            throw new ValidationException('Berechtigung existiert nicht');
+        }
+
+        $directPermissions = $this->rbacManager->getUserDirectPermissions($userId);
+
+        return JsonResponse::success([
+            'direct_permissions' => $directPermissions,
+        ], 'Berechtigung erfolgreich entfernt');
+    }
 }

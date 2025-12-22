@@ -171,6 +171,14 @@ class Router
                 $protected->post('/users/{id}/reject', [UserController::class, 'reject'])
                     ->add(new PermissionMiddleware('users.write'));
 
+                // Direct User Permissions
+                $protected->get('/users/{id}/permissions', [UserController::class, 'getUserDirectPermissions'])
+                    ->add(new PermissionMiddleware('users.read'));
+                $protected->post('/users/{id}/permissions', [UserController::class, 'assignUserPermission'])
+                    ->add(new PermissionMiddleware('users.write'));
+                $protected->delete('/users/{id}/permissions/{permission}', [UserController::class, 'removeUserPermission'])
+                    ->add(new PermissionMiddleware('users.write'));
+
                 // Lists
                 $protected->get('/lists', [ListController::class, 'index']);
                 $protected->post('/lists', [ListController::class, 'create']);

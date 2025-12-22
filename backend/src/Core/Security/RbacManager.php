@@ -36,14 +36,15 @@ class RbacManager
     }
 
     /**
-     * Get all permissions for a user (from all their roles)
+     * Get all permissions for a user (from roles AND direct assignments)
      */
     public function getUserPermissions(string $userId): array
     {
         $cacheKey = self::CACHE_PREFIX . "user_permissions:{$userId}";
 
         return $this->cache->remember($cacheKey, self::CACHE_TTL, function () use ($userId) {
-            return $this->db->fetchFirstColumn(
+            // Get permissions from roles
+            $rolePermissions = $this->db->fetchFirstColumn(
                 'SELECT DISTINCT p.name
                  FROM permissions p
                  INNER JOIN role_permissions rp ON p.id = rp.permission_id
@@ -51,7 +52,92 @@ class RbacManager
                  WHERE ur.user_id = ?',
                 [$userId]
             );
+
+            // Get direct user permissions
+            $directPermissions = $this->db->fetchFirstColumn(
+                'SELECT DISTINCT p.name
+                 FROM permissions p
+                 INNER JOIN user_permissions up ON p.id = up.permission_id
+                 WHERE up.user_id = ?',
+                [$userId]
+            );
+
+            // Merge and return unique permissions
+            return array_values(array_unique(array_merge($rolePermissions, $directPermissions)));
         });
+    }
+
+    /**
+     * Get only direct permissions for a user (not from roles)
+     */
+    public function getUserDirectPermissions(string $userId): array
+    {
+        return $this->db->fetchFirstColumn(
+            'SELECT p.name
+             FROM permissions p
+             INNER JOIN user_permissions up ON p.id = up.permission_id
+             WHERE up.user_id = ?
+             ORDER BY p.module, p.name',
+            [$userId]
+        );
+    }
+
+    /**
+     * Assign a permission directly to a user
+     */
+    public function assignPermission(string $userId, string $permissionName, ?string $grantedBy = null): bool
+    {
+        $permission = $this->db->fetchAssociative(
+            'SELECT id FROM permissions WHERE name = ?',
+            [$permissionName]
+        );
+
+        if (!$permission) {
+            return false;
+        }
+
+        // Check if already assigned
+        $existing = $this->db->fetchOne(
+            'SELECT 1 FROM user_permissions WHERE user_id = ? AND permission_id = ?',
+            [$userId, $permission['id']]
+        );
+
+        if ($existing) {
+            return true;
+        }
+
+        $this->db->insert('user_permissions', [
+            'user_id' => $userId,
+            'permission_id' => $permission['id'],
+            'granted_at' => date('Y-m-d H:i:s'),
+            'granted_by' => $grantedBy,
+        ]);
+
+        $this->clearUserCache($userId);
+        return true;
+    }
+
+    /**
+     * Remove a direct permission from a user
+     */
+    public function removePermission(string $userId, string $permissionName): bool
+    {
+        $permission = $this->db->fetchAssociative(
+            'SELECT id FROM permissions WHERE name = ?',
+            [$permissionName]
+        );
+
+        if (!$permission) {
+            return false;
+        }
+
+        $this->db->delete('user_permissions', [
+            'user_id' => $userId,
+            'permission_id' => $permission['id'],
+        ]);
+
+        $this->clearUserCache($userId);
+        return true;
     }
 
     /**

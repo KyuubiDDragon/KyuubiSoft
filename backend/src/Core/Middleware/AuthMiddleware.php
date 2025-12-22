@@ -6,6 +6,7 @@ namespace App\Core\Middleware;
 
 use App\Core\Security\JwtManager;
 use App\Core\Http\JsonResponse;
+use App\Modules\Auth\Repositories\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -14,7 +15,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 class AuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly JwtManager $jwtManager
+        private readonly JwtManager $jwtManager,
+        private readonly UserRepository $userRepository
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -34,6 +36,16 @@ class AuthMiddleware implements MiddlewareInterface
             $payload = $this->jwtManager->validateAccessToken($token);
         } catch (\Exception $e) {
             return JsonResponse::unauthorized('Invalid or expired token');
+        }
+
+        // Check if user still exists and is active
+        $user = $this->userRepository->findById($payload->sub);
+        if (!$user) {
+            return JsonResponse::unauthorized('Benutzer nicht gefunden');
+        }
+
+        if (!$user['is_active']) {
+            return JsonResponse::unauthorized('Dein Konto wurde deaktiviert');
         }
 
         // Add user info to request attributes

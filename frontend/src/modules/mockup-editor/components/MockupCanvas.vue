@@ -15,6 +15,7 @@ const isDraggingOver = ref(false)
 const dragOverElementId = ref(null)
 const isExporting = ref(false)
 const exportTransparent = ref(false)
+const exportContentOnly = ref(false)
 
 // Element dragging state
 const isDraggingElement = ref(false)
@@ -177,7 +178,7 @@ const isSelected = (elementId) => {
 
 // Export function (exposed to parent)
 const exportImage = async (options = {}) => {
-  const { format = 'png', quality = 1, transparent = false } = options
+  const { format = 'png', quality = 1, transparent = false, contentOnly = false } = options
 
   if (!canvasRef.value) {
     throw new Error('Canvas not found')
@@ -189,11 +190,17 @@ const exportImage = async (options = {}) => {
   // Get the actual canvas element (not the zoomed wrapper)
   const targetElement = canvasRef.value
 
-  // Temporarily reset zoom for export and hide selection
+  // Store original styles
   const originalTransform = targetElement.style.transform
+  const originalOverflow = targetElement.style.overflow
+
+  // Apply export styles
   targetElement.style.transform = 'none'
+  targetElement.style.overflow = 'hidden' // Clip shadows/glows that extend beyond canvas
+
   isExporting.value = true
   exportTransparent.value = transparent
+  exportContentOnly.value = contentOnly
 
   // Wait for Vue to update the DOM (remove selection rings and background if transparent)
   await nextTick()
@@ -212,6 +219,7 @@ const exportImage = async (options = {}) => {
       backgroundColor: bgColor,
       style: {
         transform: 'none',
+        overflow: 'hidden',
       },
       // Filter out selection rings for export
       filter: (node) => {
@@ -240,10 +248,12 @@ const exportImage = async (options = {}) => {
     link.click()
     document.body.removeChild(link)
   } finally {
-    // Restore zoom and selection visibility
+    // Restore original styles
     targetElement.style.transform = originalTransform
+    targetElement.style.overflow = originalOverflow
     isExporting.value = false
     exportTransparent.value = false
+    exportContentOnly.value = false
   }
 }
 
@@ -301,9 +311,9 @@ const renderTextWithHighlight = (element) => {
           :style="getBackgroundStyle(element)"
         />
 
-        <!-- Container -->
+        <!-- Container (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'container'"
+          v-else-if="element.type === 'container' && !exportContentOnly"
           :style="{
             ...getElementStyle(element),
             cursor: isDraggingElement ? 'grabbing' : 'grab',
@@ -416,9 +426,9 @@ const renderTextWithHighlight = (element) => {
           v-html="element.highlightText ? renderTextWithHighlight(element) : element.text"
         />
 
-        <!-- Line -->
+        <!-- Line (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'line'"
+          v-else-if="element.type === 'line' && !exportContentOnly"
           :style="{
             ...getElementStyle(element),
             background: element.gradient || element.color,
@@ -429,9 +439,9 @@ const renderTextWithHighlight = (element) => {
           @mousedown="(e) => startElementDrag(e, element.id)"
         />
 
-        <!-- Corner -->
+        <!-- Corner (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'corner'"
+          v-else-if="element.type === 'corner' && !exportContentOnly"
           :style="{
             position: 'absolute',
             left: `${element.x}px`,

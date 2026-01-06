@@ -39,6 +39,7 @@
     "@vueuse/core": "^10.7.0",
     "axios": "^1.6.2",
     "chart.js": "^4.4.1",
+    "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.12.1",
     "lib0": "^0.2.88",
     "lowlight": "^3.3.0",

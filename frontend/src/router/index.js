@@ -65,6 +65,7 @@ const GitRepositoryView = () => import('@/modules/git/views/GitRepositoryView.vu
 const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.vue')
 const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
 const DiscordManagerView = () => import('@/modules/discord/views/DiscordManagerView.vue')
+const MockupEditorView = () => import('@/modules/mockup-editor/views/MockupEditorView.vue')
 
 const routes = [
   // Auth routes
@@ -339,6 +340,12 @@ const routes = [
     name: 'galleries',
     component: GalleryView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/mockup-editor',
+    name: 'mockup-editor',
+    component: MockupEditorView,
+    meta: { requiresAuth: true, fullBleed: true },
   },
 
   // Admin routes (role-protected)

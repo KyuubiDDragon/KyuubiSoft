@@ -1,0 +1,500 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+export const useMockupStore = defineStore('mockup', () => {
+  // Current mockup state
+  const currentTemplate = ref(null)
+  const elements = ref([])
+  const selectedElementId = ref(null)
+  const canvasWidth = ref(1920)
+  const canvasHeight = ref(1080)
+  const backgroundColor = ref('transparent')
+  const zoom = ref(1)
+
+  // Template presets for Tebex store
+  const templates = ref([
+    {
+      id: 'single-image-hero',
+      name: 'Single Image Hero',
+      description: 'Ein Bild mit schräger Kante und Textbereich',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'hero',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          color: '#0d0d0f',
+          gradient: 'radial-gradient(1200px 700px at 50% 20%, #131316, #0d0d0f 60%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)',
+          clipPath: null
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'hero-image',
+          type: 'image',
+          x: 50,
+          y: 50,
+          width: 1092,
+          height: 980,
+          src: '',
+          placeholder: 'Bild hier ablegen oder klicken',
+          clipPath: 'polygon(0 0, calc(100% - 10%) 0, 100% 100%, 0 100%)',
+          objectFit: 'cover',
+          overlay: 'linear-gradient(90deg, rgba(13,13,15,0.85) 0%, rgba(13,13,15,0.25) 35%, rgba(13,13,15,0) 60%)'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 1150,
+          y: 400,
+          width: 600,
+          text: 'KYUUBISOFT TABX',
+          fontFamily: 'Outfit',
+          fontSize: 52,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          letterSpacing: '-0.02em',
+          textTransform: 'uppercase',
+          lineHeight: 1.05,
+          highlightText: 'TABX',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'description',
+          type: 'text',
+          x: 1150,
+          y: 480,
+          width: 400,
+          text: 'Ein Screenshot. Volle Wirkung. Premium Präsentation direkt im Store.',
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          fontWeight: 400,
+          color: '#8b8b93',
+          lineHeight: 1.5
+        },
+        {
+          id: 'divider',
+          type: 'line',
+          x: 1150,
+          y: 550,
+          width: 80,
+          height: 2,
+          gradient: 'linear-gradient(90deg, #f4b400, transparent)'
+        }
+      ]
+    },
+    {
+      id: 'feature-showcase',
+      name: 'Feature Showcase',
+      description: 'Mehrere Screenshots mit Feature-Highlights',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'showcase',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          color: '#0d0d0f',
+          gradient: 'linear-gradient(135deg, #0d0d0f 0%, #1a1a1f 100%)'
+        },
+        {
+          id: 'main-image',
+          type: 'image',
+          x: 100,
+          y: 150,
+          width: 1100,
+          height: 700,
+          src: '',
+          placeholder: 'Haupt-Screenshot',
+          borderRadius: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+        },
+        {
+          id: 'feature-1',
+          type: 'image',
+          x: 1250,
+          y: 100,
+          width: 550,
+          height: 280,
+          src: '',
+          placeholder: 'Feature 1',
+          borderRadius: 8,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'feature-2',
+          type: 'image',
+          x: 1250,
+          y: 400,
+          width: 550,
+          height: 280,
+          src: '',
+          placeholder: 'Feature 2',
+          borderRadius: 8,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'feature-3',
+          type: 'image',
+          x: 1250,
+          y: 700,
+          width: 550,
+          height: 280,
+          src: '',
+          placeholder: 'Feature 3',
+          borderRadius: 8,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 100,
+          y: 880,
+          width: 800,
+          text: 'PRODUKTNAME',
+          fontFamily: 'Outfit',
+          fontSize: 48,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textTransform: 'uppercase'
+        },
+        {
+          id: 'gold-accent',
+          type: 'line',
+          x: 100,
+          y: 950,
+          width: 120,
+          height: 4,
+          color: '#f4b400'
+        }
+      ]
+    },
+    {
+      id: 'corner-frame',
+      name: 'Corner Frame',
+      description: 'Eleganter Rahmen mit Ecken (transparenter Hintergrund)',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'frame',
+      transparentBg: true,
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          color: 'transparent'
+        },
+        {
+          id: 'corner-tl',
+          type: 'corner',
+          x: 40,
+          y: 40,
+          size: 60,
+          color: '#f4b400',
+          position: 'top-left',
+          thickness: 3
+        },
+        {
+          id: 'corner-tr',
+          type: 'corner',
+          x: 1820,
+          y: 40,
+          size: 60,
+          color: '#f4b400',
+          position: 'top-right',
+          thickness: 3
+        },
+        {
+          id: 'corner-bl',
+          type: 'corner',
+          x: 40,
+          y: 980,
+          size: 60,
+          color: '#f4b400',
+          position: 'bottom-left',
+          thickness: 3
+        },
+        {
+          id: 'corner-br',
+          type: 'corner',
+          x: 1820,
+          y: 980,
+          size: 60,
+          color: '#f4b400',
+          position: 'bottom-right',
+          thickness: 3
+        },
+        {
+          id: 'main-image',
+          type: 'image',
+          x: 100,
+          y: 100,
+          width: 1720,
+          height: 880,
+          src: '',
+          placeholder: 'Bild hier ablegen',
+          objectFit: 'cover'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 520,
+          width: 800,
+          text: '',
+          fontFamily: 'Outfit',
+          fontSize: 64,
+          fontWeight: 800,
+          color: '#ffffff',
+          textAlign: 'center',
+          textShadow: '0 4px 20px rgba(0,0,0,0.8)'
+        }
+      ]
+    },
+    {
+      id: 'price-banner',
+      name: 'Preis-Banner',
+      description: 'Banner mit Preis und Call-to-Action',
+      thumbnail: null,
+      width: 1920,
+      height: 400,
+      aspectRatio: '48:10',
+      category: 'banner',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'linear-gradient(90deg, #0d0d0f 0%, #1a1a2e 50%, #0d0d0f 100%)'
+        },
+        {
+          id: 'product-image',
+          type: 'image',
+          x: 50,
+          y: 25,
+          width: 350,
+          height: 350,
+          src: '',
+          placeholder: 'Produkt',
+          borderRadius: 12
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 450,
+          y: 100,
+          width: 800,
+          text: 'PRODUKTNAME',
+          fontFamily: 'Outfit',
+          fontSize: 56,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textTransform: 'uppercase'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 450,
+          y: 180,
+          width: 600,
+          text: 'Kurze Beschreibung deines Produkts',
+          fontFamily: 'DM Sans',
+          fontSize: 22,
+          color: '#8b8b93'
+        },
+        {
+          id: 'price',
+          type: 'text',
+          x: 1500,
+          y: 120,
+          width: 350,
+          text: '€19.99',
+          fontFamily: 'Outfit',
+          fontSize: 72,
+          fontWeight: 800,
+          color: '#f4b400',
+          textAlign: 'right'
+        },
+        {
+          id: 'cta',
+          type: 'button',
+          x: 1550,
+          y: 220,
+          width: 250,
+          height: 60,
+          text: 'JETZT KAUFEN',
+          fontFamily: 'Outfit',
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#0d0d0f',
+          backgroundColor: '#f4b400',
+          borderRadius: 8
+        },
+        {
+          id: 'top-line',
+          type: 'line',
+          x: 50,
+          y: 0,
+          width: 1820,
+          height: 3,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        }
+      ]
+    },
+    {
+      id: 'minimal-dark',
+      name: 'Minimal Dark',
+      description: 'Minimalistisches dunkles Design',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'minimal',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          color: '#0a0a0a'
+        },
+        {
+          id: 'main-image',
+          type: 'image',
+          x: 200,
+          y: 140,
+          width: 1520,
+          height: 800,
+          src: '',
+          placeholder: 'Screenshot',
+          borderRadius: 16,
+          boxShadow: '0 0 100px rgba(244, 180, 0, 0.15)'
+        },
+        {
+          id: 'logo',
+          type: 'image',
+          x: 860,
+          y: 40,
+          width: 200,
+          height: 80,
+          src: '',
+          placeholder: 'Logo',
+          objectFit: 'contain'
+        },
+        {
+          id: 'bottom-text',
+          type: 'text',
+          x: 960,
+          y: 980,
+          width: 800,
+          text: 'kyuubisoft.com',
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          fontWeight: 500,
+          color: '#4a4a4a',
+          textAlign: 'center'
+        }
+      ]
+    }
+  ])
+
+  // Selected element
+  const selectedElement = computed(() => {
+    if (!selectedElementId.value) return null
+    return elements.value.find(el => el.id === selectedElementId.value)
+  })
+
+  // Actions
+  function selectTemplate(templateId) {
+    const template = templates.value.find(t => t.id === templateId)
+    if (template) {
+      currentTemplate.value = template
+      elements.value = JSON.parse(JSON.stringify(template.elements))
+      canvasWidth.value = template.width
+      canvasHeight.value = template.height
+      backgroundColor.value = template.transparentBg ? 'transparent' : '#0d0d0f'
+      selectedElementId.value = null
+    }
+  }
+
+  function selectElement(elementId) {
+    selectedElementId.value = elementId
+  }
+
+  function updateElement(elementId, updates) {
+    const index = elements.value.findIndex(el => el.id === elementId)
+    if (index !== -1) {
+      elements.value[index] = { ...elements.value[index], ...updates }
+    }
+  }
+
+  function setElementImage(elementId, imageUrl) {
+    updateElement(elementId, { src: imageUrl })
+  }
+
+  function setZoom(newZoom) {
+    zoom.value = Math.max(0.25, Math.min(2, newZoom))
+  }
+
+  function resetMockup() {
+    if (currentTemplate.value) {
+      elements.value = JSON.parse(JSON.stringify(currentTemplate.value.elements))
+    }
+    selectedElementId.value = null
+  }
+
+  function clearMockup() {
+    currentTemplate.value = null
+    elements.value = []
+    selectedElementId.value = null
+    canvasWidth.value = 1920
+    canvasHeight.value = 1080
+    backgroundColor.value = 'transparent'
+  }
+
+  return {
+    // State
+    currentTemplate,
+    elements,
+    selectedElementId,
+    canvasWidth,
+    canvasHeight,
+    backgroundColor,
+    zoom,
+    templates,
+
+    // Computed
+    selectedElement,
+
+    // Actions
+    selectTemplate,
+    selectElement,
+    updateElement,
+    setElementImage,
+    setZoom,
+    resetMockup,
+    clearMockup
+  }
+})

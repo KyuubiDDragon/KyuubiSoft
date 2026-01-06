@@ -16,6 +16,7 @@ const dragOverElementId = ref(null)
 const isExporting = ref(false)
 const exportTransparent = ref(false)
 const exportContentOnly = ref(false)
+const exportNoShadows = ref(false)
 
 // Element dragging state
 const isDraggingElement = ref(false)
@@ -155,7 +156,8 @@ const getElementStyle = (element) => {
       : element.borderRadius
   }
 
-  if (element.boxShadow) {
+  // Skip boxShadow when noShadows export is active
+  if (element.boxShadow && !exportNoShadows.value) {
     base.boxShadow = element.boxShadow
   }
 
@@ -178,7 +180,7 @@ const isSelected = (elementId) => {
 
 // Export function (exposed to parent)
 const exportImage = async (options = {}) => {
-  const { format = 'png', quality = 1, transparent = false, contentOnly = false } = options
+  const { format = 'png', quality = 1, transparent = false, contentOnly = false, noShadows = false } = options
 
   if (!canvasRef.value) {
     throw new Error('Canvas not found')
@@ -201,6 +203,7 @@ const exportImage = async (options = {}) => {
   isExporting.value = true
   exportTransparent.value = transparent
   exportContentOnly.value = contentOnly
+  exportNoShadows.value = noShadows
 
   // Wait for Vue to update the DOM (remove selection rings and background if transparent)
   await nextTick()
@@ -254,6 +257,7 @@ const exportImage = async (options = {}) => {
     isExporting.value = false
     exportTransparent.value = false
     exportContentOnly.value = false
+    exportNoShadows.value = false
   }
 }
 
@@ -328,7 +332,7 @@ const renderTextWithHighlight = (element) => {
               backgroundColor: element.backgroundColor,
               border: element.border,
               borderRadius: element.borderRadius ? `${element.borderRadius}px` : 0,
-              boxShadow: element.boxShadow,
+              boxShadow: exportNoShadows ? 'none' : element.boxShadow,
               clipPath: element.clipPath,
             }"
           />
@@ -616,7 +620,7 @@ const renderTextWithHighlight = (element) => {
           <div
             class="w-full h-full rounded-xl bg-[#1c1c1f] border border-[rgba(255,255,255,0.08)] overflow-hidden relative"
             :style="{
-              boxShadow: '0 22px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: exportNoShadows ? 'inset 0 1px 0 rgba(255,255,255,0.06)' : '0 22px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
               borderRadius: `${element.borderRadius}px`,
             }"
           >

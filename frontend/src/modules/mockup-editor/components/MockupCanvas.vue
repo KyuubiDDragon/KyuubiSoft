@@ -13,6 +13,7 @@ const mockupStore = useMockupStore()
 const canvasRef = ref(null)
 const isDraggingOver = ref(false)
 const dragOverElementId = ref(null)
+const isExporting = ref(false)
 
 // Computed
 const canvasStyle = computed(() => ({
@@ -109,8 +110,9 @@ const getBackgroundStyle = (element) => {
   return { backgroundColor: element.color || 'transparent' }
 }
 
-// Check if element is selected
+// Check if element is selected (hide during export)
 const isSelected = (elementId) => {
+  if (isExporting.value) return false
   return mockupStore.selectedElementId === elementId
 }
 
@@ -122,32 +124,66 @@ const exportImage = async (options = {}) => {
     throw new Error('Canvas not found')
   }
 
-  // Use html2canvas for export
-  const html2canvas = (await import('html2canvas')).default
+  // Use html-to-image for better CSS support (clip-path, transforms, etc.)
+  const htmlToImage = await import('html-to-image')
 
-  const canvas = await html2canvas(canvasRef.value, {
-    backgroundColor: transparent ? null : (mockupStore.backgroundColor === 'transparent' ? null : mockupStore.backgroundColor),
-    scale: 2, // Higher resolution
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-  })
+  // Get the actual canvas element (not the zoomed wrapper)
+  const targetElement = canvasRef.value
 
-  // Convert to blob
-  const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png'
-  const blob = await new Promise(resolve => {
-    canvas.toBlob(resolve, mimeType, quality)
-  })
+  // Temporarily reset zoom for export and hide selection
+  const originalTransform = targetElement.style.transform
+  targetElement.style.transform = 'none'
+  isExporting.value = true
 
-  // Download
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `mockup-${mockupStore.currentTemplate?.id || 'export'}-${Date.now()}.${format}`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  // Wait for Vue to update the DOM (remove selection rings)
+  await nextTick()
+
+  try {
+    let dataUrl
+
+    // Determine background color
+    const bgColor = transparent || mockupStore.backgroundColor === 'transparent'
+      ? undefined
+      : mockupStore.backgroundColor || '#0d0d0f'
+
+    const exportOptions = {
+      quality: quality,
+      pixelRatio: 2, // Higher resolution
+      backgroundColor: bgColor,
+      style: {
+        transform: 'none',
+      },
+      // Filter out selection rings for export
+      filter: (node) => {
+        // Remove ring classes for clean export
+        if (node.classList && (
+          node.classList.contains('ring-2') ||
+          node.classList.contains('ring-amber-500')
+        )) {
+          return true // Still include, but the inline filter won't show the ring
+        }
+        return true
+      }
+    }
+
+    if (format === 'jpg') {
+      dataUrl = await htmlToImage.toJpeg(targetElement, exportOptions)
+    } else {
+      dataUrl = await htmlToImage.toPng(targetElement, exportOptions)
+    }
+
+    // Download
+    const link = document.createElement('a')
+    link.href = dataUrl
+    link.download = `mockup-${mockupStore.currentTemplate?.id || 'export'}-${Date.now()}.${format}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } finally {
+    // Restore zoom and selection visibility
+    targetElement.style.transform = originalTransform
+    isExporting.value = false
+  }
 }
 
 // Expose export function
@@ -175,7 +211,7 @@ const renderTextWithHighlight = (element) => {
       :style="canvasStyle"
       class="relative shadow-2xl"
       :class="{
-        'bg-checkered': mockupStore.backgroundColor === 'transparent',
+        'bg-checkered': mockupStore.backgroundColor === 'transparent' && !isExporting,
       }"
     >
       <!-- Elements -->
@@ -214,7 +250,7 @@ const renderTextWithHighlight = (element) => {
           class="relative cursor-pointer overflow-hidden transition-all group"
           :class="{
             'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id),
-            'ring-2 ring-amber-500/50': dragOverElementId === element.id,
+            'ring-2 ring-amber-500/50': !isExporting && dragOverElementId === element.id,
           }"
           @click="handleElementClick(element.id)"
           @dragover="(e) => handleDragOver(e, element.id)"
@@ -469,7 +505,7 @@ const renderTextWithHighlight = (element) => {
           class="cursor-pointer transition-all group"
           :class="{
             'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id),
-            'ring-2 ring-amber-500/50': dragOverElementId === element.id,
+            'ring-2 ring-amber-500/50': !isExporting && dragOverElementId === element.id,
           }"
           @click="handleElementClick(element.id)"
           @dragover="(e) => handleDragOver(e, element.id)"

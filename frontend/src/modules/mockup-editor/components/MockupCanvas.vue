@@ -15,6 +15,12 @@ const isDraggingOver = ref(false)
 const dragOverElementId = ref(null)
 const isExporting = ref(false)
 
+// Element dragging state
+const isDraggingElement = ref(false)
+const dragStartPos = ref({ x: 0, y: 0 })
+const dragElementStart = ref({ x: 0, y: 0 })
+const draggingElementId = ref(null)
+
 // Computed
 const canvasStyle = computed(() => ({
   width: `${mockupStore.canvasWidth}px`,
@@ -77,6 +83,58 @@ const handleFileSelect = (e, elementId) => {
 // Handle element click
 const handleElementClick = (elementId) => {
   mockupStore.selectElement(elementId)
+}
+
+// Element dragging for repositioning
+const startElementDrag = (e, elementId) => {
+  // Don't start drag if clicking on file input
+  if (e.target.tagName === 'INPUT') return
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const element = mockupStore.elements.find(el => el.id === elementId)
+  if (!element) return
+
+  // Select the element
+  mockupStore.selectElement(elementId)
+
+  isDraggingElement.value = true
+  draggingElementId.value = elementId
+  dragStartPos.value = { x: e.clientX, y: e.clientY }
+  dragElementStart.value = { x: element.x, y: element.y }
+
+  // Add global listeners
+  document.addEventListener('mousemove', handleElementDrag)
+  document.addEventListener('mouseup', stopElementDrag)
+}
+
+const handleElementDrag = (e) => {
+  if (!isDraggingElement.value || !draggingElementId.value) return
+
+  // Calculate delta (account for zoom)
+  const zoom = mockupStore.zoom
+  const deltaX = (e.clientX - dragStartPos.value.x) / zoom
+  const deltaY = (e.clientY - dragStartPos.value.y) / zoom
+
+  // Calculate new position
+  const newX = Math.round(dragElementStart.value.x + deltaX)
+  const newY = Math.round(dragElementStart.value.y + deltaY)
+
+  // Update element position
+  mockupStore.updateElement(draggingElementId.value, {
+    x: newX,
+    y: newY,
+  })
+}
+
+const stopElementDrag = () => {
+  isDraggingElement.value = false
+  draggingElementId.value = null
+
+  // Remove global listeners
+  document.removeEventListener('mousemove', handleElementDrag)
+  document.removeEventListener('mouseup', stopElementDrag)
 }
 
 // Render element style
@@ -189,14 +247,30 @@ const exportImage = async (options = {}) => {
 // Expose export function
 defineExpose({ exportImage })
 
-// Render text with highlight
+// Render text with highlight (supports multiple words)
 const renderTextWithHighlight = (element) => {
-  if (!element.highlightText) return element.text
+  if (!element.highlightText && !element.highlightWords) return element.text
 
-  const parts = element.text.split(new RegExp(`(${element.highlightText})`, 'gi'))
-  return parts.map((part, i) => {
-    if (part.toLowerCase() === element.highlightText?.toLowerCase()) {
-      return `<span style="color: ${element.highlightColor || '#f4b400'}">${part}</span>`
+  // Support both old single-word format and new multi-word format
+  let highlightList = []
+
+  if (element.highlightWords && element.highlightWords.length > 0) {
+    highlightList = element.highlightWords
+  } else if (element.highlightText) {
+    highlightList = [{ text: element.highlightText, color: element.highlightColor || '#f4b400' }]
+  }
+
+  if (highlightList.length === 0) return element.text
+
+  // Build regex to match all highlight words
+  const escapedWords = highlightList.map(h => h.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`(${escapedWords.join('|')})`, 'gi')
+
+  const parts = element.text.split(regex)
+  return parts.map((part) => {
+    const highlightMatch = highlightList.find(h => h.text.toLowerCase() === part.toLowerCase())
+    if (highlightMatch) {
+      return `<span style="color: ${highlightMatch.color || '#f4b400'}">${part}</span>`
     }
     return part
   }).join('')
@@ -212,6 +286,7 @@ const renderTextWithHighlight = (element) => {
       class="relative shadow-2xl"
       :class="{
         'bg-checkered': mockupStore.backgroundColor === 'transparent' && !isExporting,
+        'exporting': isExporting,
       }"
     >
       <!-- Elements -->
@@ -226,10 +301,13 @@ const renderTextWithHighlight = (element) => {
         <!-- Container -->
         <div
           v-else-if="element.type === 'container'"
-          :style="getElementStyle(element)"
-          class="cursor-pointer transition-all"
+          :style="{
+            ...getElementStyle(element),
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
+          }"
+          class="transition-all"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         >
           <div
             class="w-full h-full"
@@ -246,13 +324,16 @@ const renderTextWithHighlight = (element) => {
         <!-- Image -->
         <div
           v-else-if="element.type === 'image'"
-          :style="getElementStyle(element)"
-          class="relative cursor-pointer overflow-hidden transition-all group"
+          :style="{
+            ...getElementStyle(element),
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
+          }"
+          class="relative overflow-hidden transition-all group"
           :class="{
             'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id),
             'ring-2 ring-amber-500/50': !isExporting && dragOverElementId === element.id,
           }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
           @dragover="(e) => handleDragOver(e, element.id)"
           @dragleave="handleDragLeave"
           @drop="(e) => handleDrop(e, element.id)"
@@ -324,10 +405,11 @@ const renderTextWithHighlight = (element) => {
             lineHeight: element.lineHeight,
             textAlign: element.textAlign,
             textShadow: element.textShadow,
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all whitespace-pre-wrap"
+          class="transition-all whitespace-pre-wrap select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent rounded': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
           v-html="element.highlightText ? renderTextWithHighlight(element) : element.text"
         />
 
@@ -337,10 +419,11 @@ const renderTextWithHighlight = (element) => {
           :style="{
             ...getElementStyle(element),
             background: element.gradient || element.color,
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all"
+          class="transition-all"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         />
 
         <!-- Corner -->
@@ -350,10 +433,11 @@ const renderTextWithHighlight = (element) => {
             position: 'absolute',
             left: `${element.x}px`,
             top: `${element.y}px`,
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all"
+          class="transition-all"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         >
           <!-- Top-Left -->
           <svg
@@ -430,10 +514,11 @@ const renderTextWithHighlight = (element) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all"
+          class="transition-all select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         >
           {{ element.text }}
         </div>
@@ -455,10 +540,11 @@ const renderTextWithHighlight = (element) => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all whitespace-nowrap"
+          class="transition-all whitespace-nowrap select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         >
           {{ element.text }}
         </div>
@@ -471,10 +557,11 @@ const renderTextWithHighlight = (element) => {
             left: `${element.x}px`,
             top: `${element.y}px`,
             width: `${element.width}px`,
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all"
+          class="transition-all select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
         >
           <div class="bg-[rgba(28,28,31,0.72)] border border-[rgba(255,255,255,0.08)] rounded-xl p-3">
             <div class="text-xs text-[#606068]">{{ element.label }}</div>
@@ -501,13 +588,14 @@ const renderTextWithHighlight = (element) => {
               : 'perspective(900px) scale(1.04)',
             transformOrigin: 'bottom center',
             opacity: element.perspective === 'center' ? 1 : 0.95,
+            cursor: isDraggingElement ? 'grabbing' : 'grab',
           }"
-          class="cursor-pointer transition-all group"
+          class="transition-all group"
           :class="{
             'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id),
             'ring-2 ring-amber-500/50': !isExporting && dragOverElementId === element.id,
           }"
-          @click="handleElementClick(element.id)"
+          @mousedown="(e) => startElementDrag(e, element.id)"
           @dragover="(e) => handleDragOver(e, element.id)"
           @dragleave="handleDragLeave"
           @drop="(e) => handleDrop(e, element.id)"
@@ -579,5 +667,16 @@ const renderTextWithHighlight = (element) => {
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   background-color: #0f0f0f;
+}
+
+/* Hide all selection rings during export */
+.exporting :deep(.ring-2),
+.exporting :deep(.ring-amber-500),
+.exporting :deep(.ring-offset-2) {
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-offset-shadow: none !important;
+  box-shadow: none !important;
 }
 </style>

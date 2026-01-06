@@ -9,6 +9,8 @@ import {
   ArrowsPointingOutIcon,
   PaintBrushIcon,
   XMarkIcon,
+  PlusIcon,
+  TrashIcon,
 } from '@heroicons/vue/24/outline'
 
 const mockupStore = useMockupStore()
@@ -19,6 +21,9 @@ const localColor = ref('')
 const localFontSize = ref(16)
 const localHighlightText = ref('')
 const localHighlightColor = ref('#f4b400')
+const localHighlightWords = ref([])
+const newHighlightText = ref('')
+const newHighlightColor = ref('#f4b400')
 
 // Watch selected element
 watch(() => mockupStore.selectedElement, (element) => {
@@ -28,6 +33,8 @@ watch(() => mockupStore.selectedElement, (element) => {
     localFontSize.value = element.fontSize || 16
     localHighlightText.value = element.highlightText || ''
     localHighlightColor.value = element.highlightColor || '#f4b400'
+    // Support multiple highlight words
+    localHighlightWords.value = element.highlightWords ? [...element.highlightWords] : []
   }
 }, { immediate: true })
 
@@ -52,6 +59,42 @@ const updateHighlight = () => {
   mockupStore.updateElement(mockupStore.selectedElementId, {
     highlightText: localHighlightText.value,
     highlightColor: localHighlightColor.value,
+  })
+}
+
+const addHighlightWord = () => {
+  if (!mockupStore.selectedElementId || !newHighlightText.value.trim()) return
+
+  const newWord = {
+    text: newHighlightText.value.trim(),
+    color: newHighlightColor.value
+  }
+
+  localHighlightWords.value.push(newWord)
+  mockupStore.updateElement(mockupStore.selectedElementId, {
+    highlightWords: [...localHighlightWords.value]
+  })
+
+  // Reset input
+  newHighlightText.value = ''
+  newHighlightColor.value = '#f4b400'
+}
+
+const removeHighlightWord = (index) => {
+  if (!mockupStore.selectedElementId) return
+
+  localHighlightWords.value.splice(index, 1)
+  mockupStore.updateElement(mockupStore.selectedElementId, {
+    highlightWords: [...localHighlightWords.value]
+  })
+}
+
+const updateHighlightWordColor = (index, color) => {
+  if (!mockupStore.selectedElementId) return
+
+  localHighlightWords.value[index].color = color
+  mockupStore.updateElement(mockupStore.selectedElementId, {
+    highlightWords: [...localHighlightWords.value]
   })
 }
 
@@ -209,30 +252,61 @@ const typeIcons = {
           </div>
         </div>
 
-        <!-- Highlight -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-gray-300">Hervorhebung</label>
-          <input
-            v-model="localHighlightText"
-            @input="updateHighlight"
-            type="text"
-            placeholder="Text zum Hervorheben"
-            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
-          <div v-if="localHighlightText" class="flex items-center gap-3 mt-2">
-            <input
-              v-model="localHighlightColor"
-              @input="updateHighlight"
-              type="color"
-              class="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
-            />
-            <input
-              v-model="localHighlightColor"
-              @input="updateHighlight"
-              type="text"
-              class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+        <!-- Multiple Highlight Words -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-gray-300">Hervorhebungen</label>
+
+          <!-- Existing highlight words -->
+          <div v-if="localHighlightWords.length > 0" class="space-y-2">
+            <div
+              v-for="(word, index) in localHighlightWords"
+              :key="index"
+              class="flex items-center gap-2 p-2 bg-gray-700/50 rounded-lg"
+            >
+              <input
+                :value="word.color"
+                @input="(e) => updateHighlightWordColor(index, e.target.value)"
+                type="color"
+                class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent flex-shrink-0"
+              />
+              <span class="flex-1 text-sm text-white truncate" :style="{ color: word.color }">
+                {{ word.text }}
+              </span>
+              <button
+                @click="removeHighlightWord(index)"
+                class="p-1 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0"
+              >
+                <TrashIcon class="w-4 h-4" />
+              </button>
+            </div>
           </div>
+
+          <!-- Add new highlight word -->
+          <div class="flex items-center gap-2">
+            <input
+              v-model="newHighlightColor"
+              type="color"
+              class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent flex-shrink-0"
+            />
+            <input
+              v-model="newHighlightText"
+              type="text"
+              placeholder="Wort hinzufugen..."
+              class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              @keypress.enter="addHighlightWord"
+            />
+            <button
+              @click="addHighlightWord"
+              :disabled="!newHighlightText.trim()"
+              class="p-1.5 bg-amber-500 text-black rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <PlusIcon class="w-4 h-4" />
+            </button>
+          </div>
+
+          <p class="text-xs text-gray-500">
+            Worte werden farbig hervorgehoben
+          </p>
         </div>
       </template>
 

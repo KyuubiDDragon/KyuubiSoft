@@ -69,6 +69,7 @@ use App\Modules\Notes\Controllers\DatabaseController;
 use App\Modules\Notes\Controllers\CollaborationController;
 use App\Modules\Notes\Controllers\PublicNoteController;
 use App\Modules\Discord\Controllers\DiscordController;
+use App\Modules\Mockup\Controllers\MockupController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1080,6 +1081,27 @@ class Router
                     ->add(new PermissionMiddleware('links.view'));
                 $protected->get('/links/{id}/qr', [LinkController::class, 'qrCode'])
                     ->add(new PermissionMiddleware('links.view'));
+
+                // Mockup Editor
+                $protected->get('/mockup/templates', [MockupController::class, 'indexTemplates'])
+                    ->add(new PermissionMiddleware('mockup.view'));
+                $protected->post('/mockup/templates', [MockupController::class, 'createTemplate'])
+                    ->add(new PermissionMiddleware('mockup.create'));
+                $protected->get('/mockup/templates/{id}', [MockupController::class, 'showTemplate'])
+                    ->add(new PermissionMiddleware('mockup.view'));
+                $protected->put('/mockup/templates/{id}', [MockupController::class, 'updateTemplate'])
+                    ->add(new PermissionMiddleware('mockup.create'));
+                $protected->delete('/mockup/templates/{id}', [MockupController::class, 'deleteTemplate'])
+                    ->add(new PermissionMiddleware('mockup.delete'));
+
+                $protected->get('/mockup/drafts', [MockupController::class, 'indexDrafts'])
+                    ->add(new PermissionMiddleware('mockup.view'));
+                $protected->post('/mockup/drafts', [MockupController::class, 'saveDraft'])
+                    ->add(new PermissionMiddleware('mockup.create'));
+                $protected->get('/mockup/drafts/{id}', [MockupController::class, 'showDraft'])
+                    ->add(new PermissionMiddleware('mockup.view'));
+                $protected->delete('/mockup/drafts/{id}', [MockupController::class, 'deleteDraft'])
+                    ->add(new PermissionMiddleware('mockup.delete'));
 
                 // Git Repository Dashboard
                 $protected->get('/git/repositories', [GitRepositoryController::class, 'index'])

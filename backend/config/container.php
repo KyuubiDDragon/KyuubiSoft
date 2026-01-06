@@ -372,6 +372,18 @@ return [
         );
     },
 
+    // Mockup Service
+    \App\Modules\Mockup\Services\MockupService::class => function (ContainerInterface $c): \App\Modules\Mockup\Services\MockupService {
+        return new \App\Modules\Mockup\Services\MockupService($c->get(PDO::class));
+    },
+
+    // Mockup Controller
+    \App\Modules\Mockup\Controllers\MockupController::class => function (ContainerInterface $c): \App\Modules\Mockup\Controllers\MockupController {
+        return new \App\Modules\Mockup\Controllers\MockupController(
+            $c->get(\App\Modules\Mockup\Services\MockupService::class)
+        );
+    },
+
     // Git Repository Service
     \App\Modules\GitRepository\Services\GitProviderService::class => function (ContainerInterface $c): \App\Modules\GitRepository\Services\GitProviderService {
         return new \App\Modules\GitRepository\Services\GitProviderService();

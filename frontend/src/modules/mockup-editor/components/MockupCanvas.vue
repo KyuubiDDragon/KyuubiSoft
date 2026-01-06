@@ -266,7 +266,10 @@ defineExpose({ exportImage })
 
 // Render text with highlight (supports multiple words)
 const renderTextWithHighlight = (element) => {
-  if (!element.highlightText && !element.highlightWords) return element.text
+  // Support both 'text' (for text elements) and 'value' (for stat elements)
+  const textContent = element.text || element.value || ''
+
+  if (!element.highlightText && !element.highlightWords) return textContent
 
   // Support both old single-word format and new multi-word format
   let highlightList = []
@@ -277,13 +280,13 @@ const renderTextWithHighlight = (element) => {
     highlightList = [{ text: element.highlightText, color: element.highlightColor || '#f4b400' }]
   }
 
-  if (highlightList.length === 0) return element.text
+  if (highlightList.length === 0) return textContent
 
   // Build regex to match all highlight words
   const escapedWords = highlightList.map(h => h.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const regex = new RegExp(`(${escapedWords.join('|')})`, 'gi')
 
-  const parts = element.text.split(regex)
+  const parts = textContent.split(regex)
   return parts.map((part) => {
     const highlightMatch = highlightList.find(h => h.text.toLowerCase() === part.toLowerCase())
     if (highlightMatch) {

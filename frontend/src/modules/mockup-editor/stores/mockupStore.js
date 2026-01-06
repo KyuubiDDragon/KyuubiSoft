@@ -51,15 +51,6 @@ export const useMockupStore = defineStore('mockup', () => {
           clipPath: null
         },
         {
-          id: 'gold-line',
-          type: 'line',
-          x: 78,
-          y: 50,
-          width: 1764,
-          height: 2,
-          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
-        },
-        {
           id: 'hero-image',
           type: 'image',
           x: 50,
@@ -71,6 +62,26 @@ export const useMockupStore = defineStore('mockup', () => {
           clipPath: 'polygon(0 0, calc(100% - 10%) 0, 100% 100%, 0 100%)',
           objectFit: 'cover',
           overlay: 'linear-gradient(90deg, rgba(13,13,15,0.85) 0%, rgba(13,13,15,0.25) 35%, rgba(13,13,15,0) 60%)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent'
         },
         {
           id: 'title',
@@ -127,13 +138,25 @@ export const useMockupStore = defineStore('mockup', () => {
           id: 'bg',
           type: 'background',
           color: '#0d0d0f',
-          gradient: 'linear-gradient(135deg, #0d0d0f 0%, #1a1a1f 100%)'
+          gradient: 'radial-gradient(900px 520px at 30% 40%, rgba(244,180,0,0.10), transparent 55%), linear-gradient(135deg, #0d0d0f 0%, #1a1a1f 100%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
         },
         {
           id: 'main-image',
           type: 'image',
-          x: 100,
-          y: 150,
+          x: 80,
+          y: 120,
           width: 1100,
           height: 700,
           src: '',
@@ -144,9 +167,9 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'feature-1',
           type: 'image',
-          x: 1250,
-          y: 100,
-          width: 550,
+          x: 1220,
+          y: 80,
+          width: 600,
           height: 280,
           src: '',
           placeholder: 'Feature 1',
@@ -156,9 +179,9 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'feature-2',
           type: 'image',
-          x: 1250,
-          y: 400,
-          width: 550,
+          x: 1220,
+          y: 380,
+          width: 600,
           height: 280,
           src: '',
           placeholder: 'Feature 2',
@@ -168,9 +191,9 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'feature-3',
           type: 'image',
-          x: 1250,
-          y: 700,
-          width: 550,
+          x: 1220,
+          y: 680,
+          width: 600,
           height: 280,
           src: '',
           placeholder: 'Feature 3',
@@ -178,10 +201,30 @@ export const useMockupStore = defineStore('mockup', () => {
           boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
         },
         {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent'
+        },
+        {
           id: 'title',
           type: 'text',
-          x: 100,
-          y: 880,
+          x: 80,
+          y: 850,
           width: 800,
           text: 'PRODUKTNAME',
           fontFamily: 'Outfit',
@@ -193,8 +236,8 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'gold-accent',
           type: 'line',
-          x: 100,
-          y: 950,
+          x: 80,
+          y: 920,
           width: 120,
           height: 4,
           color: '#f4b400'
@@ -297,28 +340,60 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'bg',
           type: 'background',
-          gradient: 'linear-gradient(90deg, #0d0d0f 0%, #1a1a2e 50%, #0d0d0f 100%)'
+          gradient: 'radial-gradient(600px 300px at 50% 50%, rgba(244,180,0,0.08), transparent 55%), linear-gradient(90deg, #0d0d0f 0%, #1a1a2e 50%, #0d0d0f 100%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 30,
+          y: 30,
+          width: 1860,
+          height: 340,
+          borderRadius: 14,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 16px 60px rgba(0,0,0,0.55)'
         },
         {
           id: 'product-image',
           type: 'image',
           x: 50,
-          y: 25,
-          width: 350,
-          height: 350,
+          y: 45,
+          width: 310,
+          height: 310,
           src: '',
           placeholder: 'Produkt',
           borderRadius: 12
         },
         {
+          id: 'gold-line',
+          type: 'line',
+          x: 50,
+          y: 30,
+          width: 1820,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 40,
+          y: 40,
+          width: 1840,
+          height: 320,
+          borderRadius: 10,
+          border: '1px solid rgba(244,180,0,0.15)',
+          backgroundColor: 'transparent'
+        },
+        {
           id: 'title',
           type: 'text',
-          x: 450,
-          y: 100,
+          x: 400,
+          y: 110,
           width: 800,
           text: 'PRODUKTNAME',
           fontFamily: 'Outfit',
-          fontSize: 56,
+          fontSize: 52,
           fontWeight: 800,
           color: '#f0f0f2',
           textTransform: 'uppercase'
@@ -326,23 +401,23 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'subtitle',
           type: 'text',
-          x: 450,
+          x: 400,
           y: 180,
           width: 600,
           text: 'Kurze Beschreibung deines Produkts',
           fontFamily: 'DM Sans',
-          fontSize: 22,
+          fontSize: 20,
           color: '#8b8b93'
         },
         {
           id: 'price',
           type: 'text',
-          x: 1500,
-          y: 120,
+          x: 1450,
+          y: 110,
           width: 350,
           text: '€19.99',
           fontFamily: 'Outfit',
-          fontSize: 72,
+          fontSize: 64,
           fontWeight: 800,
           color: '#f4b400',
           textAlign: 'right'
@@ -351,25 +426,16 @@ export const useMockupStore = defineStore('mockup', () => {
           id: 'cta',
           type: 'button',
           x: 1550,
-          y: 220,
+          y: 200,
           width: 250,
-          height: 60,
+          height: 55,
           text: 'JETZT KAUFEN',
           fontFamily: 'Outfit',
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 700,
           color: '#0d0d0f',
           backgroundColor: '#f4b400',
           borderRadius: 8
-        },
-        {
-          id: 'top-line',
-          type: 'line',
-          x: 50,
-          y: 0,
-          width: 1820,
-          height: 3,
-          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
         }
       ]
     },
@@ -386,27 +452,60 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'bg',
           type: 'background',
-          color: '#0a0a0a'
+          color: '#0a0a0a',
+          gradient: 'radial-gradient(800px 500px at 50% 50%, rgba(244,180,0,0.06), transparent 60%), linear-gradient(180deg, #0a0a0a, #0d0d0f)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#111113',
+          border: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
         },
         {
           id: 'main-image',
           type: 'image',
-          x: 200,
-          y: 140,
-          width: 1520,
-          height: 800,
+          x: 160,
+          y: 160,
+          width: 1600,
+          height: 760,
           src: '',
           placeholder: 'Screenshot',
-          borderRadius: 16,
-          boxShadow: '0 0 100px rgba(244, 180, 0, 0.15)'
+          borderRadius: 12,
+          boxShadow: '0 0 80px rgba(244, 180, 0, 0.12)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.12)',
+          backgroundColor: 'transparent'
         },
         {
           id: 'logo',
           type: 'image',
           x: 860,
-          y: 40,
+          y: 75,
           width: 200,
-          height: 80,
+          height: 60,
           src: '',
           placeholder: 'Logo',
           objectFit: 'contain'
@@ -415,11 +514,11 @@ export const useMockupStore = defineStore('mockup', () => {
           id: 'bottom-text',
           type: 'text',
           x: 960,
-          y: 980,
+          y: 960,
           width: 800,
           text: 'kyuubisoft.com',
           fontFamily: 'DM Sans',
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 500,
           color: '#4a4a4a',
           textAlign: 'center'
@@ -455,15 +554,6 @@ export const useMockupStore = defineStore('mockup', () => {
           boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
         },
         {
-          id: 'gold-line',
-          type: 'line',
-          x: 78,
-          y: 50,
-          width: 1764,
-          height: 2,
-          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
-        },
-        {
           id: 'hero-image',
           type: 'image',
           x: 778,
@@ -475,6 +565,26 @@ export const useMockupStore = defineStore('mockup', () => {
           clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%)',
           objectFit: 'cover',
           overlay: 'linear-gradient(270deg, rgba(13,13,15,0.85) 0%, rgba(13,13,15,0.25) 35%, rgba(13,13,15,0) 60%)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent'
         },
         {
           id: 'title',

@@ -15,6 +15,8 @@ const isDraggingOver = ref(false)
 const dragOverElementId = ref(null)
 const isExporting = ref(false)
 const exportTransparent = ref(false)
+const exportContentOnly = ref(false)
+const exportNoShadows = ref(false)
 
 // Element dragging state
 const isDraggingElement = ref(false)
@@ -154,7 +156,8 @@ const getElementStyle = (element) => {
       : element.borderRadius
   }
 
-  if (element.boxShadow) {
+  // Skip boxShadow when noShadows export is active
+  if (element.boxShadow && !exportNoShadows.value) {
     base.boxShadow = element.boxShadow
   }
 
@@ -177,7 +180,7 @@ const isSelected = (elementId) => {
 
 // Export function (exposed to parent)
 const exportImage = async (options = {}) => {
-  const { format = 'png', quality = 1, transparent = false } = options
+  const { format = 'png', quality = 1, transparent = false, contentOnly = false, noShadows = false } = options
 
   if (!canvasRef.value) {
     throw new Error('Canvas not found')
@@ -189,11 +192,18 @@ const exportImage = async (options = {}) => {
   // Get the actual canvas element (not the zoomed wrapper)
   const targetElement = canvasRef.value
 
-  // Temporarily reset zoom for export and hide selection
+  // Store original styles
   const originalTransform = targetElement.style.transform
+  const originalOverflow = targetElement.style.overflow
+
+  // Apply export styles
   targetElement.style.transform = 'none'
+  targetElement.style.overflow = 'hidden' // Clip shadows/glows that extend beyond canvas
+
   isExporting.value = true
   exportTransparent.value = transparent
+  exportContentOnly.value = contentOnly
+  exportNoShadows.value = noShadows
 
   // Wait for Vue to update the DOM (remove selection rings and background if transparent)
   await nextTick()
@@ -212,6 +222,7 @@ const exportImage = async (options = {}) => {
       backgroundColor: bgColor,
       style: {
         transform: 'none',
+        overflow: 'hidden',
       },
       // Filter out selection rings for export
       filter: (node) => {
@@ -240,10 +251,13 @@ const exportImage = async (options = {}) => {
     link.click()
     document.body.removeChild(link)
   } finally {
-    // Restore zoom and selection visibility
+    // Restore original styles
     targetElement.style.transform = originalTransform
+    targetElement.style.overflow = originalOverflow
     isExporting.value = false
     exportTransparent.value = false
+    exportContentOnly.value = false
+    exportNoShadows.value = false
   }
 }
 
@@ -252,7 +266,10 @@ defineExpose({ exportImage })
 
 // Render text with highlight (supports multiple words)
 const renderTextWithHighlight = (element) => {
-  if (!element.highlightText && !element.highlightWords) return element.text
+  // Support both 'text' (for text elements) and 'value' (for stat elements)
+  const textContent = element.text || element.value || ''
+
+  if (!element.highlightText && !element.highlightWords) return textContent
 
   // Support both old single-word format and new multi-word format
   let highlightList = []
@@ -263,13 +280,13 @@ const renderTextWithHighlight = (element) => {
     highlightList = [{ text: element.highlightText, color: element.highlightColor || '#f4b400' }]
   }
 
-  if (highlightList.length === 0) return element.text
+  if (highlightList.length === 0) return textContent
 
   // Build regex to match all highlight words
   const escapedWords = highlightList.map(h => h.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const regex = new RegExp(`(${escapedWords.join('|')})`, 'gi')
 
-  const parts = element.text.split(regex)
+  const parts = textContent.split(regex)
   return parts.map((part) => {
     const highlightMatch = highlightList.find(h => h.text.toLowerCase() === part.toLowerCase())
     if (highlightMatch) {
@@ -301,9 +318,9 @@ const renderTextWithHighlight = (element) => {
           :style="getBackgroundStyle(element)"
         />
 
-        <!-- Container -->
+        <!-- Container (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'container'"
+          v-else-if="element.type === 'container' && !exportContentOnly"
           :style="{
             ...getElementStyle(element),
             cursor: isDraggingElement ? 'grabbing' : 'grab',
@@ -318,7 +335,7 @@ const renderTextWithHighlight = (element) => {
               backgroundColor: element.backgroundColor,
               border: element.border,
               borderRadius: element.borderRadius ? `${element.borderRadius}px` : 0,
-              boxShadow: element.boxShadow,
+              boxShadow: exportNoShadows ? 'none' : element.boxShadow,
               clipPath: element.clipPath,
             }"
           />
@@ -416,9 +433,9 @@ const renderTextWithHighlight = (element) => {
           v-html="element.highlightText ? renderTextWithHighlight(element) : element.text"
         />
 
-        <!-- Line -->
+        <!-- Line (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'line'"
+          v-else-if="element.type === 'line' && !exportContentOnly"
           :style="{
             ...getElementStyle(element),
             background: element.gradient || element.color,
@@ -429,9 +446,9 @@ const renderTextWithHighlight = (element) => {
           @mousedown="(e) => startElementDrag(e, element.id)"
         />
 
-        <!-- Corner -->
+        <!-- Corner (hidden when contentOnly export) -->
         <div
-          v-else-if="element.type === 'corner'"
+          v-else-if="element.type === 'corner' && !exportContentOnly"
           :style="{
             position: 'absolute',
             left: `${element.x}px`,
@@ -606,7 +623,7 @@ const renderTextWithHighlight = (element) => {
           <div
             class="w-full h-full rounded-xl bg-[#1c1c1f] border border-[rgba(255,255,255,0.08)] overflow-hidden relative"
             :style="{
-              boxShadow: '0 22px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: exportNoShadows ? 'inset 0 1px 0 rgba(255,255,255,0.06)' : '0 22px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
               borderRadius: `${element.borderRadius}px`,
             }"
           >

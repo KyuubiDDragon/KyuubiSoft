@@ -23,6 +23,8 @@ const mockupStore = useMockupStore()
 const format = ref('png')
 const quality = ref(100)
 const transparent = ref(false)
+const noShadows = ref(false)
+const contentOnly = ref(false)
 
 // Reset options when template changes
 watch(() => mockupStore.currentTemplate, (template) => {
@@ -52,6 +54,8 @@ const handleExport = () => {
     format: format.value,
     quality: quality.value / 100,
     transparent: transparent.value && canBeTransparent.value,
+    noShadows: noShadows.value,
+    contentOnly: contentOnly.value,
   })
 }
 
@@ -150,6 +154,48 @@ const close = () => {
                     Transparenter Hintergrund
                   </span>
                   <p class="text-xs text-gray-500">Entfernt den Hintergrund für PNG-Export</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- No Shadows Option -->
+            <div v-if="transparent && canBeTransparent" class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <div class="relative">
+                  <input
+                    v-model="noShadows"
+                    type="checkbox"
+                    class="sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-blue-500 transition-colors" />
+                  <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                    Ohne Schatten
+                  </span>
+                  <p class="text-xs text-gray-500">Entfernt Box-Shadows (Linien bleiben)</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Content Only Option -->
+            <div v-if="transparent && canBeTransparent" class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <div class="relative">
+                  <input
+                    v-model="contentOnly"
+                    type="checkbox"
+                    class="sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-purple-500 transition-colors" />
+                  <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                    Nur Inhalt exportieren
+                  </span>
+                  <p class="text-xs text-gray-500">Entfernt Rahmen, Linien und Dekorationen</p>
                 </div>
               </label>
             </div>

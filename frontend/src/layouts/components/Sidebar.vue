@@ -55,6 +55,7 @@ import {
   HeartIcon,
   PhotoIcon,
   PencilSquareIcon,
+  SwatchIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -125,6 +126,7 @@ const iconToName = new Map([
   [HeartIcon, 'HeartIcon'],
   [PhotoIcon, 'PhotoIcon'],
   [PencilSquareIcon, 'PencilSquareIcon'],
+  [SwatchIcon, 'SwatchIcon'],
 ])
 
 // Get icon name from component
@@ -261,6 +263,7 @@ const allNavigationGroups = [
       { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon, permission: 'checklists.view' },
       { name: 'Short Links', href: '/links', icon: LinkIcon, permission: 'links.view' },
       { name: 'Galerien', href: '/galleries', icon: PhotoIcon, feature: 'galleries', permission: 'galleries.view' },
+      { name: 'Mockup Editor', href: '/mockup-editor', icon: SwatchIcon, permission: 'mockup.view' },
     ],
   },
 

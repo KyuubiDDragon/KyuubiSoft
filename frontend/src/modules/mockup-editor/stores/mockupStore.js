@@ -581,7 +581,7 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'title',
           type: 'text',
-          x: 960,
+          x: 560,
           y: 120,
           width: 800,
           text: 'KyuubiSoft Produktname',
@@ -596,7 +596,7 @@ export const useMockupStore = defineStore('mockup', () => {
         {
           id: 'subtitle',
           type: 'text',
-          x: 960,
+          x: 610,
           y: 185,
           width: 700,
           text: 'Modular, optimiert und easy zu integrieren.',
@@ -1070,6 +1070,29 @@ export const useMockupStore = defineStore('mockup', () => {
     return newElement
   }
 
+  // ==================== Alignment Functions ====================
+
+  function centerElementHorizontally(elementId) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element || element.width === undefined) return
+
+    const newX = Math.round((canvasWidth.value - element.width) / 2)
+    updateElement(elementId, { x: newX })
+  }
+
+  function centerElementVertically(elementId) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element || element.height === undefined) return
+
+    const newY = Math.round((canvasHeight.value - element.height) / 2)
+    updateElement(elementId, { y: newY })
+  }
+
+  function centerElement(elementId) {
+    centerElementHorizontally(elementId)
+    centerElementVertically(elementId)
+  }
+
   // ==================== API Functions ====================
 
   // Fetch custom templates from backend
@@ -1309,6 +1332,11 @@ export const useMockupStore = defineStore('mockup', () => {
     addElement,
     deleteElement,
     duplicateElement,
+
+    // Alignment Actions
+    centerElementHorizontally,
+    centerElementVertically,
+    centerElement,
 
     // API Actions - Templates
     fetchCustomTemplates,

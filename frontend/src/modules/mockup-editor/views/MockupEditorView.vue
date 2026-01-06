@@ -27,6 +27,9 @@ import {
   BookmarkIcon,
   CloudArrowUpIcon,
   FolderIcon,
+  Bars3Icon,
+  Bars2Icon,
+  StopIcon,
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
@@ -71,6 +74,22 @@ const handleDeleteElement = () => {
   if (!mockupStore.selectedElementId) return
   mockupStore.deleteElement(mockupStore.selectedElementId)
   toast.success('Element gelöscht')
+}
+
+// Alignment
+const handleCenterHorizontally = () => {
+  if (!mockupStore.selectedElementId) return
+  mockupStore.centerElementHorizontally(mockupStore.selectedElementId)
+}
+
+const handleCenterVertically = () => {
+  if (!mockupStore.selectedElementId) return
+  mockupStore.centerElementVertically(mockupStore.selectedElementId)
+}
+
+const handleCenterBoth = () => {
+  if (!mockupStore.selectedElementId) return
+  mockupStore.centerElement(mockupStore.selectedElementId)
 }
 
 // Save as template
@@ -282,6 +301,26 @@ onUnmounted(() => {
           <!-- Element Actions (when selected) -->
           <template v-if="mockupStore.selectedElementId">
             <div class="w-px h-6 bg-gray-600 mx-1" />
+
+            <!-- Alignment buttons -->
+            <button @click="handleCenterHorizontally"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Horizontal zentrieren">
+              <Bars3Icon class="w-4 h-4" />
+            </button>
+            <button @click="handleCenterVertically"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Vertikal zentrieren">
+              <Bars2Icon class="w-4 h-4 rotate-90" />
+            </button>
+            <button @click="handleCenterBoth"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Mittig zentrieren">
+              <StopIcon class="w-4 h-4" />
+            </button>
+
+            <div class="w-px h-6 bg-gray-600 mx-1" />
+
             <button @click="handleDuplicateElement"
                     class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                     title="Element duplizieren">

@@ -14,6 +14,7 @@ const canvasRef = ref(null)
 const isDraggingOver = ref(false)
 const dragOverElementId = ref(null)
 const isExporting = ref(false)
+const exportTransparent = ref(false)
 
 // Element dragging state
 const isDraggingElement = ref(false)
@@ -192,8 +193,9 @@ const exportImage = async (options = {}) => {
   const originalTransform = targetElement.style.transform
   targetElement.style.transform = 'none'
   isExporting.value = true
+  exportTransparent.value = transparent
 
-  // Wait for Vue to update the DOM (remove selection rings)
+  // Wait for Vue to update the DOM (remove selection rings and background if transparent)
   await nextTick()
 
   try {
@@ -241,6 +243,7 @@ const exportImage = async (options = {}) => {
     // Restore zoom and selection visibility
     targetElement.style.transform = originalTransform
     isExporting.value = false
+    exportTransparent.value = false
   }
 }
 
@@ -291,9 +294,9 @@ const renderTextWithHighlight = (element) => {
     >
       <!-- Elements -->
       <template v-for="element in mockupStore.elements" :key="element.id">
-        <!-- Background -->
+        <!-- Background (hidden during transparent export) -->
         <div
-          v-if="element.type === 'background'"
+          v-if="element.type === 'background' && !exportTransparent"
           class="absolute inset-0"
           :style="getBackgroundStyle(element)"
         />

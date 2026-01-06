@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '@/core/api/axios'
 
 export const useMockupStore = defineStore('mockup', () => {
+  // API state
+  const customTemplates = ref([])
+  const drafts = ref([])
+  const currentDraftId = ref(null)
+  const isLoading = ref(false)
+  const error = ref(null)
+
   // Current mockup state
   const currentTemplate = ref(null)
   const elements = ref([])
@@ -909,6 +917,367 @@ export const useMockupStore = defineStore('mockup', () => {
     backgroundColor.value = 'transparent'
   }
 
+  function addElement(type, options = {}) {
+    const id = `custom-${type}-${Date.now()}`
+    let newElement = { id, type }
+
+    // Default positions centered in canvas
+    const centerX = Math.round(canvasWidth.value / 2)
+    const centerY = Math.round(canvasHeight.value / 2)
+
+    switch (type) {
+      case 'text':
+        newElement = {
+          ...newElement,
+          x: centerX - 200,
+          y: centerY - 50,
+          width: 400,
+          text: options.text || 'Neuer Text',
+          fontFamily: 'Outfit',
+          fontSize: 32,
+          fontWeight: 600,
+          color: '#ffffff',
+          textAlign: 'center',
+          ...options,
+        }
+        break
+
+      case 'image':
+        newElement = {
+          ...newElement,
+          x: centerX - 200,
+          y: centerY - 150,
+          width: 400,
+          height: 300,
+          src: '',
+          placeholder: 'Bild hier ablegen',
+          objectFit: 'cover',
+          borderRadius: 12,
+          ...options,
+        }
+        break
+
+      case 'line':
+        newElement = {
+          ...newElement,
+          x: centerX - 100,
+          y: centerY,
+          width: 200,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)',
+          ...options,
+        }
+        break
+
+      case 'button':
+        newElement = {
+          ...newElement,
+          x: centerX - 75,
+          y: centerY - 25,
+          width: 150,
+          height: 50,
+          text: options.text || 'Button',
+          fontFamily: 'Outfit',
+          fontSize: 16,
+          fontWeight: 600,
+          color: '#0d0d0f',
+          backgroundColor: '#f4b400',
+          borderRadius: 8,
+          ...options,
+        }
+        break
+
+      case 'chip':
+        newElement = {
+          ...newElement,
+          x: centerX - 60,
+          y: centerY - 15,
+          text: options.text || '● Tag',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10,
+          padding: '7px 12px',
+          ...options,
+        }
+        break
+
+      case 'container':
+        newElement = {
+          ...newElement,
+          x: centerX - 200,
+          y: centerY - 150,
+          width: 400,
+          height: 300,
+          borderRadius: 12,
+          backgroundColor: 'rgba(20,20,22,0.8)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+          ...options,
+        }
+        break
+
+      case 'screen3d':
+        newElement = {
+          ...newElement,
+          x: centerX - 200,
+          y: centerY - 150,
+          width: 400,
+          height: 300,
+          src: '',
+          placeholder: 'Screenshot',
+          perspective: options.perspective || 'center',
+          borderRadius: 12,
+          ...options,
+        }
+        break
+
+      default:
+        return null
+    }
+
+    elements.value.push(newElement)
+    selectedElementId.value = id
+    return newElement
+  }
+
+  function deleteElement(elementId) {
+    const index = elements.value.findIndex(el => el.id === elementId)
+    if (index !== -1) {
+      elements.value.splice(index, 1)
+      if (selectedElementId.value === elementId) {
+        selectedElementId.value = null
+      }
+    }
+  }
+
+  function duplicateElement(elementId) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element) return null
+
+    const newId = `${element.type}-copy-${Date.now()}`
+    const newElement = {
+      ...JSON.parse(JSON.stringify(element)),
+      id: newId,
+      x: (element.x || 0) + 20,
+      y: (element.y || 0) + 20,
+    }
+
+    elements.value.push(newElement)
+    selectedElementId.value = newId
+    return newElement
+  }
+
+  // ==================== API Functions ====================
+
+  // Fetch custom templates from backend
+  async function fetchCustomTemplates() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/api/v1/mockup/templates')
+      customTemplates.value = response.data.data.items || []
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to load templates'
+      console.error('Failed to fetch custom templates:', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Save current mockup as a custom template
+  async function saveAsTemplate(name, description = '', category = 'custom') {
+    isLoading.value = true
+    error.value = null
+    try {
+      const templateData = {
+        name,
+        description,
+        category,
+        width: canvasWidth.value,
+        height: canvasHeight.value,
+        aspectRatio: `${canvasWidth.value}:${canvasHeight.value}`,
+        elements: elements.value,
+        transparentBg: backgroundColor.value === 'transparent',
+      }
+
+      const response = await api.post('/api/v1/mockup/templates', templateData)
+      const newTemplate = response.data.data
+
+      // Add to local list
+      customTemplates.value.unshift(newTemplate)
+
+      return newTemplate
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to save template'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Update a custom template
+  async function updateCustomTemplate(templateId, updates) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.put(`/api/v1/mockup/templates/${templateId}`, updates)
+      const updatedTemplate = response.data.data
+
+      // Update local list
+      const index = customTemplates.value.findIndex(t => t.id === templateId)
+      if (index !== -1) {
+        customTemplates.value[index] = updatedTemplate
+      }
+
+      return updatedTemplate
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to update template'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Delete a custom template
+  async function deleteCustomTemplate(templateId) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.delete(`/api/v1/mockup/templates/${templateId}`)
+
+      // Remove from local list
+      customTemplates.value = customTemplates.value.filter(t => t.id !== templateId)
+
+      return true
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to delete template'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Load a custom template
+  function loadCustomTemplate(template) {
+    currentTemplate.value = {
+      ...template,
+      isCustom: true,
+    }
+    elements.value = JSON.parse(JSON.stringify(template.elements))
+    canvasWidth.value = template.width
+    canvasHeight.value = template.height
+    backgroundColor.value = template.transparent_bg ? 'transparent' : '#0d0d0f'
+    selectedElementId.value = null
+    currentDraftId.value = null
+  }
+
+  // ==================== Draft Functions ====================
+
+  // Fetch drafts from backend
+  async function fetchDrafts() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/api/v1/mockup/drafts')
+      drafts.value = response.data.data.items || []
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to load drafts'
+      console.error('Failed to fetch drafts:', err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Save current mockup as draft
+  async function saveDraft(name = null) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const draftData = {
+        id: currentDraftId.value,
+        name: name || currentTemplate.value?.name || 'Untitled Draft',
+        templateId: currentTemplate.value?.id,
+        width: canvasWidth.value,
+        height: canvasHeight.value,
+        elements: elements.value,
+      }
+
+      const response = await api.post('/api/v1/mockup/drafts', draftData)
+      const savedDraft = response.data.data
+
+      // Update current draft ID
+      currentDraftId.value = savedDraft.id
+
+      // Update local drafts list
+      const index = drafts.value.findIndex(d => d.id === savedDraft.id)
+      if (index !== -1) {
+        drafts.value[index] = savedDraft
+      } else {
+        drafts.value.unshift(savedDraft)
+      }
+
+      return savedDraft
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to save draft'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Load a draft
+  function loadDraft(draft) {
+    currentTemplate.value = {
+      id: draft.template_id,
+      name: draft.name,
+      width: draft.width,
+      height: draft.height,
+      isDraft: true,
+    }
+    elements.value = JSON.parse(JSON.stringify(draft.elements))
+    canvasWidth.value = draft.width
+    canvasHeight.value = draft.height
+    selectedElementId.value = null
+    currentDraftId.value = draft.id
+  }
+
+  // Delete a draft
+  async function deleteDraft(draftId) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.delete(`/api/v1/mockup/drafts/${draftId}`)
+
+      // Remove from local list
+      drafts.value = drafts.value.filter(d => d.id !== draftId)
+
+      // Clear current draft ID if this was the active draft
+      if (currentDraftId.value === draftId) {
+        currentDraftId.value = null
+      }
+
+      return true
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to delete draft'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Computed: All templates (built-in + custom)
+  const allTemplates = computed(() => {
+    // Mark custom templates
+    const marked = customTemplates.value.map(t => ({
+      ...t,
+      isCustom: true,
+    }))
+    return [...templates.value, ...marked]
+  })
+
   return {
     // State
     currentTemplate,
@@ -919,9 +1288,15 @@ export const useMockupStore = defineStore('mockup', () => {
     backgroundColor,
     zoom,
     templates,
+    customTemplates,
+    drafts,
+    currentDraftId,
+    isLoading,
+    error,
 
     // Computed
     selectedElement,
+    allTemplates,
 
     // Actions
     selectTemplate,
@@ -930,6 +1305,22 @@ export const useMockupStore = defineStore('mockup', () => {
     setElementImage,
     setZoom,
     resetMockup,
-    clearMockup
+    clearMockup,
+    addElement,
+    deleteElement,
+    duplicateElement,
+
+    // API Actions - Templates
+    fetchCustomTemplates,
+    saveAsTemplate,
+    updateCustomTemplate,
+    deleteCustomTemplate,
+    loadCustomTemplate,
+
+    // API Actions - Drafts
+    fetchDrafts,
+    saveDraft,
+    loadDraft,
+    deleteDraft,
   }
 })

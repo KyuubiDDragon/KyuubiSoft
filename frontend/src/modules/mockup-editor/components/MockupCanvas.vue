@@ -401,6 +401,133 @@ const renderTextWithHighlight = (element) => {
         >
           {{ element.text }}
         </div>
+
+        <!-- Chip (Feature Tag) -->
+        <div
+          v-else-if="element.type === 'chip'"
+          :style="{
+            position: 'absolute',
+            left: `${element.x}px`,
+            top: `${element.y}px`,
+            fontFamily: element.fontFamily,
+            fontSize: `${element.fontSize}px`,
+            color: element.color,
+            backgroundColor: element.backgroundColor,
+            border: element.border,
+            borderRadius: `${element.borderRadius}px`,
+            padding: element.padding || '8px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+          }"
+          class="cursor-pointer transition-all whitespace-nowrap"
+          :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
+          @click="handleElementClick(element.id)"
+        >
+          {{ element.text }}
+        </div>
+
+        <!-- Stat Box -->
+        <div
+          v-else-if="element.type === 'stat'"
+          :style="{
+            position: 'absolute',
+            left: `${element.x}px`,
+            top: `${element.y}px`,
+            width: `${element.width}px`,
+          }"
+          class="cursor-pointer transition-all"
+          :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
+          @click="handleElementClick(element.id)"
+        >
+          <div class="bg-[rgba(28,28,31,0.72)] border border-[rgba(255,255,255,0.08)] rounded-xl p-3">
+            <div class="text-xs text-[#606068]">{{ element.label }}</div>
+            <div
+              class="mt-0.5 font-mono font-medium text-sm text-white"
+              v-html="element.highlightText ? renderTextWithHighlight(element) : element.value"
+            />
+          </div>
+        </div>
+
+        <!-- 3D Screen -->
+        <div
+          v-else-if="element.type === 'screen3d'"
+          :style="{
+            position: 'absolute',
+            left: `${element.x}px`,
+            top: `${element.y}px`,
+            width: `${element.width}px`,
+            height: `${element.height}px`,
+            transform: element.perspective === 'left'
+              ? 'perspective(900px) rotateY(14deg) rotateZ(-0.8deg)'
+              : element.perspective === 'right'
+              ? 'perspective(900px) rotateY(-14deg) rotateZ(0.8deg)'
+              : 'perspective(900px) scale(1.04)',
+            transformOrigin: 'bottom center',
+            opacity: element.perspective === 'center' ? 1 : 0.95,
+          }"
+          class="cursor-pointer transition-all group"
+          :class="{
+            'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id),
+            'ring-2 ring-amber-500/50': dragOverElementId === element.id,
+          }"
+          @click="handleElementClick(element.id)"
+          @dragover="(e) => handleDragOver(e, element.id)"
+          @dragleave="handleDragLeave"
+          @drop="(e) => handleDrop(e, element.id)"
+        >
+          <div
+            class="w-full h-full rounded-xl bg-[#1c1c1f] border border-[rgba(255,255,255,0.08)] overflow-hidden relative"
+            :style="{
+              boxShadow: '0 22px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+              borderRadius: `${element.borderRadius}px`,
+            }"
+          >
+            <!-- Gold micro-line -->
+            <div class="absolute top-0 left-3.5 right-3.5 h-0.5 bg-gradient-to-r from-transparent via-[rgba(244,180,0,0.85)] to-transparent opacity-55 z-10" />
+
+            <!-- Reflection -->
+            <div class="absolute -inset-x-[30%] -top-[40%] h-[75%] bg-gradient-to-br from-white/[0.14] via-white/[0.03] to-transparent rotate-[10deg] pointer-events-none z-10" />
+
+            <!-- Image Content -->
+            <template v-if="element.src">
+              <img
+                :src="element.src"
+                :alt="element.placeholder"
+                class="w-full h-full object-cover relative z-0"
+              />
+            </template>
+
+            <!-- Placeholder -->
+            <template v-else>
+              <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#202025] to-[#151519] border-2 border-dashed border-gray-600 hover:border-amber-500/50 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                  @change="(e) => handleFileSelect(e, element.id)"
+                />
+                <PhotoIcon class="w-10 h-10 text-gray-500" />
+                <span class="mt-2 text-sm text-gray-400">{{ element.placeholder }}</span>
+              </div>
+            </template>
+
+            <!-- Upload overlay on hover if has image -->
+            <div
+              v-if="element.src"
+              class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center z-20"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
+                @change="(e) => handleFileSelect(e, element.id)"
+              />
+              <ArrowUpTrayIcon class="w-8 h-8 text-white" />
+              <span class="mt-2 text-sm text-white">Bild ersetzen</span>
+            </div>
+          </div>
+        </div>
       </template>
     </div>
   </div>

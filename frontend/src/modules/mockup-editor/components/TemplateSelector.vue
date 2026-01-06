@@ -102,6 +102,43 @@ const selectTemplate = (templateId) => {
               <div class="w-4 h-1.5 bg-gray-700 rounded"></div>
               <div class="w-4/5 h-3/5 bg-gray-700 rounded-lg shadow-lg shadow-amber-500/10"></div>
             </div>
+            <!-- Single Image Hero Right -->
+            <div v-else-if="template.id === 'single-image-hero-right'" class="absolute inset-2 flex">
+              <div class="w-2/5 flex flex-col justify-center pr-2 pl-1">
+                <div class="h-2 w-16 bg-amber-500 rounded mb-1"></div>
+                <div class="h-1 w-12 bg-gray-600 rounded"></div>
+              </div>
+              <div class="w-3/5 bg-gradient-to-l from-gray-700 to-gray-800 rounded-r-lg"></div>
+            </div>
+            <!-- Product Card Premium -->
+            <div v-else-if="template.id === 'product-card-premium'" class="absolute inset-2 flex flex-col">
+              <div class="text-center mb-1">
+                <div class="h-1.5 w-12 bg-amber-500 rounded mx-auto mb-0.5"></div>
+                <div class="h-1 w-8 bg-gray-600 rounded mx-auto"></div>
+              </div>
+              <div class="flex gap-0.5 justify-center mb-1">
+                <div class="w-4 h-1 bg-gray-600 rounded"></div>
+                <div class="w-4 h-1 bg-gray-600 rounded"></div>
+                <div class="w-4 h-1 bg-gray-600 rounded"></div>
+              </div>
+              <div class="flex-1 flex items-end justify-center gap-1 pb-1">
+                <div class="w-6 h-8 bg-gray-700 rounded transform rotate-[8deg] origin-bottom"></div>
+                <div class="w-7 h-10 bg-gray-600 rounded"></div>
+                <div class="w-6 h-8 bg-gray-700 rounded transform -rotate-[8deg] origin-bottom"></div>
+              </div>
+            </div>
+            <!-- Wide Screens Banner -->
+            <div v-else-if="template.id === 'wide-screens-banner'" class="absolute inset-2 flex flex-col">
+              <div class="text-center mb-1">
+                <div class="h-2 w-20 bg-amber-500 rounded mx-auto"></div>
+                <div class="h-0.5 w-10 bg-amber-500/30 rounded mx-auto mt-1"></div>
+              </div>
+              <div class="flex-1 flex items-end justify-center gap-1 pb-1">
+                <div class="w-6 h-7 bg-gray-700 rounded transform rotate-[8deg] origin-bottom"></div>
+                <div class="w-8 h-9 bg-gray-600 rounded"></div>
+                <div class="w-6 h-7 bg-gray-700 rounded transform -rotate-[8deg] origin-bottom"></div>
+              </div>
+            </div>
             <div v-else class="absolute inset-2 bg-gray-700 rounded-lg"></div>
 
             <!-- Transparent BG indicator -->

@@ -417,6 +417,441 @@ export const useMockupStore = defineStore('mockup', () => {
           textAlign: 'center'
         }
       ]
+    },
+    {
+      id: 'single-image-hero-right',
+      name: 'Single Image Hero (Rechts)',
+      description: 'Ein Bild rechts mit schräger Kante und Textbereich links',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'hero',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          color: '#0d0d0f',
+          gradient: 'radial-gradient(1200px 700px at 50% 20%, #131316, #0d0d0f 60%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'hero-image',
+          type: 'image',
+          x: 778,
+          y: 50,
+          width: 1092,
+          height: 980,
+          src: '',
+          placeholder: 'Bild hier ablegen oder klicken',
+          clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%)',
+          objectFit: 'cover',
+          overlay: 'linear-gradient(270deg, rgba(13,13,15,0.85) 0%, rgba(13,13,15,0.25) 35%, rgba(13,13,15,0) 60%)'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 100,
+          y: 400,
+          width: 600,
+          text: 'KYUUBISOFT TABX',
+          fontFamily: 'Outfit',
+          fontSize: 52,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          letterSpacing: '-0.02em',
+          textTransform: 'uppercase',
+          lineHeight: 1.05,
+          highlightText: 'TABX',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'description',
+          type: 'text',
+          x: 100,
+          y: 480,
+          width: 400,
+          text: 'Ein Screenshot. Volle Wirkung. Premium Präsentation direkt im Store.',
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          fontWeight: 400,
+          color: '#8b8b93',
+          lineHeight: 1.5
+        },
+        {
+          id: 'divider',
+          type: 'line',
+          x: 100,
+          y: 550,
+          width: 80,
+          height: 2,
+          gradient: 'linear-gradient(90deg, #f4b400, transparent)'
+        }
+      ]
+    },
+    {
+      id: 'product-card-premium',
+      name: 'Product Card Premium',
+      description: 'Komplette Produktkarte mit Features, Stats und 3 Screenshots',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'showcase',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(900px 520px at 50% 30%, rgba(244,180,0,0.12), transparent 55%), radial-gradient(800px 500px at 10% 80%, rgba(255,255,255,0.05), transparent 60%), linear-gradient(180deg, #0d0d0f, #141416 38%, #0d0d0f)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent'
+        },
+        {
+          id: 'kicker',
+          type: 'chip',
+          x: 860,
+          y: 80,
+          text: '● TabX Store • Premium Script',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10,
+          padding: '7px 12px'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 120,
+          width: 800,
+          text: 'KyuubiSoft Produktname',
+          fontFamily: 'Outfit',
+          fontSize: 52,
+          fontWeight: 700,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          highlightText: 'Soft',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 960,
+          y: 185,
+          width: 700,
+          text: 'Modular, optimiert und easy zu integrieren.',
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          fontWeight: 400,
+          color: '#606068',
+          textAlign: 'center'
+        },
+        {
+          id: 'chip-1',
+          type: 'chip',
+          x: 580,
+          y: 230,
+          text: '⚡ Optimized Performance',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10
+        },
+        {
+          id: 'chip-2',
+          type: 'chip',
+          x: 780,
+          y: 230,
+          text: '🔧 Modular Setup',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10
+        },
+        {
+          id: 'chip-3',
+          type: 'chip',
+          x: 950,
+          y: 230,
+          text: '🛡️ Support inklusive',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10
+        },
+        {
+          id: 'chip-4',
+          type: 'chip',
+          x: 1140,
+          y: 230,
+          text: '🧩 Ready to use',
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: '#9898a3',
+          backgroundColor: 'rgba(28,28,31,0.72)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10
+        },
+        {
+          id: 'stat-1',
+          type: 'stat',
+          x: 570,
+          y: 290,
+          width: 250,
+          label: 'Version',
+          value: 'v2.0.0 Stable',
+          highlightText: 'v2.0.0',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'stat-2',
+          type: 'stat',
+          x: 835,
+          y: 290,
+          width: 250,
+          label: 'Kompatibilität',
+          value: 'FiveM • QBCore'
+        },
+        {
+          id: 'stat-3',
+          type: 'stat',
+          x: 1100,
+          y: 290,
+          width: 250,
+          label: 'Update-Status',
+          value: 'Letztes Update: Jan 2026',
+          highlightText: 'Jan 2026',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'screen-left',
+          type: 'screen3d',
+          x: 120,
+          y: 420,
+          width: 480,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot links',
+          perspective: 'left',
+          borderRadius: 12
+        },
+        {
+          id: 'screen-center',
+          type: 'screen3d',
+          x: 660,
+          y: 380,
+          width: 600,
+          height: 600,
+          src: '',
+          placeholder: 'Screenshot Mitte',
+          perspective: 'center',
+          borderRadius: 12
+        },
+        {
+          id: 'screen-right',
+          type: 'screen3d',
+          x: 1320,
+          y: 420,
+          width: 480,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot rechts',
+          perspective: 'right',
+          borderRadius: 12
+        }
+      ]
+    },
+    {
+      id: 'wide-screens-banner',
+      name: 'Wide Screens Banner',
+      description: 'Titel oben mit 3 Screenshots in 3D-Perspektive',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'showcase',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(900px 520px at 65% 28%, rgba(244,180,0,0.16), transparent 58%), radial-gradient(700px 420px at 12% 72%, rgba(255,255,255,0.06), transparent 60%), linear-gradient(180deg, #0d0d0f, #141416 45%, #0d0d0f)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 50,
+          y: 50,
+          width: 1820,
+          height: 980,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 78,
+          y: 50,
+          width: 1764,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 60,
+          y: 60,
+          width: 1800,
+          height: 960,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent'
+        },
+        {
+          id: 'bg-stripe',
+          type: 'line',
+          x: -200,
+          y: 200,
+          width: 2400,
+          height: 300,
+          gradient: 'linear-gradient(90deg, rgba(244,180,0,0), rgba(244,180,0,0.14), rgba(244,180,0,0))',
+          transform: 'rotate(-8deg)'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 120,
+          width: 1200,
+          text: 'KYUUBISOFT TABX SCRIPT',
+          fontFamily: 'Outfit',
+          fontSize: 66,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: '-0.02em',
+          highlightText: 'SOFT',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 960,
+          y: 200,
+          width: 800,
+          text: 'Plug and Play. Premium Look. Saubere Performance.',
+          fontFamily: 'DM Sans',
+          fontSize: 20,
+          fontWeight: 400,
+          color: '#606068',
+          textAlign: 'center'
+        },
+        {
+          id: 'underline',
+          type: 'line',
+          x: 700,
+          y: 250,
+          width: 520,
+          height: 1,
+          gradient: 'linear-gradient(90deg, transparent, rgba(244,180,0,0.55), transparent)'
+        },
+        {
+          id: 'screen-left',
+          type: 'screen3d',
+          x: 100,
+          y: 380,
+          width: 500,
+          height: 500,
+          src: '',
+          placeholder: 'Screenshot links',
+          perspective: 'left',
+          borderRadius: 12
+        },
+        {
+          id: 'screen-center',
+          type: 'screen3d',
+          x: 660,
+          y: 340,
+          width: 600,
+          height: 600,
+          src: '',
+          placeholder: 'Screenshot Mitte',
+          perspective: 'center',
+          borderRadius: 12
+        },
+        {
+          id: 'screen-right',
+          type: 'screen3d',
+          x: 1320,
+          y: 380,
+          width: 500,
+          height: 500,
+          src: '',
+          placeholder: 'Screenshot rechts',
+          perspective: 'right',
+          borderRadius: 12
+        }
+      ]
     }
   ])
 

@@ -7,8 +7,6 @@ import {
   CubeIcon,
   CheckCircleIcon,
   SparklesIcon,
-  ShieldCheckIcon,
-  BoltIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   XMarkIcon,
@@ -17,31 +15,54 @@ import {
 
 const mockupStore = useMockupStore()
 
-// Row configuration for chip positioning
+// Chip configuration
 const chipConfig = {
-  baseX: 50,
-  chipGap: 12,
-  rowGap: 45, // Vertical gap between category rows
-  chipHeight: 36,
+  chipGap: 14,        // Horizontal gap between chips
+  rowGap: 42,         // Vertical gap between category rows
   fontSize: 14,
-  padding: '10px 16px',
+  padding: '10px 18px',
+  minWidth: 70,       // Minimum chip width for consistent spacing
 }
 
-// Feature categories with presets - organized by row priority (bottom to top)
+// Get chip position based on current template
+const getChipBasePosition = () => {
+  const template = mockupStore.currentTemplate
+  const templateId = template?.id || ''
+
+  // Templates that should have chips at top-left
+  const topLeftTemplates = ['wide-screens-banner', 'update-banner', 'discord-banner', 'gallery-strip']
+
+  if (topLeftTemplates.includes(templateId)) {
+    return {
+      baseX: 50,
+      baseY: 50,
+      direction: 'down' // Rows go downward from top
+    }
+  }
+
+  // Default: bottom-left
+  return {
+    baseX: 50,
+    baseY: mockupStore.canvasHeight - 50,
+    direction: 'up' // Rows go upward from bottom
+  }
+}
+
+// Feature categories with presets
 const featureCategories = ref([
   {
     id: 'languages',
     name: 'Sprachen',
     icon: LanguageIcon,
     expanded: true,
-    rowIndex: 0, // Bottom row
+    rowIndex: 0,
     presets: [
-      { id: 'de', label: 'Deutsch', chipText: 'DE', flag: '🇩🇪', color: '#ffffff' },
-      { id: 'en', label: 'English', chipText: 'EN', flag: '🇬🇧', color: '#ffffff' },
-      { id: 'fr', label: 'Français', chipText: 'FR', flag: '🇫🇷', color: '#ffffff' },
-      { id: 'es', label: 'Español', chipText: 'ES', flag: '🇪🇸', color: '#ffffff' },
-      { id: 'pl', label: 'Polski', chipText: 'PL', flag: '🇵🇱', color: '#ffffff' },
-      { id: 'tr', label: 'Türkçe', chipText: 'TR', flag: '🇹🇷', color: '#ffffff' },
+      { id: 'de', label: 'Deutsch', chipText: 'DE', bgColor: '#000000', textColor: '#FFCC00' },
+      { id: 'en', label: 'English', chipText: 'EN', bgColor: '#012169', textColor: '#FFFFFF' },
+      { id: 'fr', label: 'Français', chipText: 'FR', bgColor: '#002395', textColor: '#FFFFFF' },
+      { id: 'es', label: 'Español', chipText: 'ES', bgColor: '#AA151B', textColor: '#F1BF00' },
+      { id: 'pl', label: 'Polski', chipText: 'PL', bgColor: '#DC143C', textColor: '#FFFFFF' },
+      { id: 'tr', label: 'Türkçe', chipText: 'TR', bgColor: '#E30A17', textColor: '#FFFFFF' },
     ]
   },
   {
@@ -49,13 +70,13 @@ const featureCategories = ref([
     name: 'Framework',
     icon: CubeIcon,
     expanded: true,
-    rowIndex: 1, // Second row from bottom
+    rowIndex: 1,
     presets: [
-      { id: 'esx', label: 'ESX', chipText: 'ESX', color: '#4ade80' },
-      { id: 'qbcore', label: 'QBCore', chipText: 'QBCore', color: '#60a5fa' },
-      { id: 'standalone', label: 'Standalone', chipText: 'Standalone', color: '#f4b400' },
-      { id: 'vrp', label: 'vRP', chipText: 'vRP', color: '#c084fc' },
-      { id: 'ox', label: 'OX Core', chipText: 'OX Core', color: '#f97316' },
+      { id: 'esx', label: 'ESX', chipText: 'ESX', dotColor: '#4ade80', textColor: '#4ade80' },
+      { id: 'qbcore', label: 'QBCore', chipText: 'QBCore', dotColor: '#60a5fa', textColor: '#60a5fa' },
+      { id: 'standalone', label: 'Standalone', chipText: 'Standalone', dotColor: '#f4b400', textColor: '#f4b400' },
+      { id: 'vrp', label: 'vRP', chipText: 'vRP', dotColor: '#c084fc', textColor: '#c084fc' },
+      { id: 'ox', label: 'OX Core', chipText: 'OX Core', dotColor: '#f97316', textColor: '#f97316' },
     ]
   },
   {
@@ -63,12 +84,12 @@ const featureCategories = ref([
     name: 'Konfiguration',
     icon: Cog6ToothIcon,
     expanded: true,
-    rowIndex: 2, // Third row
+    rowIndex: 2,
     presets: [
-      { id: 'configurable', label: 'Config File', chipText: 'Config File', icon: '⚙️', color: '#9898a3' },
-      { id: 'database', label: 'Database', chipText: 'Database', icon: '🗄️', color: '#9898a3' },
-      { id: 'webhook', label: 'Discord Webhook', chipText: 'Discord', icon: '🔗', color: '#5865F2' },
-      { id: 'permissions', label: 'Permissions', chipText: 'Permissions', icon: '🔐', color: '#9898a3' },
+      { id: 'configurable', label: 'Config File', chipText: 'Config', dotColor: '#9898a3', textColor: '#ffffff' },
+      { id: 'database', label: 'Database', chipText: 'Database', dotColor: '#9898a3', textColor: '#ffffff' },
+      { id: 'webhook', label: 'Discord Webhook', chipText: 'Discord', dotColor: '#5865F2', textColor: '#5865F2' },
+      { id: 'permissions', label: 'Permissions', chipText: 'Permissions', dotColor: '#9898a3', textColor: '#ffffff' },
     ]
   },
   {
@@ -76,93 +97,120 @@ const featureCategories = ref([
     name: 'Features',
     icon: SparklesIcon,
     expanded: false,
-    rowIndex: 3, // Fourth row
+    rowIndex: 3,
     presets: [
-      { id: 'optimized', label: 'Optimized', chipText: 'Optimized', icon: '⚡', color: '#f4b400' },
-      { id: 'secure', label: 'Secure', chipText: 'Secure', icon: '🔒', color: '#4ade80' },
-      { id: 'updates', label: 'Free Updates', chipText: 'Free Updates', icon: '🔄', color: '#60a5fa' },
-      { id: 'support', label: '24/7 Support', chipText: '24/7 Support', icon: '💬', color: '#f472b6' },
-      { id: 'opensource', label: 'Open Source', chipText: 'Open Source', icon: '📂', color: '#9898a3' },
-      { id: 'documented', label: 'Documented', chipText: 'Documented', icon: '📚', color: '#9898a3' },
+      { id: 'optimized', label: 'Optimized', chipText: 'Optimized', dotColor: '#f4b400', textColor: '#f4b400' },
+      { id: 'secure', label: 'Secure', chipText: 'Secure', dotColor: '#4ade80', textColor: '#4ade80' },
+      { id: 'updates', label: 'Free Updates', chipText: 'Free Updates', dotColor: '#60a5fa', textColor: '#60a5fa' },
+      { id: 'support', label: '24/7 Support', chipText: '24/7 Support', dotColor: '#f472b6', textColor: '#f472b6' },
+      { id: 'opensource', label: 'Open Source', chipText: 'Open Source', dotColor: '#9898a3', textColor: '#ffffff' },
+      { id: 'documented', label: 'Documented', chipText: 'Documented', dotColor: '#9898a3', textColor: '#ffffff' },
     ]
   },
 ])
 
-// Custom chips added by user
+// Custom chips
 const customChips = ref([])
 const showAddCustom = ref(false)
 const newCustomText = ref('')
-const newCustomColor = ref('#9898a3')
+const newCustomColor = ref('#f4b400')
 
-// Check if a feature chip is enabled (exists in elements)
+// Check if feature is enabled
 const isFeatureEnabled = (categoryId, presetId) => {
   const elementId = `feature-${categoryId}-${presetId}`
   return mockupStore.elements.some(el => el.id === elementId)
 }
 
-// Get chips in a specific category row
+// Get all chips in a category
 const getChipsInCategory = (categoryId) => {
-  return mockupStore.elements.filter(el =>
-    el.id.startsWith(`feature-${categoryId}-`)
-  )
+  return mockupStore.elements.filter(el => el.id.startsWith(`feature-${categoryId}-`))
 }
 
-// Calculate X position for a new chip in a category
-const getNextXPosition = (categoryId) => {
-  const existingChips = getChipsInCategory(categoryId)
-  // Estimate chip widths based on text length (rough approximation)
-  let totalWidth = 0
-  existingChips.forEach(chip => {
-    const textLength = (chip.text || '').length
-    totalWidth += Math.max(80, textLength * 10 + 40) + chipConfig.chipGap
+// Calculate Y position for a row
+// For consistent top-to-bottom order: Languages, Framework, Config, Features
+const getRowYPosition = (rowIndex) => {
+  const pos = getChipBasePosition()
+  const maxRows = 5 // 4 categories + 1 custom
+
+  if (pos.direction === 'down') {
+    // Top positioning: row 0 at top, increasing downward
+    return pos.baseY + (rowIndex * chipConfig.rowGap)
+  } else {
+    // Bottom positioning: invert so row 0 (Languages) is at TOP of the chip area
+    // This keeps visual order consistent: Languages at top, Features at bottom
+    const invertedIndex = maxRows - 1 - rowIndex
+    return pos.baseY - (invertedIndex * chipConfig.rowGap)
+  }
+}
+
+// Reorganize all chips in a category with consistent spacing
+const reorganizeCategoryChips = (categoryId, rowIndex) => {
+  const chips = getChipsInCategory(categoryId)
+  const pos = getChipBasePosition()
+  const yPos = getRowYPosition(rowIndex)
+
+  let currentX = pos.baseX
+  chips.forEach((chip) => {
+    mockupStore.updateElement(chip.id, { x: currentX, y: yPos })
+    // Fixed width estimation for consistent spacing
+    const textLen = (chip.text || '').replace('● ', '').length
+    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    currentX += chipWidth + chipConfig.chipGap
   })
-  return chipConfig.baseX + totalWidth
 }
 
-// Get Y position for a category row
-const getRowYPosition = (category) => {
-  const baseY = mockupStore.canvasHeight - 60
-  return baseY - (category.rowIndex * chipConfig.rowGap)
-}
-
-// Toggle a feature chip
+// Toggle feature chip
 const toggleFeature = (category, preset) => {
   const elementId = `feature-${category.id}-${preset.id}`
   const exists = mockupStore.elements.some(el => el.id === elementId)
 
   if (exists) {
-    // Remove the chip
     mockupStore.deleteElement(elementId)
-    // Reorganize remaining chips in this category
-    setTimeout(() => reorganizeCategoryChips(category), 50)
+    setTimeout(() => reorganizeCategoryChips(category.id, category.rowIndex), 50)
   } else {
-    // Build chip text
-    let chipDisplayText = ''
-    if (preset.flag) {
-      chipDisplayText = `${preset.flag} ${preset.chipText}`
-    } else if (preset.icon) {
-      chipDisplayText = `${preset.icon} ${preset.chipText}`
-    } else {
-      chipDisplayText = `● ${preset.chipText}`
-    }
+    const pos = getChipBasePosition()
+    const existingChips = getChipsInCategory(category.id)
+    const yPos = getRowYPosition(category.rowIndex)
 
-    // Calculate position
-    const xPos = getNextXPosition(category.id)
-    const yPos = getRowYPosition(category)
+    // Calculate X position
+    let currentX = pos.baseX
+    existingChips.forEach(chip => {
+      const textLen = (chip.text || '').replace('● ', '').length
+      const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+      currentX += chipWidth + chipConfig.chipGap
+    })
+
+    // Build chip - use colored badge for languages, dot for others
+    let chipText, chipBgColor, chipTextColor, chipBorder
+
+    if (preset.bgColor) {
+      // Language chip with colored background
+      chipText = preset.chipText
+      chipBgColor = preset.bgColor
+      chipTextColor = preset.textColor
+      chipBorder = '1px solid rgba(255,255,255,0.2)'
+    } else {
+      // Other chips with dot indicator
+      chipText = `● ${preset.chipText}`
+      chipBgColor = 'rgba(28,28,31,0.9)'
+      chipTextColor = preset.textColor || '#ffffff'
+      chipBorder = '1px solid rgba(255,255,255,0.12)'
+    }
 
     const newElement = {
       id: elementId,
       type: 'chip',
-      x: xPos,
+      x: currentX,
       y: yPos,
-      text: chipDisplayText,
-      fontFamily: '"DM Sans", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+      text: chipText,
+      fontFamily: '"DM Sans", sans-serif',
       fontSize: chipConfig.fontSize,
-      color: preset.color,
-      backgroundColor: 'rgba(28,28,31,0.9)',
-      border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 12,
-      padding: chipConfig.padding,
+      fontWeight: 600,
+      color: chipTextColor,
+      backgroundColor: chipBgColor,
+      border: chipBorder,
+      borderRadius: 8,
+      padding: preset.bgColor ? '8px 14px' : chipConfig.padding,
       featureCategory: category.id,
       featurePreset: preset.id,
     }
@@ -171,53 +219,37 @@ const toggleFeature = (category, preset) => {
   }
 }
 
-// Reorganize chips in a specific category to remove gaps
-const reorganizeCategoryChips = (category) => {
-  const chips = getChipsInCategory(category.id)
-  const yPos = getRowYPosition(category)
-
-  let currentX = chipConfig.baseX
-  chips.forEach((chip) => {
-    mockupStore.updateElement(chip.id, {
-      x: currentX,
-      y: yPos,
-    })
-    // Estimate width for next position
-    const textLength = (chip.text || '').length
-    currentX += Math.max(80, textLength * 10 + 40) + chipConfig.chipGap
-  })
-}
-
-// Add custom chip
+// Custom chip functions
 const addCustomChip = () => {
   if (!newCustomText.value.trim()) return
 
   const customId = `custom-${Date.now()}`
-
-  // Custom chips go in their own row (row 4)
   const customRowIndex = 4
+  const pos = getChipBasePosition()
+  const yPos = getRowYPosition(customRowIndex)
+
   const existingCustomChips = mockupStore.elements.filter(el => el.id.startsWith('custom-chip-'))
 
-  let currentX = chipConfig.baseX
+  let currentX = pos.baseX
   existingCustomChips.forEach(chip => {
-    const textLength = (chip.text || '').length
-    currentX += Math.max(80, textLength * 10 + 40) + chipConfig.chipGap
+    const textLen = (chip.text || '').replace('● ', '').length
+    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    currentX += chipWidth + chipConfig.chipGap
   })
-
-  const yPos = mockupStore.canvasHeight - 60 - (customRowIndex * chipConfig.rowGap)
 
   const newElement = {
     id: `custom-chip-${customId}`,
     type: 'chip',
     x: currentX,
     y: yPos,
-    text: newCustomText.value.trim(),
-    fontFamily: '"DM Sans", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+    text: `● ${newCustomText.value.trim()}`,
+    fontFamily: '"DM Sans", sans-serif',
     fontSize: chipConfig.fontSize,
+    fontWeight: 600,
     color: newCustomColor.value,
     backgroundColor: 'rgba(28,28,31,0.9)',
     border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: chipConfig.padding,
   }
 
@@ -229,56 +261,55 @@ const addCustomChip = () => {
     color: newCustomColor.value,
   })
 
-  // Reset form
   newCustomText.value = ''
-  newCustomColor.value = '#9898a3'
+  newCustomColor.value = '#f4b400'
   showAddCustom.value = false
 }
 
-// Remove custom chip
 const removeCustomChip = (chip) => {
   mockupStore.deleteElement(chip.elementId)
   const index = customChips.value.findIndex(c => c.id === chip.id)
-  if (index !== -1) {
-    customChips.value.splice(index, 1)
-  }
-  // Reorganize custom chips
+  if (index !== -1) customChips.value.splice(index, 1)
   setTimeout(reorganizeCustomChips, 50)
 }
 
-// Reorganize custom chips
 const reorganizeCustomChips = () => {
   const customRowIndex = 4
-  const chips = mockupStore.elements.filter(el => el.id.startsWith('custom-chip-'))
-  const yPos = mockupStore.canvasHeight - 60 - (customRowIndex * chipConfig.rowGap)
+  const pos = getChipBasePosition()
+  const yPos = getRowYPosition(customRowIndex)
 
-  let currentX = chipConfig.baseX
+  const chips = mockupStore.elements.filter(el => el.id.startsWith('custom-chip-'))
+
+  let currentX = pos.baseX
   chips.forEach((chip) => {
-    mockupStore.updateElement(chip.id, {
-      x: currentX,
-      y: yPos,
-    })
-    const textLength = (chip.text || '').length
-    currentX += Math.max(80, textLength * 10 + 40) + chipConfig.chipGap
+    mockupStore.updateElement(chip.id, { x: currentX, y: yPos })
+    const textLen = (chip.text || '').replace('● ', '').length
+    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    currentX += chipWidth + chipConfig.chipGap
   })
 }
 
-// Toggle category expansion
+// UI helpers
 const toggleCategory = (category) => {
   category.expanded = !category.expanded
 }
 
-// Count enabled features in category
 const getEnabledCount = (category) => {
   return category.presets.filter(p => isFeatureEnabled(category.id, p.id)).length
 }
+
+// Get position label for info text
+const positionLabel = computed(() => {
+  const pos = getChipBasePosition()
+  return pos.direction === 'down' ? 'oben links' : 'unten links'
+})
 </script>
 
 <template>
   <div class="p-4 space-y-4">
     <div class="flex items-center justify-between mb-2">
       <h3 class="text-sm font-semibold text-white">Feature Chips</h3>
-      <span class="text-xs text-gray-500">Klicke zum Aktivieren</span>
+      <span class="text-xs text-gray-500">{{ positionLabel }}</span>
     </div>
 
     <!-- Feature Categories -->
@@ -320,14 +351,16 @@ const getEnabledCount = (category) => {
             class="w-4 h-4 flex-shrink-0"
           />
           <div
-            v-else
-            class="w-4 h-4 rounded-full border-2 border-current flex-shrink-0"
+            v-else-if="preset.bgColor"
+            class="w-4 h-3 rounded flex-shrink-0"
+            :style="{ backgroundColor: preset.bgColor }"
           />
-          <span class="text-sm truncate">
-            <span v-if="preset.flag" class="mr-1">{{ preset.flag }}</span>
-            <span v-else-if="preset.icon" class="mr-1">{{ preset.icon }}</span>
-            {{ preset.label }}
-          </span>
+          <div
+            v-else
+            class="w-3 h-3 rounded-full flex-shrink-0"
+            :style="{ backgroundColor: preset.dotColor }"
+          />
+          <span class="text-sm truncate">{{ preset.label }}</span>
         </button>
       </div>
     </div>
@@ -404,7 +437,7 @@ const getEnabledCount = (category) => {
     <!-- Info -->
     <div class="mt-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
       <p class="text-xs text-gray-500">
-        💡 Chips werden nach Kategorie in Reihen organisiert. Du kannst sie danach frei verschieben.
+        💡 Chips erscheinen {{ positionLabel }} und werden nach Kategorie in Reihen sortiert.
       </p>
     </div>
   </div>

@@ -17,11 +17,22 @@ const mockupStore = useMockupStore()
 
 // Chip configuration
 const chipConfig = {
-  chipGap: 8,         // Horizontal gap between chips (smaller for tighter spacing)
+  chipGap: 12,        // Horizontal gap between chips (consistent spacing)
   rowGap: 52,         // Vertical gap between category rows (larger for better separation)
   fontSize: 13,
   padding: '8px 14px',
-  minWidth: 50,       // Minimum chip width for consistent spacing
+}
+
+// Calculate chip width based on text and type
+const getChipWidth = (text, isLanguage = false) => {
+  const cleanText = (text || '').replace('● ', '')
+  if (isLanguage) {
+    // Language chips are compact (DE, EN, FR, etc.)
+    return 48
+  }
+  // Other chips: base width + character-based width
+  // Use generous calculation to account for variable-width fonts
+  return Math.max(70, cleanText.length * 9 + 40)
 }
 
 // Get chip position based on current template
@@ -158,12 +169,8 @@ const reorganizeCategoryChips = (categoryId, rowIndex) => {
   let currentX = pos.baseX
   chips.forEach((chip) => {
     mockupStore.updateElement(chip.id, { x: currentX, y: yPos })
-    // Tighter width estimation for consistent spacing
-    const textLen = (chip.text || '').replace('● ', '').length
     const isLanguageChip = chip.featureCategory === 'languages'
-    const chipWidth = isLanguageChip
-      ? Math.max(40, textLen * 10 + 24)  // Language chips are compact
-      : Math.max(chipConfig.minWidth, textLen * 8 + 36)
+    const chipWidth = getChipWidth(chip.text, isLanguageChip)
     currentX += chipWidth + chipConfig.chipGap
   })
 }
@@ -181,14 +188,11 @@ const toggleFeature = (category, preset) => {
     const existingChips = getChipsInCategory(category.id)
     const yPos = getRowYPosition(category.rowIndex)
 
-    // Calculate X position with tight spacing
+    // Calculate X position with consistent spacing
     let currentX = pos.baseX
     existingChips.forEach(chip => {
-      const textLen = (chip.text || '').replace('● ', '').length
       const isLanguageChip = chip.featureCategory === 'languages'
-      const chipWidth = isLanguageChip
-        ? Math.max(40, textLen * 10 + 24)
-        : Math.max(chipConfig.minWidth, textLen * 8 + 36)
+      const chipWidth = getChipWidth(chip.text, isLanguageChip)
       currentX += chipWidth + chipConfig.chipGap
     })
 
@@ -250,8 +254,7 @@ const addCustomChip = () => {
 
   let currentX = pos.baseX
   existingCustomChips.forEach(chip => {
-    const textLen = (chip.text || '').replace('● ', '').length
-    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    const chipWidth = getChipWidth(chip.text, false)
     currentX += chipWidth + chipConfig.chipGap
   })
 
@@ -301,8 +304,7 @@ const reorganizeCustomChips = () => {
   let currentX = pos.baseX
   chips.forEach((chip) => {
     mockupStore.updateElement(chip.id, { x: currentX, y: yPos })
-    const textLen = (chip.text || '').replace('● ', '').length
-    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    const chipWidth = getChipWidth(chip.text, false)
     currentX += chipWidth + chipConfig.chipGap
   })
 }

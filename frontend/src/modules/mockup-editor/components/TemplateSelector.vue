@@ -224,6 +224,46 @@ const deleteCustomTemplate = async (e, template) => {
                 <div class="w-6 h-7 bg-gray-700 rounded transform -rotate-[8deg] origin-bottom"></div>
               </div>
             </div>
+            <!-- Feature Gallery 3D -->
+            <div v-else-if="template.id === 'feature-gallery-3d'" class="absolute inset-2 flex flex-col">
+              <div class="text-center mb-1">
+                <div class="h-1.5 w-14 bg-amber-500 rounded mx-auto"></div>
+              </div>
+              <div class="flex-1 grid grid-cols-4 gap-0.5 px-0.5">
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex-1 bg-gray-700 rounded transform -rotate-3"></div>
+                  <div class="h-1 w-6 bg-gray-600 rounded"></div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex-1 bg-gray-700 rounded"></div>
+                  <div class="h-1 w-6 bg-gray-600 rounded"></div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex-1 bg-gray-700 rounded"></div>
+                  <div class="h-1 w-6 bg-gray-600 rounded"></div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex-1 bg-gray-700 rounded transform rotate-3"></div>
+                  <div class="h-1 w-6 bg-gray-600 rounded"></div>
+                </div>
+              </div>
+              <div class="h-4 mx-4 mt-1 bg-gray-700 rounded"></div>
+            </div>
+            <!-- Feature Cards Premium -->
+            <div v-else-if="template.id === 'feature-cards-premium'" class="absolute inset-2 flex items-end justify-center gap-1 pb-1">
+              <div class="w-6 h-12 bg-gray-700 rounded flex flex-col p-0.5 gap-0.5">
+                <div class="flex-1 bg-gray-600 rounded transform -rotate-2"></div>
+                <div class="h-0.5 w-3 bg-gray-500 rounded"></div>
+              </div>
+              <div class="w-7 h-14 bg-gray-600 rounded border border-amber-500/30 flex flex-col p-0.5 gap-0.5">
+                <div class="flex-1 bg-gray-500 rounded"></div>
+                <div class="h-0.5 w-4 bg-amber-500 rounded"></div>
+              </div>
+              <div class="w-6 h-12 bg-gray-700 rounded flex flex-col p-0.5 gap-0.5">
+                <div class="flex-1 bg-gray-600 rounded transform rotate-2"></div>
+                <div class="h-0.5 w-3 bg-gray-500 rounded"></div>
+              </div>
+            </div>
             <div v-else class="absolute inset-2 bg-gray-700 rounded-lg"></div>
 
             <!-- Transparent BG indicator -->

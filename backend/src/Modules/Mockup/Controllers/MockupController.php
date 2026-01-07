@@ -33,7 +33,7 @@ class MockupController
      */
     public function indexTemplates(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
 
         $result = $this->mockupService->getTemplates($userId, $params);
@@ -49,7 +49,7 @@ class MockupController
      */
     public function showTemplate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $id = $this->getRouteArg($request, 'id');
 
         $template = $this->mockupService->getTemplate($id, $userId);
@@ -66,7 +66,7 @@ class MockupController
      */
     public function createTemplate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody() ?? [];
 
         if (empty($data['name'])) {
@@ -90,7 +90,7 @@ class MockupController
      */
     public function updateTemplate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $id = $this->getRouteArg($request, 'id');
         $data = $request->getParsedBody() ?? [];
 
@@ -109,7 +109,7 @@ class MockupController
      */
     public function deleteTemplate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $id = $this->getRouteArg($request, 'id');
 
         $success = $this->mockupService->deleteTemplate($id, $userId);
@@ -128,7 +128,7 @@ class MockupController
      */
     public function indexDrafts(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $params = $request->getQueryParams();
 
         $result = $this->mockupService->getDrafts($userId, $params);
@@ -144,7 +144,7 @@ class MockupController
      */
     public function showDraft(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $id = $this->getRouteArg($request, 'id');
 
         $draft = $this->mockupService->getDraft($id, $userId);
@@ -161,7 +161,7 @@ class MockupController
      */
     public function saveDraft(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $data = $request->getParsedBody() ?? [];
 
         if (empty($data['elements']) || !is_array($data['elements'])) {
@@ -181,7 +181,7 @@ class MockupController
      */
     public function deleteDraft(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $userId = (int) $request->getAttribute('user_id');
+        $userId = $request->getAttribute('user_id');
         $id = $this->getRouteArg($request, 'id');
 
         $success = $this->mockupService->deleteDraft($id, $userId);

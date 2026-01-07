@@ -977,6 +977,622 @@ export const useMockupStore = defineStore('mockup', () => {
           borderRadius: 12
         }
       ]
+    },
+    {
+      id: 'comparison-split',
+      name: 'Comparison Split',
+      description: 'Vorher/Nachher Vergleich mit zwei Screenshots',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'comparison',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(900px 520px at 50% 50%, rgba(244,180,0,0.10), transparent 55%), linear-gradient(135deg, #0d0d0f 0%, #141416 100%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 0,
+          y: 0,
+          width: 1920,
+          height: 1080,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 28,
+          y: 0,
+          width: 1864,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 10,
+          y: 10,
+          width: 1900,
+          height: 1060,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 50,
+          width: 1000,
+          text: 'VORHER VS NACHHER',
+          fontFamily: 'Outfit',
+          fontSize: 48,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          highlightText: 'VS',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'left-label',
+          type: 'chip',
+          x: 420,
+          y: 130,
+          text: 'VORHER',
+          fontFamily: 'Outfit',
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#ff6b6b',
+          backgroundColor: 'rgba(255,107,107,0.15)',
+          border: '1px solid rgba(255,107,107,0.3)',
+          borderRadius: 8
+        },
+        {
+          id: 'right-label',
+          type: 'chip',
+          x: 1420,
+          y: 130,
+          text: 'NACHHER',
+          fontFamily: 'Outfit',
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#51cf66',
+          backgroundColor: 'rgba(81,207,102,0.15)',
+          border: '1px solid rgba(81,207,102,0.3)',
+          borderRadius: 8
+        },
+        {
+          id: 'left-image',
+          type: 'image',
+          x: 50,
+          y: 180,
+          width: 880,
+          height: 700,
+          src: '',
+          placeholder: 'Vorher Screenshot',
+          borderRadius: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+        },
+        {
+          id: 'right-image',
+          type: 'image',
+          x: 990,
+          y: 180,
+          width: 880,
+          height: 700,
+          src: '',
+          placeholder: 'Nachher Screenshot',
+          borderRadius: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+        },
+        {
+          id: 'divider-line',
+          type: 'line',
+          x: 955,
+          y: 180,
+          width: 4,
+          height: 700,
+          gradient: 'linear-gradient(180deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'vs-badge',
+          type: 'chip',
+          x: 920,
+          y: 500,
+          text: 'VS',
+          fontFamily: 'Outfit',
+          fontSize: 20,
+          fontWeight: 800,
+          color: '#0d0d0f',
+          backgroundColor: '#f4b400',
+          borderRadius: 50,
+          padding: '12px 20px'
+        },
+        {
+          id: 'bottom-text',
+          type: 'text',
+          x: 960,
+          y: 920,
+          width: 800,
+          text: 'Upgrade jetzt auf die neue Version!',
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          color: '#606068',
+          textAlign: 'center'
+        }
+      ]
+    },
+    {
+      id: 'features-grid',
+      name: 'Features Grid',
+      description: '6 Features mit Icons in Grid-Layout',
+      thumbnail: null,
+      width: 1920,
+      height: 1080,
+      aspectRatio: '16:9',
+      category: 'showcase',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(800px 500px at 50% 30%, rgba(244,180,0,0.12), transparent 55%), linear-gradient(180deg, #0d0d0f, #141416 50%, #0d0d0f)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 0,
+          y: 0,
+          width: 1920,
+          height: 1080,
+          borderRadius: 18,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 28,
+          y: 0,
+          width: 1864,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 10,
+          y: 10,
+          width: 1900,
+          height: 1060,
+          borderRadius: 14,
+          border: '1px solid rgba(244,180,0,0.18)',
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 60,
+          width: 1200,
+          text: 'WARUM KYUUBISOFT?',
+          fontFamily: 'Outfit',
+          fontSize: 56,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          highlightText: 'KYUUBISOFT',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 960,
+          y: 140,
+          width: 800,
+          text: 'Premium Features für dein FiveM Projekt',
+          fontFamily: 'DM Sans',
+          fontSize: 20,
+          color: '#606068',
+          textAlign: 'center'
+        },
+        {
+          id: 'feature-1',
+          type: 'stat',
+          x: 120,
+          y: 220,
+          width: 540,
+          label: '⚡ Performance',
+          value: 'Optimiert für 0.00ms Resmon'
+        },
+        {
+          id: 'feature-2',
+          type: 'stat',
+          x: 690,
+          y: 220,
+          width: 540,
+          label: '🔧 Modular',
+          value: 'Einfache Konfiguration'
+        },
+        {
+          id: 'feature-3',
+          type: 'stat',
+          x: 1260,
+          y: 220,
+          width: 540,
+          label: '🛡️ Support',
+          value: '24/7 Discord Support'
+        },
+        {
+          id: 'feature-4',
+          type: 'stat',
+          x: 120,
+          y: 320,
+          width: 540,
+          label: '🔄 Updates',
+          value: 'Regelmäßige Updates'
+        },
+        {
+          id: 'feature-5',
+          type: 'stat',
+          x: 690,
+          y: 320,
+          width: 540,
+          label: '📚 Dokumentation',
+          value: 'Ausführliche Docs'
+        },
+        {
+          id: 'feature-6',
+          type: 'stat',
+          x: 1260,
+          y: 320,
+          width: 540,
+          label: '🎨 Anpassbar',
+          value: 'Vollständig customizable'
+        },
+        {
+          id: 'main-screenshot',
+          type: 'image',
+          x: 260,
+          y: 440,
+          width: 1400,
+          height: 580,
+          src: '',
+          placeholder: 'Haupt-Screenshot',
+          borderRadius: 16,
+          boxShadow: '0 30px 80px rgba(0,0,0,0.6)'
+        }
+      ]
+    },
+    {
+      id: 'update-banner',
+      name: 'Update Banner',
+      description: 'Banner für neue Versionen und Updates',
+      thumbnail: null,
+      width: 1920,
+      height: 600,
+      aspectRatio: '16:5',
+      category: 'banner',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(800px 400px at 70% 50%, rgba(244,180,0,0.15), transparent 55%), linear-gradient(90deg, #0d0d0f 0%, #141416 50%, #0d0d0f 100%)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 0,
+          y: 0,
+          width: 1920,
+          height: 600,
+          borderRadius: 16,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 28,
+          y: 0,
+          width: 1864,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 10,
+          y: 10,
+          width: 1900,
+          height: 580,
+          borderRadius: 12,
+          border: '1px solid rgba(244,180,0,0.15)',
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
+        },
+        {
+          id: 'version-badge',
+          type: 'chip',
+          x: 100,
+          y: 80,
+          text: '🎉 NEW UPDATE',
+          fontFamily: 'Outfit',
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#f4b400',
+          backgroundColor: 'rgba(244,180,0,0.15)',
+          border: '1px solid rgba(244,180,0,0.3)',
+          borderRadius: 8
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 100,
+          y: 130,
+          width: 800,
+          text: 'VERSION 2.0 IST DA!',
+          fontFamily: 'Outfit',
+          fontSize: 64,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textTransform: 'uppercase',
+          highlightText: '2.0',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 100,
+          y: 220,
+          width: 700,
+          text: 'Komplett überarbeitet mit neuen Features, besserem Performance und mehr Optionen.',
+          fontFamily: 'DM Sans',
+          fontSize: 20,
+          color: '#8b8b93',
+          lineHeight: 1.5
+        },
+        {
+          id: 'feature-list',
+          type: 'text',
+          x: 100,
+          y: 320,
+          width: 600,
+          text: '✓ Neues UI Design\n✓ 50% schneller\n✓ Mehr Konfiguration\n✓ Bug Fixes',
+          fontFamily: 'DM Sans',
+          fontSize: 16,
+          color: '#51cf66',
+          lineHeight: 2
+        },
+        {
+          id: 'screenshot',
+          type: 'screen3d',
+          x: 1100,
+          y: 50,
+          width: 750,
+          height: 500,
+          src: '',
+          placeholder: 'Update Screenshot',
+          perspective: 'right',
+          borderRadius: 12
+        }
+      ]
+    },
+    {
+      id: 'gallery-strip',
+      name: 'Gallery Strip',
+      description: '4 Screenshots in einer Reihe',
+      thumbnail: null,
+      width: 1920,
+      height: 700,
+      aspectRatio: '24:7',
+      category: 'gallery',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'linear-gradient(180deg, #0d0d0f, #141416 50%, #0d0d0f)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 0,
+          y: 0,
+          width: 1920,
+          height: 700,
+          borderRadius: 16,
+          backgroundColor: '#141416',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.55)'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 28,
+          y: 0,
+          width: 1864,
+          height: 2,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'inner-frame',
+          type: 'container',
+          x: 10,
+          y: 10,
+          width: 1900,
+          height: 680,
+          borderRadius: 12,
+          border: '1px solid rgba(244,180,0,0.15)',
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 960,
+          y: 40,
+          width: 1000,
+          text: 'SCREENSHOT GALERIE',
+          fontFamily: 'Outfit',
+          fontSize: 36,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          highlightText: 'GALERIE',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'screen-1',
+          type: 'image',
+          x: 40,
+          y: 120,
+          width: 450,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot 1',
+          borderRadius: 12,
+          boxShadow: '0 15px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'screen-2',
+          type: 'image',
+          x: 510,
+          y: 120,
+          width: 450,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot 2',
+          borderRadius: 12,
+          boxShadow: '0 15px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'screen-3',
+          type: 'image',
+          x: 980,
+          y: 120,
+          width: 450,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot 3',
+          borderRadius: 12,
+          boxShadow: '0 15px 40px rgba(0,0,0,0.4)'
+        },
+        {
+          id: 'screen-4',
+          type: 'image',
+          x: 1450,
+          y: 120,
+          width: 450,
+          height: 540,
+          src: '',
+          placeholder: 'Screenshot 4',
+          borderRadius: 12,
+          boxShadow: '0 15px 40px rgba(0,0,0,0.4)'
+        }
+      ]
+    },
+    {
+      id: 'discord-banner',
+      name: 'Discord Server Banner',
+      description: 'Banner für Discord Server (960x540)',
+      thumbnail: null,
+      width: 960,
+      height: 540,
+      aspectRatio: '16:9',
+      category: 'social',
+      elements: [
+        {
+          id: 'bg',
+          type: 'background',
+          gradient: 'radial-gradient(600px 400px at 50% 40%, rgba(244,180,0,0.18), transparent 55%), linear-gradient(135deg, #0d0d0f, #1a1a2e)'
+        },
+        {
+          id: 'hero-container',
+          type: 'container',
+          x: 0,
+          y: 0,
+          width: 960,
+          height: 540,
+          borderRadius: 0,
+          backgroundColor: '#141416',
+          border: 'none',
+          boxShadow: 'none'
+        },
+        {
+          id: 'gold-line',
+          type: 'line',
+          x: 0,
+          y: 0,
+          width: 960,
+          height: 3,
+          gradient: 'linear-gradient(90deg, transparent, #f4b400, transparent)'
+        },
+        {
+          id: 'logo-image',
+          type: 'image',
+          x: 380,
+          y: 80,
+          width: 200,
+          height: 200,
+          src: '',
+          placeholder: 'Logo',
+          objectFit: 'contain'
+        },
+        {
+          id: 'title',
+          type: 'text',
+          x: 480,
+          y: 300,
+          width: 800,
+          text: 'KYUUBISOFT',
+          fontFamily: 'Outfit',
+          fontSize: 56,
+          fontWeight: 800,
+          color: '#f0f0f2',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          highlightText: 'SOFT',
+          highlightColor: '#f4b400'
+        },
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 480,
+          y: 370,
+          width: 600,
+          text: 'Premium FiveM Scripts',
+          fontFamily: 'DM Sans',
+          fontSize: 22,
+          color: '#8b8b93',
+          textAlign: 'center'
+        },
+        {
+          id: 'discord-tag',
+          type: 'chip',
+          x: 400,
+          y: 440,
+          text: '🎮 discord.gg/kyuubisoft',
+          fontFamily: 'DM Sans',
+          fontSize: 14,
+          color: '#7289da',
+          backgroundColor: 'rgba(114,137,218,0.15)',
+          border: '1px solid rgba(114,137,218,0.3)',
+          borderRadius: 8
+        }
+      ]
     }
   ])
 

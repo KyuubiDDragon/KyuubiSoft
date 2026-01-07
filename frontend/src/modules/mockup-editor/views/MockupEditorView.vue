@@ -5,6 +5,7 @@ import { useToast } from '@/composables/useToast'
 import MockupCanvas from '../components/MockupCanvas.vue'
 import TemplateSelector from '../components/TemplateSelector.vue'
 import ElementProperties from '../components/ElementProperties.vue'
+import FeatureToggles from '../components/FeatureToggles.vue'
 import ExportModal from '../components/ExportModal.vue'
 import ImageAnnotationEditor from '../components/ImageAnnotationEditor.vue'
 import {
@@ -31,6 +32,7 @@ import {
   Bars3Icon,
   Bars2Icon,
   StopIcon,
+  SparklesIcon,
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
@@ -49,6 +51,7 @@ const canvasRef = ref(null)
 const canvasContainerRef = ref(null)
 const showAnnotationEditor = ref(false)
 const annotationElementId = ref(null)
+const rightPanelTab = ref('properties') // 'properties' or 'features'
 
 // Auto-fit zoom based on available space
 const fitCanvasToView = () => {
@@ -477,14 +480,41 @@ onUnmounted(() => {
       <!-- Properties Panel -->
       <Transition name="slide-right">
         <div v-if="showProperties && hasTemplate" class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-            <h2 class="font-semibold text-white">Eigenschaften</h2>
-            <button @click="showProperties = false" class="text-gray-400 hover:text-white">
-              <XMarkIcon class="w-5 h-5" />
-            </button>
+          <!-- Panel Header with Tabs -->
+          <div class="border-b border-gray-700">
+            <div class="flex items-center justify-between px-4 py-2">
+              <div class="flex gap-1">
+                <button
+                  @click="rightPanelTab = 'properties'"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  :class="rightPanelTab === 'properties'
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+                >
+                  <AdjustmentsHorizontalIcon class="w-4 h-4" />
+                  <span>Element</span>
+                </button>
+                <button
+                  @click="rightPanelTab = 'features'"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  :class="rightPanelTab === 'features'
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+                >
+                  <SparklesIcon class="w-4 h-4" />
+                  <span>Features</span>
+                </button>
+              </div>
+              <button @click="showProperties = false" class="text-gray-400 hover:text-white">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
           </div>
+
+          <!-- Panel Content -->
           <div class="flex-1 overflow-y-auto">
-            <ElementProperties />
+            <ElementProperties v-if="rightPanelTab === 'properties'" />
+            <FeatureToggles v-else-if="rightPanelTab === 'features'" />
           </div>
         </div>
       </Transition>

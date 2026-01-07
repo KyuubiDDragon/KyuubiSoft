@@ -374,7 +374,7 @@ return [
 
     // Mockup Service
     \App\Modules\Mockup\Services\MockupService::class => function (ContainerInterface $c): \App\Modules\Mockup\Services\MockupService {
-        return new \App\Modules\Mockup\Services\MockupService($c->get(PDO::class));
+        return new \App\Modules\Mockup\Services\MockupService($c->get(DBALConnection::class));
     },
 
     // Mockup Controller

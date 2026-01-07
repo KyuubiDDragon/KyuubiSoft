@@ -338,11 +338,12 @@ const renderTextWithHighlight = (element) => {
           v-else-if="element.type === 'container' && !exportContentOnly"
           :style="{
             ...getElementStyle(element),
-            cursor: isDraggingElement ? 'grabbing' : 'grab',
+            cursor: element.pointerEvents === 'none' ? 'default' : (isDraggingElement ? 'grabbing' : 'grab'),
+            pointerEvents: element.pointerEvents || 'auto',
           }"
           class="transition-all"
-          :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"
-          @mousedown="(e) => startElementDrag(e, element.id)"
+          :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) && element.pointerEvents !== 'none' }"
+          @mousedown="element.pointerEvents !== 'none' ? (e) => startElementDrag(e, element.id) : null"
         >
           <div
             class="w-full h-full"

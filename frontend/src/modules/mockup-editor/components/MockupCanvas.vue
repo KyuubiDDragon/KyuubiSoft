@@ -660,15 +660,20 @@ const renderTextWithHighlight = (element) => {
             top: `${element.y}px`,
             fontFamily: element.fontFamily,
             fontSize: `${element.fontSize}px`,
+            fontWeight: element.fontWeight || 600,
             color: element.color,
             backgroundColor: element.backgroundColor,
+            background: element.backgroundGradient || element.backgroundColor,
+            textShadow: element.textShadow || 'none',
             border: element.border,
             borderRadius: `${element.borderRadius}px`,
             padding: element.padding || '8px 10px',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
+            justifyContent: 'center',
+            gap: '6px',
             cursor: isDraggingElement ? 'grabbing' : 'grab',
+            letterSpacing: element.backgroundGradient ? '0.05em' : 'normal',
           }"
           class="transition-all whitespace-nowrap select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-900': isSelected(element.id) }"

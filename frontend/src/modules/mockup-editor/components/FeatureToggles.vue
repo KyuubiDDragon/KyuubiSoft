@@ -17,11 +17,11 @@ const mockupStore = useMockupStore()
 
 // Chip configuration
 const chipConfig = {
-  chipGap: 14,        // Horizontal gap between chips
-  rowGap: 42,         // Vertical gap between category rows
-  fontSize: 14,
-  padding: '10px 18px',
-  minWidth: 70,       // Minimum chip width for consistent spacing
+  chipGap: 8,         // Horizontal gap between chips (smaller for tighter spacing)
+  rowGap: 52,         // Vertical gap between category rows (larger for better separation)
+  fontSize: 13,
+  padding: '8px 14px',
+  minWidth: 50,       // Minimum chip width for consistent spacing
 }
 
 // Get chip position based on current template
@@ -34,16 +34,16 @@ const getChipBasePosition = () => {
 
   if (topLeftTemplates.includes(templateId)) {
     return {
-      baseX: 50,
-      baseY: 50,
+      baseX: 30,
+      baseY: 35,
       direction: 'down' // Rows go downward from top
     }
   }
 
-  // Default: bottom-left
+  // Default: bottom-left (higher up and more to the left)
   return {
-    baseX: 50,
-    baseY: mockupStore.canvasHeight - 50,
+    baseX: 30,
+    baseY: mockupStore.canvasHeight - 35,
     direction: 'up' // Rows go upward from bottom
   }
 }
@@ -57,12 +57,18 @@ const featureCategories = ref([
     expanded: true,
     rowIndex: 0,
     presets: [
-      { id: 'de', label: 'Deutsch', chipText: 'DE', bgColor: '#000000', textColor: '#FFCC00' },
-      { id: 'en', label: 'English', chipText: 'EN', bgColor: '#012169', textColor: '#FFFFFF' },
-      { id: 'fr', label: 'Français', chipText: 'FR', bgColor: '#002395', textColor: '#FFFFFF' },
-      { id: 'es', label: 'Español', chipText: 'ES', bgColor: '#AA151B', textColor: '#F1BF00' },
-      { id: 'pl', label: 'Polski', chipText: 'PL', bgColor: '#DC143C', textColor: '#FFFFFF' },
-      { id: 'tr', label: 'Türkçe', chipText: 'TR', bgColor: '#E30A17', textColor: '#FFFFFF' },
+      // Germany: Black-Red-Gold horizontal stripes
+      { id: 'de', label: 'Deutsch', chipText: 'DE', bgGradient: 'linear-gradient(180deg, #000000 33%, #DD0000 33%, #DD0000 66%, #FFCC00 66%)', textColor: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.8)' },
+      // UK: Union Jack Blue with red accents
+      { id: 'en', label: 'English', chipText: 'EN', bgGradient: 'linear-gradient(135deg, #012169 25%, #C8102E 25%, #C8102E 30%, #FFFFFF 30%, #FFFFFF 35%, #012169 35%)', textColor: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.6)' },
+      // France: Blue-White-Red vertical stripes
+      { id: 'fr', label: 'Français', chipText: 'FR', bgGradient: 'linear-gradient(90deg, #002395 33%, #FFFFFF 33%, #FFFFFF 66%, #ED2939 66%)', textColor: '#002395', textShadow: '0 0 3px rgba(255,255,255,0.8)' },
+      // Spain: Red-Yellow-Red horizontal
+      { id: 'es', label: 'Español', chipText: 'ES', bgGradient: 'linear-gradient(180deg, #AA151B 25%, #F1BF00 25%, #F1BF00 75%, #AA151B 75%)', textColor: '#AA151B', textShadow: '0 0 2px rgba(241,191,0,0.9)' },
+      // Poland: White-Red horizontal
+      { id: 'pl', label: 'Polski', chipText: 'PL', bgGradient: 'linear-gradient(180deg, #FFFFFF 50%, #DC143C 50%)', textColor: '#DC143C', textShadow: '0 0 2px rgba(255,255,255,0.8)' },
+      // Turkey: Red with white crescent hint
+      { id: 'tr', label: 'Türkçe', chipText: 'TR', bgGradient: 'linear-gradient(135deg, #E30A17 0%, #E30A17 100%)', textColor: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.5)' },
     ]
   },
   {
@@ -152,9 +158,12 @@ const reorganizeCategoryChips = (categoryId, rowIndex) => {
   let currentX = pos.baseX
   chips.forEach((chip) => {
     mockupStore.updateElement(chip.id, { x: currentX, y: yPos })
-    // Fixed width estimation for consistent spacing
+    // Tighter width estimation for consistent spacing
     const textLen = (chip.text || '').replace('● ', '').length
-    const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+    const isLanguageChip = chip.featureCategory === 'languages'
+    const chipWidth = isLanguageChip
+      ? Math.max(40, textLen * 10 + 24)  // Language chips are compact
+      : Math.max(chipConfig.minWidth, textLen * 8 + 36)
     currentX += chipWidth + chipConfig.chipGap
   })
 }
@@ -172,28 +181,35 @@ const toggleFeature = (category, preset) => {
     const existingChips = getChipsInCategory(category.id)
     const yPos = getRowYPosition(category.rowIndex)
 
-    // Calculate X position
+    // Calculate X position with tight spacing
     let currentX = pos.baseX
     existingChips.forEach(chip => {
       const textLen = (chip.text || '').replace('● ', '').length
-      const chipWidth = Math.max(chipConfig.minWidth, textLen * 9 + 50)
+      const isLanguageChip = chip.featureCategory === 'languages'
+      const chipWidth = isLanguageChip
+        ? Math.max(40, textLen * 10 + 24)
+        : Math.max(chipConfig.minWidth, textLen * 8 + 36)
       currentX += chipWidth + chipConfig.chipGap
     })
 
-    // Build chip - use colored badge for languages, dot for others
-    let chipText, chipBgColor, chipTextColor, chipBorder
+    // Build chip - use flag gradient for languages, dot for others
+    let chipText, chipBgColor, chipBgGradient, chipTextColor, chipBorder, chipTextShadow
 
-    if (preset.bgColor) {
-      // Language chip with colored background
+    if (preset.bgGradient) {
+      // Language chip with flag gradient background
       chipText = preset.chipText
-      chipBgColor = preset.bgColor
+      chipBgGradient = preset.bgGradient
+      chipBgColor = undefined
       chipTextColor = preset.textColor
-      chipBorder = '1px solid rgba(255,255,255,0.2)'
+      chipTextShadow = preset.textShadow
+      chipBorder = '1px solid rgba(255,255,255,0.25)'
     } else {
       // Other chips with dot indicator
       chipText = `● ${preset.chipText}`
       chipBgColor = 'rgba(28,28,31,0.9)'
+      chipBgGradient = undefined
       chipTextColor = preset.textColor || '#ffffff'
+      chipTextShadow = undefined
       chipBorder = '1px solid rgba(255,255,255,0.12)'
     }
 
@@ -205,12 +221,14 @@ const toggleFeature = (category, preset) => {
       text: chipText,
       fontFamily: '"DM Sans", sans-serif',
       fontSize: chipConfig.fontSize,
-      fontWeight: 600,
+      fontWeight: 700,
       color: chipTextColor,
       backgroundColor: chipBgColor,
+      backgroundGradient: chipBgGradient,
+      textShadow: chipTextShadow,
       border: chipBorder,
-      borderRadius: 8,
-      padding: preset.bgColor ? '8px 14px' : chipConfig.padding,
+      borderRadius: 6,
+      padding: preset.bgGradient ? '6px 12px' : chipConfig.padding,
       featureCategory: category.id,
       featurePreset: preset.id,
     }
@@ -351,9 +369,9 @@ const positionLabel = computed(() => {
             class="w-4 h-4 flex-shrink-0"
           />
           <div
-            v-else-if="preset.bgColor"
-            class="w-4 h-3 rounded flex-shrink-0"
-            :style="{ backgroundColor: preset.bgColor }"
+            v-else-if="preset.bgGradient"
+            class="w-5 h-3.5 rounded flex-shrink-0 border border-white/20"
+            :style="{ background: preset.bgGradient }"
           />
           <div
             v-else

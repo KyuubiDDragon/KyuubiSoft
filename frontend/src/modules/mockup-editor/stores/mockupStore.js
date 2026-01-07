@@ -1401,6 +1401,63 @@ export const useMockupStore = defineStore('mockup', () => {
     }
   }
 
+  // ==================== Annotation Functions ====================
+
+  // Add annotation to an image element
+  function addAnnotation(elementId, annotation) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element || (element.type !== 'image' && element.type !== 'screen3d')) return null
+
+    const annotationId = `annotation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const newAnnotation = {
+      id: annotationId,
+      ...annotation,
+    }
+
+    if (!element.annotations) {
+      element.annotations = []
+    }
+    element.annotations.push(newAnnotation)
+
+    return newAnnotation
+  }
+
+  // Update an annotation
+  function updateAnnotation(elementId, annotationId, updates) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element || !element.annotations) return
+
+    const annotationIndex = element.annotations.findIndex(a => a.id === annotationId)
+    if (annotationIndex !== -1) {
+      element.annotations[annotationIndex] = {
+        ...element.annotations[annotationIndex],
+        ...updates,
+      }
+    }
+  }
+
+  // Delete an annotation
+  function deleteAnnotation(elementId, annotationId) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (!element || !element.annotations) return
+
+    element.annotations = element.annotations.filter(a => a.id !== annotationId)
+  }
+
+  // Get annotations for an element
+  function getAnnotations(elementId) {
+    const element = elements.value.find(el => el.id === elementId)
+    return element?.annotations || []
+  }
+
+  // Clear all annotations from an element
+  function clearAnnotations(elementId) {
+    const element = elements.value.find(el => el.id === elementId)
+    if (element) {
+      element.annotations = []
+    }
+  }
+
   // Computed: All templates (built-in + custom)
   const allTemplates = computed(() => {
     // Mark custom templates
@@ -1460,5 +1517,12 @@ export const useMockupStore = defineStore('mockup', () => {
     saveDraft,
     loadDraft,
     deleteDraft,
+
+    // Annotation Actions
+    addAnnotation,
+    updateAnnotation,
+    deleteAnnotation,
+    getAnnotations,
+    clearAnnotations,
   }
 })

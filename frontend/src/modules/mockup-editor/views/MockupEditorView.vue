@@ -6,6 +6,7 @@ import MockupCanvas from '../components/MockupCanvas.vue'
 import TemplateSelector from '../components/TemplateSelector.vue'
 import ElementProperties from '../components/ElementProperties.vue'
 import ExportModal from '../components/ExportModal.vue'
+import ImageAnnotationEditor from '../components/ImageAnnotationEditor.vue'
 import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
@@ -45,6 +46,8 @@ const showSaveTemplateModal = ref(false)
 const saveTemplateName = ref('')
 const saveTemplateDescription = ref('')
 const canvasRef = ref(null)
+const showAnnotationEditor = ref(false)
+const annotationElementId = ref(null)
 
 // Element types available for creation
 const elementTypes = [
@@ -163,6 +166,11 @@ const handleNewMockup = () => {
 
 const handleExport = () => {
   showExportModal.value = true
+}
+
+const handleEditImage = (elementId) => {
+  annotationElementId.value = elementId
+  showAnnotationEditor.value = true
 }
 
 const performExport = async (options) => {
@@ -383,7 +391,7 @@ onUnmounted(() => {
       <!-- Canvas Area -->
       <div class="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-8">
         <template v-if="hasTemplate">
-          <MockupCanvas ref="canvasRef" />
+          <MockupCanvas ref="canvasRef" @edit-image="handleEditImage" />
         </template>
         <template v-else>
           <div class="text-center">
@@ -415,6 +423,13 @@ onUnmounted(() => {
       :show="showExportModal"
       @close="showExportModal = false"
       @export="performExport"
+    />
+
+    <!-- Image Annotation Editor -->
+    <ImageAnnotationEditor
+      :show="showAnnotationEditor"
+      :element-id="annotationElementId"
+      @close="showAnnotationEditor = false"
     />
 
     <!-- Save Template Modal -->

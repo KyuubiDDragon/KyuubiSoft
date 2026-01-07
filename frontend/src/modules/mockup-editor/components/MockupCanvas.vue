@@ -33,6 +33,8 @@ const canvasStyle = computed(() => ({
   height: `${mockupStore.canvasHeight}px`,
   transform: `scale(${mockupStore.zoom})`,
   transformOrigin: 'center center',
+  overflow: 'hidden', // Clip shadows/lines that extend beyond canvas
+  borderRadius: '12px', // Rounded corners on the canvas itself
 }))
 
 // Handle drag & drop
@@ -199,6 +201,10 @@ const exportImage = async (options = {}) => {
   const originalTransform = targetElement.style.transform
   const originalOverflow = targetElement.style.overflow
 
+  // Store and clear selection to prevent selection ring in export
+  const originalSelection = mockupStore.selectedElementId
+  mockupStore.selectElement(null)
+
   // Apply export styles
   targetElement.style.transform = 'none'
   targetElement.style.overflow = 'hidden' // Clip shadows/glows that extend beyond canvas
@@ -209,6 +215,8 @@ const exportImage = async (options = {}) => {
   exportNoShadows.value = noShadows
 
   // Wait for Vue to update the DOM (remove selection rings and background if transparent)
+  await nextTick()
+  // Double nextTick to ensure all reactive updates are flushed
   await nextTick()
 
   try {
@@ -261,6 +269,10 @@ const exportImage = async (options = {}) => {
     exportTransparent.value = false
     exportContentOnly.value = false
     exportNoShadows.value = false
+    // Restore selection
+    if (originalSelection) {
+      mockupStore.selectElement(originalSelection)
+    }
   }
 }
 

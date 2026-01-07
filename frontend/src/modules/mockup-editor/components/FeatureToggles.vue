@@ -127,12 +127,19 @@ const getChipsInCategory = (categoryId) => {
 }
 
 // Calculate Y position for a row
+// For consistent top-to-bottom order: Languages, Framework, Config, Features
 const getRowYPosition = (rowIndex) => {
   const pos = getChipBasePosition()
+  const maxRows = 5 // 4 categories + 1 custom
+
   if (pos.direction === 'down') {
+    // Top positioning: row 0 at top, increasing downward
     return pos.baseY + (rowIndex * chipConfig.rowGap)
   } else {
-    return pos.baseY - (rowIndex * chipConfig.rowGap)
+    // Bottom positioning: invert so row 0 (Languages) is at TOP of the chip area
+    // This keeps visual order consistent: Languages at top, Features at bottom
+    const invertedIndex = maxRows - 1 - rowIndex
+    return pos.baseY - (invertedIndex * chipConfig.rowGap)
   }
 }
 
@@ -219,9 +226,7 @@ const addCustomChip = () => {
   const customId = `custom-${Date.now()}`
   const customRowIndex = 4
   const pos = getChipBasePosition()
-  const yPos = pos.direction === 'down'
-    ? pos.baseY + (customRowIndex * chipConfig.rowGap)
-    : pos.baseY - (customRowIndex * chipConfig.rowGap)
+  const yPos = getRowYPosition(customRowIndex)
 
   const existingCustomChips = mockupStore.elements.filter(el => el.id.startsWith('custom-chip-'))
 
@@ -271,9 +276,7 @@ const removeCustomChip = (chip) => {
 const reorganizeCustomChips = () => {
   const customRowIndex = 4
   const pos = getChipBasePosition()
-  const yPos = pos.direction === 'down'
-    ? pos.baseY + (customRowIndex * chipConfig.rowGap)
-    : pos.baseY - (customRowIndex * chipConfig.rowGap)
+  const yPos = getRowYPosition(customRowIndex)
 
   const chips = mockupStore.elements.filter(el => el.id.startsWith('custom-chip-'))
 

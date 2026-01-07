@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Mockup\Services;
 
-use PDO;
+use Doctrine\DBAL\Connection;
 
 class MockupService
 {
     public function __construct(
-        private readonly PDO $pdo
+        private readonly Connection $db
     ) {}
 
     /**
@@ -26,13 +26,15 @@ class MockupService
                 ORDER BY created_at DESC
                 LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = $this->db->fetchAllAssociative($sql, [
+            'user_id' => $userId,
+            'limit' => $limit,
+            'offset' => $offset,
+        ], [
+            'user_id' => \PDO::PARAM_INT,
+            'limit' => \PDO::PARAM_INT,
+            'offset' => \PDO::PARAM_INT,
+        ]);
 
         // Parse JSON fields
         foreach ($items as &$item) {
@@ -40,11 +42,10 @@ class MockupService
         }
 
         // Count total
-        $countStmt = $this->pdo->prepare(
-            "SELECT COUNT(*) FROM mockup_templates WHERE user_id = :user_id"
+        $total = (int) $this->db->fetchOne(
+            "SELECT COUNT(*) FROM mockup_templates WHERE user_id = :user_id",
+            ['user_id' => $userId]
         );
-        $countStmt->execute([':user_id' => $userId]);
-        $total = (int) $countStmt->fetchColumn();
 
         return [
             'items' => $items,
@@ -52,7 +53,7 @@ class MockupService
                 'page' => $page,
                 'limit' => $limit,
                 'total' => $total,
-                'pages' => ceil($total / $limit),
+                'pages' => (int) ceil($total / $limit),
             ],
         ];
     }
@@ -62,11 +63,10 @@ class MockupService
      */
     public function getTemplate(string $id, int $userId): ?array
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM mockup_templates WHERE id = :id AND user_id = :user_id"
+        $template = $this->db->fetchAssociative(
+            "SELECT * FROM mockup_templates WHERE id = :id AND user_id = :user_id",
+            ['id' => $id, 'user_id' => $userId]
         );
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
-        $template = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$template) {
             return null;
@@ -83,22 +83,19 @@ class MockupService
     {
         $id = $this->generateId();
 
-        $stmt = $this->pdo->prepare(
-            "INSERT INTO mockup_templates (id, user_id, name, description, category, width, height, aspect_ratio, elements, transparent_bg, created_at, updated_at)
-             VALUES (:id, :user_id, :name, :description, :category, :width, :height, :aspect_ratio, :elements, :transparent_bg, NOW(), NOW())"
-        );
-
-        $stmt->execute([
-            ':id' => $id,
-            ':user_id' => $userId,
-            ':name' => $data['name'] ?? 'Untitled Template',
-            ':description' => $data['description'] ?? '',
-            ':category' => $data['category'] ?? 'custom',
-            ':width' => $data['width'] ?? 1920,
-            ':height' => $data['height'] ?? 1080,
-            ':aspect_ratio' => $data['aspectRatio'] ?? '16:9',
-            ':elements' => json_encode($data['elements'] ?? []),
-            ':transparent_bg' => (int) ($data['transparentBg'] ?? false),
+        $this->db->insert('mockup_templates', [
+            'id' => $id,
+            'user_id' => $userId,
+            'name' => $data['name'] ?? 'Untitled Template',
+            'description' => $data['description'] ?? '',
+            'category' => $data['category'] ?? 'custom',
+            'width' => $data['width'] ?? 1920,
+            'height' => $data['height'] ?? 1080,
+            'aspect_ratio' => $data['aspectRatio'] ?? '16:9',
+            'elements' => json_encode($data['elements'] ?? []),
+            'transparent_bg' => (int) ($data['transparentBg'] ?? false),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
         return $this->getTemplate($id, $userId);
@@ -110,56 +107,48 @@ class MockupService
     public function updateTemplate(string $id, int $userId, array $data): bool
     {
         $fields = [];
-        $params = [':id' => $id, ':user_id' => $userId];
 
         if (isset($data['name'])) {
-            $fields[] = 'name = :name';
-            $params[':name'] = $data['name'];
+            $fields['name'] = $data['name'];
         }
 
         if (isset($data['description'])) {
-            $fields[] = 'description = :description';
-            $params[':description'] = $data['description'];
+            $fields['description'] = $data['description'];
         }
 
         if (isset($data['category'])) {
-            $fields[] = 'category = :category';
-            $params[':category'] = $data['category'];
+            $fields['category'] = $data['category'];
         }
 
         if (isset($data['elements'])) {
-            $fields[] = 'elements = :elements';
-            $params[':elements'] = json_encode($data['elements']);
+            $fields['elements'] = json_encode($data['elements']);
         }
 
         if (isset($data['width'])) {
-            $fields[] = 'width = :width';
-            $params[':width'] = $data['width'];
+            $fields['width'] = $data['width'];
         }
 
         if (isset($data['height'])) {
-            $fields[] = 'height = :height';
-            $params[':height'] = $data['height'];
+            $fields['height'] = $data['height'];
         }
 
         if (isset($data['transparentBg'])) {
-            $fields[] = 'transparent_bg = :transparent_bg';
-            $params[':transparent_bg'] = (int) $data['transparentBg'];
+            $fields['transparent_bg'] = (int) $data['transparentBg'];
         }
 
         if (empty($fields)) {
             return false;
         }
 
-        $fields[] = 'updated_at = NOW()';
+        $fields['updated_at'] = date('Y-m-d H:i:s');
 
-        $sql = "UPDATE mockup_templates SET " . implode(', ', $fields) .
-               " WHERE id = :id AND user_id = :user_id";
+        $affected = $this->db->update(
+            'mockup_templates',
+            $fields,
+            ['id' => $id, 'user_id' => $userId]
+        );
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     /**
@@ -167,12 +156,12 @@ class MockupService
      */
     public function deleteTemplate(string $id, int $userId): bool
     {
-        $stmt = $this->pdo->prepare(
-            "DELETE FROM mockup_templates WHERE id = :id AND user_id = :user_id"
-        );
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
+        $affected = $this->db->delete('mockup_templates', [
+            'id' => $id,
+            'user_id' => $userId,
+        ]);
 
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     // ==================== Drafts ====================
@@ -191,13 +180,15 @@ class MockupService
                 ORDER BY updated_at DESC
                 LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = $this->db->fetchAllAssociative($sql, [
+            'user_id' => $userId,
+            'limit' => $limit,
+            'offset' => $offset,
+        ], [
+            'user_id' => \PDO::PARAM_INT,
+            'limit' => \PDO::PARAM_INT,
+            'offset' => \PDO::PARAM_INT,
+        ]);
 
         // Parse JSON fields
         foreach ($items as &$item) {
@@ -205,11 +196,10 @@ class MockupService
         }
 
         // Count total
-        $countStmt = $this->pdo->prepare(
-            "SELECT COUNT(*) FROM mockup_drafts WHERE user_id = :user_id"
+        $total = (int) $this->db->fetchOne(
+            "SELECT COUNT(*) FROM mockup_drafts WHERE user_id = :user_id",
+            ['user_id' => $userId]
         );
-        $countStmt->execute([':user_id' => $userId]);
-        $total = (int) $countStmt->fetchColumn();
 
         return [
             'items' => $items,
@@ -217,7 +207,7 @@ class MockupService
                 'page' => $page,
                 'limit' => $limit,
                 'total' => $total,
-                'pages' => ceil($total / $limit),
+                'pages' => (int) ceil($total / $limit),
             ],
         ];
     }
@@ -227,11 +217,10 @@ class MockupService
      */
     public function getDraft(string $id, int $userId): ?array
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM mockup_drafts WHERE id = :id AND user_id = :user_id"
+        $draft = $this->db->fetchAssociative(
+            "SELECT * FROM mockup_drafts WHERE id = :id AND user_id = :user_id",
+            ['id' => $id, 'user_id' => $userId]
         );
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
-        $draft = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$draft) {
             return null;
@@ -254,19 +243,16 @@ class MockupService
         if ($existing) {
             $this->updateDraft($id, $userId, $data);
         } else {
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO mockup_drafts (id, user_id, name, template_id, width, height, elements, created_at, updated_at)
-                 VALUES (:id, :user_id, :name, :template_id, :width, :height, :elements, NOW(), NOW())"
-            );
-
-            $stmt->execute([
-                ':id' => $id,
-                ':user_id' => $userId,
-                ':name' => $data['name'] ?? 'Untitled Draft',
-                ':template_id' => $data['templateId'] ?? null,
-                ':width' => $data['width'] ?? 1920,
-                ':height' => $data['height'] ?? 1080,
-                ':elements' => json_encode($data['elements'] ?? []),
+            $this->db->insert('mockup_drafts', [
+                'id' => $id,
+                'user_id' => $userId,
+                'name' => $data['name'] ?? 'Untitled Draft',
+                'template_id' => $data['templateId'] ?? null,
+                'width' => $data['width'] ?? 1920,
+                'height' => $data['height'] ?? 1080,
+                'elements' => json_encode($data['elements'] ?? []),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
             ]);
         }
 
@@ -279,31 +265,28 @@ class MockupService
     public function updateDraft(string $id, int $userId, array $data): bool
     {
         $fields = [];
-        $params = [':id' => $id, ':user_id' => $userId];
 
         if (isset($data['name'])) {
-            $fields[] = 'name = :name';
-            $params[':name'] = $data['name'];
+            $fields['name'] = $data['name'];
         }
 
         if (isset($data['elements'])) {
-            $fields[] = 'elements = :elements';
-            $params[':elements'] = json_encode($data['elements']);
+            $fields['elements'] = json_encode($data['elements']);
         }
 
         if (empty($fields)) {
             return false;
         }
 
-        $fields[] = 'updated_at = NOW()';
+        $fields['updated_at'] = date('Y-m-d H:i:s');
 
-        $sql = "UPDATE mockup_drafts SET " . implode(', ', $fields) .
-               " WHERE id = :id AND user_id = :user_id";
+        $affected = $this->db->update(
+            'mockup_drafts',
+            $fields,
+            ['id' => $id, 'user_id' => $userId]
+        );
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     /**
@@ -311,12 +294,12 @@ class MockupService
      */
     public function deleteDraft(string $id, int $userId): bool
     {
-        $stmt = $this->pdo->prepare(
-            "DELETE FROM mockup_drafts WHERE id = :id AND user_id = :user_id"
-        );
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
+        $affected = $this->db->delete('mockup_drafts', [
+            'id' => $id,
+            'user_id' => $userId,
+        ]);
 
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     // ==================== Helpers ====================

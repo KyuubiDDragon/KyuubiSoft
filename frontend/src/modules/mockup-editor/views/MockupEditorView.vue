@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useMockupStore } from '../stores/mockupStore'
 import { useToast } from '@/composables/useToast'
 import MockupCanvas from '../components/MockupCanvas.vue'
@@ -46,8 +46,42 @@ const showSaveTemplateModal = ref(false)
 const saveTemplateName = ref('')
 const saveTemplateDescription = ref('')
 const canvasRef = ref(null)
+const canvasContainerRef = ref(null)
 const showAnnotationEditor = ref(false)
 const annotationElementId = ref(null)
+
+// Auto-fit zoom based on available space
+const fitCanvasToView = () => {
+  if (!hasTemplate.value || !canvasContainerRef.value) return
+
+  // Wait for DOM to settle after panel transitions
+  nextTick(() => {
+    const container = canvasContainerRef.value
+    if (!container) return
+
+    // Get available space (subtract padding: p-8 = 32px * 2 = 64px each direction)
+    const availableWidth = container.clientWidth - 64
+    const availableHeight = container.clientHeight - 64
+
+    // Get canvas dimensions
+    const canvasWidth = mockupStore.canvasWidth
+    const canvasHeight = mockupStore.canvasHeight
+
+    // Calculate zoom to fit
+    const zoomX = availableWidth / canvasWidth
+    const zoomY = availableHeight / canvasHeight
+    const optimalZoom = Math.min(zoomX, zoomY, 1) // Max zoom of 1 (100%)
+
+    // Apply zoom with small margin (95% of calculated to leave some breathing room)
+    mockupStore.setZoom(Math.max(0.1, optimalZoom * 0.95))
+  })
+}
+
+// Watch for sidebar changes and refit canvas
+watch([showTemplateSelector, showProperties], () => {
+  // Delay to wait for CSS transition (200ms animation)
+  setTimeout(fitCanvasToView, 250)
+}, { flush: 'post' })
 
 // Element types available for creation
 const elementTypes = [
@@ -140,6 +174,8 @@ const zoomPercent = computed(() => Math.round(mockupStore.zoom * 100))
 const selectTemplate = (templateId) => {
   mockupStore.selectTemplate(templateId)
   showTemplateSelector.value = false
+  // Auto-fit canvas to view after template is loaded
+  setTimeout(fitCanvasToView, 300)
 }
 
 const handleZoomIn = () => {
@@ -196,12 +232,44 @@ const handleClickOutside = (e) => {
   }
 }
 
+// ResizeObserver for responsive canvas fitting
+let resizeObserver = null
+let resizeTimeout = null
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+
+  // Set up ResizeObserver to auto-fit when container size changes (debounced)
+  nextTick(() => {
+    if (canvasContainerRef.value) {
+      resizeObserver = new ResizeObserver(() => {
+        // Debounce resize events
+        if (resizeTimeout) clearTimeout(resizeTimeout)
+        resizeTimeout = setTimeout(() => {
+          if (hasTemplate.value) {
+            fitCanvasToView()
+          }
+        }, 100)
+      })
+      resizeObserver.observe(canvasContainerRef.value)
+    }
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+
+  // Clean up timeout
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
+
+  // Clean up ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 </script>
 
@@ -224,14 +292,18 @@ onUnmounted(() => {
       <div class="flex items-center gap-2">
         <!-- Zoom Controls -->
         <div v-if="hasTemplate" class="flex items-center gap-1 bg-gray-700 rounded-lg px-2 py-1">
-          <button @click="handleZoomOut" class="p-1 text-gray-400 hover:text-white transition-colors">
+          <button @click="handleZoomOut" class="p-1 text-gray-400 hover:text-white transition-colors" title="Verkleinern">
             <MagnifyingGlassMinusIcon class="w-4 h-4" />
           </button>
           <span class="text-gray-300 text-sm min-w-[48px] text-center">{{ zoomPercent }}%</span>
-          <button @click="handleZoomIn" class="p-1 text-gray-400 hover:text-white transition-colors">
+          <button @click="handleZoomIn" class="p-1 text-gray-400 hover:text-white transition-colors" title="Vergrössern">
             <MagnifyingGlassPlusIcon class="w-4 h-4" />
           </button>
-          <button @click="handleZoomReset" class="p-1 text-gray-400 hover:text-white transition-colors ml-1" title="Zoom zurücksetzen">
+          <div class="w-px h-4 bg-gray-600 mx-1" />
+          <button @click="fitCanvasToView" class="p-1 text-gray-400 hover:text-white transition-colors" title="An Fenster anpassen">
+            <span class="text-xs">Fit</span>
+          </button>
+          <button @click="handleZoomReset" class="p-1 text-gray-400 hover:text-white transition-colors" title="Zoom zurücksetzen">
             <span class="text-xs">100%</span>
           </button>
         </div>
@@ -389,7 +461,7 @@ onUnmounted(() => {
       </Transition>
 
       <!-- Canvas Area -->
-      <div class="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-8">
+      <div ref="canvasContainerRef" class="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-8">
         <template v-if="hasTemplate">
           <MockupCanvas ref="canvasRef" @edit-image="handleEditImage" />
         </template>

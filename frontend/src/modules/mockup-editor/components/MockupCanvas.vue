@@ -5,7 +5,10 @@ import { useToast } from '@/composables/useToast'
 import {
   PhotoIcon,
   ArrowUpTrayIcon,
+  PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
+
+const emit = defineEmits(['edit-image'])
 
 const toast = useToast()
 const mockupStore = useMockupStore()
@@ -375,6 +378,86 @@ const renderTextWithHighlight = (element) => {
               class="absolute inset-0 pointer-events-none"
               :style="{ background: element.overlay }"
             />
+
+            <!-- Annotations Layer -->
+            <svg v-if="element.annotations?.length" class="absolute inset-0 w-full h-full pointer-events-none" style="overflow: visible;">
+              <template v-for="annotation in element.annotations" :key="annotation.id">
+                <!-- Circle -->
+                <ellipse
+                  v-if="annotation.type === 'circle'"
+                  :cx="`${annotation.x}%`"
+                  :cy="`${annotation.y}%`"
+                  :rx="`${annotation.width / 2}%`"
+                  :ry="`${annotation.height / 2}%`"
+                  fill="none"
+                  :stroke="annotation.color"
+                  :stroke-width="annotation.strokeWidth || 3"
+                />
+                <!-- Arrow -->
+                <g v-else-if="annotation.type === 'arrow'">
+                  <defs>
+                    <marker
+                      :id="`arrow-${annotation.id}`"
+                      markerWidth="10"
+                      markerHeight="7"
+                      refX="9"
+                      refY="3.5"
+                      orient="auto"
+                    >
+                      <polygon points="0 0, 10 3.5, 0 7" :fill="annotation.color" />
+                    </marker>
+                  </defs>
+                  <line
+                    :x1="`${annotation.x}%`"
+                    :y1="`${annotation.y}%`"
+                    :x2="`${annotation.endX || annotation.x + 10}%`"
+                    :y2="`${annotation.endY || annotation.y + 10}%`"
+                    :stroke="annotation.color"
+                    :stroke-width="annotation.strokeWidth || 3"
+                    :marker-end="`url(#arrow-${annotation.id})`"
+                  />
+                </g>
+              </template>
+            </svg>
+
+            <!-- HTML Annotations (Markers and Text) -->
+            <template v-if="element.annotations?.length">
+              <template v-for="annotation in element.annotations" :key="`html-${annotation.id}`">
+                <!-- Marker -->
+                <div
+                  v-if="annotation.type === 'marker'"
+                  class="absolute flex items-center justify-center rounded-full font-bold text-gray-900 pointer-events-none"
+                  :style="{
+                    left: `${annotation.x}%`,
+                    top: `${annotation.y}%`,
+                    width: `${annotation.size || 32}px`,
+                    height: `${annotation.size || 32}px`,
+                    backgroundColor: annotation.color,
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: `${(annotation.size || 32) * 0.5}px`,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  }"
+                >
+                  {{ annotation.number }}
+                </div>
+                <!-- Text Label -->
+                <div
+                  v-else-if="annotation.type === 'text'"
+                  class="absolute px-2 py-1 pointer-events-none"
+                  :style="{
+                    left: `${annotation.x}%`,
+                    top: `${annotation.y}%`,
+                    color: annotation.color,
+                    fontSize: `${annotation.fontSize || 16}px`,
+                    fontWeight: 600,
+                    textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                    transform: 'translate(-50%, -50%)',
+                  }"
+                >
+                  {{ annotation.text }}
+                </div>
+              </template>
+            </template>
           </template>
 
           <!-- Placeholder -->
@@ -395,19 +478,31 @@ const renderTextWithHighlight = (element) => {
             </div>
           </template>
 
-          <!-- Upload overlay on hover if has image -->
+          <!-- Upload/Edit overlay on hover if has image -->
           <div
-            v-if="element.src"
-            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center z-20"
+            v-if="element.src && !isExporting"
+            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-20"
           >
-            <input
-              type="file"
-              accept="image/*"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
-              @change="(e) => handleFileSelect(e, element.id)"
-            />
-            <ArrowUpTrayIcon class="w-8 h-8 text-white" />
-            <span class="mt-2 text-sm text-white">Bild ersetzen</span>
+            <!-- Edit Button -->
+            <button
+              @click.stop="emit('edit-image', element.id)"
+              class="flex flex-col items-center gap-1 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-gray-900 rounded-lg transition-colors"
+            >
+              <PencilSquareIcon class="w-6 h-6" />
+              <span class="text-xs font-medium">Bearbeiten</span>
+            </button>
+
+            <!-- Replace Button -->
+            <label class="flex flex-col items-center gap-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="(e) => handleFileSelect(e, element.id)"
+              />
+              <ArrowUpTrayIcon class="w-6 h-6" />
+              <span class="text-xs font-medium">Ersetzen</span>
+            </label>
           </div>
         </div>
 
@@ -640,6 +735,82 @@ const renderTextWithHighlight = (element) => {
                 :alt="element.placeholder"
                 class="w-full h-full object-cover relative z-0"
               />
+
+              <!-- Annotations Layer for 3D Screen -->
+              <svg v-if="element.annotations?.length" class="absolute inset-0 w-full h-full pointer-events-none z-5" style="overflow: visible;">
+                <template v-for="annotation in element.annotations" :key="annotation.id">
+                  <ellipse
+                    v-if="annotation.type === 'circle'"
+                    :cx="`${annotation.x}%`"
+                    :cy="`${annotation.y}%`"
+                    :rx="`${annotation.width / 2}%`"
+                    :ry="`${annotation.height / 2}%`"
+                    fill="none"
+                    :stroke="annotation.color"
+                    :stroke-width="annotation.strokeWidth || 3"
+                  />
+                  <g v-else-if="annotation.type === 'arrow'">
+                    <defs>
+                      <marker
+                        :id="`arrow3d-${annotation.id}`"
+                        markerWidth="10"
+                        markerHeight="7"
+                        refX="9"
+                        refY="3.5"
+                        orient="auto"
+                      >
+                        <polygon points="0 0, 10 3.5, 0 7" :fill="annotation.color" />
+                      </marker>
+                    </defs>
+                    <line
+                      :x1="`${annotation.x}%`"
+                      :y1="`${annotation.y}%`"
+                      :x2="`${annotation.endX || annotation.x + 10}%`"
+                      :y2="`${annotation.endY || annotation.y + 10}%`"
+                      :stroke="annotation.color"
+                      :stroke-width="annotation.strokeWidth || 3"
+                      :marker-end="`url(#arrow3d-${annotation.id})`"
+                    />
+                  </g>
+                </template>
+              </svg>
+
+              <!-- HTML Annotations for 3D Screen -->
+              <template v-if="element.annotations?.length">
+                <template v-for="annotation in element.annotations" :key="`html3d-${annotation.id}`">
+                  <div
+                    v-if="annotation.type === 'marker'"
+                    class="absolute flex items-center justify-center rounded-full font-bold text-gray-900 pointer-events-none z-5"
+                    :style="{
+                      left: `${annotation.x}%`,
+                      top: `${annotation.y}%`,
+                      width: `${annotation.size || 32}px`,
+                      height: `${annotation.size || 32}px`,
+                      backgroundColor: annotation.color,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: `${(annotation.size || 32) * 0.5}px`,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    }"
+                  >
+                    {{ annotation.number }}
+                  </div>
+                  <div
+                    v-else-if="annotation.type === 'text'"
+                    class="absolute px-2 py-1 pointer-events-none z-5"
+                    :style="{
+                      left: `${annotation.x}%`,
+                      top: `${annotation.y}%`,
+                      color: annotation.color,
+                      fontSize: `${annotation.fontSize || 16}px`,
+                      fontWeight: 600,
+                      textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                      transform: 'translate(-50%, -50%)',
+                    }"
+                  >
+                    {{ annotation.text }}
+                  </div>
+                </template>
+              </template>
             </template>
 
             <!-- Placeholder -->
@@ -656,19 +827,31 @@ const renderTextWithHighlight = (element) => {
               </div>
             </template>
 
-            <!-- Upload overlay on hover if has image -->
+            <!-- Upload/Edit overlay on hover if has image -->
             <div
-              v-if="element.src"
-              class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center z-20"
+              v-if="element.src && !isExporting"
+              class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20"
             >
-              <input
-                type="file"
-                accept="image/*"
-                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
-                @change="(e) => handleFileSelect(e, element.id)"
-              />
-              <ArrowUpTrayIcon class="w-8 h-8 text-white" />
-              <span class="mt-2 text-sm text-white">Bild ersetzen</span>
+              <!-- Edit Button -->
+              <button
+                @click.stop="emit('edit-image', element.id)"
+                class="flex flex-col items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-gray-900 rounded-lg transition-colors"
+              >
+                <PencilSquareIcon class="w-5 h-5" />
+                <span class="text-xs font-medium">Bearbeiten</span>
+              </button>
+
+              <!-- Replace Button -->
+              <label class="flex flex-col items-center gap-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="(e) => handleFileSelect(e, element.id)"
+                />
+                <ArrowUpTrayIcon class="w-5 h-5" />
+                <span class="text-xs font-medium">Ersetzen</span>
+              </label>
             </div>
           </div>
         </div>

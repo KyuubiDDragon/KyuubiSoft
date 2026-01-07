@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useMockupStore } from '../stores/mockupStore'
 import {
   PhotoIcon,
@@ -7,10 +7,17 @@ import {
   Square3Stack3DIcon,
   TagIcon,
   SparklesIcon,
+  FolderIcon,
+  TrashIcon,
 } from '@heroicons/vue/24/outline'
 
 const emit = defineEmits(['select'])
 const mockupStore = useMockupStore()
+
+// Load custom templates on mount
+onMounted(() => {
+  mockupStore.fetchCustomTemplates()
+})
 
 const categoryIcons = {
   hero: PhotoIcon,
@@ -18,6 +25,7 @@ const categoryIcons = {
   frame: Square3Stack3DIcon,
   banner: TagIcon,
   minimal: SparklesIcon,
+  custom: FolderIcon,
 }
 
 const categoryLabels = {
@@ -26,6 +34,7 @@ const categoryLabels = {
   frame: 'Frames',
   banner: 'Banner',
   minimal: 'Minimal',
+  custom: 'Eigene Templates',
 }
 
 const templatesByCategory = computed(() => {
@@ -43,11 +52,87 @@ const templatesByCategory = computed(() => {
 const selectTemplate = (templateId) => {
   emit('select', templateId)
 }
+
+const selectCustomTemplate = (template) => {
+  mockupStore.loadCustomTemplate(template)
+  emit('select', null) // Close selector
+}
+
+const deleteCustomTemplate = async (e, template) => {
+  e.stopPropagation()
+  if (confirm(`Template "${template.name}" wirklich löschen?`)) {
+    try {
+      await mockupStore.deleteCustomTemplate(template.id)
+    } catch (err) {
+      console.error('Failed to delete template:', err)
+    }
+  }
+}
 </script>
 
 <template>
   <div class="p-4 space-y-6">
-    <!-- Categories -->
+    <!-- Custom Templates Section (if any) -->
+    <div v-if="mockupStore.customTemplates.length > 0" class="space-y-3">
+      <div class="flex items-center gap-2 text-amber-400">
+        <FolderIcon class="w-4 h-4" />
+        <h3 class="text-sm font-medium uppercase tracking-wide">
+          Meine Templates
+        </h3>
+        <span class="text-xs text-gray-500">({{ mockupStore.customTemplates.length }})</span>
+      </div>
+
+      <div class="grid gap-3">
+        <button
+          v-for="template in mockupStore.customTemplates"
+          :key="template.id"
+          @click="selectCustomTemplate(template)"
+          class="group relative bg-amber-500/10 hover:bg-amber-500/20 rounded-lg overflow-hidden transition-all duration-200 text-left border border-amber-500/30 hover:border-amber-500/50"
+        >
+          <!-- Thumbnail Preview -->
+          <div class="aspect-video bg-gray-900 relative overflow-hidden">
+            <div class="absolute inset-2 bg-gray-700/50 rounded-lg flex items-center justify-center">
+              <FolderIcon class="w-8 h-8 text-amber-500/50" />
+            </div>
+
+            <!-- Delete button -->
+            <button
+              @click="(e) => deleteCustomTemplate(e, template)"
+              class="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Template löschen"
+            >
+              <TrashIcon class="w-3 h-3" />
+            </button>
+          </div>
+
+          <!-- Info -->
+          <div class="p-3">
+            <h4 class="font-medium text-amber-400 text-sm group-hover:text-amber-300 transition-colors">
+              {{ template.name }}
+            </h4>
+            <p v-if="template.description" class="text-xs text-gray-500 mt-0.5 line-clamp-2">
+              {{ template.description }}
+            </p>
+            <div class="flex items-center gap-2 mt-2 text-[10px] text-gray-500">
+              <span>{{ template.width }} x {{ template.height }}</span>
+              <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+              <span>Custom</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="mockupStore.isLoading" class="text-center py-4">
+      <div class="animate-spin w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
+      <p class="text-gray-500 text-sm mt-2">Lade Templates...</p>
+    </div>
+
+    <!-- Divider if custom templates exist -->
+    <div v-if="mockupStore.customTemplates.length > 0" class="border-t border-gray-700" />
+
+    <!-- Built-in Categories -->
     <div v-for="(templates, category) in templatesByCategory" :key="category" class="space-y-3">
       <div class="flex items-center gap-2 text-gray-400">
         <component :is="categoryIcons[category] || PhotoIcon" class="w-4 h-4" />

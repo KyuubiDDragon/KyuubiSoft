@@ -15,7 +15,7 @@ class MockupService
     /**
      * Get all templates for a user
      */
-    public function getTemplates(int $userId, array $params = []): array
+    public function getTemplates(string $userId, array $params = []): array
     {
         $page = max(1, (int) ($params['page'] ?? 1));
         $limit = min(100, max(1, (int) ($params['limit'] ?? 20)));
@@ -31,7 +31,7 @@ class MockupService
             'limit' => $limit,
             'offset' => $offset,
         ], [
-            'user_id' => \PDO::PARAM_INT,
+            'user_id' => \PDO::PARAM_STR,
             'limit' => \PDO::PARAM_INT,
             'offset' => \PDO::PARAM_INT,
         ]);
@@ -61,7 +61,7 @@ class MockupService
     /**
      * Get a single template
      */
-    public function getTemplate(string $id, int $userId): ?array
+    public function getTemplate(string $id, string $userId): ?array
     {
         $template = $this->db->fetchAssociative(
             "SELECT * FROM mockup_templates WHERE id = :id AND user_id = :user_id",
@@ -79,7 +79,7 @@ class MockupService
     /**
      * Create a new template
      */
-    public function createTemplate(int $userId, array $data): array
+    public function createTemplate(string $userId, array $data): array
     {
         $id = $this->generateId();
 
@@ -104,7 +104,7 @@ class MockupService
     /**
      * Update a template
      */
-    public function updateTemplate(string $id, int $userId, array $data): bool
+    public function updateTemplate(string $id, string $userId, array $data): bool
     {
         $fields = [];
 
@@ -154,7 +154,7 @@ class MockupService
     /**
      * Delete a template
      */
-    public function deleteTemplate(string $id, int $userId): bool
+    public function deleteTemplate(string $id, string $userId): bool
     {
         $affected = $this->db->delete('mockup_templates', [
             'id' => $id,
@@ -169,7 +169,7 @@ class MockupService
     /**
      * Get all drafts for a user
      */
-    public function getDrafts(int $userId, array $params = []): array
+    public function getDrafts(string $userId, array $params = []): array
     {
         $page = max(1, (int) ($params['page'] ?? 1));
         $limit = min(100, max(1, (int) ($params['limit'] ?? 20)));
@@ -185,7 +185,7 @@ class MockupService
             'limit' => $limit,
             'offset' => $offset,
         ], [
-            'user_id' => \PDO::PARAM_INT,
+            'user_id' => \PDO::PARAM_STR,
             'limit' => \PDO::PARAM_INT,
             'offset' => \PDO::PARAM_INT,
         ]);
@@ -215,7 +215,7 @@ class MockupService
     /**
      * Get a single draft
      */
-    public function getDraft(string $id, int $userId): ?array
+    public function getDraft(string $id, string $userId): ?array
     {
         $draft = $this->db->fetchAssociative(
             "SELECT * FROM mockup_drafts WHERE id = :id AND user_id = :user_id",
@@ -233,7 +233,7 @@ class MockupService
     /**
      * Create or update a draft (upsert)
      */
-    public function saveDraft(int $userId, array $data): array
+    public function saveDraft(string $userId, array $data): array
     {
         $id = $data['id'] ?? $this->generateId();
 
@@ -262,7 +262,7 @@ class MockupService
     /**
      * Update a draft
      */
-    public function updateDraft(string $id, int $userId, array $data): bool
+    public function updateDraft(string $id, string $userId, array $data): bool
     {
         $fields = [];
 
@@ -292,7 +292,7 @@ class MockupService
     /**
      * Delete a draft
      */
-    public function deleteDraft(string $id, int $userId): bool
+    public function deleteDraft(string $id, string $userId): bool
     {
         $affected = $this->db->delete('mockup_drafts', [
             'id' => $id,

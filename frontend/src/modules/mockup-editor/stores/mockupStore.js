@@ -81,7 +81,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.18)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'title',
@@ -218,7 +219,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.18)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'title',
@@ -383,7 +385,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 380,
           borderRadius: 10,
           border: '1px solid rgba(244,180,0,0.15)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'title',
@@ -497,7 +500,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.12)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'logo',
@@ -584,7 +588,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.18)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'title',
@@ -672,7 +677,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.18)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'kicker',
@@ -882,7 +888,8 @@ export const useMockupStore = defineStore('mockup', () => {
           height: 1060,
           borderRadius: 14,
           border: '1px solid rgba(244,180,0,0.18)',
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          pointerEvents: 'none'
         },
         {
           id: 'bg-stripe',

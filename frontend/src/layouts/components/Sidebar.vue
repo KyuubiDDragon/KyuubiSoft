@@ -56,6 +56,8 @@ import {
   PhotoIcon,
   PencilSquareIcon,
   SwatchIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -770,6 +772,24 @@ function navigateTo(href) {
           </div>
         </template>
       </nav>
+
+      <!-- Theme toggle -->
+      <div class="px-4 py-2 border-t border-dark-700">
+        <button
+          @click="uiStore.toggleDarkMode()"
+          :title="uiStore.isDarkMode ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+        >
+          <SunIcon v-if="uiStore.isDarkMode" class="w-5 h-5 flex-shrink-0" />
+          <MoonIcon v-else class="w-5 h-5 flex-shrink-0" />
+          <span
+            v-if="isMobile || !uiStore.sidebarCollapsed"
+            class="text-sm"
+          >
+            {{ uiStore.isDarkMode ? 'Light Mode' : 'Dark Mode' }}
+          </span>
+        </button>
+      </div>
 
       <!-- User section -->
       <div class="p-4 border-t border-dark-700">

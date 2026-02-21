@@ -9,6 +9,7 @@
         "php": "^8.2",
         "cboden/ratchet": "^0.4.4",
         "doctrine/dbal": "^3.8",
+        "guzzlehttp/guzzle": "^7.9",
         "firebase/php-jwt": "^6.10",
         "monolog/monolog": "^3.5",
         "php-di/php-di": "^7.0",

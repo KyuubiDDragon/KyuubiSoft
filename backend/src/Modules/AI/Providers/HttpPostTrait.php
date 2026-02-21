@@ -4,35 +4,35 @@ declare(strict_types=1);
 
 namespace App\Modules\AI\Providers;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+
 /**
- * Provides a simple cURL-based HTTP POST helper for AI providers.
- *
- * NOTE: Phase 3 will replace this with Guzzle HTTP client. All providers
- * use this single trait so the migration can be done in one place.
+ * Provides a Guzzle-based HTTP POST helper for AI providers.
  */
 trait HttpPostTrait
 {
     private function httpPost(string $url, array $data, array $headers, int $timeout = 120): array
     {
-        $headers[] = 'Content-Type: application/json';
+        $client = new Client(['timeout' => $timeout]);
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => $timeout,
-        ]);
-
-        $response = curl_exec($ch);
-        $error    = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            throw new \RuntimeException('HTTP request failed: ' . $error);
+        // Convert flat "Name: Value" header strings to associative array for Guzzle
+        $parsedHeaders = ['Content-Type' => 'application/json'];
+        foreach ($headers as $header) {
+            [$name, $value] = explode(': ', $header, 2);
+            $parsedHeaders[$name] = $value;
         }
 
-        return json_decode($response, true) ?? ['error' => 'Invalid JSON response'];
+        try {
+            $response = $client->post($url, [
+                'headers' => $parsedHeaders,
+                'json'    => $data,
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true)
+                ?? ['error' => 'Invalid JSON response'];
+        } catch (GuzzleException $e) {
+            throw new \RuntimeException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+        }
     }
 }

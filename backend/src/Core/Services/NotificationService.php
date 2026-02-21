@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Services;
 
 use Doctrine\DBAL\Connection;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -211,18 +213,22 @@ class NotificationService
             $headers[] = 'X-Webhook-Signature: ' . $signature;
         }
 
-        $ch = curl_init($webhookUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        // Convert flat header strings to associative array
+        $parsedHeaders = [];
+        foreach ($headers as $header) {
+            [$name, $value] = explode(': ', $header, 2);
+            $parsedHeaders[$name] = $value;
+        }
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($webhookUrl, [
+                'headers' => $parsedHeaders,
+                'json'    => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
     }
 
     /**
@@ -258,18 +264,14 @@ class NotificationService
             ];
         }
 
-        $ch = curl_init($webhookUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($webhookUrl, [
+                'json' => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
     }
 
     /**
@@ -300,17 +302,14 @@ class NotificationService
             'disable_web_page_preview' => true,
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($url, [
+                'form_params' => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
     }
 
     /**

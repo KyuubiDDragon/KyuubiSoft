@@ -53,6 +53,7 @@ import {
   ArchiveBoxIcon,
   LockClosedIcon,
   HeartIcon,
+  FireIcon,
   PhotoIcon,
   PencilSquareIcon,
   SwatchIcon,
@@ -98,6 +99,7 @@ const iconToName = new Map([
   [ClockIcon, 'ClockIcon'],
   [BellIcon, 'BellIcon'],
   [BookmarkIcon, 'BookmarkIcon'],
+  [FireIcon, 'FireIcon'],
   [SignalIcon, 'SignalIcon'],
   [CurrencyDollarIcon, 'CurrencyDollarIcon'],
   [WrenchScrewdriverIcon, 'WrenchScrewdriverIcon'],
@@ -251,6 +253,7 @@ const allNavigationGroups = [
       { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes', permission: 'notes.view' },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, permission: 'snippets.view' },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, permission: 'bookmarks.view' },
+      { name: 'Habit Tracker', href: '/habit-tracker', icon: FireIcon },
     ],
   },
 

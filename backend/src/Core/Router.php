@@ -25,6 +25,7 @@ use App\Modules\Webhooks\Controllers\WebhookController;
 use App\Modules\Projects\Controllers\ProjectController;
 use App\Modules\TimeTracking\Controllers\TimeTrackingController;
 use App\Modules\Bookmarks\Controllers\BookmarkController;
+use App\Modules\HabitTracker\Controllers\HabitController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
@@ -428,6 +429,15 @@ class Router
                 $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
                 $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
+
+                // Habit Tracker
+                $protected->get('/habits', [HabitController::class, 'index']);
+                $protected->post('/habits', [HabitController::class, 'create']);
+                $protected->get('/habits/stats', [HabitController::class, 'getStats']);
+                $protected->put('/habits/{id}', [HabitController::class, 'update']);
+                $protected->delete('/habits/{id}', [HabitController::class, 'delete']);
+                $protected->post('/habits/{id}/complete', [HabitController::class, 'complete']);
+                $protected->get('/habits/{id}/completions', [HabitController::class, 'getCompletions']);
 
                 // Uptime Monitor - protected by feature flags
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index'])

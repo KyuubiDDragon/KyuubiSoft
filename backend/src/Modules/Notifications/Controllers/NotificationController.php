@@ -129,6 +129,62 @@ class NotificationController
         return JsonResponse::success(null, 'All notifications cleared');
     }
 
+    public function getChannels(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $channels = $this->db->fetchAllAssociative(
+            'SELECT * FROM notification_channels WHERE user_id = ? ORDER BY channel_type ASC',
+            [$userId]
+        );
+
+        return JsonResponse::success($channels);
+    }
+
+    public function updateChannel(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $channelType = $args['type'];
+        $data = (array) $request->getParsedBody();
+
+        $allowed = ['ntfy', 'gotify', 'healthchecks', 'webhook', 'slack', 'telegram'];
+        if (!in_array($channelType, $allowed, true)) {
+            return JsonResponse::validationError(['type' => 'Ungültiger Kanaltyp']);
+        }
+
+        $existing = $this->db->fetchAssociative(
+            'SELECT id FROM notification_channels WHERE user_id = ? AND channel_type = ?',
+            [$userId, $channelType]
+        );
+
+        $updateData = ['updated_at' => date('Y-m-d H:i:s')];
+        if (array_key_exists('is_enabled', $data)) {
+            $updateData['is_enabled'] = $data['is_enabled'] ? 1 : 0;
+        }
+        if (array_key_exists('config', $data)) {
+            $updateData['config'] = is_array($data['config']) ? json_encode($data['config']) : $data['config'];
+        }
+
+        if ($existing) {
+            $this->db->update('notification_channels', $updateData, ['id' => $existing['id']]);
+        } else {
+            $updateData['id'] = Uuid::uuid4()->toString();
+            $updateData['user_id'] = $userId;
+            $updateData['channel_type'] = $channelType;
+            if (!isset($updateData['is_enabled'])) {
+                $updateData['is_enabled'] = 0;
+            }
+            $this->db->insert('notification_channels', $updateData);
+        }
+
+        $channel = $this->db->fetchAssociative(
+            'SELECT * FROM notification_channels WHERE user_id = ? AND channel_type = ?',
+            [$userId, $channelType]
+        );
+
+        return JsonResponse::success($channel);
+    }
+
     public function getPreferences(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');

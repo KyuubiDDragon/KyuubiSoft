@@ -576,6 +576,8 @@ class Router
                 $protected->delete('/notifications/{id}', [NotificationController::class, 'delete']);
                 $protected->get('/notifications/preferences', [NotificationController::class, 'getPreferences']);
                 $protected->put('/notifications/preferences', [NotificationController::class, 'updatePreferences']);
+                $protected->get('/notifications/channels', [NotificationController::class, 'getChannels']);
+                $protected->put('/notifications/channels/{type}', [NotificationController::class, 'updateChannel']);
 
                 // Push Notifications
                 $protected->get('/push/vapid-key', [PushNotificationController::class, 'getVapidKey']);

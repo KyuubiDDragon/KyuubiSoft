@@ -611,6 +611,61 @@ async function sendTestNotification() {
     isSendingTest.value = false
   }
 }
+
+// ─── External Notification Channels ─────────────────────────────────────────
+
+const ntfyConfig = reactive({ url: '', token: '', priority: 'default', enabled: false })
+const gotifyConfig = reactive({ url: '', token: '', priority: 5, enabled: false })
+const healthchecksConfig = reactive({ uuid: '', base_url: 'https://hc-ping.com', enabled: false })
+const isSavingExternalChannels = ref(false)
+
+async function loadExternalChannels() {
+  try {
+    const response = await api.get('/api/v1/notifications/channels')
+    const channels = response.data.data || []
+    for (const ch of channels) {
+      const cfg = ch.config ? JSON.parse(ch.config) : {}
+      if (ch.channel_type === 'ntfy') {
+        Object.assign(ntfyConfig, { ...cfg, enabled: !!ch.is_enabled })
+      } else if (ch.channel_type === 'gotify') {
+        Object.assign(gotifyConfig, { ...cfg, enabled: !!ch.is_enabled })
+      } else if (ch.channel_type === 'healthchecks') {
+        Object.assign(healthchecksConfig, { ...cfg, enabled: !!ch.is_enabled })
+      }
+    }
+  } catch { /* channels not yet configured */ }
+}
+
+async function saveExternalChannel(type, config, enabled) {
+  await api.put(`/api/v1/notifications/channels/${type}`, {
+    is_enabled: enabled,
+    config,
+  })
+}
+
+async function saveAllExternalChannels() {
+  isSavingExternalChannels.value = true
+  try {
+    const { enabled: ntfyEnabled, ...ntfyCfg } = ntfyConfig
+    const { enabled: gotifyEnabled, ...gotifyCfg } = gotifyConfig
+    const { enabled: hcEnabled, ...hcCfg } = healthchecksConfig
+    await Promise.all([
+      saveExternalChannel('ntfy', ntfyCfg, ntfyEnabled),
+      saveExternalChannel('gotify', gotifyCfg, gotifyEnabled),
+      saveExternalChannel('healthchecks', hcCfg, hcEnabled),
+    ])
+    uiStore.showSuccess('Externe Kanäle gespeichert!')
+  } catch (error) {
+    uiStore.showError('Fehler beim Speichern')
+  } finally {
+    isSavingExternalChannels.value = false
+  }
+}
+
+// Load external channels when notifications tab is opened
+watch(activeTab, (tab) => {
+  if (tab === 'notifications') loadExternalChannels()
+}, { immediate: true })
 </script>
 
 <template>
@@ -1085,6 +1140,124 @@ async function sendTestNotification() {
 
             <button @click="savePushPreferences" class="btn-primary mt-6">
               Einstellungen speichern
+            </button>
+          </div>
+
+          <!-- External Notification Channels -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-6">Externe Benachrichtigungskanäle</h2>
+
+            <!-- ntfy.sh -->
+            <div class="mb-6 pb-6 border-b border-dark-700">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-white">ntfy.sh</h3>
+                  <p class="text-sm text-gray-400">Push-Benachrichtigungen via ntfy.sh oder selbst gehostetes ntfy</p>
+                </div>
+                <button
+                  @click="ntfyConfig.enabled = !ntfyConfig.enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="ntfyConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                >
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="ntfyConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
+                </button>
+              </div>
+              <div v-if="ntfyConfig.enabled" class="space-y-3">
+                <div>
+                  <label class="label">Topic-URL</label>
+                  <input v-model="ntfyConfig.url" type="url" class="input" placeholder="https://ntfy.sh/my-topic" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="label">Access Token (optional)</label>
+                    <input v-model="ntfyConfig.token" type="password" class="input" placeholder="tk_..." />
+                  </div>
+                  <div>
+                    <label class="label">Standard-Priorität</label>
+                    <select v-model="ntfyConfig.priority" class="input">
+                      <option value="min">Min</option>
+                      <option value="low">Niedrig</option>
+                      <option value="default">Standard</option>
+                      <option value="high">Hoch</option>
+                      <option value="urgent">Dringend</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gotify -->
+            <div class="mb-6 pb-6 border-b border-dark-700">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-white">Gotify</h3>
+                  <p class="text-sm text-gray-400">Self-hosted Push-Benachrichtigungen via Gotify-Server</p>
+                </div>
+                <button
+                  @click="gotifyConfig.enabled = !gotifyConfig.enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="gotifyConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                >
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="gotifyConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
+                </button>
+              </div>
+              <div v-if="gotifyConfig.enabled" class="space-y-3">
+                <div>
+                  <label class="label">Server-URL</label>
+                  <input v-model="gotifyConfig.url" type="url" class="input" placeholder="https://gotify.example.com" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="label">App-Token</label>
+                    <input v-model="gotifyConfig.token" type="password" class="input" placeholder="App-Token" />
+                  </div>
+                  <div>
+                    <label class="label">Standard-Priorität (1–10)</label>
+                    <input v-model.number="gotifyConfig.priority" type="number" min="1" max="10" class="input" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Healthchecks.io -->
+            <div class="mb-6">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-white">Healthchecks.io</h3>
+                  <p class="text-sm text-gray-400">Cron-Job-Monitoring – automatischer Ping bei geplanten Aufgaben</p>
+                </div>
+                <button
+                  @click="healthchecksConfig.enabled = !healthchecksConfig.enabled"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="healthchecksConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                >
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="healthchecksConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
+                </button>
+              </div>
+              <div v-if="healthchecksConfig.enabled" class="space-y-3">
+                <div>
+                  <label class="label">Check-UUID</label>
+                  <input v-model="healthchecksConfig.uuid" type="text" class="input font-mono"
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                </div>
+                <div>
+                  <label class="label">Basis-URL (für self-hosted)</label>
+                  <input v-model="healthchecksConfig.base_url" type="url" class="input"
+                    placeholder="https://hc-ping.com" />
+                </div>
+              </div>
+            </div>
+
+            <button
+              @click="saveAllExternalChannels"
+              :disabled="isSavingExternalChannels"
+              class="btn-primary"
+            >
+              <span v-if="isSavingExternalChannels">Speichern...</span>
+              <span v-else>Externe Kanäle speichern</span>
             </button>
           </div>
         </div>

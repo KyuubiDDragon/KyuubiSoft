@@ -15,7 +15,11 @@ class AIService
     public function __construct(
         private readonly Connection $db
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        // Derive a proper 32-byte key from APP_KEY using SHA-256 (raw binary output).
+        // Using the raw APP_KEY string directly was unsafe: AES-256-CBC requires exactly
+        // 32 bytes, and OpenSSL would silently truncate/pad arbitrary-length strings.
+        $rawKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = hash('sha256', $rawKey, true);
         $this->toolsService = new AIToolsService();
     }
 
@@ -989,23 +993,41 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
     }
 
     /**
-     * Encrypt API key
+     * Encrypt API key using the derived 32-byte key.
      */
     private function encryptApiKey(string $apiKey): string
     {
         $iv = random_bytes(16);
-        $encrypted = openssl_encrypt($apiKey, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        $encrypted = openssl_encrypt($apiKey, 'aes-256-cbc', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $encrypted);
     }
 
     /**
-     * Decrypt API key
+     * Decrypt API key. Tries the derived key first; falls back to the legacy raw
+     * APP_KEY for data encrypted before the key-derivation fix was applied.
+     * Run scripts/migrate_encryption.php to re-encrypt legacy values so the fallback
+     * can eventually be removed.
      */
     private function decryptApiKey(string $encrypted): string
     {
         $data = base64_decode($encrypted);
         $iv = substr($data, 0, 16);
-        $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        $ciphertext = substr($data, 16);
+
+        // Attempt decryption with the new derived key (OPENSSL_RAW_DATA).
+        $result = openssl_decrypt($ciphertext, 'aes-256-cbc', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
+        if ($result !== false) {
+            return $result;
+        }
+
+        // Legacy fallback: data was encrypted with the raw APP_KEY string and flag=0
+        // (base64-wrapped output). Try that combination before giving up.
+        $legacyKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $legacyResult = openssl_decrypt($ciphertext, 'aes-256-cbc', $legacyKey, 0, $iv);
+        if ($legacyResult !== false) {
+            return $legacyResult;
+        }
+
+        throw new \RuntimeException('Unable to decrypt API key: invalid key or corrupted data.');
     }
 }

@@ -26,6 +26,7 @@ use App\Modules\Projects\Controllers\ProjectController;
 use App\Modules\TimeTracking\Controllers\TimeTrackingController;
 use App\Modules\Bookmarks\Controllers\BookmarkController;
 use App\Modules\HabitTracker\Controllers\HabitController;
+use App\Modules\Finance\Controllers\ExpenseController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
@@ -438,6 +439,16 @@ class Router
                 $protected->delete('/habits/{id}', [HabitController::class, 'delete']);
                 $protected->post('/habits/{id}/complete', [HabitController::class, 'complete']);
                 $protected->get('/habits/{id}/completions', [HabitController::class, 'getCompletions']);
+
+                // Expense Tracker
+                $protected->get('/expenses', [ExpenseController::class, 'index']);
+                $protected->post('/expenses', [ExpenseController::class, 'create']);
+                $protected->get('/expenses/summary', [ExpenseController::class, 'getSummary']);
+                $protected->put('/expenses/{id}', [ExpenseController::class, 'update']);
+                $protected->delete('/expenses/{id}', [ExpenseController::class, 'delete']);
+                $protected->get('/expense-categories', [ExpenseController::class, 'getCategories']);
+                $protected->post('/expense-categories', [ExpenseController::class, 'createCategory']);
+                $protected->delete('/expense-categories/{id}', [ExpenseController::class, 'deleteCategory']);
 
                 // Uptime Monitor - protected by feature flags
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index'])

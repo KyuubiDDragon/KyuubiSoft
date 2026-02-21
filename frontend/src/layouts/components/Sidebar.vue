@@ -20,6 +20,7 @@ import {
   BookmarkIcon,
   SignalIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   WrenchScrewdriverIcon,
   Cog6ToothIcon,
   UsersIcon,
@@ -102,6 +103,7 @@ const iconToName = new Map([
   [FireIcon, 'FireIcon'],
   [SignalIcon, 'SignalIcon'],
   [CurrencyDollarIcon, 'CurrencyDollarIcon'],
+  [BanknotesIcon, 'BanknotesIcon'],
   [WrenchScrewdriverIcon, 'WrenchScrewdriverIcon'],
   [Cog6ToothIcon, 'Cog6ToothIcon'],
   [UsersIcon, 'UsersIcon'],
@@ -338,10 +340,9 @@ const allNavigationGroups = [
     id: 'business',
     name: 'Business',
     icon: CurrencyDollarIcon,
-    feature: 'invoices',
-    permission: 'invoices.view',
     children: [
-      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, permission: 'invoices.view' },
+      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, feature: 'invoices', permission: 'invoices.view' },
+      { name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon },
     ],
   },
 

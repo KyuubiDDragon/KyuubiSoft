@@ -3,22 +3,55 @@ import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 
+interface User {
+  id: string
+  name: string
+  email: string
+  roles: string[]
+  permissions: string[]
+  [key: string]: unknown
+}
+
+interface LoginCredentials {
+  email: string
+  password: string
+  totp_code?: string
+}
+
+interface RegisterData {
+  name: string
+  email: string
+  password: string
+  [key: string]: unknown
+}
+
+interface LoginResult {
+  success?: boolean
+  requires2FA?: boolean
+}
+
+interface RegisterResult {
+  success: boolean
+  pendingApproval?: boolean
+  message?: string
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const uiStore = useUiStore()
   // State
-  const user = ref(null)
-  const accessToken = ref(null)
-  const refreshToken = ref(null)
-  const isLoading = ref(false)
-  const isInitialized = ref(false)
+  const user = ref<User | null>(null)
+  const accessToken = ref<string | null>(null)
+  const refreshToken = ref<string | null>(null)
+  const isLoading = ref<boolean>(false)
+  const isInitialized = ref<boolean>(false)
 
   // Getters
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
-  const userRoles = computed(() => user.value?.roles || [])
-  const userPermissions = computed(() => user.value?.permissions || [])
+  const userRoles = computed<string[]>(() => user.value?.roles || [])
+  const userPermissions = computed<string[]>(() => user.value?.permissions || [])
 
   // Actions
-  function hasPermission(permission) {
+  function hasPermission(permission: string): boolean {
     if (userRoles.value.includes('owner')) return true
     if (userPermissions.value.includes(permission)) return true
 
@@ -32,11 +65,11 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  function hasRole(role) {
+  function hasRole(role: string): boolean {
     return userRoles.value.includes(role)
   }
 
-  async function initialize() {
+  async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
     // Check if we're on a public page - don't try to authenticate
@@ -75,7 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
   }
 
-  async function login(credentials) {
+  async function login(credentials: LoginCredentials): Promise<LoginResult> {
     isLoading.value = true
 
     try {
@@ -95,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(userData) {
+  async function register(userData: RegisterData): Promise<RegisterResult> {
     isLoading.value = true
 
     try {
@@ -123,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function refresh() {
+  async function refresh(): Promise<void> {
     if (!refreshToken.value) {
       throw new Error('No refresh token')
     }
@@ -138,13 +171,13 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchUser()
   }
 
-  async function fetchUser() {
+  async function fetchUser(): Promise<void> {
     const response = await api.get('/api/v1/auth/me')
     user.value = response.data.data
     uiStore.setAuthenticated(true)
   }
 
-  function logout() {
+  function logout(): void {
     // Call logout endpoint (fire and forget)
     if (accessToken.value) {
       api.post('/api/v1/auth/logout', {
@@ -157,7 +190,7 @@ export const useAuthStore = defineStore('auth', () => {
     uiStore.setAuthenticated(false)
   }
 
-  function setTokens(access, refresh) {
+  function setTokens(access: string, refresh: string | null): void {
     accessToken.value = access
     refreshToken.value = refresh
     localStorage.setItem('access_token', access)
@@ -166,7 +199,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function clearTokens() {
+  function clearTokens(): void {
     accessToken.value = null
     refreshToken.value = null
     localStorage.removeItem('access_token')

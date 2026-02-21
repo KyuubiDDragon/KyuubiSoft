@@ -19,7 +19,7 @@ const globalShortcuts = [
 
   // Actions
   { key: '/', description: 'Globale Suche', action: 'search' },
-  { key: 'Ctrl+k', description: 'Globale Suche (alternativ)', action: 'search' },
+  { key: 'Ctrl+k', description: 'Command Palette öffnen', action: 'commandPalette' },
   { key: '?', description: 'Shortcuts anzeigen', action: 'showShortcuts' },
   { key: 'Escape', description: 'Modal/Dialog schließen', action: 'escape' },
   { key: 'n', description: 'Neu erstellen (kontextabhängig)', action: 'new' },
@@ -68,8 +68,11 @@ export function useKeyboardShortcuts() {
 
     switch (shortcut.action) {
       case 'search':
-        // Emit event or directly trigger global search
         document.dispatchEvent(new CustomEvent('toggle-global-search'))
+        return true
+
+      case 'commandPalette':
+        document.dispatchEvent(new CustomEvent('toggle-command-palette'))
         return true
 
       case 'showShortcuts':
@@ -93,10 +96,10 @@ export function useKeyboardShortcuts() {
   function handleKeyDown(e) {
     // Ignore if in input field (except for some specific shortcuts)
     if (isInputElement(e.target)) {
-      // Allow Ctrl+K for search even in input fields
+      // Allow Ctrl+K for command palette even in input fields
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        document.dispatchEvent(new CustomEvent('toggle-global-search'))
+        document.dispatchEvent(new CustomEvent('toggle-command-palette'))
         return
       }
       // Allow Escape

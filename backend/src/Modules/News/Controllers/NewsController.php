@@ -8,6 +8,8 @@ use App\Core\Http\JsonResponse;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use Doctrine\DBAL\Connection;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
@@ -448,28 +450,24 @@ class NewsController
      */
     private function extractArticleContent(string $url): ?string
     {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_HTTPHEADER => [
-                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language: de,en-US;q=0.7,en;q=0.3',
-            ],
-        ]);
+        try {
+            $res = (new GuzzleClient([
+                'timeout'         => 20,
+                'connect_timeout' => 10,
+                'allow_redirects' => ['max' => 5],
+                'verify'          => false,
+                'headers'         => [
+                    'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language' => 'de,en-US;q=0.7,en;q=0.3',
+                ],
+            ]))->get($url);
 
-        $html = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($html === false || $httpCode >= 400) {
+            if ($res->getStatusCode() >= 400) {
+                return null;
+            }
+            $html = $res->getBody()->getContents();
+        } catch (GuzzleException) {
             return null;
         }
 
@@ -681,35 +679,26 @@ class NewsController
 
     private function parseFeedUrl(string $url): array
     {
-        // Use cURL for more reliable HTTP requests
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_USERAGENT => 'KyuubiSoft News Reader/1.0 (compatible; RSS/Atom reader)',
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
-            ],
-        ]);
-
-        $content = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($content === false || !empty($error)) {
-            throw new \Exception('Could not fetch feed: ' . ($error ?: 'Unknown error'));
+        try {
+            $res = (new GuzzleClient([
+                'timeout'         => 15,
+                'connect_timeout' => 10,
+                'allow_redirects' => ['max' => 5],
+                'verify'          => false,
+                'headers'         => [
+                    'User-Agent' => 'KyuubiSoft News Reader/1.0 (compatible; RSS/Atom reader)',
+                    'Accept'     => 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+                ],
+            ]))->get($url);
+        } catch (GuzzleException $e) {
+            throw new \Exception('Could not fetch feed: ' . $e->getMessage());
         }
 
-        if ($httpCode >= 400) {
-            throw new \Exception('Feed returned HTTP ' . $httpCode);
+        if ($res->getStatusCode() >= 400) {
+            throw new \Exception('Feed returned HTTP ' . $res->getStatusCode());
         }
+
+        $content = $res->getBody()->getContents();
 
         if (empty($content)) {
             throw new \Exception('Feed returned empty response');

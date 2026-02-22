@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Services;
 
 use Doctrine\DBAL\Connection;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -27,6 +29,8 @@ class NotificationService
     public const CHANNEL_WEBHOOK = 'webhook';
     public const CHANNEL_SLACK = 'slack';
     public const CHANNEL_TELEGRAM = 'telegram';
+    public const CHANNEL_NTFY = 'ntfy';
+    public const CHANNEL_GOTIFY = 'gotify';
 
     public function __construct(
         private readonly Connection $db,
@@ -124,6 +128,16 @@ class NotificationService
                     $status = $this->sendTelegramNotification($config, $title, $message, $link);
                     break;
 
+                case self::CHANNEL_NTFY:
+                    $config = $channel['config'] ? json_decode($channel['config'], true) : [];
+                    $status = $this->sendNtfyNotification($config, $title, $message, $priority);
+                    break;
+
+                case self::CHANNEL_GOTIFY:
+                    $config = $channel['config'] ? json_decode($channel['config'], true) : [];
+                    $status = $this->sendGotifyNotification($config, $title, $message, $priority);
+                    break;
+
                 default:
                     $status = 'skipped';
             }
@@ -211,18 +225,22 @@ class NotificationService
             $headers[] = 'X-Webhook-Signature: ' . $signature;
         }
 
-        $ch = curl_init($webhookUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        // Convert flat header strings to associative array
+        $parsedHeaders = [];
+        foreach ($headers as $header) {
+            [$name, $value] = explode(': ', $header, 2);
+            $parsedHeaders[$name] = $value;
+        }
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($webhookUrl, [
+                'headers' => $parsedHeaders,
+                'json'    => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
     }
 
     /**
@@ -258,18 +276,14 @@ class NotificationService
             ];
         }
 
-        $ch = curl_init($webhookUrl);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($webhookUrl, [
+                'json' => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
     }
 
     /**
@@ -300,17 +314,116 @@ class NotificationService
             'disable_web_page_preview' => true,
         ];
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($url, [
+                'form_params' => $payload,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
+    }
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+    /**
+     * Send ntfy.sh notification (self-hosted or ntfy.sh cloud).
+     * Config: { "url": "https://ntfy.sh/my-topic", "token": "optional", "priority": "default" }
+     * Priority values: min, low, default, high, urgent
+     */
+    private function sendNtfyNotification(array $config, string $title, ?string $message, string $appPriority): string
+    {
+        $url = $config['url'] ?? null;
+        if (!$url) {
+            return 'skipped';
+        }
 
-        return ($httpCode >= 200 && $httpCode < 300) ? 'sent' : 'failed';
+        // Map internal priority to ntfy priority
+        $ntfyPriority = match ($appPriority) {
+            'critical' => 'urgent',
+            'high'     => 'high',
+            'low'      => 'low',
+            default    => $config['priority'] ?? 'default',
+        };
+
+        $headers = [
+            'Title'    => $title,
+            'Priority' => $ntfyPriority,
+        ];
+
+        if (!empty($config['token'])) {
+            $headers['Authorization'] = 'Bearer ' . $config['token'];
+        }
+
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($url, [
+                'headers' => $headers,
+                'body'    => $message ?? $title,
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
+    }
+
+    /**
+     * Send Gotify notification.
+     * Config: { "url": "https://gotify.example.com", "token": "app-token", "priority": 5 }
+     */
+    private function sendGotifyNotification(array $config, string $title, ?string $message, string $appPriority): string
+    {
+        $url   = $config['url'] ?? null;
+        $token = $config['token'] ?? null;
+
+        if (!$url || !$token) {
+            return 'skipped';
+        }
+
+        // Map internal priority to Gotify priority (1–10)
+        $gotifyPriority = match ($appPriority) {
+            'critical' => 10,
+            'high'     => 7,
+            'low'      => 2,
+            default    => (int) ($config['priority'] ?? 5),
+        };
+
+        $endpoint = rtrim($url, '/') . '/message';
+
+        try {
+            $res = (new GuzzleClient(['timeout' => 10]))->post($endpoint, [
+                'query'   => ['token' => $token],
+                'json'    => [
+                    'title'    => $title,
+                    'message'  => $message ?? $title,
+                    'priority' => $gotifyPriority,
+                ],
+            ]);
+            return ($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) ? 'sent' : 'failed';
+        } catch (GuzzleException) {
+            return 'failed';
+        }
+    }
+
+    /**
+     * Ping a Healthchecks.io check URL to signal a cron job ran successfully.
+     * Pass $success = false to signal failure (/fail endpoint).
+     *
+     * Usage: $notificationService->pingHealthcheck('your-uuid-here');
+     */
+    public function pingHealthcheck(string $checkUuid, bool $success = true, ?string $baseUrl = null): bool
+    {
+        $base     = rtrim($baseUrl ?? 'https://hc-ping.com', '/');
+        $endpoint = $success ? "{$base}/{$checkUuid}" : "{$base}/{$checkUuid}/fail";
+
+        try {
+            (new GuzzleClient(['timeout' => 5]))->get($endpoint);
+            return true;
+        } catch (GuzzleException $e) {
+            $this->logger?->warning('Healthchecks.io ping failed', [
+                'uuid'    => $checkUuid,
+                'success' => $success,
+                'error'   => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**

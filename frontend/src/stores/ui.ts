@@ -2,20 +2,27 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import api from '@/core/api/axios'
 
+type NotificationType = 'success' | 'error' | 'warning' | 'info'
+
+interface Notification {
+  message: string
+  type: NotificationType
+}
+
 export const useUiStore = defineStore('ui', () => {
   // State
-  const isDarkMode = ref(true)
-  const sidebarOpen = ref(true)
-  const sidebarCollapsed = ref(false)
-  const notification = ref(null)
-  const isLoading = ref(false)
-  const isAuthenticated = ref(false)
-  const settingsLoaded = ref(false)
+  const isDarkMode = ref<boolean>(true)
+  const sidebarOpen = ref<boolean>(true)
+  const sidebarCollapsed = ref<boolean>(false)
+  const notification = ref<Notification | null>(null)
+  const isLoading = ref<boolean>(false)
+  const isAuthenticated = ref<boolean>(false)
+  const settingsLoaded = ref<boolean>(false)
 
   // Floating widgets visibility (default: hidden)
-  const showQuickNotes = ref(false)
-  const showQuickCapture = ref(false)
-  const showAIAssistant = ref(false)
+  const showQuickNotes = ref<boolean>(false)
+  const showQuickCapture = ref<boolean>(false)
+  const showAIAssistant = ref<boolean>(false)
 
   // Initialize from localStorage (fallback)
   const storedDarkMode = localStorage.getItem('darkMode')
@@ -50,7 +57,7 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   // Load settings from backend
-  async function loadUserSettings() {
+  async function loadUserSettings(): Promise<void> {
     if (!isAuthenticated.value) return
 
     try {
@@ -74,7 +81,7 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   // Save single setting to backend
-  async function saveUserSetting(key, value) {
+  async function saveUserSetting(key: string, value: unknown): Promise<void> {
     if (!isAuthenticated.value) return
 
     try {
@@ -85,7 +92,7 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   // Set auth state (called from auth store)
-  function setAuthenticated(value) {
+  function setAuthenticated(value: boolean): void {
     isAuthenticated.value = value
     if (value) {
       loadUserSettings()
@@ -117,19 +124,19 @@ export const useUiStore = defineStore('ui', () => {
   })
 
   // Actions
-  function toggleDarkMode() {
+  function toggleDarkMode(): void {
     isDarkMode.value = !isDarkMode.value
   }
 
-  function toggleSidebar() {
+  function toggleSidebar(): void {
     sidebarOpen.value = !sidebarOpen.value
   }
 
-  function toggleSidebarCollapse() {
+  function toggleSidebarCollapse(): void {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  function showNotification(message, type = 'info', duration = 3000) {
+  function showNotification(message: string, type: NotificationType = 'info', duration = 3000): void {
     notification.value = { message, type }
 
     setTimeout(() => {
@@ -137,41 +144,41 @@ export const useUiStore = defineStore('ui', () => {
     }, duration)
   }
 
-  function showSuccess(message) {
+  function showSuccess(message: string): void {
     showNotification(message, 'success')
   }
 
-  function showError(message) {
+  function showError(message: string): void {
     showNotification(message, 'error', 5000)
   }
 
-  function showWarning(message) {
+  function showWarning(message: string): void {
     showNotification(message, 'warning')
   }
 
-  function showInfo(message) {
+  function showInfo(message: string): void {
     showNotification(message, 'info')
   }
 
-  function startLoading() {
+  function startLoading(): void {
     isLoading.value = true
   }
 
-  function stopLoading() {
+  function stopLoading(): void {
     isLoading.value = false
   }
 
-  function toggleQuickNotes() {
+  function toggleQuickNotes(): void {
     showQuickNotes.value = !showQuickNotes.value
     localStorage.setItem('showQuickNotes', String(showQuickNotes.value))
   }
 
-  function toggleQuickCapture() {
+  function toggleQuickCapture(): void {
     showQuickCapture.value = !showQuickCapture.value
     localStorage.setItem('showQuickCapture', String(showQuickCapture.value))
   }
 
-  function toggleAIAssistant() {
+  function toggleAIAssistant(): void {
     showAIAssistant.value = !showAIAssistant.value
     localStorage.setItem('showAIAssistant', String(showAIAssistant.value))
   }

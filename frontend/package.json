@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vue-tsc --noEmit && vite build",
+    "type-check": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts --fix --ignore-path .gitignore",
     "test": "vitest"
   },
   "dependencies": {
@@ -34,8 +35,6 @@
     "@tiptap/extension-underline": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
     "@tiptap/vue-3": "^2.11.0",
-    "@univerjs/preset-sheets-core": "^0.12.2",
-    "@univerjs/presets": "^0.12.2",
     "@vueuse/core": "^10.7.0",
     "axios": "^1.6.2",
     "chart.js": "^4.4.1",
@@ -47,8 +46,6 @@
     "monaco-editor": "^0.55.1",
     "pinia": "^2.1.7",
     "qrcode": "^1.5.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "rxjs": "^7.8.1",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
@@ -64,13 +61,16 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.2",
+    "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.19.2",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "vue-tsc": "^3.2.5"
   }
 }

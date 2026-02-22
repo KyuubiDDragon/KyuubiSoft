@@ -9,6 +9,7 @@ import QuickNotes from '@/components/QuickNotes.vue'
 import QuickCapture from '@/components/QuickCapture.vue'
 import AIAssistant from '@/components/AIAssistant.vue'
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal.vue'
+import CommandPalette from '@/components/CommandPalette.vue'
 
 const route = useRoute()
 const uiStore = useUiStore()
@@ -100,6 +101,9 @@ function closeMobileSidebar() {
 
     <!-- Keyboard Shortcuts Modal -->
     <KeyboardShortcutsModal />
+
+    <!-- Command Palette (Ctrl+K) -->
+    <CommandPalette />
 
     <!-- Loading overlay -->
     <Transition name="fade">

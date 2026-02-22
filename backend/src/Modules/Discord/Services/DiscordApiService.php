@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Discord\Services;
 
 use App\Core\Exceptions\ValidationException;
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 
 class DiscordApiService
 {
@@ -257,28 +260,24 @@ class DiscordApiService
             mkdir($dir, 0755, true);
         }
 
-        $ch = curl_init($url);
-        $fp = fopen($localPath, 'wb');
+        try {
+            $response = (new GuzzleClient([
+                'timeout'         => 300,
+                'allow_redirects' => true,
+                'headers'         => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                ],
+            ]))->get($url, ['sink' => $localPath]);
 
-        curl_setopt_array($ch, [
-            CURLOPT_FILE => $fp,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 300,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        ]);
-
-        $success = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        curl_close($ch);
-        fclose($fp);
-
-        if (!$success || $httpCode !== 200) {
+            if ($response->getStatusCode() !== 200) {
+                @unlink($localPath);
+                return false;
+            }
+            return true;
+        } catch (GuzzleException) {
             @unlink($localPath);
             return false;
         }
-
-        return true;
     }
 
     /**
@@ -338,42 +337,30 @@ class DiscordApiService
 
         $url = self::BASE_URL . $endpoint;
 
-        $ch = curl_init();
-
         $headers = [
-            'Authorization: ' . $token,
-            'Content-Type: application/json',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'X-Super-Properties: ' . $this->getSuperProperties(),
-            'X-Discord-Locale: de',
-            'X-Discord-Timezone: Europe/Berlin',
+            'Authorization'        => $token,
+            'Content-Type'         => 'application/json',
+            'User-Agent'           => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'X-Super-Properties'   => $this->getSuperProperties(),
+            'X-Discord-Locale'     => 'de',
+            'X-Discord-Timezone'   => 'Europe/Berlin',
         ];
 
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CUSTOMREQUEST => $method,
-        ]);
-
+        $options = ['headers' => $headers, 'timeout' => 30, 'http_errors' => false];
         if ($body !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+            $options['json'] = $body;
         }
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-
-        curl_close($ch);
+        try {
+            $res = (new GuzzleClient())->request($method, $url, $options);
+        } catch (GuzzleException $e) {
+            throw new \RuntimeException("Discord API request failed: {$e->getMessage()}");
+        }
 
         $this->lastRequestTime = (int) (microtime(true) * 1000);
 
-        if ($error) {
-            throw new \RuntimeException("Discord API request failed: {$error}");
-        }
-
-        $data = json_decode($response, true) ?? [];
+        $httpCode = $res->getStatusCode();
+        $data     = json_decode($res->getBody()->getContents(), true) ?? [];
 
         // Handle rate limiting
         if ($httpCode === 429) {
@@ -390,7 +377,7 @@ class DiscordApiService
         // Handle errors
         if ($httpCode >= 400) {
             $message = $data['message'] ?? 'Unknown error';
-            $code = $data['code'] ?? 0;
+            $code    = $data['code'] ?? 0;
             throw new \RuntimeException("Discord API error ({$code}): {$message}", $httpCode);
         }
 

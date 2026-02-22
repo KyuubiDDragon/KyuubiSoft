@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
         name: 'KyuubiSoft',
@@ -41,9 +41,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
-        // Exclude large chunks from precaching (Univer is ~10MB)
-        globIgnores: ['**/univer-*.js'],
-        // Increase limit for other large assets (TipTap, etc.)
+        // Increase limit for large assets (Monaco, TipTap, etc.)
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
         runtimeCaching: [
           {
@@ -90,8 +88,8 @@ export default defineConfig({
             }
           },
           {
-            // Cache large JS chunks (like Univer) at runtime
-            urlPattern: /\/assets\/.*\.js$/i,
+            // Cache large JS/CSS chunks at runtime
+            urlPattern: /\/assets\/.*\.(js|css)$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'js-assets-cache',
@@ -134,17 +132,12 @@ export default defineConfig({
           'vendor': ['vue', 'vue-router', 'pinia'],
           'charts': ['chart.js', 'vue-chartjs'],
           'tiptap': ['@tiptap/vue-3', '@tiptap/starter-kit'],
-          'univer': ['@univerjs/presets', '@univerjs/preset-sheets-core'],
         },
       },
     },
   },
   optimizeDeps: {
     include: [
-      '@univerjs/presets',
-      '@univerjs/preset-sheets-core',
-      'react',
-      'react-dom',
       'rxjs',
     ],
   },

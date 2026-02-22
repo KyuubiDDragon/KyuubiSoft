@@ -60,6 +60,8 @@ import {
   SwatchIcon,
   SunIcon,
   MoonIcon,
+  CircleStackIcon,
+  QueueListIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -133,6 +135,8 @@ const iconToName = new Map([
   [PhotoIcon, 'PhotoIcon'],
   [PencilSquareIcon, 'PencilSquareIcon'],
   [SwatchIcon, 'SwatchIcon'],
+  [CircleStackIcon, 'CircleStackIcon'],
+  [QueueListIcon, 'QueueListIcon'],
 ])
 
 // Get icon name from component
@@ -296,6 +300,9 @@ const allNavigationGroups = [
     children: [
       { name: 'Verbindungen', href: '/connections', icon: ServerIcon, permission: 'connections.view' },
       { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server', permission: 'server.view' },
+      { name: 'DB Browser', href: '/database-browser', icon: CircleStackIcon, permission: 'connections.view' },
+      { name: 'Log Viewer', href: '/logs', icon: QueueListIcon, permission: 'server.view' },
+      { name: 'Script Vault', href: '/scripts', icon: CodeBracketIcon, feature: 'server', permission: 'server.view' },
       { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git', permission: 'git.view' },
       { name: 'Webhooks', href: '/webhooks', icon: BellIcon, permission: 'webhooks.view' },
       { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },

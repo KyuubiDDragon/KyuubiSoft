@@ -72,6 +72,10 @@ use App\Modules\Notes\Controllers\CollaborationController;
 use App\Modules\Notes\Controllers\PublicNoteController;
 use App\Modules\Discord\Controllers\DiscordController;
 use App\Modules\Mockup\Controllers\MockupController;
+use App\Modules\Terminal\Controllers\TerminalController;
+use App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController;
+use App\Modules\Logs\Controllers\LogsController;
+use App\Modules\Scripts\Controllers\ScriptsController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -917,6 +921,8 @@ class Router
                     ->add(new FeatureMiddleware('docker', null, 'containers'));
                 $protected->get('/docker/containers/{id}/logs', [DockerController::class, 'containerLogs'])
                     ->add(new FeatureMiddleware('docker', null, 'containers'));
+                $protected->get('/docker/containers/{id}/logs/stream', [DockerController::class, 'containerLogsStream'])
+                    ->add(new FeatureMiddleware('docker', null, 'containers'));
                 $protected->get('/docker/containers/{id}/stats', [DockerController::class, 'containerStats'])
                     ->add(new FeatureMiddleware('docker', null, 'containers'));
                 $protected->get('/docker/containers/{id}/env', [DockerController::class, 'getContainerEnv'])
@@ -1206,6 +1212,68 @@ class Router
                 // NOTE: User-token-based Discord account endpoints have been removed.
                 // Storing Discord user tokens violates Discord's Terms of Service (self-botting).
                 // All Discord functionality is now exclusively available via Bot tokens (see Bot section below).
+
+                // =========================================================
+                // Web Terminal (SSH PTY via WebSocket collaboration server)
+                // =========================================================
+                $protected->post('/terminal/sessions', [TerminalController::class, 'createSession'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/terminal/sessions/{id}', [TerminalController::class, 'getStatus'])
+                    ->add(new FeatureMiddleware('connections'));
+
+                // =========================================================
+                // Database Browser
+                // =========================================================
+                $protected->get('/database/connections', [DatabaseBrowserController::class, 'listConnections'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->post('/database/connections/{id}/test', [DatabaseBrowserController::class, 'testConnection'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/database/connections/{id}/schemas', [DatabaseBrowserController::class, 'listSchemas'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/database/connections/{id}/tables', [DatabaseBrowserController::class, 'listTables'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/database/connections/{id}/tables/{table}/schema', [DatabaseBrowserController::class, 'tableSchema'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/database/connections/{id}/tables/{table}/rows', [DatabaseBrowserController::class, 'tableRows'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->post('/database/connections/{id}/query', [DatabaseBrowserController::class, 'executeQuery'])
+                    ->add(new FeatureMiddleware('connections'));
+                $protected->get('/database/connections/{id}/history', [DatabaseBrowserController::class, 'getHistory'])
+                    ->add(new FeatureMiddleware('connections'));
+
+                // =========================================================
+                // Centralized Log Viewer
+                // =========================================================
+                $protected->get('/logs/docker-hosts', [LogsController::class, 'listDockerHosts'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/logs/docker-hosts/{hostId}/containers', [LogsController::class, 'listDockerContainers'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/logs/docker/{hostId}/{containerId}', [LogsController::class, 'dockerContainerLogs'])
+                    ->add(new FeatureMiddleware('docker'));
+                $protected->get('/logs/local/files', [LogsController::class, 'listLocalFiles'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/logs/local/read', [LogsController::class, 'readLocalFile'])
+                    ->add(new FeatureMiddleware('server'));
+
+                // =========================================================
+                // Script Vault & Runner
+                // =========================================================
+                $protected->get('/scripts', [ScriptsController::class, 'index'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/scripts', [ScriptsController::class, 'create'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/scripts/{id}', [ScriptsController::class, 'show'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->put('/scripts/{id}', [ScriptsController::class, 'update'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->delete('/scripts/{id}', [ScriptsController::class, 'delete'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->post('/scripts/{id}/run', [ScriptsController::class, 'run'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/scripts/{id}/history', [ScriptsController::class, 'history'])
+                    ->add(new FeatureMiddleware('server'));
+                $protected->get('/scripts/{id}/history/{executionId}', [ScriptsController::class, 'executionDetail'])
+                    ->add(new FeatureMiddleware('server'));
 
                 // Discord Bots
                 $protected->get('/discord/bots', [DiscordController::class, 'getBots'])

@@ -189,7 +189,7 @@ function goToSettings() {
         class="btn-icon"
         :title="item.nav_name"
       >
-        <component :is="getIconComponent(item.nav_icon)" class="w-4.5 h-4.5" style="width: 1.125rem; height: 1.125rem;" />
+        <component :is="getIconComponent(item.nav_icon)" class="w-[1.125rem] h-[1.125rem]" />
       </button>
 
       <!-- Overflow dropdown -->
@@ -199,7 +199,7 @@ function goToSettings() {
           class="btn-icon"
           title="Weitere"
         >
-          <EllipsisHorizontalIcon style="width: 1.125rem; height: 1.125rem;" />
+          <EllipsisHorizontalIcon class="w-[1.125rem] h-[1.125rem]" />
         </button>
 
         <Transition
@@ -239,7 +239,7 @@ function goToSettings() {
         class="btn-icon"
         title="Inbox"
       >
-        <InboxArrowDownIcon style="width: 1.125rem; height: 1.125rem;" />
+        <InboxArrowDownIcon class="w-[1.125rem] h-[1.125rem]" />
       </button>
 
       <!-- Team Chat -->
@@ -248,7 +248,7 @@ function goToSettings() {
         class="btn-icon"
         title="Team Chat"
       >
-        <ChatBubbleLeftRightIcon style="width: 1.125rem; height: 1.125rem;" />
+        <ChatBubbleLeftRightIcon class="w-[1.125rem] h-[1.125rem]" />
       </button>
 
       <!-- Divider -->
@@ -260,8 +260,8 @@ function goToSettings() {
         class="btn-icon"
         title="Dark Mode umschalten"
       >
-        <SunIcon v-if="uiStore.isDarkMode" style="width: 1.125rem; height: 1.125rem;" />
-        <MoonIcon v-else style="width: 1.125rem; height: 1.125rem;" />
+        <SunIcon v-if="uiStore.isDarkMode" class="w-[1.125rem] h-[1.125rem]" />
+        <MoonIcon v-else class="w-[1.125rem] h-[1.125rem]" />
       </button>
 
       <!-- Notifications -->
@@ -274,7 +274,7 @@ function goToSettings() {
           class="btn-icon"
           title="Widgets"
         >
-          <Squares2X2Icon style="width: 1.125rem; height: 1.125rem;" />
+          <Squares2X2Icon class="w-[1.125rem] h-[1.125rem]" />
         </button>
 
         <!-- Dropdown -->

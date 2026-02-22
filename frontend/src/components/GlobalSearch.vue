@@ -8,100 +8,23 @@ import {
   ListBulletIcon,
   CodeBracketIcon,
   TableCellsIcon,
-  HomeIcon,
-  NewspaperIcon,
-  ViewColumnsIcon,
-  FolderIcon,
-  CalendarIcon,
-  ClockIcon,
-  ArrowPathIcon,
-  ServerIcon,
-  BellIcon,
-  SignalIcon,
-  LockClosedIcon,
-  WrenchScrewdriverIcon,
-  BoltIcon,
-  CubeIcon,
-  TicketIcon,
-  TagIcon,
-  CurrencyDollarIcon,
-  ChatBubbleLeftRightIcon,
-  BookOpenIcon,
   Cog6ToothIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-  ArchiveBoxIcon,
-  KeyIcon,
-  CloudArrowUpIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
-  PhotoIcon,
-  PencilSquareIcon,
-  SwatchIcon,
-  BookmarkIcon,
-  CommandLineIcon,
-  CloudIcon,
   ArrowRightIcon,
   SparklesIcon,
   PlusIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
+import { navigationConfig } from '@/core/config/navigation'
 
-// ─── Navigation items for Command Palette ────────────────────────────────────
-const navigationItems = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon, group: null },
-  { name: 'News', href: '/news', icon: NewspaperIcon, group: null },
-  { name: 'Listen', href: '/lists', icon: ListBulletIcon, group: 'Inhalte' },
-  { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon, group: 'Inhalte' },
-  { name: 'Notes', href: '/notes', icon: PencilSquareIcon, group: 'Inhalte' },
-  { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, group: 'Inhalte' },
-  { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, group: 'Inhalte' },
-  { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon, group: 'KyuubiCloud' },
-  { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon, group: 'KyuubiCloud' },
-  { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon, group: 'KyuubiCloud' },
-  { name: 'Short Links', href: '/links', icon: LinkIcon, group: 'KyuubiCloud' },
-  { name: 'Galerien', href: '/galleries', icon: PhotoIcon, group: 'KyuubiCloud' },
-  { name: 'Mockup Editor', href: '/mockup-editor', icon: SwatchIcon, group: 'KyuubiCloud' },
-  { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon, group: 'Projektmanagement' },
-  { name: 'Projekte', href: '/projects', icon: FolderIcon, group: 'Projektmanagement' },
-  { name: 'Kalender', href: '/calendar', icon: CalendarIcon, group: 'Projektmanagement' },
-  { name: 'Zeiterfassung', href: '/time', icon: ClockIcon, group: 'Projektmanagement' },
-  { name: 'Wiederkehrend', href: '/recurring-tasks', icon: ArrowPathIcon, group: 'Projektmanagement' },
-  { name: 'Verbindungen', href: '/connections', icon: ServerIcon, group: 'Entwicklung & Tools' },
-  { name: 'Server', href: '/server', icon: CommandLineIcon, group: 'Entwicklung & Tools' },
-  { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, group: 'Entwicklung & Tools' },
-  { name: 'Webhooks', href: '/webhooks', icon: BellIcon, group: 'Entwicklung & Tools' },
-  { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, group: 'Entwicklung & Tools' },
-  { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, group: 'Entwicklung & Tools' },
-  { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, group: 'Entwicklung & Tools' },
-  { name: 'Workflows', href: '/workflows', icon: BoltIcon, group: 'Entwicklung & Tools' },
-  { name: 'Container Manager', href: '/docker', icon: CubeIcon, group: 'Docker' },
-  { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon, group: 'Docker' },
-  { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon, group: 'Docker' },
-  { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon, group: 'Docker' },
-  { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon, group: 'Docker' },
-  { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon, group: 'Docker' },
-  { name: 'Tickets', href: '/tickets', icon: TicketIcon, group: 'Support' },
-  { name: 'Ticket-Kategorien', href: '/tickets/categories', icon: TagIcon, group: 'Support' },
-  { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, group: 'Business' },
-  { name: 'Discord Manager', href: '/discord', icon: ChatBubbleLeftRightIcon, group: null },
-  { name: 'Wiki', href: '/wiki', icon: BookOpenIcon, group: null },
-  { name: 'Inbox', href: '/inbox', icon: CloudIcon, group: null },
-  { name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon, group: null },
-  { name: 'Passwörter', href: '/passwords', icon: KeyIcon, group: 'Administration' },
-  { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, group: 'Administration' },
-  { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, group: 'Administration' },
-  { name: 'Benutzer', href: '/users', icon: UsersIcon, group: 'Administration' },
-  { name: 'Rollen', href: '/roles', icon: ShieldCheckIcon, group: 'Administration' },
-  { name: 'System', href: '/system', icon: ShieldCheckIcon, group: 'Administration' },
-]
+// Navigation items sourced from shared config
+const navigationItems = navigationConfig
 
 // Quick actions shown when no search query
 const quickActions = [
-  { name: 'Neue Liste', icon: PlusIcon, href: '/lists', description: 'Liste erstellen', accent: true },
-  { name: 'Neues Dokument', icon: PlusIcon, href: '/documents', description: 'Dokument erstellen', accent: true },
-  { name: 'Neues Snippet', icon: PlusIcon, href: '/snippets', description: 'Snippet erstellen', accent: true },
-  { name: 'Einstellungen', icon: Cog6ToothIcon, href: '/settings', description: 'App-Einstellungen öffnen', accent: false },
+  { name: 'Neue Liste',     icon: PlusIcon,      href: '/lists',     description: 'Liste erstellen',         accent: true },
+  { name: 'Neues Dokument', icon: PlusIcon,      href: '/documents', description: 'Dokument erstellen',      accent: true },
+  { name: 'Neues Snippet',  icon: PlusIcon,      href: '/snippets',  description: 'Snippet erstellen',       accent: true },
+  { name: 'Einstellungen',  icon: Cog6ToothIcon, href: '/settings',  description: 'App-Einstellungen öffnen', accent: false },
 ]
 
 const router = useRouter()
@@ -229,6 +152,7 @@ function handleGlobalKeydown(e) {
 }
 
 watch(searchQuery, () => {
+  selectedIndex.value = -1
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(search, 280)
 })

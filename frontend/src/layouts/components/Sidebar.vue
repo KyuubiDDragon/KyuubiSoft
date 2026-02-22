@@ -483,71 +483,75 @@ function navigateTo(href) {
 
 <template>
   <aside
-    class="fixed left-0 top-0 h-screen bg-dark-800 border-r border-dark-700 transition-all duration-300 z-40"
+    class="fixed left-0 top-0 h-screen bg-dark-800/95 border-r border-dark-700/60 transition-all duration-300 z-40 flex flex-col"
     :class="sidebarClass"
   >
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full overflow-hidden">
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-center border-b border-dark-700 gap-2">
+      <div class="h-16 flex items-center border-b border-dark-700/80 px-4 gap-3 shrink-0">
         <img
           src="/logo.png"
           alt="KyuubiSoft"
-          class="w-10 h-10"
+          class="w-8 h-8 shrink-0"
         />
         <h1
           v-if="isMobile || !uiStore.sidebarCollapsed"
-          class="text-xl font-bold text-gradient"
+          class="text-base font-bold text-gradient tracking-tight"
         >
           KyuubiSoft
         </h1>
       </div>
 
       <!-- Project Selector -->
-      <div class="px-3 py-3 border-b border-dark-700">
+      <div class="px-2.5 py-2.5 border-b border-dark-700/60 shrink-0">
         <div v-if="isMobile || !uiStore.sidebarCollapsed" class="relative">
           <button
             @click="showProjectDropdown = !showProjectDropdown"
-            class="w-full flex items-center justify-between px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
+            class="w-full flex items-center justify-between px-2.5 py-2 bg-dark-700/50 hover:bg-dark-700 border border-dark-600/50 rounded-lg transition-all duration-150"
           >
             <div class="flex items-center gap-2 min-w-0">
-              <FolderIcon class="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span class="text-sm text-white truncate">
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :style="projectStore.selectedProject ? { backgroundColor: projectStore.selectedProject.color } : {}"
+                :class="!projectStore.selectedProject ? 'bg-gray-500' : ''"
+              ></span>
+              <span class="text-sm text-gray-300 truncate font-medium">
                 {{ projectStore.selectedProject?.name || 'Alle Projekte' }}
               </span>
             </div>
-            <ChevronUpDownIcon class="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <ChevronUpDownIcon class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
           </button>
 
           <!-- Dropdown -->
           <div
             v-if="showProjectDropdown"
-            class="absolute left-0 right-0 mt-1 py-1 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto"
+            class="absolute left-0 right-0 mt-1.5 py-1 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto animate-scale-in"
           >
             <!-- All Projects Option -->
             <button
               @click="clearProjectSelection"
-              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
-              :class="!projectStore.selectedProjectId ? 'bg-dark-600' : ''"
+              class="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-dark-700/60 transition-colors"
+              :class="!projectStore.selectedProjectId ? 'bg-dark-700/60 text-white' : 'text-gray-400'"
             >
               <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-              <span class="text-sm text-gray-300">Alle Projekte</span>
+              <span class="text-sm">Alle Projekte</span>
             </button>
 
-            <div class="h-px bg-dark-600 my-1"></div>
+            <div class="h-px bg-dark-700/60 my-1 mx-2"></div>
 
             <!-- Project List -->
             <button
               v-for="project in projectStore.activeProjects"
               :key="project.id"
               @click="selectProject(project.id)"
-              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
-              :class="projectStore.selectedProjectId === project.id ? 'bg-dark-600' : ''"
+              class="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-dark-700/60 transition-colors"
+              :class="projectStore.selectedProjectId === project.id ? 'bg-dark-700/60 text-white' : 'text-gray-400'"
             >
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 :style="{ backgroundColor: project.color }"
               ></span>
-              <span class="text-sm text-gray-300 truncate">{{ project.name }}</span>
+              <span class="text-sm truncate">{{ project.name }}</span>
             </button>
 
             <div v-if="projectStore.activeProjects.length === 0" class="px-3 py-2 text-xs text-gray-500">
@@ -563,17 +567,17 @@ function navigateTo(href) {
           ></div>
         </div>
 
-        <!-- Collapsed: Just show icon with color indicator (desktop only) -->
+        <!-- Collapsed: Icon with color indicator (desktop only) -->
         <div v-else-if="!isMobile" class="flex justify-center">
           <button
             @click="showProjectDropdown = !showProjectDropdown"
-            class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors relative"
+            class="p-2 bg-dark-700/50 hover:bg-dark-700 border border-dark-600/50 rounded-lg transition-all duration-150 relative"
             :title="projectStore.selectedProject?.name || 'Alle Projekte'"
           >
-            <FolderIcon class="w-5 h-5 text-gray-400" />
+            <FolderIcon class="w-4 h-4 text-gray-400" />
             <span
               v-if="projectStore.selectedProject"
-              class="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-dark-800"
+              class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-dark-800"
               :style="{ backgroundColor: projectStore.selectedProject.color }"
             ></span>
           </button>
@@ -581,15 +585,15 @@ function navigateTo(href) {
       </div>
 
       <!-- Favorites Section -->
-      <div v-if="favoritesStore.favorites.length > 0" class="px-3 py-2 border-b border-dark-700">
+      <div v-if="favoritesStore.favorites.length > 0" class="px-2.5 py-2 border-b border-dark-700/60 shrink-0">
         <button
           v-if="isMobile || !uiStore.sidebarCollapsed"
           @click="showFavorites = !showFavorites"
-          class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase font-semibold"
+          class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-gray-500 hover:text-gray-300 transition-colors"
         >
           <div class="flex items-center gap-2">
-            <StarIcon class="w-4 h-4 text-yellow-500" />
-            <span>Favoriten</span>
+            <StarIcon class="w-3.5 h-3.5 text-yellow-500/80" />
+            <span class="text-[10px] font-semibold uppercase tracking-wider">Favoriten</span>
           </div>
           <ChevronDownIcon
             class="w-3 h-3 transition-transform duration-200"
@@ -601,7 +605,7 @@ function navigateTo(href) {
           class="flex justify-center py-1"
           title="Favoriten"
         >
-          <StarIcon class="w-5 h-5 text-yellow-500" />
+          <StarIcon class="w-4 h-4 text-yellow-500/80" />
         </div>
 
         <!-- Favorites list -->
@@ -613,31 +617,31 @@ function navigateTo(href) {
             v-for="fav in favoritesStore.favorites"
             :key="fav.id"
             @click="navigateToFavorite(fav)"
-            class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-dark-700 hover:text-white transition-colors truncate"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-500 hover:bg-dark-700/60 hover:text-gray-200 transition-colors truncate"
           >
-            <component :is="getFavoriteIcon(fav.item_type)" class="w-4 h-4 flex-shrink-0" />
-            <span class="text-sm truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
+            <component :is="getFavoriteIcon(fav.item_type)" class="flex-shrink-0" style="width: 0.875rem; height: 0.875rem;" />
+            <span class="text-xs truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
           </button>
         </div>
 
-        <!-- Collapsed favorites tooltip -->
+        <!-- Collapsed favorites flyout -->
         <div
           v-if="!isMobile && uiStore.sidebarCollapsed"
           class="group relative"
         >
-          <div class="absolute left-full ml-2 top-0 hidden group-hover:block z-50">
-            <div class="bg-dark-700 border border-dark-600 rounded-lg shadow-xl py-2 min-w-48">
-              <div class="px-3 py-1 text-xs text-gray-500 font-semibold uppercase flex items-center gap-2">
-                <StarIcon class="w-3 h-3 text-yellow-500" />
+          <div class="absolute left-full ml-2.5 top-0 hidden group-hover:block z-50">
+            <div class="bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 min-w-52 animate-scale-in">
+              <div class="px-3 py-1.5 text-[10px] text-gray-500 font-semibold uppercase tracking-widest border-b border-dark-700/60 mb-1 flex items-center gap-2">
+                <StarIcon class="w-3 h-3 text-yellow-500/80" />
                 Favoriten
               </div>
               <button
                 v-for="fav in favoritesStore.favorites"
                 :key="fav.id"
                 @click="navigateToFavorite(fav)"
-                class="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+                class="w-full flex items-center gap-2.5 px-3 py-1.5 text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
               >
-                <component :is="getFavoriteIcon(fav.item_type)" class="w-4 h-4 flex-shrink-0" />
+                <component :is="getFavoriteIcon(fav.item_type)" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
                 <span class="text-sm truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
               </button>
             </div>
@@ -646,147 +650,165 @@ function navigateTo(href) {
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        <template v-for="group in navigationGroups" :key="group.id">
-          <!-- Standalone item (no children) -->
-          <div
-            v-if="!group.children"
-            class="group/nav relative"
-          >
-            <button
-              @click="navigateTo(group.href)"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200"
-              :class="[
-                isActive(group.href)
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-              ]"
+      <nav class="flex-1 py-3 px-2.5 overflow-y-auto">
+        <div class="space-y-0.5">
+          <template v-for="group in navigationGroups" :key="group.id">
+            <!-- Standalone item (no children) -->
+            <div
+              v-if="!group.children"
+              class="group/nav relative"
             >
-              <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-              <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm flex-1 text-left">
-                {{ group.name }}
-              </span>
-              <!-- Pin button (visible on hover) -->
               <button
-                v-if="isMobile || !uiStore.sidebarCollapsed"
-                @click="toggleQuickAccess(group, $event)"
-                class="opacity-0 group-hover/nav:opacity-100 transition-opacity p-1 rounded hover:bg-dark-600"
-                :class="isPinned(group) ? 'text-primary-400 opacity-100' : 'text-gray-500'"
-                :title="isPinned(group) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
+                @click="navigateTo(group.href)"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 relative"
+                :class="[
+                  isActive(group.href)
+                    ? 'bg-primary-500/10 text-primary-300'
+                    : 'text-gray-400 hover:bg-dark-700/60 hover:text-gray-200'
+                ]"
               >
-                <MapPinIcon class="w-4 h-4" />
-              </button>
-            </button>
-          </div>
-
-          <!-- Group with children -->
-          <div v-else class="space-y-1">
-            <!-- Group header -->
-            <button
-              @click="(isMobile || !uiStore.sidebarCollapsed) ? toggleGroup(group.id) : null"
-              class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200"
-              :class="[
-                isGroupActive(group)
-                  ? 'text-primary-400'
-                  : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-              ]"
-            >
-              <div class="flex items-center gap-3">
-                <component :is="group.icon" class="w-5 h-5 flex-shrink-0" />
-                <span v-if="isMobile || !uiStore.sidebarCollapsed" class="font-medium text-sm">
+                <!-- Active indicator bar -->
+                <span
+                  v-if="isActive(group.href)"
+                  class="nav-active-bar"
+                />
+                <component
+                  :is="group.icon"
+                  class="w-4.5 h-4.5 flex-shrink-0 transition-colors duration-150"
+                  :class="isActive(group.href) ? 'text-primary-400' : ''"
+                  style="width: 1.125rem; height: 1.125rem;"
+                />
+                <span v-if="isMobile || !uiStore.sidebarCollapsed" class="text-sm flex-1 text-left font-medium">
                   {{ group.name }}
                 </span>
-              </div>
-              <ChevronDownIcon
-                v-if="isMobile || !uiStore.sidebarCollapsed"
-                class="w-4 h-4 transition-transform duration-200"
-                :class="{ 'rotate-180': isGroupExpanded(group.id) }"
-              />
-            </button>
-
-            <!-- Children (expanded view) -->
-            <div
-              v-if="(isMobile || !uiStore.sidebarCollapsed) && isGroupExpanded(group.id)"
-              class="ml-4 pl-4 border-l border-dark-600 space-y-1"
-            >
-              <div
-                v-for="child in group.children"
-                :key="child.name"
-                class="group/child relative"
-              >
+                <!-- Pin button (visible on hover) -->
                 <button
-                  @click="navigateTo(child.href)"
-                  class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200"
-                  :class="[
-                    isActive(child.href)
-                      ? 'bg-primary-600 text-white'
-                      : 'text-gray-400 hover:bg-dark-700 hover:text-white'
-                  ]"
+                  v-if="isMobile || !uiStore.sidebarCollapsed"
+                  @click="toggleQuickAccess(group, $event)"
+                  class="opacity-0 group-hover/nav:opacity-100 transition-opacity p-1 rounded-md hover:bg-dark-600"
+                  :class="isPinned(group) ? 'text-primary-400 !opacity-100' : 'text-gray-500'"
+                  :title="isPinned(group) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
                 >
-                  <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
-                  <span class="font-medium text-sm flex-1 text-left">{{ child.name }}</span>
-                  <!-- Pin button (visible on hover) -->
-                  <button
-                    @click="toggleQuickAccess(child, $event)"
-                    class="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded hover:bg-dark-600"
-                    :class="isPinned(child) ? 'text-primary-400 opacity-100' : 'text-gray-500'"
-                    :title="isPinned(child) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
-                  >
-                    <MapPinIcon class="w-3 h-3" />
-                  </button>
+                  <MapPinIcon class="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </button>
             </div>
 
-            <!-- Collapsed view: Show tooltip/dropdown on hover (desktop only) -->
-            <div
-              v-if="!isMobile && uiStore.sidebarCollapsed"
-              class="group relative"
-            >
-              <div
-                class="absolute left-full ml-2 top-0 hidden group-hover:block z-50"
+            <!-- Group with children -->
+            <div v-else class="space-y-0.5">
+              <!-- Group header -->
+              <button
+                @click="(isMobile || !uiStore.sidebarCollapsed) ? toggleGroup(group.id) : null"
+                class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all duration-150"
+                :class="[
+                  isGroupActive(group)
+                    ? 'text-primary-400'
+                    : 'text-gray-500 hover:bg-dark-700/60 hover:text-gray-300'
+                ]"
               >
-                <div class="bg-dark-700 border border-dark-600 rounded-lg shadow-xl py-2 min-w-48">
-                  <div class="px-3 py-1 text-xs text-gray-500 font-semibold uppercase">
+                <div class="flex items-center gap-2.5">
+                  <component :is="group.icon" class="flex-shrink-0" style="width: 1.125rem; height: 1.125rem;" />
+                  <span v-if="isMobile || !uiStore.sidebarCollapsed" class="text-sm font-medium">
                     {{ group.name }}
-                  </div>
+                  </span>
+                </div>
+                <ChevronDownIcon
+                  v-if="isMobile || !uiStore.sidebarCollapsed"
+                  class="w-3.5 h-3.5 transition-transform duration-200"
+                  :class="{ 'rotate-180': isGroupExpanded(group.id) }"
+                />
+              </button>
+
+              <!-- Children (expanded view) -->
+              <div
+                v-if="(isMobile || !uiStore.sidebarCollapsed) && isGroupExpanded(group.id)"
+                class="ml-3 pl-3 border-l border-dark-700/60 space-y-0.5 pb-1"
+              >
+                <div
+                  v-for="child in group.children"
+                  :key="child.name"
+                  class="group/child relative"
+                >
                   <button
-                    v-for="child in group.children"
-                    :key="child.name"
                     @click="navigateTo(child.href)"
-                    class="w-full flex items-center gap-3 px-3 py-2 transition-colors"
+                    class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all duration-150 relative"
                     :class="[
                       isActive(child.href)
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-300 hover:bg-dark-600 hover:text-white'
+                        ? 'bg-primary-500/10 text-primary-300'
+                        : 'text-gray-500 hover:bg-dark-700/60 hover:text-gray-200'
                     ]"
                   >
-                    <component :is="child.icon" class="w-4 h-4 flex-shrink-0" />
-                    <span class="text-sm">{{ child.name }}</span>
+                    <!-- Active indicator bar -->
+                    <span
+                      v-if="isActive(child.href)"
+                      class="nav-active-bar"
+                    />
+                    <component :is="child.icon" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
+                    <span class="text-sm flex-1 text-left">{{ child.name }}</span>
+                    <!-- Pin button (visible on hover) -->
+                    <button
+                      @click="toggleQuickAccess(child, $event)"
+                      class="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded-md hover:bg-dark-600"
+                      :class="isPinned(child) ? 'text-primary-400 !opacity-100' : 'text-gray-500'"
+                      :title="isPinned(child) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
+                    >
+                      <MapPinIcon class="w-3 h-3" />
+                    </button>
                   </button>
                 </div>
               </div>
+
+              <!-- Collapsed view: Show flyout on hover (desktop only) -->
+              <div
+                v-if="!isMobile && uiStore.sidebarCollapsed"
+                class="group relative"
+              >
+                <div
+                  class="absolute left-full ml-2.5 top-0 hidden group-hover:block z-50"
+                >
+                  <div class="bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 min-w-52 animate-scale-in">
+                    <div class="px-3 py-1.5 text-[10px] text-gray-500 font-semibold uppercase tracking-widest border-b border-dark-700/60 mb-1">
+                      {{ group.name }}
+                    </div>
+                    <button
+                      v-for="child in group.children"
+                      :key="child.name"
+                      @click="navigateTo(child.href)"
+                      class="w-full flex items-center gap-2.5 px-3 py-1.5 transition-colors duration-100 relative"
+                      :class="[
+                        isActive(child.href)
+                          ? 'bg-primary-500/10 text-primary-300'
+                          : 'text-gray-400 hover:bg-dark-700/60 hover:text-white'
+                      ]"
+                    >
+                      <span v-if="isActive(child.href)" class="nav-active-bar" />
+                      <component :is="child.icon" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
+                      <span class="text-sm">{{ child.name }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </template>
+          </template>
+        </div>
       </nav>
 
       <!-- User section -->
-      <div class="p-4 border-t border-dark-700">
+      <div class="px-3 py-3 border-t border-dark-700/60 shrink-0">
         <div
           v-if="isMobile || !uiStore.sidebarCollapsed"
-          class="flex items-center gap-3"
+          class="flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg hover:bg-dark-700/40 transition-colors group"
         >
-          <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-            <span class="text-sm font-semibold text-white">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shrink-0 shadow-sm">
+            <span class="text-xs font-bold text-white">
               {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
             </span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">
+            <p class="text-sm font-medium text-gray-200 truncate leading-tight">
               {{ authStore.user?.username || 'User' }}
             </p>
-            <p class="text-xs text-gray-400 truncate">
+            <p class="text-[11px] text-gray-500 truncate leading-tight">
               {{ authStore.user?.email }}
             </p>
           </div>
@@ -795,8 +817,8 @@ function navigateTo(href) {
           v-else-if="!isMobile"
           class="flex justify-center"
         >
-          <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-            <span class="text-sm font-semibold text-white">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shadow-sm">
+            <span class="text-xs font-bold text-white">
               {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
             </span>
           </div>
@@ -807,15 +829,15 @@ function navigateTo(href) {
       <button
         v-if="!isMobile"
         @click="uiStore.toggleSidebarCollapse"
-        class="absolute -right-3 top-20 w-6 h-6 bg-dark-700 border border-dark-600 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
+        class="absolute -right-3 top-[72px] w-6 h-6 bg-dark-800 border border-dark-600/80 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-200 hover:bg-dark-700 transition-all duration-150 shadow-sm"
       >
         <ChevronLeftIcon
           v-if="!uiStore.sidebarCollapsed"
-          class="w-4 h-4"
+          class="w-3.5 h-3.5"
         />
         <ChevronRightIcon
           v-else
-          class="w-4 h-4"
+          class="w-3.5 h-3.5"
         />
       </button>
 

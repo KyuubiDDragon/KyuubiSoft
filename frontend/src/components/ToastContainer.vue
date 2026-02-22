@@ -14,54 +14,76 @@ const iconMap = {
   success: CheckCircleIcon,
   error: ExclamationCircleIcon,
   warning: ExclamationTriangleIcon,
-  info: InformationCircleIcon
+  info: InformationCircleIcon,
 }
 
-const colorMap = {
-  success: 'bg-green-500/10 border-green-500/30 text-green-400',
-  error: 'bg-red-500/10 border-red-500/30 text-red-400',
-  warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
-  info: 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-}
-
-const iconColorMap = {
-  success: 'text-green-400',
-  error: 'text-red-400',
-  warning: 'text-yellow-400',
-  info: 'text-blue-400'
+const styleMap = {
+  success: {
+    wrapper: 'bg-dark-800 border-green-500/25',
+    icon: 'text-green-400',
+    bar: 'bg-green-500',
+  },
+  error: {
+    wrapper: 'bg-dark-800 border-red-500/25',
+    icon: 'text-red-400',
+    bar: 'bg-red-500',
+  },
+  warning: {
+    wrapper: 'bg-dark-800 border-yellow-500/25',
+    icon: 'text-yellow-400',
+    bar: 'bg-yellow-500',
+  },
+  info: {
+    wrapper: 'bg-dark-800 border-primary-500/25',
+    icon: 'text-primary-400',
+    bar: 'bg-primary-500',
+  },
 }
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <!-- Bottom-right toast stack -->
+    <div class="fixed bottom-5 right-5 z-[100] flex flex-col-reverse gap-2.5 max-w-sm w-full pointer-events-none">
       <TransitionGroup
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-x-8"
-        enter-to-class="opacity-100 translate-x-0"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-from-class="opacity-100 translate-x-0"
-        leave-to-class="opacity-0 translate-x-8"
+        enter-active-class="transition-all duration-250 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200 ease-in absolute"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-2"
       >
         <div
-          v-for="toast in toasts"
-          :key="toast.id"
-          :class="[
-            'pointer-events-auto flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm shadow-lg',
-            colorMap[toast.type] || colorMap.info
-          ]"
+          v-for="t in toasts"
+          :key="t.id"
+          class="pointer-events-auto rounded-xl border shadow-lg overflow-hidden"
+          :class="(styleMap[t.type] || styleMap.info).wrapper"
         >
-          <component
-            :is="iconMap[toast.type] || iconMap.info"
-            :class="['w-5 h-5 flex-shrink-0 mt-0.5', iconColorMap[toast.type] || iconColorMap.info]"
+          <!-- Main content -->
+          <div class="flex items-start gap-3 px-4 py-3.5">
+            <component
+              :is="iconMap[t.type] || iconMap.info"
+              class="w-5 h-5 shrink-0 mt-0.5"
+              :class="(styleMap[t.type] || styleMap.info).icon"
+            />
+            <p class="flex-1 text-sm text-gray-200 leading-snug">{{ t.message }}</p>
+            <button
+              @click="removeToast(t.id)"
+              class="shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors ml-1"
+            >
+              <XMarkIcon class="w-3.5 h-3.5 text-gray-500" />
+            </button>
+          </div>
+
+          <!-- Progress bar (auto-dismiss indicator) -->
+          <div
+            v-if="t.duration > 0"
+            class="h-0.5 opacity-50"
+            :class="(styleMap[t.type] || styleMap.info).bar"
+            :style="{
+              animation: `toast-progress ${t.duration}ms linear forwards`
+            }"
           />
-          <p class="flex-1 text-sm text-gray-200">{{ toast.message }}</p>
-          <button
-            @click="removeToast(toast.id)"
-            class="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors"
-          >
-            <XMarkIcon class="w-4 h-4 text-gray-400" />
-          </button>
         </div>
       </TransitionGroup>
     </div>

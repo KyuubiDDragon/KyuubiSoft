@@ -55,6 +55,7 @@ import {
   LockClosedIcon,
   PhotoIcon,
 } from '@heroicons/vue/24/outline'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 
 const props = defineProps({
   isMobile: {
@@ -156,42 +157,49 @@ function goToSettings() {
 </script>
 
 <template>
-  <header class="h-16 bg-dark-800 border-b border-dark-700 flex items-center justify-between px-4 lg:px-6">
+  <header class="h-14 bg-dark-800/95 border-b border-dark-700/60 flex items-center justify-between px-3 lg:px-5 gap-3 shrink-0">
     <!-- Mobile menu button -->
     <button
       v-if="isMobile"
       @click="$emit('toggle-sidebar')"
-      class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors mr-2"
+      class="btn-icon shrink-0"
     >
-      <Bars3Icon class="w-6 h-6" />
+      <Bars3Icon class="w-5 h-5" />
     </button>
 
-    <!-- Global Search -->
-    <div class="flex-1">
-      <GlobalSearch />
+    <!-- Left: Search + Breadcrumbs -->
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <!-- Global Search (compact) -->
+      <div class="shrink-0">
+        <GlobalSearch />
+      </div>
+
+      <!-- Breadcrumbs (desktop only) -->
+      <div v-if="!isMobile" class="hidden md:flex items-center min-w-0">
+        <Breadcrumbs />
+      </div>
     </div>
 
-    <!-- Quick Access Icons -->
-    <div v-if="quickAccessStore.items.length > 0 && !isMobile" class="flex items-center gap-1 mr-4">
-      <!-- Visible items -->
+    <!-- Quick Access Icons (desktop only) -->
+    <div v-if="quickAccessStore.items.length > 0 && !isMobile" class="flex items-center gap-0.5 shrink-0">
       <button
         v-for="item in quickAccessStore.visibleItems"
         :key="item.id"
         @click="navigateToQuickAccess(item)"
-        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        class="btn-icon"
         :title="item.nav_name"
       >
-        <component :is="getIconComponent(item.nav_icon)" class="w-5 h-5" />
+        <component :is="getIconComponent(item.nav_icon)" class="w-4.5 h-4.5" style="width: 1.125rem; height: 1.125rem;" />
       </button>
 
       <!-- Overflow dropdown -->
       <div v-if="quickAccessStore.hasOverflow" class="relative">
         <button
           @click="showQuickAccessOverflow = !showQuickAccessOverflow"
-          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+          class="btn-icon"
           title="Weitere"
         >
-          <EllipsisHorizontalIcon class="w-5 h-5" />
+          <EllipsisHorizontalIcon style="width: 1.125rem; height: 1.125rem;" />
         </button>
 
         <Transition
@@ -204,15 +212,15 @@ function goToSettings() {
         >
           <div
             v-if="showQuickAccessOverflow"
-            class="absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 z-50"
+            class="absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
           >
             <button
               v-for="item in quickAccessStore.overflowItems"
               :key="item.id"
               @click="navigateToQuickAccess(item)"
-              class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+              class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
             >
-              <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4" />
+              <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4 shrink-0" />
               {{ item.nav_name }}
             </button>
           </div>
@@ -220,40 +228,40 @@ function goToSettings() {
       </div>
 
       <!-- Divider -->
-      <div class="w-px h-6 bg-dark-600 mx-2"></div>
+      <div class="w-px h-5 bg-dark-600/80 mx-1.5"></div>
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-0.5 shrink-0">
       <!-- Inbox -->
       <button
         @click="router.push('/inbox')"
-        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        class="btn-icon"
         title="Inbox"
       >
-        <InboxArrowDownIcon class="w-5 h-5" />
+        <InboxArrowDownIcon style="width: 1.125rem; height: 1.125rem;" />
       </button>
 
       <!-- Team Chat -->
       <button
         @click="router.push('/chat')"
-        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        class="btn-icon"
         title="Team Chat"
       >
-        <ChatBubbleLeftRightIcon class="w-5 h-5" />
+        <ChatBubbleLeftRightIcon style="width: 1.125rem; height: 1.125rem;" />
       </button>
 
       <!-- Divider -->
-      <div class="w-px h-6 bg-dark-600"></div>
+      <div class="w-px h-5 bg-dark-600/80 mx-1"></div>
 
       <!-- Dark mode toggle -->
       <button
         @click="uiStore.toggleDarkMode"
-        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+        class="btn-icon"
         title="Dark Mode umschalten"
       >
-        <SunIcon v-if="uiStore.isDarkMode" class="w-5 h-5" />
-        <MoonIcon v-else class="w-5 h-5" />
+        <SunIcon v-if="uiStore.isDarkMode" style="width: 1.125rem; height: 1.125rem;" />
+        <MoonIcon v-else style="width: 1.125rem; height: 1.125rem;" />
       </button>
 
       <!-- Notifications -->
@@ -263,10 +271,10 @@ function goToSettings() {
       <div class="relative">
         <button
           @click="showWidgetsMenu = !showWidgetsMenu"
-          class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors"
+          class="btn-icon"
           title="Widgets"
         >
-          <Squares2X2Icon class="w-5 h-5" />
+          <Squares2X2Icon style="width: 1.125rem; height: 1.125rem;" />
         </button>
 
         <!-- Dropdown -->
@@ -280,50 +288,58 @@ function goToSettings() {
         >
           <div
             v-if="showWidgetsMenu"
-            class="absolute right-0 mt-2 w-52 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 z-50"
+            class="absolute right-0 mt-2 w-52 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
           >
-            <div class="px-4 py-2 border-b border-dark-700">
-              <p class="text-sm font-medium text-white">Widgets</p>
+            <div class="px-3 py-2 border-b border-dark-700/60">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Widgets</p>
             </div>
 
-            <button
-              @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
-              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
-            >
-              <div class="flex items-center gap-3">
-                <PencilSquareIcon class="w-4 h-4" />
-                Quick Notes
-              </div>
-              <CheckIcon v-if="uiStore.showQuickNotes" class="w-4 h-4 text-primary-400" />
-            </button>
+            <div class="py-1">
+              <button
+                @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
+                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
+              >
+                <div class="flex items-center gap-2.5">
+                  <PencilSquareIcon class="w-4 h-4 shrink-0" />
+                  <span>Quick Notes</span>
+                </div>
+                <div v-if="uiStore.showQuickNotes" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
+                  <CheckIcon class="w-3 h-3 text-primary-400" />
+                </div>
+              </button>
 
-            <button
-              @click="uiStore.toggleQuickCapture(); showWidgetsMenu = false"
-              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
-            >
-              <div class="flex items-center gap-3">
-                <InboxArrowDownIcon class="w-4 h-4" />
-                Quick Capture
-              </div>
-              <CheckIcon v-if="uiStore.showQuickCapture" class="w-4 h-4 text-primary-400" />
-            </button>
+              <button
+                @click="uiStore.toggleQuickCapture(); showWidgetsMenu = false"
+                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
+              >
+                <div class="flex items-center gap-2.5">
+                  <InboxArrowDownIcon class="w-4 h-4 shrink-0" />
+                  <span>Quick Capture</span>
+                </div>
+                <div v-if="uiStore.showQuickCapture" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
+                  <CheckIcon class="w-3 h-3 text-primary-400" />
+                </div>
+              </button>
 
-            <button
-              @click="uiStore.toggleAIAssistant(); showWidgetsMenu = false"
-              class="w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
-            >
-              <div class="flex items-center gap-3">
-                <SparklesIcon class="w-4 h-4" />
-                AI Assistent
-              </div>
-              <CheckIcon v-if="uiStore.showAIAssistant" class="w-4 h-4 text-primary-400" />
-            </button>
+              <button
+                @click="uiStore.toggleAIAssistant(); showWidgetsMenu = false"
+                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
+              >
+                <div class="flex items-center gap-2.5">
+                  <SparklesIcon class="w-4 h-4 shrink-0" />
+                  <span>AI Assistent</span>
+                </div>
+                <div v-if="uiStore.showAIAssistant" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
+                  <CheckIcon class="w-3 h-3 text-primary-400" />
+                </div>
+              </button>
+            </div>
 
             <!-- Quick Access Settings -->
-            <div v-if="quickAccessStore.items.length > 0" class="border-t border-dark-700 mt-1 pt-1">
-              <div class="px-4 py-2">
-                <p class="text-xs text-gray-500 mb-2">Quick Access Icons</p>
-                <div class="flex items-center gap-2">
+            <div v-if="quickAccessStore.items.length > 0" class="border-t border-dark-700/60 pt-1 pb-1">
+              <div class="px-3 py-2">
+                <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Access Anzahl</p>
+                <div class="flex items-center gap-2.5">
                   <input
                     type="range"
                     :value="quickAccessStore.maxVisible"
@@ -332,7 +348,7 @@ function goToSettings() {
                     max="10"
                     class="flex-1 h-1 bg-dark-600 rounded-lg appearance-none cursor-pointer accent-primary-500"
                   />
-                  <span class="text-xs text-gray-400 w-4 text-center">{{ quickAccessStore.maxVisible }}</span>
+                  <span class="text-xs text-gray-400 w-4 text-center tabular-nums">{{ quickAccessStore.maxVisible }}</span>
                 </div>
               </div>
             </div>
@@ -341,13 +357,13 @@ function goToSettings() {
       </div>
 
       <!-- User menu -->
-      <div class="relative">
+      <div class="relative ml-0.5">
         <button
           @click="toggleUserMenu"
-          class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-dark-700 transition-colors"
+          class="flex items-center p-1 rounded-lg hover:bg-dark-700/60 transition-colors"
         >
-          <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
-            <span class="text-sm font-semibold text-white">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shadow-sm">
+            <span class="text-xs font-bold text-white">
               {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
             </span>
           </div>
@@ -364,27 +380,29 @@ function goToSettings() {
         >
           <div
             v-if="showUserMenu"
-            class="absolute right-0 mt-2 w-56 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 z-50"
+            class="absolute right-0 mt-2 w-56 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
           >
-            <div class="px-4 py-3 border-b border-dark-700">
-              <p class="text-sm font-medium text-white">{{ authStore.user?.username }}</p>
-              <p class="text-xs text-gray-400">{{ authStore.user?.email }}</p>
+            <div class="px-3 py-2.5 border-b border-dark-700/60">
+              <p class="text-sm font-semibold text-white">{{ authStore.user?.username }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ authStore.user?.email }}</p>
             </div>
 
-            <button
-              @click="goToSettings"
-              class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
-            >
-              <Cog6ToothIcon class="w-4 h-4" />
-              Einstellungen
-            </button>
+            <div class="py-1">
+              <button
+                @click="goToSettings"
+                class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
+              >
+                <Cog6ToothIcon class="w-4 h-4 shrink-0" />
+                Einstellungen
+              </button>
+            </div>
 
-            <div class="border-t border-dark-700 mt-1 pt-1">
+            <div class="border-t border-dark-700/60 py-1">
               <button
                 @click="logout"
-                class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-dark-700 hover:text-red-300 transition-colors"
+                class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
               >
-                <ArrowRightOnRectangleIcon class="w-4 h-4" />
+                <ArrowRightOnRectangleIcon class="w-4 h-4 shrink-0" />
                 Abmelden
               </button>
             </div>
@@ -395,19 +413,7 @@ function goToSettings() {
   </header>
 
   <!-- Click outside to close menus -->
-  <div
-    v-if="showUserMenu"
-    @click="closeUserMenu"
-    class="fixed inset-0 z-40"
-  ></div>
-  <div
-    v-if="showWidgetsMenu"
-    @click="showWidgetsMenu = false"
-    class="fixed inset-0 z-40"
-  ></div>
-  <div
-    v-if="showQuickAccessOverflow"
-    @click="showQuickAccessOverflow = false"
-    class="fixed inset-0 z-40"
-  ></div>
+  <div v-if="showUserMenu" @click="closeUserMenu" class="fixed inset-0 z-40" />
+  <div v-if="showWidgetsMenu" @click="showWidgetsMenu = false" class="fixed inset-0 z-40" />
+  <div v-if="showQuickAccessOverflow" @click="showQuickAccessOverflow = false" class="fixed inset-0 z-40" />
 </template>

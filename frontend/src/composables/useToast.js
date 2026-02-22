@@ -10,6 +10,7 @@ export function useToast() {
       id,
       message,
       type, // 'success', 'error', 'warning', 'info'
+      duration,
       visible: true
     }
 

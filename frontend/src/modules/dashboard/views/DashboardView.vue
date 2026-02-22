@@ -461,72 +461,56 @@ function discardChanges() {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="page-header">
       <div>
-        <h1 class="text-2xl font-bold text-white">
-          Willkommen zurück, {{ authStore.user?.username || 'User' }}!
+        <h1 class="page-title">
+          Willkommen zurück, {{ authStore.user?.username || 'User' }}
         </h1>
-        <p class="text-gray-400 mt-1">
-          Hier ist dein persönliches Dashboard.
-        </p>
+        <p class="page-subtitle">Dein persönliches Dashboard</p>
       </div>
       <div class="flex items-center gap-2">
         <template v-if="isEditMode">
-          <button
-            @click="resetDashboard"
-            class="btn-secondary text-sm"
-          >
+          <button @click="resetDashboard" class="btn-secondary text-sm">
             Zurücksetzen
           </button>
-          <button
-            @click="showAddWidget = true"
-            class="btn-secondary text-sm"
-          >
-            <PlusIcon class="w-4 h-4 mr-1" />
+          <button @click="showAddWidget = true" class="btn-secondary text-sm">
+            <PlusIcon class="w-4 h-4 mr-1.5" />
             Widget hinzufügen
           </button>
           <button
             v-if="hasUnsavedChanges"
             @click="discardChanges"
-            class="btn-secondary text-sm text-red-400 hover:text-red-300"
+            class="btn-ghost text-sm text-red-400 hover:text-red-300"
           >
             Abbrechen
           </button>
-          <button
-            @click="saveLayout(true)"
-            class="btn-primary text-sm"
-            :class="hasUnsavedChanges ? 'animate-pulse' : ''"
-          >
-            <CheckIcon class="w-4 h-4 mr-1" />
+          <button @click="saveLayout(true)" class="btn-primary text-sm">
+            <CheckIcon class="w-4 h-4 mr-1.5" />
             Speichern
           </button>
         </template>
-        <button
-          v-else
-          @click="isEditMode = true"
-          class="btn-primary text-sm"
-        >
-          <Cog6ToothIcon class="w-4 h-4 mr-1" />
+        <button v-else @click="isEditMode = true" class="btn-secondary text-sm">
+          <Cog6ToothIcon class="w-4 h-4 mr-1.5" />
           Anpassen
         </button>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div v-for="i in 4" :key="i" class="card p-6 animate-pulse">
-        <div class="h-4 bg-dark-600 rounded w-1/3 mb-4"></div>
-        <div class="h-8 bg-dark-600 rounded w-1/2"></div>
+    <!-- Loading skeleton -->
+    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div v-for="i in 4" :key="i" class="card p-5 animate-pulse">
+        <div class="h-3 bg-dark-600 rounded-full w-1/3 mb-4"></div>
+        <div class="h-7 bg-dark-600 rounded-lg w-1/2"></div>
       </div>
     </div>
 
     <!-- Edit Mode Info Bar -->
-    <div v-if="isEditMode" class="bg-primary-500/10 border border-primary-500/30 rounded-lg p-3 flex items-center gap-4">
-      <div class="flex-1 text-sm text-primary-300">
-        <span class="font-medium">Bearbeitungsmodus aktiv</span> - Widgets verschieben (Drag & Drop), Ecken ziehen zum Vergrößern/Verkleinern
+    <div v-if="isEditMode" class="bg-primary-500/8 border border-primary-500/20 rounded-xl px-4 py-3 flex items-center gap-4">
+      <div class="flex-1 text-sm text-primary-300/90">
+        <span class="font-medium">Bearbeitungsmodus</span> — Widgets per Drag &amp; Drop verschieben, Ecken zum Anpassen der Größe ziehen
       </div>
-      <div v-if="hasUnsavedChanges" class="text-xs text-yellow-400 flex items-center gap-1">
-        <ExclamationTriangleIcon class="w-4 h-4" />
+      <div v-if="hasUnsavedChanges" class="text-xs text-yellow-400 flex items-center gap-1.5 shrink-0">
+        <ExclamationTriangleIcon class="w-3.5 h-3.5" />
         Ungespeicherte Änderungen
       </div>
     </div>
@@ -581,23 +565,23 @@ function discardChanges() {
           @dragend="handleDragEnd"
           @resize="(dir, e) => handleResize(widget, dir, e)"
         >
-          <h3 class="text-lg font-semibold text-white mb-4">{{ widget.title }}</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-dark-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Listen</p>
-              <p class="text-2xl font-bold text-white">{{ widgetData.quick_stats?.lists || 0 }}</p>
+          <h3 class="text-base font-semibold text-white mb-4">{{ widget.title }}</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-dark-700/40 border border-dark-600/40 rounded-xl p-4 hover:border-dark-500/60 transition-colors">
+              <p class="text-gray-500 text-xs mb-1.5">Listen</p>
+              <p class="text-2xl font-bold text-white tabular-nums">{{ widgetData.quick_stats?.lists || 0 }}</p>
             </div>
-            <div class="bg-dark-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Offene Aufgaben</p>
-              <p class="text-2xl font-bold text-yellow-400">{{ widgetData.quick_stats?.open_tasks || 0 }}</p>
+            <div class="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-4 hover:border-yellow-500/25 transition-colors">
+              <p class="text-gray-500 text-xs mb-1.5">Offene Aufgaben</p>
+              <p class="text-2xl font-bold text-yellow-300 tabular-nums">{{ widgetData.quick_stats?.open_tasks || 0 }}</p>
             </div>
-            <div class="bg-dark-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Dokumente</p>
-              <p class="text-2xl font-bold text-white">{{ widgetData.quick_stats?.documents || 0 }}</p>
+            <div class="bg-dark-700/40 border border-dark-600/40 rounded-xl p-4 hover:border-dark-500/60 transition-colors">
+              <p class="text-gray-500 text-xs mb-1.5">Dokumente</p>
+              <p class="text-2xl font-bold text-white tabular-nums">{{ widgetData.quick_stats?.documents || 0 }}</p>
             </div>
-            <div class="bg-dark-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Kanban Karten</p>
-              <p class="text-2xl font-bold text-white">{{ widgetData.quick_stats?.kanban_cards || 0 }}</p>
+            <div class="bg-dark-700/40 border border-dark-600/40 rounded-xl p-4 hover:border-dark-500/60 transition-colors">
+              <p class="text-gray-500 text-xs mb-1.5">Kanban Karten</p>
+              <p class="text-2xl font-bold text-white tabular-nums">{{ widgetData.quick_stats?.kanban_cards || 0 }}</p>
             </div>
           </div>
         </WidgetWrapper>
@@ -1253,11 +1237,13 @@ function discardChanges() {
     <!-- Empty state -->
     <div
       v-if="!isLoading && widgets.length === 0"
-      class="card p-12 text-center"
+      class="card p-16 text-center"
     >
-      <ChartBarIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">Kein Dashboard konfiguriert</h3>
-      <p class="text-gray-500 mb-4">Füge Widgets hinzu, um dein Dashboard anzupassen.</p>
+      <div class="w-16 h-16 rounded-2xl bg-dark-700/50 border border-dark-600/50 flex items-center justify-center mx-auto mb-5">
+        <ChartBarIcon class="w-8 h-8 text-gray-600" />
+      </div>
+      <h3 class="text-base font-semibold text-white mb-2">Dashboard noch leer</h3>
+      <p class="text-sm text-gray-500 mb-6 max-w-xs mx-auto">Füge Widgets hinzu, um dein Dashboard zu personalisieren und wichtige Infos auf einen Blick zu sehen.</p>
       <button @click="resetDashboard" class="btn-primary">
         Standard-Layout laden
       </button>

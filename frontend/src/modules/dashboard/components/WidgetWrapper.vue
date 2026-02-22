@@ -37,10 +37,10 @@ function onResizeStart(direction, event) {
 
 <template>
   <div
-    class="card p-6 relative group transition-all duration-200 overflow-y-auto"
+    class="card p-5 relative group transition-all duration-150 overflow-y-auto"
     :class="[
-      isEditMode ? 'cursor-move ring-2 ring-transparent hover:ring-primary-500/50' : '',
-      isDragging || isResizing ? 'opacity-40' : ''
+      isEditMode ? 'cursor-move ring-1 ring-transparent hover:ring-primary-500/40 hover:border-primary-500/30' : '',
+      isDragging || isResizing ? 'opacity-40 scale-[0.99]' : ''
     ]"
     :style="{ ...style, height: '100%' }"
     :data-widget-height="widget.height ?? 1"
@@ -52,9 +52,9 @@ function onResizeStart(direction, event) {
     <button
       v-if="isEditMode"
       @click.stop="$emit('remove', index)"
-      class="absolute top-2 right-2 z-20 p-1 text-gray-500 hover:text-red-400 bg-dark-800/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+      class="absolute top-3 right-3 z-20 p-1.5 text-gray-500 hover:text-red-400 bg-dark-900/80 border border-dark-600/80 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-150 hover:bg-red-500/10"
     >
-      <XMarkIcon class="w-4 h-4" />
+      <XMarkIcon class="w-3.5 h-3.5" />
     </button>
 
     <!-- Resize handles (only in edit mode) -->

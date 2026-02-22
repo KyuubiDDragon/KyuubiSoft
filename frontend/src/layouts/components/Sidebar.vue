@@ -20,6 +20,7 @@ import {
   BookmarkIcon,
   SignalIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   WrenchScrewdriverIcon,
   Cog6ToothIcon,
   UsersIcon,
@@ -53,9 +54,12 @@ import {
   ArchiveBoxIcon,
   LockClosedIcon,
   HeartIcon,
+  FireIcon,
   PhotoIcon,
   PencilSquareIcon,
   SwatchIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -96,8 +100,10 @@ const iconToName = new Map([
   [ClockIcon, 'ClockIcon'],
   [BellIcon, 'BellIcon'],
   [BookmarkIcon, 'BookmarkIcon'],
+  [FireIcon, 'FireIcon'],
   [SignalIcon, 'SignalIcon'],
   [CurrencyDollarIcon, 'CurrencyDollarIcon'],
+  [BanknotesIcon, 'BanknotesIcon'],
   [WrenchScrewdriverIcon, 'WrenchScrewdriverIcon'],
   [Cog6ToothIcon, 'Cog6ToothIcon'],
   [UsersIcon, 'UsersIcon'],
@@ -249,6 +255,7 @@ const allNavigationGroups = [
       { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes', permission: 'notes.view' },
       { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, permission: 'snippets.view' },
       { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, permission: 'bookmarks.view' },
+      { name: 'Habit Tracker', href: '/habit-tracker', icon: FireIcon },
     ],
   },
 
@@ -333,10 +340,9 @@ const allNavigationGroups = [
     id: 'business',
     name: 'Business',
     icon: CurrencyDollarIcon,
-    feature: 'invoices',
-    permission: 'invoices.view',
     children: [
-      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, permission: 'invoices.view' },
+      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, feature: 'invoices', permission: 'invoices.view' },
+      { name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon },
     ],
   },
 
@@ -792,6 +798,24 @@ function navigateTo(href) {
           </template>
         </div>
       </nav>
+
+      <!-- Theme toggle -->
+      <div class="px-4 py-2 border-t border-dark-700">
+        <button
+          @click="uiStore.toggleDarkMode()"
+          :title="uiStore.isDarkMode ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+        >
+          <SunIcon v-if="uiStore.isDarkMode" class="w-5 h-5 flex-shrink-0" />
+          <MoonIcon v-else class="w-5 h-5 flex-shrink-0" />
+          <span
+            v-if="isMobile || !uiStore.sidebarCollapsed"
+            class="text-sm"
+          >
+            {{ uiStore.isDarkMode ? 'Light Mode' : 'Dark Mode' }}
+          </span>
+        </button>
+      </div>
 
       <!-- User section -->
       <div class="px-3 py-3 border-t border-dark-700/60 shrink-0">

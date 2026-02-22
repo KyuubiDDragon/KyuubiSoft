@@ -21,6 +21,8 @@ const ProjectsView = () => import('@/modules/projects/views/ProjectsView.vue')
 const TimeTrackingView = () => import('@/modules/time/views/TimeTrackingView.vue')
 const WebhooksView = () => import('@/modules/webhooks/views/WebhooksView.vue')
 const BookmarksView = () => import('@/modules/bookmarks/views/BookmarksView.vue')
+const HabitTrackerView = () => import('@/modules/habit-tracker/views/HabitTrackerView.vue')
+const ExpenseTrackerView = () => import('@/modules/finance/views/ExpenseTrackerView.vue')
 const UptimeView = () => import('@/modules/uptime/views/UptimeView.vue')
 const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
 const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
@@ -159,6 +161,18 @@ const routes = [
     path: '/bookmarks',
     name: 'bookmarks',
     component: BookmarksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/habit-tracker',
+    name: 'habit-tracker',
+    component: HabitTrackerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/expenses',
+    name: 'expense-tracker',
+    component: ExpenseTrackerView,
     meta: { requiresAuth: true },
   },
   {

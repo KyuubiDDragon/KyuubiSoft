@@ -2,11 +2,19 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import api from '@/core/api/axios'
 
+interface Project {
+  id: string
+  name: string
+  status: 'active' | 'archived' | 'completed'
+  color?: string
+  [key: string]: unknown
+}
+
 export const useProjectStore = defineStore('project', () => {
   // State
-  const projects = ref([])
-  const selectedProjectId = ref(null)
-  const isLoading = ref(false)
+  const projects = ref<Project[]>([])
+  const selectedProjectId = ref<string | null>(null)
+  const isLoading = ref<boolean>(false)
 
   // Initialize from localStorage
   const storedProjectId = localStorage.getItem('selectedProjectId')
@@ -15,12 +23,12 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   // Computed
-  const selectedProject = computed(() => {
+  const selectedProject = computed<Project | null>(() => {
     if (!selectedProjectId.value) return null
     return projects.value.find(p => p.id === selectedProjectId.value) || null
   })
 
-  const activeProjects = computed(() => {
+  const activeProjects = computed<Project[]>(() => {
     return projects.value.filter(p => p.status === 'active')
   })
 
@@ -30,7 +38,7 @@ export const useProjectStore = defineStore('project', () => {
   })
 
   // Actions
-  async function loadProjects() {
+  async function loadProjects(): Promise<void> {
     isLoading.value = true
     try {
       const response = await api.get('/api/v1/projects')
@@ -47,21 +55,21 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  function selectProject(projectId) {
+  function selectProject(projectId: string): void {
     selectedProjectId.value = projectId
   }
 
-  function clearSelection() {
+  function clearSelection(): void {
     selectedProjectId.value = null
   }
 
   // Helper to get project_id filter param for API calls
-  function getProjectFilter() {
+  function getProjectFilter(): Record<string, string> {
     return selectedProjectId.value ? { project_id: selectedProjectId.value } : {}
   }
 
   // Auto-link a newly created item to the selected project
-  async function linkToSelectedProject(itemType, itemId) {
+  async function linkToSelectedProject(itemType: string, itemId: string): Promise<void> {
     if (!selectedProjectId.value) return
 
     try {

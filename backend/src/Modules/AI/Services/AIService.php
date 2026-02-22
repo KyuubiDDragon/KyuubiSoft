@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\AI\Services;
 
+use App\Modules\AI\Providers\AIProviderInterface;
+use App\Modules\AI\Providers\OpenAIProvider;
+use App\Modules\AI\Providers\OpenRouterProvider;
+use App\Modules\AI\Providers\AnthropicProvider;
+use App\Modules\AI\Providers\OllamaProvider;
+use App\Modules\AI\Providers\CustomProvider;
 use Doctrine\DBAL\Connection;
 use Ramsey\Uuid\Uuid;
 
@@ -12,11 +18,43 @@ class AIService
     private string $encryptionKey;
     private AIToolsService $toolsService;
 
+    /** @var array<string, AIProviderInterface> */
+    private array $providers;
+
     public function __construct(
         private readonly Connection $db
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
-        $this->toolsService = new AIToolsService();
+        // Derive a proper 32-byte key from APP_KEY using SHA-256 (raw binary output).
+        // Using the raw APP_KEY string directly was unsafe: AES-256-CBC requires exactly
+        // 32 bytes, and OpenSSL would silently truncate/pad arbitrary-length strings.
+        $rawKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = hash('sha256', $rawKey, true);
+        $this->toolsService  = new AIToolsService();
+
+        $this->providers = $this->buildProviderMap();
+    }
+
+    /**
+     * Build the provider map. Adding a new AI provider only requires creating a class
+     * implementing AIProviderInterface and registering it here.
+     *
+     * @return array<string, AIProviderInterface>
+     */
+    private function buildProviderMap(): array
+    {
+        $list = [
+            new OpenAIProvider(),
+            new OpenRouterProvider(),
+            new AnthropicProvider(),
+            new OllamaProvider(),
+            new CustomProvider(),
+        ];
+
+        $map = [];
+        foreach ($list as $provider) {
+            $map[$provider->getName()] = $provider;
+        }
+        return $map;
     }
 
     /**
@@ -484,7 +522,7 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
     }
 
     /**
-     * Call AI provider API
+     * Dispatch a chat completion request to the appropriate AI provider.
      */
     private function callProvider(
         string $provider,
@@ -496,340 +534,29 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
         float $temperature,
         bool $toolsEnabled = true
     ): array {
+        if (!isset($this->providers[$provider])) {
+            throw new \InvalidArgumentException('Unsupported AI provider: ' . $provider);
+        }
+
         $formattedMessages = array_map(fn($m) => [
-            'role' => $m['role'],
-            'content' => $m['content']
+            'role'    => $m['role'],
+            'content' => $m['content'],
         ], $messages);
 
-        switch ($provider) {
-            case 'openai':
-                return $this->callOpenAI($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
-            case 'anthropic':
-                return $this->callAnthropic($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
-            case 'openrouter':
-                return $this->callOpenRouter($apiKey, $model, $formattedMessages, $maxTokens, $temperature, $toolsEnabled);
-            case 'ollama':
-                return $this->callOllama($baseUrl ?? 'http://localhost:11434', $model, $formattedMessages, $maxTokens, $temperature);
-            case 'custom':
-                return $this->callCustom($baseUrl, $apiKey, $model, $formattedMessages, $maxTokens, $temperature);
-            default:
-                throw new \InvalidArgumentException('Unsupported AI provider: ' . $provider);
-        }
+        return $this->providers[$provider]->call(
+            $apiKey,
+            $model,
+            $formattedMessages,
+            $maxTokens,
+            $temperature,
+            $toolsEnabled,
+            $this->toolsService,
+            $baseUrl
+        );
     }
 
-    /**
-     * Call OpenAI API with tool support
-     */
-    private function callOpenAI(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
-    {
-        $totalTokens = 0;
-        $maxIterations = $toolsEnabled ? 5 : 1; // Only loop if tools enabled
-
-        for ($i = 0; $i < $maxIterations; $i++) {
-            $payload = [
-                'model' => $model,
-                'messages' => $messages,
-                'max_tokens' => $maxTokens,
-                'temperature' => $temperature,
-            ];
-
-            // Only add tools if enabled
-            if ($toolsEnabled) {
-                $payload['tools'] = $this->toolsService->getToolDefinitions();
-                $payload['tool_choice'] = 'auto';
-            }
-
-            $response = $this->httpPost('https://api.openai.com/v1/chat/completions', $payload, [
-                'Authorization: Bearer ' . $apiKey
-            ]);
-
-            if (isset($response['error'])) {
-                throw new \RuntimeException($response['error']['message'] ?? 'OpenAI API error');
-            }
-
-            $totalTokens += $response['usage']['total_tokens'] ?? 0;
-            $choice = $response['choices'][0] ?? [];
-            $message = $choice['message'] ?? [];
-            $finishReason = $choice['finish_reason'] ?? '';
-
-            // If no tool calls, return the content
-            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
-                return [
-                    'content' => $message['content'] ?? '',
-                    'tokens' => $totalTokens,
-                ];
-            }
-
-            // Process tool calls
-            $messages[] = $message; // Add assistant message with tool calls
-
-            foreach ($message['tool_calls'] as $toolCall) {
-                $toolName = $toolCall['function']['name'] ?? '';
-                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
-
-                // Execute the tool with error handling
-                try {
-                    $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
-                } catch (\Throwable $e) {
-                    $toolResult = ['error' => 'Tool execution failed: ' . $e->getMessage()];
-                }
-
-                // Add tool result to messages
-                $messages[] = [
-                    'role' => 'tool',
-                    'tool_call_id' => $toolCall['id'],
-                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
-                ];
-            }
-        }
-
-        return [
-            'content' => 'Maximale Tool-Iterationen erreicht.',
-            'tokens' => $totalTokens,
-        ];
-    }
-
-    /**
-     * Call Anthropic API with tool support
-     */
-    private function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
-    {
-        $totalTokens = 0;
-        $maxIterations = $toolsEnabled ? 5 : 1;
-
-        // Extract system message
-        $system = null;
-        $filteredMessages = [];
-        foreach ($messages as $msg) {
-            if ($msg['role'] === 'system') {
-                $system = $msg['content'];
-            } else {
-                $filteredMessages[] = $msg;
-            }
-        }
-
-        for ($i = 0; $i < $maxIterations; $i++) {
-            $payload = [
-                'model' => $model,
-                'messages' => $filteredMessages,
-                'max_tokens' => $maxTokens,
-                'temperature' => $temperature,
-            ];
-
-            // Only add tools if enabled
-            if ($toolsEnabled) {
-                $payload['tools'] = $this->toolsService->getAnthropicToolDefinitions();
-            }
-
-            if ($system) {
-                $payload['system'] = $system;
-            }
-
-            $response = $this->httpPost('https://api.anthropic.com/v1/messages', $payload, [
-                'x-api-key: ' . $apiKey,
-                'anthropic-version: 2023-06-01',
-            ]);
-
-            if (isset($response['error'])) {
-                throw new \RuntimeException($response['error']['message'] ?? 'Anthropic API error');
-            }
-
-            $totalTokens += ($response['usage']['input_tokens'] ?? 0) + ($response['usage']['output_tokens'] ?? 0);
-            $stopReason = $response['stop_reason'] ?? '';
-            $content = $response['content'] ?? [];
-
-            // Check for tool use
-            $toolUseBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'tool_use');
-
-            if (empty($toolUseBlocks) || $stopReason !== 'tool_use') {
-                // Extract text content
-                $textBlocks = array_filter($content, fn($block) => ($block['type'] ?? '') === 'text');
-                $textContent = implode("\n", array_map(fn($block) => $block['text'] ?? '', $textBlocks));
-
-                return [
-                    'content' => $textContent,
-                    'tokens' => $totalTokens,
-                ];
-            }
-
-            // Add assistant response with tool use to messages
-            $filteredMessages[] = ['role' => 'assistant', 'content' => $content];
-
-            // Process each tool use and collect results
-            $toolResults = [];
-            foreach ($toolUseBlocks as $toolUse) {
-                $toolName = $toolUse['name'] ?? '';
-                $toolArgs = $toolUse['input'] ?? [];
-                $toolId = $toolUse['id'] ?? '';
-
-                // Execute the tool with error handling
-                try {
-                    $result = $this->toolsService->executeTool($toolName, $toolArgs);
-                } catch (\Throwable $e) {
-                    $result = ['error' => 'Tool execution failed: ' . $e->getMessage()];
-                }
-
-                $toolResults[] = [
-                    'type' => 'tool_result',
-                    'tool_use_id' => $toolId,
-                    'content' => json_encode($result, JSON_UNESCAPED_UNICODE),
-                ];
-            }
-
-            // Add tool results as user message
-            $filteredMessages[] = ['role' => 'user', 'content' => $toolResults];
-        }
-
-        return [
-            'content' => 'Maximale Tool-Iterationen erreicht.',
-            'tokens' => $totalTokens,
-        ];
-    }
-
-    /**
-     * Call OpenRouter API with tool support (OpenAI compatible)
-     */
-    private function callOpenRouter(string $apiKey, string $model, array $messages, int $maxTokens, float $temperature, bool $toolsEnabled = true): array
-    {
-        $totalTokens = 0;
-        $maxIterations = $toolsEnabled ? 5 : 1;
-
-        for ($i = 0; $i < $maxIterations; $i++) {
-            $payload = [
-                'model' => $model,
-                'messages' => $messages,
-                'max_tokens' => $maxTokens,
-                'temperature' => $temperature,
-            ];
-
-            // Only add tools if enabled
-            if ($toolsEnabled) {
-                $payload['tools'] = $this->toolsService->getToolDefinitions();
-                $payload['tool_choice'] = 'auto';
-            }
-
-            $response = $this->httpPost('https://openrouter.ai/api/v1/chat/completions', $payload, [
-                'Authorization: Bearer ' . $apiKey,
-                'HTTP-Referer: ' . ($_ENV['APP_URL'] ?? 'http://localhost'),
-            ]);
-
-            if (isset($response['error'])) {
-                throw new \RuntimeException($response['error']['message'] ?? 'OpenRouter API error');
-            }
-
-            $totalTokens += $response['usage']['total_tokens'] ?? 0;
-            $choice = $response['choices'][0] ?? [];
-            $message = $choice['message'] ?? [];
-            $finishReason = $choice['finish_reason'] ?? '';
-
-            if ($finishReason !== 'tool_calls' || empty($message['tool_calls'])) {
-                return [
-                    'content' => $message['content'] ?? '',
-                    'tokens' => $totalTokens,
-                ];
-            }
-
-            $messages[] = $message;
-
-            foreach ($message['tool_calls'] as $toolCall) {
-                $toolName = $toolCall['function']['name'] ?? '';
-                $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?: [];
-
-                // Execute the tool with error handling
-                try {
-                    $toolResult = $this->toolsService->executeTool($toolName, $toolArgs);
-                } catch (\Throwable $e) {
-                    $toolResult = ['error' => 'Tool execution failed: ' . $e->getMessage()];
-                }
-
-                $messages[] = [
-                    'role' => 'tool',
-                    'tool_call_id' => $toolCall['id'],
-                    'content' => json_encode($toolResult, JSON_UNESCAPED_UNICODE),
-                ];
-            }
-        }
-
-        return [
-            'content' => 'Maximale Tool-Iterationen erreicht.',
-            'tokens' => $totalTokens,
-        ];
-    }
-
-    /**
-     * Call Ollama (local)
-     */
-    private function callOllama(string $baseUrl, string $model, array $messages, int $maxTokens, float $temperature): array
-    {
-        $response = $this->httpPost($baseUrl . '/api/chat', [
-            'model' => $model,
-            'messages' => $messages,
-            'options' => [
-                'num_predict' => $maxTokens,
-                'temperature' => $temperature,
-            ],
-            'stream' => false,
-        ], []);
-
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error'] ?? 'Ollama API error');
-        }
-
-        return [
-            'content' => $response['message']['content'] ?? '',
-            'tokens' => $response['eval_count'] ?? 0,
-        ];
-    }
-
-    /**
-     * Call custom OpenAI-compatible API
-     */
-    private function callCustom(string $baseUrl, string $apiKey, string $model, array $messages, int $maxTokens, float $temperature): array
-    {
-        $response = $this->httpPost($baseUrl . '/v1/chat/completions', [
-            'model' => $model,
-            'messages' => $messages,
-            'max_tokens' => $maxTokens,
-            'temperature' => $temperature,
-        ], ['Authorization: Bearer ' . $apiKey]);
-
-        if (isset($response['error'])) {
-            throw new \RuntimeException($response['error']['message'] ?? 'Custom API error');
-        }
-
-        return [
-            'content' => $response['choices'][0]['message']['content'] ?? '',
-            'tokens' => $response['usage']['total_tokens'] ?? 0,
-        ];
-    }
-
-    /**
-     * HTTP POST helper
-     */
-    private function httpPost(string $url, array $data, array $headers): array
-    {
-        $headers[] = 'Content-Type: application/json';
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 120,
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            throw new \RuntimeException('HTTP request failed: ' . $error);
-        }
-
-        return json_decode($response, true) ?? ['error' => 'Invalid response'];
-    }
+    // Provider-specific call methods have been moved to dedicated classes under
+    // App\Modules\AI\Providers\. See callProvider() above and the Providers/ directory.
 
     /**
      * Create conversation
@@ -989,23 +716,41 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
     }
 
     /**
-     * Encrypt API key
+     * Encrypt API key using the derived 32-byte key.
      */
     private function encryptApiKey(string $apiKey): string
     {
         $iv = random_bytes(16);
-        $encrypted = openssl_encrypt($apiKey, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        $encrypted = openssl_encrypt($apiKey, 'aes-256-cbc', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $encrypted);
     }
 
     /**
-     * Decrypt API key
+     * Decrypt API key. Tries the derived key first; falls back to the legacy raw
+     * APP_KEY for data encrypted before the key-derivation fix was applied.
+     * Run scripts/migrate_encryption.php to re-encrypt legacy values so the fallback
+     * can eventually be removed.
      */
     private function decryptApiKey(string $encrypted): string
     {
         $data = base64_decode($encrypted);
         $iv = substr($data, 0, 16);
-        $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryptionKey, 0, $iv);
+        $ciphertext = substr($data, 16);
+
+        // Attempt decryption with the new derived key (OPENSSL_RAW_DATA).
+        $result = openssl_decrypt($ciphertext, 'aes-256-cbc', $this->encryptionKey, OPENSSL_RAW_DATA, $iv);
+        if ($result !== false) {
+            return $result;
+        }
+
+        // Legacy fallback: data was encrypted with the raw APP_KEY string and flag=0
+        // (base64-wrapped output). Try that combination before giving up.
+        $legacyKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $legacyResult = openssl_decrypt($ciphertext, 'aes-256-cbc', $legacyKey, 0, $iv);
+        if ($legacyResult !== false) {
+            return $legacyResult;
+        }
+
+        throw new \RuntimeException('Unable to decrypt API key: invalid key or corrupted data.');
     }
 }

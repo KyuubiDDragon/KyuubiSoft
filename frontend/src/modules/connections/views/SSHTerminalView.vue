@@ -1,76 +1,54 @@
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
-import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   ArrowLeftIcon,
   CommandLineIcon,
-  PlayIcon,
-  ClockIcon,
-  BookmarkIcon,
-  PlusIcon,
-  TrashIcon,
-  PencilIcon,
   XMarkIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ShieldCheckIcon,
+  SignalIcon,
+  SignalSlashIcon,
+  ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 
-const route = useRoute()
-const router = useRouter()
+const route   = useRoute()
+const router  = useRouter()
 const uiStore = useUiStore()
-const toast = useToast()
-const { confirm } = useConfirmDialog()
+const toast   = useToast()
 
 // State
 const connection = ref(null)
-const loading = ref(true)
-const executing = ref(false)
-const commandInput = ref('')
-const commandOutput = ref([])
-const commandHistory = ref([])
-const presets = ref([])
-const sensitiveToken = ref(null)
+const loading    = ref(true)
+const terminalEl = ref(null)
+const wsStatus   = ref('disconnected') // disconnected | connecting | connected | error
+const wsError    = ref('')
 
-// 2FA Modal
-const show2FAModal = ref(false)
-const twoFACode = ref('')
-const verifying2FA = ref(false)
+// xterm.js + WebSocket instances
+let term      = null
+let fitAddon  = null
+let ws        = null
 
-// Preset Modal
-const showPresetModal = ref(false)
-const editingPreset = ref(null)
-const presetForm = reactive({
-  name: '',
-  command: '',
-  description: '',
-  is_dangerous: false,
-})
+// Resolve the WebSocket base URL for the collaboration server
+const WS_BASE = import.meta.env.VITE_COLLAB_WS_URL
+  || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:1234`
 
-// Terminal ref for scrolling
-const terminalRef = ref(null)
+// =========================================================================
+// Connection loading
+// =========================================================================
 
-// Fetch connection
 async function fetchConnection() {
   loading.value = true
   try {
-    const response = await api.get(`/api/v1/connections/${route.params.id}`)
-    connection.value = response.data.data
+    const res = await api.get(`/api/v1/connections/${route.params.id}`)
+    connection.value = res.data.data
 
-    if (connection.value.type !== 'ssh' && connection.value.type !== 'sftp') {
+    if (!['ssh', 'sftp'].includes(connection.value.type)) {
       uiStore.showError('Diese Verbindung unterstützt kein SSH')
       router.push('/connections')
-      return
     }
-
-    // Load presets and history
-    await Promise.all([fetchPresets(), fetchHistory()])
-  } catch (error) {
+  } catch {
     uiStore.showError('Verbindung nicht gefunden')
     router.push('/connections')
   } finally {
@@ -78,220 +56,183 @@ async function fetchConnection() {
   }
 }
 
-// Fetch presets
-async function fetchPresets() {
+// =========================================================================
+// Terminal bootstrap
+// =========================================================================
+
+async function openTerminal() {
+  if (!connection.value) return
+
+  wsStatus.value = 'connecting'
+  wsError.value  = ''
+
   try {
-    const response = await api.get(`/api/v1/connections/${route.params.id}/presets`)
-    presets.value = response.data.data.items || []
-  } catch (error) {
-    console.error('Error fetching presets:', error)
+    const res = await api.post('/api/v1/terminal/sessions', {
+      connection_id: connection.value.id,
+    })
+
+    const { session_id, ws_url } = res.data.data
+
+    // Use provided ws_url or build from WS_BASE
+    const wsUrl = (ws_url && ws_url.startsWith('ws'))
+      ? ws_url
+      : `${WS_BASE}/terminal/${session_id}`
+
+    await initXterm()
+    connectWebSocket(wsUrl)
+  } catch (err) {
+    wsStatus.value = 'error'
+    wsError.value  = err.response?.data?.message || 'Fehler beim Erstellen der Terminal-Session'
+    toast.error(wsError.value)
   }
 }
 
-// Fetch history
-async function fetchHistory() {
-  try {
-    const response = await api.get(`/api/v1/connections/${route.params.id}/history`)
-    commandHistory.value = response.data.data.items || []
-  } catch (error) {
-    console.error('Error fetching history:', error)
-  }
-}
+async function initXterm() {
+  const { Terminal }      = await import('xterm')
+  const { FitAddon }      = await import('@xterm/addon-fit')
+  const { WebLinksAddon } = await import('@xterm/addon-web-links')
 
-// Execute command
-async function executeCommand(command = null) {
-  const cmd = command || commandInput.value.trim()
-  if (!cmd) return
-
-  // Check for 2FA token
-  if (!sensitiveToken.value) {
-    show2FAModal.value = true
-    commandInput.value = cmd
-    return
+  if (term) {
+    term.dispose()
+    term = null
   }
 
-  executing.value = true
-
-  // Add to output
-  commandOutput.value.push({
-    type: 'command',
-    content: `$ ${cmd}`,
-    timestamp: new Date().toISOString(),
+  term = new Terminal({
+    theme: {
+      background: '#0d1117',
+      foreground: '#c9d1d9',
+      cursor: '#58a6ff',
+      selectionBackground: 'rgba(88,166,255,0.3)',
+    },
+    fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+    fontSize: 14,
+    lineHeight: 1.4,
+    cursorBlink: true,
+    scrollback: 5000,
   })
 
-  try {
-    const response = await api.post(`/api/v1/connections/${route.params.id}/execute`, {
-      command: cmd,
-      sensitive_token: sensitiveToken.value,
-    })
+  fitAddon = new FitAddon()
+  term.loadAddon(fitAddon)
+  term.loadAddon(new WebLinksAddon())
 
-    commandOutput.value.push({
-      type: response.data.data.success ? 'success' : 'error',
-      content: response.data.data.output || '(keine Ausgabe)',
-      exitCode: response.data.data.exit_code,
-      timestamp: new Date().toISOString(),
-    })
+  await nextTick()
+  if (terminalEl.value) {
+    term.open(terminalEl.value)
+    fitAddon.fit()
+  }
 
-    commandInput.value = ''
-    await fetchHistory()
-  } catch (error) {
-    if (error.response?.status === 428 && error.response?.data?.data?.requires_2fa) {
-      sensitiveToken.value = null
-      show2FAModal.value = true
-      return
+  // Send keystrokes to SSH
+  term.onData((data) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'input', data }))
     }
+  })
 
-    if (error.response?.status === 401) {
-      sensitiveToken.value = null
-      show2FAModal.value = true
-      uiStore.showError('2FA-Token abgelaufen, bitte erneut verifizieren')
-      return
-    }
-
-    commandOutput.value.push({
-      type: 'error',
-      content: error.response?.data?.message || 'Fehler bei der Ausführung',
-      timestamp: new Date().toISOString(),
-    })
-  } finally {
-    executing.value = false
-    scrollToBottom()
-  }
-}
-
-// Verify 2FA
-async function verify2FA() {
-  if (!twoFACode.value.trim()) {
-    uiStore.showError('Bitte 2FA-Code eingeben')
-    return
-  }
-
-  verifying2FA.value = true
-
-  try {
-    const response = await api.post('/api/v1/auth/2fa/verify-sensitive', {
-      code: twoFACode.value,
-      operation: 'ssh_terminal',
-    })
-
-    sensitiveToken.value = response.data.data.sensitive_token
-    show2FAModal.value = false
-    twoFACode.value = ''
-    uiStore.showSuccess('2FA verifiziert - Token gültig für 5 Minuten')
-
-    // Execute pending command if any
-    if (commandInput.value) {
-      await executeCommand()
-    }
-  } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Ungültiger 2FA-Code')
-  } finally {
-    verifying2FA.value = false
-  }
-}
-
-// Run preset
-async function runPreset(preset) {
-  if (preset.is_dangerous) {
-    if (!await confirm({ message: `WARNUNG: Dieser Befehl ist als gefährlich markiert!\n\n${preset.command}\n\nWirklich ausführen?`, type: 'danger', confirmText: 'Löschen' })) {
-      return
-    }
-  }
-  executeCommand(preset.command)
-}
-
-// Open preset modal
-function openPresetModal(preset = null) {
-  editingPreset.value = preset
-  if (preset) {
-    presetForm.name = preset.name
-    presetForm.command = preset.command
-    presetForm.description = preset.description || ''
-    presetForm.is_dangerous = !!preset.is_dangerous
-  } else {
-    presetForm.name = ''
-    presetForm.command = commandInput.value || ''
-    presetForm.description = ''
-    presetForm.is_dangerous = false
-  }
-  showPresetModal.value = true
-}
-
-// Save preset
-async function savePreset() {
-  if (!presetForm.name.trim() || !presetForm.command.trim()) {
-    uiStore.showError('Name und Befehl sind erforderlich')
-    return
-  }
-
-  try {
-    if (editingPreset.value) {
-      await api.put(
-        `/api/v1/connections/${route.params.id}/presets/${editingPreset.value.id}`,
-        presetForm
-      )
-      uiStore.showSuccess('Preset aktualisiert')
-    } else {
-      await api.post(`/api/v1/connections/${route.params.id}/presets`, presetForm)
-      uiStore.showSuccess('Preset erstellt')
-    }
-
-    showPresetModal.value = false
-    await fetchPresets()
-  } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
-  }
-}
-
-// Delete preset
-async function deletePreset(preset) {
-  if (!await confirm({ message: 'Preset wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
-
-  try {
-    await api.delete(`/api/v1/connections/${route.params.id}/presets/${preset.id}`)
-    uiStore.showSuccess('Preset gelöscht')
-    await fetchPresets()
-  } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
-  }
-}
-
-// Use history command
-function useHistoryCommand(cmd) {
-  commandInput.value = cmd
-}
-
-// Scroll to bottom
-function scrollToBottom() {
-  nextTick(() => {
-    if (terminalRef.value) {
-      terminalRef.value.scrollTop = terminalRef.value.scrollHeight
+  // Notify server of terminal resize
+  term.onResize(({ cols, rows }) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'resize', cols, rows }))
     }
   })
 }
 
-// Clear output
-function clearOutput() {
-  commandOutput.value = []
+// =========================================================================
+// WebSocket proxy (via collaboration/terminalHandler.js → SSH PTY)
+// =========================================================================
+
+function connectWebSocket(url) {
+  ws = new WebSocket(url)
+
+  ws.onmessage = (evt) => {
+    try {
+      const msg = JSON.parse(evt.data)
+
+      switch (msg.type) {
+        case 'connected':
+          wsStatus.value = 'connected'
+          term?.writeln(`\x1b[32mVerbunden mit ${msg.username}@${msg.host}\x1b[0m\r\n`)
+          break
+        case 'output':
+          if (term) {
+            try { term.write(atob(msg.data)) } catch { term.write(msg.data) }
+          }
+          break
+        case 'disconnected':
+          wsStatus.value = 'disconnected'
+          term?.writeln('\r\n\x1b[33mVerbindung getrennt.\x1b[0m')
+          break
+        case 'error':
+          wsStatus.value = 'error'
+          wsError.value  = msg.message
+          term?.writeln(`\r\n\x1b[31mFehler: ${msg.message}\x1b[0m`)
+          break
+      }
+    } catch {
+      if (term) term.write(evt.data)
+    }
+  }
+
+  ws.onerror = () => {
+    wsStatus.value = 'error'
+    wsError.value  = 'WebSocket-Verbindungsfehler zum Terminal-Server'
+    term?.writeln('\r\n\x1b[31mWebSocket-Fehler\x1b[0m')
+  }
+
+  ws.onclose = () => {
+    if (wsStatus.value === 'connected' || wsStatus.value === 'connecting') {
+      wsStatus.value = 'disconnected'
+      term?.writeln('\r\n\x1b[33mVerbindung geschlossen.\x1b[0m')
+    }
+  }
 }
 
-// Format date
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleTimeString('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+function disconnect() {
+  if (ws) { ws.close(); ws = null }
+  wsStatus.value = 'disconnected'
+}
+
+async function reconnect() {
+  disconnect()
+  term?.clear()
+  await openTerminal()
+}
+
+// =========================================================================
+// Resize handling
+// =========================================================================
+
+let resizeObserver = null
+
+function setupResizeObserver() {
+  if (!terminalEl.value) return
+  resizeObserver = new ResizeObserver(() => {
+    if (fitAddon && term) fitAddon.fit()
   })
+  resizeObserver.observe(terminalEl.value)
 }
 
-onMounted(() => {
-  fetchConnection()
+// =========================================================================
+// Lifecycle
+// =========================================================================
+
+onMounted(async () => {
+  await fetchConnection()
+  if (connection.value) {
+    await openTerminal()
+    setupResizeObserver()
+  }
+})
+
+onUnmounted(() => {
+  disconnect()
+  resizeObserver?.disconnect()
+  term?.dispose()
+  term = null
 })
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="flex flex-col h-full gap-4">
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
@@ -299,8 +240,8 @@ onMounted(() => {
 
     <template v-else-if="connection">
       <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
+      <div class="flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
           <button
             @click="router.push('/connections')"
             class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
@@ -308,338 +249,76 @@ onMounted(() => {
             <ArrowLeftIcon class="w-5 h-5" />
           </button>
           <div>
-            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-              <CommandLineIcon class="w-6 h-6 text-primary-400" />
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+              <CommandLineIcon class="w-5 h-5 text-primary-400" />
               {{ connection.name }}
             </h1>
-            <p class="text-gray-400 text-sm mt-1">
+            <p class="text-xs text-gray-400 font-mono mt-0.5">
               {{ connection.username }}@{{ connection.host }}:{{ connection.port }}
             </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <span
-            v-if="sensitiveToken"
-            class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm flex items-center gap-1"
-          >
-            <ShieldCheckIcon class="w-4 h-4" />
-            2FA aktiv
-          </span>
+        <div class="flex items-center gap-3">
+          <!-- Status -->
+          <div class="flex items-center gap-1.5 text-sm">
+            <component
+              :is="wsStatus === 'connected' ? SignalIcon : SignalSlashIcon"
+              class="w-4 h-4"
+              :class="{
+                'text-green-400 animate-pulse': wsStatus === 'connected',
+                'text-yellow-400': wsStatus === 'connecting',
+                'text-red-400': wsStatus === 'error',
+                'text-gray-500': wsStatus === 'disconnected',
+              }"
+            />
+            <span
+              :class="{
+                'text-green-400': wsStatus === 'connected',
+                'text-yellow-400': wsStatus === 'connecting',
+                'text-red-400': wsStatus === 'error',
+                'text-gray-500': wsStatus === 'disconnected',
+              }"
+            >
+              {{ { connected: 'Verbunden', connecting: 'Verbinde…', disconnected: 'Getrennt', error: 'Fehler' }[wsStatus] }}
+            </span>
+          </div>
+
           <button
-            @click="clearOutput"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+            v-if="wsStatus !== 'connecting'"
+            @click="reconnect"
+            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            title="Neu verbinden"
           >
-            Terminal leeren
+            <ArrowPathIcon class="w-4 h-4" />
+          </button>
+
+          <button
+            v-if="wsStatus === 'connected'"
+            @click="disconnect"
+            class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-700 rounded-lg transition-colors"
+            title="Trennen"
+          >
+            <XMarkIcon class="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <!-- Terminal -->
-        <div class="lg:col-span-3 space-y-4">
-          <!-- Output -->
-          <div
-            ref="terminalRef"
-            class="bg-dark-900 border border-dark-700 rounded-xl p-4 h-[500px] overflow-y-auto font-mono text-sm"
-          >
-            <div v-if="commandOutput.length === 0" class="text-gray-500 text-center py-8">
-              Terminal bereit. Gib einen Befehl ein oder wähle ein Preset.
-            </div>
-
-            <div
-              v-for="(item, index) in commandOutput"
-              :key="index"
-              class="mb-3"
-            >
-              <div
-                v-if="item.type === 'command'"
-                class="text-primary-400"
-              >
-                {{ item.content }}
-              </div>
-              <div
-                v-else
-                class="pl-4 whitespace-pre-wrap"
-                :class="{
-                  'text-gray-300': item.type === 'success',
-                  'text-red-400': item.type === 'error',
-                }"
-              >
-                {{ item.content }}
-                <span
-                  v-if="item.exitCode !== undefined && item.exitCode !== 0"
-                  class="text-yellow-400 text-xs ml-2"
-                >
-                  (Exit: {{ item.exitCode }})
-                </span>
-              </div>
-            </div>
-
-            <div v-if="executing" class="flex items-center gap-2 text-gray-400">
-              <div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-              Wird ausgeführt...
-            </div>
-          </div>
-
-          <!-- Input -->
-          <div class="flex gap-2">
-            <div class="flex-1 relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400 font-mono">$</span>
-              <input
-                v-model="commandInput"
-                type="text"
-                class="w-full bg-dark-800 border border-dark-700 rounded-lg pl-8 pr-4 py-3 text-white font-mono focus:outline-none focus:border-primary-500"
-                placeholder="Befehl eingeben..."
-                @keydown.enter="executeCommand()"
-                :disabled="executing"
-              />
-            </div>
-            <button
-              @click="executeCommand()"
-              :disabled="executing || !commandInput.trim()"
-              class="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <PlayIcon class="w-5 h-5" />
-              Ausführen
-            </button>
-            <button
-              @click="openPresetModal()"
-              class="px-4 py-3 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
-              title="Als Preset speichern"
-            >
-              <BookmarkIcon class="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="space-y-6">
-          <!-- Presets -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-medium text-white flex items-center gap-2">
-                <BookmarkIcon class="w-5 h-5 text-primary-400" />
-                Presets
-              </h3>
-              <button
-                @click="openPresetModal()"
-                class="p-1 text-gray-400 hover:text-white rounded transition-colors"
-              >
-                <PlusIcon class="w-5 h-5" />
-              </button>
-            </div>
-
-            <div v-if="presets.length === 0" class="text-gray-500 text-sm text-center py-4">
-              Keine Presets vorhanden
-            </div>
-
-            <div class="space-y-2">
-              <div
-                v-for="preset in presets"
-                :key="preset.id"
-                class="group flex items-center gap-2 p-2 rounded-lg hover:bg-dark-700 transition-colors"
-              >
-                <button
-                  @click="runPreset(preset)"
-                  class="flex-1 text-left"
-                  :title="preset.command"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="text-white text-sm">{{ preset.name }}</span>
-                    <ExclamationTriangleIcon
-                      v-if="preset.is_dangerous"
-                      class="w-4 h-4 text-red-400"
-                      title="Gefährlicher Befehl"
-                    />
-                  </div>
-                  <p class="text-xs text-gray-500 truncate">{{ preset.command }}</p>
-                </button>
-                <button
-                  @click="openPresetModal(preset)"
-                  class="p-1 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
-                >
-                  <PencilIcon class="w-4 h-4" />
-                </button>
-                <button
-                  @click="deletePreset(preset)"
-                  class="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                >
-                  <TrashIcon class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- History -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
-            <h3 class="font-medium text-white flex items-center gap-2 mb-4">
-              <ClockIcon class="w-5 h-5 text-primary-400" />
-              Verlauf
-            </h3>
-
-            <div v-if="commandHistory.length === 0" class="text-gray-500 text-sm text-center py-4">
-              Keine Befehle ausgeführt
-            </div>
-
-            <div class="space-y-2 max-h-64 overflow-y-auto">
-              <button
-                v-for="item in commandHistory"
-                :key="item.id"
-                @click="useHistoryCommand(item.command)"
-                class="w-full text-left p-2 rounded-lg hover:bg-dark-700 transition-colors group"
-              >
-                <div class="flex items-center gap-2">
-                  <component
-                    :is="item.exit_code === 0 ? CheckCircleIcon : XCircleIcon"
-                    class="w-4 h-4 flex-shrink-0"
-                    :class="item.exit_code === 0 ? 'text-green-400' : 'text-red-400'"
-                  />
-                  <span class="text-gray-300 text-sm truncate font-mono">{{ item.command }}</span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">
-                  {{ formatDate(item.executed_at) }}
-                </p>
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- Error banner -->
+      <div
+        v-if="wsStatus === 'error' && wsError"
+        class="flex-shrink-0 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2"
+      >
+        <XMarkIcon class="w-4 h-4 flex-shrink-0" />
+        {{ wsError }}
       </div>
+
+      <!-- xterm.js terminal — fills available height -->
+      <div
+        ref="terminalEl"
+        class="flex-1 min-h-0 rounded-xl overflow-hidden border border-dark-700 cursor-text"
+        style="background: #0d1117;"
+      ></div>
     </template>
-
-    <!-- 2FA Modal -->
-    <Teleport to="body">
-      <div
-        v-if="show2FAModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-              <ShieldCheckIcon class="w-6 h-6 text-primary-400" />
-              2FA-Verifizierung erforderlich
-            </h2>
-            <button
-              @click="show2FAModal = false"
-              class="p-1 text-gray-400 hover:text-white rounded"
-            >
-              <XMarkIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          <p class="text-gray-400 mb-4">
-            Für SSH-Zugriff ist eine 2FA-Verifizierung erforderlich. Der Token ist 5 Minuten gültig.
-          </p>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">2FA-Code</label>
-              <input
-                v-model="twoFACode"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="6"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white text-center text-xl tracking-widest font-mono focus:outline-none focus:border-primary-500"
-                placeholder="000000"
-                @keydown.enter="verify2FA"
-              />
-            </div>
-
-            <button
-              @click="verify2FA"
-              :disabled="verifying2FA || twoFACode.length < 6"
-              class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ verifying2FA ? 'Wird verifiziert...' : 'Verifizieren' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Preset Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showPresetModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-white">
-              {{ editingPreset ? 'Preset bearbeiten' : 'Neues Preset' }}
-            </h2>
-            <button
-              @click="showPresetModal = false"
-              class="p-1 text-gray-400 hover:text-white rounded"
-            >
-              <XMarkIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name</label>
-              <input
-                v-model="presetForm.name"
-                type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
-                placeholder="z.B. System-Status"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Befehl</label>
-              <textarea
-                v-model="presetForm.command"
-                rows="3"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-primary-500 resize-none"
-                placeholder="htop"
-              ></textarea>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung (optional)</label>
-              <input
-                v-model="presetForm.description"
-                type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
-                placeholder="Zeigt den System-Status an"
-              />
-            </div>
-
-            <div>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input
-                  v-model="presetForm.is_dangerous"
-                  type="checkbox"
-                  class="w-4 h-4 rounded bg-dark-700 border-dark-600 text-red-600 focus:ring-red-500"
-                />
-                <span class="text-gray-300">Als gefährlich markieren</span>
-                <ExclamationTriangleIcon class="w-4 h-4 text-red-400" />
-              </label>
-              <p class="text-xs text-gray-500 mt-1 ml-6">
-                Gefährliche Befehle erfordern eine zusätzliche Bestätigung
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-3 mt-6">
-            <button
-              @click="showPresetModal = false"
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
-            <button
-              @click="savePreset"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
-            >
-              {{ editingPreset ? 'Speichern' : 'Erstellen' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>

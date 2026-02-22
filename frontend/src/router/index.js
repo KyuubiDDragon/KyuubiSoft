@@ -68,6 +68,9 @@ const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.
 const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
 const DiscordManagerView = () => import('@/modules/discord/views/DiscordManagerView.vue')
 const MockupEditorView = () => import('@/modules/mockup-editor/views/MockupEditorView.vue')
+const DatabaseBrowserView = () => import('@/modules/database-browser/views/DatabaseBrowserView.vue')
+const LogsView = () => import('@/modules/logs/views/LogsView.vue')
+const ScriptsView = () => import('@/modules/scripts/views/ScriptsView.vue')
 
 const routes = [
   // Auth routes
@@ -360,6 +363,24 @@ const routes = [
     name: 'mockup-editor',
     component: MockupEditorView,
     meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/database-browser',
+    name: 'database-browser',
+    component: DatabaseBrowserView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/logs',
+    name: 'logs',
+    component: LogsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/scripts',
+    name: 'scripts',
+    component: ScriptsView,
+    meta: { requiresAuth: true },
   },
 
   // Admin routes (role-protected)

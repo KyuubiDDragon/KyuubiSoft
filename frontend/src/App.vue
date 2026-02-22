@@ -10,6 +10,7 @@ import PWAUpdatePrompt from '@/components/PWAUpdatePrompt.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import PromptDialog from '@/components/PromptDialog.vue'
+import CommandPalette from '@/components/CommandPalette.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,5 +106,6 @@ onMounted(async () => {
     <ToastContainer />
     <ConfirmDialog />
     <PromptDialog />
+    <CommandPalette />
   </div>
 </template>

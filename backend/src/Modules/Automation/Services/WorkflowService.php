@@ -43,6 +43,7 @@ class WorkflowService
         'create_document' => ['name' => 'Dokument erstellen', 'config' => ['title', 'content', 'folder_id']],
         'create_calendar_event' => ['name' => 'Kalendereintrag erstellen', 'config' => ['title', 'start', 'end']],
         'http_request' => ['name' => 'HTTP-Request', 'config' => ['method', 'url', 'headers', 'body']],
+        'trigger_n8n' => ['name' => 'n8n Webhook auslösen', 'config' => ['webhook_url', 'payload']],
         'delay' => ['name' => 'Verzögerung', 'config' => ['seconds']],
     ];
 
@@ -436,6 +437,9 @@ class WorkflowService
             case 'http_request':
                 return $this->actionHttpRequest($config);
 
+            case 'trigger_n8n':
+                return $this->actionTriggerN8n($config);
+
             case 'delay':
                 return $this->actionDelay($config);
 
@@ -536,6 +540,52 @@ class WorkflowService
         return [
             'status_code' => $httpCode,
             'response' => $response,
+        ];
+    }
+
+    /**
+     * Trigger n8n webhook action
+     */
+    private function actionTriggerN8n(array $config): array
+    {
+        $webhookUrl = $config['webhook_url'] ?? '';
+
+        if (empty($webhookUrl) || !filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('Invalid n8n webhook URL');
+        }
+
+        $payload = $config['payload'] ?? '{}';
+        if (is_string($payload)) {
+            $payloadData = json_decode($payload, true) ?? [];
+        } else {
+            $payloadData = $payload;
+        }
+
+        $ch = curl_init($webhookUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payloadData),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error        = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            throw new \RuntimeException("n8n webhook request failed: {$error}");
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("n8n webhook returned HTTP {$httpCode}");
+        }
+
+        return [
+            'status_code' => $httpCode,
+            'response'    => $responseBody,
         ];
     }
 

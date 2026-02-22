@@ -684,6 +684,96 @@ class DockerController
     }
 
     /**
+     * Stream container logs via Server-Sent Events
+     */
+    public function containerLogsStream(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $host        = $this->resolveHost($request);
+        $containerId = $this->getRouteArg($request, 'id');
+        $params      = $request->getQueryParams();
+        $tail        = min((int) ($params['tail'] ?? 50), 500);
+
+        if (empty($containerId) || !preg_match('/^[a-zA-Z0-9_-]+$/', $containerId)) {
+            throw new ValidationException('Invalid container ID');
+        }
+
+        // Build docker command
+        $dockerCmd = 'docker';
+        if ($host['type'] === 'tcp' && !empty($host['tcp_host'])) {
+            $port = $host['tcp_port'] ?? 2375;
+            $dockerCmd .= " -H tcp://{$host['tcp_host']}:{$port}";
+        } elseif (!empty($host['socket_path']) && $host['socket_path'] !== '/var/run/docker.sock') {
+            $dockerCmd .= ' -H unix://' . escapeshellarg($host['socket_path']);
+        }
+
+        $cmd = "$dockerCmd logs --follow --tail $tail --timestamps $containerId 2>&1";
+
+        $response = $response
+            ->withHeader('Content-Type', 'text/event-stream')
+            ->withHeader('Cache-Control', 'no-cache')
+            ->withHeader('Connection', 'keep-alive')
+            ->withHeader('X-Accel-Buffering', 'no');
+
+        $body = new \Slim\Psr7\Stream(fopen('php://temp', 'r+'));
+
+        set_time_limit(0);
+
+        $process = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+
+        if (!is_resource($process)) {
+            $body->write("data: " . json_encode(['error' => 'Failed to start log stream']) . "\n\n");
+            return $response->withBody($body);
+        }
+
+        stream_set_blocking($pipes[1], false);
+
+        $maxTime = time() + 300; // 5 min max
+
+        while (time() < $maxTime) {
+            if (feof($pipes[1])) {
+                break;
+            }
+
+            $line = fgets($pipes[1]);
+            if ($line !== false) {
+                $line = rtrim($line);
+                // Parse Docker timestamp (first token before space)
+                $ts  = '';
+                $msg = $line;
+                if (preg_match('/^(\d{4}-\d{2}-\d{2}T[^\s]+)\s+(.*)$/s', $line, $m)) {
+                    $ts  = $m[1];
+                    $msg = $m[2];
+                }
+                $event = json_encode(['timestamp' => $ts, 'message' => $msg, 'stream' => 'stdout']);
+                $body->write("data: {$event}\n\n");
+
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            } else {
+                usleep(50000); // 50ms sleep to avoid busy-loop
+            }
+
+            // Check if client disconnected
+            if (connection_aborted()) {
+                break;
+            }
+        }
+
+        foreach ($pipes as $pipe) {
+            if (is_resource($pipe)) {
+                fclose($pipe);
+            }
+        }
+        proc_close($process);
+
+        $body->write("event: done\ndata: {}\n\n");
+
+        return $response->withBody($body);
+    }
+
+    /**
      * Get container stats
      */
     public function containerStats(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

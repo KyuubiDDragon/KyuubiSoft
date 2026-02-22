@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const Y = require('yjs');
 const Redis = require('ioredis');
 const { setupWSConnection, docs, setRedis, saveToRedis, syncToDatabase } = require('./wsHandler');
+const { handleTerminalConnection, setRedisClient } = require('./terminalHandler');
 
 const PORT = process.env.PORT || 1234;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -20,6 +21,7 @@ const redis = new Redis({
 redis.on('connect', () => {
   console.log(`[${new Date().toISOString()}] Connected to Redis at ${REDIS_HOST}:${REDIS_PORT}`);
   setRedis(redis);
+  setRedisClient(redis);
 });
 
 redis.on('error', (err) => {
@@ -61,8 +63,16 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
+  const url = req.url ? req.url.split('?')[0] : '';
+
+  // Route terminal WebSocket connections to the terminal handler
+  if (url.startsWith('/terminal/')) {
+    handleTerminalConnection(ws, url, req);
+    return;
+  }
+
   // Extract room name from URL path (e.g., /doc-token-here)
-  const docName = req.url.slice(1).split('?')[0];
+  const docName = url.slice(1);
 
   if (!docName) {
     ws.close(4000, 'Document name required');

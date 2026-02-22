@@ -128,6 +128,12 @@ function navigate(item) {
 }
 
 function handleKeyDown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    onToggle()
+    return
+  }
+
   if (!isOpen.value) return
 
   if (e.key === 'Escape') {

@@ -854,26 +854,165 @@ class BackupService
 
     private function uploadToS3(string $sourceFile, array $config, string $fileName): string
     {
-        // S3 upload implementation - requires aws/aws-sdk-php
-        $path = ($config['prefix'] ?? 'backups') . '/' . $fileName;
-        // For now, fallback to local
-        return $this->uploadToLocal($sourceFile, ['path' => self::BACKUP_DIR], $fileName);
+        $bucket    = $config['bucket'] ?? '';
+        $region    = $config['region'] ?? 'us-east-1';
+        $prefix    = trim($config['prefix'] ?? 'backups', '/');
+        $objectKey = ($prefix ? $prefix . '/' : '') . $fileName;
+        $endpoint  = $config['endpoint'] ?? "https://s3.{$region}.amazonaws.com";
+        $accessKey = $config['access_key'] ?? '';
+        $secretKey = $config['secret_key'] ?? '';
+
+        if (empty($bucket) || empty($accessKey) || empty($secretKey)) {
+            throw new \RuntimeException('S3 configuration incomplete (bucket, access_key, secret_key required)');
+        }
+
+        $url         = rtrim($endpoint, '/') . "/{$bucket}/{$objectKey}";
+        $fileContent = file_get_contents($sourceFile);
+        $contentHash = hash('sha256', $fileContent);
+        $date        = gmdate('Ymd');
+        $datetime    = gmdate('Ymd\THis\Z');
+        $contentType = 'application/octet-stream';
+
+        // AWS Signature V4
+        $canonicalHeaders = "content-type:{$contentType}\nhost:" . parse_url($endpoint, PHP_URL_HOST) . "\nx-amz-content-sha256:{$contentHash}\nx-amz-date:{$datetime}\n";
+        $signedHeaders    = 'content-type;host;x-amz-content-sha256;x-amz-date';
+        $canonicalRequest = "PUT\n/{$bucket}/{$objectKey}\n\n{$canonicalHeaders}\n{$signedHeaders}\n{$contentHash}";
+
+        $credentialScope = "{$date}/{$region}/s3/aws4_request";
+        $stringToSign    = "AWS4-HMAC-SHA256\n{$datetime}\n{$credentialScope}\n" . hash('sha256', $canonicalRequest);
+
+        $signingKey = hash_hmac('sha256', 'aws4_request',
+            hash_hmac('sha256', 's3',
+                hash_hmac('sha256', $region,
+                    hash_hmac('sha256', $date, 'AWS4' . $secretKey, true),
+                    true),
+                true),
+            true);
+
+        $signature     = hash_hmac('sha256', $stringToSign, $signingKey);
+        $authorization = "AWS4-HMAC-SHA256 Credential={$accessKey}/{$credentialScope},SignedHeaders={$signedHeaders},Signature={$signature}";
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'PUT',
+            CURLOPT_POSTFIELDS     => $fileContent,
+            CURLOPT_HTTPHEADER     => [
+                "Authorization: {$authorization}",
+                "Content-Type: {$contentType}",
+                "x-amz-content-sha256: {$contentHash}",
+                "x-amz-date: {$datetime}",
+            ],
+            CURLOPT_TIMEOUT        => 300,
+        ]);
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($error || $httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("S3 upload failed: " . ($error ?: "HTTP {$httpCode}"));
+        }
+
+        return "s3://{$bucket}/{$objectKey}";
     }
 
     private function uploadToSftp(string $sourceFile, array $config, string $fileName): string
     {
-        // SFTP upload implementation
-        $remotePath = ($config['path'] ?? '/backups') . '/' . $fileName;
-        // For now, fallback to local
-        return $this->uploadToLocal($sourceFile, ['path' => self::BACKUP_DIR], $fileName);
+        $host       = $config['host'] ?? '';
+        $port       = (int) ($config['port'] ?? 22);
+        $username   = $config['username'] ?? '';
+        $password   = $config['password'] ?? '';
+        $privateKey = $config['private_key'] ?? '';
+        $remotePath = rtrim($config['path'] ?? '/backups', '/') . '/' . $fileName;
+
+        if (empty($host) || empty($username)) {
+            throw new \RuntimeException('SFTP configuration incomplete (host, username required)');
+        }
+
+        $connection = @ssh2_connect($host, $port);
+        if (!$connection) {
+            throw new \RuntimeException("SFTP: Could not connect to {$host}:{$port}");
+        }
+
+        $authenticated = false;
+        if (!empty($privateKey)) {
+            $keyFile = tempnam(sys_get_temp_dir(), 'sftp_key_');
+            file_put_contents($keyFile, $privateKey);
+            $authenticated = @ssh2_auth_pubkey_file($connection, $username, $keyFile . '.pub', $keyFile);
+            @unlink($keyFile);
+        }
+
+        if (!$authenticated && !empty($password)) {
+            $authenticated = @ssh2_auth_password($connection, $username, $password);
+        }
+
+        if (!$authenticated) {
+            throw new \RuntimeException('SFTP: Authentication failed');
+        }
+
+        $sftp = @ssh2_sftp($connection);
+        if (!$sftp) {
+            throw new \RuntimeException('SFTP: Could not initialize SFTP subsystem');
+        }
+
+        // Ensure remote directory exists
+        $remoteDir = dirname($remotePath);
+        @ssh2_sftp_mkdir($sftp, $remoteDir, 0755, true);
+
+        $stream = @fopen("ssh2.sftp://{$sftp}{$remotePath}", 'w');
+        if (!$stream) {
+            throw new \RuntimeException("SFTP: Could not open remote file {$remotePath}");
+        }
+
+        $localStream = fopen($sourceFile, 'r');
+        stream_copy_to_stream($localStream, $stream);
+        fclose($localStream);
+        fclose($stream);
+
+        return "sftp://{$host}{$remotePath}";
     }
 
     private function uploadToWebDav(string $sourceFile, array $config, string $fileName): string
     {
-        // WebDAV upload implementation
-        $remotePath = ($config['path'] ?? '/backups') . '/' . $fileName;
-        // For now, fallback to local
-        return $this->uploadToLocal($sourceFile, ['path' => self::BACKUP_DIR], $fileName);
+        $baseUrl    = rtrim($config['url'] ?? '', '/');
+        $remotePath = rtrim($config['path'] ?? '/backups', '/') . '/' . $fileName;
+        $username   = $config['username'] ?? '';
+        $password   = $config['password'] ?? '';
+
+        if (empty($baseUrl)) {
+            throw new \RuntimeException('WebDAV configuration incomplete (url required)');
+        }
+
+        $url = $baseUrl . $remotePath;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'PUT',
+            CURLOPT_INFILE         => fopen($sourceFile, 'r'),
+            CURLOPT_INFILESIZE     => filesize($sourceFile),
+            CURLOPT_UPLOAD         => true,
+            CURLOPT_TIMEOUT        => 300,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/octet-stream'],
+        ]);
+
+        if (!empty($username)) {
+            curl_setopt($ch, CURLOPT_USERPWD, "{$username}:{$password}");
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        }
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($error || !in_array($httpCode, [200, 201, 204])) {
+            throw new \RuntimeException("WebDAV upload failed: " . ($error ?: "HTTP {$httpCode}"));
+        }
+
+        return $url;
     }
 
     private function downloadFromTarget(string $remotePath, array $target, array $config, string $localPath): void
@@ -923,20 +1062,105 @@ class BackupService
 
     private function testS3Connection(array $config): bool
     {
-        // Implement S3 connection test
-        return true;
+        $bucket    = $config['bucket'] ?? '';
+        $region    = $config['region'] ?? 'us-east-1';
+        $endpoint  = $config['endpoint'] ?? "https://s3.{$region}.amazonaws.com";
+        $accessKey = $config['access_key'] ?? '';
+        $secretKey = $config['secret_key'] ?? '';
+
+        if (empty($bucket) || empty($accessKey) || empty($secretKey)) {
+            return false;
+        }
+
+        $url         = rtrim($endpoint, '/') . "/{$bucket}/?max-keys=1";
+        $contentHash = hash('sha256', '');
+        $date        = gmdate('Ymd');
+        $datetime    = gmdate('Ymd\THis\Z');
+
+        $host             = parse_url($endpoint, PHP_URL_HOST);
+        $canonicalHeaders = "host:{$host}\nx-amz-content-sha256:{$contentHash}\nx-amz-date:{$datetime}\n";
+        $signedHeaders    = 'host;x-amz-content-sha256;x-amz-date';
+        $canonicalRequest = "GET\n/{$bucket}/\nmax-keys=1\n{$canonicalHeaders}\n{$signedHeaders}\n{$contentHash}";
+
+        $credentialScope = "{$date}/{$region}/s3/aws4_request";
+        $stringToSign    = "AWS4-HMAC-SHA256\n{$datetime}\n{$credentialScope}\n" . hash('sha256', $canonicalRequest);
+
+        $signingKey = hash_hmac('sha256', 'aws4_request',
+            hash_hmac('sha256', 's3',
+                hash_hmac('sha256', $region,
+                    hash_hmac('sha256', $date, 'AWS4' . $secretKey, true),
+                    true),
+                true),
+            true);
+
+        $signature     = hash_hmac('sha256', $stringToSign, $signingKey);
+        $authorization = "AWS4-HMAC-SHA256 Credential={$accessKey}/{$credentialScope},SignedHeaders={$signedHeaders},Signature={$signature}";
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_HTTPHEADER     => [
+                "Authorization: {$authorization}",
+                "x-amz-content-sha256: {$contentHash}",
+                "x-amz-date: {$datetime}",
+            ],
+        ]);
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpCode === 200;
     }
 
     private function testSftpConnection(array $config): bool
     {
-        // Implement SFTP connection test
-        return true;
+        $host     = $config['host'] ?? '';
+        $port     = (int) ($config['port'] ?? 22);
+        $username = $config['username'] ?? '';
+        $password = $config['password'] ?? '';
+
+        if (empty($host) || empty($username)) {
+            return false;
+        }
+
+        $connection = @ssh2_connect($host, $port);
+        if (!$connection) {
+            return false;
+        }
+
+        $authenticated = !empty($password) && @ssh2_auth_password($connection, $username, $password);
+        return $authenticated !== false;
     }
 
     private function testWebDavConnection(array $config): bool
     {
-        // Implement WebDAV connection test
-        return true;
+        $baseUrl  = rtrim($config['url'] ?? '', '/');
+        $username = $config['username'] ?? '';
+        $password = $config['password'] ?? '';
+
+        if (empty($baseUrl)) {
+            return false;
+        }
+
+        $ch = curl_init($baseUrl . '/');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_CUSTOMREQUEST  => 'PROPFIND',
+            CURLOPT_HTTPHEADER     => ['Depth: 0', 'Content-Type: application/xml'],
+        ]);
+
+        if (!empty($username)) {
+            curl_setopt($ch, CURLOPT_USERPWD, "{$username}:{$password}");
+        }
+
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return in_array($httpCode, [200, 207]);
     }
 
     // ==================== Stats ====================

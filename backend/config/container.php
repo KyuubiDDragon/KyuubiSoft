@@ -516,4 +516,50 @@ return [
             $c->get(\App\Modules\Discord\Repositories\DiscordBotRepository::class)
         );
     },
+
+    // Terminal Controller
+    \App\Modules\Terminal\Controllers\TerminalController::class => function (ContainerInterface $c): \App\Modules\Terminal\Controllers\TerminalController {
+        return new \App\Modules\Terminal\Controllers\TerminalController(
+            $c->get(DBALConnection::class),
+            $c->get(AuthService::class),
+            $c->get(RedisClient::class)
+        );
+    },
+
+    // Database Browser Service
+    \App\Modules\DatabaseBrowser\Services\DatabaseBrowserService::class => function (ContainerInterface $c): \App\Modules\DatabaseBrowser\Services\DatabaseBrowserService {
+        return new \App\Modules\DatabaseBrowser\Services\DatabaseBrowserService(
+            $c->get(RedisClient::class)
+        );
+    },
+
+    // Database Browser Controller
+    \App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController::class => function (ContainerInterface $c): \App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController {
+        return new \App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\DatabaseBrowser\Services\DatabaseBrowserService::class)
+        );
+    },
+
+    // Logs Controller
+    \App\Modules\Logs\Controllers\LogsController::class => function (ContainerInterface $c): \App\Modules\Logs\Controllers\LogsController {
+        return new \App\Modules\Logs\Controllers\LogsController(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Scripts Service
+    \App\Modules\Scripts\Services\ScriptsService::class => function (ContainerInterface $c): \App\Modules\Scripts\Services\ScriptsService {
+        return new \App\Modules\Scripts\Services\ScriptsService(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Scripts Controller
+    \App\Modules\Scripts\Controllers\ScriptsController::class => function (ContainerInterface $c): \App\Modules\Scripts\Controllers\ScriptsController {
+        return new \App\Modules\Scripts\Controllers\ScriptsController(
+            $c->get(DBALConnection::class),
+            $c->get(\App\Modules\Scripts\Services\ScriptsService::class)
+        );
+    },
 ];

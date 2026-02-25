@@ -38,6 +38,11 @@ const selectedInvoice = ref(null)
 const statusFilter = ref('')
 const kleinunternehmerMode = ref(false)
 const pdfGenerating = ref(false)
+const invoiceSenderSettings = ref({})
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
 
 // Invoice form
 const invoiceForm = ref({
@@ -87,11 +92,25 @@ const filteredInvoices = computed(() => {
 // API Calls
 onMounted(async () => {
   await loadData()
-  // Load Kleinunternehmer setting
+  // Load Kleinunternehmer setting + invoice sender settings
   try {
     const settingsResp = await api.get('/api/v1/settings/user')
-    kleinunternehmerMode.value = settingsResp.data.data?.kleinunternehmer_mode ?? false
-  } catch {}
+    const s = settingsResp.data.data ?? {}
+    kleinunternehmerMode.value = s.kleinunternehmer_mode ?? false
+    invoiceSenderSettings.value = {
+      sender_name: s.invoice_sender_name ?? '',
+      sender_company: s.invoice_company ?? '',
+      sender_address: s.invoice_address ?? '',
+      sender_email: s.invoice_email ?? '',
+      sender_phone: s.invoice_phone ?? '',
+      sender_vat_id: s.invoice_vat_id ?? '',
+      invoice_steuernummer: s.invoice_steuernummer ?? '',
+      sender_bank_details: s.invoice_bank_details ?? '',
+    }
+  } catch (err) {
+    console.warn('Einstellungen konnten nicht geladen werden', err)
+    uiStore.showError('Einstellungen konnten nicht geladen werden')
+  }
 })
 
 async function loadData() {
@@ -233,22 +252,39 @@ async function downloadInvoicePdf(invoice) {
     const resp = await api.get(`/api/v1/invoices/${invoice.id}`)
     const inv = resp.data.data
 
-    // Build HTML for PDF
+    // Validate required fields before generating (§14 UStG)
+    const missing = []
+    if (!inv.sender_name && !inv.sender_company) missing.push('Absender-Name')
+    if (!inv.sender_address) missing.push('Absender-Adresse (Einstellungen → Rechnungen)')
+    if (!inv.items?.length) missing.push('mind. eine Rechnungsposition')
+    if (missing.length) {
+      uiStore.showError(`PDF nicht möglich – fehlende Pflichtangaben: ${missing.join(', ')}`)
+      return
+    }
+
     const isKleinunternehmer = parseFloat(inv.tax_rate) === 0
+
+    // Steuernummer: read from stored sender settings (loaded on mount)
+    const steuernummer = invoiceSenderSettings.value.invoice_steuernummer || ''
+
     const itemsHtml = (inv.items || []).map(item => `
       <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${item.description.replace(/\n/g, '<br>')}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${parseFloat(item.quantity).toLocaleString('de-DE')} ${item.unit}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.unit_price)}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.total)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${parseFloat(item.quantity ?? 0).toLocaleString('de-DE')} ${escapeHtml(item.unit ?? '')}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.unit_price ?? 0)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.total ?? 0)}</td>
       </tr>`).join('')
 
     const totalsHtml = isKleinunternehmer
-      ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">Gesamtbetrag</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${formatCurrency(inv.subtotal)}</td></tr>`
+      ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">Gesamtbetrag (netto)</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${formatCurrency(inv.subtotal)}</td></tr>`
       : `
         <tr><td colspan="3" style="padding:8px 12px;text-align:right;">Netto</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.subtotal)}</td></tr>
-        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">MwSt. (${inv.tax_rate}%)</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.tax_amount)}</td></tr>
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">MwSt. (${escapeHtml(String(inv.tax_rate))}%)</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.tax_amount)}</td></tr>
         <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">Gesamtbetrag</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${formatCurrency(inv.total)}</td></tr>`
+
+    const senderTaxLine = isKleinunternehmer && steuernummer
+      ? `<div style="color:#6b7280;font-size:11px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
+      : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : '')
 
     const html = `
       <html><head><meta charset="UTF-8">
@@ -265,7 +301,7 @@ async function downloadInvoicePdf(invoice) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;">
         <div>
           <h1>Rechnung</h1>
-          <div style="color:#6b7280;">${inv.invoice_number}</div>
+          <div style="color:#6b7280;">${escapeHtml(inv.invoice_number)}</div>
         </div>
         <div style="text-align:right;">
           <div class="label">Datum</div>
@@ -276,20 +312,21 @@ async function downloadInvoicePdf(invoice) {
       <div style="display:flex;gap:48px;margin-bottom:32px;">
         <div style="flex:1;">
           <div class="label">Von</div>
-          <div style="font-weight:600;">${inv.sender_name || ''}</div>
-          ${inv.sender_company ? `<div>${inv.sender_company}</div>` : ''}
-          ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;">${inv.sender_address}</div>` : ''}
-          ${inv.sender_email ? `<div style="color:#4b5563;">${inv.sender_email}</div>` : ''}
-          ${inv.sender_phone ? `<div style="color:#4b5563;">${inv.sender_phone}</div>` : ''}
-          ${inv.sender_bank_details ? `<div style="margin-top:8px;white-space:pre-line;font-size:11px;color:#6b7280;">${inv.sender_bank_details}</div>` : ''}
+          <div style="font-weight:600;">${escapeHtml(inv.sender_name ?? '')}</div>
+          ${inv.sender_company ? `<div>${escapeHtml(inv.sender_company)}</div>` : ''}
+          ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;">${escapeHtml(inv.sender_address)}</div>` : ''}
+          ${senderTaxLine}
+          ${inv.sender_email ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_email)}</div>` : ''}
+          ${inv.sender_phone ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_phone)}</div>` : ''}
+          ${inv.sender_bank_details ? `<div style="margin-top:8px;white-space:pre-line;font-size:11px;color:#6b7280;">${escapeHtml(inv.sender_bank_details)}</div>` : ''}
         </div>
         <div style="flex:1;">
           <div class="label">An</div>
-          <div style="font-weight:600;">${inv.client_name || ''}</div>
-          ${inv.client_company ? `<div>${inv.client_company}</div>` : ''}
-          ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${inv.client_address}</div>` : ''}
-          ${inv.client_email ? `<div style="color:#4b5563;">${inv.client_email}</div>` : ''}
-          ${inv.client_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${inv.client_vat_id}</div>` : ''}
+          <div style="font-weight:600;">${escapeHtml(inv.client_name ?? '')}</div>
+          ${inv.client_company ? `<div>${escapeHtml(inv.client_company)}</div>` : ''}
+          ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${escapeHtml(inv.client_address)}</div>` : ''}
+          ${inv.client_email ? `<div style="color:#4b5563;">${escapeHtml(inv.client_email)}</div>` : ''}
+          ${inv.client_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
         </div>
       </div>
       <table>
@@ -302,8 +339,8 @@ async function downloadInvoicePdf(invoice) {
         <tbody>${itemsHtml}</tbody>
         <tfoot>${totalsHtml}</tfoot>
       </table>
-      ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${inv.notes}</div></div>` : ''}
-      ${inv.terms ? `<div class="notice">${inv.terms.replace(/\n/g, '<br>')}</div>` : ''}
+      ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
+      ${inv.terms ? `<div class="notice">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
       </body></html>`
 
     const el = document.createElement('div')
@@ -400,9 +437,10 @@ function getStatusInfo(status) {
     </div>
 
     <!-- Kleinunternehmer info banner -->
-    <div v-if="kleinunternehmerMode" class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300">
-      <span class="font-medium">Kleinunternehmer-Modus aktiv:</span>
-      Neue Rechnungen werden ohne MwSt. erstellt und enthalten den Hinweis gemäß § 19 UStG.
+    <div v-if="kleinunternehmerMode" class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300 space-y-1">
+      <p><span class="font-medium">Kleinunternehmer-Modus aktiv (§ 19 UStG):</span>
+      Rechnungen werden ohne MwSt. erstellt und erhalten automatisch den gesetzlich vorgeschriebenen Hinweis.</p>
+      <p class="text-amber-400/70 text-xs">Grenzen 2025: Vorjahresumsatz ≤ 25.000 € · Laufendes Jahr voraussichtlich ≤ 100.000 €</p>
     </div>
 
     <!-- Stats -->
@@ -633,7 +671,7 @@ function getStatusInfo(status) {
       <div
         v-if="showInvoiceModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        @click.self="showInvoiceModal = false"
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -696,7 +734,7 @@ function getStatusInfo(status) {
       <div
         v-if="showClientModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        @click.self="showClientModal = false"
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
@@ -792,7 +830,7 @@ function getStatusInfo(status) {
       <div
         v-if="showDetailModal && selectedInvoice"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        @click.self="showDetailModal = false"
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">

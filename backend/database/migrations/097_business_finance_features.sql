@@ -2,9 +2,25 @@
 -- Adds receipt linking for expenses, income tracking, and Kleinunternehmer support
 
 -- Link expenses to uploaded receipts (via storage module)
+-- IF NOT EXISTS makes this migration idempotent (safe to re-run)
 ALTER TABLE expenses
-    ADD COLUMN receipt_file_id VARCHAR(36) NULL AFTER notes,
-    ADD INDEX idx_expenses_receipt_file (receipt_file_id);
+    ADD COLUMN IF NOT EXISTS receipt_file_id VARCHAR(36) NULL AFTER notes;
+
+-- Add index conditionally to stay idempotent
+SET @dbname = DATABASE();
+SET @s = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = 'expenses' AND INDEX_NAME = 'idx_expenses_receipt_file') > 0,
+    'SELECT 1',
+    'ALTER TABLE `expenses` ADD INDEX `idx_expenses_receipt_file` (`receipt_file_id`)'
+));
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add Steuernummer snapshot to invoices (Kleinunternehmer §14 UStG requirement)
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS sender_steuernummer VARCHAR(50) NULL AFTER sender_vat_id;
 
 -- Income categories (separate from expense categories)
 CREATE TABLE IF NOT EXISTS income_categories (

@@ -34,42 +34,77 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function fetchSummary(params = {}) {
-    const response = await api.get('/api/v1/expenses/summary', { params })
-    summary.value = response.data.data
+    try {
+      const response = await api.get('/api/v1/expenses/summary', { params })
+      summary.value = response.data.data
+    } catch (e) {
+      console.error('fetchSummary failed:', e)
+      throw e
+    }
   }
 
   async function fetchCategories() {
-    const response = await api.get('/api/v1/expense-categories')
-    categories.value = response.data.data
+    try {
+      const response = await api.get('/api/v1/expense-categories')
+      categories.value = response.data.data
+    } catch (e) {
+      console.error('fetchCategories failed:', e)
+      throw e
+    }
   }
 
   async function createExpense(data) {
-    const response = await api.post('/api/v1/expenses', data)
-    expenses.value.unshift(response.data.data)
-    return response.data.data
+    try {
+      const response = await api.post('/api/v1/expenses', data)
+      expenses.value.unshift(response.data.data)
+      return response.data.data
+    } catch (e) {
+      console.error('createExpense failed:', e)
+      throw e
+    }
   }
 
   async function updateExpense(id, data) {
-    const response = await api.put(`/api/v1/expenses/${id}`, data)
-    const index = expenses.value.findIndex(e => e.id === id)
-    if (index !== -1) expenses.value[index] = response.data.data
-    return response.data.data
+    try {
+      const response = await api.put(`/api/v1/expenses/${id}`, data)
+      const index = expenses.value.findIndex(e => e.id === id)
+      if (index !== -1) expenses.value[index] = response.data.data
+      return response.data.data
+    } catch (e) {
+      console.error('updateExpense failed:', e)
+      throw e
+    }
   }
 
   async function deleteExpense(id) {
-    await api.delete(`/api/v1/expenses/${id}`)
-    expenses.value = expenses.value.filter(e => e.id !== id)
+    try {
+      await api.delete(`/api/v1/expenses/${id}`)
+      expenses.value = expenses.value.filter(e => e.id !== id)
+    } catch (e) {
+      console.error('deleteExpense failed:', e)
+      throw e
+    }
   }
 
   async function createCategory(data) {
-    const response = await api.post('/api/v1/expense-categories', data)
-    categories.value.push(response.data.data)
-    return response.data.data
+    try {
+      const response = await api.post('/api/v1/expense-categories', data)
+      categories.value.push(response.data.data)
+      return response.data.data
+    } catch (e) {
+      console.error('createCategory failed:', e)
+      throw e
+    }
   }
 
   async function deleteCategory(id) {
-    await api.delete(`/api/v1/expense-categories/${id}`)
-    categories.value = categories.value.filter(c => c.id !== id)
+    try {
+      await api.delete(`/api/v1/expense-categories/${id}`)
+      categories.value = categories.value.filter(c => c.id !== id)
+    } catch (e) {
+      console.error('deleteCategory failed:', e)
+      throw e
+    }
   }
 
   // ─── Income ───────────────────────────────────────────────────────────────
@@ -85,42 +120,77 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   async function fetchIncomeSummary(params = {}) {
-    const response = await api.get('/api/v1/income/summary', { params })
-    incomeSummary.value = response.data.data
+    try {
+      const response = await api.get('/api/v1/income/summary', { params })
+      incomeSummary.value = response.data.data
+    } catch (e) {
+      console.error('fetchIncomeSummary failed:', e)
+      throw e
+    }
   }
 
   async function fetchIncomeCategories() {
-    const response = await api.get('/api/v1/income-categories')
-    incomeCategories.value = response.data.data
+    try {
+      const response = await api.get('/api/v1/income-categories')
+      incomeCategories.value = response.data.data
+    } catch (e) {
+      console.error('fetchIncomeCategories failed:', e)
+      throw e
+    }
   }
 
   async function createIncomeEntry(data) {
-    const response = await api.post('/api/v1/income', data)
-    incomeEntries.value.unshift(response.data.data)
-    return response.data.data
+    try {
+      const response = await api.post('/api/v1/income', data)
+      incomeEntries.value.unshift(response.data.data)
+      return response.data.data
+    } catch (e) {
+      console.error('createIncomeEntry failed:', e)
+      throw e
+    }
   }
 
   async function updateIncomeEntry(id, data) {
-    const response = await api.put(`/api/v1/income/${id}`, data)
-    const index = incomeEntries.value.findIndex(e => e.id === id)
-    if (index !== -1) incomeEntries.value[index] = response.data.data
-    return response.data.data
+    try {
+      const response = await api.put(`/api/v1/income/${id}`, data)
+      const index = incomeEntries.value.findIndex(e => e.id === id)
+      if (index !== -1) incomeEntries.value[index] = response.data.data
+      return response.data.data
+    } catch (e) {
+      console.error('updateIncomeEntry failed:', e)
+      throw e
+    }
   }
 
   async function deleteIncomeEntry(id) {
-    await api.delete(`/api/v1/income/${id}`)
-    incomeEntries.value = incomeEntries.value.filter(e => e.id !== id)
+    try {
+      await api.delete(`/api/v1/income/${id}`)
+      incomeEntries.value = incomeEntries.value.filter(e => e.id !== id)
+    } catch (e) {
+      console.error('deleteIncomeEntry failed:', e)
+      throw e
+    }
   }
 
   async function createIncomeCategory(data) {
-    const response = await api.post('/api/v1/income-categories', data)
-    incomeCategories.value.push(response.data.data)
-    return response.data.data
+    try {
+      const response = await api.post('/api/v1/income-categories', data)
+      incomeCategories.value.push(response.data.data)
+      return response.data.data
+    } catch (e) {
+      console.error('createIncomeCategory failed:', e)
+      throw e
+    }
   }
 
   async function deleteIncomeCategory(id) {
-    await api.delete(`/api/v1/income-categories/${id}`)
-    incomeCategories.value = incomeCategories.value.filter(c => c.id !== id)
+    try {
+      await api.delete(`/api/v1/income-categories/${id}`)
+      incomeCategories.value = incomeCategories.value.filter(c => c.id !== id)
+    } catch (e) {
+      console.error('deleteIncomeCategory failed:', e)
+      throw e
+    }
   }
 
   // ─── EÜR ──────────────────────────────────────────────────────────────────

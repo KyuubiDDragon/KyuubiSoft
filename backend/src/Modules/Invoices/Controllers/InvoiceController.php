@@ -270,6 +270,7 @@ class InvoiceController
             'sender_email' => $settings['invoice_email'] ?? $user['email'],
             'sender_phone' => $settings['invoice_phone'] ?? null,
             'sender_vat_id' => $settings['invoice_vat_id'] ?? null,
+            'sender_steuernummer' => $settings['invoice_steuernummer'] ?? null,
             'sender_bank_details' => $settings['invoice_bank_details'] ?? null,
         ], $clientData));
 

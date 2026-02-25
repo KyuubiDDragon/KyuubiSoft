@@ -14,9 +14,11 @@ import {
   PaperClipIcon,
 } from '@heroicons/vue/24/outline'
 import { useFinanceStore } from '../stores/financeStore.js'
+import { useToast } from '@/composables/useToast'
 import api from '@/core/api/axios'
 
 const financeStore = useFinanceStore()
+const toast = useToast()
 
 // Active tab
 const activeTab = ref('expenses')
@@ -183,14 +185,17 @@ async function saveExpense() {
     category_id: expenseForm.value.category_id || null,
   }
 
-  if (editingExpense.value) {
-    await financeStore.updateExpense(editingExpense.value.id, data)
-  } else {
-    await financeStore.createExpense(data)
+  try {
+    if (editingExpense.value) {
+      await financeStore.updateExpense(editingExpense.value.id, data)
+    } else {
+      await financeStore.createExpense(data)
+    }
+    showExpenseForm.value = false
+    await loadExpenseData()
+  } catch (e) {
+    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Unbekannter Fehler'))
   }
-
-  showExpenseForm.value = false
-  await loadExpenseData()
 }
 
 async function deleteExpense(expense) {
@@ -264,14 +269,17 @@ async function saveIncome() {
     category_id: incomeForm.value.category_id || null,
   }
 
-  if (editingIncome.value) {
-    await financeStore.updateIncomeEntry(editingIncome.value.id, data)
-  } else {
-    await financeStore.createIncomeEntry(data)
+  try {
+    if (editingIncome.value) {
+      await financeStore.updateIncomeEntry(editingIncome.value.id, data)
+    } else {
+      await financeStore.createIncomeEntry(data)
+    }
+    showIncomeForm.value = false
+    await loadIncomeData()
+  } catch (e) {
+    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Unbekannter Fehler'))
   }
-
-  showIncomeForm.value = false
-  await loadIncomeData()
 }
 
 async function deleteIncome(entry) {

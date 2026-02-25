@@ -117,10 +117,23 @@ class IncomeController
         }
 
         $updates = ['updated_at' => date('Y-m-d H:i:s')];
-        if (isset($body['description'])) $updates['description'] = trim($body['description']);
-        if (isset($body['amount'])) $updates['amount'] = (float) $body['amount'];
+        if (isset($body['description']) && trim($body['description']) !== '') {
+            $updates['description'] = trim($body['description']);
+        }
+        if (isset($body['amount'])) {
+            $amount = (float) $body['amount'];
+            if ($amount <= 0) {
+                return JsonResponse::validationError(['amount' => 'Betrag muss größer als 0 sein']);
+            }
+            $updates['amount'] = $amount;
+        }
         if (isset($body['currency'])) $updates['currency'] = strtoupper(substr($body['currency'], 0, 3));
-        if (isset($body['income_date'])) $updates['income_date'] = $body['income_date'];
+        if (isset($body['income_date'])) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $body['income_date'])) {
+                return JsonResponse::validationError(['income_date' => 'Ungültiges Datum']);
+            }
+            $updates['income_date'] = $body['income_date'];
+        }
         if (array_key_exists('category_id', $body)) $updates['category_id'] = $body['category_id'];
         if (array_key_exists('source', $body)) $updates['source'] = $body['source'];
         if (array_key_exists('notes', $body)) $updates['notes'] = $body['notes'];
@@ -237,9 +250,10 @@ class IncomeController
             );
 
             $mIncome = $mIncomeManual + $mIncomeInvoices;
+            $formatter = new \IntlDateFormatter('de_DE', \IntlDateFormatter::NONE, \IntlDateFormatter::NONE, null, null, 'MMMM');
             $months[] = [
                 'month' => $m,
-                'month_name' => strftime('%B', mktime(0, 0, 0, $m, 1, $year)),
+                'month_name' => $formatter->format(mktime(0, 0, 0, $m, 1, $year)),
                 'income' => round($mIncome, 2),
                 'income_manual' => round($mIncomeManual, 2),
                 'income_invoices' => round($mIncomeInvoices, 2),

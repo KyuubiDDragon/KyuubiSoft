@@ -10,9 +10,9 @@
 
 -- Drop the column - user tokens should no longer be stored
 -- (No need to clear first; DROP COLUMN removes data along with the column)
-ALTER TABLE discord_accounts DROP COLUMN IF EXISTS token_encrypted;
+ALTER TABLE discord_accounts DROP COLUMN token_encrypted;
 
 -- Add a note column documenting why accounts exist (for display purposes only)
 ALTER TABLE discord_accounts
-    ADD COLUMN IF NOT EXISTS note VARCHAR(255) NULL DEFAULT NULL
+    ADD COLUMN note VARCHAR(255) NULL DEFAULT NULL
     COMMENT 'Display-only metadata; authentication now uses Bot tokens via discord_bots table';

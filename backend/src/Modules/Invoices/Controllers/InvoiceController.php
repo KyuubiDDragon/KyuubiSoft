@@ -213,6 +213,7 @@ class InvoiceController
             'proforma'    => 'PRO',
             'quote'       => 'AN',
             'credit_note' => 'GS',
+            'reminder'    => 'MAN',
         ];
         $prefix = $prefixMap[$type] ?? 'RE';
 
@@ -286,6 +287,8 @@ class InvoiceController
             'sender_steuernummer' => $settings['invoice_steuernummer'] ?? null,
             'sender_logo_file_id' => $settings['invoice_logo_file_id'] ?? null,
             'sender_bank_details' => $settings['invoice_bank_details'] ?? null,
+            'mahnung_level' => $data['mahnung_level'] ?? 0,
+            'mahnung_fee' => (float) ($data['mahnung_fee'] ?? 0.00),
         ], $clientData));
 
         $invoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$id]);
@@ -350,7 +353,8 @@ class InvoiceController
         $params = [];
 
         $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
-                   'service_date', 'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms'];
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                   'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -626,7 +630,7 @@ class InvoiceController
             [$sourceId]
         );
 
-        // Generate new invoice number (reuse same prefix logic)
+        // Generate new invoice number (reuse same prefix logic incl. reminder type)
         $year = date('Y');
         $settingsRows = $this->db->fetchAllAssociative(
             'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
@@ -636,7 +640,14 @@ class InvoiceController
         foreach ($settingsRows as $row) {
             $settings[$row['key']] = json_decode($row['value'], true);
         }
-        $prefix = $settings['invoice_number_prefix'] ?? 'RE';
+        $dupPrefixMap = [
+            'invoice'     => $settings['invoice_number_prefix'] ?? 'RE',
+            'proforma'    => 'PRO',
+            'quote'       => 'AN',
+            'credit_note' => 'GS',
+            'reminder'    => 'MAN',
+        ];
+        $prefix = $dupPrefixMap[$source['document_type'] ?? 'invoice'] ?? ($settings['invoice_number_prefix'] ?? 'RE');
         $lastNumber = $this->db->fetchOne(
             "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
              FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
@@ -656,6 +667,7 @@ class InvoiceController
                 'sender_name', 'sender_company', 'sender_address', 'sender_email', 'sender_phone',
                 'sender_vat_id', 'sender_steuernummer', 'sender_logo_file_id', 'sender_bank_details',
                 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                'mahnung_level', 'mahnung_fee',
             ])),
             [
                 'id' => $newId,

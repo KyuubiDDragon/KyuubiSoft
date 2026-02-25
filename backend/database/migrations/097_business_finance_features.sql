@@ -38,6 +38,39 @@ ALTER TABLE invoices
 ALTER TABLE invoices
     ADD COLUMN IF NOT EXISTS document_type ENUM('invoice','proforma','quote','credit_note') NOT NULL DEFAULT 'invoice' AFTER invoice_number;
 
+-- ─── Fahrtkosten & Bewirtungskosten support ──────────────────────────────────
+
+-- expense_type differentiates regular / mileage / entertainment
+ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS expense_type ENUM('general','mileage','entertainment') NOT NULL DEFAULT 'general' AFTER receipt_file_id;
+
+-- Fahrtkosten: km and route description (amount auto-calculated from 0.30€/km)
+ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS mileage_km DECIMAL(8,2) NULL AFTER expense_type;
+
+ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS mileage_route VARCHAR(255) NULL AFTER mileage_km;
+
+-- Bewirtungskosten: only 70% deductible (§4 Abs.5 Nr.2 EStG); defaults to 100 for all other types
+ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS deductible_percent TINYINT UNSIGNED NOT NULL DEFAULT 100 AFTER mileage_route;
+
+-- ─── Mahnwesen ────────────────────────────────────────────────────────────────
+
+-- Extend document_type to include payment reminder (Mahnung)
+ALTER TABLE invoices
+    MODIFY COLUMN document_type ENUM('invoice','proforma','quote','credit_note','reminder') NOT NULL DEFAULT 'invoice';
+
+-- Mahnstufe: 0 = Zahlungserinnerung, 1 = 1. Mahnung, 2 = 2. Mahnung, 3 = 3. Mahnung
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS mahnung_level TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER payment_terms;
+
+-- Mahngebühr added on top of outstanding amount
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS mahnung_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER mahnung_level;
+
+-- ─── Income categories (separate from expense categories) ────────────────────
+
 -- Income categories (separate from expense categories)
 CREATE TABLE IF NOT EXISTS income_categories (
     id VARCHAR(36) NOT NULL PRIMARY KEY,

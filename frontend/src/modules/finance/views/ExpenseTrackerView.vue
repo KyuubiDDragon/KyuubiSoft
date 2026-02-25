@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import {
   PlusIcon,
   XMarkIcon,
@@ -12,6 +12,9 @@ import {
   DocumentChartBarIcon,
   ArrowDownTrayIcon,
   PaperClipIcon,
+  TruckIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
 } from '@heroicons/vue/24/outline'
 import { useFinanceStore } from '../stores/financeStore.js'
 import { useToast } from '@/composables/useToast'
@@ -51,6 +54,16 @@ const expenseForm = ref({
   notes: '',
   is_recurring: false,
   receipt_file_id: null,
+  expense_type: 'general',
+  mileage_km: '',
+  mileage_route: '',
+})
+
+// Auto-calculate mileage amount when km changes
+watch(() => expenseForm.value.mileage_km, (km) => {
+  if (expenseForm.value.expense_type === 'mileage' && km) {
+    expenseForm.value.amount = (parseFloat(km) * 0.30).toFixed(2)
+  }
 })
 
 const categoryForm = ref({ name: '', color: '#3B82F6' })
@@ -146,6 +159,9 @@ function openCreateExpense() {
     notes: '',
     is_recurring: false,
     receipt_file_id: null,
+    expense_type: 'general',
+    mileage_km: '',
+    mileage_route: '',
   }
   showExpenseForm.value = true
 }
@@ -162,6 +178,9 @@ function openEditExpense(expense) {
     notes: expense.notes || '',
     is_recurring: expense.is_recurring,
     receipt_file_id: expense.receipt_file_id || null,
+    expense_type: expense.expense_type || 'general',
+    mileage_km: expense.mileage_km || '',
+    mileage_route: expense.mileage_route || '',
   }
   showExpenseForm.value = true
 }
@@ -337,6 +356,104 @@ function downloadEuerCsv() {
   link.click()
 }
 
+async function downloadEuerPdf() {
+  const data = financeStore.euer
+  if (!data) return
+
+  const fmt = (v) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0)
+
+  const monthRows = data.months.map(m => `
+    <tr style="border-bottom:1px solid #e5e7eb;">
+      <td style="padding:6px 10px;">${m.month_name}</td>
+      <td style="padding:6px 10px;text-align:right;color:#16a34a;">${m.income > 0 ? fmt(m.income) : '-'}</td>
+      <td style="padding:6px 10px;text-align:right;color:#dc2626;">${m.expenses > 0 ? fmt(m.expenses) : '-'}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:600;color:${m.profit >= 0 ? '#2563eb' : '#ea580c'};">${(m.income > 0 || m.expenses > 0) ? fmt(m.profit) : '-'}</td>
+    </tr>`).join('')
+
+  const categoryRows = (data.expenses_by_category || []).map(c => `
+    <tr style="border-bottom:1px solid #f3f4f6;">
+      <td style="padding:5px 10px;">${c.name || 'Ohne Kategorie'}</td>
+      <td style="padding:5px 10px;text-align:right;">${fmt(c.total)}</td>
+    </tr>`).join('')
+
+  const entertainmentNote = data.entertainment_gross > 0
+    ? `<p style="margin:4px 0;font-size:12px;color:#6b7280;">
+        Bewirtungskosten gesamt: ${fmt(data.entertainment_gross)} → absetzbar (70%): ${fmt(data.entertainment_deductible)}
+       </p>`
+    : ''
+
+  const mileageNote = data.mileage_total > 0
+    ? `<p style="margin:4px 0;font-size:12px;color:#6b7280;">
+        Fahrtkosten gesamt: ${fmt(data.mileage_total)} (0,30 €/km pauschal)
+       </p>`
+    : ''
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:30px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">Einnahmen-Überschuss-Rechnung</h1>
+          <p style="margin:4px 0;color:#6b7280;">Wirtschaftsjahr ${data.year} · Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
+          <p style="margin:4px 0;font-size:11px;color:#9ca3af;">Hinweis: Diese Übersicht ersetzt nicht das amtliche ELSTER-Formular.</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+        <div style="border:1px solid #d1fae5;border-radius:8px;padding:16px;background:#f0fdf4;">
+          <p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;">Einnahmen ${data.year}</p>
+          <p style="margin:0;font-size:22px;font-weight:700;color:#16a34a;">${fmt(data.total_income)}</p>
+        </div>
+        <div style="border:1px solid #fee2e2;border-radius:8px;padding:16px;background:#fef2f2;">
+          <p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;">Betriebsausgaben ${data.year}</p>
+          <p style="margin:0;font-size:22px;font-weight:700;color:#dc2626;">${fmt(data.total_expenses)}</p>
+          ${entertainmentNote}${mileageNote}
+        </div>
+        <div style="border:1px solid #dbeafe;border-radius:8px;padding:16px;background:#eff6ff;">
+          <p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;">Gewinn / Verlust</p>
+          <p style="margin:0;font-size:22px;font-weight:700;color:${data.profit >= 0 ? '#2563eb' : '#ea580c'};">${fmt(data.profit)}</p>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">Monatsübersicht</h3>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
+        <thead>
+          <tr style="background:#f9fafb;">
+            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e5e7eb;">Monat</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#16a34a;">Einnahmen</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#dc2626;">Ausgaben</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;">Gewinn/Verlust</th>
+          </tr>
+        </thead>
+        <tbody>${monthRows}</tbody>
+        <tfoot>
+          <tr style="font-weight:700;background:#f9fafb;">
+            <td style="padding:8px 10px;">Gesamt</td>
+            <td style="padding:8px 10px;text-align:right;color:#16a34a;">${fmt(data.total_income)}</td>
+            <td style="padding:8px 10px;text-align:right;color:#dc2626;">${fmt(data.total_expenses)}</td>
+            <td style="padding:8px 10px;text-align:right;color:${data.profit >= 0 ? '#2563eb' : '#ea580c'};">${fmt(data.profit)}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      ${categoryRows ? `
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">Ausgaben nach Kategorie</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tbody>${categoryRows}</tbody>
+      </table>` : ''}
+    </div>`
+
+  const { default: html2pdf } = await import('html2pdf.js')
+  const element = document.createElement('div')
+  element.innerHTML = html
+  html2pdf().set({
+    margin: 0,
+    filename: `euer-${data.year}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(element).save()
+}
+
 // EÜR bar chart width helper
 function barWidth(value, max) {
   if (!max || max === 0) return '0%'
@@ -386,9 +503,13 @@ onMounted(loadExpenseData)
           </button>
         </template>
         <template v-if="activeTab === 'euer'">
+          <button @click="downloadEuerPdf" class="btn-secondary text-sm" :disabled="!financeStore.euer">
+            <DocumentTextIcon class="w-4 h-4 mr-1" />
+            PDF
+          </button>
           <button @click="downloadEuerCsv" class="btn-secondary text-sm">
             <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
-            CSV Export
+            CSV
           </button>
         </template>
       </div>
@@ -480,8 +601,19 @@ onMounted(loadExpenseData)
               :style="{ backgroundColor: getCategoryColor(expense.category_id, financeStore.categories) }"
             ></span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm text-white truncate">{{ expense.description }}</p>
-              <p class="text-xs text-gray-500">{{ getCategoryName(expense.category_id, financeStore.categories) }} · {{ expense.expense_date }}</p>
+              <div class="flex items-center gap-2">
+                <p class="text-sm text-white truncate">{{ expense.description }}</p>
+                <span v-if="expense.expense_type === 'mileage'" class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 flex items-center gap-1">
+                  <TruckIcon class="w-3 h-3" /> Fahrtkosten
+                </span>
+                <span v-else-if="expense.expense_type === 'entertainment'" class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 flex items-center gap-1">
+                  <UserGroupIcon class="w-3 h-3" /> Bewirtung 70%
+                </span>
+              </div>
+              <p class="text-xs text-gray-500">
+                {{ getCategoryName(expense.category_id, financeStore.categories) }} · {{ expense.expense_date }}
+                <span v-if="expense.expense_type === 'mileage' && expense.mileage_km"> · {{ expense.mileage_km }} km</span>
+              </p>
             </div>
             <span v-if="expense.receipt_file_id" class="text-gray-500" title="Beleg vorhanden">
               <PaperClipIcon class="w-3.5 h-3.5" />
@@ -631,6 +763,12 @@ onMounted(loadExpenseData)
               <span class="text-gray-400 text-sm">Ausgaben {{ selectedYear }}</span>
             </div>
             <p class="text-2xl font-bold text-red-400">{{ formatCurrency(financeStore.euer.total_expenses) }}</p>
+            <p v-if="financeStore.euer.mileage_total > 0" class="text-xs text-gray-500 mt-1">
+              Fahrtkosten: {{ formatCurrency(financeStore.euer.mileage_total) }}
+            </p>
+            <p v-if="financeStore.euer.entertainment_gross > 0" class="text-xs text-gray-500">
+              Bewirtung (70%): {{ formatCurrency(financeStore.euer.entertainment_deductible) }} von {{ formatCurrency(financeStore.euer.entertainment_gross) }}
+            </p>
           </div>
           <div class="card p-4">
             <div class="flex items-center gap-3 mb-2">
@@ -764,20 +902,92 @@ onMounted(loadExpenseData)
               <button @click="showExpenseForm = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
             </div>
             <div class="p-6 space-y-4">
+              <!-- Ausgabentyp -->
+              <div>
+                <label class="label">Ausgabentyp</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    @click="expenseForm.expense_type = 'general'"
+                    class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 text-xs font-medium transition-all"
+                    :class="expenseForm.expense_type === 'general' ? 'border-primary-500 bg-primary-500/10 text-primary-300' : 'border-dark-600 text-gray-400 hover:border-dark-500'"
+                  >
+                    <BanknotesIcon class="w-5 h-5" />
+                    Allgemein
+                  </button>
+                  <button
+                    type="button"
+                    @click="expenseForm.expense_type = 'mileage'"
+                    class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 text-xs font-medium transition-all"
+                    :class="expenseForm.expense_type === 'mileage' ? 'border-blue-500 bg-blue-500/10 text-blue-300' : 'border-dark-600 text-gray-400 hover:border-dark-500'"
+                  >
+                    <TruckIcon class="w-5 h-5" />
+                    Fahrtkosten
+                  </button>
+                  <button
+                    type="button"
+                    @click="expenseForm.expense_type = 'entertainment'"
+                    class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 text-xs font-medium transition-all"
+                    :class="expenseForm.expense_type === 'entertainment' ? 'border-purple-500 bg-purple-500/10 text-purple-300' : 'border-dark-600 text-gray-400 hover:border-dark-500'"
+                  >
+                    <UserGroupIcon class="w-5 h-5" />
+                    Bewirtung
+                  </button>
+                </div>
+              </div>
+
+              <!-- Bewirtungskosten Hinweis -->
+              <div v-if="expenseForm.expense_type === 'entertainment'" class="bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2 text-sm text-purple-300">
+                Bewirtungskosten sind steuerlich nur zu <strong>70%</strong> absetzbar (§4 Abs.5 Nr.2 EStG). Die EÜR wird automatisch korrigiert.
+              </div>
+
               <div>
                 <label class="label">Beschreibung *</label>
-                <input v-model="expenseForm.description" type="text" class="input" placeholder="z.B. Bürobedarf, Fahrtkosten..." />
+                <input
+                  v-model="expenseForm.description"
+                  type="text"
+                  class="input"
+                  :placeholder="expenseForm.expense_type === 'mileage' ? 'z.B. Kundenbesuch München' : expenseForm.expense_type === 'entertainment' ? 'z.B. Geschäftsessen mit Kunde XY' : 'z.B. Bürobedarf, Software...'"
+                />
               </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="label">Betrag *</label>
-                  <input v-model="expenseForm.amount" type="number" step="0.01" min="0" class="input" placeholder="0.00" />
+
+              <!-- Fahrtkosten-Felder -->
+              <template v-if="expenseForm.expense_type === 'mileage'">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="label">Kilometer *</label>
+                    <input v-model="expenseForm.mileage_km" type="number" step="0.1" min="0" class="input" placeholder="0" />
+                    <p class="text-xs text-gray-500 mt-1">Betrag wird auto. berechnet (0,30 €/km)</p>
+                  </div>
+                  <div>
+                    <label class="label">Datum</label>
+                    <input v-model="expenseForm.expense_date" type="date" class="input" />
+                  </div>
                 </div>
                 <div>
-                  <label class="label">Datum</label>
-                  <input v-model="expenseForm.expense_date" type="date" class="input" />
+                  <label class="label">Route</label>
+                  <input v-model="expenseForm.mileage_route" type="text" class="input" placeholder="z.B. München → Augsburg" />
                 </div>
-              </div>
+                <div>
+                  <label class="label">Betrag (€) <span class="text-gray-500 font-normal">— auto aus km</span></label>
+                  <input v-model="expenseForm.amount" type="number" step="0.01" min="0" class="input" />
+                </div>
+              </template>
+
+              <!-- Standard-Felder (Betrag + Datum) -->
+              <template v-else>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="label">Betrag *</label>
+                    <input v-model="expenseForm.amount" type="number" step="0.01" min="0" class="input" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label class="label">Datum</label>
+                    <input v-model="expenseForm.expense_date" type="date" class="input" />
+                  </div>
+                </div>
+              </template>
+
               <div>
                 <label class="label">Kategorie</label>
                 <select v-model="expenseForm.category_id" class="input">

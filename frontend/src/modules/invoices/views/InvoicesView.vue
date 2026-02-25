@@ -56,7 +56,14 @@ const invoiceForm = ref({
   tax_rate: 19,
   notes: '',
   payment_terms: '',
+  mahnung_level: 0,
+  mahnung_fee: 0,
 })
+
+// Time entries modal
+const showTimeEntriesModal = ref(false)
+const timeEntriesForm = ref({ client_id: null, project_id: null, hourly_rate: '' })
+const projects = ref([])
 
 // Client form
 const clientForm = ref({
@@ -240,6 +247,8 @@ function openCreateInvoice() {
     tax_rate: kleinunternehmerMode.value ? 0 : 19,
     notes: '',
     payment_terms: invoiceSenderSettings.value.default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
+    mahnung_level: 0,
+    mahnung_fee: 0,
   }
   showInvoiceModal.value = true
 }
@@ -255,8 +264,64 @@ function openEditInvoice(invoice) {
     tax_rate: invoice.tax_rate,
     notes: invoice.notes ?? '',
     payment_terms: invoice.payment_terms ?? '',
+    mahnung_level: invoice.mahnung_level ?? 0,
+    mahnung_fee: invoice.mahnung_fee ?? 0,
   }
   showInvoiceModal.value = true
+}
+
+async function openTimeEntriesModal() {
+  // Load projects for selection
+  try {
+    const resp = await api.get('/api/v1/time/projects')
+    projects.value = resp.data.data ?? []
+  } catch {
+    projects.value = []
+  }
+  timeEntriesForm.value = { client_id: null, project_id: null, hourly_rate: '' }
+  showTimeEntriesModal.value = true
+}
+
+async function createFromTimeEntries() {
+  if (!timeEntriesForm.value.project_id && !timeEntriesForm.value.client_id) {
+    toast.error('Bitte Projekt oder Kunden auswählen')
+    return
+  }
+  try {
+    const payload = {
+      client_id: timeEntriesForm.value.client_id || null,
+      project_id: timeEntriesForm.value.project_id || null,
+    }
+    if (timeEntriesForm.value.hourly_rate) {
+      payload.hourly_rate = parseFloat(timeEntriesForm.value.hourly_rate)
+    }
+    // Get all unbilled billable time entries for the project
+    const teResp = await api.get('/api/v1/time', {
+      params: {
+        project_id: payload.project_id,
+        limit: 100,
+      }
+    })
+    const allEntries = teResp.data.data?.items ?? teResp.data.items ?? []
+    const billableIds = allEntries
+      .filter(e => e.is_billable && !e.invoiced)
+      .map(e => e.id)
+
+    if (billableIds.length === 0) {
+      toast.error('Keine abrechenbaren, noch nicht abgerechneten Zeiteinträge gefunden')
+      return
+    }
+
+    await api.post('/api/v1/invoices/from-time', {
+      ...payload,
+      time_entry_ids: billableIds,
+    })
+    showTimeEntriesModal.value = false
+    await loadData()
+    uiStore.showSuccess(`Rechnung aus ${billableIds.length} Zeiteinträgen erstellt`)
+  } catch (err) {
+    toast.error('Fehler: ' + (err?.response?.data?.message ?? err?.message ?? 'Unbekannter Fehler'))
+  }
 }
 
 async function duplicateInvoice(invoice) {
@@ -303,8 +368,18 @@ async function downloadInvoicePdf(invoice) {
     const isCreditNote = docType === 'credit_note'
     const isQuote = docType === 'quote'
     const isProforma = docType === 'proforma'
+    const isReminder = docType === 'reminder'
 
-    const docTitles = { invoice: 'Rechnung', proforma: 'Proforma-Rechnung', quote: 'Angebot', credit_note: 'Gutschrift' }
+    const mahnung_labels = ['Zahlungserinnerung', '1. Mahnung', '2. Mahnung', '3. Mahnung (Letzte Frist)']
+    const mahnungLabel = mahnung_labels[inv.mahnung_level ?? 0] ?? 'Zahlungserinnerung'
+
+    const docTitles = {
+      invoice: 'Rechnung',
+      proforma: 'Proforma-Rechnung',
+      quote: 'Angebot',
+      credit_note: 'Gutschrift',
+      reminder: mahnungLabel,
+    }
     const docTitle = docTitles[docType] ?? 'Rechnung'
 
     // Steuernummer: read from stored sender settings (loaded on mount)
@@ -349,7 +424,7 @@ async function downloadInvoicePdf(invoice) {
         <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${totalLabel}</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${signedAmount(inv.total)}</td></tr>`
     }
 
-    // Sender tax line — only for real invoices (not proforma/quote)
+    // Sender tax line — only for real invoices and reminders (not proforma/quote)
     const senderTaxLine = (!isProforma && !isQuote)
       ? (isKleinunternehmer && steuernummer
           ? `<div style="color:#6b7280;font-size:11px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
@@ -357,12 +432,21 @@ async function downloadInvoicePdf(invoice) {
       : ''
 
     // Date label differs by type
-    const dueDateLabel = isQuote ? 'Angebot gültig bis' : 'Fällig bis'
-    const issueDateLabel = isQuote ? 'Angebotsdatum' : (isProforma ? 'Ausstellungsdatum' : 'Rechnungsdatum')
+    const dueDateLabel = isQuote ? 'Angebot gültig bis' : (isReminder ? 'Neue Zahlungsfrist bis' : 'Fällig bis')
+    const issueDateLabel = isQuote ? 'Angebotsdatum' : (isProforma ? 'Ausstellungsdatum' : (isReminder ? 'Mahndatum' : 'Rechnungsdatum'))
 
     // Proforma notice
     const proformaNotice = isProforma
       ? `<div class="notice" style="border-left-color:#3b82f6;background:#eff6ff;">Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des § 14 UStG. Es entsteht keine Zahlungsverpflichtung.</div>`
+      : ''
+
+    // Mahnung notice
+    const mahnungNotice = isReminder
+      ? `<div class="notice" style="border-left-color:#f97316;background:#fff7ed;">
+          <strong>${mahnungLabel}</strong><br>
+          Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.
+          ${inv.mahnung_fee > 0 ? `<br>Mahngebühr: ${formatCurrency(inv.mahnung_fee)}` : ''}
+         </div>`
       : ''
 
     const paymentTerms = inv.payment_terms || invoiceSenderSettings.value.default_payment_terms || ''
@@ -408,7 +492,7 @@ async function downloadInvoicePdf(invoice) {
           ${inv.sender_phone ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_phone)}</div>` : ''}
         </div>
         <div style="flex:1;">
-          <div class="label">${isQuote ? 'Angeboten für' : (isCreditNote ? 'Gutschrift für' : 'Rechnungsempfänger')}</div>
+          <div class="label">${isQuote ? 'Angeboten für' : (isCreditNote ? 'Gutschrift für' : (isReminder ? 'Empfänger' : 'Rechnungsempfänger'))}</div>
           <div style="font-weight:600;">${escapeHtml(inv.client_name ?? '')}</div>
           ${inv.client_company ? `<div>${escapeHtml(inv.client_company)}</div>` : ''}
           ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${escapeHtml(inv.client_address)}</div>` : ''}
@@ -430,6 +514,7 @@ async function downloadInvoicePdf(invoice) {
       ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
       ${(!isProforma && inv.terms) ? `<div class="notice">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
       ${proformaNotice}
+      ${mahnungNotice}
       <!-- Payment information (not for proforma/quote) -->
       ${showPaymentBox ? `
       <div class="payment-box">
@@ -523,6 +608,10 @@ function getStatusInfo(status) {
         <button @click="openCreateClient" class="btn-secondary">
           <UserIcon class="w-5 h-5 mr-2" />
           Neuer Kunde
+        </button>
+        <button @click="openTimeEntriesModal" class="btn-secondary">
+          <ClockIcon class="w-5 h-5 mr-2" />
+          Aus Zeiteinträgen
         </button>
         <button @click="openCreateInvoice" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
@@ -647,14 +736,15 @@ function getStatusInfo(status) {
                 <div class="flex items-center gap-2">
                   <span class="font-mono text-white">{{ invoice.invoice_number }}</span>
                   <span
-                    v-if="invoice.document_type && invoice.document_type !== 'invoice'"
+                    v-if="invoice.document_type && invoice.document_type !== 'invoice' && { proforma: 1, quote: 1, credit_note: 1, reminder: 1 }[invoice.document_type]"
                     class="text-xs px-1.5 py-0.5 rounded font-medium"
                     :class="{
                       'bg-blue-500/20 text-blue-300': invoice.document_type === 'proforma',
                       'bg-yellow-500/20 text-yellow-300': invoice.document_type === 'quote',
                       'bg-red-500/20 text-red-300': invoice.document_type === 'credit_note',
+                      'bg-orange-500/20 text-orange-300': invoice.document_type === 'reminder',
                     }"
-                  >{{ { proforma: 'Proforma', quote: 'Angebot', credit_note: 'Gutschrift' }[invoice.document_type] }}</span>
+                  >{{ { proforma: 'Proforma', quote: 'Angebot', credit_note: 'Gutschrift', reminder: 'Mahnung' }[invoice.document_type] }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-300">{{ invoice.client_name || '-' }}</td>
@@ -813,11 +903,34 @@ function getStatusInfo(status) {
               <label class="label">Dokumenttyp</label>
               <select v-model="invoiceForm.document_type" class="input">
                 <option value="invoice">Rechnung</option>
+                <option value="reminder">Mahnung / Zahlungserinnerung</option>
                 <option value="proforma">Proforma-Rechnung</option>
                 <option value="quote">Angebot / Kostenvoranschlag</option>
                 <option value="credit_note">Gutschrift / Storno</option>
               </select>
             </div>
+
+            <!-- Mahnwesen Felder -->
+            <template v-if="invoiceForm.document_type === 'reminder'">
+              <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-amber-300">
+                Eine Mahnung bezieht sich auf eine unbezahlte Rechnung. Trage die Original-Rechnungsnummer in die Anmerkungen ein.
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="label">Mahnstufe</label>
+                  <select v-model.number="invoiceForm.mahnung_level" class="input">
+                    <option :value="0">Zahlungserinnerung</option>
+                    <option :value="1">1. Mahnung</option>
+                    <option :value="2">2. Mahnung</option>
+                    <option :value="3">3. Mahnung (Letzte Frist)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Mahngebühr (€)</label>
+                  <input v-model.number="invoiceForm.mahnung_fee" type="number" step="0.01" min="0" class="input" placeholder="0.00" />
+                </div>
+              </div>
+            </template>
 
             <div>
               <label class="label">Kunde</label>
@@ -1057,6 +1170,50 @@ function getStatusInfo(status) {
           </div>
         </div>
       </div>
+    </Teleport>
+
+    <!-- Aus Zeiteinträgen Modal -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
+                  leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div v-if="showTimeEntriesModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showTimeEntriesModal = false">
+          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+              <h3 class="text-lg font-semibold text-white">Rechnung aus Zeiteinträgen</h3>
+              <button @click="showTimeEntriesModal = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 text-sm text-blue-300">
+                Es werden alle abrechenbaren, noch nicht abgerechneten Zeiteinträge des gewählten Projekts importiert.
+              </div>
+              <div>
+                <label class="label">Projekt</label>
+                <select v-model="timeEntriesForm.project_id" class="input">
+                  <option :value="null">Kein Projekt ausgewählt</option>
+                  <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Kunde</label>
+                <select v-model="timeEntriesForm.client_id" class="input">
+                  <option :value="null">Kein Kunde</option>
+                  <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Stundensatz (€) <span class="text-gray-500 font-normal">— optional, überschreibt Eintragswert</span></label>
+                <input v-model="timeEntriesForm.hourly_rate" type="number" step="0.01" min="0" class="input" placeholder="z.B. 75.00" />
+              </div>
+              <div class="flex gap-3 pt-2">
+                <button @click="showTimeEntriesModal = false" class="btn-secondary flex-1">Abbrechen</button>
+                <button @click="createFromTimeEntries" class="btn-primary flex-1" :disabled="!timeEntriesForm.project_id && !timeEntriesForm.client_id">
+                  Rechnung erstellen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

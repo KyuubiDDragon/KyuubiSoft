@@ -222,9 +222,9 @@ class IncomeController
         );
         $totalIncome = $incomeManual + $incomeInvoices;
 
-        // Total expenses
+        // Total deductible expenses (Bewirtungskosten only 70% via deductible_percent; rest 100%)
         $totalExpenses = (float) $this->db->fetchOne(
-            'SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+            'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
             [$userId, $from, $to]
         );
 
@@ -245,7 +245,7 @@ class IncomeController
                 [$userId, $mFrom, $mTo]
             );
             $mExpenses = (float) $this->db->fetchOne(
-                'SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+                'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
                 [$userId, $mFrom, $mTo]
             );
 
@@ -262,9 +262,9 @@ class IncomeController
             ];
         }
 
-        // Expense breakdown by category
+        // Expense breakdown by category (using deductible amounts)
         $expensesByCategory = $this->db->fetchAllAssociative(
-            'SELECT ec.name, ec.color, COALESCE(SUM(e.amount), 0) AS total
+            'SELECT ec.name, ec.color, COALESCE(SUM(e.amount * e.deductible_percent / 100), 0) AS total
              FROM expense_categories ec
              LEFT JOIN expenses e ON e.category_id = ec.id AND e.user_id = ? AND e.expense_date BETWEEN ? AND ?
              WHERE ec.user_id = ?
@@ -273,6 +273,17 @@ class IncomeController
              ORDER BY total DESC',
             [$userId, $from, $to, $userId]
         );
+
+        // Fahrtkosten & Bewirtungskosten breakdown for EÜR transparency
+        $mileageTotal = (float) $this->db->fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'mileage' AND expense_date BETWEEN ? AND ?",
+            [$userId, $from, $to]
+        );
+        $entertainmentGross = (float) $this->db->fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'entertainment' AND expense_date BETWEEN ? AND ?",
+            [$userId, $from, $to]
+        );
+        $entertainmentDeductible = round($entertainmentGross * 0.70, 2);
 
         foreach ($expensesByCategory as &$cat) {
             $cat['total'] = (float) $cat['total'];
@@ -287,6 +298,9 @@ class IncomeController
             'profit' => round($profit, 2),
             'months' => $months,
             'expenses_by_category' => $expensesByCategory,
+            'mileage_total' => round($mileageTotal, 2),
+            'entertainment_gross' => round($entertainmentGross, 2),
+            'entertainment_deductible' => $entertainmentDeductible,
         ]);
     }
 
@@ -317,9 +331,12 @@ class IncomeController
             [$userId, $from, $to]
         );
 
-        // Fetch all expenses
+        // Fetch all expenses (with deductible amounts for Bewirtungskosten)
         $expenseEntries = $this->db->fetchAllAssociative(
-            'SELECT e.expense_date, e.description, e.amount, e.currency,
+            'SELECT e.expense_date, e.description,
+                    e.amount AS gross_amount,
+                    ROUND(e.amount * e.deductible_percent / 100, 2) AS amount,
+                    e.expense_type, e.mileage_km, e.mileage_route, e.deductible_percent, e.currency,
                     ec.name AS category
              FROM expenses e
              LEFT JOIN expense_categories ec ON e.category_id = ec.id
@@ -330,26 +347,39 @@ class IncomeController
 
         // Build CSV
         $lines = [];
-        $lines[] = "Typ;Datum;Beschreibung;Kategorie;Quelle;Betrag;Währung";
+        $lines[] = "Typ;Datum;Beschreibung;Kategorie;Quelle;Brutto-Betrag;Abzugsfähig (%);Betrag (abzugsfähig);Währung";
 
         foreach (array_merge($incomeEntries, $paidInvoices) as $row) {
             $lines[] = sprintf(
-                'Einnahme;%s;%s;%s;%s;%s;%s',
+                'Einnahme;%s;%s;%s;%s;%s;100;%s;%s',
                 $row['income_date'],
                 str_replace(';', ',', $row['description']),
                 str_replace(';', ',', $row['category'] ?? ''),
                 str_replace(';', ',', $row['source'] ?? ''),
+                number_format((float) $row['amount'], 2, ',', '.'),
                 number_format((float) $row['amount'], 2, ',', '.'),
                 $row['currency']
             );
         }
 
         foreach ($expenseEntries as $row) {
+            $typeLabel = match($row['expense_type'] ?? 'general') {
+                'mileage' => 'Fahrtkosten',
+                'entertainment' => 'Bewirtungskosten',
+                default => 'Ausgabe',
+            };
+            $description = $row['description'];
+            if (!empty($row['mileage_route'])) {
+                $description .= ' (' . $row['mileage_route'] . ', ' . $row['mileage_km'] . ' km)';
+            }
             $lines[] = sprintf(
-                'Ausgabe;%s;%s;%s;;%s;%s',
+                '%s;%s;%s;%s;;%s;%d;%s;%s',
+                $typeLabel,
                 $row['expense_date'],
-                str_replace(';', ',', $row['description']),
+                str_replace(';', ',', $description),
                 str_replace(';', ',', $row['category'] ?? ''),
+                number_format((float) $row['gross_amount'], 2, ',', '.'),
+                (int) ($row['deductible_percent'] ?? 100),
                 number_format((float) $row['amount'], 2, ',', '.'),
                 $row['currency']
             );

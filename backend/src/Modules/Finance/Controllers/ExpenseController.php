@@ -54,6 +54,8 @@ class ExpenseController
         foreach ($expenses as &$expense) {
             $expense['amount'] = (float) $expense['amount'];
             $expense['is_recurring'] = (bool) $expense['is_recurring'];
+            $expense['mileage_km'] = $expense['mileage_km'] !== null ? (float) $expense['mileage_km'] : null;
+            $expense['deductible_percent'] = (int) ($expense['deductible_percent'] ?? 100);
         }
 
         return JsonResponse::paginated($expenses, $total, $page, $perPage);
@@ -66,12 +68,28 @@ class ExpenseController
 
         $errors = [];
         $description = trim($body['description'] ?? '');
-        $amount = (float) ($body['amount'] ?? 0);
         $date = $body['expense_date'] ?? date('Y-m-d');
+        $expenseType = in_array($body['expense_type'] ?? 'general', ['general', 'mileage', 'entertainment'])
+            ? ($body['expense_type'] ?? 'general')
+            : 'general';
+
+        // For mileage: auto-calculate amount from km (0,30 €/km for ICE; 0,38 €/km for e-vehicles not yet differentiated)
+        $mileageKm = $expenseType === 'mileage' ? (float) ($body['mileage_km'] ?? 0) : null;
+        if ($expenseType === 'mileage' && $mileageKm > 0 && empty($body['amount'])) {
+            $amount = round($mileageKm * 0.30, 2);
+        } else {
+            $amount = (float) ($body['amount'] ?? 0);
+        }
+
+        // Bewirtungskosten: always 70% deductible (§4 Abs.5 Nr.2 EStG)
+        $deductiblePercent = $expenseType === 'entertainment' ? 70 : 100;
 
         if (empty($description)) $errors['description'] = 'Beschreibung ist erforderlich';
         if ($amount <= 0) $errors['amount'] = 'Betrag muss größer als 0 sein';
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $errors['expense_date'] = 'Ungültiges Datum';
+        if ($expenseType === 'mileage' && ($mileageKm === null || $mileageKm <= 0)) {
+            $errors['mileage_km'] = 'Kilometeranzahl ist erforderlich';
+        }
 
         if (!empty($errors)) {
             return JsonResponse::validationError($errors);
@@ -91,6 +109,10 @@ class ExpenseController
             'is_recurring' => isset($body['is_recurring']) && $body['is_recurring'] ? 1 : 0,
             'recurring_interval' => in_array($body['recurring_interval'] ?? '', ['weekly', 'monthly', 'yearly']) ? $body['recurring_interval'] : null,
             'notes' => $body['notes'] ?? null,
+            'expense_type' => $expenseType,
+            'mileage_km' => $mileageKm,
+            'mileage_route' => $expenseType === 'mileage' ? ($body['mileage_route'] ?? null) : null,
+            'deductible_percent' => $deductiblePercent,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -101,6 +123,8 @@ class ExpenseController
         );
         $expense['amount'] = (float) $expense['amount'];
         $expense['is_recurring'] = (bool) $expense['is_recurring'];
+        $expense['mileage_km'] = $expense['mileage_km'] !== null ? (float) $expense['mileage_km'] : null;
+        $expense['deductible_percent'] = (int) ($expense['deductible_percent'] ?? 100);
 
         return JsonResponse::created($expense);
     }
@@ -118,12 +142,28 @@ class ExpenseController
 
         $updates = ['updated_at' => date('Y-m-d H:i:s')];
         if (isset($body['description'])) $updates['description'] = trim($body['description']);
-        if (isset($body['amount'])) $updates['amount'] = (float) $body['amount'];
         if (isset($body['currency'])) $updates['currency'] = strtoupper(substr($body['currency'], 0, 3));
         if (isset($body['expense_date'])) $updates['expense_date'] = $body['expense_date'];
         if (array_key_exists('category_id', $body)) $updates['category_id'] = $body['category_id'];
         if (array_key_exists('notes', $body)) $updates['notes'] = $body['notes'];
         if (isset($body['is_recurring'])) $updates['is_recurring'] = $body['is_recurring'] ? 1 : 0;
+
+        // Expense type fields
+        if (isset($body['expense_type']) && in_array($body['expense_type'], ['general', 'mileage', 'entertainment'])) {
+            $updates['expense_type'] = $body['expense_type'];
+            // Enforce 70% deductible for entertainment
+            $updates['deductible_percent'] = $body['expense_type'] === 'entertainment' ? 70 : 100;
+        }
+        if (array_key_exists('mileage_km', $body)) $updates['mileage_km'] = $body['mileage_km'] !== null ? (float) $body['mileage_km'] : null;
+        if (array_key_exists('mileage_route', $body)) $updates['mileage_route'] = $body['mileage_route'];
+
+        // Amount: auto-calculate for mileage if not explicitly set
+        $currentType = $updates['expense_type'] ?? null;
+        if ($currentType === 'mileage' && isset($updates['mileage_km']) && !isset($body['amount'])) {
+            $updates['amount'] = round((float) $updates['mileage_km'] * 0.30, 2);
+        } elseif (isset($body['amount'])) {
+            $updates['amount'] = (float) $body['amount'];
+        }
 
         $this->db->update('expenses', $updates, ['id' => $expenseId]);
 
@@ -133,6 +173,8 @@ class ExpenseController
         );
         $updated['amount'] = (float) $updated['amount'];
         $updated['is_recurring'] = (bool) $updated['is_recurring'];
+        $updated['mileage_km'] = $updated['mileage_km'] !== null ? (float) $updated['mileage_km'] : null;
+        $updated['deductible_percent'] = (int) ($updated['deductible_percent'] ?? 100);
 
         return JsonResponse::success($updated);
     }

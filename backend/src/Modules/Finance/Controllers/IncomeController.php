@@ -223,10 +223,20 @@ class IncomeController
         $totalIncome = $incomeManual + $incomeInvoices;
 
         // Total deductible expenses (Bewirtungskosten only 70% via deductible_percent; rest 100%)
-        $totalExpenses = (float) $this->db->fetchOne(
-            'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
-            [$userId, $from, $to]
-        );
+        // Falls back to SUM(amount) if deductible_percent column doesn't exist yet (migration pending)
+        $hasDeductibleColumn = true;
+        try {
+            $totalExpenses = (float) $this->db->fetchOne(
+                'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+                [$userId, $from, $to]
+            );
+        } catch (\Throwable $e) {
+            $hasDeductibleColumn = false;
+            $totalExpenses = (float) $this->db->fetchOne(
+                'SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+                [$userId, $from, $to]
+            );
+        }
 
         $profit = $totalIncome - $totalExpenses;
 
@@ -244,10 +254,17 @@ class IncomeController
                 "SELECT COALESCE(SUM(total), 0) FROM invoices WHERE user_id = ? AND status = 'paid' AND paid_date BETWEEN ? AND ?",
                 [$userId, $mFrom, $mTo]
             );
-            $mExpenses = (float) $this->db->fetchOne(
-                'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
-                [$userId, $mFrom, $mTo]
-            );
+            if ($hasDeductibleColumn) {
+                $mExpenses = (float) $this->db->fetchOne(
+                    'SELECT COALESCE(SUM(amount * deductible_percent / 100), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+                    [$userId, $mFrom, $mTo]
+                );
+            } else {
+                $mExpenses = (float) $this->db->fetchOne(
+                    'SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_date BETWEEN ? AND ?',
+                    [$userId, $mFrom, $mTo]
+                );
+            }
 
             $mIncome = $mIncomeManual + $mIncomeInvoices;
             $formatter = new \IntlDateFormatter('de_DE', \IntlDateFormatter::NONE, \IntlDateFormatter::NONE, null, null, 'MMMM');
@@ -262,27 +279,47 @@ class IncomeController
             ];
         }
 
-        // Expense breakdown by category (using deductible amounts)
-        $expensesByCategory = $this->db->fetchAllAssociative(
-            'SELECT ec.name, ec.color, COALESCE(SUM(e.amount * e.deductible_percent / 100), 0) AS total
-             FROM expense_categories ec
-             LEFT JOIN expenses e ON e.category_id = ec.id AND e.user_id = ? AND e.expense_date BETWEEN ? AND ?
-             WHERE ec.user_id = ?
-             GROUP BY ec.id, ec.name, ec.color
-             HAVING total > 0
-             ORDER BY total DESC',
-            [$userId, $from, $to, $userId]
-        );
+        // Expense breakdown by category (using deductible amounts if column exists)
+        try {
+            $expensesByCategory = $this->db->fetchAllAssociative(
+                $hasDeductibleColumn
+                    ? 'SELECT ec.name, ec.color, COALESCE(SUM(e.amount * e.deductible_percent / 100), 0) AS total
+                       FROM expense_categories ec
+                       LEFT JOIN expenses e ON e.category_id = ec.id AND e.user_id = ? AND e.expense_date BETWEEN ? AND ?
+                       WHERE ec.user_id = ?
+                       GROUP BY ec.id, ec.name, ec.color
+                       HAVING total > 0
+                       ORDER BY total DESC'
+                    : 'SELECT ec.name, ec.color, COALESCE(SUM(e.amount), 0) AS total
+                       FROM expense_categories ec
+                       LEFT JOIN expenses e ON e.category_id = ec.id AND e.user_id = ? AND e.expense_date BETWEEN ? AND ?
+                       WHERE ec.user_id = ?
+                       GROUP BY ec.id, ec.name, ec.color
+                       HAVING total > 0
+                       ORDER BY total DESC',
+                [$userId, $from, $to, $userId]
+            );
+        } catch (\Throwable $e) {
+            $expensesByCategory = [];
+        }
 
-        // Fahrtkosten & Bewirtungskosten breakdown for EÜR transparency
-        $mileageTotal = (float) $this->db->fetchOne(
-            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'mileage' AND expense_date BETWEEN ? AND ?",
-            [$userId, $from, $to]
-        );
-        $entertainmentGross = (float) $this->db->fetchOne(
-            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'entertainment' AND expense_date BETWEEN ? AND ?",
-            [$userId, $from, $to]
-        );
+        // Fahrtkosten & Bewirtungskosten breakdown (requires migration 097 columns)
+        $mileageTotal = 0.0;
+        $entertainmentGross = 0.0;
+        if ($hasDeductibleColumn) {
+            try {
+                $mileageTotal = (float) $this->db->fetchOne(
+                    "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'mileage' AND expense_date BETWEEN ? AND ?",
+                    [$userId, $from, $to]
+                );
+                $entertainmentGross = (float) $this->db->fetchOne(
+                    "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? AND expense_type = 'entertainment' AND expense_date BETWEEN ? AND ?",
+                    [$userId, $from, $to]
+                );
+            } catch (\Throwable $e) {
+                // expense_type column not available yet
+            }
+        }
         $entertainmentDeductible = round($entertainmentGross * 0.70, 2);
 
         foreach ($expensesByCategory as &$cat) {

@@ -21,17 +21,22 @@ class ServiceCatalogController
     {
         $userId = $request->getAttribute('user_id');
 
-        $items = $this->db->fetchAllAssociative(
-            'SELECT * FROM service_catalog WHERE user_id = ? ORDER BY sort_order ASC, name ASC',
-            [$userId]
-        );
+        try {
+            $items = $this->db->fetchAllAssociative(
+                'SELECT * FROM service_catalog WHERE user_id = ? ORDER BY sort_order ASC, name ASC',
+                [$userId]
+            );
+        } catch (\Throwable $e) {
+            // Table may not exist yet (migration not run)
+            $items = [];
+        }
 
         foreach ($items as &$item) {
             $item['unit_price'] = (float) $item['unit_price'];
             $item['is_active'] = (bool) $item['is_active'];
         }
 
-        return JsonResponse::success($items);
+        return JsonResponse::success(['items' => $items]);
     }
 
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

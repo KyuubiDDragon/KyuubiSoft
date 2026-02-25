@@ -54,8 +54,10 @@ class ExpenseController
         foreach ($expenses as &$expense) {
             $expense['amount'] = (float) $expense['amount'];
             $expense['is_recurring'] = (bool) $expense['is_recurring'];
-            $expense['mileage_km'] = $expense['mileage_km'] !== null ? (float) $expense['mileage_km'] : null;
+            $rawKm = $expense['mileage_km'] ?? null;
+            $expense['mileage_km'] = $rawKm !== null ? (float) $rawKm : null;
             $expense['deductible_percent'] = (int) ($expense['deductible_percent'] ?? 100);
+            $expense['expense_type'] = $expense['expense_type'] ?? 'general';
         }
 
         return JsonResponse::paginated($expenses, $total, $page, $perPage);

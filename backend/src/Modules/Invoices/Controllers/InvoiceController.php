@@ -195,15 +195,37 @@ class InvoiceController
 
         $id = Uuid::uuid4()->toString();
 
-        // Generate invoice number
+        // Get user settings early (needed for invoice number prefix)
+        $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+
+        // Determine document type and derive number prefix
+        $type = $data['document_type'] ?? 'invoice';
+        $prefixMap = [
+            'invoice'     => $settings['invoice_number_prefix'] ?? 'RE',
+            'proforma'    => 'PRO',
+            'quote'       => 'AN',
+            'credit_note' => 'GS',
+            'reminder'    => 'MAN',
+        ];
+        $prefix = $prefixMap[$type] ?? 'RE';
+
+        // Generate document number using per-type prefix
         $year = date('Y');
         $lastNumber = $this->db->fetchOne(
             "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
              FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
-            [$userId, "RE-{$year}-%"]
+            [$userId, "{$prefix}-{$year}-%"]
         );
         $nextNumber = ($lastNumber ?? 0) + 1;
-        $invoiceNumber = sprintf("RE-%s-%04d", $year, $nextNumber);
+        $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $nextNumber);
 
         // Get client data if client_id provided
         $clientData = [];
@@ -228,13 +250,17 @@ class InvoiceController
             }
         }
 
-        // Get user settings for sender info
-        $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
-        $userSettings = $this->db->fetchAssociative(
-            'SELECT * FROM user_settings WHERE user_id = ?',
-            [$userId]
-        );
-        $settings = $userSettings ? json_decode($userSettings['settings'], true) : [];
+        // Kleinunternehmer mode: default to 0% tax, add §19 UStG legal notice
+        $isKleinunternehmer = (bool) ($settings['kleinunternehmer_mode'] ?? false);
+        $defaultTaxRate = $isKleinunternehmer ? 0.00 : 19.00;
+        $kleinunternehmerNotice = $isKleinunternehmer
+            ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
+            : null;
+
+        $existingTerms = $data['terms'] ?? null;
+        $terms = $kleinunternehmerNotice
+            ? ($existingTerms ? $existingTerms . "\n\n" . $kleinunternehmerNotice : $kleinunternehmerNotice)
+            : $existingTerms;
 
         $this->db->insert('invoices', array_merge([
             'id' => $id,
@@ -242,20 +268,27 @@ class InvoiceController
             'client_id' => $data['client_id'] ?? null,
             'project_id' => $projectId,
             'invoice_number' => $invoiceNumber,
+            'document_type' => $type,
             'status' => 'draft',
             'issue_date' => $data['issue_date'] ?? date('Y-m-d'),
             'due_date' => $data['due_date'] ?? date('Y-m-d', strtotime('+14 days')),
-            'tax_rate' => $data['tax_rate'] ?? 19.00,
+            'service_date' => $data['service_date'] ?? null,
+            'tax_rate' => $data['tax_rate'] ?? $defaultTaxRate,
             'currency' => $data['currency'] ?? 'EUR',
             'notes' => $data['notes'] ?? null,
-            'terms' => $data['terms'] ?? null,
+            'terms' => $terms,
+            'payment_terms' => $data['payment_terms'] ?? ($settings['invoice_default_payment_terms'] ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'),
             'sender_name' => $settings['invoice_sender_name'] ?? $user['name'],
             'sender_company' => $settings['invoice_company'] ?? null,
             'sender_address' => $settings['invoice_address'] ?? null,
             'sender_email' => $settings['invoice_email'] ?? $user['email'],
             'sender_phone' => $settings['invoice_phone'] ?? null,
             'sender_vat_id' => $settings['invoice_vat_id'] ?? null,
+            'sender_steuernummer' => $settings['invoice_steuernummer'] ?? null,
+            'sender_logo_file_id' => $settings['invoice_logo_file_id'] ?? null,
             'sender_bank_details' => $settings['invoice_bank_details'] ?? null,
+            'mahnung_level' => $data['mahnung_level'] ?? 0,
+            'mahnung_fee' => (float) ($data['mahnung_fee'] ?? 0.00),
         ], $clientData));
 
         $invoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$id]);
@@ -319,8 +352,9 @@ class InvoiceController
         $updates = [];
         $params = [];
 
-        $fields = ['client_id', 'project_id', 'status', 'issue_date', 'due_date', 'paid_date',
-                   'tax_rate', 'currency', 'notes', 'terms'];
+        $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                   'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -329,12 +363,19 @@ class InvoiceController
             }
         }
 
+        $taxRateChanged = isset($data['tax_rate']);
+
         if (!empty($updates)) {
             $params[] = $id;
             $this->db->executeStatement(
                 'UPDATE invoices SET ' . implode(', ', $updates) . ' WHERE id = ?',
                 $params
             );
+        }
+
+        // Recalculate totals if tax rate was changed
+        if ($taxRateChanged) {
+            $this->recalculateInvoice($id);
         }
 
         // Trigger webhook when invoice is marked as paid
@@ -508,6 +549,17 @@ class InvoiceController
         $body = json_decode((string) $invoiceResponse->getBody(), true);
         $invoiceId = $body['data']['id'];
 
+        // Load user settings to get default hourly rate
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+        $defaultRate = (float) ($settings['default_hourly_rate'] ?? 50);
+
         // Add time entries as items
         $entries = $this->db->fetchAllAssociative(
             'SELECT * FROM time_entries WHERE id IN (?) AND user_id = ? AND is_billable = 1 AND invoiced = 0',
@@ -517,7 +569,7 @@ class InvoiceController
 
         foreach ($entries as $entry) {
             $hours = $entry['duration_seconds'] / 3600;
-            $rate = $entry['hourly_rate'] ?? $data['hourly_rate'] ?? 50;
+            $rate = $entry['hourly_rate'] ?? $data['hourly_rate'] ?? $defaultRate;
 
             $itemId = Uuid::uuid4()->toString();
             $this->db->insert('invoice_items', [
@@ -567,6 +619,100 @@ class InvoiceController
         );
 
         return JsonResponse::success($stats);
+    }
+
+    public function duplicate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $sourceId = $routeContext->getRoute()->getArgument('id');
+
+        $source = $this->db->fetchAssociative(
+            'SELECT * FROM invoices WHERE id = ? AND user_id = ?',
+            [$sourceId, $userId]
+        );
+
+        if (!$source) {
+            throw new NotFoundException('Invoice not found');
+        }
+
+        $items = $this->db->fetchAllAssociative(
+            'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order ASC',
+            [$sourceId]
+        );
+
+        // Generate new invoice number (reuse same prefix logic incl. reminder type)
+        $year = date('Y');
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+        $dupPrefixMap = [
+            'invoice'     => $settings['invoice_number_prefix'] ?? 'RE',
+            'proforma'    => 'PRO',
+            'quote'       => 'AN',
+            'credit_note' => 'GS',
+            'reminder'    => 'MAN',
+        ];
+        $prefix = $dupPrefixMap[$source['document_type'] ?? 'invoice'] ?? ($settings['invoice_number_prefix'] ?? 'RE');
+        $lastNumber = $this->db->fetchOne(
+            "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
+             FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
+            [$userId, "{$prefix}-{$year}-%"]
+        );
+        $nextNumber = ($lastNumber ?? 0) + 1;
+        $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $nextNumber);
+
+        $newId = Uuid::uuid4()->toString();
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+
+        $this->db->insert('invoices', array_merge(
+            array_intersect_key($source, array_flip([
+                'user_id', 'client_id', 'project_id', 'document_type',
+                'client_name', 'client_company', 'client_address', 'client_email', 'client_vat_id',
+                'sender_name', 'sender_company', 'sender_address', 'sender_email', 'sender_phone',
+                'sender_vat_id', 'sender_steuernummer', 'sender_logo_file_id', 'sender_bank_details',
+                'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                'mahnung_level', 'mahnung_fee',
+            ])),
+            [
+                'id' => $newId,
+                'invoice_number' => $invoiceNumber,
+                'status' => 'draft',
+                'issue_date' => $today,
+                'due_date' => date('Y-m-d', strtotime('+14 days')),
+                'service_date' => $today,
+                'subtotal' => $source['subtotal'],
+                'tax_amount' => $source['tax_amount'],
+                'total' => $source['total'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        ));
+
+        foreach ($items as $item) {
+            $this->db->insert('invoice_items', [
+                'id' => Uuid::uuid4()->toString(),
+                'invoice_id' => $newId,
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit' => $item['unit'],
+                'unit_price' => $item['unit_price'],
+                'total' => $item['total'],
+                'sort_order' => $item['sort_order'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $newInvoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$newId]);
+
+        return JsonResponse::success($newInvoice, 'Invoice duplicated');
     }
 
     private function recalculateInvoice(string $invoiceId): void

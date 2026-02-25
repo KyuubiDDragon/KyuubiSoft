@@ -27,6 +27,7 @@ import {
   TicketIcon,
   TagIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
   CloudIcon,
@@ -86,6 +87,7 @@ export const navigationConfig = [
   { name: 'Tickets',           href: '/tickets',             icon: TicketIcon,               group: 'Support' },
   { name: 'Ticket-Kategorien', href: '/tickets/categories',  icon: TagIcon,                  group: 'Support' },
   // Business
+  { name: 'Finanzen',          href: '/expenses',            icon: BanknotesIcon,            group: 'Business' },
   { name: 'Rechnungen',        href: '/invoices',            icon: CurrencyDollarIcon,       group: 'Business' },
   // Standalone
   { name: 'Discord Manager',   href: '/discord',             icon: ChatBubbleLeftRightIcon,  group: null },

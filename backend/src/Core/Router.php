@@ -27,8 +27,10 @@ use App\Modules\TimeTracking\Controllers\TimeTrackingController;
 use App\Modules\Bookmarks\Controllers\BookmarkController;
 use App\Modules\HabitTracker\Controllers\HabitController;
 use App\Modules\Finance\Controllers\ExpenseController;
+use App\Modules\Finance\Controllers\IncomeController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
+use App\Modules\Invoices\Controllers\ServiceCatalogController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
 use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use App\Modules\QuickNotes\Controllers\QuickNoteController;
@@ -454,6 +456,20 @@ class Router
                 $protected->post('/expense-categories', [ExpenseController::class, 'createCategory']);
                 $protected->delete('/expense-categories/{id}', [ExpenseController::class, 'deleteCategory']);
 
+                // Income Tracker
+                $protected->get('/income', [IncomeController::class, 'index']);
+                $protected->post('/income', [IncomeController::class, 'create']);
+                $protected->get('/income/summary', [IncomeController::class, 'getSummary']);
+                $protected->put('/income/{id}', [IncomeController::class, 'update']);
+                $protected->delete('/income/{id}', [IncomeController::class, 'delete']);
+                $protected->get('/income-categories', [IncomeController::class, 'getCategories']);
+                $protected->post('/income-categories', [IncomeController::class, 'createCategory']);
+                $protected->delete('/income-categories/{id}', [IncomeController::class, 'deleteCategory']);
+
+                // EÜR (Einnahmen-Überschuss-Rechnung) Report
+                $protected->get('/finance/euer', [IncomeController::class, 'getEuer']);
+                $protected->get('/finance/euer/export', [IncomeController::class, 'exportEuerCsv']);
+
                 // Uptime Monitor - protected by feature flags
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index'])
                     ->add(new FeatureMiddleware('uptime', null, 'view'));
@@ -509,12 +525,24 @@ class Router
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete'])
                     ->add(new FeatureMiddleware('invoices', null, 'delete'));
+                $protected->post('/invoices/{id}/duplicate', [InvoiceController::class, 'duplicate'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
                 $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
+
+                // Service Catalog (Leistungskatalog)
+                $protected->get('/service-catalog', [ServiceCatalogController::class, 'index'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/service-catalog', [ServiceCatalogController::class, 'create'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->put('/service-catalog/{id}', [ServiceCatalogController::class, 'update'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/service-catalog/{id}', [ServiceCatalogController::class, 'delete'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
 
                 // API Tester - Collections - protected by feature flags
                 $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections'])

@@ -25,6 +25,11 @@ import {
   DocumentArrowUpIcon,
   TagIcon,
   SparklesIcon,
+  CurrencyDollarIcon,
+  PhotoIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { useExportImportStore } from '@/stores/exportImport'
 import { useAIStore } from '@/stores/ai'
@@ -58,6 +63,7 @@ const tabs = [
   { id: 'api-keys', name: 'API-Keys', icon: KeyIcon },
   { id: 'ai', name: 'AI Assistent', icon: SparklesIcon },
   { id: 'tags', name: 'Tags', icon: TagIcon },
+  { id: 'invoices', name: 'Rechnungen', icon: CurrencyDollarIcon },
   { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon },
   { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
 ]
@@ -277,6 +283,208 @@ function formatDate(dateStr) {
 }
 
 // Load API keys when tab is selected
+// ─── Invoice Settings ────────────────────────────────────────────────────────
+
+const invoiceSettings = reactive({
+  invoice_sender_name: '',
+  invoice_company: '',
+  invoice_address: '',
+  invoice_email: '',
+  invoice_phone: '',
+  invoice_steuernummer: '',
+  invoice_vat_id: '',
+  invoice_bank_details: '',
+  invoice_logo_file_id: null,
+  invoice_default_payment_terms: 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
+  invoice_number_prefix: 'RE',
+  kleinunternehmer_mode: false,
+  default_hourly_rate: 50,
+})
+const invoiceLogoPreviewUrl = ref(null)
+const invoiceLogoFile = ref(null)
+const invoiceLogoUploading = ref(false)
+const invoiceSettingsLoaded = ref(false)
+const invoiceSettingsSaving = ref(false)
+
+async function loadLogoPreview(fileId) {
+  try {
+    const response = await api.get(`/api/v1/storage/${fileId}/thumbnail`, { responseType: 'blob' })
+    if (invoiceLogoPreviewUrl.value) URL.revokeObjectURL(invoiceLogoPreviewUrl.value)
+    invoiceLogoPreviewUrl.value = URL.createObjectURL(response.data)
+  } catch {
+    invoiceLogoPreviewUrl.value = null
+  }
+}
+
+async function loadInvoiceSettings() {
+  try {
+    const response = await api.get('/api/v1/settings/user')
+    const s = response.data.data
+    invoiceSettings.invoice_sender_name = s.invoice_sender_name ?? ''
+    invoiceSettings.invoice_company = s.invoice_company ?? ''
+    invoiceSettings.invoice_address = s.invoice_address ?? ''
+    invoiceSettings.invoice_email = s.invoice_email ?? ''
+    invoiceSettings.invoice_phone = s.invoice_phone ?? ''
+    invoiceSettings.invoice_steuernummer = s.invoice_steuernummer ?? ''
+    invoiceSettings.invoice_vat_id = s.invoice_vat_id ?? ''
+    invoiceSettings.invoice_bank_details = s.invoice_bank_details ?? ''
+    invoiceSettings.invoice_logo_file_id = s.invoice_logo_file_id ?? null
+    invoiceSettings.invoice_default_payment_terms = s.invoice_default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'
+    invoiceSettings.invoice_number_prefix = s.invoice_number_prefix ?? 'RE'
+    invoiceSettings.kleinunternehmer_mode = s.kleinunternehmer_mode ?? false
+    invoiceSettings.default_hourly_rate = parseFloat(s.default_hourly_rate ?? 50)
+    invoiceSettingsLoaded.value = true
+    if (invoiceSettings.invoice_logo_file_id) {
+      await loadLogoPreview(invoiceSettings.invoice_logo_file_id)
+    }
+  } catch (e) {
+    console.warn('Invoice settings load failed:', e)
+    toast.warning('Rechnungseinstellungen konnten nicht geladen werden')
+  }
+}
+
+function onLogoFileChange(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  invoiceLogoFile.value = file
+  if (invoiceLogoPreviewUrl.value) URL.revokeObjectURL(invoiceLogoPreviewUrl.value)
+  invoiceLogoPreviewUrl.value = URL.createObjectURL(file)
+}
+
+function removeLogo() {
+  invoiceSettings.invoice_logo_file_id = null
+  invoiceLogoFile.value = null
+  if (invoiceLogoPreviewUrl.value) URL.revokeObjectURL(invoiceLogoPreviewUrl.value)
+  invoiceLogoPreviewUrl.value = null
+}
+
+async function saveInvoiceSettings() {
+  invoiceSettingsSaving.value = true
+  try {
+    if (invoiceLogoFile.value) {
+      invoiceLogoUploading.value = true
+      try {
+        const formData = new FormData()
+        formData.append('file', invoiceLogoFile.value)
+        const resp = await api.post('/api/v1/storage', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        invoiceSettings.invoice_logo_file_id = resp.data.data?.id ?? null
+        invoiceLogoFile.value = null
+      } finally {
+        invoiceLogoUploading.value = false
+      }
+    }
+    await api.put('/api/v1/settings/user', {
+      invoice_sender_name: invoiceSettings.invoice_sender_name,
+      invoice_company: invoiceSettings.invoice_company,
+      invoice_address: invoiceSettings.invoice_address,
+      invoice_email: invoiceSettings.invoice_email,
+      invoice_phone: invoiceSettings.invoice_phone,
+      invoice_steuernummer: invoiceSettings.invoice_steuernummer,
+      invoice_vat_id: invoiceSettings.invoice_vat_id,
+      invoice_bank_details: invoiceSettings.invoice_bank_details,
+      invoice_logo_file_id: invoiceSettings.invoice_logo_file_id,
+      invoice_default_payment_terms: invoiceSettings.invoice_default_payment_terms,
+      invoice_number_prefix: invoiceSettings.invoice_number_prefix || 'RE',
+      kleinunternehmer_mode: invoiceSettings.kleinunternehmer_mode,
+      default_hourly_rate: parseFloat(invoiceSettings.default_hourly_rate) || 50,
+    })
+    toast.success('Rechnungseinstellungen gespeichert')
+  } catch (e) {
+    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Fehler'))
+  } finally {
+    invoiceSettingsSaving.value = false
+  }
+}
+
+// ─── Service Catalog ─────────────────────────────────────────────────────────
+
+const serviceCatalog = ref([])
+const catalogLoading = ref(false)
+const showCatalogForm = ref(false)
+const editingCatalogItem = ref(null)
+const catalogForm = reactive({
+  name: '',
+  description: '',
+  unit: 'Stunde',
+  unit_price: 0,
+})
+const catalogUnits = ['Stunde', 'Stück', 'Pauschal', 'Tag', 'Monat', 'km']
+
+async function loadServiceCatalog() {
+  catalogLoading.value = true
+  try {
+    const response = await api.get('/api/v1/service-catalog')
+    serviceCatalog.value = response.data.data?.items ?? []
+  } catch (e) {
+    toast.warning('Leistungskatalog konnte nicht geladen werden')
+  } finally {
+    catalogLoading.value = false
+  }
+}
+
+function openAddCatalogItem() {
+  editingCatalogItem.value = null
+  catalogForm.name = ''
+  catalogForm.description = ''
+  catalogForm.unit = 'Stunde'
+  catalogForm.unit_price = 0
+  showCatalogForm.value = true
+}
+
+function openEditCatalogItem(item) {
+  editingCatalogItem.value = item
+  catalogForm.name = item.name
+  catalogForm.description = item.description ?? ''
+  catalogForm.unit = item.unit
+  catalogForm.unit_price = parseFloat(item.unit_price)
+  showCatalogForm.value = true
+}
+
+function cancelCatalogForm() {
+  showCatalogForm.value = false
+  editingCatalogItem.value = null
+}
+
+async function saveCatalogItem() {
+  if (!catalogForm.name.trim()) {
+    toast.warning('Name ist erforderlich')
+    return
+  }
+  const payload = {
+    name: catalogForm.name.trim(),
+    description: catalogForm.description.trim() || null,
+    unit: catalogForm.unit,
+    unit_price: parseFloat(catalogForm.unit_price) || 0,
+  }
+  try {
+    if (editingCatalogItem.value) {
+      await api.put(`/api/v1/service-catalog/${editingCatalogItem.value.id}`, payload)
+      toast.success('Leistung aktualisiert')
+    } else {
+      await api.post('/api/v1/service-catalog', payload)
+      toast.success('Leistung hinzugefügt')
+    }
+    showCatalogForm.value = false
+    editingCatalogItem.value = null
+    await loadServiceCatalog()
+  } catch (e) {
+    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.error ?? e?.message ?? 'Fehler'))
+  }
+}
+
+async function deleteCatalogItem(item) {
+  if (!await confirm({ message: `Leistung „${item.name}" löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  try {
+    await api.delete(`/api/v1/service-catalog/${item.id}`)
+    toast.success('Leistung gelöscht')
+    await loadServiceCatalog()
+  } catch (e) {
+    toast.error('Löschen fehlgeschlagen')
+  }
+}
+
 watch(activeTab, (newTab) => {
   if (newTab === 'api-keys' && apiKeys.value.length === 0) {
     loadApiKeys()
@@ -289,6 +497,10 @@ watch(activeTab, (newTab) => {
   }
   if (newTab === 'notifications') {
     loadPushSettings()
+  }
+  if (newTab === 'invoices') {
+    if (!invoiceSettingsLoaded.value) loadInvoiceSettings()
+    if (serviceCatalog.value.length === 0) loadServiceCatalog()
   }
 })
 
@@ -1879,6 +2091,253 @@ watch(activeTab, (tab) => {
                       {{ type }}: {{ Array.isArray(errors) ? errors.join(', ') : errors }}
                     </li>
                   </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Settings -->
+        <div v-if="activeTab === 'invoices'" class="space-y-6">
+
+          <!-- Kleinunternehmer Mode -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-1">Steuerlicher Status</h2>
+            <p class="text-sm text-gray-400 mb-4">Legt fest, ob auf Rechnungen MwSt. ausgewiesen wird.</p>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-white font-medium">Kleinunternehmer (§ 19 UStG)</p>
+                <p class="text-gray-400 text-sm">Keine MwSt. auf Rechnungen · §19-Hinweis wird automatisch hinzugefügt</p>
+              </div>
+              <button
+                @click="invoiceSettings.kleinunternehmer_mode = !invoiceSettings.kleinunternehmer_mode"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                :class="invoiceSettings.kleinunternehmer_mode ? 'bg-primary-600' : 'bg-dark-600'"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  :class="invoiceSettings.kleinunternehmer_mode ? 'translate-x-6' : 'translate-x-1'"
+                />
+              </button>
+            </div>
+            <div v-if="invoiceSettings.kleinunternehmer_mode" class="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-amber-300">
+              Grenzen 2025: Vorjahresumsatz ≤ 25.000 € · Laufendes Jahr voraussichtlich ≤ 100.000 €
+            </div>
+          </div>
+
+          <!-- Absenderdaten -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Absenderdaten</h2>
+            <p class="text-sm text-gray-400">Diese Daten erscheinen auf jeder Rechnung als Absender.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="label">Name *</label>
+                <input v-model="invoiceSettings.invoice_sender_name" type="text" class="input" placeholder="Max Mustermann" />
+              </div>
+              <div>
+                <label class="label">Firma</label>
+                <input v-model="invoiceSettings.invoice_company" type="text" class="input" placeholder="Mustermann GbR" />
+              </div>
+              <div>
+                <label class="label">E-Mail</label>
+                <input v-model="invoiceSettings.invoice_email" type="email" class="input" placeholder="rechnungen@beispiel.de" />
+              </div>
+              <div>
+                <label class="label">Telefon</label>
+                <input v-model="invoiceSettings.invoice_phone" type="text" class="input" placeholder="+49 123 456789" />
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Adresse</label>
+              <textarea v-model="invoiceSettings.invoice_address" class="input" rows="3" placeholder="Musterstraße 1&#10;12345 Musterstadt&#10;Deutschland"></textarea>
+            </div>
+          </div>
+
+          <!-- Steuerliche Angaben -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Steuerliche Angaben</h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="label">Steuernummer</label>
+                <input v-model="invoiceSettings.invoice_steuernummer" type="text" class="input" placeholder="12/345/67890" />
+                <p class="text-xs text-gray-500 mt-1">Pflichtangabe für Kleinunternehmer (§14 UStG)</p>
+              </div>
+              <div>
+                <label class="label">USt-IdNr.</label>
+                <input v-model="invoiceSettings.invoice_vat_id" type="text" class="input" placeholder="DE123456789" />
+                <p class="text-xs text-gray-500 mt-1">Nur für Regelbesteuerung (nicht bei §19 UStG)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bankverbindung -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Bankverbindung</h2>
+            <p class="text-sm text-gray-400">Wird im Zahlungsbereich der Rechnung angezeigt.</p>
+            <div>
+              <label class="label">Bankdaten (IBAN, BIC, Kontoinhaber)</label>
+              <textarea v-model="invoiceSettings.invoice_bank_details" class="input" rows="3" placeholder="Kontoinhaber: Max Mustermann&#10;IBAN: DE89 3704 0044 0532 0130 00&#10;BIC: COBADEFFXXX&#10;Sparkasse Musterstadt"></textarea>
+            </div>
+          </div>
+
+          <!-- Rechnungsnummer-Präfix -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Rechnungsnummer</h2>
+            <p class="text-sm text-gray-400">Präfix für automatisch generierte Rechnungsnummern.</p>
+            <div>
+              <label class="label">Präfix</label>
+              <input v-model="invoiceSettings.invoice_number_prefix" type="text" class="input max-w-xs" placeholder="RE" maxlength="10" />
+              <p class="text-xs text-gray-500 mt-1">
+                Format: <span class="font-mono text-gray-400">{{ (invoiceSettings.invoice_number_prefix || 'RE').toUpperCase() }}-{{ new Date().getFullYear() }}-0001</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Zahlungsziel -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Standard-Zahlungsbedingungen</h2>
+            <p class="text-sm text-gray-400">Wird automatisch auf neue Rechnungen angewendet.</p>
+            <div>
+              <label class="label">Zahlungsziel</label>
+              <input v-model="invoiceSettings.invoice_default_payment_terms" type="text" class="input" placeholder="Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum." />
+            </div>
+          </div>
+
+          <!-- Logo -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Firmenlogo</h2>
+            <p class="text-sm text-gray-400">Logo wird oben links auf der Rechnung angezeigt. Empfohlen: PNG oder SVG, max. 300×100 px.</p>
+
+            <!-- Current logo preview -->
+            <div v-if="invoiceLogoPreviewUrl" class="flex items-start gap-4">
+              <div class="bg-white rounded-lg p-3 max-w-[200px]">
+                <img :src="invoiceLogoPreviewUrl" alt="Firmenlogo" class="max-h-16 object-contain" />
+              </div>
+              <button @click="removeLogo" class="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm mt-2">
+                <TrashIcon class="w-4 h-4" />
+                Logo entfernen
+              </button>
+            </div>
+
+            <!-- Upload area -->
+            <div>
+              <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-dark-500 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-dark-700 transition-colors">
+                <div class="flex flex-col items-center gap-2">
+                  <PhotoIcon class="w-8 h-8 text-gray-400" />
+                  <p class="text-sm text-gray-400">
+                    {{ invoiceLogoFile ? invoiceLogoFile.name : 'Logo auswählen oder hier ablegen' }}
+                  </p>
+                  <p class="text-xs text-gray-500">PNG, JPG, SVG · Max. 5 MB</p>
+                </div>
+                <input type="file" class="hidden" accept="image/*" @change="onLogoFileChange" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Standard-Stundensatz -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Standard-Stundensatz</h2>
+            <p class="text-sm text-gray-400">Fallback-Stundensatz für „Aus Zeiteinträgen", wenn kein Kundensatz hinterlegt ist.</p>
+            <div class="flex items-center gap-3 max-w-xs">
+              <input
+                v-model.number="invoiceSettings.default_hourly_rate"
+                type="number"
+                min="0"
+                step="0.01"
+                class="input flex-1"
+                placeholder="50.00"
+              />
+              <span class="text-gray-400 text-sm whitespace-nowrap">€ / Std</span>
+            </div>
+          </div>
+
+          <!-- Save button -->
+          <div class="flex justify-end">
+            <button
+              @click="saveInvoiceSettings"
+              :disabled="invoiceSettingsSaving || invoiceLogoUploading"
+              class="btn-primary px-6"
+            >
+              <span v-if="invoiceSettingsSaving || invoiceLogoUploading">Speichern...</span>
+              <span v-else>Einstellungen speichern</span>
+            </button>
+          </div>
+
+          <!-- Leistungskatalog -->
+          <div class="card p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-white">Leistungskatalog</h2>
+                <p class="text-sm text-gray-400 mt-0.5">Vordefinierte Positionen für Rechnungen – auswählbar beim Hinzufügen von Rechnungspositionen.</p>
+              </div>
+              <button @click="openAddCatalogItem" class="btn-primary flex items-center gap-2 text-sm px-3 py-2">
+                <PlusIcon class="w-4 h-4" />
+                Leistung hinzufügen
+              </button>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div v-if="showCatalogForm" class="bg-dark-700 rounded-lg p-4 space-y-3 border border-dark-500">
+              <h3 class="text-sm font-medium text-white">{{ editingCatalogItem ? 'Leistung bearbeiten' : 'Neue Leistung' }}</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="label">Name *</label>
+                  <input v-model="catalogForm.name" type="text" class="input" placeholder="z.B. Webentwicklung" />
+                </div>
+                <div>
+                  <label class="label">Einheit</label>
+                  <select v-model="catalogForm.unit" class="input">
+                    <option v-for="u in catalogUnits" :key="u" :value="u">{{ u }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Einzelpreis (€)</label>
+                  <input v-model.number="catalogForm.unit_price" type="number" min="0" step="0.01" class="input" placeholder="0.00" />
+                </div>
+                <div>
+                  <label class="label">Beschreibung (optional)</label>
+                  <input v-model="catalogForm.description" type="text" class="input" placeholder="Kurze Beschreibung" />
+                </div>
+              </div>
+              <div class="flex gap-2 justify-end">
+                <button @click="cancelCatalogForm" class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1">
+                  <XMarkIcon class="w-4 h-4" /> Abbrechen
+                </button>
+                <button @click="saveCatalogItem" class="btn-primary text-sm px-3 py-1.5 flex items-center gap-1">
+                  <CheckIcon class="w-4 h-4" /> Speichern
+                </button>
+              </div>
+            </div>
+
+            <!-- Catalog List -->
+            <div v-if="catalogLoading" class="text-center py-6 text-gray-400 text-sm">Lade Katalog...</div>
+            <div v-else-if="serviceCatalog.length === 0 && !showCatalogForm" class="text-center py-8 text-gray-500 text-sm">
+              Noch keine Leistungen angelegt. Klicke auf „Leistung hinzufügen".
+            </div>
+            <div v-else class="divide-y divide-dark-600">
+              <div
+                v-for="item in serviceCatalog"
+                :key="item.id"
+                class="flex items-center justify-between py-3 gap-4"
+              >
+                <div class="flex-1 min-w-0">
+                  <p class="text-white text-sm font-medium truncate">{{ item.name }}</p>
+                  <p v-if="item.description" class="text-gray-400 text-xs truncate">{{ item.description }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-white text-sm font-mono">{{ parseFloat(item.unit_price).toFixed(2) }} €</p>
+                  <p class="text-gray-500 text-xs">/ {{ item.unit }}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button @click="openEditCatalogItem(item)" class="text-gray-400 hover:text-white transition-colors p-1" title="Bearbeiten">
+                    <PencilIcon class="w-4 h-4" />
+                  </button>
+                  <button @click="deleteCatalogItem(item)" class="text-gray-400 hover:text-red-400 transition-colors p-1" title="Löschen">
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>

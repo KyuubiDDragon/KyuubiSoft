@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class ExpenseController
 {
@@ -111,6 +112,7 @@ class ExpenseController
             'is_recurring' => isset($body['is_recurring']) && $body['is_recurring'] ? 1 : 0,
             'recurring_interval' => in_array($body['recurring_interval'] ?? '', ['weekly', 'monthly', 'yearly']) ? $body['recurring_interval'] : null,
             'notes' => $body['notes'] ?? null,
+            'receipt_file_id' => $body['receipt_file_id'] ?? null,
             'expense_type' => $expenseType,
             'mileage_km' => $mileageKm,
             'mileage_route' => $expenseType === 'mileage' ? ($body['mileage_route'] ?? null) : null,
@@ -131,10 +133,10 @@ class ExpenseController
         return JsonResponse::created($expense);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $expenseId = $args['id'];
+        $expenseId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $body = (array) $request->getParsedBody();
 
         $expense = $this->db->fetchAssociative('SELECT id FROM expenses WHERE id = ? AND user_id = ?', [$expenseId, $userId]);
@@ -148,6 +150,7 @@ class ExpenseController
         if (isset($body['expense_date'])) $updates['expense_date'] = $body['expense_date'];
         if (array_key_exists('category_id', $body)) $updates['category_id'] = $body['category_id'];
         if (array_key_exists('notes', $body)) $updates['notes'] = $body['notes'];
+        if (array_key_exists('receipt_file_id', $body)) $updates['receipt_file_id'] = $body['receipt_file_id'] ?: null;
         if (isset($body['is_recurring'])) $updates['is_recurring'] = $body['is_recurring'] ? 1 : 0;
 
         // Expense type fields
@@ -181,10 +184,10 @@ class ExpenseController
         return JsonResponse::success($updated);
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $expenseId = $args['id'];
+        $expenseId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $expense = $this->db->fetchAssociative('SELECT id FROM expenses WHERE id = ? AND user_id = ?', [$expenseId, $userId]);
         if (!$expense) {
@@ -293,10 +296,10 @@ class ExpenseController
         return JsonResponse::created($category);
     }
 
-    public function deleteCategory(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteCategory(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $categoryId = $args['id'];
+        $categoryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $category = $this->db->fetchAssociative('SELECT id FROM expense_categories WHERE id = ? AND user_id = ?', [$categoryId, $userId]);
         if (!$category) {

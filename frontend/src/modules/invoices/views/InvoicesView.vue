@@ -16,6 +16,7 @@ import {
   CheckIcon,
   ClockIcon,
   PaperAirplaneIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
@@ -35,6 +36,8 @@ const editingInvoice = ref(null)
 const editingClient = ref(null)
 const selectedInvoice = ref(null)
 const statusFilter = ref('')
+const kleinunternehmerMode = ref(false)
+const pdfGenerating = ref(false)
 
 // Invoice form
 const invoiceForm = ref({
@@ -84,6 +87,11 @@ const filteredInvoices = computed(() => {
 // API Calls
 onMounted(async () => {
   await loadData()
+  // Load Kleinunternehmer setting
+  try {
+    const settingsResp = await api.get('/api/v1/settings/user')
+    kleinunternehmerMode.value = settingsResp.data.data?.kleinunternehmer_mode ?? false
+  } catch {}
 })
 
 async function loadData() {
@@ -200,10 +208,124 @@ function openCreateInvoice() {
     project_id: null,
     issue_date: today,
     due_date: dueDate,
-    tax_rate: 19,
+    tax_rate: kleinunternehmerMode.value ? 0 : 19,
     notes: '',
   }
   showInvoiceModal.value = true
+}
+
+async function toggleKleinunternehmer() {
+  kleinunternehmerMode.value = !kleinunternehmerMode.value
+  try {
+    await api.put('/api/v1/settings/user', { kleinunternehmer_mode: kleinunternehmerMode.value })
+    uiStore.showSuccess(kleinunternehmerMode.value
+      ? 'Kleinunternehmer-Modus aktiviert (§ 19 UStG)'
+      : 'Kleinunternehmer-Modus deaktiviert')
+  } catch {
+    uiStore.showError('Einstellung konnte nicht gespeichert werden')
+  }
+}
+
+async function downloadInvoicePdf(invoice) {
+  pdfGenerating.value = invoice.id
+  try {
+    // Fetch full invoice data
+    const resp = await api.get(`/api/v1/invoices/${invoice.id}`)
+    const inv = resp.data.data
+
+    // Build HTML for PDF
+    const isKleinunternehmer = parseFloat(inv.tax_rate) === 0
+    const itemsHtml = (inv.items || []).map(item => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${item.description.replace(/\n/g, '<br>')}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${parseFloat(item.quantity).toLocaleString('de-DE')} ${item.unit}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.unit_price)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.total)}</td>
+      </tr>`).join('')
+
+    const totalsHtml = isKleinunternehmer
+      ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">Gesamtbetrag</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${formatCurrency(inv.subtotal)}</td></tr>`
+      : `
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">Netto</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.subtotal)}</td></tr>
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">MwSt. (${inv.tax_rate}%)</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.tax_amount)}</td></tr>
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">Gesamtbetrag</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${formatCurrency(inv.total)}</td></tr>`
+
+    const html = `
+      <html><head><meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #111827; margin: 0; padding: 40px; }
+        h1 { font-size: 22px; font-weight: bold; margin-bottom: 4px; }
+        .label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+        thead th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 12px; color: #374151; }
+        thead th:not(:first-child) { text-align: right; }
+        .notice { margin-top: 24px; padding: 12px; background: #f9fafb; border-left: 3px solid #6b7280; font-size: 12px; color: #4b5563; }
+      </style>
+      </head><body>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;">
+        <div>
+          <h1>Rechnung</h1>
+          <div style="color:#6b7280;">${inv.invoice_number}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label">Datum</div>
+          <div>${formatDate(inv.issue_date)}</div>
+          ${inv.due_date ? `<div class="label" style="margin-top:8px;">Fällig bis</div><div>${formatDate(inv.due_date)}</div>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:48px;margin-bottom:32px;">
+        <div style="flex:1;">
+          <div class="label">Von</div>
+          <div style="font-weight:600;">${inv.sender_name || ''}</div>
+          ${inv.sender_company ? `<div>${inv.sender_company}</div>` : ''}
+          ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;">${inv.sender_address}</div>` : ''}
+          ${inv.sender_email ? `<div style="color:#4b5563;">${inv.sender_email}</div>` : ''}
+          ${inv.sender_phone ? `<div style="color:#4b5563;">${inv.sender_phone}</div>` : ''}
+          ${inv.sender_bank_details ? `<div style="margin-top:8px;white-space:pre-line;font-size:11px;color:#6b7280;">${inv.sender_bank_details}</div>` : ''}
+        </div>
+        <div style="flex:1;">
+          <div class="label">An</div>
+          <div style="font-weight:600;">${inv.client_name || ''}</div>
+          ${inv.client_company ? `<div>${inv.client_company}</div>` : ''}
+          ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${inv.client_address}</div>` : ''}
+          ${inv.client_email ? `<div style="color:#4b5563;">${inv.client_email}</div>` : ''}
+          ${inv.client_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${inv.client_vat_id}</div>` : ''}
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Beschreibung</th>
+          <th style="text-align:right;">Menge</th>
+          <th style="text-align:right;">Einzelpreis</th>
+          <th style="text-align:right;">Betrag</th>
+        </tr></thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot>${totalsHtml}</tfoot>
+      </table>
+      ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${inv.notes}</div></div>` : ''}
+      ${inv.terms ? `<div class="notice">${inv.terms.replace(/\n/g, '<br>')}</div>` : ''}
+      </body></html>`
+
+    const el = document.createElement('div')
+    el.innerHTML = html
+    el.style.position = 'absolute'
+    el.style.left = '-9999px'
+    document.body.appendChild(el)
+
+    const { default: html2pdf } = await import('html2pdf.js')
+    await html2pdf().set({
+      margin: 0,
+      filename: `${inv.invoice_number}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(el.firstChild).save()
+
+    document.body.removeChild(el)
+  } catch (err) {
+    uiStore.showError('PDF konnte nicht erstellt werden')
+  } finally {
+    pdfGenerating.value = null
+  }
 }
 
 function openCreateClient() {
@@ -253,7 +375,19 @@ function getStatusInfo(status) {
         <h1 class="text-2xl font-bold text-white">Rechnungen</h1>
         <p class="text-gray-400 mt-1">Erstelle und verwalte deine Rechnungen</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2 items-center">
+        <!-- Kleinunternehmer toggle -->
+        <button
+          @click="toggleKleinunternehmer"
+          class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
+          :class="kleinunternehmerMode
+            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+            : 'bg-dark-700 border-dark-600 text-gray-400 hover:text-white'"
+          title="Kleinunternehmer nach § 19 UStG"
+        >
+          <span class="font-mono text-xs">§19</span>
+          <span>{{ kleinunternehmerMode ? 'Kleinunternehmer' : 'Regelbesteuerung' }}</span>
+        </button>
         <button @click="openCreateClient" class="btn-secondary">
           <UserIcon class="w-5 h-5 mr-2" />
           Neuer Kunde
@@ -263,6 +397,12 @@ function getStatusInfo(status) {
           Neue Rechnung
         </button>
       </div>
+    </div>
+
+    <!-- Kleinunternehmer info banner -->
+    <div v-if="kleinunternehmerMode" class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300">
+      <span class="font-medium">Kleinunternehmer-Modus aktiv:</span>
+      Neue Rechnungen werden ohne MwSt. erstellt und enthalten den Hinweis gemäß § 19 UStG.
     </div>
 
     <!-- Stats -->
@@ -386,8 +526,18 @@ function getStatusInfo(status) {
                   <button
                     @click="openInvoiceDetail(invoice)"
                     class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                    title="Details anzeigen"
                   >
                     <EyeIcon class="w-4 h-4" />
+                  </button>
+                  <button
+                    @click="downloadInvoicePdf(invoice)"
+                    class="p-1.5 hover:bg-dark-600 rounded"
+                    :class="pdfGenerating === invoice.id ? 'text-primary-400 animate-pulse' : 'text-gray-400 hover:text-primary-400'"
+                    title="Als PDF herunterladen"
+                    :disabled="pdfGenerating === invoice.id"
+                  >
+                    <ArrowDownTrayIcon class="w-4 h-4" />
                   </button>
                   <button
                     v-if="invoice.status === 'draft'"
@@ -515,9 +665,12 @@ function getStatusInfo(status) {
               </div>
             </div>
 
-            <div>
+            <div v-if="!kleinunternehmerMode">
               <label class="label">MwSt. (%)</label>
               <input v-model.number="invoiceForm.tax_rate" type="number" class="input" step="0.01" />
+            </div>
+            <div v-else class="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-amber-300">
+              Kleinunternehmer: 0% MwSt. · § 19 UStG Hinweis wird automatisch hinzugefügt
             </div>
 
             <div>

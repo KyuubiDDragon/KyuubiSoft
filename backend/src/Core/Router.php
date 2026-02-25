@@ -27,6 +27,7 @@ use App\Modules\TimeTracking\Controllers\TimeTrackingController;
 use App\Modules\Bookmarks\Controllers\BookmarkController;
 use App\Modules\HabitTracker\Controllers\HabitController;
 use App\Modules\Finance\Controllers\ExpenseController;
+use App\Modules\Finance\Controllers\IncomeController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
@@ -453,6 +454,20 @@ class Router
                 $protected->get('/expense-categories', [ExpenseController::class, 'getCategories']);
                 $protected->post('/expense-categories', [ExpenseController::class, 'createCategory']);
                 $protected->delete('/expense-categories/{id}', [ExpenseController::class, 'deleteCategory']);
+
+                // Income Tracker
+                $protected->get('/income', [IncomeController::class, 'index']);
+                $protected->post('/income', [IncomeController::class, 'create']);
+                $protected->get('/income/summary', [IncomeController::class, 'getSummary']);
+                $protected->put('/income/{id}', [IncomeController::class, 'update']);
+                $protected->delete('/income/{id}', [IncomeController::class, 'delete']);
+                $protected->get('/income-categories', [IncomeController::class, 'getCategories']);
+                $protected->post('/income-categories', [IncomeController::class, 'createCategory']);
+                $protected->delete('/income-categories/{id}', [IncomeController::class, 'deleteCategory']);
+
+                // EÜR (Einnahmen-Überschuss-Rechnung) Report
+                $protected->get('/finance/euer', [IncomeController::class, 'getEuer']);
+                $protected->get('/finance/euer/export', [IncomeController::class, 'exportEuerCsv']);
 
                 // Uptime Monitor - protected by feature flags
                 $protected->get('/uptime', [UptimeMonitorController::class, 'index'])

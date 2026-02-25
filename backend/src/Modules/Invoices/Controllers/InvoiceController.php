@@ -228,13 +228,28 @@ class InvoiceController
             }
         }
 
-        // Get user settings for sender info
+        // Get user settings for sender info and Kleinunternehmer mode
         $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
-        $userSettings = $this->db->fetchAssociative(
-            'SELECT * FROM user_settings WHERE user_id = ?',
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
             [$userId]
         );
-        $settings = $userSettings ? json_decode($userSettings['settings'], true) : [];
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+
+        // Kleinunternehmer mode: default to 0% tax, add §19 UStG legal notice
+        $isKleinunternehmer = (bool) ($settings['kleinunternehmer_mode'] ?? false);
+        $defaultTaxRate = $isKleinunternehmer ? 0.00 : 19.00;
+        $kleinunternehmerNotice = $isKleinunternehmer
+            ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
+            : null;
+
+        $existingTerms = $data['terms'] ?? null;
+        $terms = $kleinunternehmerNotice
+            ? ($existingTerms ? $existingTerms . "\n\n" . $kleinunternehmerNotice : $kleinunternehmerNotice)
+            : $existingTerms;
 
         $this->db->insert('invoices', array_merge([
             'id' => $id,
@@ -245,10 +260,10 @@ class InvoiceController
             'status' => 'draft',
             'issue_date' => $data['issue_date'] ?? date('Y-m-d'),
             'due_date' => $data['due_date'] ?? date('Y-m-d', strtotime('+14 days')),
-            'tax_rate' => $data['tax_rate'] ?? 19.00,
+            'tax_rate' => $data['tax_rate'] ?? $defaultTaxRate,
             'currency' => $data['currency'] ?? 'EUR',
             'notes' => $data['notes'] ?? null,
-            'terms' => $data['terms'] ?? null,
+            'terms' => $terms,
             'sender_name' => $settings['invoice_sender_name'] ?? $user['name'],
             'sender_company' => $settings['invoice_company'] ?? null,
             'sender_address' => $settings['invoice_address'] ?? null,

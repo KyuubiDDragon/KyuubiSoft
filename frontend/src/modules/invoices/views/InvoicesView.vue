@@ -49,6 +49,7 @@ function escapeHtml(str) {
 const invoiceForm = ref({
   client_id: null,
   project_id: null,
+  document_type: 'invoice',
   issue_date: '',
   due_date: '',
   service_date: '',
@@ -232,6 +233,7 @@ function openCreateInvoice() {
   invoiceForm.value = {
     client_id: null,
     project_id: null,
+    document_type: 'invoice',
     issue_date: today,
     due_date: dueDate,
     service_date: today,
@@ -246,6 +248,7 @@ function openEditInvoice(invoice) {
   editingInvoice.value = invoice
   invoiceForm.value = {
     client_id: invoice.client_id,
+    document_type: invoice.document_type ?? 'invoice',
     issue_date: invoice.issue_date,
     due_date: invoice.due_date ?? '',
     service_date: invoice.service_date ?? '',
@@ -295,7 +298,14 @@ async function downloadInvoicePdf(invoice) {
       return
     }
 
+    const docType = inv.document_type || 'invoice'
     const isKleinunternehmer = parseFloat(inv.tax_rate) === 0
+    const isCreditNote = docType === 'credit_note'
+    const isQuote = docType === 'quote'
+    const isProforma = docType === 'proforma'
+
+    const docTitles = { invoice: 'Rechnung', proforma: 'Proforma-Rechnung', quote: 'Angebot', credit_note: 'Gutschrift' }
+    const docTitle = docTitles[docType] ?? 'Rechnung'
 
     // Steuernummer: read from stored sender settings (loaded on mount)
     const steuernummer = invoiceSenderSettings.value.invoice_steuernummer || ''
@@ -314,26 +324,50 @@ async function downloadInvoicePdf(invoice) {
       } catch { /* logo not critical */ }
     }
 
+    // For credit notes: display all amounts as negative
+    const signedAmount = (amount) => isCreditNote ? formatCurrency(-(Math.abs(amount ?? 0))) : formatCurrency(amount ?? 0)
+
     const itemsHtml = (inv.items || []).map(item => `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${parseFloat(item.quantity ?? 0).toLocaleString('de-DE')} ${escapeHtml(item.unit ?? '')}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.unit_price ?? 0)}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.total ?? 0)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${signedAmount(item.unit_price)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${signedAmount(item.total)}</td>
       </tr>`).join('')
 
-    const totalsHtml = isKleinunternehmer
-      ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">Gesamtbetrag (netto)</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${formatCurrency(inv.subtotal)}</td></tr>`
-      : `
-        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">Netto</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.subtotal)}</td></tr>
-        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">MwSt. (${escapeHtml(String(inv.tax_rate))}%)</td><td style="padding:8px 12px;text-align:right;">${formatCurrency(inv.tax_amount)}</td></tr>
-        <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">Gesamtbetrag</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${formatCurrency(inv.total)}</td></tr>`
+    // Totals section — no tax rows for proforma/quote
+    const totalLabel = isCreditNote ? 'Gutschriftbetrag' : 'Gesamtbetrag'
+    let totalsHtml
+    if (isProforma || isQuote) {
+      totalsHtml = `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">${totalLabel} (netto)</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${signedAmount(inv.subtotal)}</td></tr>`
+    } else if (isKleinunternehmer) {
+      totalsHtml = `<tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;">${totalLabel} (netto)</td><td style="padding:8px 12px;text-align:right;font-weight:bold;">${signedAmount(inv.subtotal)}</td></tr>`
+    } else {
+      totalsHtml = `
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">Netto</td><td style="padding:8px 12px;text-align:right;">${signedAmount(inv.subtotal)}</td></tr>
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;">MwSt. (${escapeHtml(String(inv.tax_rate))}%)</td><td style="padding:8px 12px;text-align:right;">${signedAmount(inv.tax_amount)}</td></tr>
+        <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${totalLabel}</td><td style="padding:8px 12px;text-align:right;font-weight:bold;border-top:2px solid #111827;">${signedAmount(inv.total)}</td></tr>`
+    }
 
-    const senderTaxLine = isKleinunternehmer && steuernummer
-      ? `<div style="color:#6b7280;font-size:11px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
-      : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : '')
+    // Sender tax line — only for real invoices (not proforma/quote)
+    const senderTaxLine = (!isProforma && !isQuote)
+      ? (isKleinunternehmer && steuernummer
+          ? `<div style="color:#6b7280;font-size:11px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
+          : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : ''))
+      : ''
+
+    // Date label differs by type
+    const dueDateLabel = isQuote ? 'Angebot gültig bis' : 'Fällig bis'
+    const issueDateLabel = isQuote ? 'Angebotsdatum' : (isProforma ? 'Ausstellungsdatum' : 'Rechnungsdatum')
+
+    // Proforma notice
+    const proformaNotice = isProforma
+      ? `<div class="notice" style="border-left-color:#3b82f6;background:#eff6ff;">Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des § 14 UStG. Es entsteht keine Zahlungsverpflichtung.</div>`
+      : ''
 
     const paymentTerms = inv.payment_terms || invoiceSenderSettings.value.default_payment_terms || ''
+    // No payment box for quotes or proforma
+    const showPaymentBox = !isProforma && !isQuote && (paymentTerms || inv.sender_bank_details)
 
     const html = `
       <html><head><meta charset="UTF-8">
@@ -348,18 +382,18 @@ async function downloadInvoicePdf(invoice) {
         .payment-box { margin-top: 24px; padding: 12px 16px; background: #f9fafb; border-radius: 6px; font-size: 12px; color: #374151; }
       </style>
       </head><body>
-      <!-- Header: Logo left, invoice metadata right -->
+      <!-- Header: Logo left, document metadata right -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;">
         <div>
           ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;margin-bottom:8px;" />` : ''}
-          <h1>Rechnung</h1>
+          <h1>${docTitle}</h1>
           <div style="color:#6b7280;">${escapeHtml(inv.invoice_number)}</div>
         </div>
         <div style="text-align:right;min-width:150px;">
-          <div class="label">Rechnungsdatum</div>
+          <div class="label">${issueDateLabel}</div>
           <div>${formatDate(inv.issue_date)}</div>
-          ${inv.service_date ? `<div class="label" style="margin-top:8px;">Leistungsdatum</div><div>${formatDate(inv.service_date)}</div>` : ''}
-          ${inv.due_date ? `<div class="label" style="margin-top:8px;">Fällig bis</div><div>${formatDate(inv.due_date)}</div>` : ''}
+          ${!isProforma && inv.service_date ? `<div class="label" style="margin-top:8px;">Leistungsdatum</div><div>${formatDate(inv.service_date)}</div>` : ''}
+          ${inv.due_date ? `<div class="label" style="margin-top:8px;">${escapeHtml(dueDateLabel)}</div><div>${formatDate(inv.due_date)}</div>` : ''}
         </div>
       </div>
       <!-- Sender / Recipient -->
@@ -374,7 +408,7 @@ async function downloadInvoicePdf(invoice) {
           ${inv.sender_phone ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_phone)}</div>` : ''}
         </div>
         <div style="flex:1;">
-          <div class="label">Rechnungsempfänger</div>
+          <div class="label">${isQuote ? 'Angeboten für' : (isCreditNote ? 'Gutschrift für' : 'Rechnungsempfänger')}</div>
           <div style="font-weight:600;">${escapeHtml(inv.client_name ?? '')}</div>
           ${inv.client_company ? `<div>${escapeHtml(inv.client_company)}</div>` : ''}
           ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${escapeHtml(inv.client_address)}</div>` : ''}
@@ -394,9 +428,10 @@ async function downloadInvoicePdf(invoice) {
         <tfoot>${totalsHtml}</tfoot>
       </table>
       ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
-      ${inv.terms ? `<div class="notice">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
-      <!-- Payment information -->
-      ${(paymentTerms || inv.sender_bank_details) ? `
+      ${(!isProforma && inv.terms) ? `<div class="notice">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
+      ${proformaNotice}
+      <!-- Payment information (not for proforma/quote) -->
+      ${showPaymentBox ? `
       <div class="payment-box">
         ${paymentTerms ? `<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(paymentTerms)}</div>` : ''}
         ${inv.sender_bank_details ? `<div style="white-space:pre-line;color:#6b7280;">${escapeHtml(inv.sender_bank_details)}</div>` : ''}
@@ -609,7 +644,18 @@ function getStatusInfo(status) {
           <tbody class="divide-y divide-dark-700">
             <tr v-for="invoice in filteredInvoices" :key="invoice.id" class="hover:bg-dark-700/50">
               <td class="px-4 py-3">
-                <span class="font-mono text-white">{{ invoice.invoice_number }}</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-white">{{ invoice.invoice_number }}</span>
+                  <span
+                    v-if="invoice.document_type && invoice.document_type !== 'invoice'"
+                    class="text-xs px-1.5 py-0.5 rounded font-medium"
+                    :class="{
+                      'bg-blue-500/20 text-blue-300': invoice.document_type === 'proforma',
+                      'bg-yellow-500/20 text-yellow-300': invoice.document_type === 'quote',
+                      'bg-red-500/20 text-red-300': invoice.document_type === 'credit_note',
+                    }"
+                  >{{ { proforma: 'Proforma', quote: 'Angebot', credit_note: 'Gutschrift' }[invoice.document_type] }}</span>
+                </div>
               </td>
               <td class="px-4 py-3 text-gray-300">{{ invoice.client_name || '-' }}</td>
               <td class="px-4 py-3 text-gray-400">{{ formatDate(invoice.issue_date) }}</td>
@@ -763,6 +809,16 @@ function getStatusInfo(status) {
           </div>
 
           <form @submit.prevent="saveInvoice" class="p-4 space-y-4">
+            <div>
+              <label class="label">Dokumenttyp</label>
+              <select v-model="invoiceForm.document_type" class="input">
+                <option value="invoice">Rechnung</option>
+                <option value="proforma">Proforma-Rechnung</option>
+                <option value="quote">Angebot / Kostenvoranschlag</option>
+                <option value="credit_note">Gutschrift / Storno</option>
+              </select>
+            </div>
+
             <div>
               <label class="label">Kunde</label>
               <select v-model="invoiceForm.client_id" class="input">

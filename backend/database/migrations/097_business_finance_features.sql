@@ -34,6 +34,10 @@ ALTER TABLE invoices
 ALTER TABLE invoices
     ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(255) NULL DEFAULT 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.' AFTER terms;
 
+-- Add document type: invoice (default), proforma, quote (Angebot), credit_note (Gutschrift)
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS document_type ENUM('invoice','proforma','quote','credit_note') NOT NULL DEFAULT 'invoice' AFTER invoice_number;
+
 -- Income categories (separate from expense categories)
 CREATE TABLE IF NOT EXISTS income_categories (
     id VARCHAR(36) NOT NULL PRIMARY KEY,

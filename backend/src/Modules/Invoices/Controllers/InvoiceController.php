@@ -206,9 +206,18 @@ class InvoiceController
             $settings[$row['key']] = json_decode($row['value'], true);
         }
 
-        // Generate invoice number using configurable prefix
+        // Determine document type and derive number prefix
+        $type = $data['document_type'] ?? 'invoice';
+        $prefixMap = [
+            'invoice'     => $settings['invoice_number_prefix'] ?? 'RE',
+            'proforma'    => 'PRO',
+            'quote'       => 'AN',
+            'credit_note' => 'GS',
+        ];
+        $prefix = $prefixMap[$type] ?? 'RE';
+
+        // Generate document number using per-type prefix
         $year = date('Y');
-        $prefix = $settings['invoice_number_prefix'] ?? 'RE';
         $lastNumber = $this->db->fetchOne(
             "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
              FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
@@ -258,6 +267,7 @@ class InvoiceController
             'client_id' => $data['client_id'] ?? null,
             'project_id' => $projectId,
             'invoice_number' => $invoiceNumber,
+            'document_type' => $type,
             'status' => 'draft',
             'issue_date' => $data['issue_date'] ?? date('Y-m-d'),
             'due_date' => $data['due_date'] ?? date('Y-m-d', strtotime('+14 days')),
@@ -339,8 +349,8 @@ class InvoiceController
         $updates = [];
         $params = [];
 
-        $fields = ['client_id', 'project_id', 'status', 'issue_date', 'due_date', 'service_date',
-                   'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms'];
+        $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms'];
 
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -641,7 +651,7 @@ class InvoiceController
 
         $this->db->insert('invoices', array_merge(
             array_intersect_key($source, array_flip([
-                'user_id', 'client_id', 'project_id',
+                'user_id', 'client_id', 'project_id', 'document_type',
                 'client_name', 'client_company', 'client_address', 'client_email', 'client_vat_id',
                 'sender_name', 'sender_company', 'sender_address', 'sender_email', 'sender_phone',
                 'sender_vat_id', 'sender_steuernummer', 'sender_logo_file_id', 'sender_bank_details',

@@ -133,7 +133,19 @@ function getCategoryColor(categoryId, list) {
   return cat?.color || '#6B7280'
 }
 
-// ─── Receipt upload ───────────────────────────────────────────────────────
+// ─── Receipt upload & view ────────────────────────────────────────────────
+
+async function viewReceipt(fileId) {
+  try {
+    const resp = await api.get(`/api/v1/storage/${fileId}/download`, { responseType: 'blob' })
+    const blob = new Blob([resp.data], { type: resp.headers['content-type'] || 'application/octet-stream' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
+  } catch {
+    toast.error('Beleg konnte nicht geöffnet werden')
+  }
+}
 
 async function uploadReceipt(file) {
   if (!file) return null
@@ -615,9 +627,9 @@ onMounted(loadExpenseData)
                 <span v-if="expense.expense_type === 'mileage' && expense.mileage_km"> · {{ expense.mileage_km }} km</span>
               </p>
             </div>
-            <span v-if="expense.receipt_file_id" class="text-gray-500" title="Beleg vorhanden">
+            <button v-if="expense.receipt_file_id" @click.stop="viewReceipt(expense.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" title="Beleg ansehen">
               <PaperClipIcon class="w-3.5 h-3.5" />
-            </span>
+            </button>
             <span class="text-sm font-medium text-red-400 flex-shrink-0">
               -{{ formatCurrency(expense.amount) }}
             </span>
@@ -714,9 +726,9 @@ onMounted(loadExpenseData)
                 · {{ entry.income_date }}
               </p>
             </div>
-            <span v-if="entry.receipt_file_id" class="text-gray-500" title="Beleg vorhanden">
+            <button v-if="entry.receipt_file_id" @click.stop="viewReceipt(entry.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" title="Beleg ansehen">
               <PaperClipIcon class="w-3.5 h-3.5" />
-            </span>
+            </button>
             <span class="text-sm font-medium text-green-400 flex-shrink-0">
               +{{ formatCurrency(entry.amount) }}
             </span>
@@ -1005,6 +1017,9 @@ onMounted(loadExpenseData)
                     </span>
                     <input type="file" class="hidden" accept="image/*,.pdf" @change="e => receiptFile = e.target.files[0]" />
                   </label>
+                  <button v-if="expenseForm.receipt_file_id && !receiptFile" @click="viewReceipt(expenseForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+                    <ArrowDownTrayIcon class="w-4 h-4" />
+                  </button>
                   <button v-if="receiptFile" @click="receiptFile = null; expenseForm.receipt_file_id = null" class="p-2 text-gray-500 hover:text-red-400">
                     <XMarkIcon class="w-4 h-4" />
                   </button>
@@ -1120,6 +1135,9 @@ onMounted(loadExpenseData)
                     </span>
                     <input type="file" class="hidden" accept="image/*,.pdf" @change="e => incomeReceiptFile = e.target.files[0]" />
                   </label>
+                  <button v-if="incomeForm.receipt_file_id && !incomeReceiptFile" @click="viewReceipt(incomeForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+                    <ArrowDownTrayIcon class="w-4 h-4" />
+                  </button>
                   <button v-if="incomeReceiptFile" @click="incomeReceiptFile = null; incomeForm.receipt_file_id = null" class="p-2 text-gray-500 hover:text-red-400">
                     <XMarkIcon class="w-4 h-4" />
                   </button>

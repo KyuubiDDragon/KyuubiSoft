@@ -8,10 +8,8 @@
 -- All Discord integration now goes exclusively through Bot tokens
 -- (discord_bots.bot_token_encrypted) which is the officially supported flow.
 
--- Clear any existing encrypted user tokens before dropping the column
-UPDATE discord_accounts SET token_encrypted = NULL WHERE token_encrypted IS NOT NULL;
-
 -- Drop the column - user tokens should no longer be stored
+-- (No need to clear first; DROP COLUMN removes data along with the column)
 ALTER TABLE discord_accounts DROP COLUMN IF EXISTS token_encrypted;
 
 -- Add a note column documenting why accounts exist (for display purposes only)

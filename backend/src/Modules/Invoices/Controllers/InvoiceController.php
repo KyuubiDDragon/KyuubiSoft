@@ -260,10 +260,12 @@ class InvoiceController
             'status' => 'draft',
             'issue_date' => $data['issue_date'] ?? date('Y-m-d'),
             'due_date' => $data['due_date'] ?? date('Y-m-d', strtotime('+14 days')),
+            'service_date' => $data['service_date'] ?? null,
             'tax_rate' => $data['tax_rate'] ?? $defaultTaxRate,
             'currency' => $data['currency'] ?? 'EUR',
             'notes' => $data['notes'] ?? null,
             'terms' => $terms,
+            'payment_terms' => $data['payment_terms'] ?? ($settings['invoice_default_payment_terms'] ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'),
             'sender_name' => $settings['invoice_sender_name'] ?? $user['name'],
             'sender_company' => $settings['invoice_company'] ?? null,
             'sender_address' => $settings['invoice_address'] ?? null,
@@ -271,6 +273,7 @@ class InvoiceController
             'sender_phone' => $settings['invoice_phone'] ?? null,
             'sender_vat_id' => $settings['invoice_vat_id'] ?? null,
             'sender_steuernummer' => $settings['invoice_steuernummer'] ?? null,
+            'sender_logo_file_id' => $settings['invoice_logo_file_id'] ?? null,
             'sender_bank_details' => $settings['invoice_bank_details'] ?? null,
         ], $clientData));
 
@@ -335,8 +338,8 @@ class InvoiceController
         $updates = [];
         $params = [];
 
-        $fields = ['client_id', 'project_id', 'status', 'issue_date', 'due_date', 'paid_date',
-                   'tax_rate', 'currency', 'notes', 'terms'];
+        $fields = ['client_id', 'project_id', 'status', 'issue_date', 'due_date', 'service_date',
+                   'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms'];
 
         foreach ($fields as $field) {
             if (isset($data[$field])) {
@@ -345,12 +348,19 @@ class InvoiceController
             }
         }
 
+        $taxRateChanged = isset($data['tax_rate']);
+
         if (!empty($updates)) {
             $params[] = $id;
             $this->db->executeStatement(
                 'UPDATE invoices SET ' . implode(', ', $updates) . ' WHERE id = ?',
                 $params
             );
+        }
+
+        // Recalculate totals if tax rate was changed
+        if ($taxRateChanged) {
+            $this->recalculateInvoice($id);
         }
 
         // Trigger webhook when invoice is marked as paid

@@ -50,8 +50,10 @@ const invoiceForm = ref({
   project_id: null,
   issue_date: '',
   due_date: '',
+  service_date: '',
   tax_rate: 19,
   notes: '',
+  payment_terms: '',
 })
 
 // Client form
@@ -106,7 +108,11 @@ onMounted(async () => {
       sender_vat_id: s.invoice_vat_id ?? '',
       invoice_steuernummer: s.invoice_steuernummer ?? '',
       sender_bank_details: s.invoice_bank_details ?? '',
+      logo_file_id: s.invoice_logo_file_id ?? null,
+      default_payment_terms: s.invoice_default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
     }
+    // Pre-fill payment terms in new invoice form
+    invoiceForm.value.payment_terms = invoiceSenderSettings.value.default_payment_terms
   } catch (err) {
     console.warn('Einstellungen konnten nicht geladen werden', err)
     uiStore.showError('Einstellungen konnten nicht geladen werden')
@@ -227,8 +233,10 @@ function openCreateInvoice() {
     project_id: null,
     issue_date: today,
     due_date: dueDate,
+    service_date: today,
     tax_rate: kleinunternehmerMode.value ? 0 : 19,
     notes: '',
+    payment_terms: invoiceSenderSettings.value.default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
   }
   showInvoiceModal.value = true
 }
@@ -267,6 +275,20 @@ async function downloadInvoicePdf(invoice) {
     // Steuernummer: read from stored sender settings (loaded on mount)
     const steuernummer = invoiceSenderSettings.value.invoice_steuernummer || ''
 
+    // Load logo as data URL for embedding in PDF
+    let logoDataUrl = ''
+    const logoFileId = inv.sender_logo_file_id || invoiceSenderSettings.value.logo_file_id
+    if (logoFileId) {
+      try {
+        const logoResp = await api.get(`/api/v1/storage/${logoFileId}/thumbnail`, { responseType: 'blob' })
+        logoDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(logoResp.data)
+        })
+      } catch { /* logo not critical */ }
+    }
+
     const itemsHtml = (inv.items || []).map(item => `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
@@ -286,6 +308,8 @@ async function downloadInvoicePdf(invoice) {
       ? `<div style="color:#6b7280;font-size:11px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
       : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : '')
 
+    const paymentTerms = inv.payment_terms || invoiceSenderSettings.value.default_payment_terms || ''
+
     const html = `
       <html><head><meta charset="UTF-8">
       <style>
@@ -295,20 +319,25 @@ async function downloadInvoicePdf(invoice) {
         table { width: 100%; border-collapse: collapse; margin-top: 24px; }
         thead th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 12px; color: #374151; }
         thead th:not(:first-child) { text-align: right; }
-        .notice { margin-top: 24px; padding: 12px; background: #f9fafb; border-left: 3px solid #6b7280; font-size: 12px; color: #4b5563; }
+        .notice { margin-top: 16px; padding: 12px; background: #f9fafb; border-left: 3px solid #6b7280; font-size: 12px; color: #4b5563; }
+        .payment-box { margin-top: 24px; padding: 12px 16px; background: #f9fafb; border-radius: 6px; font-size: 12px; color: #374151; }
       </style>
       </head><body>
+      <!-- Header: Logo left, invoice metadata right -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;">
         <div>
+          ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:60px;max-width:180px;object-fit:contain;margin-bottom:8px;" />` : ''}
           <h1>Rechnung</h1>
           <div style="color:#6b7280;">${escapeHtml(inv.invoice_number)}</div>
         </div>
-        <div style="text-align:right;">
-          <div class="label">Datum</div>
+        <div style="text-align:right;min-width:150px;">
+          <div class="label">Rechnungsdatum</div>
           <div>${formatDate(inv.issue_date)}</div>
+          ${inv.service_date ? `<div class="label" style="margin-top:8px;">Leistungsdatum</div><div>${formatDate(inv.service_date)}</div>` : ''}
           ${inv.due_date ? `<div class="label" style="margin-top:8px;">Fällig bis</div><div>${formatDate(inv.due_date)}</div>` : ''}
         </div>
       </div>
+      <!-- Sender / Recipient -->
       <div style="display:flex;gap:48px;margin-bottom:32px;">
         <div style="flex:1;">
           <div class="label">Von</div>
@@ -318,10 +347,9 @@ async function downloadInvoicePdf(invoice) {
           ${senderTaxLine}
           ${inv.sender_email ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_email)}</div>` : ''}
           ${inv.sender_phone ? `<div style="color:#4b5563;">${escapeHtml(inv.sender_phone)}</div>` : ''}
-          ${inv.sender_bank_details ? `<div style="margin-top:8px;white-space:pre-line;font-size:11px;color:#6b7280;">${escapeHtml(inv.sender_bank_details)}</div>` : ''}
         </div>
         <div style="flex:1;">
-          <div class="label">An</div>
+          <div class="label">Rechnungsempfänger</div>
           <div style="font-weight:600;">${escapeHtml(inv.client_name ?? '')}</div>
           ${inv.client_company ? `<div>${escapeHtml(inv.client_company)}</div>` : ''}
           ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;">${escapeHtml(inv.client_address)}</div>` : ''}
@@ -329,6 +357,7 @@ async function downloadInvoicePdf(invoice) {
           ${inv.client_vat_id ? `<div style="color:#6b7280;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
         </div>
       </div>
+      <!-- Line items -->
       <table>
         <thead><tr>
           <th>Beschreibung</th>
@@ -341,6 +370,12 @@ async function downloadInvoicePdf(invoice) {
       </table>
       ${inv.notes ? `<div style="margin-top:24px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
       ${inv.terms ? `<div class="notice">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
+      <!-- Payment information -->
+      ${(paymentTerms || inv.sender_bank_details) ? `
+      <div class="payment-box">
+        ${paymentTerms ? `<div style="font-weight:600;margin-bottom:6px;">${escapeHtml(paymentTerms)}</div>` : ''}
+        ${inv.sender_bank_details ? `<div style="white-space:pre-line;color:#6b7280;">${escapeHtml(inv.sender_bank_details)}</div>` : ''}
+      </div>` : ''}
       </body></html>`
 
     const el = document.createElement('div')
@@ -434,6 +469,12 @@ function getStatusInfo(status) {
           Neue Rechnung
         </button>
       </div>
+    </div>
+
+    <!-- Setup prompt if sender details not configured -->
+    <div v-if="!invoiceSenderSettings.sender_address" class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 text-sm text-blue-300 flex items-center justify-between gap-4">
+      <span>Absenderdaten noch nicht konfiguriert. Hinterlege Name, Adresse, Steuernummer und Logo für rechtsgültige Rechnungen.</span>
+      <RouterLink to="/settings" class="shrink-0 underline hover:no-underline text-blue-200">Einstellungen → Rechnungen</RouterLink>
     </div>
 
     <!-- Kleinunternehmer info banner -->
@@ -703,12 +744,23 @@ function getStatusInfo(status) {
               </div>
             </div>
 
+            <div>
+              <label class="label">Leistungsdatum <span class="text-gray-500 font-normal">(§14 UStG Pflicht)</span></label>
+              <input v-model="invoiceForm.service_date" type="date" class="input" />
+              <p class="text-xs text-gray-500 mt-1">Datum der Leistungserbringung oder Lieferung</p>
+            </div>
+
             <div v-if="!kleinunternehmerMode">
               <label class="label">MwSt. (%)</label>
               <input v-model.number="invoiceForm.tax_rate" type="number" class="input" step="0.01" />
             </div>
             <div v-else class="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-amber-300">
               Kleinunternehmer: 0% MwSt. · § 19 UStG Hinweis wird automatisch hinzugefügt
+            </div>
+
+            <div>
+              <label class="label">Zahlungsbedingungen</label>
+              <input v-model="invoiceForm.payment_terms" type="text" class="input" placeholder="Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum." />
             </div>
 
             <div>
@@ -836,7 +888,8 @@ function getStatusInfo(status) {
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
             <div>
               <h2 class="text-lg font-semibold text-white">{{ selectedInvoice.invoice_number }}</h2>
-              <p class="text-sm text-gray-400">{{ formatDate(selectedInvoice.issue_date) }}</p>
+              <p class="text-sm text-gray-400">Datum: {{ formatDate(selectedInvoice.issue_date) }}</p>
+              <p v-if="selectedInvoice.service_date" class="text-sm text-gray-400">Leistungsdatum: {{ formatDate(selectedInvoice.service_date) }}</p>
             </div>
             <button @click="showDetailModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />

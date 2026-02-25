@@ -22,6 +22,18 @@ DEALLOCATE PREPARE stmt;
 ALTER TABLE invoices
     ADD COLUMN IF NOT EXISTS sender_steuernummer VARCHAR(50) NULL AFTER sender_vat_id;
 
+-- Add logo snapshot (invoice_logo_file_id stored in user_settings, snapshotted here)
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS sender_logo_file_id VARCHAR(36) NULL AFTER sender_steuernummer;
+
+-- Add Leistungsdatum (§14 UStG Pflichtangabe: date goods/services were delivered)
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS service_date DATE NULL AFTER due_date;
+
+-- Add Zahlungsziel / payment terms text field
+ALTER TABLE invoices
+    ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(255) NULL DEFAULT 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.' AFTER terms;
+
 -- Income categories (separate from expense categories)
 CREATE TABLE IF NOT EXISTS income_categories (
     id VARCHAR(36) NOT NULL PRIMARY KEY,

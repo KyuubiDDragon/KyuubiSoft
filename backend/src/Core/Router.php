@@ -683,6 +683,7 @@ class Router
 
                 // Cloud Storage
                 $protected->get('/storage', [StorageController::class, 'index']);
+                $protected->post('/storage', [StorageController::class, 'upload']);
                 $protected->post('/storage/upload', [StorageController::class, 'upload']);
                 $protected->get('/storage/stats', [StorageController::class, 'stats']);
                 $protected->get('/storage/shares', [StorageController::class, 'listShares']);

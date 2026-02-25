@@ -27,6 +27,9 @@ import {
   SparklesIcon,
   CurrencyDollarIcon,
   PhotoIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { useExportImportStore } from '@/stores/exportImport'
 import { useAIStore } from '@/stores/ai'
@@ -295,6 +298,7 @@ const invoiceSettings = reactive({
   invoice_default_payment_terms: 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
   invoice_number_prefix: 'RE',
   kleinunternehmer_mode: false,
+  default_hourly_rate: 50,
 })
 const invoiceLogoPreviewUrl = ref(null)
 const invoiceLogoFile = ref(null)
@@ -328,6 +332,7 @@ async function loadInvoiceSettings() {
     invoiceSettings.invoice_default_payment_terms = s.invoice_default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'
     invoiceSettings.invoice_number_prefix = s.invoice_number_prefix ?? 'RE'
     invoiceSettings.kleinunternehmer_mode = s.kleinunternehmer_mode ?? false
+    invoiceSettings.default_hourly_rate = parseFloat(s.default_hourly_rate ?? 50)
     invoiceSettingsLoaded.value = true
     if (invoiceSettings.invoice_logo_file_id) {
       await loadLogoPreview(invoiceSettings.invoice_logo_file_id)
@@ -383,12 +388,100 @@ async function saveInvoiceSettings() {
       invoice_default_payment_terms: invoiceSettings.invoice_default_payment_terms,
       invoice_number_prefix: invoiceSettings.invoice_number_prefix || 'RE',
       kleinunternehmer_mode: invoiceSettings.kleinunternehmer_mode,
+      default_hourly_rate: parseFloat(invoiceSettings.default_hourly_rate) || 50,
     })
     toast.success('Rechnungseinstellungen gespeichert')
   } catch (e) {
     toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Fehler'))
   } finally {
     invoiceSettingsSaving.value = false
+  }
+}
+
+// ─── Service Catalog ─────────────────────────────────────────────────────────
+
+const serviceCatalog = ref([])
+const catalogLoading = ref(false)
+const showCatalogForm = ref(false)
+const editingCatalogItem = ref(null)
+const catalogForm = reactive({
+  name: '',
+  description: '',
+  unit: 'Stunde',
+  unit_price: 0,
+})
+const catalogUnits = ['Stunde', 'Stück', 'Pauschal', 'Tag', 'Monat', 'km']
+
+async function loadServiceCatalog() {
+  catalogLoading.value = true
+  try {
+    const response = await api.get('/api/v1/service-catalog')
+    serviceCatalog.value = response.data.data?.items ?? []
+  } catch (e) {
+    toast.warning('Leistungskatalog konnte nicht geladen werden')
+  } finally {
+    catalogLoading.value = false
+  }
+}
+
+function openAddCatalogItem() {
+  editingCatalogItem.value = null
+  catalogForm.name = ''
+  catalogForm.description = ''
+  catalogForm.unit = 'Stunde'
+  catalogForm.unit_price = 0
+  showCatalogForm.value = true
+}
+
+function openEditCatalogItem(item) {
+  editingCatalogItem.value = item
+  catalogForm.name = item.name
+  catalogForm.description = item.description ?? ''
+  catalogForm.unit = item.unit
+  catalogForm.unit_price = parseFloat(item.unit_price)
+  showCatalogForm.value = true
+}
+
+function cancelCatalogForm() {
+  showCatalogForm.value = false
+  editingCatalogItem.value = null
+}
+
+async function saveCatalogItem() {
+  if (!catalogForm.name.trim()) {
+    toast.warning('Name ist erforderlich')
+    return
+  }
+  const payload = {
+    name: catalogForm.name.trim(),
+    description: catalogForm.description.trim() || null,
+    unit: catalogForm.unit,
+    unit_price: parseFloat(catalogForm.unit_price) || 0,
+  }
+  try {
+    if (editingCatalogItem.value) {
+      await api.put(`/api/v1/service-catalog/${editingCatalogItem.value.id}`, payload)
+      toast.success('Leistung aktualisiert')
+    } else {
+      await api.post('/api/v1/service-catalog', payload)
+      toast.success('Leistung hinzugefügt')
+    }
+    showCatalogForm.value = false
+    editingCatalogItem.value = null
+    await loadServiceCatalog()
+  } catch (e) {
+    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.error ?? e?.message ?? 'Fehler'))
+  }
+}
+
+async function deleteCatalogItem(item) {
+  if (!await confirm({ message: `Leistung „${item.name}" löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  try {
+    await api.delete(`/api/v1/service-catalog/${item.id}`)
+    toast.success('Leistung gelöscht')
+    await loadServiceCatalog()
+  } catch (e) {
+    toast.error('Löschen fehlgeschlagen')
   }
 }
 
@@ -405,8 +498,9 @@ watch(activeTab, (newTab) => {
   if (newTab === 'notifications') {
     loadPushSettings()
   }
-  if (newTab === 'invoices' && !invoiceSettingsLoaded.value) {
-    loadInvoiceSettings()
+  if (newTab === 'invoices') {
+    if (!invoiceSettingsLoaded.value) loadInvoiceSettings()
+    if (serviceCatalog.value.length === 0) loadServiceCatalog()
   }
 })
 
@@ -2143,6 +2237,23 @@ watch(activeTab, (tab) => {
             </div>
           </div>
 
+          <!-- Standard-Stundensatz -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Standard-Stundensatz</h2>
+            <p class="text-sm text-gray-400">Fallback-Stundensatz für „Aus Zeiteinträgen", wenn kein Kundensatz hinterlegt ist.</p>
+            <div class="flex items-center gap-3 max-w-xs">
+              <input
+                v-model.number="invoiceSettings.default_hourly_rate"
+                type="number"
+                min="0"
+                step="0.01"
+                class="input flex-1"
+                placeholder="50.00"
+              />
+              <span class="text-gray-400 text-sm whitespace-nowrap">€ / Std</span>
+            </div>
+          </div>
+
           <!-- Save button -->
           <div class="flex justify-end">
             <button
@@ -2153,6 +2264,83 @@ watch(activeTab, (tab) => {
               <span v-if="invoiceSettingsSaving || invoiceLogoUploading">Speichern...</span>
               <span v-else>Einstellungen speichern</span>
             </button>
+          </div>
+
+          <!-- Leistungskatalog -->
+          <div class="card p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-white">Leistungskatalog</h2>
+                <p class="text-sm text-gray-400 mt-0.5">Vordefinierte Positionen für Rechnungen – auswählbar beim Hinzufügen von Rechnungspositionen.</p>
+              </div>
+              <button @click="openAddCatalogItem" class="btn-primary flex items-center gap-2 text-sm px-3 py-2">
+                <PlusIcon class="w-4 h-4" />
+                Leistung hinzufügen
+              </button>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div v-if="showCatalogForm" class="bg-dark-700 rounded-lg p-4 space-y-3 border border-dark-500">
+              <h3 class="text-sm font-medium text-white">{{ editingCatalogItem ? 'Leistung bearbeiten' : 'Neue Leistung' }}</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="label">Name *</label>
+                  <input v-model="catalogForm.name" type="text" class="input" placeholder="z.B. Webentwicklung" />
+                </div>
+                <div>
+                  <label class="label">Einheit</label>
+                  <select v-model="catalogForm.unit" class="input">
+                    <option v-for="u in catalogUnits" :key="u" :value="u">{{ u }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Einzelpreis (€)</label>
+                  <input v-model.number="catalogForm.unit_price" type="number" min="0" step="0.01" class="input" placeholder="0.00" />
+                </div>
+                <div>
+                  <label class="label">Beschreibung (optional)</label>
+                  <input v-model="catalogForm.description" type="text" class="input" placeholder="Kurze Beschreibung" />
+                </div>
+              </div>
+              <div class="flex gap-2 justify-end">
+                <button @click="cancelCatalogForm" class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-1">
+                  <XMarkIcon class="w-4 h-4" /> Abbrechen
+                </button>
+                <button @click="saveCatalogItem" class="btn-primary text-sm px-3 py-1.5 flex items-center gap-1">
+                  <CheckIcon class="w-4 h-4" /> Speichern
+                </button>
+              </div>
+            </div>
+
+            <!-- Catalog List -->
+            <div v-if="catalogLoading" class="text-center py-6 text-gray-400 text-sm">Lade Katalog...</div>
+            <div v-else-if="serviceCatalog.length === 0 && !showCatalogForm" class="text-center py-8 text-gray-500 text-sm">
+              Noch keine Leistungen angelegt. Klicke auf „Leistung hinzufügen".
+            </div>
+            <div v-else class="divide-y divide-dark-600">
+              <div
+                v-for="item in serviceCatalog"
+                :key="item.id"
+                class="flex items-center justify-between py-3 gap-4"
+              >
+                <div class="flex-1 min-w-0">
+                  <p class="text-white text-sm font-medium truncate">{{ item.name }}</p>
+                  <p v-if="item.description" class="text-gray-400 text-xs truncate">{{ item.description }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-white text-sm font-mono">{{ parseFloat(item.unit_price).toFixed(2) }} €</p>
+                  <p class="text-gray-500 text-xs">/ {{ item.unit }}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button @click="openEditCatalogItem(item)" class="text-gray-400 hover:text-white transition-colors p-1" title="Bearbeiten">
+                    <PencilIcon class="w-4 h-4" />
+                  </button>
+                  <button @click="deleteCatalogItem(item)" class="text-gray-400 hover:text-red-400 transition-colors p-1" title="Löschen">
+                    <TrashIcon class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

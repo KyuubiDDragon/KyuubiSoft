@@ -65,6 +65,15 @@ const showTimeEntriesModal = ref(false)
 const timeEntriesForm = ref({ client_id: null, project_id: null, hourly_rate: '' })
 const projects = ref([])
 
+// Invoice items + service catalog
+const serviceCatalog = ref([])
+const catalogLoaded = ref(false)
+const showCatalogPicker = ref(false)
+const showNewItemForm = ref(false)
+const savingItem = ref(false)
+const newItemForm = ref({ description: '', quantity: 1, unit: 'Stunde', unit_price: 0 })
+const itemUnits = ['Stunde', 'Stück', 'Pauschal', 'Tag', 'Monat', 'km']
+
 // Client form
 const clientForm = ref({
   name: '',
@@ -189,12 +198,89 @@ async function updateInvoiceStatus(invoice, status) {
 }
 
 async function openInvoiceDetail(invoice) {
+  showNewItemForm.value = false
+  showCatalogPicker.value = false
   try {
     const response = await api.get(`/api/v1/invoices/${invoice.id}`)
     selectedInvoice.value = response.data.data
     showDetailModal.value = true
   } catch (error) {
     uiStore.showError('Fehler beim Laden')
+  }
+}
+
+async function refreshInvoiceDetail() {
+  if (!selectedInvoice.value) return
+  try {
+    const response = await api.get(`/api/v1/invoices/${selectedInvoice.value.id}`)
+    selectedInvoice.value = response.data.data
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
+function openAddItemForm() {
+  newItemForm.value = { description: '', quantity: 1, unit: 'Stunde', unit_price: 0 }
+  showCatalogPicker.value = false
+  showNewItemForm.value = true
+}
+
+async function openCatalogPicker() {
+  if (!catalogLoaded.value) {
+    try {
+      const response = await api.get('/api/v1/service-catalog')
+      serviceCatalog.value = response.data.data?.items ?? []
+      catalogLoaded.value = true
+    } catch {
+      toast.warning('Leistungskatalog konnte nicht geladen werden')
+    }
+  }
+  showNewItemForm.value = false
+  showCatalogPicker.value = true
+}
+
+function selectCatalogItem(item) {
+  newItemForm.value = {
+    description: item.name + (item.description ? '\n' + item.description : ''),
+    quantity: 1,
+    unit: item.unit,
+    unit_price: parseFloat(item.unit_price),
+  }
+  showCatalogPicker.value = false
+  showNewItemForm.value = true
+}
+
+async function saveNewItem() {
+  if (!newItemForm.value.description.trim()) {
+    toast.warning('Beschreibung ist erforderlich')
+    return
+  }
+  savingItem.value = true
+  try {
+    await api.post(`/api/v1/invoices/${selectedInvoice.value.id}/items`, {
+      description: newItemForm.value.description.trim(),
+      quantity: parseFloat(newItemForm.value.quantity) || 1,
+      unit: newItemForm.value.unit || 'Stück',
+      unit_price: parseFloat(newItemForm.value.unit_price) || 0,
+    })
+    showNewItemForm.value = false
+    await refreshInvoiceDetail()
+    await loadData()
+  } catch (error) {
+    toast.error('Fehler beim Speichern der Position')
+  } finally {
+    savingItem.value = false
+  }
+}
+
+async function deleteItem(itemId) {
+  if (!await confirm({ message: 'Position wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  try {
+    await api.delete(`/api/v1/invoices/${selectedInvoice.value.id}/items/${itemId}`)
+    await refreshInvoiceDetail()
+    await loadData()
+  } catch (error) {
+    toast.error('Fehler beim Löschen der Position')
   }
 }
 
@@ -1124,7 +1210,86 @@ function getStatusInfo(status) {
 
             <!-- Items -->
             <div>
-              <h3 class="text-sm font-medium text-gray-400 mb-2">Positionen</h3>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium text-gray-400">Positionen</h3>
+                <div class="flex gap-2">
+                  <button
+                    @click="openCatalogPicker"
+                    class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-dark-600 hover:bg-dark-500 text-gray-300 hover:text-white rounded-lg transition-colors"
+                    title="Aus Leistungskatalog hinzufügen"
+                  >
+                    <DocumentTextIcon class="w-3.5 h-3.5" />
+                    Aus Katalog
+                  </button>
+                  <button
+                    @click="openAddItemForm"
+                    class="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+                  >
+                    <PlusIcon class="w-3.5 h-3.5" />
+                    Position hinzufügen
+                  </button>
+                </div>
+              </div>
+
+              <!-- Catalog picker -->
+              <div v-if="showCatalogPicker" class="mb-3 bg-dark-700 border border-dark-500 rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between px-3 py-2 border-b border-dark-600">
+                  <span class="text-xs font-medium text-gray-300">Leistung auswählen</span>
+                  <button @click="showCatalogPicker = false" class="text-gray-500 hover:text-white">
+                    <XMarkIcon class="w-4 h-4" />
+                  </button>
+                </div>
+                <div v-if="serviceCatalog.length === 0" class="px-3 py-4 text-center text-gray-500 text-sm">
+                  Kein Leistungskatalog vorhanden. Katalog unter Einstellungen → Rechnungen anlegen.
+                </div>
+                <div v-else class="divide-y divide-dark-600 max-h-48 overflow-y-auto">
+                  <button
+                    v-for="item in serviceCatalog"
+                    :key="item.id"
+                    @click="selectCatalogItem(item)"
+                    class="w-full flex items-center justify-between px-3 py-2.5 hover:bg-dark-600 transition-colors text-left"
+                  >
+                    <div>
+                      <p class="text-sm text-white">{{ item.name }}</p>
+                      <p v-if="item.description" class="text-xs text-gray-500">{{ item.description }}</p>
+                    </div>
+                    <span class="text-sm text-gray-300 font-mono shrink-0 ml-3">{{ parseFloat(item.unit_price).toFixed(2) }} €/{{ item.unit }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- New item form -->
+              <div v-if="showNewItemForm" class="mb-3 bg-dark-700 border border-dark-500 rounded-lg p-3 space-y-3">
+                <div>
+                  <label class="label text-xs">Beschreibung *</label>
+                  <textarea v-model="newItemForm.description" class="input text-sm" rows="2" placeholder="Leistungsbeschreibung"></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div>
+                    <label class="label text-xs">Menge</label>
+                    <input v-model.number="newItemForm.quantity" type="number" min="0" step="0.01" class="input text-sm" />
+                  </div>
+                  <div>
+                    <label class="label text-xs">Einheit</label>
+                    <select v-model="newItemForm.unit" class="input text-sm">
+                      <option v-for="u in itemUnits" :key="u" :value="u">{{ u }}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label text-xs">Einzelpreis (€)</label>
+                    <input v-model.number="newItemForm.unit_price" type="number" min="0" step="0.01" class="input text-sm" />
+                  </div>
+                </div>
+                <div class="flex gap-2 justify-end">
+                  <button @click="showNewItemForm = false" class="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
+                    <XMarkIcon class="w-3.5 h-3.5" /> Abbrechen
+                  </button>
+                  <button @click="saveNewItem" :disabled="savingItem" class="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
+                    <CheckIcon class="w-3.5 h-3.5" /> {{ savingItem ? 'Speichern...' : 'Hinzufügen' }}
+                  </button>
+                </div>
+              </div>
+
               <div class="bg-dark-700 rounded-lg overflow-hidden">
                 <table class="w-full">
                   <thead class="bg-dark-600">
@@ -1133,17 +1298,27 @@ function getStatusInfo(status) {
                       <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Menge</th>
                       <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Preis</th>
                       <th class="px-3 py-2 text-right text-xs font-medium text-gray-400">Gesamt</th>
+                      <th class="px-3 py-2 text-right text-xs font-medium text-gray-400 w-10"></th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-dark-600">
-                    <tr v-for="item in selectedInvoice.items" :key="item.id">
-                      <td class="px-3 py-2 text-sm text-white">{{ item.description }}</td>
+                    <tr v-for="item in selectedInvoice.items" :key="item.id" class="group">
+                      <td class="px-3 py-2 text-sm text-white whitespace-pre-line">{{ item.description }}</td>
                       <td class="px-3 py-2 text-sm text-gray-400 text-right">{{ item.quantity }} {{ item.unit }}</td>
                       <td class="px-3 py-2 text-sm text-gray-400 text-right">{{ formatCurrency(item.unit_price) }}</td>
                       <td class="px-3 py-2 text-sm text-white text-right">{{ formatCurrency(item.total) }}</td>
+                      <td class="px-3 py-2 text-right">
+                        <button
+                          @click="deleteItem(item.id)"
+                          class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-0.5"
+                          title="Position löschen"
+                        >
+                          <TrashIcon class="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                     <tr v-if="!selectedInvoice.items?.length">
-                      <td colspan="4" class="px-3 py-4 text-center text-gray-500">Keine Positionen</td>
+                      <td colspan="5" class="px-3 py-4 text-center text-gray-500">Noch keine Positionen – füge eine oben hinzu.</td>
                     </tr>
                   </tbody>
                 </table>

@@ -549,6 +549,17 @@ class InvoiceController
         $body = json_decode((string) $invoiceResponse->getBody(), true);
         $invoiceId = $body['data']['id'];
 
+        // Load user settings to get default hourly rate
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+        $defaultRate = (float) ($settings['default_hourly_rate'] ?? 50);
+
         // Add time entries as items
         $entries = $this->db->fetchAllAssociative(
             'SELECT * FROM time_entries WHERE id IN (?) AND user_id = ? AND is_billable = 1 AND invoiced = 0',
@@ -558,7 +569,7 @@ class InvoiceController
 
         foreach ($entries as $entry) {
             $hours = $entry['duration_seconds'] / 3600;
-            $rate = $entry['hourly_rate'] ?? $data['hourly_rate'] ?? 50;
+            $rate = $entry['hourly_rate'] ?? $data['hourly_rate'] ?? $defaultRate;
 
             $itemId = Uuid::uuid4()->toString();
             $this->db->insert('invoice_items', [

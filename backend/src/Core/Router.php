@@ -30,6 +30,7 @@ use App\Modules\Finance\Controllers\ExpenseController;
 use App\Modules\Finance\Controllers\IncomeController;
 use App\Modules\UptimeMonitor\Controllers\UptimeMonitorController;
 use App\Modules\Invoices\Controllers\InvoiceController;
+use App\Modules\Invoices\Controllers\ServiceCatalogController;
 use App\Modules\ApiTester\Controllers\ApiTesterController;
 use App\Modules\YouTubeDownloader\Controllers\YouTubeController;
 use App\Modules\QuickNotes\Controllers\QuickNoteController;
@@ -532,6 +533,16 @@ class Router
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
+
+                // Service Catalog (Leistungskatalog)
+                $protected->get('/service-catalog', [ServiceCatalogController::class, 'index'])
+                    ->add(new FeatureMiddleware('invoices', null, 'view'));
+                $protected->post('/service-catalog', [ServiceCatalogController::class, 'create'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
+                $protected->put('/service-catalog/{id}', [ServiceCatalogController::class, 'update'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->delete('/service-catalog/{id}', [ServiceCatalogController::class, 'delete'])
+                    ->add(new FeatureMiddleware('invoices', null, 'delete'));
 
                 // API Tester - Collections - protected by feature flags
                 $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections'])

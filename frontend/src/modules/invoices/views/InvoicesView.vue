@@ -7,6 +7,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import {
   PlusIcon,
   DocumentTextIcon,
+  DocumentDuplicateIcon,
   TrashIcon,
   PencilIcon,
   UserIcon,
@@ -239,6 +240,30 @@ function openCreateInvoice() {
     payment_terms: invoiceSenderSettings.value.default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
   }
   showInvoiceModal.value = true
+}
+
+function openEditInvoice(invoice) {
+  editingInvoice.value = invoice
+  invoiceForm.value = {
+    client_id: invoice.client_id,
+    issue_date: invoice.issue_date,
+    due_date: invoice.due_date ?? '',
+    service_date: invoice.service_date ?? '',
+    tax_rate: invoice.tax_rate,
+    notes: invoice.notes ?? '',
+    payment_terms: invoice.payment_terms ?? '',
+  }
+  showInvoiceModal.value = true
+}
+
+async function duplicateInvoice(invoice) {
+  try {
+    await api.post(`/api/v1/invoices/${invoice.id}/duplicate`)
+    await loadData()
+    uiStore.showSuccess('Rechnung dupliziert')
+  } catch (error) {
+    uiStore.showError('Fehler beim Duplizieren')
+  }
 }
 
 async function toggleKleinunternehmer() {
@@ -635,8 +660,23 @@ function getStatusInfo(status) {
                     <CheckIcon class="w-4 h-4" />
                   </button>
                   <button
+                    @click="openEditInvoice(invoice)"
+                    class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-dark-600 rounded"
+                    title="Rechnung bearbeiten"
+                  >
+                    <PencilIcon class="w-4 h-4" />
+                  </button>
+                  <button
+                    @click="duplicateInvoice(invoice)"
+                    class="p-1.5 text-gray-400 hover:text-purple-400 hover:bg-dark-600 rounded"
+                    title="Rechnung duplizieren"
+                  >
+                    <DocumentDuplicateIcon class="w-4 h-4" />
+                  </button>
+                  <button
                     @click="deleteInvoice(invoice)"
                     class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+                    title="Rechnung löschen"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -716,7 +756,7 @@ function getStatusInfo(status) {
       >
         <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
           <div class="p-4 border-b border-dark-700 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-white">Neue Rechnung</h2>
+            <h2 class="text-lg font-semibold text-white">{{ editingInvoice ? 'Rechnung bearbeiten' : 'Neue Rechnung' }}</h2>
             <button @click="showInvoiceModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
             </button>

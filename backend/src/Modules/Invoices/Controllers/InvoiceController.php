@@ -195,15 +195,27 @@ class InvoiceController
 
         $id = Uuid::uuid4()->toString();
 
-        // Generate invoice number
+        // Get user settings early (needed for invoice number prefix)
+        $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+
+        // Generate invoice number using configurable prefix
         $year = date('Y');
+        $prefix = $settings['invoice_number_prefix'] ?? 'RE';
         $lastNumber = $this->db->fetchOne(
             "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
              FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
-            [$userId, "RE-{$year}-%"]
+            [$userId, "{$prefix}-{$year}-%"]
         );
         $nextNumber = ($lastNumber ?? 0) + 1;
-        $invoiceNumber = sprintf("RE-%s-%04d", $year, $nextNumber);
+        $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $nextNumber);
 
         // Get client data if client_id provided
         $clientData = [];
@@ -226,17 +238,6 @@ class InvoiceController
                     'client_vat_id' => $client['vat_id'],
                 ];
             }
-        }
-
-        // Get user settings for sender info and Kleinunternehmer mode
-        $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
-        $settingsRows = $this->db->fetchAllAssociative(
-            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
-            [$userId]
-        );
-        $settings = [];
-        foreach ($settingsRows as $row) {
-            $settings[$row['key']] = json_decode($row['value'], true);
         }
 
         // Kleinunternehmer mode: default to 0% tax, add §19 UStG legal notice
@@ -593,6 +594,92 @@ class InvoiceController
         );
 
         return JsonResponse::success($stats);
+    }
+
+    public function duplicate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $sourceId = $routeContext->getRoute()->getArgument('id');
+
+        $source = $this->db->fetchAssociative(
+            'SELECT * FROM invoices WHERE id = ? AND user_id = ?',
+            [$sourceId, $userId]
+        );
+
+        if (!$source) {
+            throw new NotFoundException('Invoice not found');
+        }
+
+        $items = $this->db->fetchAllAssociative(
+            'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order ASC',
+            [$sourceId]
+        );
+
+        // Generate new invoice number (reuse same prefix logic)
+        $year = date('Y');
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+        $prefix = $settings['invoice_number_prefix'] ?? 'RE';
+        $lastNumber = $this->db->fetchOne(
+            "SELECT MAX(CAST(SUBSTRING(invoice_number, -4) AS UNSIGNED))
+             FROM invoices WHERE user_id = ? AND invoice_number LIKE ?",
+            [$userId, "{$prefix}-{$year}-%"]
+        );
+        $nextNumber = ($lastNumber ?? 0) + 1;
+        $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $nextNumber);
+
+        $newId = Uuid::uuid4()->toString();
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+
+        $this->db->insert('invoices', array_merge(
+            array_intersect_key($source, array_flip([
+                'user_id', 'client_id', 'project_id',
+                'client_name', 'client_company', 'client_address', 'client_email', 'client_vat_id',
+                'sender_name', 'sender_company', 'sender_address', 'sender_email', 'sender_phone',
+                'sender_vat_id', 'sender_steuernummer', 'sender_logo_file_id', 'sender_bank_details',
+                'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+            ])),
+            [
+                'id' => $newId,
+                'invoice_number' => $invoiceNumber,
+                'status' => 'draft',
+                'issue_date' => $today,
+                'due_date' => date('Y-m-d', strtotime('+14 days')),
+                'service_date' => $today,
+                'subtotal' => $source['subtotal'],
+                'tax_amount' => $source['tax_amount'],
+                'total' => $source['total'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        ));
+
+        foreach ($items as $item) {
+            $this->db->insert('invoice_items', [
+                'id' => Uuid::uuid4()->toString(),
+                'invoice_id' => $newId,
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit' => $item['unit'],
+                'unit_price' => $item['unit_price'],
+                'total' => $item['total'],
+                'sort_order' => $item['sort_order'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $newInvoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$newId]);
+
+        return JsonResponse::success($newInvoice, 'Invoice duplicated');
     }
 
     private function recalculateInvoice(string $invoiceId): void

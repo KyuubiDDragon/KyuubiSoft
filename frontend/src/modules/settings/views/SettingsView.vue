@@ -293,6 +293,7 @@ const invoiceSettings = reactive({
   invoice_bank_details: '',
   invoice_logo_file_id: null,
   invoice_default_payment_terms: 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
+  invoice_number_prefix: 'RE',
   kleinunternehmer_mode: false,
 })
 const invoiceLogoPreviewUrl = ref(null)
@@ -325,6 +326,7 @@ async function loadInvoiceSettings() {
     invoiceSettings.invoice_bank_details = s.invoice_bank_details ?? ''
     invoiceSettings.invoice_logo_file_id = s.invoice_logo_file_id ?? null
     invoiceSettings.invoice_default_payment_terms = s.invoice_default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'
+    invoiceSettings.invoice_number_prefix = s.invoice_number_prefix ?? 'RE'
     invoiceSettings.kleinunternehmer_mode = s.kleinunternehmer_mode ?? false
     invoiceSettingsLoaded.value = true
     if (invoiceSettings.invoice_logo_file_id) {
@@ -379,6 +381,7 @@ async function saveInvoiceSettings() {
       invoice_bank_details: invoiceSettings.invoice_bank_details,
       invoice_logo_file_id: invoiceSettings.invoice_logo_file_id,
       invoice_default_payment_terms: invoiceSettings.invoice_default_payment_terms,
+      invoice_number_prefix: invoiceSettings.invoice_number_prefix || 'RE',
       kleinunternehmer_mode: invoiceSettings.kleinunternehmer_mode,
     })
     toast.success('Rechnungseinstellungen gespeichert')
@@ -2083,6 +2086,19 @@ watch(activeTab, (tab) => {
             <div>
               <label class="label">Bankdaten (IBAN, BIC, Kontoinhaber)</label>
               <textarea v-model="invoiceSettings.invoice_bank_details" class="input" rows="3" placeholder="Kontoinhaber: Max Mustermann&#10;IBAN: DE89 3704 0044 0532 0130 00&#10;BIC: COBADEFFXXX&#10;Sparkasse Musterstadt"></textarea>
+            </div>
+          </div>
+
+          <!-- Rechnungsnummer-Präfix -->
+          <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-white">Rechnungsnummer</h2>
+            <p class="text-sm text-gray-400">Präfix für automatisch generierte Rechnungsnummern.</p>
+            <div>
+              <label class="label">Präfix</label>
+              <input v-model="invoiceSettings.invoice_number_prefix" type="text" class="input max-w-xs" placeholder="RE" maxlength="10" />
+              <p class="text-xs text-gray-500 mt-1">
+                Format: <span class="font-mono text-gray-400">{{ (invoiceSettings.invoice_number_prefix || 'RE').toUpperCase() }}-{{ new Date().getFullYear() }}-0001</span>
+              </p>
             </div>
           </div>
 

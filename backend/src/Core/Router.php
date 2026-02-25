@@ -524,6 +524,8 @@ class Router
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/invoices/{id}', [InvoiceController::class, 'delete'])
                     ->add(new FeatureMiddleware('invoices', null, 'delete'));
+                $protected->post('/invoices/{id}/duplicate', [InvoiceController::class, 'duplicate'])
+                    ->add(new FeatureMiddleware('invoices', null, 'create'));
                 $protected->post('/invoices/{id}/items', [InvoiceController::class, 'addItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])

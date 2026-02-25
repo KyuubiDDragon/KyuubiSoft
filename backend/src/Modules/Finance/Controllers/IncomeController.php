@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
+use Slim\Routing\RouteContext;
 
 class IncomeController
 {
@@ -105,10 +106,10 @@ class IncomeController
         return JsonResponse::created($entry);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $entryId = $args['id'];
+        $entryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $body = (array) $request->getParsedBody();
 
         $entry = $this->db->fetchAssociative('SELECT id FROM income_entries WHERE id = ? AND user_id = ?', [$entryId, $userId]);
@@ -151,10 +152,10 @@ class IncomeController
         return JsonResponse::success($updated);
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function delete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $entryId = $args['id'];
+        $entryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $entry = $this->db->fetchAssociative('SELECT id FROM income_entries WHERE id = ? AND user_id = ?', [$entryId, $userId]);
         if (!$entry) {
@@ -473,10 +474,10 @@ class IncomeController
         return JsonResponse::created($category);
     }
 
-    public function deleteCategory(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function deleteCategory(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
-        $categoryId = $args['id'];
+        $categoryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $category = $this->db->fetchAssociative('SELECT id FROM income_categories WHERE id = ? AND user_id = ?', [$categoryId, $userId]);
         if (!$category) {

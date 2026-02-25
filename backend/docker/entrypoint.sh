@@ -24,5 +24,9 @@ chown -R www-data:www-data "$STORAGE_PATH"
 chmod -R 775 "$STORAGE_PATH"
 echo "Storage directory configured: $STORAGE_PATH"
 
+# Run database migrations automatically on startup
+echo "Running database migrations..."
+php /var/www/html/bin/migrate.php || echo "Migration failed (non-fatal, continuing...)"
+
 # Execute the main command
 exec "$@"

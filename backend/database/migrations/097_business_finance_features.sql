@@ -2,9 +2,8 @@
 -- Adds receipt linking for expenses, income tracking, and Kleinunternehmer support
 
 -- Link expenses to uploaded receipts (via storage module)
--- IF NOT EXISTS makes this migration idempotent (safe to re-run)
 ALTER TABLE expenses
-    ADD COLUMN IF NOT EXISTS receipt_file_id VARCHAR(36) NULL AFTER notes;
+    ADD COLUMN receipt_file_id VARCHAR(36) NULL AFTER notes;
 
 -- Add index conditionally to stay idempotent
 SET @dbname = DATABASE();
@@ -20,40 +19,40 @@ DEALLOCATE PREPARE stmt;
 
 -- Add Steuernummer snapshot to invoices (Kleinunternehmer §14 UStG requirement)
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS sender_steuernummer VARCHAR(50) NULL AFTER sender_vat_id;
+    ADD COLUMN sender_steuernummer VARCHAR(50) NULL AFTER sender_vat_id;
 
 -- Add logo snapshot (invoice_logo_file_id stored in user_settings, snapshotted here)
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS sender_logo_file_id VARCHAR(36) NULL AFTER sender_steuernummer;
+    ADD COLUMN sender_logo_file_id VARCHAR(36) NULL AFTER sender_steuernummer;
 
 -- Add Leistungsdatum (§14 UStG Pflichtangabe: date goods/services were delivered)
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS service_date DATE NULL AFTER due_date;
+    ADD COLUMN service_date DATE NULL AFTER due_date;
 
 -- Add Zahlungsziel / payment terms text field
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(255) NULL DEFAULT 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.' AFTER terms;
+    ADD COLUMN payment_terms VARCHAR(255) NULL DEFAULT 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.' AFTER terms;
 
 -- Add document type: invoice (default), proforma, quote (Angebot), credit_note (Gutschrift)
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS document_type ENUM('invoice','proforma','quote','credit_note') NOT NULL DEFAULT 'invoice' AFTER invoice_number;
+    ADD COLUMN document_type ENUM('invoice','proforma','quote','credit_note') NOT NULL DEFAULT 'invoice' AFTER invoice_number;
 
 -- ─── Fahrtkosten & Bewirtungskosten support ──────────────────────────────────
 
 -- expense_type differentiates regular / mileage / entertainment
 ALTER TABLE expenses
-    ADD COLUMN IF NOT EXISTS expense_type ENUM('general','mileage','entertainment') NOT NULL DEFAULT 'general' AFTER receipt_file_id;
+    ADD COLUMN expense_type ENUM('general','mileage','entertainment') NOT NULL DEFAULT 'general' AFTER receipt_file_id;
 
 -- Fahrtkosten: km and route description (amount auto-calculated from 0.30€/km)
 ALTER TABLE expenses
-    ADD COLUMN IF NOT EXISTS mileage_km DECIMAL(8,2) NULL AFTER expense_type;
+    ADD COLUMN mileage_km DECIMAL(8,2) NULL AFTER expense_type;
 
 ALTER TABLE expenses
-    ADD COLUMN IF NOT EXISTS mileage_route VARCHAR(255) NULL AFTER mileage_km;
+    ADD COLUMN mileage_route VARCHAR(255) NULL AFTER mileage_km;
 
 -- Bewirtungskosten: only 70% deductible (§4 Abs.5 Nr.2 EStG); defaults to 100 for all other types
 ALTER TABLE expenses
-    ADD COLUMN IF NOT EXISTS deductible_percent TINYINT UNSIGNED NOT NULL DEFAULT 100 AFTER mileage_route;
+    ADD COLUMN deductible_percent TINYINT UNSIGNED NOT NULL DEFAULT 100 AFTER mileage_route;
 
 -- ─── Mahnwesen ────────────────────────────────────────────────────────────────
 
@@ -63,11 +62,11 @@ ALTER TABLE invoices
 
 -- Mahnstufe: 0 = Zahlungserinnerung, 1 = 1. Mahnung, 2 = 2. Mahnung, 3 = 3. Mahnung
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS mahnung_level TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER payment_terms;
+    ADD COLUMN mahnung_level TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER payment_terms;
 
 -- Mahngebühr added on top of outstanding amount
 ALTER TABLE invoices
-    ADD COLUMN IF NOT EXISTS mahnung_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER mahnung_level;
+    ADD COLUMN mahnung_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER mahnung_level;
 
 -- ─── Income categories (separate from expense categories) ────────────────────
 

@@ -609,22 +609,15 @@ async function downloadInvoicePdf(invoice) {
       </div>` : ''}
       </body></html>`
 
-    const el = document.createElement('div')
-    el.innerHTML = html
-    el.style.position = 'absolute'
-    el.style.left = '-9999px'
-    document.body.appendChild(el)
-
     const { default: html2pdf } = await import('html2pdf.js')
     await html2pdf().set({
       margin: 0,
       filename: `${inv.invoice_number}.pdf`,
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }).from(el.firstChild).save()
-
-    document.body.removeChild(el)
+    }).from(html, 'string').save()
   } catch (err) {
+    console.error('PDF generation error:', err)
     uiStore.showError('PDF konnte nicht erstellt werden')
   } finally {
     pdfGenerating.value = null

@@ -44,9 +44,9 @@ function close() {
         v-if="needRefresh"
         class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50"
       >
-        <div class="bg-dark-800 border border-dark-600 rounded-xl shadow-2xl p-4">
+        <div class="bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-float p-4">
           <div class="flex items-start gap-3">
-            <div class="flex-shrink-0 w-10 h-10 bg-primary-600/20 rounded-lg flex items-center justify-center">
+            <div class="flex-shrink-0 w-10 h-10 bg-primary-500/[0.12] rounded-xl flex items-center justify-center">
               <ArrowPathIcon class="w-5 h-5 text-primary-400" />
             </div>
             <div class="flex-1 min-w-0">
@@ -65,14 +65,14 @@ function close() {
           <div class="flex gap-2 mt-4">
             <button
               @click="close"
-              class="flex-1 px-4 py-2 text-sm text-gray-300 hover:text-white bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
+              class="flex-1 px-4 py-2 text-sm text-gray-300 hover:text-white btn-secondary btn-sm transition-colors"
             >
               Später
             </button>
             <button
               @click="updateApp"
               :disabled="isUpdating"
-              class="flex-1 px-4 py-2 text-sm text-white bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              class="flex-1 px-4 py-2 text-sm text-white btn-primary btn-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <ArrowPathIcon v-if="isUpdating" class="w-4 h-4 animate-spin" />
               {{ isUpdating ? 'Aktualisiere...' : 'Jetzt aktualisieren' }}

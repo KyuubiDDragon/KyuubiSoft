@@ -37,13 +37,13 @@ function formatKey(key) {
       />
 
       <!-- Modal -->
-      <div class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+      <div class="relative modal max-w-2xl w-full max-h-[80vh] overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
           <h2 class="text-lg font-semibold text-white">Tastaturkürzel</h2>
           <button
             @click="close"
-            class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -58,10 +58,10 @@ function formatKey(key) {
               <div
                 v-for="shortcut in navigationShortcuts"
                 :key="shortcut.key"
-                class="flex items-center justify-between p-3 bg-dark-700/50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-white/[0.03] rounded-xl"
               >
                 <span class="text-gray-300 text-sm">{{ shortcut.description }}</span>
-                <kbd class="px-2 py-1 bg-dark-600 text-primary-400 text-xs font-mono rounded border border-dark-500">
+                <kbd class="kbd">
                   {{ formatKey(shortcut.key) }}
                 </kbd>
               </div>
@@ -75,10 +75,10 @@ function formatKey(key) {
               <div
                 v-for="shortcut in actionShortcuts"
                 :key="shortcut.key"
-                class="flex items-center justify-between p-3 bg-dark-700/50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-white/[0.03] rounded-xl"
               >
                 <span class="text-gray-300 text-sm">{{ shortcut.description }}</span>
-                <kbd class="px-2 py-1 bg-dark-600 text-primary-400 text-xs font-mono rounded border border-dark-500">
+                <kbd class="kbd">
                   {{ formatKey(shortcut.key) }}
                 </kbd>
               </div>
@@ -87,9 +87,9 @@ function formatKey(key) {
         </div>
 
         <!-- Footer hint -->
-        <div class="px-6 py-3 bg-dark-700/30 border-t border-dark-700 text-center">
+        <div class="px-6 py-3 bg-white/[0.02] border-t border-white/[0.06] text-center">
           <span class="text-xs text-gray-500">
-            Drücke <kbd class="px-1.5 py-0.5 bg-dark-600 text-primary-400 text-xs font-mono rounded mx-1">?</kbd> jederzeit um diese Hilfe anzuzeigen
+            Drücke <kbd class="kbd mx-1">?</kbd> jederzeit um diese Hilfe anzuzeigen
           </span>
         </div>
       </div>

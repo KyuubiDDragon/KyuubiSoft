@@ -47,7 +47,7 @@ function onInputKeydown(e) {
       >
         <!-- Backdrop -->
         <div
-          class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          class="absolute inset-0 bg-black/60 backdrop-blur-md"
           @click="handleCancel"
         />
 
@@ -62,16 +62,16 @@ function onInputKeydown(e) {
         >
           <div
             v-if="isOpen"
-            class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+            class="relative modal max-w-md w-full overflow-hidden"
           >
             <!-- Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
                 {{ dialogConfig.title }}
               </h3>
               <button
                 @click="handleCancel"
-                class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+                class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               >
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -88,22 +88,22 @@ function onInputKeydown(e) {
                 :type="dialogConfig.inputType"
                 :placeholder="dialogConfig.placeholder"
                 autocomplete="off"
-                class="w-full px-4 py-2.5 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                class="input"
                 @keydown="onInputKeydown"
               />
             </div>
 
             <!-- Footer -->
-            <div class="flex justify-end gap-3 px-6 py-4 bg-dark-700/30 border-t border-dark-700">
+            <div class="flex justify-end gap-3 px-6 py-4 bg-white/[0.02] border-t border-white/[0.06]">
               <button
                 @click="handleCancel"
-                class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
+                class="btn-secondary btn-sm"
               >
                 {{ dialogConfig.cancelText }}
               </button>
               <button
                 @click="handleConfirm"
-                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-800 focus:ring-primary-500"
+                class="btn-primary btn-sm"
               >
                 {{ dialogConfig.confirmText }}
               </button>

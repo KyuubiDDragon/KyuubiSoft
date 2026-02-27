@@ -45,7 +45,7 @@ const sizeClasses = computed(() => {
 const buttonClasses = computed(() => {
   const base = 'flex items-center gap-1.5 transition-colors'
   if (props.showLabel) {
-    return `${base} px-3 py-1.5 rounded-lg ${isFavorite.value ? 'text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-gray-400 hover:text-yellow-400 hover:bg-dark-700'}`
+    return `${base} px-3 py-1.5 rounded-lg ${isFavorite.value ? 'text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04]'}`
   }
   return `${base} p-1.5 rounded-lg ${isFavorite.value ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'}`
 })

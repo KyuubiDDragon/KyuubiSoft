@@ -17,8 +17,8 @@
   body {
     @apply bg-dark-950 text-gray-100 min-h-screen;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08), transparent),
-      radial-gradient(ellipse 60% 40% at 80% 50%, rgba(16, 185, 129, 0.04), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 50%, rgba(34, 211, 238, 0.03), transparent);
   }
 
   /* Selection */
@@ -67,31 +67,31 @@
 
   /* ========== GLASS SURFACES ========== */
   .glass {
-    @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-glass;
+    @apply bg-white/[0.06] backdrop-blur-xl border border-white/[0.12] shadow-glass;
   }
 
   .glass-sm {
-    @apply bg-white/[0.03] backdrop-blur-lg border border-white/[0.06] shadow-glass-sm;
+    @apply bg-white/[0.04] backdrop-blur-lg border border-white/[0.10] shadow-glass-sm;
   }
 
   .glass-lg {
-    @apply bg-white/[0.05] backdrop-blur-2xl border border-white/[0.10] shadow-glass-lg;
+    @apply bg-white/[0.07] backdrop-blur-2xl border border-white/[0.12] shadow-glass-lg;
   }
 
   .glass-subtle {
-    @apply bg-white/[0.02] backdrop-blur-md border border-white/[0.04];
+    @apply bg-white/[0.03] backdrop-blur-md border border-white/[0.08];
   }
 
   .glass-solid {
-    @apply bg-dark-900/90 backdrop-blur-xl border border-white/[0.08] shadow-glass;
+    @apply bg-dark-900/90 backdrop-blur-xl border border-white/[0.12] shadow-glass;
   }
 
   .glass-interactive {
-    @apply glass hover:bg-white/[0.07] hover:border-white/[0.12] transition-all duration-200 cursor-pointer;
+    @apply glass hover:bg-white/[0.09] hover:border-white/[0.18] transition-all duration-200 cursor-pointer;
   }
 
   .glass-elevated {
-    @apply bg-white/[0.06] backdrop-blur-2xl border border-white/[0.10] shadow-float;
+    @apply bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] shadow-float;
   }
 
   /* ========== BUTTONS ========== */
@@ -110,8 +110,8 @@
   }
 
   .btn-secondary {
-    @apply btn bg-white/[0.06] text-gray-200 border border-white/[0.10]
-           hover:bg-white/[0.10] hover:border-white/[0.15] hover:text-white
+    @apply btn bg-white/[0.08] text-gray-200 border border-white/[0.12]
+           hover:bg-white/[0.12] hover:border-white/[0.18] hover:text-white
            active:bg-white/[0.08];
   }
 
@@ -129,8 +129,8 @@
 
   .btn-ghost {
     @apply btn bg-transparent text-gray-400
-           hover:bg-white/[0.06] hover:text-gray-200
-           active:bg-white/[0.04];
+           hover:bg-white/[0.10] hover:text-gray-200
+           active:bg-white/[0.06];
   }
 
   .btn-outline {
@@ -153,29 +153,29 @@
 
   .btn-icon {
     @apply p-2.5 text-gray-400 rounded-xl
-           hover:text-white hover:bg-white/[0.06]
+           hover:text-white hover:bg-white/[0.10]
            transition-all duration-200 active:scale-95;
   }
 
   .btn-icon-sm {
     @apply p-1.5 text-gray-400 rounded-lg
-           hover:text-white hover:bg-white/[0.06]
+           hover:text-white hover:bg-white/[0.10]
            transition-all duration-200;
   }
 
   .btn-icon-glass {
     @apply p-2.5 text-gray-400 rounded-xl
-           bg-white/[0.03] border border-white/[0.06]
-           hover:text-white hover:bg-white/[0.08] hover:border-white/[0.12]
+           bg-white/[0.04] border border-white/[0.10]
+           hover:text-white hover:bg-white/[0.12] hover:border-white/[0.18]
            transition-all duration-200 active:scale-95;
   }
 
   /* ========== INPUTS ========== */
   .input {
     @apply w-full px-4 py-2.5 rounded-xl text-sm text-gray-100
-           bg-white/[0.04] border border-white/[0.08]
+           bg-white/[0.06] border border-white/[0.12]
            placeholder-gray-500
-           focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/30 focus:bg-white/[0.06]
+           focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500/30 focus:bg-white/[0.08]
            transition-all duration-200;
   }
 
@@ -192,7 +192,7 @@
   }
 
   .input-glass {
-    @apply input bg-white/[0.03] backdrop-blur-sm;
+    @apply input bg-white/[0.04] backdrop-blur-sm;
   }
 
   /* Select */
@@ -209,16 +209,16 @@
 
   /* ========== CARDS ========== */
   .card {
-    @apply bg-white/[0.04] rounded-2xl border border-white/[0.08] shadow-glass-sm;
+    @apply bg-white/[0.06] rounded-2xl border border-white/[0.12] shadow-glass-sm;
   }
 
   .card-hover {
-    @apply card hover:bg-white/[0.06] hover:border-white/[0.12] hover:shadow-glass
+    @apply card hover:bg-white/[0.10] hover:border-white/[0.18] hover:shadow-glass
            transition-all duration-250 cursor-pointer;
   }
 
   .card-glass {
-    @apply bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/[0.06] shadow-glass;
+    @apply bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-white/[0.10] shadow-glass;
   }
 
   .card-interactive {
@@ -226,11 +226,11 @@
   }
 
   .card-elevated {
-    @apply bg-white/[0.06] backdrop-blur-2xl rounded-2xl border border-white/[0.10] shadow-float;
+    @apply bg-white/[0.08] backdrop-blur-2xl rounded-2xl border border-white/[0.12] shadow-float;
   }
 
   .card-inset {
-    @apply bg-dark-950/50 rounded-xl border border-white/[0.04];
+    @apply bg-dark-950/50 rounded-xl border border-white/[0.08];
   }
 
   /* ========== PAGE STRUCTURE ========== */
@@ -291,7 +291,7 @@
   }
 
   .badge-neutral {
-    @apply badge bg-white/[0.06] text-gray-300 border border-white/[0.08];
+    @apply badge bg-white/[0.08] text-gray-300 border border-white/[0.12];
   }
 
   .badge-accent {
@@ -313,12 +313,12 @@
 
   .modal {
     @apply bg-dark-900/95 backdrop-blur-2xl rounded-2xl w-full
-           border border-white/[0.08] shadow-float
+           border border-white/[0.12] shadow-float
            max-h-[90vh] overflow-y-auto;
   }
 
   .modal-header {
-    @apply px-6 py-5 border-b border-white/[0.06] flex items-center justify-between;
+    @apply px-6 py-5 border-b border-white/[0.10] flex items-center justify-between;
   }
 
   .modal-header h2 {
@@ -330,7 +330,7 @@
   }
 
   .modal-footer {
-    @apply px-6 py-4 border-t border-white/[0.06] flex justify-end gap-3;
+    @apply px-6 py-4 border-t border-white/[0.10] flex justify-end gap-3;
   }
 
   .modal-sm {
@@ -351,14 +351,14 @@
 
   /* ========== CHECKBOX / TOGGLE ========== */
   .checkbox {
-    @apply w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500
+    @apply w-4 h-4 rounded border-white/20 bg-white/[0.08] text-primary-500
            focus:ring-primary-500/40 focus:ring-offset-dark-950
            cursor-pointer transition-colors;
   }
 
   .toggle {
     @apply relative inline-flex h-6 w-11 items-center rounded-full
-           bg-white/[0.08] border border-white/[0.06]
+           bg-white/[0.08] border border-white/[0.10]
            transition-colors duration-200 cursor-pointer;
   }
 
@@ -373,7 +373,7 @@
 
   /* ========== DIVIDERS ========== */
   .divider {
-    @apply h-px bg-white/[0.06] my-4;
+    @apply h-px bg-white/[0.08] my-4;
   }
 
   .divider-glow {
@@ -402,7 +402,7 @@
   /* ========== TOOLTIPS ========== */
   .tooltip {
     @apply absolute z-50 px-2.5 py-1.5 text-xs font-medium text-gray-200
-           bg-dark-900/95 backdrop-blur-lg border border-white/[0.08]
+           bg-dark-900/95 backdrop-blur-lg border border-white/[0.12]
            rounded-lg shadow-glass-sm whitespace-nowrap
            pointer-events-none animate-fade-in;
   }
@@ -411,13 +411,13 @@
   .dropdown {
     @apply absolute z-50 py-1.5
            bg-dark-900/95 backdrop-blur-2xl
-           border border-white/[0.08] rounded-xl shadow-float
+           border border-white/[0.12] rounded-xl shadow-float
            min-w-[12rem] animate-scale-in;
   }
 
   .dropdown-item {
     @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400
-           hover:bg-white/[0.06] hover:text-white
+           hover:bg-white/[0.10] hover:text-white
            transition-colors duration-150 cursor-pointer;
   }
 
@@ -430,7 +430,7 @@
   }
 
   .dropdown-divider {
-    @apply h-px bg-white/[0.06] my-1 mx-2;
+    @apply h-px bg-white/[0.08] my-1 mx-2;
   }
 
   .dropdown-header {
@@ -439,12 +439,12 @@
 
   /* ========== TABS ========== */
   .tabs {
-    @apply flex items-center gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06];
+    @apply flex items-center gap-1 p-1 bg-white/[0.04] rounded-xl border border-white/[0.10];
   }
 
   .tab {
     @apply px-4 py-2 text-sm font-medium text-gray-400 rounded-lg
-           hover:text-gray-200 hover:bg-white/[0.04]
+           hover:text-gray-200 hover:bg-white/[0.08]
            transition-all duration-200 cursor-pointer;
   }
 
@@ -458,7 +458,7 @@
   }
 
   .table-glass thead {
-    @apply border-b border-white/[0.06];
+    @apply border-b border-white/[0.10];
   }
 
   .table-glass th {
@@ -466,11 +466,11 @@
   }
 
   .table-glass td {
-    @apply px-4 py-3 text-sm text-gray-300 border-b border-white/[0.04];
+    @apply px-4 py-3 text-sm text-gray-300 border-b border-white/[0.08];
   }
 
   .table-glass tr:hover td {
-    @apply bg-white/[0.02];
+    @apply bg-white/[0.03];
   }
 
   .table-glass tr:last-child td {
@@ -502,7 +502,7 @@
   .nav-rail {
     @apply fixed left-0 top-0 h-screen w-rail
            bg-dark-950/80 backdrop-blur-2xl
-           border-r border-white/[0.06]
+           border-r border-white/[0.10]
            flex flex-col items-center
            z-40;
   }
@@ -510,7 +510,7 @@
   .nav-rail-item {
     @apply w-10 h-10 rounded-xl flex items-center justify-center
            text-gray-500 transition-all duration-200
-           hover:text-white hover:bg-white/[0.08]
+           hover:text-white hover:bg-white/[0.12]
            relative cursor-pointer;
   }
 
@@ -521,7 +521,7 @@
   .nav-flyout {
     @apply fixed left-rail top-0 h-screen w-flyout
            bg-dark-950/90 backdrop-blur-2xl
-           border-r border-white/[0.06]
+           border-r border-white/[0.10]
            shadow-float
            z-30 animate-slide-in-left;
   }
@@ -533,7 +533,7 @@
 
   /* ========== SKELETON LOADING ========== */
   .skeleton {
-    @apply bg-white/[0.04] rounded-lg animate-pulse;
+    @apply bg-white/[0.06] rounded-lg animate-pulse;
   }
 
   .skeleton-text {
@@ -571,7 +571,7 @@
 
   /* ========== PROGRESS ========== */
   .progress {
-    @apply w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden;
+    @apply w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden;
   }
 
   .progress-bar {
@@ -594,7 +594,7 @@
   .kbd {
     @apply inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5
            text-2xs font-mono font-medium text-gray-400
-           bg-white/[0.04] border border-white/[0.08] rounded-md;
+           bg-white/[0.06] border border-white/[0.12] rounded-md;
   }
 
   /* ========== NOTIFICATION DOT ========== */
@@ -759,10 +759,10 @@
 
 /* Monaco Editor glass container */
 .monaco-glass-container {
-  @apply rounded-xl overflow-hidden border border-white/[0.08];
+  @apply rounded-xl overflow-hidden border border-white/[0.12];
 }
 
 /* xterm glass container */
 .xterm-glass-container {
-  @apply rounded-xl overflow-hidden border border-white/[0.08] bg-black/40;
+  @apply rounded-xl overflow-hidden border border-white/[0.12] bg-black/40;
 }

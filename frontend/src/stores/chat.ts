@@ -78,7 +78,7 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
     try {
       const response = await api.get('/api/v1/chat/rooms')
-      rooms.value = response.data
+      rooms.value = response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to fetch rooms'
     } finally {
@@ -89,8 +89,8 @@ export const useChatStore = defineStore('chat', () => {
   async function fetchRoom(roomId: string): Promise<ChatRoom> {
     try {
       const response = await api.get(`/api/v1/chat/rooms/${roomId}`)
-      currentRoom.value = response.data
-      return response.data
+      currentRoom.value = response.data.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to fetch room'
       throw err
@@ -100,8 +100,8 @@ export const useChatStore = defineStore('chat', () => {
   async function createRoom(data: CreateRoomData): Promise<ChatRoom> {
     try {
       const response = await api.post('/api/v1/chat/rooms', data)
-      rooms.value.unshift(response.data)
-      return response.data
+      rooms.value.unshift(response.data.data)
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to create room'
       throw err
@@ -112,11 +112,12 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const response = await api.post('/api/v1/chat/direct', { user_id: userId })
       // Check if room already exists in list
-      const existingIndex = rooms.value.findIndex(r => r.id === response.data.id)
+      const roomData = response.data.data
+      const existingIndex = rooms.value.findIndex(r => r.id === roomData.id)
       if (existingIndex === -1) {
-        rooms.value.unshift(response.data)
+        rooms.value.unshift(roomData)
       }
-      return response.data
+      return roomData
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to start direct message'
       throw err
@@ -130,11 +131,11 @@ export const useChatStore = defineStore('chat', () => {
       const response = await api.get(`/api/v1/chat/rooms/${roomId}/messages`, { params })
       if (before) {
         // Prepend older messages
-        messages.value = [...response.data, ...messages.value]
+        messages.value = [...response.data.data, ...messages.value]
       } else {
-        messages.value = response.data
+        messages.value = response.data.data
       }
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to fetch messages'
       throw err
@@ -149,16 +150,17 @@ export const useChatStore = defineStore('chat', () => {
         content,
         ...options
       })
-      messages.value.push(response.data)
+      const msgData = response.data.data
+      messages.value.push(msgData)
 
       // Update room's last message
       const roomIndex = rooms.value.findIndex(r => r.id === roomId)
       if (roomIndex !== -1) {
-        rooms.value[roomIndex].last_message_at = response.data.created_at
+        rooms.value[roomIndex].last_message_at = msgData.created_at
         rooms.value[roomIndex].last_message_preview = content.substring(0, 100)
       }
 
-      return response.data
+      return msgData
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to send message'
       throw err
@@ -170,9 +172,9 @@ export const useChatStore = defineStore('chat', () => {
       const response = await api.put(`/api/v1/chat/messages/${messageId}`, { content })
       const index = messages.value.findIndex(m => m.id === messageId)
       if (index !== -1) {
-        messages.value[index] = response.data
+        messages.value[index] = response.data.data
       }
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to edit message'
       throw err
@@ -246,7 +248,7 @@ export const useChatStore = defineStore('chat', () => {
   async function fetchTyping(roomId: string): Promise<void> {
     try {
       const response = await api.get(`/api/v1/chat/rooms/${roomId}/typing`)
-      typingUsers.value = response.data
+      typingUsers.value = response.data.data
     } catch (err: unknown) {
       // Ignore typing errors
     }
@@ -255,7 +257,7 @@ export const useChatStore = defineStore('chat', () => {
   async function fetchAvailableUsers(): Promise<void> {
     try {
       const response = await api.get('/api/v1/chat/users')
-      availableUsers.value = response.data
+      availableUsers.value = response.data.data
     } catch (err: unknown) {
       console.error('Failed to fetch users:', err)
     }
@@ -266,7 +268,7 @@ export const useChatStore = defineStore('chat', () => {
       const params: SearchParams = { q: query }
       if (roomId) params.room_id = roomId
       const response = await api.get('/api/v1/chat/search', { params })
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to search messages'
       throw err

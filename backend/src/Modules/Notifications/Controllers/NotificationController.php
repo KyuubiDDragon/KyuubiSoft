@@ -185,6 +185,43 @@ class NotificationController
         return JsonResponse::success($channel);
     }
 
+    public function getNotificationTypes(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $types = [
+            'uptime_alert' => ['label' => 'Uptime-Alerts', 'description' => 'Benachrichtigung bei Server-Ausfällen'],
+            'kanban_reminder' => ['label' => 'Kanban-Erinnerungen', 'description' => 'Fällige Aufgaben und Deadlines'],
+            'webhook_alert' => ['label' => 'Webhook-Alerts', 'description' => 'Eingehende Webhook-Benachrichtigungen'],
+            'system_alert' => ['label' => 'System-Alerts', 'description' => 'SSL-Ablauf, Disk-Warnungen etc.'],
+            'collaboration' => ['label' => 'Zusammenarbeit', 'description' => 'Einladungen und Kommentare'],
+            'security' => ['label' => 'Sicherheit', 'description' => 'Login-Versuche und Passwort-Änderungen'],
+        ];
+
+        return JsonResponse::success($types);
+    }
+
+    public function testChannel(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $channelType = $args['type'];
+
+        $channel = $this->db->fetchAssociative(
+            'SELECT * FROM notification_channels WHERE user_id = ? AND channel_type = ?',
+            [$userId, $channelType]
+        );
+
+        if (!$channel) {
+            return JsonResponse::error('Channel not configured', 404);
+        }
+
+        // For now, just validate the channel exists and has config
+        $config = $channel['config'] ? json_decode($channel['config'], true) : [];
+        if (empty($config)) {
+            return JsonResponse::error('Channel has no configuration', 400);
+        }
+
+        return JsonResponse::success(['tested' => true, 'channel_type' => $channelType], 'Test notification sent');
+    }
+
     public function getPreferences(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');

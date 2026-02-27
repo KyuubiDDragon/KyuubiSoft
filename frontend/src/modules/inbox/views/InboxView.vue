@@ -333,6 +333,17 @@ function formatDate(date) {
         <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
 
+      <!-- Error State -->
+      <div v-else-if="inboxStore.error" class="p-4 rounded-xl bg-red-500/[0.06] border border-red-500/30">
+        <div class="flex items-center gap-3">
+          <ExclamationTriangleIcon class="w-5 h-5 text-red-400 shrink-0" />
+          <p class="text-sm text-red-300 flex-1">{{ inboxStore.error }}</p>
+          <button @click="inboxStore.error = null" class="p-1 text-red-400 hover:text-red-300 rounded transition-colors">
+            <XMarkIcon class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       <!-- Empty State -->
       <div v-else-if="filteredItems.length === 0" class="text-center py-12">
         <InboxArrowDownIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />

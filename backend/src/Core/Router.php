@@ -80,6 +80,8 @@ use App\Modules\Logs\Controllers\LogsController;
 use App\Modules\Scripts\Controllers\ScriptsController;
 use App\Modules\Contacts\Controllers\ContactController;
 use App\Modules\Email\Controllers\EmailController;
+use App\Modules\Audit\Controllers\AuditController;
+use App\Modules\NotificationRules\Controllers\NotificationRuleController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1364,6 +1366,29 @@ class Router
                     ->add(new PermissionMiddleware('discord.create_backups'));
                 $protected->post('/discord/bots/{botId}/backups', [DiscordController::class, 'createBotBackup'])
                     ->add(new PermissionMiddleware('discord.create_backups'));
+
+                // Notification Rules
+                $protected->get('/notification-rules', [NotificationRuleController::class, 'index']);
+                $protected->post('/notification-rules', [NotificationRuleController::class, 'create']);
+                $protected->get('/notification-rules/events', [NotificationRuleController::class, 'availableEvents']);
+                $protected->get('/notification-rules/{id}', [NotificationRuleController::class, 'show']);
+                $protected->put('/notification-rules/{id}', [NotificationRuleController::class, 'update']);
+                $protected->delete('/notification-rules/{id}', [NotificationRuleController::class, 'delete']);
+                $protected->post('/notification-rules/{id}/toggle', [NotificationRuleController::class, 'toggle']);
+                $protected->post('/notification-rules/{id}/test', [NotificationRuleController::class, 'test']);
+                $protected->get('/notification-rules/{id}/history', [NotificationRuleController::class, 'history']);
+
+                // Audit Log
+                $protected->get('/audit', [AuditController::class, 'index'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/stats', [AuditController::class, 'stats'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/export', [AuditController::class, 'export'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/entity/{type}/{id}', [AuditController::class, 'entityHistory'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/{id}', [AuditController::class, 'show'])
+                    ->add(new PermissionMiddleware('system.admin'));
 
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 

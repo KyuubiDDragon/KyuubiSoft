@@ -294,6 +294,7 @@ export const navigationGroups: NavGroup[] = [
     children: [
       { id: 'passwords', name: 'Passwörter', href: '/passwords', icon: KeyIcon, permission: 'passwords.view' },
       { id: 'backups', name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, permission: 'backups.view' },
+      { id: 'audit', name: 'Audit Log', href: '/audit', icon: ClipboardDocumentListIcon, permission: 'system.admin' },
       { id: 'settings', name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, permission: 'settings.view' },
       { id: 'users', name: 'Benutzer', href: '/users', icon: UsersIcon, permission: 'users.view' },
       { id: 'roles', name: 'Rollen', href: '/roles', icon: ShieldCheckIcon, permission: 'users.write' },

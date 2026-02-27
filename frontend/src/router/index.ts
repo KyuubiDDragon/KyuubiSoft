@@ -88,6 +88,7 @@ const ScriptsView = () => import('@/modules/scripts/views/ScriptsView.vue')
 const EmailView = () => import('@/modules/email/views/EmailView.vue')
 const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
 const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
+const AuditView = () => import('@/modules/audit/views/AuditView.vue')
 
 const routes: RouteRecordRaw[] = [
   // Auth routes
@@ -442,6 +443,12 @@ const routes: RouteRecordRaw[] = [
     name: 'backups',
     component: BackupsView,
     meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/audit',
+    name: 'audit',
+    component: AuditView,
+    meta: { requiresAuth: true, permission: 'system.admin' },
   },
 
   // Ticket routes

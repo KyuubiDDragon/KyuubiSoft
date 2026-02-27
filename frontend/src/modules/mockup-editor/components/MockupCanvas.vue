@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useMockupStore } from '../stores/mockupStore'
+import { sanitizeHtml } from '@/core/services/sanitize'
 import { useToast } from '@/composables/useToast'
 import {
   PhotoIcon,
@@ -318,7 +319,7 @@ const renderTextWithHighlight = (element) => {
     <div
       ref="canvasRef"
       :style="canvasStyle"
-      class="relative shadow-2xl"
+      class="relative shadow-float"
       :class="{
         'bg-checkered': mockupStore.backgroundColor === 'transparent' && !isExporting,
         'exporting': isExporting,
@@ -476,7 +477,7 @@ const renderTextWithHighlight = (element) => {
           <!-- Placeholder -->
           <template v-else>
             <div
-              class="w-full h-full flex flex-col items-center justify-center bg-gray-800/80 border-2 border-dashed border-gray-600 hover:border-amber-500/50 transition-colors"
+              class="w-full h-full flex flex-col items-center justify-center bg-white/[0.04]/80 border-2 border-dashed border-white/[0.06] hover:border-amber-500/50 transition-colors"
               :style="{ clipPath: element.clipPath }"
             >
               <input
@@ -506,7 +507,7 @@ const renderTextWithHighlight = (element) => {
             </button>
 
             <!-- Replace Button -->
-            <label class="flex flex-col items-center gap-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer">
+            <label class="flex flex-col items-center gap-1 px-4 py-3 bg-white/[0.04] hover:bg-white/[0.04] text-white rounded-lg transition-colors cursor-pointer">
               <input
                 type="file"
                 accept="image/*"
@@ -538,7 +539,7 @@ const renderTextWithHighlight = (element) => {
           class="transition-all whitespace-pre-wrap select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent rounded': isSelected(element.id) }"
           @mousedown="(e) => startElementDrag(e, element.id)"
-          v-html="element.highlightText ? renderTextWithHighlight(element) : element.text"
+          v-html="sanitizeHtml(element.highlightText ? renderTextWithHighlight(element) : element.text)"
         />
 
         <!-- Line (hidden when contentOnly export) -->
@@ -700,7 +701,7 @@ const renderTextWithHighlight = (element) => {
             <div class="text-xs text-[#606068]">{{ element.label }}</div>
             <div
               class="mt-0.5 font-mono font-medium text-sm text-white"
-              v-html="element.highlightText ? renderTextWithHighlight(element) : element.value"
+              v-html="sanitizeHtml(element.highlightText ? renderTextWithHighlight(element) : element.value)"
             />
           </div>
         </div>
@@ -833,7 +834,7 @@ const renderTextWithHighlight = (element) => {
 
             <!-- Placeholder -->
             <template v-else>
-              <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#202025] to-[#151519] border-2 border-dashed border-gray-600 hover:border-amber-500/50 transition-colors">
+              <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#202025] to-[#151519] border-2 border-dashed border-white/[0.06] hover:border-amber-500/50 transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -860,7 +861,7 @@ const renderTextWithHighlight = (element) => {
               </button>
 
               <!-- Replace Button -->
-              <label class="flex flex-col items-center gap-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer">
+              <label class="flex flex-col items-center gap-1 px-3 py-2 bg-white/[0.04] hover:bg-white/[0.04] text-white rounded-lg transition-colors cursor-pointer">
                 <input
                   type="file"
                   accept="image/*"

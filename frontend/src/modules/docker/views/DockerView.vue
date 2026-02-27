@@ -764,7 +764,7 @@ watch(() => projectStore.selectedProjectId, async () => {
         <div class="relative">
           <button
             @click="showHostDropdown = !showHostDropdown"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg border border-dark-600 transition-colors"
+            class="flex items-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg border border-white/[0.06] transition-colors"
           >
             <ServerStackIcon class="w-4 h-4 text-gray-400" />
             <span class="text-sm text-white">{{ currentHostName }}</span>
@@ -774,27 +774,27 @@ watch(() => projectStore.selectedProjectId, async () => {
           <!-- Host Dropdown -->
           <div
             v-if="showHostDropdown"
-            class="absolute right-0 mt-1 py-1 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-50 min-w-48"
+            class="absolute right-0 mt-1 py-1 bg-white/[0.04] border border-white/[0.06] rounded-lg shadow-float z-50 min-w-48"
           >
             <!-- Local/Default Option -->
             <button
               @click="selectHost(null)"
-              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
-              :class="!selectedHostId ? 'bg-dark-600' : ''"
+              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
+              :class="!selectedHostId ? 'bg-white/[0.08]' : ''"
             >
               <ComputerDesktopIcon class="w-4 h-4 text-blue-400" />
               <span class="text-sm text-gray-300">Lokal (Standard)</span>
             </button>
 
             <template v-if="dockerHosts.length > 0">
-              <div class="h-px bg-dark-600 my-1"></div>
+              <div class="h-px bg-white/[0.06] my-1"></div>
 
               <button
                 v-for="host in dockerHosts"
                 :key="host.id"
                 @click="selectHost(host)"
-                class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
-                :class="selectedHostId === host.id ? 'bg-dark-600' : ''"
+                class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
+                :class="selectedHostId === host.id ? 'bg-white/[0.08]' : ''"
               >
                 <ComputerDesktopIcon
                   v-if="host.type === 'socket'"
@@ -816,12 +816,12 @@ watch(() => projectStore.selectedProjectId, async () => {
               </button>
             </template>
 
-            <div class="h-px bg-dark-600 my-1"></div>
+            <div class="h-px bg-white/[0.06] my-1"></div>
 
             <!-- Manage Hosts Link -->
             <a
               href="/docker/hosts"
-              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-dark-600 transition-colors"
+              class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
             >
               <Cog6ToothIcon class="w-4 h-4 text-gray-400" />
               <span class="text-sm text-gray-400">Hosts verwalten</span>
@@ -837,7 +837,7 @@ watch(() => projectStore.selectedProjectId, async () => {
         </div>
 
         <label class="flex items-center gap-2 text-sm text-gray-400">
-          <input v-model="autoRefresh" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="autoRefresh" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           Auto-Refresh
         </label>
         <button @click="refreshData" :disabled="loading" class="btn-secondary">
@@ -863,12 +863,12 @@ watch(() => projectStore.selectedProjectId, async () => {
             <h3 class="text-lg font-semibold text-yellow-400">Docker-Daemon nicht erreichbar</h3>
             <p class="text-gray-400 mt-1">{{ error || 'Der Docker-Daemon ist nicht erreichbar.' }}</p>
 
-            <div class="mt-4 p-4 bg-dark-800 rounded-lg">
+            <div class="mt-4 p-4 bg-white/[0.04] rounded-lg">
               <p class="text-sm text-gray-300 font-medium mb-2">Mögliche Lösungen:</p>
               <ul class="text-sm text-gray-400 space-y-1 list-disc list-inside">
-                <li>Prüfe ob Docker installiert ist: <code class="bg-dark-700 px-1 rounded">docker --version</code></li>
-                <li>Starte den Docker-Daemon: <code class="bg-dark-700 px-1 rounded">sudo systemctl start docker</code></li>
-                <li>Prüfe Berechtigungen: <code class="bg-dark-700 px-1 rounded">sudo usermod -aG docker $USER</code></li>
+                <li>Prüfe ob Docker installiert ist: <code class="bg-white/[0.04] px-1 rounded">docker --version</code></li>
+                <li>Starte den Docker-Daemon: <code class="bg-white/[0.04] px-1 rounded">sudo systemctl start docker</code></li>
+                <li>Prüfe Berechtigungen: <code class="bg-white/[0.04] px-1 rounded">sudo usermod -aG docker $USER</code></li>
                 <li>Bei Docker Desktop: Stelle sicher, dass die Anwendung läuft</li>
               </ul>
             </div>
@@ -887,7 +887,7 @@ watch(() => projectStore.selectedProjectId, async () => {
         <p class="text-gray-400 text-sm mb-4">Diese Tools funktionieren auch ohne laufenden Docker-Daemon:</p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+          <a href="/toolbox" class="card p-4 hover:bg-white/[0.04] hover:border-primary-500 transition-all group">
             <div class="flex items-center gap-3">
               <span class="text-2xl">📄</span>
               <div>
@@ -896,7 +896,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               </div>
             </div>
           </a>
-          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+          <a href="/toolbox" class="card p-4 hover:bg-white/[0.04] hover:border-primary-500 transition-all group">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🔧</span>
               <div>
@@ -905,7 +905,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               </div>
             </div>
           </a>
-          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+          <a href="/toolbox" class="card p-4 hover:bg-white/[0.04] hover:border-primary-500 transition-all group">
             <div class="flex items-center gap-3">
               <span class="text-2xl">⚙️</span>
               <div>
@@ -914,7 +914,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               </div>
             </div>
           </a>
-          <a href="/toolbox" class="card p-4 hover:bg-dark-700 hover:border-primary-500 transition-all group">
+          <a href="/toolbox" class="card p-4 hover:bg-white/[0.04] hover:border-primary-500 transition-all group">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🚫</span>
               <div>
@@ -978,7 +978,7 @@ watch(() => projectStore.selectedProjectId, async () => {
       </div>
 
       <!-- Tabs -->
-      <div class="border-b border-dark-600">
+      <div class="border-b border-white/[0.06]">
         <nav class="flex gap-4">
           <button
             v-for="tab in [
@@ -1014,7 +1014,7 @@ watch(() => projectStore.selectedProjectId, async () => {
           <div v-for="stack in stacks" :key="stack.name" class="card overflow-hidden">
             <!-- Stack Header -->
             <div
-              class="flex items-center justify-between p-4 bg-dark-700 cursor-pointer hover:bg-dark-600 transition-colors"
+              class="flex items-center justify-between p-4 bg-white/[0.03] cursor-pointer hover:bg-white/[0.04] transition-colors"
               @click="toggleStack(stack.name)"
             >
               <div class="flex items-center gap-3">
@@ -1033,14 +1033,14 @@ watch(() => projectStore.selectedProjectId, async () => {
               <div class="flex items-center gap-2" @click.stop>
                 <button
                   @click="backupStack(stack.name)"
-                  class="btn-icon text-gray-400 hover:text-white hover:bg-dark-500"
+                  class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
                   title="Backup erstellen"
                 >
                   <ArchiveBoxIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="openComposeModal(stack.name)"
-                  class="btn-icon text-gray-400 hover:text-white hover:bg-dark-500"
+                  class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
                   title="Compose-Datei anzeigen"
                 >
                   <CodeBracketIcon class="w-4 h-4" />
@@ -1076,11 +1076,11 @@ watch(() => projectStore.selectedProjectId, async () => {
             </div>
 
             <!-- Stack Containers -->
-            <div v-if="isStackExpanded(stack.name)" class="divide-y divide-dark-600">
+            <div v-if="isStackExpanded(stack.name)" class="divide-y divide-white/[0.06]">
               <div
                 v-for="container in stack.containers"
                 :key="container.id"
-                class="p-4 pl-12 hover:bg-dark-700 transition-colors cursor-pointer"
+                class="p-4 pl-12 hover:bg-white/[0.04] transition-colors cursor-pointer"
                 @click="showContainerDetails(container)"
               >
                 <div class="flex items-center justify-between">
@@ -1139,7 +1139,7 @@ watch(() => projectStore.selectedProjectId, async () => {
             <div
               v-for="container in standaloneContainers"
               :key="container.id"
-              class="card p-4 hover:bg-dark-700 transition-colors cursor-pointer"
+              class="card p-4 hover:bg-white/[0.04] transition-colors cursor-pointer"
               @click="showContainerDetails(container)"
             >
               <div class="flex items-center justify-between">
@@ -1199,7 +1199,7 @@ watch(() => projectStore.selectedProjectId, async () => {
         <div v-else class="overflow-x-auto">
           <table class="w-full">
             <thead>
-              <tr class="text-left text-sm text-gray-400 border-b border-dark-600">
+              <tr class="text-left text-sm text-gray-400 border-b border-white/[0.06]">
                 <th class="pb-3 font-medium">Repository</th>
                 <th class="pb-3 font-medium">Tag</th>
                 <th class="pb-3 font-medium">ID</th>
@@ -1208,10 +1208,10 @@ watch(() => projectStore.selectedProjectId, async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="image in images" :key="image.id" class="border-b border-dark-700">
+              <tr v-for="image in images" :key="image.id" class="border-b border-white/[0.06]">
                 <td class="py-3 text-white">{{ image.repository }}</td>
                 <td class="py-3">
-                  <span class="px-2 py-1 bg-dark-600 rounded text-sm">{{ image.tag }}</span>
+                  <span class="px-2 py-1 bg-white/[0.08] rounded text-sm">{{ image.tag }}</span>
                 </td>
                 <td class="py-3 text-gray-400 font-mono text-sm">{{ image.id.substring(0, 12) }}</td>
                 <td class="py-3 text-gray-400">{{ image.created }}</td>
@@ -1230,7 +1230,7 @@ watch(() => projectStore.selectedProjectId, async () => {
         <div v-else class="overflow-x-auto">
           <table class="w-full">
             <thead>
-              <tr class="text-left text-sm text-gray-400 border-b border-dark-600">
+              <tr class="text-left text-sm text-gray-400 border-b border-white/[0.06]">
                 <th class="pb-3 font-medium">Name</th>
                 <th class="pb-3 font-medium">ID</th>
                 <th class="pb-3 font-medium">Driver</th>
@@ -1238,11 +1238,11 @@ watch(() => projectStore.selectedProjectId, async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="network in networks" :key="network.id" class="border-b border-dark-700">
+              <tr v-for="network in networks" :key="network.id" class="border-b border-white/[0.06]">
                 <td class="py-3 text-white">{{ network.name }}</td>
                 <td class="py-3 text-gray-400 font-mono text-sm">{{ network.id.substring(0, 12) }}</td>
                 <td class="py-3">
-                  <span class="px-2 py-1 bg-dark-600 rounded text-sm">{{ network.driver }}</span>
+                  <span class="px-2 py-1 bg-white/[0.08] rounded text-sm">{{ network.driver }}</span>
                 </td>
                 <td class="py-3 text-gray-400">{{ network.scope }}</td>
               </tr>
@@ -1259,17 +1259,17 @@ watch(() => projectStore.selectedProjectId, async () => {
         <div v-else class="overflow-x-auto">
           <table class="w-full">
             <thead>
-              <tr class="text-left text-sm text-gray-400 border-b border-dark-600">
+              <tr class="text-left text-sm text-gray-400 border-b border-white/[0.06]">
                 <th class="pb-3 font-medium">Name</th>
                 <th class="pb-3 font-medium">Driver</th>
                 <th class="pb-3 font-medium">Scope</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="volume in volumes" :key="volume.name" class="border-b border-dark-700">
+              <tr v-for="volume in volumes" :key="volume.name" class="border-b border-white/[0.06]">
                 <td class="py-3 text-white font-mono text-sm">{{ volume.name }}</td>
                 <td class="py-3">
-                  <span class="px-2 py-1 bg-dark-600 rounded text-sm">{{ volume.driver }}</span>
+                  <span class="px-2 py-1 bg-white/[0.08] rounded text-sm">{{ volume.driver }}</span>
                 </td>
                 <td class="py-3 text-gray-400">{{ volume.scope }}</td>
               </tr>
@@ -1302,7 +1302,7 @@ watch(() => projectStore.selectedProjectId, async () => {
           <div
             v-for="backup in backups"
             :key="backup.file"
-            class="card p-4 flex items-center justify-between hover:bg-dark-700 transition-colors"
+            class="card p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors"
           >
             <div class="flex items-center gap-4">
               <ArchiveBoxIcon class="w-8 h-8 text-primary-400" />
@@ -1344,12 +1344,12 @@ watch(() => projectStore.selectedProjectId, async () => {
     <Teleport to="body">
       <div
         v-if="selectedContainer"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div class="modal w-full max-w-4xl max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <component
                 :is="getStateIcon(selectedContainer.state)"
@@ -1367,7 +1367,7 @@ watch(() => projectStore.selectedProjectId, async () => {
           </div>
 
           <!-- Details Tabs -->
-          <div class="border-b border-dark-600 px-4">
+          <div class="border-b border-white/[0.06] px-4">
             <nav class="flex gap-4">
               <button
                 v-for="tab in [
@@ -1425,7 +1425,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                   <div
                     v-for="(mount, i) in containerDetails.mounts"
                     :key="i"
-                    class="text-xs bg-dark-700 p-2 rounded font-mono"
+                    class="text-xs bg-white/[0.04] p-2 rounded font-mono"
                   >
                     <span class="text-gray-400">{{ mount.source }}</span>
                     <span class="text-gray-500 mx-2">:</span>
@@ -1447,13 +1447,13 @@ watch(() => projectStore.selectedProjectId, async () => {
                     {{ showSensitiveEnvVars ? 'Sensible Werte ausblenden' : 'Sensible Werte anzeigen' }}
                   </button>
                 </div>
-                <div class="bg-dark-700 rounded overflow-hidden max-h-60 overflow-auto">
+                <div class="bg-white/[0.04] rounded overflow-hidden max-h-60 overflow-auto">
                   <table class="w-full text-xs">
                     <tbody>
                       <tr
                         v-for="(env, i) in containerEnvVars"
                         :key="i"
-                        class="border-b border-dark-600 last:border-0 hover:bg-dark-600"
+                        class="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.04]"
                       >
                         <td class="py-1.5 px-2 text-primary-400 font-mono whitespace-nowrap">{{ env.key }}</td>
                         <td class="py-1.5 px-2 text-gray-300 font-mono break-all">
@@ -1488,7 +1488,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                   Aktualisieren
                 </button>
               </div>
-              <pre class="bg-dark-900 p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-96 whitespace-pre-wrap">{{ containerLogs || 'Keine Logs verfügbar' }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-96 whitespace-pre-wrap">{{ containerLogs || 'Keine Logs verfügbar' }}</pre>
             </div>
 
             <!-- Stats Tab -->
@@ -1531,12 +1531,12 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Compose File Modal -->
       <div
         v-if="showComposeModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div class="modal w-full max-w-4xl max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <CodeBracketIcon class="w-5 h-5 text-primary-400" />
               <div>
@@ -1579,7 +1579,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               <textarea
                 v-model="composeContent"
                 :readonly="!composeFile?.writable"
-                class="w-full h-96 bg-dark-900 text-gray-300 font-mono text-sm p-4 rounded-lg border border-dark-600 focus:border-primary-500 focus:outline-none resize-none"
+                class="w-full h-96 bg-white/[0.02] text-gray-300 font-mono text-sm p-4 rounded-lg border border-white/[0.06] focus:border-primary-500 focus:outline-none resize-none"
                 :class="{ 'cursor-not-allowed opacity-75': !composeFile?.writable }"
                 spellcheck="false"
               ></textarea>
@@ -1587,7 +1587,7 @@ watch(() => projectStore.selectedProjectId, async () => {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex items-center justify-between p-4 border-t border-dark-600">
+          <div class="flex items-center justify-between p-4 border-t border-white/[0.06]">
             <p class="text-xs text-gray-500">
               {{ composeFile?.working_dir ? `Working Dir: ${composeFile.working_dir}` : '' }}
             </p>
@@ -1612,10 +1612,10 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Quick Deploy Modal -->
       <div
         v-if="showQuickDeployModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-lg">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <PlusIcon class="w-5 h-5 text-primary-400" />
               <h2 class="text-lg font-semibold text-white">Quick Deploy</h2>
@@ -1686,10 +1686,10 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Stack Deploy Modal -->
       <div
         v-if="showStackDeployModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-2xl max-h-[90vh] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <CloudArrowUpIcon class="w-5 h-5 text-primary-400" />
               <h2 class="text-lg font-semibold text-white">Stack Deploy</h2>
@@ -1751,10 +1751,10 @@ DB_PASSWORD=secret"
       <!-- Backup Details Modal -->
       <div
         v-if="showBackupModal && selectedBackup"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-3xl max-h-[90vh] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <ArchiveBoxIcon class="w-5 h-5 text-primary-400" />
               <div>
@@ -1773,11 +1773,11 @@ DB_PASSWORD=secret"
                 <h4 class="font-medium text-white">{{ file.name }}</h4>
                 <span class="text-xs text-gray-500 font-mono">{{ file.path }}</span>
               </div>
-              <pre class="bg-dark-900 p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ file.content }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ file.content }}</pre>
             </div>
           </div>
 
-          <div class="flex items-center justify-between p-4 border-t border-dark-600">
+          <div class="flex items-center justify-between p-4 border-t border-white/[0.06]">
             <p class="text-xs text-gray-500">Working Dir: {{ selectedBackup.working_dir }}</p>
             <div class="flex items-center gap-2">
               <button @click="deleteBackup(selectedBackup)" class="btn-secondary text-red-400">
@@ -1801,8 +1801,8 @@ DB_PASSWORD=secret"
     <!-- 2FA Verification Modal -->
     <Teleport to="body">
       <div v-if="show2FAModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/70" @click="cancel2FA"></div>
-        <div class="relative bg-dark-700 rounded-xl shadow-xl w-full max-w-md">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="cancel2FA"></div>
+        <div class="relative modal w-full max-w-md">
           <div class="p-6">
             <div class="flex items-center gap-3 mb-4">
               <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center">

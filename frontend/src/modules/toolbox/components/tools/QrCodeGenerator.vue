@@ -70,13 +70,13 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
     <!-- Tabs -->
-    <div class="flex gap-2 border-b border-dark-600 pb-2">
+    <div class="flex gap-2 border-b border-white/[0.06] pb-2">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         @click="activeTab = tab.id"
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        :class="activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white hover:bg-dark-700'"
+        :class="activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
       >
         {{ tab.name }}
       </button>

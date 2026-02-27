@@ -290,7 +290,7 @@ onMounted(() => {
         <div class="flex items-start gap-4">
           <button
             @click="router.push('/tickets')"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors mt-1"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors mt-1"
           >
             <ArrowLeftIcon class="w-5 h-5" />
           </button>
@@ -317,28 +317,28 @@ onMounted(() => {
         <div v-if="canManage" class="flex items-center gap-2">
           <button
             @click="openStatusModal"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+            class="btn-secondary flex items-center gap-2"
           >
             <ArrowPathIcon class="w-5 h-5" />
             Status
           </button>
           <button
             @click="showAssignModal = true"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+            class="btn-secondary flex items-center gap-2"
           >
             <UserCircleIcon class="w-5 h-5" />
             Zuweisen
           </button>
           <button
             @click="openEditModal"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+            class="btn-secondary flex items-center gap-2"
           >
             <PencilIcon class="w-5 h-5" />
             Bearbeiten
           </button>
           <button
             @click="deleteTicket"
-            class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <TrashIcon class="w-5 h-5" />
           </button>
@@ -349,13 +349,13 @@ onMounted(() => {
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
           <!-- Description -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+          <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
             <h3 class="text-sm font-medium text-gray-400 mb-3">Beschreibung</h3>
             <div class="text-white whitespace-pre-wrap">{{ ticket.description }}</div>
           </div>
 
           <!-- Comments -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+          <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
             <h3 class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
               <ChatBubbleLeftIcon class="w-5 h-5" />
               Kommentare ({{ comments.length }})
@@ -367,7 +367,7 @@ onMounted(() => {
                 v-for="comment in comments"
                 :key="comment.id"
                 class="flex gap-3"
-                :class="{ 'bg-dark-700/50 p-3 rounded-lg border-l-2 border-yellow-500': comment.is_internal }"
+                :class="{ 'bg-white/[0.04] p-3 rounded-lg border-l-2 border-yellow-500': comment.is_internal }"
               >
                 <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                   {{ comment.username?.[0]?.toUpperCase() || comment.guest_name?.[0]?.toUpperCase() || '?' }}
@@ -399,11 +399,11 @@ onMounted(() => {
             </div>
 
             <!-- Add comment -->
-            <div class="border-t border-dark-700 pt-4">
+            <div class="border-t border-white/[0.06] pt-4">
               <textarea
                 v-model="newComment"
                 rows="3"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
                 placeholder="Kommentar schreiben..."
               ></textarea>
               <div class="flex items-center justify-between mt-3">
@@ -419,7 +419,7 @@ onMounted(() => {
                 <button
                   @click="addComment"
                   :disabled="!newComment.trim() || submittingComment"
-                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="btn-primary"
                 >
                   {{ submittingComment ? 'Wird gesendet...' : 'Kommentar senden' }}
                 </button>
@@ -428,7 +428,7 @@ onMounted(() => {
           </div>
 
           <!-- Status History -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+          <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
             <h3 class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
               <ClockIcon class="w-5 h-5" />
               Verlauf
@@ -440,7 +440,7 @@ onMounted(() => {
                 :key="history.id"
                 class="flex gap-3"
               >
-                <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
+                <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0">
                   <ArrowPathIcon class="w-4 h-4 text-gray-400" />
                 </div>
                 <div>
@@ -468,11 +468,11 @@ onMounted(() => {
         <!-- Sidebar -->
         <div class="space-y-6">
           <!-- Meta Info -->
-          <div class="bg-dark-800 border border-dark-700 rounded-xl p-6 space-y-4">
+          <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 space-y-4">
             <div>
               <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Erstellt von</h4>
               <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-white text-sm">
+                <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-white text-sm">
                   {{ ticket.creator_name?.[0]?.toUpperCase() || ticket.guest_name?.[0]?.toUpperCase() || '?' }}
                 </div>
                 <div>
@@ -527,7 +527,7 @@ onMounted(() => {
 
             <div v-if="ticket.access_code">
               <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Zugriffscode</h4>
-              <div class="text-gray-300 text-sm font-mono bg-dark-700 px-2 py-1 rounded">
+              <div class="text-gray-300 text-sm font-mono bg-white/[0.04] px-2 py-1 rounded">
                 {{ ticket.access_code }}
               </div>
             </div>
@@ -540,10 +540,10 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showEditModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-2xl">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-2xl">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Ticket bearbeiten</h2>
             <button @click="showEditModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -556,7 +556,7 @@ onMounted(() => {
               <input
                 v-model="editForm.title"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                class="input"
               />
             </div>
 
@@ -565,7 +565,7 @@ onMounted(() => {
               <textarea
                 v-model="editForm.description"
                 rows="5"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
               ></textarea>
             </div>
 
@@ -574,7 +574,7 @@ onMounted(() => {
                 <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
                 <select
                   v-model="editForm.category_id"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option value="">Keine Kategorie</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
@@ -587,7 +587,7 @@ onMounted(() => {
                 <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
                 <select
                   v-model="editForm.priority"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option v-for="p in priorityOptions" :key="p.value" :value="p.value">
                     {{ p.label }}
@@ -597,11 +597,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
-            <button @click="showEditModal = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
+            <button @click="showEditModal = false" class="btn-secondary">
               Abbrechen
             </button>
-            <button @click="saveEdit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors">
+            <button @click="saveEdit" class="btn-primary">
               Speichern
             </button>
           </div>
@@ -613,10 +613,10 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showStatusModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Status ändern</h2>
             <button @click="showStatusModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -634,7 +634,7 @@ onMounted(() => {
                   class="px-3 py-2 rounded-lg text-sm transition-all"
                   :class="statusForm.status === s.value
                     ? `${s.color} text-white`
-                    : 'bg-dark-700 text-gray-300 hover:bg-dark-600'"
+                    : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.04]'"
                 >
                   {{ s.label }}
                 </button>
@@ -646,17 +646,17 @@ onMounted(() => {
               <textarea
                 v-model="statusForm.comment"
                 rows="3"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
                 placeholder="Grund für die Statusänderung..."
               ></textarea>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
-            <button @click="showStatusModal = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
+            <button @click="showStatusModal = false" class="btn-secondary">
               Abbrechen
             </button>
-            <button @click="updateStatus" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors">
+            <button @click="updateStatus" class="btn-primary">
               Status ändern
             </button>
           </div>
@@ -668,10 +668,10 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showAssignModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Ticket zuweisen</h2>
             <button @click="showAssignModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />

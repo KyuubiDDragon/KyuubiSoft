@@ -89,10 +89,10 @@ async function saveBot() {
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-dark-800 rounded-xl w-full max-w-lg">
+    <div v-if="show" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div class="modal w-full max-w-lg">
         <!-- Header -->
-        <div class="p-6 border-b border-dark-600">
+        <div class="p-6 border-b border-white/[0.06]">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-white">Discord Bot hinzufügen</h2>
             <button @click="close" class="text-gray-400 hover:text-white">
@@ -102,11 +102,11 @@ async function saveBot() {
 
           <!-- Progress Steps -->
           <div class="flex items-center gap-2 mt-4">
-            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 1 ? 'bg-primary-500 text-white' : 'bg-dark-600 text-gray-400']">1</div>
-            <div :class="['flex-1 h-1 rounded', step >= 2 ? 'bg-primary-500' : 'bg-dark-600']"></div>
-            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 2 ? 'bg-primary-500 text-white' : 'bg-dark-600 text-gray-400']">2</div>
-            <div :class="['flex-1 h-1 rounded', step >= 3 ? 'bg-primary-500' : 'bg-dark-600']"></div>
-            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 3 ? 'bg-primary-500 text-white' : 'bg-dark-600 text-gray-400']">3</div>
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 1 ? 'bg-primary-500 text-white' : 'bg-white/[0.08] text-gray-400']">1</div>
+            <div :class="['flex-1 h-1 rounded', step >= 2 ? 'bg-primary-500' : 'bg-white/[0.08]']"></div>
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 2 ? 'bg-primary-500 text-white' : 'bg-white/[0.08] text-gray-400']">2</div>
+            <div :class="['flex-1 h-1 rounded', step >= 3 ? 'bg-primary-500' : 'bg-white/[0.08]']"></div>
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium', step >= 3 ? 'bg-primary-500 text-white' : 'bg-white/[0.08] text-gray-400']">3</div>
           </div>
         </div>
 
@@ -115,7 +115,7 @@ async function saveBot() {
           <div v-if="step === 1">
             <h3 class="text-lg font-medium text-white mb-4">Bot im Discord Developer Portal erstellen</h3>
 
-            <div class="bg-dark-700 rounded-lg p-4 space-y-3">
+            <div class="bg-white/[0.04] rounded-xl p-4 space-y-3">
               <ol class="list-decimal list-inside space-y-2 text-gray-300">
                 <li>Öffne das <a href="https://discord.com/developers/applications" target="_blank" class="text-primary-400 hover:text-primary-300">Discord Developer Portal</a></li>
                 <li>Klicke auf "New Application" und gib einen Namen ein</li>
@@ -196,7 +196,7 @@ async function saveBot() {
           <!-- Step 3: Validation Result -->
           <div v-if="step === 3 && validatedBot">
             <div class="text-center">
-              <div class="w-20 h-20 mx-auto rounded-full bg-dark-600 overflow-hidden mb-4">
+              <div class="w-20 h-20 mx-auto rounded-full bg-white/[0.08] overflow-hidden mb-4">
                 <img
                   v-if="validatedBot.avatar_url"
                   :src="validatedBot.avatar_url"
@@ -223,7 +223,7 @@ async function saveBot() {
         </div>
 
         <!-- Footer -->
-        <div class="p-6 border-t border-dark-600 flex justify-between">
+        <div class="p-6 border-t border-white/[0.06] flex justify-between">
           <button
             v-if="step > 1"
             @click="step--"

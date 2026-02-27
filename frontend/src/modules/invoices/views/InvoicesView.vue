@@ -240,7 +240,7 @@ async function createFromTimeEntries() {
           class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors"
           :class="kleinunternehmerMode
             ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-            : 'bg-dark-700 border-dark-600 text-gray-400 hover:text-white'"
+            : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'"
           title="Kleinunternehmer nach § 19 UStG"
         >
           <span class="font-mono text-xs font-bold">§19</span>
@@ -281,7 +281,7 @@ async function createFromTimeEntries() {
 
     <!-- Stats -->
     <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-colors">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
             <DocumentTextIcon class="w-5 h-5 text-blue-400" />
@@ -292,7 +292,7 @@ async function createFromTimeEntries() {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-colors">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center shrink-0">
             <CheckIcon class="w-5 h-5 text-green-400" />
@@ -303,7 +303,7 @@ async function createFromTimeEntries() {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-colors">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-xl flex items-center justify-center shrink-0">
             <ClockIcon class="w-5 h-5 text-yellow-400" />
@@ -314,7 +314,7 @@ async function createFromTimeEntries() {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-colors">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
             <UserIcon class="w-5 h-5 text-purple-400" />
@@ -328,7 +328,7 @@ async function createFromTimeEntries() {
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-1 border-b border-dark-700">
+    <div class="flex gap-1 border-b border-white/[0.06]">
       <button
         v-for="tab in [{ id: 'invoices', label: 'Rechnungen' }, { id: 'clients', label: 'Kunden' }]"
         :key="tab.id"
@@ -380,9 +380,9 @@ async function createFromTimeEntries() {
       </div>
 
       <!-- Invoices table -->
-      <div v-if="filteredInvoices.length" class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+      <div v-if="filteredInvoices.length" class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
         <table class="w-full">
-          <thead class="bg-dark-700/80">
+          <thead class="bg-white/[0.03]">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nr.</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kunde</th>
@@ -393,11 +393,11 @@ async function createFromTimeEntries() {
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Aktionen</th>
             </tr>
           </thead>
-          <TransitionGroup tag="tbody" name="list" class="divide-y divide-dark-700">
+          <TransitionGroup tag="tbody" name="list" class="divide-y divide-white/[0.06]">
             <tr
               v-for="invoice in filteredInvoices"
               :key="invoice.id"
-              class="hover:bg-dark-700/40 transition-colors cursor-pointer group"
+              class="hover:bg-white/[0.04]/40 transition-colors cursor-pointer group"
               @click="openInvoiceDetail(invoice)"
             >
               <td class="px-4 py-3">
@@ -440,14 +440,14 @@ async function createFromTimeEntries() {
                 <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     @click="openInvoiceDetail(invoice)"
-                    class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg"
                     title="Details anzeigen"
                   >
                     <EyeIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="handleDownloadPdf(invoice)"
-                    class="p-1.5 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 hover:bg-white/[0.04] rounded-lg"
                     :class="pdfGenerating === invoice.id ? 'text-primary-400 animate-pulse' : 'text-gray-400 hover:text-primary-400'"
                     title="PDF herunterladen"
                     :disabled="pdfGenerating === invoice.id"
@@ -457,7 +457,7 @@ async function createFromTimeEntries() {
                   <button
                     v-if="invoice.status === 'draft'"
                     @click="handleStatusChange(invoice, 'sent')"
-                    class="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-white/[0.04] rounded-lg"
                     title="Als gesendet markieren"
                   >
                     <PaperAirplaneIcon class="w-4 h-4" />
@@ -465,28 +465,28 @@ async function createFromTimeEntries() {
                   <button
                     v-if="invoice.status === 'sent'"
                     @click="handleStatusChange(invoice, 'paid')"
-                    class="p-1.5 text-gray-400 hover:text-green-400 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-green-400 hover:bg-white/[0.04] rounded-lg"
                     title="Als bezahlt markieren"
                   >
                     <CheckIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="openEditInvoice(invoice)"
-                    class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] rounded-lg"
                     title="Bearbeiten"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="duplicateInvoice(invoice)"
-                    class="p-1.5 text-gray-400 hover:text-purple-400 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-purple-400 hover:bg-white/[0.04] rounded-lg"
                     title="Duplizieren"
                   >
                     <DocumentDuplicateIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="handleDeleteInvoice(invoice)"
-                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg"
                     title="Löschen"
                   >
                     <TrashIcon class="w-4 h-4" />
@@ -499,7 +499,7 @@ async function createFromTimeEntries() {
       </div>
 
       <!-- Empty state -->
-      <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-16 text-center">
+      <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-16 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-700 mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">
           {{ searchQuery || statusFilter ? 'Keine Ergebnisse' : 'Noch keine Rechnungen' }}
@@ -521,7 +521,7 @@ async function createFromTimeEntries() {
         <div
           v-for="client in clients"
           :key="client.id"
-          class="bg-dark-800 border border-dark-700 rounded-xl p-5 group hover:border-dark-600 transition-colors"
+          class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5 group hover:border-white/[0.08] transition-colors"
         >
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
@@ -539,14 +539,14 @@ async function createFromTimeEntries() {
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 @click="openEditClient(client)"
-                class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                 title="Bearbeiten"
               >
                 <PencilIcon class="w-4 h-4" />
               </button>
               <button
                 @click="handleDeleteClient(client)"
-                class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
                 title="Löschen"
               >
                 <TrashIcon class="w-4 h-4" />
@@ -566,14 +566,14 @@ async function createFromTimeEntries() {
             </p>
           </div>
 
-          <div class="flex items-center justify-between pt-3 border-t border-dark-700 text-sm">
+          <div class="flex items-center justify-between pt-3 border-t border-white/[0.06] text-sm">
             <span class="text-gray-600">{{ client.invoice_count || 0 }} Rechnungen</span>
             <span class="text-green-400 font-semibold">{{ formatCurrency(client.total_paid) }}</span>
           </div>
         </div>
       </div>
 
-      <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-16 text-center">
+      <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-16 text-center">
         <UserIcon class="w-16 h-16 mx-auto text-gray-700 mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">Keine Kunden</h3>
         <p class="text-gray-500 mb-6">Füge deinen ersten Kunden hinzu.</p>
@@ -631,7 +631,7 @@ async function createFromTimeEntries() {
       >
         <div
           v-if="showTimeEntriesModal"
-          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
           @click.self="showTimeEntriesModal = false"
         >
           <Transition
@@ -641,11 +641,11 @@ async function createFromTimeEntries() {
           >
             <div
               v-if="showTimeEntriesModal"
-              class="bg-dark-800 border border-dark-700 rounded-2xl shadow-2xl w-full max-w-md"
+              class="modal w-full max-w-md"
             >
-              <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
                 <h3 class="text-lg font-bold text-white">Rechnung aus Zeiteinträgen</h3>
-                <button @click="showTimeEntriesModal = false" class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg">
+                <button @click="showTimeEntriesModal = false" class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg">
                   <XMarkIcon class="w-5 h-5" />
                 </button>
               </div>

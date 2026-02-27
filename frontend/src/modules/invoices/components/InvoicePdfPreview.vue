@@ -38,7 +38,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
 <template>
   <div class="flex flex-col h-full min-h-[600px]">
     <!-- Preview toolbar -->
-    <div class="flex items-center justify-between px-6 py-3 border-b border-dark-700 flex-none">
+    <div class="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] flex-none">
       <div class="flex items-center gap-2">
         <div v-if="isLoading" class="flex items-center gap-2 text-gray-400 text-sm">
           <ArrowPathIcon class="w-4 h-4 animate-spin" />
@@ -56,10 +56,10 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
     </div>
 
     <!-- A4 Preview area -->
-    <div class="flex-1 overflow-auto bg-dark-900 p-6">
+    <div class="flex-1 overflow-auto bg-white/[0.02] p-6">
       <div class="max-w-[794px] mx-auto">
         <!-- A4 shadow frame -->
-        <div class="relative shadow-2xl rounded-sm overflow-hidden" style="aspect-ratio: 210 / 297;">
+        <div class="relative shadow-float rounded-sm overflow-hidden" style="aspect-ratio: 210 / 297;">
           <iframe
             v-if="htmlContent"
             :srcdoc="htmlContent"

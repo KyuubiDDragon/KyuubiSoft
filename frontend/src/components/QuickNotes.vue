@@ -22,12 +22,12 @@ const editingNote = ref(null)
 const newNoteContent = ref('')
 
 const colors = [
-  { value: 'default', class: 'bg-dark-700' },
-  { value: 'yellow', class: 'bg-yellow-900/50' },
-  { value: 'green', class: 'bg-green-900/50' },
-  { value: 'blue', class: 'bg-blue-900/50' },
-  { value: 'red', class: 'bg-red-900/50' },
-  { value: 'purple', class: 'bg-purple-900/50' },
+  { value: 'default', class: 'bg-white/[0.04]' },
+  { value: 'yellow', class: 'bg-yellow-500/[0.08]' },
+  { value: 'green', class: 'bg-emerald-500/[0.08]' },
+  { value: 'blue', class: 'bg-blue-500/[0.08]' },
+  { value: 'red', class: 'bg-red-500/[0.08]' },
+  { value: 'purple', class: 'bg-purple-500/[0.08]' },
 ]
 
 onMounted(() => {
@@ -99,7 +99,7 @@ function setNoteColor(note, color) {
 }
 
 function getColorClass(color) {
-  return colors.find(c => c.value === color)?.class || 'bg-dark-700'
+  return colors.find(c => c.value === color)?.class || 'bg-white/[0.04]'
 }
 
 function toggleOpen() {
@@ -115,7 +115,7 @@ function toggleOpen() {
   <button
     v-if="!isOpen"
     @click="toggleOpen"
-    class="fixed bottom-6 right-6 w-14 h-14 bg-primary-600 hover:bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white transition-all z-50 group"
+    class="fixed bottom-6 right-6 w-14 h-14 bg-primary-600 hover:bg-primary-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
     title="Quick Notes"
   >
     <PencilSquareIcon class="w-6 h-6" />
@@ -138,11 +138,11 @@ function toggleOpen() {
   >
     <div
       v-if="isOpen"
-      class="fixed bottom-6 right-6 w-80 bg-dark-800 border border-dark-600 rounded-xl shadow-2xl z-50 overflow-hidden"
+      class="fixed bottom-6 right-6 w-80 bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-float z-50 overflow-hidden"
       :class="{ 'h-auto': isMinimized, 'max-h-[500px]': !isMinimized }"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-3 bg-dark-700 border-b border-dark-600">
+      <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
           <PencilSquareIcon class="w-5 h-5 text-primary-400" />
           <h3 class="font-semibold text-white">Quick Notes</h3>
@@ -167,19 +167,19 @@ function toggleOpen() {
       <!-- Content -->
       <div v-if="!isMinimized" class="flex flex-col">
         <!-- New Note Input -->
-        <div class="p-3 border-b border-dark-600">
+        <div class="p-3 border-b border-white/[0.06]">
           <div class="flex gap-2">
             <input
               v-model="newNoteContent"
               @keyup.enter="createNote"
               type="text"
               placeholder="Neue Notiz..."
-              class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              class="input text-sm"
             />
             <button
               @click="createNote"
               :disabled="!newNoteContent.trim()"
-              class="px-3 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              class="btn-primary btn-sm"
             >
               <PlusIcon class="w-4 h-4 text-white" />
             </button>
@@ -223,7 +223,7 @@ function toggleOpen() {
                 @blur="updateNote(note)"
                 @keydown.escape="editingNote = null"
                 rows="3"
-                class="w-full px-2 py-1 bg-dark-600 border border-dark-500 rounded text-sm text-white resize-none focus:outline-none focus:border-primary-500"
+                class="textarea text-sm"
                 autofocus
               ></textarea>
             </div>
@@ -242,12 +242,12 @@ function toggleOpen() {
                 <button class="p-1 text-gray-400 hover:text-white rounded transition-colors">
                   <div class="w-3 h-3 rounded-full" :class="getColorClass(note.color)"></div>
                 </button>
-                <div class="absolute right-0 top-full mt-1 p-1 bg-dark-600 rounded-lg shadow-lg hidden group-hover/color:flex gap-1 z-10">
+                <div class="absolute right-0 top-full mt-1 p-1 bg-dark-900/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-float hidden group-hover/color:flex gap-1 z-10">
                   <button
                     v-for="color in colors"
                     :key="color.value"
                     @click="setNoteColor(note, color.value)"
-                    class="w-4 h-4 rounded-full border border-dark-500 hover:scale-110 transition-transform"
+                    class="w-4 h-4 rounded-full border border-white/[0.08] hover:scale-110 transition-transform"
                     :class="color.class"
                   ></button>
                 </div>

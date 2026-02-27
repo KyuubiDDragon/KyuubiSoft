@@ -98,7 +98,7 @@ function handleKeyDown(event) {
   <button
     v-if="!isOpen"
     @click="toggleOpen"
-    class="fixed bottom-6 right-24 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-lg flex items-center justify-center text-white transition-all z-50 group"
+    class="fixed bottom-6 right-24 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
     title="Quick Capture"
   >
     <InboxArrowDownIcon class="w-6 h-6" />
@@ -122,11 +122,11 @@ function handleKeyDown(event) {
   >
     <div
       v-if="isOpen"
-      class="fixed bottom-6 right-24 w-96 bg-dark-800 border border-dark-600 rounded-xl shadow-2xl z-50 overflow-hidden"
+      class="fixed bottom-6 right-24 w-96 bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-float z-50 overflow-hidden"
       :class="{ 'h-auto': isMinimized }"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-3 bg-dark-700 border-b border-dark-600">
+      <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
           <InboxArrowDownIcon class="w-5 h-5 text-indigo-400" />
           <h3 class="font-semibold text-white">Quick Capture</h3>
@@ -165,7 +165,7 @@ function handleKeyDown(event) {
             @keydown="handleKeyDown"
             placeholder="Was hast du im Kopf? Schnell erfassen, spater sortieren..."
             rows="3"
-            class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none"
+            class="textarea text-sm w-full resize-none"
           ></textarea>
         </div>
 
@@ -179,7 +179,7 @@ function handleKeyDown(event) {
               @click="priority = p.value"
               class="px-2 py-1 rounded text-xs transition-colors"
               :class="priority === p.value
-                ? 'bg-dark-600 ' + p.color + ' font-medium'
+                ? 'bg-white/[0.08] ' + p.color + ' font-medium'
                 : 'text-gray-500 hover:text-gray-300'"
             >
               {{ p.label }}
@@ -200,7 +200,7 @@ function handleKeyDown(event) {
         </button>
 
         <!-- Advanced Options -->
-        <div v-if="showAdvanced" class="space-y-3 pt-2 border-t border-dark-600">
+        <div v-if="showAdvanced" class="space-y-3 pt-2 border-t border-white/[0.06]">
           <!-- Note -->
           <div>
             <label class="text-xs text-gray-500 mb-1 block">Notiz</label>
@@ -208,7 +208,7 @@ function handleKeyDown(event) {
               v-model="note"
               placeholder="Zusatzliche Details..."
               rows="2"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none"
+              class="textarea text-sm w-full resize-none"
             ></textarea>
           </div>
 
@@ -222,7 +222,7 @@ function handleKeyDown(event) {
               <span
                 v-for="tag in tags"
                 :key="tag"
-                class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-900/30 text-indigo-300 rounded-full text-xs"
+                class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/[0.12] text-indigo-300 rounded-full text-xs"
               >
                 {{ tag }}
                 <button @click="removeTag(tag)" class="hover:text-indigo-100">
@@ -235,7 +235,7 @@ function handleKeyDown(event) {
               @keyup.enter="addTag"
               type="text"
               placeholder="Tag hinzufugen..."
-              class="w-full px-3 py-1.5 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+              class="input text-sm w-full"
             />
           </div>
 
@@ -248,7 +248,7 @@ function handleKeyDown(event) {
             <input
               v-model="reminderAt"
               type="datetime-local"
-              class="w-full px-3 py-1.5 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+              class="input text-sm w-full"
             />
           </div>
         </div>
@@ -259,7 +259,7 @@ function handleKeyDown(event) {
           <button
             @click="capture"
             :disabled="!content.trim() || saving"
-            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors"
           >
             <span v-if="saving">Speichern...</span>
             <template v-else>

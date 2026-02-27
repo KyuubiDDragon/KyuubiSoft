@@ -418,7 +418,7 @@ function canDeleteUser(user) {
       </div>
       <button
         @click="openCreateModal"
-        class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        class="btn-primary"
       >
         <PlusIcon class="w-5 h-5" />
         Neuer Benutzer
@@ -487,9 +487,9 @@ function canDeleteUser(user) {
     </div>
 
     <!-- Users Table -->
-    <div v-if="!isLoading && !error" class="bg-dark-800 rounded-lg border border-dark-700 overflow-hidden">
+    <div v-if="!isLoading && !error" class="bg-white/[0.04] rounded-xl border border-white/[0.06] overflow-hidden">
       <table class="w-full">
-        <thead class="bg-dark-700">
+        <thead class="bg-white/[0.03]">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
               Benutzer
@@ -514,8 +514,8 @@ function canDeleteUser(user) {
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-dark-700">
-          <tr v-for="user in users" :key="user.id" class="hover:bg-dark-700/50">
+        <tbody class="divide-y divide-white/[0.06]">
+          <tr v-for="user in users" :key="user.id" class="hover:bg-white/[0.04]">
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
@@ -612,11 +612,11 @@ function canDeleteUser(user) {
     <Teleport to="body">
       <div
         v-if="showUserModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="modal w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
               {{ isEditing ? 'Benutzer bearbeiten' : 'Neuer Benutzer' }}
             </h3>
@@ -638,7 +638,7 @@ function canDeleteUser(user) {
               <input
                 v-model="formData.email"
                 type="email"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="benutzer@beispiel.de"
               />
             </div>
@@ -649,7 +649,7 @@ function canDeleteUser(user) {
               <input
                 v-model="formData.username"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="benutzername"
               />
             </div>
@@ -660,7 +660,7 @@ function canDeleteUser(user) {
               <input
                 v-model="formData.password"
                 type="password"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Mindestens 12 Zeichen"
               />
             </div>
@@ -678,7 +678,7 @@ function canDeleteUser(user) {
                   :class="[
                     formData.selectedRoles.includes(role.name)
                       ? getRoleBadgeClass(role.name)
-                      : 'bg-dark-700 text-gray-400 hover:bg-dark-600',
+                      : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.04]',
                     !canManageRole(role.name) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                   ]"
                 >
@@ -688,7 +688,7 @@ function canDeleteUser(user) {
             </div>
 
             <!-- Divider -->
-            <hr class="border-dark-600" />
+            <hr class="border-white/[0.06]" />
 
             <!-- Status Checkboxes -->
             <div class="space-y-3">
@@ -696,7 +696,7 @@ function canDeleteUser(user) {
                 <input
                   v-model="formData.is_active"
                   type="checkbox"
-                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                 />
                 <div>
                   <span class="text-sm font-medium text-gray-300">Aktiv</span>
@@ -708,7 +708,7 @@ function canDeleteUser(user) {
                 <input
                   v-model="formData.require_2fa"
                   type="checkbox"
-                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                 />
                 <div>
                   <span class="text-sm font-medium text-gray-300">2FA erforderlich</span>
@@ -720,7 +720,7 @@ function canDeleteUser(user) {
                 <input
                   v-model="formData.restricted_to_projects"
                   type="checkbox"
-                  class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                  class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                 />
                 <div>
                   <span class="text-sm font-medium text-gray-300">Auf Projekte einschränken</span>
@@ -735,17 +735,17 @@ function canDeleteUser(user) {
               <div v-if="projects.length === 0" class="text-sm text-gray-500">
                 Keine Projekte vorhanden
               </div>
-              <div v-else class="max-h-48 overflow-y-auto bg-dark-700 rounded-lg p-2 space-y-1">
+              <div v-else class="max-h-48 overflow-y-auto bg-white/[0.04] rounded-lg p-2 space-y-1">
                 <label
                   v-for="project in projects"
                   :key="project.id"
-                  class="flex items-center gap-2 p-2 rounded hover:bg-dark-600 cursor-pointer"
+                  class="flex items-center gap-2 p-2 rounded hover:bg-white/[0.04] cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     :checked="formData.allowed_project_ids.includes(project.id)"
                     @change="toggleProjectSelection(project.id)"
-                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                   />
                   <span class="text-sm text-gray-300">{{ project.name }}</span>
                 </label>
@@ -757,7 +757,7 @@ function canDeleteUser(user) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -767,7 +767,7 @@ function canDeleteUser(user) {
             <button
               @click="saveUser"
               :disabled="isSaving"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+              class="btn-primary disabled:opacity-50"
             >
               {{ isSaving ? 'Speichern...' : (isEditing ? 'Speichern' : 'Erstellen') }}
             </button>
@@ -780,9 +780,9 @@ function canDeleteUser(user) {
     <Teleport to="body">
       <div
         v-if="showDeleteModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-md mx-4">
+        <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
             <h3 class="text-lg font-semibold text-white mb-2">Benutzer löschen</h3>
             <p class="text-gray-400">
@@ -795,7 +795,7 @@ function canDeleteUser(user) {
               <p class="text-red-400 text-sm">{{ formErrors.general }}</p>
             </div>
           </div>
-          <div class="flex justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -805,7 +805,7 @@ function canDeleteUser(user) {
             <button
               @click="deleteUser"
               :disabled="isSaving"
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              class="btn-danger disabled:opacity-50"
             >
               {{ isSaving ? 'Löschen...' : 'Löschen' }}
             </button>
@@ -818,11 +818,11 @@ function canDeleteUser(user) {
     <Teleport to="body">
       <div
         v-if="showPermissionsModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+        <div class="modal w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-700 flex-shrink-0">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06] flex-shrink-0">
             <div>
               <h3 class="text-lg font-semibold text-white">
                 Berechtigungen verwalten
@@ -845,7 +845,7 @@ function canDeleteUser(user) {
 
             <template v-else>
               <!-- Currently Assigned Permissions Info -->
-              <div class="mb-4 p-3 bg-dark-700 rounded-lg">
+              <div class="mb-4 p-3 bg-white/[0.04] rounded-lg">
                 <div class="flex items-center gap-4 text-sm">
                   <div class="flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
@@ -864,7 +864,7 @@ function canDeleteUser(user) {
                   v-model="permissionSearch"
                   type="text"
                   placeholder="Berechtigungen suchen..."
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                 />
               </div>
 
@@ -873,16 +873,16 @@ function canDeleteUser(user) {
                 <div
                   v-for="(permissions, module) in getFilteredPermissions()"
                   :key="module"
-                  class="bg-dark-700 rounded-lg overflow-hidden"
+                  class="bg-white/[0.04] rounded-lg overflow-hidden"
                 >
-                  <div class="px-4 py-2 bg-dark-600 border-b border-dark-500">
+                  <div class="px-4 py-2 bg-white/[0.08] border-b border-white/[0.08]">
                     <h4 class="text-sm font-medium text-white">{{ getModuleLabel(module) }}</h4>
                   </div>
                   <div class="p-2 space-y-1">
                     <div
                       v-for="permission in permissions"
                       :key="permission.name"
-                      class="flex items-center justify-between p-2 rounded hover:bg-dark-600"
+                      class="flex items-center justify-between p-2 rounded hover:bg-white/[0.04]"
                     >
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
@@ -945,10 +945,10 @@ function canDeleteUser(user) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex justify-end p-4 border-t border-dark-700 flex-shrink-0">
+          <div class="flex justify-end p-4 border-t border-white/[0.06] flex-shrink-0">
             <button
               @click="closeModals"
-              class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
+              class="btn-secondary"
             >
               Schließen
             </button>

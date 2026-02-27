@@ -228,10 +228,10 @@ onMounted(loadConnections)
 </script>
 
 <template>
-  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-dark-700">
+  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-white/[0.06]">
     <!-- Left sidebar: connections → schemas → tables -->
-    <div class="w-64 flex-shrink-0 flex flex-col bg-dark-900 border-r border-dark-700">
-      <div class="px-4 py-3 border-b border-dark-700 flex items-center justify-between">
+    <div class="w-64 flex-shrink-0 flex flex-col bg-white/[0.02] border-r border-white/[0.06]">
+      <div class="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
         <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
           <CircleStackIcon class="w-4 h-4 text-primary-400" />
           Datenbanken
@@ -255,7 +255,7 @@ onMounted(loadConnections)
           <button
             @click="selectConnection(conn)"
             class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
-            :class="selectedConn?.id === conn.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-dark-700 hover:text-white'"
+            :class="selectedConn?.id === conn.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-white/[0.04] hover:text-white'"
           >
             <CircleStackIcon class="w-4 h-4 flex-shrink-0" />
             <span class="truncate">{{ conn.name }}</span>
@@ -290,7 +290,7 @@ onMounted(loadConnections)
                   :key="table.table_name"
                   @click="selectTable(table)"
                   class="w-full text-left ml-4 px-2 py-1 rounded text-xs flex items-center gap-1.5 transition-colors"
-                  :class="selectedTable?.table_name === table.table_name ? 'text-white bg-dark-700' : 'text-gray-500 hover:text-gray-300'"
+                  :class="selectedTable?.table_name === table.table_name ? 'text-white bg-white/[0.04]' : 'text-gray-500 hover:text-gray-300'"
                 >
                   <TableCellsIcon class="w-3 h-3 flex-shrink-0" />
                   <span class="truncate">{{ table.table_name }}</span>
@@ -303,7 +303,7 @@ onMounted(loadConnections)
     </div>
 
     <!-- Right panel -->
-    <div class="flex-1 flex flex-col min-w-0 bg-dark-850">
+    <div class="flex-1 flex flex-col min-w-0 bg-white/[0.02]">
       <!-- No connection selected -->
       <div v-if="!selectedConn" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
@@ -315,7 +315,7 @@ onMounted(loadConnections)
 
       <template v-else>
         <!-- Tabs -->
-        <div class="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-dark-700 flex-shrink-0">
+        <div class="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-white/[0.06] flex-shrink-0">
           <button
             v-for="tab in [{ id: 'browser', label: 'Tabellen-Browser', icon: TableCellsIcon }, { id: 'query', label: 'SQL-Editor', icon: MagnifyingGlassIcon }, { id: 'history', label: 'Verlauf', icon: ClockIcon }]"
             :key="tab.id"
@@ -339,7 +339,7 @@ onMounted(loadConnections)
 
           <template v-else>
             <!-- Table header info -->
-            <div class="flex items-center justify-between px-4 py-2 border-b border-dark-700 flex-shrink-0">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
               <span class="text-white font-mono text-sm font-semibold">{{ selectedSchema }}.{{ selectedTable.table_name }}</span>
               <span class="text-gray-500 text-xs">{{ tableTotal.toLocaleString() }} Zeilen gesamt</span>
             </div>
@@ -351,12 +351,12 @@ onMounted(loadConnections)
               </div>
 
               <table v-else-if="tableRows.length" class="w-full text-xs font-mono border-collapse min-w-max">
-                <thead class="sticky top-0 bg-dark-900 z-10">
+                <thead class="sticky top-0 bg-white/[0.02] z-10">
                   <tr>
                     <th
                       v-for="col in columns"
                       :key="col"
-                      class="text-left px-3 py-2 text-gray-400 font-semibold border-b border-dark-700 whitespace-nowrap"
+                      class="text-left px-3 py-2 text-gray-400 font-semibold border-b border-white/[0.06] whitespace-nowrap"
                     >
                       {{ col }}
                     </th>
@@ -366,7 +366,7 @@ onMounted(loadConnections)
                   <tr
                     v-for="(row, idx) in tableRows"
                     :key="idx"
-                    class="border-b border-dark-800 hover:bg-dark-700/30 transition-colors"
+                    class="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors"
                   >
                     <td
                       v-for="col in columns"
@@ -385,18 +385,18 @@ onMounted(loadConnections)
             </div>
 
             <!-- Pagination -->
-            <div class="flex items-center justify-between px-4 py-2 border-t border-dark-700 flex-shrink-0 text-xs text-gray-400">
+            <div class="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] flex-shrink-0 text-xs text-gray-400">
               <span>Zeilen {{ tableOffset + 1 }} – {{ Math.min(tableOffset + tableLimit, tableTotal) }} von {{ tableTotal.toLocaleString() }}</span>
               <div class="flex gap-2">
                 <button
                   @click="loadMoreRows('prev')"
                   :disabled="tableOffset === 0 || loadingRows"
-                  class="px-3 py-1 bg-dark-700 rounded hover:bg-dark-600 disabled:opacity-40 transition-colors"
+                  class="px-3 py-1 bg-white/[0.04] rounded hover:bg-white/[0.08] disabled:opacity-40 transition-colors"
                 >Zurück</button>
                 <button
                   @click="loadMoreRows('next')"
                   :disabled="tableOffset + tableLimit >= tableTotal || loadingRows"
-                  class="px-3 py-1 bg-dark-700 rounded hover:bg-dark-600 disabled:opacity-40 transition-colors"
+                  class="px-3 py-1 bg-white/[0.04] rounded hover:bg-white/[0.08] disabled:opacity-40 transition-colors"
                 >Weiter</button>
               </div>
             </div>
@@ -406,7 +406,7 @@ onMounted(loadConnections)
         <!-- SQL EDITOR TAB -->
         <div v-if="activeTab === 'query'" class="flex-1 flex flex-col min-h-0">
           <!-- Monaco Editor -->
-          <div class="h-48 flex-shrink-0 border-b border-dark-700">
+          <div class="h-48 flex-shrink-0 border-b border-white/[0.06]">
             <MonacoEditor
               v-model="sqlQuery"
               language="sql"
@@ -415,7 +415,7 @@ onMounted(loadConnections)
           </div>
 
           <!-- Toolbar -->
-          <div class="flex items-center gap-3 px-4 py-2 border-b border-dark-700 flex-shrink-0">
+          <div class="flex items-center gap-3 px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
             <button
               @click="runQuery"
               :disabled="queryRunning"
@@ -443,12 +443,12 @@ onMounted(loadConnections)
           <!-- Results -->
           <div class="flex-1 overflow-auto min-h-0">
             <table v-if="displayRows.length" class="w-full text-xs font-mono border-collapse min-w-max">
-              <thead class="sticky top-0 bg-dark-900 z-10">
+              <thead class="sticky top-0 bg-white/[0.02] z-10">
                 <tr>
                   <th
                     v-for="col in columns"
                     :key="col"
-                    class="text-left px-3 py-2 text-gray-400 font-semibold border-b border-dark-700 whitespace-nowrap"
+                    class="text-left px-3 py-2 text-gray-400 font-semibold border-b border-white/[0.06] whitespace-nowrap"
                   >{{ col }}</th>
                 </tr>
               </thead>
@@ -456,7 +456,7 @@ onMounted(loadConnections)
                 <tr
                   v-for="(row, idx) in displayRows"
                   :key="idx"
-                  class="border-b border-dark-800 hover:bg-dark-700/30"
+                  class="border-b border-white/[0.04] hover:bg-white/[0.03]"
                 >
                   <td
                     v-for="col in columns"
@@ -487,11 +487,11 @@ onMounted(loadConnections)
             Keine Queries ausgeführt
           </div>
 
-          <div v-else class="divide-y divide-dark-700">
+          <div v-else class="divide-y divide-white/[0.06]">
             <div
               v-for="item in history"
               :key="item.id"
-              class="px-4 py-3 hover:bg-dark-700/30 transition-colors group"
+              class="px-4 py-3 hover:bg-white/[0.03] transition-colors group"
             >
               <div class="flex items-start justify-between gap-3">
                 <pre class="flex-1 text-xs font-mono text-gray-300 truncate overflow-hidden whitespace-nowrap">{{ item.query }}</pre>

@@ -295,7 +295,7 @@ onMounted(fetchData)
         v-model="searchQuery"
         type="text"
         placeholder="Links durchsuchen..."
-        class="w-full px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+        class="input"
       />
     </div>
 
@@ -320,7 +320,7 @@ onMounted(fetchData)
       <div
         v-for="link in filteredLinks"
         :key="link.id"
-        class="card p-4 hover:bg-dark-700/50 transition-colors"
+        class="card p-4 hover:bg-white/[0.04] transition-colors"
       >
         <div class="flex items-center justify-between">
           <div class="flex-1 min-w-0">
@@ -396,14 +396,14 @@ onMounted(fetchData)
           <div class="flex items-center gap-2 ml-4">
             <button
               @click="viewStats(link)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg"
               title="Statistiken"
             >
               <ChartBarIcon class="w-5 h-5" />
             </button>
             <button
               @click="viewQr(link)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg"
               title="QR-Code"
             >
               <QrCodeIcon class="w-5 h-5" />
@@ -443,10 +443,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showCreateModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">Neuer Short Link</h3>
               <button @click="showCreateModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -458,7 +458,7 @@ onMounted(fetchData)
                 <input
                   v-model="linkForm.url"
                   type="url"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="https://example.com/lange-url"
                   required
                 />
@@ -469,7 +469,7 @@ onMounted(fetchData)
                 <input
                   v-model="linkForm.title"
                   type="text"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="Mein Link"
                 />
               </div>
@@ -481,7 +481,7 @@ onMounted(fetchData)
                   <input
                     v-model="linkForm.custom_code"
                     type="text"
-                    class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white font-mono"
+                    class="flex-1 px-3 py-2 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white font-mono"
                     placeholder="mein-link"
                     pattern="[a-zA-Z0-9_-]+"
                   />
@@ -494,7 +494,7 @@ onMounted(fetchData)
                 <input
                   v-model="linkForm.password"
                   type="password"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="Link mit Passwort schützen"
                 />
               </div>
@@ -505,7 +505,7 @@ onMounted(fetchData)
                   <input
                     v-model="linkForm.expires_at"
                     type="datetime-local"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                   />
                 </div>
                 <div>
@@ -514,7 +514,7 @@ onMounted(fetchData)
                     v-model.number="linkForm.max_clicks"
                     type="number"
                     min="1"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                     placeholder="Unbegrenzt"
                   />
                 </div>
@@ -548,10 +548,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showStatsModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
                 Statistiken: {{ selectedLink?.title || selectedLink?.short_code }}
               </h3>
@@ -567,7 +567,7 @@ onMounted(fetchData)
 
               <div v-else class="space-y-6">
                 <!-- Total clicks -->
-                <div class="text-center p-6 bg-dark-700/50 rounded-lg">
+                <div class="text-center p-6 bg-white/[0.04] rounded-xl">
                   <p class="text-4xl font-bold text-white">{{ linkStats.total_clicks.toLocaleString() }}</p>
                   <p class="text-gray-400">Gesamt Klicks</p>
                 </div>
@@ -579,7 +579,7 @@ onMounted(fetchData)
                     <div
                       v-for="device in linkStats.devices"
                       :key="device.device_type"
-                      class="bg-dark-700/50 rounded-lg p-3 text-center"
+                      class="bg-white/[0.04] rounded-xl p-3 text-center"
                     >
                       <component
                         :is="device.device_type === 'mobile' ? DevicePhoneMobileIcon : ComputerDesktopIcon"
@@ -643,7 +643,7 @@ onMounted(fetchData)
                     <div
                       v-for="click in linkStats.recent_clicks.slice(0, 10)"
                       :key="click.id"
-                      class="flex items-center justify-between text-sm bg-dark-700/50 rounded px-3 py-2"
+                      class="flex items-center justify-between text-sm bg-white/[0.04] rounded px-3 py-2"
                     >
                       <span class="text-gray-300">{{ click.browser }} / {{ click.os }}</span>
                       <span class="text-gray-500">{{ formatDateTime(click.clicked_at) }}</span>
@@ -669,10 +669,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showQrModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-sm">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-sm">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">QR-Code</h3>
               <button @click="showQrModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />

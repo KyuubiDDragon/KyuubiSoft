@@ -203,7 +203,7 @@ function swapUnits() {
         class="px-3 py-2 rounded-lg text-sm transition-colors"
         :class="selectedCategory.id === cat.id
           ? 'bg-primary-600 text-white'
-          : 'bg-dark-700 text-gray-400 hover:text-white'"
+          : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         <span class="mr-1">{{ cat.icon }}</span>
         {{ cat.name }}
@@ -238,7 +238,7 @@ function swapUnits() {
       <!-- Swap Button -->
       <button
         @click="swapUnits"
-        class="p-3 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors self-center mb-6 md:mb-0"
+        class="p-3 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg transition-colors self-center mb-6 md:mb-0"
         title="Einheiten tauschen"
       >
         ⇄
@@ -247,7 +247,7 @@ function swapUnits() {
       <!-- To -->
       <div class="space-y-2">
         <label class="text-sm text-gray-400">Zu</label>
-        <div class="input w-full text-lg font-mono bg-dark-900 min-h-[42px] flex items-center">
+        <div class="input w-full text-lg font-mono bg-white/[0.02] min-h-[42px] flex items-center">
           {{ formattedResult || '0' }}
         </div>
         <select
@@ -266,7 +266,7 @@ function swapUnits() {
     </div>
 
     <!-- Formula Display -->
-    <div class="p-3 bg-dark-700 rounded-lg text-sm text-gray-400 text-center">
+    <div class="p-3 bg-white/[0.04] rounded-lg text-sm text-gray-400 text-center">
       {{ inputValue }} {{ fromUnit.name }} = {{ formattedResult }} {{ toUnit.name }}
     </div>
 
@@ -277,7 +277,7 @@ function swapUnits() {
         <span
           v-for="unit in selectedCategory.units"
           :key="unit.id"
-          class="px-2 py-1 bg-dark-800 rounded"
+          class="px-2 py-1 bg-white/[0.04] rounded"
         >
           {{ unit.name }}
         </span>

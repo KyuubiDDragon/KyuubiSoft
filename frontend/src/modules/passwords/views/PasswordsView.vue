@@ -267,9 +267,9 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
 <template>
   <div class="flex h-[calc(100vh-8rem)]">
     <!-- Sidebar -->
-    <div class="w-64 bg-dark-800 border-r border-dark-700 flex flex-col shrink-0">
+    <div class="w-64 bg-white/[0.04] border-r border-white/[0.06] flex flex-col shrink-0">
       <!-- Search -->
-      <div class="p-4 border-b border-dark-700">
+      <div class="p-4 border-b border-white/[0.06]">
         <div class="relative">
           <MagnifyingGlassIcon class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -286,7 +286,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
         <button
           @click="passwordsStore.selectCategory(null)"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
-          :class="!passwordsStore.selectedCategory ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-dark-700'"
+          :class="!passwordsStore.selectedCategory ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/[0.04]'"
         >
           <KeyIcon class="w-5 h-5" />
           <span>Alle Passwörter</span>
@@ -296,7 +296,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
         <button
           @click="passwordsStore.selectCategory('favorites')"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors mt-1"
-          :class="passwordsStore.selectedCategory === 'favorites' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-dark-700'"
+          :class="passwordsStore.selectedCategory === 'favorites' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/[0.04]'"
         >
           <StarIcon class="w-5 h-5 text-yellow-500" />
           <span>Favoriten</span>
@@ -314,7 +314,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
           v-for="cat in passwordsStore.categories"
           :key="cat.id"
           class="group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
-          :class="passwordsStore.selectedCategory === cat.id ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-dark-700'"
+          :class="passwordsStore.selectedCategory === cat.id ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/[0.04]'"
         >
           <button
             @click="passwordsStore.selectCategory(cat.id)"
@@ -337,7 +337,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
-      <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+      <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
         <h1 class="text-xl font-semibold text-white">Passwort-Manager</h1>
         <button @click="openCreatePassword" class="btn-primary flex items-center gap-2">
           <PlusIcon class="w-5 h-5" />
@@ -360,11 +360,11 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
           <div
             v-for="pwd in passwordsStore.filteredPasswords"
             :key="pwd.id"
-            class="bg-dark-800 border border-dark-700 rounded-lg p-4 hover:border-dark-600 transition-colors group"
+            class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors group"
           >
             <div class="flex items-center gap-4">
               <!-- Favicon -->
-              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 bg-white/[0.04] rounded-lg flex items-center justify-center shrink-0">
                 <img
                   v-if="getFaviconUrl(pwd.url)"
                   :src="getFaviconUrl(pwd.url)"
@@ -392,14 +392,14 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                 <button
                   v-if="pwd.totp_secret_encrypted"
                   @click="showTOTP(pwd)"
-                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-dark-700 rounded-lg"
+                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] rounded-lg"
                   title="TOTP Code"
                 >
                   <QrCodeIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="copyPassword(pwd)"
-                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-dark-700 rounded-lg"
+                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] rounded-lg"
                   :class="{ 'text-green-400': copiedField === pwd.id }"
                   title="Passwort kopieren"
                 >
@@ -407,14 +407,14 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                 </button>
                 <button
                   @click="openEditPassword(pwd)"
-                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-dark-700 rounded-lg"
+                  class="p-2 text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] rounded-lg"
                   title="Bearbeiten"
                 >
                   <PencilIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="deletePassword(pwd)"
-                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-700 rounded-lg"
+                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg"
                   title="Löschen"
                 >
                   <TrashIcon class="w-5 h-5" />
@@ -429,8 +429,8 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
     <!-- Password Modal -->
     <Teleport to="body">
       <div v-if="showPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60" @click="showPasswordModal = false"></div>
-        <div class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showPasswordModal = false"></div>
+        <div class="relative modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-lg font-semibold text-white">
@@ -480,7 +480,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                 </div>
 
                 <!-- Generator Options -->
-                <div class="mt-2 p-3 bg-dark-700/50 rounded-lg">
+                <div class="mt-2 p-3 bg-white/[0.03] rounded-lg">
                   <div class="flex items-center gap-4 text-sm">
                     <label class="flex items-center gap-2">
                       <input v-model="generatorOptions.length" type="number" min="8" max="128" class="w-16 input text-sm py-1" />
@@ -545,8 +545,8 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
     <!-- Category Modal -->
     <Teleport to="body">
       <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60" @click="showCategoryModal = false"></div>
-        <div class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-sm">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showCategoryModal = false"></div>
+        <div class="relative modal w-full max-w-sm">
           <div class="p-6">
             <h2 class="text-lg font-semibold text-white mb-4">
               {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
@@ -594,15 +594,15 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
     <!-- TOTP Modal -->
     <Teleport to="body">
       <div v-if="showTOTPModal && totpData" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60" @click="closeTOTPModal"></div>
-        <div class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-xs text-center p-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="closeTOTPModal"></div>
+        <div class="relative modal w-full max-w-xs text-center p-6">
           <h2 class="text-lg font-semibold text-white mb-4">2FA Code</h2>
 
           <div class="text-4xl font-mono font-bold text-primary-400 mb-4 tracking-widest">
             {{ totpData.code }}
           </div>
 
-          <div class="w-full bg-dark-700 h-2 rounded-full overflow-hidden mb-4">
+          <div class="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden mb-4">
             <div
               class="h-full bg-primary-600 transition-all duration-1000"
               :style="{ width: `${(totpData.seconds_remaining / 30) * 100}%` }"

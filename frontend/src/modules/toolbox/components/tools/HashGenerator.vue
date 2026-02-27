@@ -279,13 +279,13 @@ function clearAll() {
       <button
         @click="switchToText"
         class="px-4 py-2 text-sm rounded-lg transition-colors"
-        :class="inputType === 'text' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+        :class="inputType === 'text' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
       >
         Text
       </button>
       <label
         class="px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors"
-        :class="inputType === 'file' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="inputType === 'file' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         Datei
         <input
@@ -314,7 +314,7 @@ function clearAll() {
     </div>
 
     <!-- File Info -->
-    <div v-else-if="fileName" class="p-4 bg-dark-700 rounded-lg">
+    <div v-else-if="fileName" class="p-4 bg-white/[0.04] rounded-lg">
       <div class="flex items-center gap-3">
         <span class="text-2xl">📄</span>
         <div>
@@ -334,7 +334,7 @@ function clearAll() {
       <div
         v-for="(hash, name) in hashes"
         :key="name"
-        class="p-3 bg-dark-700 rounded-lg"
+        class="p-3 bg-white/[0.04] rounded-lg"
       >
         <div class="flex items-center justify-between mb-1">
           <label class="text-sm text-gray-400 uppercase">{{ name }}</label>

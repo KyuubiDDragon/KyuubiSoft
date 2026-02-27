@@ -34,6 +34,7 @@ import {
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { sanitizeHtml } from '@/core/services/sanitize'
 
 const uiStore = useUiStore()
 
@@ -366,7 +367,7 @@ onMounted(async () => {
     <!-- Filters -->
     <div class="flex flex-wrap items-center gap-3">
       <!-- Category Filter -->
-      <div class="flex items-center gap-2 bg-dark-800 rounded-lg p-1">
+      <div class="flex items-center gap-2 bg-white/[0.04] rounded-xl p-1">
         <button
           @click="selectedCategory = null; selectedFeed = null"
           class="px-3 py-1.5 rounded-md text-sm transition-colors"
@@ -390,7 +391,7 @@ onMounted(async () => {
       <select
         v-if="selectedCategory && groupedFeeds[selectedCategory]?.length"
         v-model="selectedFeed"
-        class="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white"
+        class="select text-sm"
       >
         <option :value="null">Alle Feeds</option>
         <option
@@ -408,7 +409,7 @@ onMounted(async () => {
       <button
         @click="showOnlyUnread = !showOnlyUnread"
         class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
-        :class="showOnlyUnread ? 'bg-blue-600 text-white' : 'bg-dark-800 text-gray-400 hover:text-white'"
+        :class="showOnlyUnread ? 'bg-blue-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         <FunnelIcon class="w-4 h-4" />
         Ungelesen
@@ -416,25 +417,25 @@ onMounted(async () => {
       <button
         @click="showOnlySaved = !showOnlySaved"
         class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
-        :class="showOnlySaved ? 'bg-yellow-600 text-white' : 'bg-dark-800 text-gray-400 hover:text-white'"
+        :class="showOnlySaved ? 'bg-yellow-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         <BookmarkIcon class="w-4 h-4" />
         Gespeichert
       </button>
 
       <!-- View Toggle -->
-      <div class="flex items-center gap-1 ml-2 bg-dark-800 rounded-lg p-1">
+      <div class="flex items-center gap-1 ml-2 bg-white/[0.04] rounded-xl p-1">
         <button
           @click="viewMode = 'grid'"
           class="p-1.5 rounded transition-colors"
-          :class="viewMode === 'grid' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+          :class="viewMode === 'grid' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'"
         >
           <Squares2X2Icon class="w-4 h-4" />
         </button>
         <button
           @click="viewMode = 'list'"
           class="p-1.5 rounded transition-colors"
-          :class="viewMode === 'list' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'"
+          :class="viewMode === 'list' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'"
         >
           <ListBulletIcon class="w-4 h-4" />
         </button>
@@ -474,7 +475,7 @@ onMounted(async () => {
             </h3>
             <button
               @click.stop="toggleSaved(item)"
-              class="p-1 rounded hover:bg-dark-600 flex-shrink-0"
+              class="p-1 rounded hover:bg-white/[0.04] flex-shrink-0"
               :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
             >
               <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
@@ -528,7 +529,7 @@ onMounted(async () => {
               <div class="flex items-center gap-1 flex-shrink-0">
                 <button
                   @click="toggleSaved(item)"
-                  class="p-1.5 rounded hover:bg-dark-600"
+                  class="p-1.5 rounded hover:bg-white/[0.04]"
                   :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
                   title="Speichern"
                 >
@@ -537,14 +538,14 @@ onMounted(async () => {
                 </button>
                 <button
                   @click="openExternalLink(item.url)"
-                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  class="p-1.5 rounded hover:bg-white/[0.04] text-gray-500 hover:text-white"
                   title="Original öffnen"
                 >
                   <ArrowTopRightOnSquareIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="toggleExpanded(item)"
-                  class="p-1.5 rounded hover:bg-dark-600 text-gray-500 hover:text-white"
+                  class="p-1.5 rounded hover:bg-white/[0.04] text-gray-500 hover:text-white"
                   :title="isExpanded(item) ? 'Einklappen' : 'Aufklappen'"
                 >
                   <ChevronUpIcon v-if="isExpanded(item)" class="w-5 h-5" />
@@ -561,7 +562,7 @@ onMounted(async () => {
             <div class="flex items-center gap-4 text-sm text-gray-500">
               <div class="flex items-center gap-2">
                 <component :is="categoryIcons[item.article_category] || categoryIcons[item.feed_category] || categoryIcons.other" class="w-4 h-4" />
-                <span class="px-1.5 py-0.5 bg-dark-700 rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
+                <span class="px-1.5 py-0.5 bg-white/[0.04] rounded text-gray-400">{{ categoryNames[item.article_category] || categoryNames[item.feed_category] || 'Sonstiges' }}</span>
                 <span>{{ item.feed_name }}</span>
               </div>
               <div class="flex items-center gap-1">
@@ -574,7 +575,7 @@ onMounted(async () => {
         </div>
 
         <!-- Expanded content -->
-        <div v-if="isExpanded(item)" class="mt-6 pt-6 border-t border-dark-700">
+        <div v-if="isExpanded(item)" class="mt-6 pt-6 border-t border-white/[0.06]">
           <!-- Large image when expanded -->
           <img
             v-if="item.image_url"
@@ -599,12 +600,12 @@ onMounted(async () => {
                    prose-strong:text-white prose-em:text-gray-200
                    prose-ul:text-gray-300 prose-ol:text-gray-300
                    prose-li:mb-1 prose-blockquote:border-primary-500
-                   prose-code:text-primary-300 prose-pre:bg-dark-900"
-            v-html="getFullContent(item)"
+                   prose-code:text-primary-300 prose-pre:bg-white/[0.02]"
+            v-html="sanitizeHtml(getFullContent(item))"
           ></div>
 
           <!-- Action buttons -->
-          <div class="mt-6 pt-4 border-t border-dark-700 flex justify-between items-center">
+          <div class="mt-6 pt-4 border-t border-white/[0.06] flex justify-between items-center">
             <button
               @click="toggleExpanded(item)"
               class="text-gray-400 hover:text-white flex items-center gap-2"
@@ -639,10 +640,10 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showSettingsModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Feed-Einstellungen</h2>
             <button @click="showSettingsModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -668,7 +669,7 @@ onMounted(async () => {
                   <div
                     v-for="feed in feedList"
                     :key="feed.id"
-                    class="flex items-center justify-between p-3 bg-dark-700/50 rounded-lg"
+                    class="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg"
                   >
                     <div class="flex items-center gap-3">
                       <img v-if="feed.icon_url" :src="feed.icon_url" class="w-6 h-6 rounded" />
@@ -681,7 +682,7 @@ onMounted(async () => {
                     <button
                       @click="toggleSubscription(feed)"
                       class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-                      :class="feed.is_subscribed == 1 ? 'bg-primary-600 text-white' : 'bg-dark-600 text-gray-400 hover:text-white'"
+                      :class="feed.is_subscribed == 1 ? 'bg-primary-600 text-white' : 'bg-white/[0.08] text-gray-400 hover:text-white'"
                     >
                       <CheckIcon v-if="feed.is_subscribed == 1" class="w-4 h-4 inline mr-1" />
                       {{ feed.is_subscribed == 1 ? 'Abonniert' : 'Abonnieren' }}
@@ -692,7 +693,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end">
             <button @click="showSettingsModal = false; loadNews()" class="btn-primary">
               Fertig
             </button>
@@ -705,10 +706,10 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showAddFeedModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Eigenen Feed hinzufügen</h2>
             <button @click="showAddFeedModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -721,7 +722,7 @@ onMounted(async () => {
               <input
                 v-model="newFeedForm.url"
                 type="url"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+                class="input w-full"
                 placeholder="https://example.com/feed.xml"
               />
             </div>
@@ -731,7 +732,7 @@ onMounted(async () => {
               <input
                 v-model="newFeedForm.name"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+                class="input w-full"
                 placeholder="Wird aus Feed gelesen, wenn leer"
               />
             </div>
@@ -740,14 +741,14 @@ onMounted(async () => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
               <select
                 v-model="newFeedForm.category"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+                class="select w-full"
               >
                 <option v-for="(name, key) in categoryNames" :key="key" :value="key">{{ name }}</option>
               </select>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showAddFeedModal = false" class="btn-secondary">Abbrechen</button>
             <button @click="addFeed" class="btn-primary">Hinzufügen</button>
           </div>
@@ -759,20 +760,20 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="selectedArticle"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         @click.self="selectedArticle = null"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <component :is="categoryIcons[selectedArticle.article_category] || categoryIcons[selectedArticle.feed_category] || categoryIcons.other" class="w-5 h-5 text-primary-400" />
-              <span class="px-2 py-1 bg-dark-700 rounded text-sm text-gray-300">{{ categoryNames[selectedArticle.article_category] || categoryNames[selectedArticle.feed_category] || 'Sonstiges' }}</span>
+              <span class="px-2 py-1 bg-white/[0.04] rounded text-sm text-gray-300">{{ categoryNames[selectedArticle.article_category] || categoryNames[selectedArticle.feed_category] || 'Sonstiges' }}</span>
               <span class="text-gray-400">{{ selectedArticle.feed_name }}</span>
             </div>
             <div class="flex items-center gap-2">
               <button
                 @click="toggleSaved(selectedArticle)"
-                class="p-2 rounded hover:bg-dark-600"
+                class="p-2 rounded hover:bg-white/[0.04]"
                 :class="selectedArticle.is_saved == 1 ? 'text-yellow-400' : 'text-gray-400'"
               >
                 <BookmarkIconSolid v-if="selectedArticle.is_saved == 1" class="w-5 h-5" />
@@ -780,11 +781,11 @@ onMounted(async () => {
               </button>
               <button
                 @click="openExternalLink(selectedArticle.url)"
-                class="p-2 text-gray-400 hover:text-white rounded hover:bg-dark-600"
+                class="p-2 text-gray-400 hover:text-white rounded hover:bg-white/[0.04]"
               >
                 <ArrowTopRightOnSquareIcon class="w-5 h-5" />
               </button>
-              <button @click="selectedArticle = null" class="p-2 text-gray-400 hover:text-white rounded hover:bg-dark-600">
+              <button @click="selectedArticle = null" class="p-2 text-gray-400 hover:text-white rounded hover:bg-white/[0.04]">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
@@ -826,14 +827,14 @@ onMounted(async () => {
                      prose-ol:text-gray-300 prose-ol:my-4 prose-ol:pl-6
                      prose-li:mb-2 prose-li:leading-relaxed
                      prose-blockquote:border-l-4 prose-blockquote:border-primary-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-400
-                     prose-code:text-primary-300 prose-code:bg-dark-700 prose-code:px-1 prose-code:rounded
-                     prose-pre:bg-dark-900 prose-pre:p-4 prose-pre:rounded-lg
+                     prose-code:text-primary-300 prose-code:bg-white/[0.04] prose-code:px-1 prose-code:rounded
+                     prose-pre:bg-white/[0.02] prose-pre:p-4 prose-pre:rounded-lg
                      prose-img:rounded-lg prose-img:my-4"
-              v-html="getFullContent(selectedArticle)"
+              v-html="sanitizeHtml(getFullContent(selectedArticle))"
             ></div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-between">
+          <div class="p-4 border-t border-white/[0.06] flex justify-between">
             <button @click="selectedArticle = null" class="btn-secondary">Schließen</button>
             <button @click="openExternalLink(selectedArticle.url)" class="btn-primary">
               <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />

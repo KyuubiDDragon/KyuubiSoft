@@ -78,6 +78,16 @@ use App\Modules\Terminal\Controllers\TerminalController;
 use App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController;
 use App\Modules\Logs\Controllers\LogsController;
 use App\Modules\Scripts\Controllers\ScriptsController;
+use App\Modules\Contacts\Controllers\ContactController;
+use App\Modules\Email\Controllers\EmailController;
+use App\Modules\Audit\Controllers\AuditController;
+use App\Modules\NotificationRules\Controllers\NotificationRuleController;
+use App\Modules\StatusPage\Controllers\StatusPageController;
+use App\Modules\Cron\Controllers\CronController;
+use App\Modules\Dns\Controllers\DnsController;
+use App\Modules\Deployments\Controllers\DeploymentController;
+use App\Modules\KnowledgeBase\Controllers\KnowledgeBaseController;
+use App\Modules\Environments\Controllers\EnvironmentController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -436,6 +446,33 @@ class Router
                 $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
                 $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
+
+                // Contacts / CRM
+                $protected->get('/contacts', [ContactController::class, 'index']);
+                $protected->post('/contacts', [ContactController::class, 'create']);
+                $protected->get('/contacts/stats', [ContactController::class, 'getStats']);
+                $protected->get('/contacts/{id}', [ContactController::class, 'show']);
+                $protected->put('/contacts/{id}', [ContactController::class, 'update']);
+                $protected->delete('/contacts/{id}', [ContactController::class, 'delete']);
+                $protected->post('/contacts/{id}/favorite', [ContactController::class, 'toggleFavorite']);
+                $protected->get('/contacts/{id}/activities', [ContactController::class, 'getActivities']);
+                $protected->post('/contacts/{id}/activities', [ContactController::class, 'createActivity']);
+                $protected->delete('/contacts/{id}/activities/{activityId}', [ContactController::class, 'deleteActivity']);
+
+                // Email
+                $protected->get('/email/accounts', [EmailController::class, 'getAccounts']);
+                $protected->post('/email/accounts', [EmailController::class, 'createAccount']);
+                $protected->put('/email/accounts/{id}', [EmailController::class, 'updateAccount']);
+                $protected->delete('/email/accounts/{id}', [EmailController::class, 'deleteAccount']);
+                $protected->post('/email/accounts/{id}/test', [EmailController::class, 'testConnection']);
+                $protected->get('/email/messages', [EmailController::class, 'getMessages']);
+                $protected->get('/email/messages/{id}', [EmailController::class, 'getMessage']);
+                $protected->post('/email/messages', [EmailController::class, 'sendMessage']);
+                $protected->delete('/email/messages/{id}', [EmailController::class, 'deleteMessage']);
+                $protected->post('/email/messages/{id}/read', [EmailController::class, 'toggleRead']);
+                $protected->post('/email/messages/{id}/star', [EmailController::class, 'toggleStar']);
+                $protected->get('/email/folders', [EmailController::class, 'getFolders']);
+                $protected->get('/email/stats', [EmailController::class, 'getStats']);
 
                 // Habit Tracker
                 $protected->get('/habits', [HabitController::class, 'index']);
@@ -1336,7 +1373,112 @@ class Router
                 $protected->post('/discord/bots/{botId}/backups', [DiscordController::class, 'createBotBackup'])
                     ->add(new PermissionMiddleware('discord.create_backups'));
 
+                // Notification Rules
+                $protected->get('/notification-rules', [NotificationRuleController::class, 'index']);
+                $protected->post('/notification-rules', [NotificationRuleController::class, 'create']);
+                $protected->get('/notification-rules/events', [NotificationRuleController::class, 'availableEvents']);
+                $protected->get('/notification-rules/{id}', [NotificationRuleController::class, 'show']);
+                $protected->put('/notification-rules/{id}', [NotificationRuleController::class, 'update']);
+                $protected->delete('/notification-rules/{id}', [NotificationRuleController::class, 'delete']);
+                $protected->post('/notification-rules/{id}/toggle', [NotificationRuleController::class, 'toggle']);
+                $protected->post('/notification-rules/{id}/test', [NotificationRuleController::class, 'test']);
+                $protected->get('/notification-rules/{id}/history', [NotificationRuleController::class, 'history']);
+
+                // Audit Log
+                $protected->get('/audit', [AuditController::class, 'index'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/stats', [AuditController::class, 'stats'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/export', [AuditController::class, 'export'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/entity/{type}/{id}', [AuditController::class, 'entityHistory'])
+                    ->add(new PermissionMiddleware('system.admin'));
+                $protected->get('/audit/{id}', [AuditController::class, 'show'])
+                    ->add(new PermissionMiddleware('system.admin'));
+
+                // Status Page (admin)
+                $protected->get('/status-page/config', [StatusPageController::class, 'getConfig']);
+                $protected->put('/status-page/config', [StatusPageController::class, 'updateConfig']);
+                $protected->get('/status-page/monitors', [StatusPageController::class, 'getMonitors']);
+                $protected->post('/status-page/monitors', [StatusPageController::class, 'addMonitor']);
+                $protected->delete('/status-page/monitors/{id}', [StatusPageController::class, 'removeMonitor']);
+                $protected->get('/status-page/incidents', [StatusPageController::class, 'getIncidents']);
+                $protected->post('/status-page/incidents', [StatusPageController::class, 'createIncident']);
+                $protected->put('/status-page/incidents/{id}', [StatusPageController::class, 'updateIncident']);
+                $protected->post('/status-page/incidents/{id}/updates', [StatusPageController::class, 'addIncidentUpdate']);
+
+                // Cron Jobs
+                $protected->get('/cron', [CronController::class, 'index']);
+                $protected->post('/cron', [CronController::class, 'create']);
+                $protected->post('/cron/parse', [CronController::class, 'parseExpression']);
+                $protected->get('/cron/{id}', [CronController::class, 'show']);
+                $protected->put('/cron/{id}', [CronController::class, 'update']);
+                $protected->delete('/cron/{id}', [CronController::class, 'delete']);
+                $protected->post('/cron/{id}/toggle', [CronController::class, 'toggle']);
+                $protected->get('/cron/{id}/history', [CronController::class, 'history']);
+
+                // DNS Management
+                $protected->get('/dns/domains', [DnsController::class, 'listDomains']);
+                $protected->post('/dns/domains', [DnsController::class, 'createDomain']);
+                $protected->get('/dns/domains/{id}', [DnsController::class, 'showDomain']);
+                $protected->put('/dns/domains/{id}', [DnsController::class, 'updateDomain']);
+                $protected->delete('/dns/domains/{id}', [DnsController::class, 'deleteDomain']);
+                $protected->get('/dns/domains/{id}/records', [DnsController::class, 'listRecords']);
+                $protected->post('/dns/domains/{id}/records', [DnsController::class, 'createRecord']);
+                $protected->put('/dns/records/{id}', [DnsController::class, 'updateRecord']);
+                $protected->delete('/dns/records/{id}', [DnsController::class, 'deleteRecord']);
+                $protected->post('/dns/records/{id}/propagation', [DnsController::class, 'checkPropagation']);
+                $protected->get('/dns/domains/{id}/export', [DnsController::class, 'exportZone']);
+                $protected->post('/dns/domains/{id}/import', [DnsController::class, 'importZone']);
+
+                // Deployments
+                $protected->get('/deployments/stats', [DeploymentController::class, 'getStats']);
+                $protected->get('/deployments/pipelines', [DeploymentController::class, 'listPipelines']);
+                $protected->post('/deployments/pipelines', [DeploymentController::class, 'createPipeline']);
+                $protected->get('/deployments/pipelines/{id}', [DeploymentController::class, 'showPipeline']);
+                $protected->put('/deployments/pipelines/{id}', [DeploymentController::class, 'updatePipeline']);
+                $protected->delete('/deployments/pipelines/{id}', [DeploymentController::class, 'deletePipeline']);
+                $protected->post('/deployments/pipelines/{id}/deploy', [DeploymentController::class, 'deploy']);
+                $protected->get('/deployments/pipelines/{id}/deployments', [DeploymentController::class, 'getDeployments']);
+                $protected->get('/deployments/{id}', [DeploymentController::class, 'getDeployment']);
+                $protected->post('/deployments/{id}/cancel', [DeploymentController::class, 'cancelDeployment']);
+                $protected->post('/deployments/{id}/rollback', [DeploymentController::class, 'rollback']);
+
+                // Knowledge Base (admin)
+                $protected->get('/knowledge-base/categories', [KnowledgeBaseController::class, 'listCategories']);
+                $protected->post('/knowledge-base/categories', [KnowledgeBaseController::class, 'createCategory']);
+                $protected->put('/knowledge-base/categories/{id}', [KnowledgeBaseController::class, 'updateCategory']);
+                $protected->delete('/knowledge-base/categories/{id}', [KnowledgeBaseController::class, 'deleteCategory']);
+                $protected->get('/knowledge-base/articles', [KnowledgeBaseController::class, 'listArticles']);
+                $protected->post('/knowledge-base/articles', [KnowledgeBaseController::class, 'createArticle']);
+                $protected->get('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'showArticle']);
+                $protected->put('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'updateArticle']);
+                $protected->delete('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'deleteArticle']);
+
+                // Environments (secrets/config vault)
+                $protected->get('/environments', [EnvironmentController::class, 'index']);
+                $protected->post('/environments', [EnvironmentController::class, 'create']);
+                $protected->get('/environments/{id}', [EnvironmentController::class, 'show']);
+                $protected->put('/environments/{id}', [EnvironmentController::class, 'update']);
+                $protected->delete('/environments/{id}', [EnvironmentController::class, 'delete']);
+                $protected->get('/environments/{id}/variables', [EnvironmentController::class, 'getVariables']);
+                $protected->put('/environments/{id}/variables', [EnvironmentController::class, 'setVariables']);
+                $protected->delete('/environments/{id}/variables/{varId}', [EnvironmentController::class, 'deleteVariable']);
+                $protected->get('/environments/{id}/history', [EnvironmentController::class, 'getHistory']);
+                $protected->post('/environments/{id}/duplicate', [EnvironmentController::class, 'duplicate']);
+                $protected->get('/environments/{id}/export', [EnvironmentController::class, 'exportEnv']);
+                $protected->post('/environments/{id}/import', [EnvironmentController::class, 'importEnv']);
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
+
+            // Knowledge Base (public, no auth required)
+            $group->get('/kb/categories', [KnowledgeBaseController::class, 'publicCategories']);
+            $group->get('/kb/search', [KnowledgeBaseController::class, 'publicSearch']);
+            $group->get('/kb/articles/{slug}', [KnowledgeBaseController::class, 'publicArticle']);
+            $group->post('/kb/articles/{slug}/rate', [KnowledgeBaseController::class, 'rateArticle']);
+
+            // Status Page (public, no auth required)
+            $group->get('/status-page/public', [StatusPageController::class, 'publicIndex']);
 
             // Discord signed media (no auth required - protected by HMAC signature)
             $group->get('/discord/media/{id}/signed', [DiscordController::class, 'serveSignedMedia']);

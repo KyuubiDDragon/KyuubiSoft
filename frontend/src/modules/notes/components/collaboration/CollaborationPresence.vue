@@ -75,7 +75,7 @@ function isTyping(userId) {
         <!-- Avatar -->
         <div
           :style="{ backgroundColor: participant.color || '#6366F1' }"
-          class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium border-2 border-dark-800 ring-2 ring-transparent hover:ring-white/20 transition-all cursor-pointer"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium border-2 border-white/[0.04] ring-2 ring-transparent hover:ring-white/20 transition-all cursor-pointer"
           :title="participant.name"
         >
           {{ getInitials(participant.name) }}
@@ -84,7 +84,7 @@ function isTyping(userId) {
         <!-- Typing indicator -->
         <div
           v-if="isTyping(participant.id)"
-          class="absolute -bottom-1 -right-1 w-4 h-4 bg-dark-700 rounded-full flex items-center justify-center"
+          class="absolute -bottom-1 -right-1 w-4 h-4 bg-white/[0.04] rounded-full flex items-center justify-center"
         >
           <span class="typing-indicator flex gap-0.5">
             <span class="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms" />
@@ -94,7 +94,7 @@ function isTyping(userId) {
         </div>
 
         <!-- Tooltip -->
-        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-700 rounded text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-white/[0.04] rounded text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
           {{ participant.name }}
           <span v-if="isTyping(participant.id)" class="text-gray-400 ml-1">tippt...</span>
         </div>
@@ -103,7 +103,7 @@ function isTyping(userId) {
       <!-- Hidden count badge -->
       <div
         v-if="hiddenCount > 0"
-        class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 text-xs font-medium border-2 border-dark-800"
+        class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-gray-400 text-xs font-medium border-2 border-white/[0.04]"
         :title="`+${hiddenCount} weitere Bearbeiter`"
       >
         +{{ hiddenCount }}

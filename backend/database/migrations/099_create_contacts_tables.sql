@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS contacts (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    user_id CHAR(36) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NULL,
+    phone VARCHAR(50) NULL,
+    mobile VARCHAR(50) NULL,
+    company VARCHAR(255) NULL,
+    position VARCHAR(255) NULL,
+    address TEXT NULL,
+    city VARCHAR(100) NULL,
+    postal_code VARCHAR(20) NULL,
+    country VARCHAR(100) NULL DEFAULT 'Deutschland',
+    website VARCHAR(500) NULL,
+    notes TEXT NULL,
+    tags JSON NULL,
+    is_favorite BOOLEAN DEFAULT FALSE,
+    avatar_color VARCHAR(7) NULL DEFAULT '#6366f1',
+    last_contact_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_contacts_user (user_id),
+    INDEX idx_contacts_name (last_name, first_name),
+    INDEX idx_contacts_company (company),
+    INDEX idx_contacts_favorite (user_id, is_favorite)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contact_activities (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    contact_id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    type ENUM('note', 'email', 'call', 'meeting') NOT NULL DEFAULT 'note',
+    subject VARCHAR(255) NULL,
+    description TEXT NULL,
+    activity_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_activities_contact (contact_id),
+    INDEX idx_activities_date (activity_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

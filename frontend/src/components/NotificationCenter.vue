@@ -164,15 +164,15 @@ function formatTime(dateStr) {
     <!-- Bell Button -->
     <button
       @click="toggleOpen"
-      class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors relative"
+      class="btn-icon-sm relative"
       title="Benachrichtigungen"
     >
-      <BellIcon class="w-5 h-5" />
+      <BellIcon class="w-4 h-4" />
       <span
         v-if="unreadCount > 0"
-        class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-medium"
+        class="notification-dot-pulse"
       >
-        {{ unreadCount > 9 ? '9+' : unreadCount }}
+        <span class="sr-only">{{ unreadCount }} neue Benachrichtigungen</span>
       </span>
     </button>
 
@@ -187,16 +187,16 @@ function formatTime(dateStr) {
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-2 w-96 bg-dark-800 border border-dark-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+        class="dropdown right-0 mt-2 w-96 !p-0 overflow-hidden"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 bg-dark-700 border-b border-dark-600">
+        <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
           <div class="flex items-center gap-2">
             <BellIcon class="w-5 h-5 text-primary-400" />
             <h3 class="font-semibold text-white">Benachrichtigungen</h3>
             <span
               v-if="unreadCount > 0"
-              class="px-2 py-0.5 bg-primary-600/20 text-primary-400 text-xs rounded-full"
+              class="badge-primary"
             >
               {{ unreadCount }} neu
             </span>
@@ -242,8 +242,8 @@ function formatTime(dateStr) {
             v-for="notification in notifications"
             :key="notification.id"
             @click="handleClick(notification)"
-            class="flex items-start gap-3 px-4 py-3 border-b border-dark-700 hover:bg-dark-700/50 transition-colors cursor-pointer group"
-            :class="{ 'bg-dark-700/30': !notification.is_read }"
+            class="flex items-start gap-3 px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors cursor-pointer group"
+            :class="{ 'bg-white/[0.02]': !notification.is_read }"
           >
             <!-- Icon -->
             <div
@@ -295,7 +295,7 @@ function formatTime(dateStr) {
         <!-- Footer -->
         <div
           v-if="notifications.length > 0"
-          class="px-4 py-2 bg-dark-700/50 border-t border-dark-600"
+          class="px-4 py-2 bg-white/[0.02] border-t border-white/[0.06]"
         >
           <router-link
             to="/settings"

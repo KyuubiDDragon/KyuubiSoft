@@ -522,20 +522,20 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
         <div class="flex items-center gap-4">
           <button
             @click="previousMonth"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <ChevronLeftIcon class="w-5 h-5" />
           </button>
           <h2 class="text-lg font-semibold text-white min-w-40 text-center">{{ monthName }}</h2>
           <button
             @click="nextMonth"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <ChevronRightIcon class="w-5 h-5" />
           </button>
           <button
             @click="goToToday"
-            class="px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             Heute
           </button>
@@ -576,7 +576,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
     <!-- Calendar Grid -->
     <div class="card overflow-hidden">
       <!-- Week days header -->
-      <div class="grid grid-cols-7 bg-dark-700">
+      <div class="grid grid-cols-7 bg-white/[0.03]">
         <div
           v-for="day in weekDays"
           :key="day"
@@ -592,9 +592,9 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
           v-for="(day, index) in daysInMonth"
           :key="index"
           @click="openNewEvent(day.date)"
-          class="min-h-28 p-2 border-t border-l border-dark-700 cursor-pointer hover:bg-dark-700/50 transition-colors"
+          class="min-h-28 p-2 border-t border-l border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors"
           :class="{
-            'bg-dark-800/50': !day.isCurrentMonth,
+            'bg-white/[0.02]': !day.isCurrentMonth,
             'border-l-0': index % 7 === 0,
           }"
         >
@@ -645,11 +645,11 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
       >
         <div
           v-if="showEventModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
                 {{ selectedEvent ? 'Termin bearbeiten' : 'Neuer Termin' }}
               </h3>
@@ -665,7 +665,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   v-model="eventForm.title"
                   type="text"
                   required
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="Terminname"
                 />
               </div>
@@ -675,7 +675,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 <textarea
                   v-model="eventForm.description"
                   rows="2"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500 resize-none"
+                  class="textarea resize-none"
                   placeholder="Optional"
                 ></textarea>
               </div>
@@ -686,7 +686,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <input
                     type="checkbox"
                     v-model="eventForm.all_day"
-                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500 focus:ring-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                   />
                   <span class="text-sm text-gray-400">Ganztägig</span>
                 </label>
@@ -700,7 +700,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     v-model="eventForm.start_date"
                     type="date"
                     required
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                   />
                 </div>
                 <div>
@@ -708,7 +708,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <input
                     v-model="eventForm.end_date"
                     type="date"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                     :placeholder="eventForm.start_date"
                   />
                 </div>
@@ -722,7 +722,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     v-model="eventForm.start_time"
                     type="time"
                     required
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                   />
                 </div>
                 <div>
@@ -730,7 +730,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <input
                     v-model="eventForm.end_time"
                     type="time"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                   />
                 </div>
               </div>
@@ -743,7 +743,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 </label>
                 <select
                   v-model="eventForm.recurrence"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option v-for="opt in recurrenceOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -759,7 +759,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 </label>
                 <select
                   v-model="eventForm.reminder_minutes"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option v-for="opt in reminderOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -777,7 +777,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     type="button"
                     @click="eventForm.color = color.value"
                     class="w-8 h-8 rounded-full transition-transform hover:scale-110"
-                    :class="[color.class, eventForm.color === color.value ? 'ring-2 ring-white ring-offset-2 ring-offset-dark-800' : '']"
+                    :class="[color.class, eventForm.color === color.value ? 'ring-2 ring-white ring-offset-2 ring-offset-transparent' : '']"
                   ></button>
                 </div>
               </div>
@@ -823,10 +823,10 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
       >
         <div
           v-if="showSettingsModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">Kalender-Einstellungen</h3>
               <button @click="showSettingsModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -854,7 +854,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 </div>
 
                 <!-- Empty state -->
-                <div v-else-if="externalCalendars.length === 0" class="bg-dark-700/50 rounded-lg p-6 text-center">
+                <div v-else-if="externalCalendars.length === 0" class="bg-white/[0.03] rounded-lg p-6 text-center">
                   <CalendarIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
                   <p class="text-gray-400">Keine externen Kalender verbunden</p>
                   <p class="text-sm text-gray-500 mt-1">Füge einen iCal-Link oder CalDAV-Server hinzu</p>
@@ -865,7 +865,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <div
                     v-for="calendar in externalCalendars"
                     :key="calendar.id"
-                    class="bg-dark-700/50 rounded-lg p-4 flex items-center justify-between"
+                    class="bg-white/[0.03] rounded-lg p-4 flex items-center justify-between"
                   >
                     <div class="flex items-center gap-3">
                       <div
@@ -887,7 +887,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                       <button
                         @click="toggleCalendarVisibility(calendar)"
                         class="p-2 rounded-lg transition-colors"
-                        :class="calendar.is_visible ? 'text-green-400 hover:bg-green-500/10' : 'text-gray-500 hover:bg-dark-600'"
+                        :class="calendar.is_visible ? 'text-green-400 hover:bg-green-500/10' : 'text-gray-500 hover:bg-white/[0.04]'"
                         :title="calendar.is_visible ? 'Sichtbar' : 'Ausgeblendet'"
                       >
                         <CheckCircleIcon v-if="calendar.is_visible" class="w-5 h-5" />
@@ -896,7 +896,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                       <!-- Sync button -->
                       <button
                         @click="syncExternalCalendar(calendar.id)"
-                        class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                        class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                         :disabled="isSyncingCalendar === calendar.id"
                         title="Synchronisieren"
                       >
@@ -919,7 +919,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
               </div>
             </div>
 
-            <div class="px-6 py-4 border-t border-dark-700">
+            <div class="px-6 py-4 border-t border-white/[0.06]">
               <button @click="showSettingsModal = false" class="btn-secondary w-full">
                 Schließen
               </button>
@@ -941,10 +941,10 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
       >
         <div
           v-if="showAddCalendarModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">Kalender hinzufügen</h3>
               <button @click="showAddCalendarModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -958,7 +958,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   v-model="calendarForm.name"
                   type="text"
                   required
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="z.B. Google Kalender"
                 />
               </div>
@@ -974,7 +974,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     class="p-3 rounded-lg border-2 text-left transition-all"
                     :class="calendarForm.type === type.value
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'"
+                      : 'border-white/[0.06] hover:border-white/[0.08]'"
                   >
                     <p class="font-medium text-white text-sm">{{ type.label }}</p>
                     <p class="text-xs text-gray-400 mt-0.5">{{ type.description }}</p>
@@ -990,7 +990,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   v-model="calendarForm.url"
                   type="url"
                   required
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                  class="input"
                   :placeholder="calendarForm.type === 'ical' ? 'https://calendar.google.com/calendar/ical/...' : 'https://caldav.example.com/...'"
                 />
               </div>
@@ -1002,7 +1002,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <input
                     v-model="calendarForm.username"
                     type="text"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                     placeholder="Optional"
                   />
                 </div>
@@ -1011,7 +1011,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <input
                     v-model="calendarForm.password"
                     type="password"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                     placeholder="Optional"
                   />
                 </div>
@@ -1026,13 +1026,13 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     type="button"
                     @click="calendarForm.color = color.value"
                     class="w-8 h-8 rounded-full transition-transform hover:scale-110"
-                    :class="[color.class, calendarForm.color === color.value ? 'ring-2 ring-white ring-offset-2 ring-offset-dark-800' : '']"
+                    :class="[color.class, calendarForm.color === color.value ? 'ring-2 ring-white ring-offset-2 ring-offset-transparent' : '']"
                   ></button>
                 </div>
               </div>
 
               <!-- Help text -->
-              <div class="bg-dark-700/50 rounded-lg p-3 text-sm">
+              <div class="bg-white/[0.03] rounded-lg p-3 text-sm">
                 <p class="text-gray-400 mb-2">
                   <strong class="text-white">So findest du die URL:</strong>
                 </p>

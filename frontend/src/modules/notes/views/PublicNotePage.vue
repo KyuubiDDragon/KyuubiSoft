@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { sanitizeHtml } from '@/core/services/sanitize'
 import api from '@/core/api/axios'
 
 const route = useRoute()
@@ -111,7 +112,7 @@ onMounted(() => {
       <!-- Content -->
       <div
         class="public-note-content prose prose-invert prose-lg max-w-none"
-        v-html="note.content"
+        v-html="sanitizeHtml(note.content)"
       />
 
       <!-- Footer -->

@@ -429,7 +429,7 @@ onMounted(() => {
         <button
           v-if="selectedProject"
           @click="backToList"
-          class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+          class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -448,21 +448,21 @@ onMounted(() => {
         <template v-if="selectedProject">
           <button
             @click="toggleFavorite(selectedProject)"
-            class="p-2 text-gray-400 hover:text-yellow-400 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <component :is="selectedProject.is_favorite ? StarIconSolid : StarIcon" class="w-5 h-5" :class="{ 'text-yellow-400': selectedProject.is_favorite }" />
           </button>
           <button
             v-if="selectedProject.is_owner"
             @click="openMembersModal"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
           >
             <UserGroupIcon class="w-5 h-5" />
             <span>Mitglieder</span>
           </button>
           <button
             @click="openModal(selectedProject)"
-            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+            class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
           >
             <PencilIcon class="w-5 h-5" />
             <span>Bearbeiten</span>
@@ -500,7 +500,7 @@ onMounted(() => {
         v-for="project in filteredProjects"
         :key="project.id"
         @click="selectProject(project)"
-        class="bg-dark-800 border border-dark-700 rounded-xl p-4 cursor-pointer hover:border-dark-600 transition-all group"
+        class="bg-dark-800 border border-dark-700 rounded-xl p-4 cursor-pointer hover:border-white/[0.08] transition-all group"
       >
         <div class="flex items-start justify-between mb-3">
           <div
@@ -518,13 +518,13 @@ onMounted(() => {
             </button>
             <button
               @click.stop="openModal(project)"
-              class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded opacity-0 group-hover:opacity-100 transition-all"
+              class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded opacity-0 group-hover:opacity-100 transition-all"
             >
               <PencilIcon class="w-4 h-4" />
             </button>
             <button
               @click.stop="deleteProject(project)"
-              class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded opacity-0 group-hover:opacity-100 transition-all"
+              class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded opacity-0 group-hover:opacity-100 transition-all"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -560,7 +560,7 @@ onMounted(() => {
       <div
         v-if="filteredProjects.length === 0"
         @click="openModal()"
-        class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 cursor-pointer hover:border-dark-500 transition-colors flex flex-col items-center justify-center text-center col-span-full"
+        class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 cursor-pointer hover:border-white/[0.08] transition-colors flex flex-col items-center justify-center text-center col-span-full"
       >
         <FolderIcon class="w-12 h-12 text-gray-500 mb-3" />
         <p class="text-gray-400">Kein Projekt vorhanden</p>
@@ -652,7 +652,7 @@ onMounted(() => {
                 v-for="type in linkTypes"
                 :key="type.value"
                 @click="openLinkModal(type.value)"
-                class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                 :title="type.label + ' verknüpfen'"
               >
                 <component :is="type.icon" class="w-5 h-5" />
@@ -666,7 +666,7 @@ onMounted(() => {
               v-for="link in filteredLinkedItems"
               :key="link.link_id"
               @click="openLinkedItem(link)"
-              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg group cursor-pointer hover:bg-dark-600 transition-colors"
+              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg group cursor-pointer hover:bg-white/[0.04] transition-colors"
             >
               <div class="flex items-center gap-3">
                 <component :is="getLinkIcon(link.type)" class="w-5 h-5 text-gray-400" />
@@ -802,7 +802,7 @@ onMounted(() => {
                 v-for="item in linkableItems"
                 :key="item.id"
                 @click="addLink(item)"
-                class="w-full flex items-center gap-3 p-3 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors text-left"
+                class="w-full flex items-center gap-3 p-3 bg-dark-700 rounded-lg hover:bg-white/[0.04] transition-colors text-left"
               >
                 <component :is="getLinkIcon(linkType)" class="w-5 h-5 text-gray-400" />
                 <div>

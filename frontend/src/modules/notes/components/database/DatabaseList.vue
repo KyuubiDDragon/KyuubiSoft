@@ -170,7 +170,7 @@ function formatPreview(property, row) {
     </div>
 
     <!-- List -->
-    <div v-else class="divide-y divide-dark-600">
+    <div v-else class="divide-y divide-white/[0.06]">
       <!-- List items -->
       <div
         v-for="row in rows"
@@ -181,7 +181,7 @@ function formatPreview(property, row) {
         <div
           @click="toggleRow(row.id)"
           :class="[
-            'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-dark-700/50 transition-colors group',
+            'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.04] transition-colors group',
             hasCheckbox(row) ? 'opacity-60' : ''
           ]"
         >
@@ -201,7 +201,7 @@ function formatPreview(property, row) {
               'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
               hasCheckbox(row)
                 ? 'bg-primary-600 border-primary-600 text-white'
-                : 'border-dark-500 hover:border-dark-400'
+                : 'border-white/[0.08] hover:border-white/[0.12]'
             ]"
           >
             <CheckIcon v-if="hasCheckbox(row)" class="w-3 h-3" />
@@ -253,7 +253,7 @@ function formatPreview(property, row) {
         <!-- Expanded content -->
         <div
           v-if="expandedRows.has(row.id)"
-          class="px-4 pb-4 pl-12 bg-dark-700/30"
+          class="px-4 pb-4 pl-12 bg-white/[0.02]"
         >
           <div class="grid gap-3 py-3">
             <!-- Title property -->
@@ -301,7 +301,7 @@ function formatPreview(property, row) {
       <!-- Add row button -->
       <button
         @click="addRow"
-        class="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-dark-700/50 transition-colors"
+        class="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
       >
         <PlusIcon class="w-4 h-4" />
         Neuer Eintrag

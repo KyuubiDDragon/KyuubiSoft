@@ -121,7 +121,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
   <div class="space-y-4">
     <!-- File Upload -->
     <div
-      class="border-2 border-dashed border-dark-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      class="border-2 border-dashed border-white/[0.06] rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
       @click="$refs.fileInput.click()"
       @dragover.prevent
       @drop.prevent="handleFileSelect({ target: { files: $event.dataTransfer.files } })"
@@ -189,7 +189,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
     </div>
 
     <label v-if="originalImage" class="flex items-center gap-2 text-sm text-gray-400">
-      <input type="checkbox" v-model="maintainAspect" class="rounded bg-dark-700" />
+      <input type="checkbox" v-model="maintainAspect" class="rounded bg-white/[0.04]" />
       Seitenverhältnis beibehalten
     </label>
 
@@ -197,7 +197,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
     <div v-if="originalImage && compressedImage" class="space-y-4">
       <!-- Size Comparison -->
       <div class="grid grid-cols-3 gap-4 text-center">
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <div class="text-xs text-gray-500">Original</div>
           <div class="text-lg font-mono text-white">{{ formatSize(originalSize) }}</div>
         </div>
@@ -215,11 +215,11 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-gray-500 mb-1">Original</div>
-          <img :src="originalImage" class="w-full rounded-lg border border-dark-600" />
+          <img :src="originalImage" class="w-full rounded-lg border border-white/[0.06]" />
         </div>
         <div>
           <div class="text-xs text-gray-500 mb-1">Komprimiert</div>
-          <img :src="compressedImage" class="w-full rounded-lg border border-dark-600" />
+          <img :src="compressedImage" class="w-full rounded-lg border border-white/[0.06]" />
         </div>
       </div>
 

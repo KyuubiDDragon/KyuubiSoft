@@ -491,7 +491,7 @@ function toggleMonitorSelection(monitorId) {
     </div>
 
     <!-- Filters -->
-    <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+    <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
       <div class="flex items-center gap-2 mb-3">
         <FunnelIcon class="w-4 h-4 text-gray-400" />
         <span class="text-sm text-gray-400">Filter</span>
@@ -527,7 +527,7 @@ function toggleMonitorSelection(monitorId) {
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
             <SignalIcon class="w-5 h-5 text-blue-400" />
@@ -538,7 +538,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
             <CheckCircleIcon class="w-5 h-5 text-green-400" />
@@ -549,7 +549,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
             <ExclamationCircleIcon class="w-5 h-5 text-red-400" />
@@ -560,7 +560,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
             <FolderIcon class="w-5 h-5 text-purple-400" />
@@ -610,11 +610,11 @@ function toggleMonitorSelection(monitorId) {
     <div v-else class="space-y-4">
       <!-- Folders with monitors -->
       <template v-for="(group, folderId) in groupedMonitors" :key="folderId">
-        <div v-if="group.monitors.length > 0 || group.folder" class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+        <div v-if="group.monitors.length > 0 || group.folder" class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
           <!-- Folder header -->
           <div
             v-if="group.folder"
-            class="flex items-center justify-between px-4 py-3 bg-dark-750 border-b border-dark-700 cursor-pointer hover:bg-dark-700 transition-colors"
+            class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors"
             @click="toggleFolderCollapse(group.folder)"
           >
             <div class="flex items-center gap-3">
@@ -648,7 +648,7 @@ function toggleMonitorSelection(monitorId) {
           <!-- Unfiled header -->
           <div
             v-else
-            class="flex items-center px-4 py-3 bg-dark-750 border-b border-dark-700"
+            class="flex items-center px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]"
           >
             <FolderIcon class="w-4 h-4 text-gray-500 mr-2" />
             <span class="text-gray-400">Ohne Ordner</span>
@@ -656,11 +656,11 @@ function toggleMonitorSelection(monitorId) {
           </div>
 
           <!-- Monitors list -->
-          <div v-show="!group.isCollapsed" class="divide-y divide-dark-700">
+          <div v-show="!group.isCollapsed" class="divide-y divide-white/[0.06]">
             <div
               v-for="monitor in group.monitors"
               :key="monitor.id"
-              class="flex items-center gap-4 p-4 hover:bg-dark-750 transition-colors group"
+              class="flex items-center gap-4 p-4 hover:bg-white/[0.04] transition-colors group"
             >
               <!-- Checkbox -->
               <input
@@ -677,7 +677,7 @@ function toggleMonitorSelection(monitorId) {
               ></div>
 
               <!-- Type icon -->
-              <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center">
+              <div class="w-8 h-8 bg-white/[0.04] rounded-lg flex items-center justify-center">
                 <component :is="getTypeIcon(monitor.type)" class="w-4 h-4 text-gray-400" />
               </div>
 
@@ -685,7 +685,7 @@ function toggleMonitorSelection(monitorId) {
               <div class="flex-1 min-w-0 cursor-pointer" @click="openDetail(monitor)">
                 <div class="flex items-center gap-2">
                   <h3 class="font-medium text-white">{{ monitor.name }}</h3>
-                  <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
+                  <span class="px-2 py-0.5 text-xs rounded bg-white/[0.08] text-gray-400">
                     {{ getTypeName(monitor.type) }}
                   </span>
                   <span
@@ -732,14 +732,14 @@ function toggleMonitorSelection(monitorId) {
                 <button
                   @click="checkNow(monitor)"
                   :disabled="checkingId === monitor.id"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                   title="Jetzt prüfen"
                 >
                   <ArrowPathIcon class="w-5 h-5" :class="{ 'animate-spin': checkingId === monitor.id }" />
                 </button>
                 <button
                   @click="togglePause(monitor)"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                   :title="monitor.is_paused ? 'Fortsetzen' : 'Pausieren'"
                 >
                   <PlayIcon v-if="monitor.is_paused" class="w-5 h-5" />
@@ -747,13 +747,13 @@ function toggleMonitorSelection(monitorId) {
                 </button>
                 <button
                   @click="openEditModal(monitor)"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   <PencilIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="deleteMonitor(monitor)"
-                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   <TrashIcon class="w-5 h-5" />
                 </button>
@@ -768,11 +768,11 @@ function toggleMonitorSelection(monitorId) {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
               {{ editingMonitor ? 'Monitor bearbeiten' : 'Neuer Monitor' }}
             </h2>
@@ -822,7 +822,7 @@ function toggleMonitorSelection(monitorId) {
                   class="p-3 rounded-lg border text-left transition-colors"
                   :class="form.type === type
                     ? 'border-primary-500 bg-primary-500/10 text-white'
-                    : 'border-dark-600 bg-dark-700 text-gray-400 hover:border-dark-500'"
+                    : 'border-white/[0.06] bg-white/[0.04] text-gray-400 hover:border-white/[0.08]'"
                 >
                   <component :is="getTypeIcon(type)" class="w-5 h-5 mb-1" />
                   <p class="text-sm font-medium">{{ info.name }}</p>
@@ -930,11 +930,11 @@ function toggleMonitorSelection(monitorId) {
     <Teleport to="body">
       <div
         v-if="showFolderModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-sm border border-dark-700">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-sm">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
               {{ editingFolder ? 'Ordner bearbeiten' : 'Neuer Ordner' }}
             </h2>
@@ -981,11 +981,11 @@ function toggleMonitorSelection(monitorId) {
     <Teleport to="body">
       <div
         v-if="showDetailModal && selectedMonitor"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div
                 class="w-3 h-3 rounded-full"
@@ -993,7 +993,7 @@ function toggleMonitorSelection(monitorId) {
               ></div>
               <component :is="getTypeIcon(selectedMonitor.type)" class="w-5 h-5 text-gray-400" />
               <h2 class="text-lg font-semibold text-white">{{ selectedMonitor.name }}</h2>
-              <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-400">
+              <span class="px-2 py-0.5 text-xs rounded bg-white/[0.08] text-gray-400">
                 {{ getTypeName(selectedMonitor.type) }}
               </span>
             </div>
@@ -1004,7 +1004,7 @@ function toggleMonitorSelection(monitorId) {
 
           <div class="p-4 space-y-6">
             <!-- Game Server Data -->
-            <div v-if="selectedMonitor.game_server_data && Object.keys(selectedMonitor.game_server_data).length" class="bg-dark-700 rounded-lg p-4">
+            <div v-if="selectedMonitor.game_server_data && Object.keys(selectedMonitor.game_server_data).length" class="bg-white/[0.04] rounded-lg p-4">
               <h3 class="text-sm font-medium text-gray-400 mb-3">Server Info</h3>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div v-if="selectedMonitor.game_server_data.players_online !== undefined">
@@ -1037,7 +1037,7 @@ function toggleMonitorSelection(monitorId) {
             </div>
 
             <!-- SSL Certificate Info -->
-            <div v-if="selectedMonitor.type === 'ssl' && selectedMonitor.game_server_data" class="bg-dark-700 rounded-lg p-4">
+            <div v-if="selectedMonitor.type === 'ssl' && selectedMonitor.game_server_data" class="bg-white/[0.04] rounded-lg p-4">
               <h3 class="text-sm font-medium text-gray-400 mb-3">SSL Zertifikat</h3>
               <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -1065,7 +1065,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Stats -->
             <div class="grid grid-cols-3 gap-4">
-              <div v-for="(stat, period) in selectedMonitor.stats" :key="period" class="bg-dark-700 rounded-lg p-3">
+              <div v-for="(stat, period) in selectedMonitor.stats" :key="period" class="bg-white/[0.04] rounded-lg p-3">
                 <p class="text-sm text-gray-400">{{ period }}</p>
                 <p class="text-xl font-bold text-white">{{ stat.percentage }}%</p>
                 <p class="text-xs text-gray-500">Ø {{ stat.avg_response_time || '-' }}ms</p>
@@ -1079,7 +1079,7 @@ function toggleMonitorSelection(monitorId) {
                 <div
                   v-for="incident in selectedMonitor.incidents"
                   :key="incident.id"
-                  class="bg-dark-700 rounded-lg p-3"
+                  class="bg-white/[0.04] rounded-lg p-3"
                 >
                   <div class="flex items-center justify-between">
                     <span class="text-sm text-red-400">{{ formatDate(incident.started_at) }}</span>

@@ -220,7 +220,7 @@ async function onDragEnd() {
       <div class="flex gap-2">
         <button
           @click="openCatalogPicker"
-          class="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-dark-600 hover:bg-dark-500 text-gray-300 hover:text-white rounded-lg transition-colors border border-dark-500"
+          class="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.06] text-gray-300 hover:text-white rounded-lg transition-colors border border-white/[0.08]"
         >
           <DocumentTextIcon class="w-4 h-4" />
           Aus Katalog
@@ -244,8 +244,8 @@ async function onDragEnd() {
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-1"
     >
-      <div v-if="showCatalogPicker" class="bg-dark-700 border border-dark-500 rounded-xl overflow-hidden shadow-xl">
-        <div class="p-3 border-b border-dark-600 flex items-center gap-2">
+      <div v-if="showCatalogPicker" class="bg-white/[0.04] border border-white/[0.08] rounded-xl overflow-hidden shadow-float">
+        <div class="p-3 border-b border-white/[0.06] flex items-center gap-2">
           <MagnifyingGlassIcon class="w-4 h-4 text-gray-400 shrink-0" />
           <input
             id="catalog-search"
@@ -263,12 +263,12 @@ async function onDragEnd() {
             ? 'Kein Leistungskatalog vorhanden. Lege einen an unter Einstellungen → Rechnungen.'
             : 'Keine Leistungen gefunden.' }}
         </div>
-        <div v-else class="max-h-56 overflow-y-auto divide-y divide-dark-600">
+        <div v-else class="max-h-56 overflow-y-auto divide-y divide-white/[0.06]">
           <button
             v-for="item in filteredCatalog"
             :key="item.id"
             @click="selectCatalogItem(item)"
-            class="w-full flex items-center justify-between px-4 py-3 hover:bg-dark-600 transition-colors text-left group"
+            class="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.04] transition-colors text-left group"
           >
             <div class="min-w-0 mr-4">
               <p class="text-sm text-white font-medium group-hover:text-primary-300 transition-colors">{{ item.name }}</p>
@@ -283,9 +283,9 @@ async function onDragEnd() {
     </Transition>
 
     <!-- Items table -->
-    <div class="bg-dark-700 rounded-xl overflow-hidden border border-dark-600">
+    <div class="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
       <table class="w-full">
-        <thead class="bg-dark-600">
+        <thead class="bg-white/[0.08]">
           <tr>
             <th class="w-8 px-3 py-2.5"></th>
             <th class="px-3 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Beschreibung</th>
@@ -303,13 +303,13 @@ async function onDragEnd() {
           ghost-class="opacity-30"
           animation="150"
           @end="onDragEnd"
-          class="divide-y divide-dark-600"
+          class="divide-y divide-white/[0.06]"
         >
           <template #item="{ element: item }">
-            <tr class="group hover:bg-dark-600/30 transition-colors">
+            <tr class="group hover:bg-white/[0.02] transition-colors">
               <!-- Drag handle -->
               <td class="px-2 py-2">
-                <div class="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-center text-dark-400 group-hover:text-gray-500 transition-colors">
+                <div class="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-center text-gray-600 group-hover:text-gray-500 transition-colors">
                   <Bars3Icon class="w-4 h-4" />
                 </div>
               </td>
@@ -324,7 +324,7 @@ async function onDragEnd() {
                     :id="`edit-description-${item.id}`"
                     v-model="editValues.description"
                     rows="2"
-                    class="flex-1 bg-dark-500 border border-primary-500 rounded-lg px-2 py-1.5 text-sm text-white resize-none outline-none focus:ring-1 ring-primary-400"
+                    class="flex-1 bg-white/[0.06] border border-primary-500 rounded-lg px-2 py-1.5 text-sm text-white resize-none outline-none focus:ring-1 ring-primary-400"
                     @keydown.enter.exact.prevent="saveEdit(item)"
                     @keydown.esc="cancelEdit"
                   ></textarea>
@@ -332,7 +332,7 @@ async function onDragEnd() {
                     <button @click="saveEdit(item)" class="p-1 bg-primary-600 hover:bg-primary-500 rounded text-white">
                       <CheckIcon class="w-3 h-3" />
                     </button>
-                    <button @click="cancelEdit" class="p-1 bg-dark-500 hover:bg-dark-400 rounded text-gray-400">
+                    <button @click="cancelEdit" class="p-1 bg-white/[0.06] hover:bg-white/[0.06] rounded text-gray-400">
                       <XMarkIcon class="w-3 h-3" />
                     </button>
                   </div>
@@ -340,7 +340,7 @@ async function onDragEnd() {
                 <div
                   v-else
                   @click="startEdit(item, 'description')"
-                  class="cursor-text text-white whitespace-pre-line hover:text-primary-300 transition-colors min-h-[1.5rem] rounded px-1 -mx-1 hover:bg-dark-500/50 py-0.5"
+                  class="cursor-text text-white whitespace-pre-line hover:text-primary-300 transition-colors min-h-[1.5rem] rounded px-1 -mx-1 hover:bg-white/[0.06]/50 py-0.5"
                   title="Klicken zum Bearbeiten"
                 >
                   {{ item.description || '–' }}
@@ -359,14 +359,14 @@ async function onDragEnd() {
                     type="number"
                     min="0"
                     step="0.01"
-                    class="w-16 bg-dark-500 border border-primary-500 rounded px-2 py-1 text-sm text-white text-right outline-none focus:ring-1 ring-primary-400"
+                    class="w-16 bg-white/[0.06] border border-primary-500 rounded px-2 py-1 text-sm text-white text-right outline-none focus:ring-1 ring-primary-400"
                     @keydown.enter="saveEdit(item)"
                     @keydown.esc="cancelEdit"
                     @blur="saveEdit(item)"
                   />
                   <select
                     v-model="editValues.unit"
-                    class="w-20 bg-dark-500 border border-dark-400 rounded px-1 py-1 text-xs text-gray-300 outline-none"
+                    class="w-20 bg-white/[0.06] border border-white/[0.06] rounded px-1 py-1 text-xs text-gray-300 outline-none"
                     @change="saveEdit(item)"
                   >
                     <option v-for="u in itemUnits" :key="u" :value="u">{{ u }}</option>
@@ -375,7 +375,7 @@ async function onDragEnd() {
                 <div
                   v-else
                   @click="startEdit(item, 'quantity')"
-                  class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-dark-500/50 rounded px-1 py-0.5 inline-block"
+                  class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-white/[0.06]/50 rounded px-1 py-0.5 inline-block"
                   title="Klicken zum Bearbeiten"
                 >
                   {{ parseFloat(item.quantity).toLocaleString('de-DE') }} {{ item.unit }}
@@ -393,7 +393,7 @@ async function onDragEnd() {
                     type="number"
                     min="0"
                     step="0.01"
-                    class="w-24 bg-dark-500 border border-primary-500 rounded px-2 py-1 text-sm text-white text-right outline-none focus:ring-1 ring-primary-400"
+                    class="w-24 bg-white/[0.06] border border-primary-500 rounded px-2 py-1 text-sm text-white text-right outline-none focus:ring-1 ring-primary-400"
                     @keydown.enter="saveEdit(item)"
                     @keydown.esc="cancelEdit"
                     @blur="saveEdit(item)"
@@ -402,7 +402,7 @@ async function onDragEnd() {
                 <div
                   v-else
                   @click="startEdit(item, 'unit_price')"
-                  class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-dark-500/50 rounded px-1 py-0.5 inline-block"
+                  class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-white/[0.06]/50 rounded px-1 py-0.5 inline-block"
                   title="Klicken zum Bearbeiten"
                 >
                   {{ formatCurrency(item.unit_price) }}
@@ -438,7 +438,7 @@ async function onDragEnd() {
         </draggable>
 
         <!-- Totals row -->
-        <tfoot class="border-t-2 border-dark-500 bg-dark-600/50">
+        <tfoot class="border-t-2 border-white/[0.08] bg-white/[0.03]">
           <tr v-if="parseFloat(invoice.tax_rate) > 0">
             <td colspan="4" class="px-3 py-2 text-right text-sm text-gray-400">Netto</td>
             <td class="px-3 py-2 text-right text-sm text-gray-300">{{ formatCurrency(localSubtotal) }}</td>
@@ -467,7 +467,7 @@ async function onDragEnd() {
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-2"
     >
-      <div v-if="showNewItemForm" class="bg-dark-700 border border-primary-500/30 rounded-xl p-4 space-y-3 shadow-lg">
+      <div v-if="showNewItemForm" class="bg-white/[0.04] border border-primary-500/30 rounded-xl p-4 space-y-3 shadow-glass">
         <div class="flex items-center justify-between">
           <h4 class="text-sm font-semibold text-white">Neue Position</h4>
           <button @click="showNewItemForm = false" class="text-gray-500 hover:text-white">
@@ -510,7 +510,7 @@ async function onDragEnd() {
           </div>
         </div>
         <!-- Live preview of total -->
-        <div class="flex items-center justify-between text-sm border-t border-dark-600 pt-2">
+        <div class="flex items-center justify-between text-sm border-t border-white/[0.06] pt-2">
           <span class="text-gray-500">Positionsbetrag:</span>
           <span class="text-white font-semibold">
             {{ formatCurrency((parseFloat(newItemForm.quantity) || 0) * (parseFloat(newItemForm.unit_price) || 0)) }}

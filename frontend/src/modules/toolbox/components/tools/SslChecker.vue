@@ -132,50 +132,50 @@ const quickDomains = [
 
       <!-- Certificate Details -->
       <div class="grid grid-cols-2 gap-3" v-if="result.certificate">
-        <div class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Common Name</span>
           <div class="text-white font-mono">{{ result.certificate.commonName }}</div>
         </div>
 
-        <div class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Aussteller</span>
           <div class="text-white">{{ result.certificate.issuer }}</div>
         </div>
 
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Gültig ab</span>
           <div class="text-white">{{ formatDate(result.certificate.validFrom) }}</div>
         </div>
 
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Gültig bis</span>
           <div class="text-white">{{ formatDate(result.certificate.validTo) }}</div>
         </div>
 
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Verbleibende Zeit</span>
           <div :class="getExpiryStatus(result.certificate.daysUntilExpiry).class">
             {{ getExpiryStatus(result.certificate.daysUntilExpiry).text }}
           </div>
         </div>
 
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Signatur-Algorithmus</span>
           <div class="text-white text-sm">{{ result.certificate.signatureAlgorithm || '-' }}</div>
         </div>
 
-        <div v-if="result.certificate.serialNumber" class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div v-if="result.certificate.serialNumber" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Seriennummer</span>
           <div class="text-sm text-gray-300 font-mono break-all">{{ result.certificate.serialNumber }}</div>
         </div>
 
-        <div v-if="result.certificate.san?.length" class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div v-if="result.certificate.san?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Alternative Namen (SAN)</span>
           <div class="flex flex-wrap gap-1 mt-1">
             <span
               v-for="name in result.certificate.san"
               :key="name"
-              class="px-2 py-0.5 text-xs bg-dark-600 text-gray-300 rounded font-mono"
+              class="px-2 py-0.5 text-xs bg-white/[0.08] text-gray-300 rounded font-mono"
             >
               {{ name }}
             </span>

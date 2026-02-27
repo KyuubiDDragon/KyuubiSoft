@@ -40,6 +40,9 @@ class WidgetController
         'quote_of_day' => ['title' => 'Zitat des Tages', 'default_width' => 2, 'default_height' => 5, 'description' => 'Inspirierendes Zitat'],
         'link_stats' => ['title' => 'Link-Statistiken', 'default_width' => 1, 'default_height' => 5, 'description' => 'Übersicht über Short-Links'],
         'backup_status' => ['title' => 'Backup-Status', 'default_width' => 1, 'default_height' => 6, 'description' => 'Status der Backups'],
+        'system_health' => ['title' => 'Systemstatus', 'default_width' => 1, 'default_height' => 8, 'description' => 'CPU, RAM und Festplattenauslastung'],
+        'github_activity' => ['title' => 'Git-Aktivität', 'default_width' => 1, 'default_height' => 10, 'description' => 'Aktuelle Git-Commits und Aktivitäten'],
+        'pomodoro_timer' => ['title' => 'Pomodoro Timer', 'default_width' => 1, 'default_height' => 8, 'description' => 'Pomodoro-Timer für fokussiertes Arbeiten'],
     ];
 
     public function __construct(

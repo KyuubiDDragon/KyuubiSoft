@@ -138,7 +138,7 @@ async function deleteOption(optionId) {
     <button
       v-if="!isRenaming"
       @click="showMenu = !showMenu"
-      class="flex items-center gap-1.5 px-2 py-2 w-full hover:bg-dark-700 rounded transition-colors"
+      class="flex items-center gap-1.5 px-2 py-2 w-full hover:bg-white/[0.04] rounded transition-colors"
     >
       <span class="text-sm">{{ typeInfo.icon }}</span>
       <span class="text-xs font-medium text-gray-400 truncate">{{ property.name }}</span>
@@ -150,7 +150,7 @@ async function deleteOption(optionId) {
       v-else
       v-model="renameValue"
       type="text"
-      class="w-full bg-dark-700 border border-primary-500 rounded px-2 py-1 text-xs text-white focus:outline-none"
+      class="input w-full"
       @blur="saveRename"
       @keydown.enter="saveRename"
       @keydown.escape="isRenaming = false"
@@ -160,9 +160,9 @@ async function deleteOption(optionId) {
     <!-- Dropdown menu -->
     <div
       v-if="showMenu"
-      class="absolute top-full left-0 mt-1 w-56 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-20 overflow-hidden"
+      class="absolute top-full left-0 mt-1 w-56 bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-glass z-20 overflow-hidden"
     >
-      <div class="p-2 border-b border-dark-600">
+      <div class="p-2 border-b border-white/[0.06]">
         <div class="text-xs text-gray-500 mb-1">Typ</div>
         <div class="flex items-center gap-2 text-sm text-gray-300">
           <span>{{ typeInfo.icon }}</span>
@@ -173,7 +173,7 @@ async function deleteOption(optionId) {
       <div class="p-1">
         <button
           @click="startRename"
-          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-dark-600 rounded"
+          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <PencilIcon class="w-4 h-4" />
           Umbenennen
@@ -183,7 +183,7 @@ async function deleteOption(optionId) {
         <button
           v-if="['select', 'multi_select'].includes(property.type)"
           @click="showOptionsEditor = !showOptionsEditor"
-          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-dark-600 rounded"
+          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <ArrowsUpDownIcon class="w-4 h-4" />
           Optionen bearbeiten
@@ -191,13 +191,13 @@ async function deleteOption(optionId) {
 
         <button
           @click="hideProperty"
-          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-dark-600 rounded"
+          class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <EyeSlashIcon class="w-4 h-4" />
           Ausblenden
         </button>
 
-        <hr class="my-1 border-dark-600" />
+        <hr class="my-1 border-white/[0.06]" />
 
         <button
           @click="deleteProperty"
@@ -213,7 +213,7 @@ async function deleteOption(optionId) {
       </div>
 
       <!-- Options editor panel -->
-      <div v-if="showOptionsEditor && ['select', 'multi_select'].includes(property.type)" class="border-t border-dark-600 p-2">
+      <div v-if="showOptionsEditor && ['select', 'multi_select'].includes(property.type)" class="border-t border-white/[0.06] p-2">
         <div class="text-xs text-gray-500 mb-2">Optionen</div>
 
         <!-- Existing options -->
@@ -221,7 +221,7 @@ async function deleteOption(optionId) {
           <div
             v-for="option in selectOptions"
             :key="option.id"
-            class="flex items-center gap-2 px-2 py-1 rounded bg-dark-600/50 group"
+            class="flex items-center gap-2 px-2 py-1 rounded bg-white/[0.04] group"
           >
             <span :class="['w-3 h-3 rounded-full', `bg-${option.color}-500`]"></span>
             <span class="text-sm text-gray-300 flex-1 truncate">{{ option.name }}</span>
@@ -238,7 +238,7 @@ async function deleteOption(optionId) {
         <div class="flex items-center gap-2">
           <select
             v-model="newOptionColor"
-            class="w-16 bg-dark-600 border-none rounded px-1 py-1 text-xs text-white"
+            class="select w-16"
           >
             <option
               v-for="color in databaseStore.selectColors"
@@ -252,12 +252,12 @@ async function deleteOption(optionId) {
             v-model="newOptionName"
             type="text"
             placeholder="Option..."
-            class="flex-1 bg-dark-600 border-none rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="input flex-1"
             @keydown.enter="addOption"
           />
           <button
             @click="addOption"
-            class="p-1 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+            class="p-1 text-gray-400 hover:text-white hover:bg-white/[0.08] rounded"
           >
             <PlusIcon class="w-4 h-4" />
           </button>

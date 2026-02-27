@@ -214,16 +214,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-dark-700">
+  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-white/[0.06]">
     <!-- Sidebar -->
-    <div class="w-64 flex-shrink-0 flex flex-col bg-dark-900 border-r border-dark-700">
-      <div class="px-4 py-3 border-b border-dark-700">
+    <div class="w-64 flex-shrink-0 flex flex-col bg-white/[0.02] border-r border-white/[0.06]">
+      <div class="px-4 py-3 border-b border-white/[0.06]">
         <h2 class="font-semibold text-white text-sm flex items-center gap-2">
           <DocumentTextIcon class="w-4 h-4 text-primary-400" />
           Log Viewer
         </h2>
         <!-- Source type toggle -->
-        <div class="flex mt-2 rounded-lg overflow-hidden border border-dark-700">
+        <div class="flex mt-2 rounded-lg overflow-hidden border border-white/[0.06]">
           <button
             @click="sourceType = 'docker'"
             class="flex-1 py-1 text-xs transition-colors"
@@ -248,7 +248,7 @@ onUnmounted(() => {
             <button
               @click="selectDockerHost(host)"
               class="w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
-              :class="selectedHost?.id === host.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-dark-700 hover:text-white'"
+              :class="selectedHost?.id === host.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-white/[0.04] hover:text-white'"
             >
               <ServerIcon class="w-4 h-4 flex-shrink-0" />
               {{ host.name }}
@@ -260,7 +260,7 @@ onUnmounted(() => {
                 :key="container.id"
                 @click="selectContainer(container)"
                 class="w-full text-left ml-4 px-2 py-1.5 rounded text-xs flex items-center gap-1.5 transition-colors"
-                :class="selectedContainer?.id === container.id ? 'text-white bg-dark-700' : 'text-gray-500 hover:text-gray-300'"
+                :class="selectedContainer?.id === container.id ? 'text-white bg-white/[0.08]' : 'text-gray-500 hover:text-gray-300'"
               >
                 <span
                   class="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -283,7 +283,7 @@ onUnmounted(() => {
             :key="file.path"
             @click="selectLocalFile(file)"
             class="w-full text-left px-3 py-2 rounded-lg text-xs transition-colors"
-            :class="selectedFile?.path === file.path ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-dark-700 hover:text-white'"
+            :class="selectedFile?.path === file.path ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-white/[0.04] hover:text-white'"
           >
             <div class="font-medium truncate">{{ file.name }}</div>
             <div class="text-gray-600 mt-0.5">{{ file.label }}</div>
@@ -293,7 +293,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Log panel -->
-    <div class="flex-1 flex flex-col min-w-0 bg-dark-950">
+    <div class="flex-1 flex flex-col min-w-0 bg-white/[0.02]">
       <!-- No source selected -->
       <div v-if="!selectedContainer && !selectedFile" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
@@ -304,7 +304,7 @@ onUnmounted(() => {
 
       <template v-else>
         <!-- Toolbar -->
-        <div class="flex items-center gap-2 px-4 py-2 border-b border-dark-700 flex-shrink-0">
+        <div class="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
           <!-- Search -->
           <div class="relative flex-1 max-w-xs">
             <MagnifyingGlassIcon class="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -312,14 +312,14 @@ onUnmounted(() => {
               v-model="filterText"
               type="text"
               placeholder="Filter…"
-              class="w-full bg-dark-700 border border-dark-600 rounded-lg pl-8 pr-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              class="input w-full pl-8 pr-3 py-1.5 text-sm"
             />
           </div>
 
           <!-- Level filter -->
           <select
             v-model="filterLevel"
-            class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-primary-500"
+            class="select px-3 py-1.5 text-sm"
           >
             <option value="">Alle Level</option>
             <option value="critical">Critical</option>
@@ -340,7 +340,7 @@ onUnmounted(() => {
             <button
               @click="toggleAutoRefresh"
               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-              :class="autoRefresh ? 'bg-green-500/20 text-green-400' : 'bg-dark-700 text-gray-400 hover:text-white'"
+              :class="autoRefresh ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
             >
               <component :is="autoRefresh ? PauseIcon : PlayIcon" class="w-3.5 h-3.5" />
               {{ autoRefresh ? `Live (${refreshInterval}s)` : 'Live' }}
@@ -350,7 +350,7 @@ onUnmounted(() => {
             <button
               @click="fetchLogs"
               :disabled="loading"
-              class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-700 transition-colors"
+              class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
             >
               <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
             </button>
@@ -358,7 +358,7 @@ onUnmounted(() => {
             <!-- Clear -->
             <button
               @click="clearLogs"
-              class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-700 transition-colors"
+              class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
             >
               <XMarkIcon class="w-4 h-4" />
             </button>
@@ -366,7 +366,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Log count -->
-        <div class="px-4 py-1 border-b border-dark-700 text-xs text-gray-600 flex-shrink-0">
+        <div class="px-4 py-1 border-b border-white/[0.06] text-xs text-gray-600 flex-shrink-0">
           {{ filteredLogs.length.toLocaleString() }} Einträge
           <span v-if="filterText || filterLevel">(gefiltert von {{ logs.length.toLocaleString() }})</span>
         </div>
@@ -380,7 +380,7 @@ onUnmounted(() => {
           <div
             v-for="(log, idx) in filteredLogs"
             :key="idx"
-            class="flex items-start gap-2 px-4 py-0.5 hover:bg-white/5 transition-colors border-b border-dark-800/30"
+            class="flex items-start gap-2 px-4 py-0.5 hover:bg-white/5 transition-colors border-b border-white/[0.04]"
             :class="levelClass(log.level)"
           >
             <span class="flex-shrink-0 text-gray-600 w-24 truncate text-right">

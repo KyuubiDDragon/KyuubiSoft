@@ -382,7 +382,7 @@ watch(activeTab, (newTab) => {
       </div>
       <div class="flex items-center gap-3">
         <label class="flex items-center gap-2 text-sm text-gray-400">
-          <input v-model="autoRefresh" @change="toggleAutoRefresh" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="autoRefresh" @change="toggleAutoRefresh" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           Auto-Refresh
         </label>
         <button @click="refreshAll" :disabled="loading" class="btn-secondary">
@@ -406,7 +406,7 @@ watch(activeTab, (newTab) => {
       <div class="card p-4">
         <p class="text-xs text-gray-400 mb-1">Memory</p>
         <p class="text-lg font-semibold text-white">{{ systemInfo.memory?.percent }}%</p>
-        <div class="w-full h-1.5 bg-dark-600 rounded-full mt-1.5 mb-1">
+        <div class="w-full h-1.5 bg-white/[0.08] rounded-full mt-1.5 mb-1">
           <div
             class="h-full rounded-full transition-all"
             :class="systemInfo.memory?.percent >= 90 ? 'bg-red-500' : systemInfo.memory?.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
@@ -418,7 +418,7 @@ watch(activeTab, (newTab) => {
       <div class="card p-4">
         <p class="text-xs text-gray-400 mb-1">CPU</p>
         <p class="text-lg font-semibold text-white">{{ systemInfo.cpu?.percent ?? '–' }}%</p>
-        <div class="w-full h-1.5 bg-dark-600 rounded-full mt-1.5 mb-1">
+        <div class="w-full h-1.5 bg-white/[0.08] rounded-full mt-1.5 mb-1">
           <div
             class="h-full rounded-full transition-all"
             :class="systemInfo.cpu?.percent >= 90 ? 'bg-red-500' : systemInfo.cpu?.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
@@ -434,7 +434,7 @@ watch(activeTab, (newTab) => {
         <div class="space-y-2">
           <div v-for="disk in systemInfo.disks" :key="disk.mount" class="flex items-center gap-3">
             <span class="text-xs text-gray-400 w-28 truncate shrink-0 font-mono">{{ disk.mount }}</span>
-            <div class="flex-1 h-2 bg-dark-600 rounded-full overflow-hidden">
+            <div class="flex-1 h-2 bg-white/[0.08] rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all"
                 :class="disk.percent >= 90 ? 'bg-red-500' : disk.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
@@ -452,7 +452,7 @@ watch(activeTab, (newTab) => {
       <div v-if="systemInfo.network?.length" class="col-span-2 sm:col-span-4 card p-4">
         <p class="text-xs text-gray-400 mb-3">Netzwerk</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div v-for="iface in systemInfo.network" :key="iface.name" class="bg-dark-800 rounded-lg px-3 py-2">
+          <div v-for="iface in systemInfo.network" :key="iface.name" class="bg-white/[0.04] rounded-lg px-3 py-2">
             <p class="text-xs font-semibold text-white font-mono">{{ iface.name }}</p>
             <p class="text-xs text-gray-400 mt-0.5">{{ iface.ip }}</p>
             <div class="flex gap-3 mt-1 text-xs text-gray-500">
@@ -465,7 +465,7 @@ watch(activeTab, (newTab) => {
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-dark-600">
+    <div class="border-b border-white/[0.06]">
       <nav class="flex gap-4">
         <button
           v-for="tab in [
@@ -494,7 +494,7 @@ watch(activeTab, (newTab) => {
       <div class="card">
         <!-- Header with toggle -->
         <div
-          class="flex items-center justify-between p-4 cursor-pointer hover:bg-dark-700/50 transition-colors"
+          class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
           @click="importantServicesExpanded = !importantServicesExpanded"
         >
           <div class="flex items-center gap-3">
@@ -527,7 +527,7 @@ watch(activeTab, (newTab) => {
             <div
               v-for="service in customServices"
               :key="service.name"
-              class="bg-dark-700 rounded-lg p-4 flex items-center justify-between"
+              class="bg-white/[0.04] rounded-lg p-4 flex items-center justify-between"
             >
               <div class="flex items-center gap-3">
                 <div
@@ -598,7 +598,7 @@ watch(activeTab, (newTab) => {
       <!-- Services Table -->
       <div class="card overflow-hidden">
         <table class="w-full">
-          <thead class="bg-dark-700">
+          <thead class="bg-white/[0.04]">
             <tr class="text-left text-sm text-gray-400">
               <th class="p-3">Service</th>
               <th class="p-3">Status</th>
@@ -610,7 +610,7 @@ watch(activeTab, (newTab) => {
             <tr
               v-for="service in filteredServices"
               :key="service.name"
-              class="border-t border-dark-600 hover:bg-dark-700"
+              class="border-t border-white/[0.06] hover:bg-white/[0.04]"
             >
               <td class="p-3">
                 <span class="font-medium text-white">{{ service.name }}</span>
@@ -736,7 +736,7 @@ watch(activeTab, (newTab) => {
       <!-- Processes Table -->
       <div class="card overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-dark-700">
+          <thead class="bg-white/[0.04]">
             <tr class="text-left text-xs text-gray-400">
               <th class="p-3">PID</th>
               <th class="p-3">User</th>
@@ -751,7 +751,7 @@ watch(activeTab, (newTab) => {
             <tr
               v-for="proc in processes.slice(0, 50)"
               :key="proc.pid"
-              class="border-t border-dark-600 hover:bg-dark-700"
+              class="border-t border-white/[0.06] hover:bg-white/[0.04]"
             >
               <td class="p-3 font-mono text-sm text-gray-300">{{ proc.pid }}</td>
               <td class="p-3 text-sm text-gray-400">{{ proc.user }}</td>
@@ -785,10 +785,10 @@ watch(activeTab, (newTab) => {
     <Teleport to="body">
       <div
         v-if="showCrontabModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-lg">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Neuer Crontab</h2>
             <button @click="showCrontabModal = false" class="btn-icon">
               <XMarkIcon class="w-5 h-5" />
@@ -838,10 +838,10 @@ watch(activeTab, (newTab) => {
       <!-- Edit Raw Crontab Modal -->
       <div
         v-if="showEditCrontabModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-2xl">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-2xl">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Crontab bearbeiten</h2>
             <button @click="showEditCrontabModal = false" class="btn-icon">
               <XMarkIcon class="w-5 h-5" />
@@ -851,12 +851,12 @@ watch(activeTab, (newTab) => {
           <div class="p-4">
             <textarea
               v-model="rawCrontab"
-              class="w-full h-80 bg-dark-900 text-gray-300 font-mono text-sm p-4 rounded-lg border border-dark-600 focus:border-primary-500 focus:outline-none resize-none"
+              class="w-full h-80 bg-white/[0.02] text-gray-300 font-mono text-sm p-4 rounded-lg border border-white/[0.06] focus:border-primary-500 focus:outline-none resize-none"
               spellcheck="false"
             ></textarea>
           </div>
 
-          <div class="flex justify-end gap-3 p-4 border-t border-dark-600">
+          <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showEditCrontabModal = false" class="btn-secondary">
               Abbrechen
             </button>
@@ -870,10 +870,10 @@ watch(activeTab, (newTab) => {
       <!-- Service Details Modal -->
       <div
         v-if="showServiceModal && selectedService"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-3xl max-h-[90vh] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <div>
               <h2 class="text-lg font-semibold text-white">{{ selectedService.name }}</h2>
               <p class="text-sm text-gray-400">{{ selectedService.description }}</p>
@@ -886,16 +886,16 @@ watch(activeTab, (newTab) => {
           <div class="flex-1 overflow-auto p-4 space-y-4">
             <div>
               <h4 class="text-sm font-medium text-gray-300 mb-2">Status</h4>
-              <pre class="bg-dark-900 p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-40 whitespace-pre-wrap">{{ serviceStatus || 'Loading...' }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-40 whitespace-pre-wrap">{{ serviceStatus || 'Loading...' }}</pre>
             </div>
 
             <div>
               <h4 class="text-sm font-medium text-gray-300 mb-2">Logs (letzte 50 Zeilen)</h4>
-              <pre class="bg-dark-900 p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || 'Keine Logs verfügbar' }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || 'Keine Logs verfügbar' }}</pre>
             </div>
           </div>
 
-          <div class="flex justify-between p-4 border-t border-dark-600">
+          <div class="flex justify-between p-4 border-t border-white/[0.06]">
             <div class="flex gap-2">
               <button
                 @click="controlService(selectedService.name, 'start')"
@@ -936,10 +936,10 @@ watch(activeTab, (newTab) => {
       <!-- Add Custom Service Modal -->
       <div
         v-if="showAddServiceModal"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-md">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="modal w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Service hinzufuegen</h2>
             <button @click="showAddServiceModal = false" class="btn-icon">
               <XMarkIcon class="w-5 h-5" />

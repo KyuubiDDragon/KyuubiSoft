@@ -305,34 +305,34 @@ onUnmounted(() => {
 
     <!-- System Info Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-      <div class="bg-dark-800 rounded-lg border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider">Version</h3>
         <p class="mt-1 text-xl font-bold text-white">{{ systemInfo.version }}</p>
       </div>
 
-      <div class="bg-dark-800 rounded-lg border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider">Umgebung</h3>
         <p class="mt-1 text-xl font-bold text-white capitalize">{{ systemInfo.environment }}</p>
       </div>
 
-      <div class="bg-dark-800 rounded-lg border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider">PHP Version</h3>
         <p class="mt-1 text-xl font-bold text-white">{{ systemInfo.phpVersion }}</p>
       </div>
 
-      <div class="bg-dark-800 rounded-lg border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider">MySQL</h3>
         <p class="mt-1 text-xl font-bold text-white">{{ systemInfo.mysqlVersion }}</p>
       </div>
 
-      <div class="bg-dark-800 rounded-lg border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <h3 class="text-xs font-medium text-gray-400 uppercase tracking-wider">Uptime</h3>
         <p class="mt-1 text-xl font-bold text-white">{{ metrics.uptime }}</p>
       </div>
     </div>
 
     <!-- Resource Monitoring -->
-    <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
+    <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-6">
       <h2 class="text-lg font-semibold text-white mb-4">Ressourcen-Monitoring</h2>
 
       <div v-if="isLoadingMetrics" class="text-gray-400">Lade Metriken...</div>
@@ -344,7 +344,7 @@ onUnmounted(() => {
             <span class="text-gray-400">CPU ({{ metrics.cpu.cores }} Kerne)</span>
             <span class="text-white font-medium">{{ metrics.cpu.usage_percent }}%</span>
           </div>
-          <div class="w-full bg-dark-700 rounded-full h-3">
+          <div class="w-full bg-white/[0.04] rounded-full h-3">
             <div
               :class="['h-3 rounded-full transition-all duration-500', getProgressColor(metrics.cpu.usage_percent)]"
               :style="{ width: metrics.cpu.usage_percent + '%' }"
@@ -359,7 +359,7 @@ onUnmounted(() => {
             <span class="text-gray-400">Speicher</span>
             <span class="text-white font-medium">{{ metrics.memory.usage_percent }}%</span>
           </div>
-          <div class="w-full bg-dark-700 rounded-full h-3">
+          <div class="w-full bg-white/[0.04] rounded-full h-3">
             <div
               :class="['h-3 rounded-full transition-all duration-500', getProgressColor(metrics.memory.usage_percent)]"
               :style="{ width: metrics.memory.usage_percent + '%' }"
@@ -374,7 +374,7 @@ onUnmounted(() => {
             <span class="text-gray-400">Festplatte</span>
             <span class="text-white font-medium">{{ metrics.disk.usage_percent }}%</span>
           </div>
-          <div class="w-full bg-dark-700 rounded-full h-3">
+          <div class="w-full bg-white/[0.04] rounded-full h-3">
             <div
               :class="['h-3 rounded-full transition-all duration-500', getProgressColor(metrics.disk.usage_percent)]"
               :style="{ width: metrics.disk.usage_percent + '%' }"
@@ -386,23 +386,23 @@ onUnmounted(() => {
     </div>
 
     <!-- Database Stats -->
-    <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
+    <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-6">
       <h2 class="text-lg font-semibold text-white mb-4">Datenbank-Statistiken</h2>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="text-center p-4 bg-dark-700 rounded-lg">
+        <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-blue-400">{{ metrics.database.users || 0 }}</p>
           <p class="text-sm text-gray-400">Benutzer</p>
         </div>
-        <div class="text-center p-4 bg-dark-700 rounded-lg">
+        <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-green-400">{{ metrics.database.lists || 0 }}</p>
           <p class="text-sm text-gray-400">Listen</p>
         </div>
-        <div class="text-center p-4 bg-dark-700 rounded-lg">
+        <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-yellow-400">{{ metrics.database.documents || 0 }}</p>
           <p class="text-sm text-gray-400">Dokumente</p>
         </div>
-        <div class="text-center p-4 bg-dark-700 rounded-lg">
+        <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-purple-400">{{ metrics.database.audit_logs || 0 }}</p>
           <p class="text-sm text-gray-400">Audit Logs</p>
         </div>
@@ -410,7 +410,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Danger Zone -->
-    <div class="bg-dark-800 rounded-lg border border-red-900 p-6">
+    <div class="bg-white/[0.04] rounded-xl border border-red-900 p-6">
       <h2 class="text-lg font-semibold text-red-400 mb-4">Gefahrenzone</h2>
       <div class="space-y-4">
         <div class="flex items-center justify-between">
@@ -421,12 +421,12 @@ onUnmounted(() => {
           <button
             @click="clearCache"
             :disabled="isClearingCache"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="btn-danger"
           >
             {{ isClearingCache ? 'Wird geleert...' : 'Cache leeren' }}
           </button>
         </div>
-        <div class="border-t border-dark-700"></div>
+        <div class="border-t border-white/[0.06]"></div>
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-white font-medium">Alle Sessions beenden</h3>
@@ -435,7 +435,7 @@ onUnmounted(() => {
           <button
             @click="terminateSessions"
             :disabled="isTerminatingSessions"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="btn-danger"
           >
             {{ isTerminatingSessions ? 'Wird beendet...' : 'Sessions beenden' }}
           </button>
@@ -444,19 +444,19 @@ onUnmounted(() => {
     </div>
 
     <!-- Audit Log -->
-    <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
+    <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-white">Audit Log</h2>
         <span class="text-sm text-gray-400">{{ auditPagination.total }} Einträge</span>
       </div>
 
       <!-- Filters -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-dark-700/50 rounded-lg">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-white/[0.03] rounded-xl">
         <div>
           <label class="block text-xs text-gray-400 mb-1">Entitätstyp</label>
           <select
             v-model="auditFilters.entity_type"
-            class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+            class="select"
           >
             <option v-for="type in availableEntityTypes" :key="type.value" :value="type.value">
               {{ type.label }}
@@ -469,19 +469,19 @@ onUnmounted(() => {
             v-model="auditFilters.action"
             type="text"
             placeholder="z.B. create, delete"
-            class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
+            class="input"
           />
         </div>
         <div class="flex items-end gap-2">
           <button
             @click="applyFilters"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
+            class="btn-primary text-sm"
           >
             Filtern
           </button>
           <button
             @click="resetFilters"
-            class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors text-sm"
+            class="btn-secondary text-sm"
           >
             Zurücksetzen
           </button>
@@ -496,7 +496,7 @@ onUnmounted(() => {
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left text-gray-400 border-b border-dark-700">
+              <tr class="text-left text-gray-400 border-b border-white/[0.06]">
                 <th class="pb-3 font-medium w-8"></th>
                 <th class="pb-3 font-medium">Zeitpunkt</th>
                 <th class="pb-3 font-medium">Benutzer</th>
@@ -505,12 +505,12 @@ onUnmounted(() => {
                 <th class="pb-3 font-medium">IP</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-dark-700">
+            <tbody class="divide-y divide-white/[0.06]">
               <template v-for="log in auditLogs" :key="log.id">
                 <tr
                   @click="toggleLogDetails(log.id)"
-                  class="hover:bg-dark-700/50 cursor-pointer"
-                  :class="{ 'bg-dark-700/30': expandedLogId === log.id }"
+                  class="hover:bg-white/[0.04] cursor-pointer"
+                  :class="{ 'bg-white/[0.03]': expandedLogId === log.id }"
                 >
                   <td class="py-3 text-gray-400">
                     <svg
@@ -536,7 +536,7 @@ onUnmounted(() => {
                 </tr>
                 <!-- Expanded Details Row -->
                 <tr v-if="expandedLogId === log.id">
-                  <td colspan="6" class="bg-dark-700/20 p-4">
+                  <td colspan="6" class="bg-white/[0.02] p-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <!-- General Info -->
                       <div class="space-y-2">
@@ -550,12 +550,12 @@ onUnmounted(() => {
                       <!-- Old Values -->
                       <div v-if="parseJsonSafe(log.old_values)" class="space-y-2">
                         <h4 class="text-sm font-medium text-red-400">Vorherige Werte</h4>
-                        <pre class="text-xs bg-dark-800 rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.old_values), null, 2) }}</pre>
+                        <pre class="text-xs bg-white/[0.04] rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.old_values), null, 2) }}</pre>
                       </div>
                       <!-- New Values -->
                       <div v-if="parseJsonSafe(log.new_values)" class="space-y-2">
                         <h4 class="text-sm font-medium text-green-400">Neue Werte</h4>
-                        <pre class="text-xs bg-dark-800 rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.new_values), null, 2) }}</pre>
+                        <pre class="text-xs bg-white/[0.04] rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.new_values), null, 2) }}</pre>
                       </div>
                     </div>
                   </td>
@@ -566,11 +566,11 @@ onUnmounted(() => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="flex justify-between items-center mt-4 pt-4 border-t border-dark-700">
+        <div v-if="totalPages > 1" class="flex justify-between items-center mt-4 pt-4 border-t border-white/[0.06]">
           <button
             @click="prevPage"
             :disabled="auditPagination.page <= 1"
-            class="px-3 py-1 bg-dark-700 text-white rounded hover:bg-dark-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 bg-white/[0.04] text-white rounded hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Zurück
           </button>
@@ -578,7 +578,7 @@ onUnmounted(() => {
           <button
             @click="nextPage"
             :disabled="auditPagination.page >= totalPages"
-            class="px-3 py-1 bg-dark-700 text-white rounded hover:bg-dark-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 bg-white/[0.04] text-white rounded hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Weiter
           </button>

@@ -270,7 +270,7 @@ function downloadFile() {
           v-for="(preset, key) in presets"
           :key="key"
           @click="applyPreset(key)"
-          class="px-3 py-1 bg-dark-700 hover:bg-dark-600 rounded text-sm transition-colors"
+          class="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.04] rounded text-sm transition-colors"
         >
           {{ preset.name }}
         </button>
@@ -290,7 +290,7 @@ function downloadFile() {
               'px-3 py-1 rounded text-sm transition-colors border',
               selectedTemplates.includes(tpl.key)
                 ? 'bg-primary-500/20 border-primary-500 text-primary-400'
-                : 'bg-dark-700 border-dark-600 hover:border-dark-500'
+                : 'bg-white/[0.04] border-white/[0.06] hover:border-white/[0.08]'
             ]"
           >
             {{ tpl.name }}
@@ -324,7 +324,7 @@ function downloadFile() {
           </button>
         </div>
       </div>
-      <pre class="bg-dark-900 p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-64">{{ dockerignoreContent || '# Wähle Templates aus...' }}</pre>
+      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-64">{{ dockerignoreContent || '# Wähle Templates aus...' }}</pre>
     </div>
   </div>
 </template>

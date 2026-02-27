@@ -325,7 +325,7 @@ function getLanguageLabel(lang) {
       >
         <div class="flex items-start gap-4">
           <!-- Icon -->
-          <div class="flex-shrink-0 w-10 h-10 bg-dark-600 rounded-lg flex items-center justify-center">
+          <div class="flex-shrink-0 w-10 h-10 bg-white/[0.08] rounded-lg flex items-center justify-center">
             <CommandLineIcon v-if="snippet.language === 'bash'" class="w-5 h-5 text-green-400" />
             <CodeBracketIcon v-else class="w-5 h-5 text-primary-400" />
           </div>
@@ -334,7 +334,7 @@ function getLanguageLabel(lang) {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               <h3 class="font-medium text-white">{{ snippet.title }}</h3>
-              <span class="px-2 py-0.5 text-xs rounded bg-dark-600 text-gray-300">
+              <span class="px-2 py-0.5 text-xs rounded bg-white/[0.08] text-gray-300">
                 {{ getLanguageLabel(snippet.language) }}
               </span>
               <span v-if="snippet.category" class="px-2 py-0.5 text-xs rounded bg-primary-600/20 text-primary-400">
@@ -347,14 +347,14 @@ function getLanguageLabel(lang) {
             </p>
 
             <!-- Code preview -->
-            <pre class="bg-dark-900 rounded-lg p-3 text-sm text-gray-300 font-mono overflow-x-auto max-h-24">{{ snippet.content }}</pre>
+            <pre class="bg-white/[0.02] rounded-lg p-3 text-sm text-gray-300 font-mono overflow-x-auto max-h-24">{{ snippet.content }}</pre>
 
             <!-- Tags -->
             <div v-if="snippet.tags?.length" class="flex flex-wrap gap-1 mt-2">
               <span
                 v-for="tag in snippet.tags"
                 :key="tag"
-                class="px-2 py-0.5 text-xs rounded-full bg-dark-600 text-gray-400"
+                class="px-2 py-0.5 text-xs rounded-full bg-white/[0.08] text-gray-400"
               >
                 #{{ tag }}
               </span>
@@ -370,14 +370,14 @@ function getLanguageLabel(lang) {
           <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               @click="toggleFavorite(snippet)"
-              class="p-2 rounded hover:bg-dark-600 transition-colors"
+              class="p-2 rounded hover:bg-white/[0.04] transition-colors"
             >
               <StarIconSolid v-if="snippet.is_favorite" class="w-5 h-5 text-yellow-400" />
               <StarIcon v-else class="w-5 h-5 text-gray-500 hover:text-yellow-400" />
             </button>
             <button
               @click="copySnippet(snippet)"
-              class="p-2 rounded hover:bg-dark-600 transition-colors"
+              class="p-2 rounded hover:bg-white/[0.04] transition-colors"
               :class="copiedId === snippet.id ? 'text-green-400' : 'text-gray-400 hover:text-white'"
             >
               <CheckIcon v-if="copiedId === snippet.id" class="w-5 h-5" />
@@ -385,7 +385,7 @@ function getLanguageLabel(lang) {
             </button>
             <button
               @click="openEditModal(snippet)"
-              class="p-2 text-gray-400 hover:text-white rounded hover:bg-dark-600 transition-colors"
+              class="p-2 text-gray-400 hover:text-white rounded hover:bg-white/[0.04] transition-colors"
             >
               <PencilIcon class="w-5 h-5" />
             </button>
@@ -404,11 +404,11 @@ function getLanguageLabel(lang) {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-2xl border border-dark-700 max-h-[90vh] overflow-y-auto">
-          <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-xl font-bold text-white">
               {{ editingSnippet ? 'Snippet bearbeiten' : 'Neues Snippet' }}
             </h2>
@@ -465,7 +465,7 @@ function getLanguageLabel(lang) {
                   <span
                     v-for="tag in form.tags"
                     :key="tag"
-                    class="px-2 py-1 text-xs rounded-full bg-dark-600 text-gray-300 flex items-center gap-1"
+                    class="px-2 py-1 text-xs rounded-full bg-white/[0.08] text-gray-300 flex items-center gap-1"
                   >
                     #{{ tag }}
                     <button type="button" @click="removeTag(tag)" class="hover:text-red-400">

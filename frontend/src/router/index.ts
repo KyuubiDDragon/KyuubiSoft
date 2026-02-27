@@ -1,0 +1,700 @@
+import { createRouter, createWebHistory, type RouteRecordRaw, type NavigationGuardNext, type RouteLocationNormalized } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/core/api/axios'
+
+// Extend RouteMeta for custom meta fields
+declare module 'vue-router' {
+  interface RouteMeta {
+    layout?: 'auth' | 'public' | 'none'
+    guest?: boolean
+    isSetup?: boolean
+    requiresAuth?: boolean
+    fullBleed?: boolean
+    roles?: string[]
+    permission?: string
+    title?: string
+  }
+}
+
+// Setup status cache
+let setupChecked: boolean = false
+let setupRequired: boolean = false
+
+// Lazy load views
+const LoginView = () => import('@/modules/auth/views/LoginView.vue')
+const RegisterView = () => import('@/modules/auth/views/RegisterView.vue')
+const SetupView = () => import('@/modules/auth/views/SetupView.vue')
+const DashboardView = () => import('@/modules/dashboard/views/DashboardView.vue')
+const ListsView = () => import('@/modules/lists/views/ListsView.vue')
+const DocumentsView = () => import('@/modules/documents/views/DocumentsView.vue')
+const NotesView = () => import('@/modules/notes/views/NotesView.vue')
+const ConnectionsView = () => import('@/modules/connections/views/ConnectionsView.vue')
+const SnippetsView = () => import('@/modules/snippets/views/SnippetsView.vue')
+const KanbanView = () => import('@/modules/kanban/views/KanbanView.vue')
+const ProjectsView = () => import('@/modules/projects/views/ProjectsView.vue')
+const TimeTrackingView = () => import('@/modules/time/views/TimeTrackingView.vue')
+const WebhooksView = () => import('@/modules/webhooks/views/WebhooksView.vue')
+const BookmarksView = () => import('@/modules/bookmarks/views/BookmarksView.vue')
+const HabitTrackerView = () => import('@/modules/habit-tracker/views/HabitTrackerView.vue')
+const ExpenseTrackerView = () => import('@/modules/finance/views/ExpenseTrackerView.vue')
+const UptimeView = () => import('@/modules/uptime/views/UptimeView.vue')
+const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
+const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
+const YouTubeDownloaderView = () => import('@/modules/youtube-downloader/views/YouTubeDownloaderView.vue')
+const ToolboxView = () => import('@/modules/toolbox/views/ToolboxView.vue')
+const DockerView = () => import('@/modules/docker/views/DockerView.vue')
+const DockerfileGeneratorView = () => import('@/modules/docker/views/DockerfileGeneratorView.vue')
+const DockerComposeView = () => import('@/modules/docker/views/DockerComposeView.vue')
+const DockerCommandView = () => import('@/modules/docker/views/DockerCommandView.vue')
+const DockerignoreView = () => import('@/modules/docker/views/DockerignoreView.vue')
+const DockerHostsView = () => import('@/modules/docker/views/DockerHostsView.vue')
+const ServerView = () => import('@/modules/server/views/ServerView.vue')
+const CalendarView = () => import('@/modules/calendar/views/CalendarView.vue')
+const SettingsView = () => import('@/modules/settings/views/SettingsView.vue')
+const UsersView = () => import('@/modules/users/views/UsersView.vue')
+const RolesView = () => import('@/modules/users/views/RolesView.vue')
+const SystemView = () => import('@/modules/system/views/SystemView.vue')
+const TicketsView = () => import('@/modules/tickets/views/TicketsView.vue')
+const TicketDetailView = () => import('@/modules/tickets/views/TicketDetailView.vue')
+const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategoriesView.vue')
+const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
+const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
+const PublicNotePage = () => import('@/modules/notes/views/PublicNotePage.vue')
+const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
+const NewsView = () => import('@/modules/news/views/NewsView.vue')
+const StorageView = () => import('@/modules/storage/views/StorageView.vue')
+const SharesView = () => import('@/modules/storage/views/SharesView.vue')
+const PublicDownloadView = () => import('@/modules/storage/views/PublicDownloadView.vue')
+const ChecklistsView = () => import('@/modules/checklists/views/ChecklistsView.vue')
+const ChecklistDetailView = () => import('@/modules/checklists/views/ChecklistDetailView.vue')
+const PublicChecklistView = () => import('@/modules/checklists/views/PublicChecklistView.vue')
+const PasswordsView = () => import('@/modules/passwords/views/PasswordsView.vue')
+const RecurringTasksView = () => import('@/modules/recurring/views/RecurringTasksView.vue')
+const InboxView = () => import('@/modules/inbox/views/InboxView.vue')
+const ChatView = () => import('@/modules/chat/views/ChatView.vue')
+const WikiView = () => import('@/modules/wiki/views/WikiView.vue')
+const BackupsView = () => import('@/modules/backups/views/BackupsView.vue')
+const LinksView = () => import('@/modules/links/views/LinksView.vue')
+const ShortLinkRedirectView = () => import('@/modules/links/views/ShortLinkRedirectView.vue')
+const WorkflowsView = () => import('@/modules/workflows/views/WorkflowsView.vue')
+const GitRepositoryView = () => import('@/modules/git/views/GitRepositoryView.vue')
+const SslCertificateView = () => import('@/modules/ssl/views/SslCertificateView.vue')
+const GalleryView = () => import('@/modules/galleries/views/GalleryView.vue')
+const DiscordManagerView = () => import('@/modules/discord/views/DiscordManagerView.vue')
+const MockupEditorView = () => import('@/modules/mockup-editor/views/MockupEditorView.vue')
+const DatabaseBrowserView = () => import('@/modules/database-browser/views/DatabaseBrowserView.vue')
+const LogsView = () => import('@/modules/logs/views/LogsView.vue')
+const ScriptsView = () => import('@/modules/scripts/views/ScriptsView.vue')
+const EmailView = () => import('@/modules/email/views/EmailView.vue')
+const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
+const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
+const AuditView = () => import('@/modules/audit/views/AuditView.vue')
+const CronView = () => import('@/modules/cron/views/CronView.vue')
+const DnsView = () => import('@/modules/dns/views/DnsView.vue')
+const NotificationRulesView = () => import('@/modules/notification-rules/views/NotificationRulesView.vue')
+const StatusPageAdmin = () => import('@/modules/status-page/views/StatusPageAdmin.vue')
+const PublicStatusPage = () => import('@/modules/status-page/views/PublicStatusPage.vue')
+const KnowledgeBaseAdmin = () => import('@/modules/knowledge-base/views/KnowledgeBaseAdmin.vue')
+const PublicKnowledgeBase = () => import('@/modules/knowledge-base/views/PublicKnowledgeBase.vue')
+const EnvironmentsView = () => import('@/modules/environments/views/EnvironmentsView.vue')
+const DeploymentsView = () => import('@/modules/deployments/views/DeploymentsView.vue')
+
+const routes: RouteRecordRaw[] = [
+  // Auth routes
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView,
+    meta: { layout: 'auth', guest: true },
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: { layout: 'auth', guest: true },
+  },
+  {
+    path: '/setup',
+    name: 'setup',
+    component: SetupView,
+    meta: { layout: 'auth', guest: true, isSetup: true },
+  },
+
+  // Protected routes
+  {
+    path: '/',
+    name: 'dashboard',
+    component: DashboardView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lists',
+    name: 'lists',
+    component: ListsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/documents',
+    name: 'documents',
+    component: DocumentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notes/:id?',
+    name: 'notes',
+    component: NotesView,
+    meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/connections',
+    name: 'connections',
+    component: ConnectionsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/connections/:id/terminal',
+    name: 'ssh-terminal',
+    component: SSHTerminalView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/snippets',
+    name: 'snippets',
+    component: SnippetsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/kanban',
+    name: 'kanban',
+    component: KanbanView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/projects',
+    name: 'projects',
+    component: ProjectsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/time',
+    name: 'time',
+    component: TimeTrackingView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/webhooks',
+    name: 'webhooks',
+    component: WebhooksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/bookmarks',
+    name: 'bookmarks',
+    component: BookmarksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/habit-tracker',
+    name: 'habit-tracker',
+    component: HabitTrackerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/expenses',
+    name: 'expense-tracker',
+    component: ExpenseTrackerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/uptime',
+    name: 'uptime',
+    component: UptimeView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/invoices',
+    name: 'invoices',
+    component: InvoicesView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/api-tester',
+    name: 'api-tester',
+    component: ApiTesterView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/youtube-downloader',
+    name: 'youtube-downloader',
+    component: YouTubeDownloaderView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/toolbox',
+    name: 'toolbox',
+    component: ToolboxView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker',
+    name: 'docker',
+    component: DockerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/dockerfile',
+    name: 'docker-dockerfile',
+    component: DockerfileGeneratorView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/compose',
+    name: 'docker-compose',
+    component: DockerComposeView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/command',
+    name: 'docker-command',
+    component: DockerCommandView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/ignore',
+    name: 'docker-ignore',
+    component: DockerignoreView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/docker/hosts',
+    name: 'docker-hosts',
+    component: DockerHostsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/server',
+    name: 'server',
+    component: ServerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/calendar',
+    name: 'calendar',
+    component: CalendarView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/news',
+    name: 'news',
+    component: NewsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/storage',
+    name: 'storage',
+    component: StorageView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/storage/shares',
+    name: 'storage-shares',
+    component: SharesView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/checklists',
+    name: 'checklists',
+    component: ChecklistsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/checklists/:id',
+    name: 'checklist-detail',
+    component: ChecklistDetailView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/passwords',
+    name: 'passwords',
+    component: PasswordsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/recurring-tasks',
+    name: 'recurring-tasks',
+    component: RecurringTasksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/inbox',
+    name: 'inbox',
+    component: InboxView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/chat',
+    name: 'chat',
+    component: ChatView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/discord',
+    name: 'discord',
+    component: DiscordManagerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/email',
+    name: 'email',
+    component: EmailView,
+    meta: { requiresAuth: true, title: 'E-Mail' },
+  },
+  {
+    path: '/wiki',
+    name: 'wiki',
+    component: WikiView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/links',
+    name: 'links',
+    component: LinksView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/workflows',
+    name: 'workflows',
+    component: WorkflowsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/git',
+    name: 'git-repositories',
+    component: GitRepositoryView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/ssl',
+    name: 'ssl-certificates',
+    component: SslCertificateView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/galleries',
+    name: 'galleries',
+    component: GalleryView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/mockup-editor',
+    name: 'mockup-editor',
+    component: MockupEditorView,
+    meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/database-browser',
+    name: 'database-browser',
+    component: DatabaseBrowserView,
+    meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/logs',
+    name: 'logs',
+    component: LogsView,
+    meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/scripts',
+    name: 'scripts',
+    component: ScriptsView,
+    meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/contacts',
+    name: 'contacts',
+    component: ContactsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/contacts/:id',
+    name: 'contact-detail',
+    component: ContactDetailView,
+    meta: { requiresAuth: true },
+  },
+
+  // Admin routes (role-protected)
+  {
+    path: '/users',
+    name: 'users',
+    component: UsersView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/roles',
+    name: 'roles',
+    component: RolesView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/system',
+    name: 'system',
+    component: SystemView,
+    meta: { requiresAuth: true, roles: ['owner'] },
+  },
+  {
+    path: '/backups',
+    name: 'backups',
+    component: BackupsView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/audit',
+    name: 'audit',
+    component: AuditView,
+    meta: { requiresAuth: true, permission: 'system.admin' },
+  },
+  {
+    path: '/cron',
+    name: 'cron',
+    component: CronView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/dns',
+    name: 'dns-manager',
+    component: DnsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/deployments',
+    name: 'deployments',
+    component: DeploymentsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notification-rules',
+    name: 'notification-rules',
+    component: NotificationRulesView,
+    meta: { requiresAuth: true },
+  },
+
+  // Status Page routes
+  {
+    path: '/status-page',
+    name: 'status-page',
+    component: StatusPageAdmin,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/status',
+    name: 'public-status',
+    component: PublicStatusPage,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Knowledge Base routes
+  {
+    path: '/knowledge-base',
+    name: 'knowledge-base',
+    component: KnowledgeBaseAdmin,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/kb',
+    name: 'public-kb',
+    component: PublicKnowledgeBase,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Environments
+  {
+    path: '/environments',
+    name: 'environments',
+    component: EnvironmentsView,
+    meta: { requiresAuth: true },
+  },
+
+  // Ticket routes
+  {
+    path: '/tickets',
+    name: 'tickets',
+    component: TicketsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/tickets/categories',
+    name: 'ticket-categories',
+    component: TicketCategoriesView,
+    meta: { requiresAuth: true, roles: ['owner', 'admin'] },
+  },
+  {
+    path: '/tickets/:id',
+    name: 'ticket-detail',
+    component: TicketDetailView,
+    meta: { requiresAuth: true },
+  },
+
+  // Public ticket routes (no auth, no layout wrapper)
+  {
+    path: '/support',
+    name: 'public-tickets',
+    component: PublicTicketView,
+    meta: { layout: 'none', guest: true },
+  },
+  {
+    path: '/support/:code',
+    name: 'public-ticket-view',
+    component: PublicTicketView,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Public document view (accessible to everyone - logged in or not)
+  {
+    path: '/doc/:token',
+    name: 'public-document',
+    component: PublicDocumentView,
+    meta: { layout: 'public' },
+  },
+  {
+    path: '/public/note/:token',
+    name: 'public-note',
+    component: PublicNotePage,
+    meta: { layout: 'public' },
+  },
+
+  // Public storage download (accessible to everyone)
+  {
+    path: '/share/:token',
+    name: 'public-download',
+    component: PublicDownloadView,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Public checklist view (accessible to everyone)
+  {
+    path: '/checklist/:token',
+    name: 'public-checklist',
+    component: PublicChecklistView,
+    meta: { layout: 'public' },
+  },
+
+  // Short link redirect - loads component that fetches target URL from API
+  {
+    path: '/s/:code',
+    name: 'short-link-redirect',
+    component: ShortLinkRedirectView,
+    meta: { layout: 'public' },
+  },
+
+  // Catch all
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+// Navigation guard
+router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
+  const authStore = useAuthStore()
+
+  // Public routes that don't need any auth checks - check this FIRST before any API calls
+  const isPublicRoute = to.meta.layout === 'public' || to.meta.guest
+
+  // For public routes, skip auth initialization entirely and proceed immediately
+  if (isPublicRoute) {
+    // Still mark as initialized so the app doesn't hang
+    if (!authStore.isInitialized) {
+      authStore.isInitialized = true
+    }
+    // Still check setup status for public routes, but don't block on failure
+    if (!setupChecked && !to.meta.isSetup) {
+      try {
+        const response = await api.get('/api/v1/setup/status')
+        setupRequired = response.data.data.setup_required
+        setupChecked = true
+        if (setupRequired) {
+          return next({ name: 'setup' })
+        }
+      } catch (error) {
+        // Ignore - public routes should work even if setup check fails
+        setupChecked = true
+      }
+    }
+    return next()
+  }
+
+  // Check setup status once on first navigation (except for setup page itself)
+  if (!setupChecked && !to.meta.isSetup) {
+    try {
+      const response = await api.get('/api/v1/setup/status')
+      setupRequired = response.data.data.setup_required
+      setupChecked = true
+
+      // If setup is required, redirect to setup wizard
+      if (setupRequired) {
+        return next({ name: 'setup' })
+      }
+    } catch (error) {
+      console.error('Failed to check setup status:', error)
+      // Continue anyway, the setup page will handle errors
+      setupChecked = true
+    }
+  }
+
+  // If going to setup but setup not required, redirect to login
+  if (to.meta.isSetup && setupChecked && !setupRequired) {
+    return next({ name: 'login' })
+  }
+
+  // Wait for auth initialization (only for non-public routes)
+  if (!authStore.isInitialized) {
+    await authStore.initialize()
+  }
+
+  const requiresAuth = to.meta.requiresAuth
+  const guestOnly = to.meta.guest
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (requiresAuth && !isAuthenticated) {
+    // Redirect to login
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  if (guestOnly && isAuthenticated) {
+    // Redirect to dashboard
+    return next({ name: 'dashboard' })
+  }
+
+  // Check permissions if required
+  if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
+    return next({ name: 'dashboard' })
+  }
+
+  // Check roles if required
+  if (to.meta.roles) {
+    const hasRequiredRole = to.meta.roles.some((role: string) => authStore.hasRole(role))
+    if (!hasRequiredRole) {
+      return next({ name: 'dashboard' })
+    }
+  }
+
+  next()
+})
+
+// Function to mark setup as complete (called from SetupView after successful setup)
+export function markSetupComplete(): void {
+  setupRequired = false
+}
+
+export default router

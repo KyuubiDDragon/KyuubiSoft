@@ -176,9 +176,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="database-table bg-dark-800 overflow-hidden">
+  <div class="database-table bg-white/[0.04] overflow-hidden">
     <!-- Header (optional) -->
-    <div v-if="showHeader" class="flex items-center justify-between px-4 py-3 border-b border-dark-700">
+    <div v-if="showHeader" class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
       <div class="flex items-center gap-3">
         <input
           v-if="database"
@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
 
       <div class="flex items-center gap-2">
         <!-- View switcher -->
-        <div class="flex items-center gap-1 bg-dark-700 rounded-lg p-1">
+        <div class="flex items-center gap-1 bg-white/[0.04] rounded-lg p-1">
           <button
             v-for="(icon, type) in viewIcons"
             :key="type"
@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Options -->
-        <button class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg">
+        <button class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg">
           <AdjustmentsHorizontalIcon class="w-5 h-5" />
         </button>
       </div>
@@ -222,12 +222,12 @@ onBeforeUnmount(() => {
       <table class="w-full">
         <!-- Table Header -->
         <thead>
-          <tr class="border-b border-dark-700">
+          <tr class="border-b border-white/[0.06]">
             <!-- Checkbox column -->
             <th class="w-10 px-2 py-2 text-left">
               <input
                 type="checkbox"
-                class="rounded border-dark-500 bg-dark-700 text-primary-600"
+                class="rounded border-white/[0.08] bg-white/[0.04] text-primary-600"
                 :checked="selectedRows.size === rows.length && rows.length > 0"
                 @change="selectedRows = selectedRows.size === rows.length ? new Set() : new Set(rows.map(r => r.id))"
               />
@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
             <th class="w-10 px-2">
               <button
                 @click="showAddProperty = true"
-                class="p-1 text-gray-500 hover:text-white hover:bg-dark-700 rounded"
+                class="p-1 text-gray-500 hover:text-white hover:bg-white/[0.04] rounded"
                 title="Spalte hinzufügen"
               >
                 <PlusIcon class="w-4 h-4" />
@@ -264,14 +264,14 @@ onBeforeUnmount(() => {
           <tr
             v-for="row in rows"
             :key="row.id"
-            class="group border-b border-dark-700/50 hover:bg-dark-700/30"
+            class="group border-b border-white/[0.03] hover:bg-white/[0.02]"
           >
             <!-- Checkbox -->
             <td class="px-2 py-1">
               <div class="flex items-center gap-1">
                 <input
                   type="checkbox"
-                  class="rounded border-dark-500 bg-dark-700 text-primary-600"
+                  class="rounded border-white/[0.08] bg-white/[0.04] text-primary-600"
                   :checked="selectedRows.has(row.id)"
                   @change="toggleRowSelection(row.id)"
                 />
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
             <td :colspan="properties.length + 2" class="px-2 py-1">
               <button
                 @click="addRow"
-                class="flex items-center gap-2 w-full px-2 py-2 text-sm text-gray-500 hover:text-white hover:bg-dark-700/50 rounded transition-colors"
+                class="flex items-center gap-2 w-full px-2 py-2 text-sm text-gray-500 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
               >
                 <PlusIcon class="w-4 h-4" />
                 Neue Zeile
@@ -326,10 +326,10 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div
         v-if="showAddProperty"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
         @click.self="showAddProperty = false"
       >
-        <div class="bg-dark-800 rounded-xl shadow-xl w-full max-w-md p-6">
+        <div class="modal w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-white mb-4">Neue Spalte</h3>
 
           <div class="space-y-4">
@@ -339,7 +339,7 @@ onBeforeUnmount(() => {
                 v-model="newPropertyName"
                 type="text"
                 placeholder="Spaltenname"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                class="input w-full"
                 @keydown.enter="addProperty"
               />
             </div>
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
               <label class="block text-sm text-gray-400 mb-1">Typ</label>
               <select
                 v-model="newPropertyType"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                class="select w-full"
               >
                 <option
                   v-for="type in databaseStore.propertyTypes"
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
             </button>
             <button
               @click="addProperty"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+              class="btn-primary"
             >
               Hinzufügen
             </button>

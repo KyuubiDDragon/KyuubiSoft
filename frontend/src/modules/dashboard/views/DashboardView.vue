@@ -6,7 +6,7 @@ import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
 import { useDashboardGrid } from '../composables/useDashboardGrid'
 import WidgetWrapper from '../components/WidgetWrapper.vue'
-import { widgetRegistry } from '../widgets/widgetRegistry.js'
+import { widgetRegistry } from '../widgets/widgetRegistry'
 import {
   ListBulletIcon,
   DocumentTextIcon,
@@ -476,34 +476,34 @@ function handleWidgetConfig(widget) {
     <!-- Header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">
-          Willkommen zurück, {{ authStore.user?.username || 'User' }}
+        <h1 class="text-2xl font-bold text-white tracking-tight">
+          Willkommen zurück, <span class="text-gradient">{{ authStore.user?.username || 'User' }}</span>
         </h1>
         <p class="page-subtitle">Dein persönliches Dashboard</p>
       </div>
       <div class="flex items-center gap-2">
         <template v-if="isEditMode">
-          <button @click="resetDashboard" class="btn-secondary text-sm">
+          <button @click="resetDashboard" class="btn-secondary btn-sm">
             Zurücksetzen
           </button>
-          <button @click="showAddWidget = true" class="btn-secondary text-sm">
-            <PlusIcon class="w-4 h-4 mr-1.5" />
+          <button @click="showAddWidget = true" class="btn-secondary btn-sm">
+            <PlusIcon class="w-4 h-4" />
             Widget hinzufügen
           </button>
           <button
             v-if="hasUnsavedChanges"
             @click="discardChanges"
-            class="btn-ghost text-sm text-red-400 hover:text-red-300"
+            class="btn-ghost btn-sm text-red-400 hover:text-red-300"
           >
             Abbrechen
           </button>
-          <button @click="saveLayout(true)" class="btn-primary text-sm">
-            <CheckIcon class="w-4 h-4 mr-1.5" />
+          <button @click="saveLayout(true)" class="btn-primary btn-sm">
+            <CheckIcon class="w-4 h-4" />
             Speichern
           </button>
         </template>
-        <button v-else @click="isEditMode = true" class="btn-secondary text-sm">
-          <Cog6ToothIcon class="w-4 h-4 mr-1.5" />
+        <button v-else @click="isEditMode = true" class="btn-secondary btn-sm">
+          <Cog6ToothIcon class="w-4 h-4" />
           Anpassen
         </button>
       </div>
@@ -511,20 +511,20 @@ function handleWidgetConfig(widget) {
 
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div v-for="i in 4" :key="i" class="card p-5 animate-pulse">
-        <div class="h-3 bg-dark-600 rounded-full w-1/3 mb-4"></div>
-        <div class="h-7 bg-dark-600 rounded-lg w-1/2"></div>
+      <div v-for="i in 4" :key="i" class="card-glass p-5">
+        <div class="skeleton-text w-1/3 mb-4"></div>
+        <div class="skeleton h-7 w-1/2 rounded-lg"></div>
       </div>
     </div>
 
     <!-- Edit Mode Info Bar -->
-    <div v-if="isEditMode" class="bg-primary-500/8 border border-primary-500/20 rounded-xl px-4 py-3 flex items-center gap-4">
+    <div v-if="isEditMode" class="glass-sm rounded-2xl px-5 py-3.5 flex items-center gap-4 border-primary-500/20 bg-primary-500/[0.06]">
       <div class="flex-1 text-sm text-primary-300/90">
-        <span class="font-medium">Bearbeitungsmodus</span> — Widgets per Drag &amp; Drop verschieben, Ecken zum Anpassen der Größe ziehen
+        <span class="font-semibold">Bearbeitungsmodus</span> — Widgets per Drag &amp; Drop verschieben, Ecken zum Anpassen der Größe ziehen
       </div>
-      <div v-if="hasUnsavedChanges" class="text-xs text-yellow-400 flex items-center gap-1.5 shrink-0">
+      <div v-if="hasUnsavedChanges" class="badge-warning shrink-0">
         <ExclamationTriangleIcon class="w-3.5 h-3.5" />
-        Ungespeicherte Änderungen
+        Ungespeichert
       </div>
     </div>
 
@@ -595,16 +595,18 @@ function handleWidgetConfig(widget) {
     <!-- Empty state -->
     <div
       v-if="!isLoading && widgets.length === 0"
-      class="card p-16 text-center"
+      class="card-glass p-16"
     >
-      <div class="w-16 h-16 rounded-2xl bg-dark-700/50 border border-dark-600/50 flex items-center justify-center mx-auto mb-5">
-        <ChartBarIcon class="w-8 h-8 text-gray-600" />
+      <div class="empty-state">
+        <div class="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-5">
+          <ChartBarIcon class="empty-state-icon !mb-0 !w-8 !h-8" />
+        </div>
+        <h3 class="empty-state-title">Dashboard noch leer</h3>
+        <p class="empty-state-text mb-6">Füge Widgets hinzu, um dein Dashboard zu personalisieren und wichtige Infos auf einen Blick zu sehen.</p>
+        <button @click="resetDashboard" class="btn-primary">
+          Standard-Layout laden
+        </button>
       </div>
-      <h3 class="text-base font-semibold text-white mb-2">Dashboard noch leer</h3>
-      <p class="text-sm text-gray-500 mb-6 max-w-xs mx-auto">Füge Widgets hinzu, um dein Dashboard zu personalisieren und wichtige Infos auf einen Blick zu sehen.</p>
-      <button @click="resetDashboard" class="btn-primary">
-        Standard-Layout laden
-      </button>
     </div>
 
     <!-- Add Widget Modal -->
@@ -622,26 +624,26 @@ function handleWidgetConfig(widget) {
           class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-lg">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
-              <h3 class="text-lg font-semibold text-white">Widget hinzufügen</h3>
-              <button @click="showAddWidget = false" class="text-gray-400 hover:text-white">
+          <div class="modal max-w-lg animate-scale-in">
+            <div class="modal-header">
+              <h2>Widget hinzufügen</h2>
+              <button @click="showAddWidget = false" class="btn-icon-sm">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
-            <div class="p-6 space-y-2 max-h-96 overflow-y-auto">
+            <div class="modal-body space-y-2 max-h-96 overflow-y-auto">
               <button
                 v-for="widget in availableToAdd"
                 :key="widget.type"
                 @click="addWidget(widget.type)"
-                class="w-full flex items-center gap-4 p-4 rounded-lg bg-dark-700/50 hover:bg-dark-700 transition-colors text-left"
+                class="w-full flex items-center gap-4 p-4 rounded-xl glass-interactive text-left"
               >
-                <div class="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-xl bg-primary-500/15 border border-primary-500/20 flex items-center justify-center">
                   <component :is="widgetIcons[widget.type] || ChartBarIcon" class="w-5 h-5 text-primary-400" />
                 </div>
                 <div>
                   <p class="text-white font-medium">{{ widget.title }}</p>
-                  <p class="text-sm text-gray-500">{{ widget.default_width }}x{{ widget.default_height }}</p>
+                  <p class="text-xs text-gray-500">{{ widget.default_width }}x{{ widget.default_height }}</p>
                 </div>
               </button>
               <p v-if="availableToAdd.length === 0" class="text-center text-gray-500 py-4">

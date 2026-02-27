@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { sanitizeHtml } from '@/core/services/sanitize'
 
 const pattern = ref('')
 const flags = ref('g')
@@ -119,7 +120,7 @@ function usePattern(p) {
         :key="flag.id"
         @click="toggleFlag(flag.id)"
         class="px-3 py-1 text-sm rounded-lg transition-colors"
-        :class="flags.includes(flag.id) ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="flags.includes(flag.id) ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
         :title="flag.desc"
       >
         {{ flag.name }}
@@ -134,7 +135,7 @@ function usePattern(p) {
           v-for="p in commonPatterns"
           :key="p.name"
           @click="usePattern(p.pattern)"
-          class="px-2 py-1 text-xs bg-dark-700 text-gray-300 rounded hover:bg-dark-600"
+          class="px-2 py-1 text-xs bg-white/[0.04] text-gray-300 rounded hover:bg-white/[0.04]"
         >
           {{ p.name }}
         </button>
@@ -162,8 +163,8 @@ function usePattern(p) {
       <div>
         <label class="text-sm text-gray-400 mb-1 block">Hervorgehobener Text</label>
         <div
-          class="p-3 bg-dark-900 rounded-lg text-sm font-mono whitespace-pre-wrap break-all min-h-[100px]"
-          v-html="highlightedText"
+          class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono whitespace-pre-wrap break-all min-h-[100px]"
+          v-html="sanitizeHtml(highlightedText)"
         ></div>
       </div>
 
@@ -172,7 +173,7 @@ function usePattern(p) {
         <label class="text-sm text-gray-400 mb-1 block">
           Treffer ({{ matches.length }})
         </label>
-        <div class="bg-dark-900 rounded-lg p-3 min-h-[100px] max-h-60 overflow-auto">
+        <div class="bg-white/[0.02] rounded-lg p-3 min-h-[100px] max-h-60 overflow-auto">
           <div v-if="matches.length === 0" class="text-gray-500 text-sm">
             Keine Treffer
           </div>
@@ -180,7 +181,7 @@ function usePattern(p) {
             <div
               v-for="(m, i) in matches"
               :key="i"
-              class="p-2 bg-dark-700 rounded text-sm"
+              class="p-2 bg-white/[0.04] rounded text-sm"
             >
               <div class="flex justify-between">
                 <span class="font-mono text-green-400">"{{ m.match }}"</span>

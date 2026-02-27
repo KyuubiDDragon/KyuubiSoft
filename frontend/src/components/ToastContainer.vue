@@ -19,22 +19,22 @@ const iconMap = {
 
 const styleMap = {
   success: {
-    wrapper: 'bg-dark-800 border-green-500/25',
-    icon: 'text-green-400',
-    bar: 'bg-green-500',
+    wrapper: 'bg-dark-950/90 backdrop-blur-2xl border-emerald-500/20',
+    icon: 'text-emerald-400',
+    bar: 'bg-emerald-500',
   },
   error: {
-    wrapper: 'bg-dark-800 border-red-500/25',
+    wrapper: 'bg-dark-950/90 backdrop-blur-2xl border-red-500/20',
     icon: 'text-red-400',
     bar: 'bg-red-500',
   },
   warning: {
-    wrapper: 'bg-dark-800 border-yellow-500/25',
-    icon: 'text-yellow-400',
-    bar: 'bg-yellow-500',
+    wrapper: 'bg-dark-950/90 backdrop-blur-2xl border-amber-500/20',
+    icon: 'text-amber-400',
+    bar: 'bg-amber-500',
   },
   info: {
-    wrapper: 'bg-dark-800 border-primary-500/25',
+    wrapper: 'bg-dark-950/90 backdrop-blur-2xl border-primary-500/20',
     icon: 'text-primary-400',
     bar: 'bg-primary-500',
   },
@@ -56,7 +56,7 @@ const styleMap = {
         <div
           v-for="t in toasts"
           :key="t.id"
-          class="pointer-events-auto rounded-xl border shadow-lg overflow-hidden"
+          class="pointer-events-auto rounded-2xl border shadow-float overflow-hidden"
           :class="(styleMap[t.type] || styleMap.info).wrapper"
         >
           <!-- Main content -->

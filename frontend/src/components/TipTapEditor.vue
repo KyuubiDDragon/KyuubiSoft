@@ -75,12 +75,12 @@ const editor = useEditor({
     TableRow,
     TableCell.configure({
       HTMLAttributes: {
-        class: 'border border-dark-600 p-2',
+        class: 'border border-white/[0.06] p-2',
       },
     }),
     TableHeader.configure({
       HTMLAttributes: {
-        class: 'border border-dark-600 p-2 bg-dark-700 font-semibold',
+        class: 'border border-white/[0.06] p-2 bg-white/[0.04] font-semibold',
       },
     }),
     Placeholder.configure({
@@ -92,7 +92,7 @@ const editor = useEditor({
     CodeBlockLowlight.configure({
       lowlight,
       HTMLAttributes: {
-        class: 'bg-dark-700 rounded-lg p-4 my-2 overflow-x-auto',
+        class: 'bg-white/[0.04] rounded-xl p-4 my-2 overflow-x-auto',
       },
     }),
     TaskList.configure({
@@ -227,13 +227,13 @@ function onCodeChange(event) {
 <template>
   <div class="tiptap-editor h-full flex flex-col">
     <!-- Toolbar -->
-    <div v-if="editable && editor" class="flex flex-wrap gap-1 p-2 bg-dark-700 border border-dark-600 rounded-t-lg">
+    <div v-if="editable && editor" class="flex flex-wrap gap-1 p-2 bg-white/[0.03] border border-white/[0.06] rounded-t-xl">
       <!-- Text Formatting -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().toggleBold().run()"
-          :class="{ 'bg-dark-500': editor.isActive('bold') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('bold') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Fett (Strg+B)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,8 +242,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleItalic().run()"
-          :class="{ 'bg-dark-500': editor.isActive('italic') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('italic') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Kursiv (Strg+I)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,8 +252,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleUnderline().run()"
-          :class="{ 'bg-dark-500': editor.isActive('underline') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('underline') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Unterstrichen (Strg+U)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,8 +262,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleStrike().run()"
-          :class="{ 'bg-dark-500': editor.isActive('strike') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('strike') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Durchgestrichen"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,27 +273,27 @@ function onCodeChange(event) {
       </div>
 
       <!-- Headings -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-          :class="{ 'bg-dark-500': editor.isActive('heading', { level: 1 }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 1 }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
           title="Überschrift 1"
         >
           H1
         </button>
         <button
           @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-          :class="{ 'bg-dark-500': editor.isActive('heading', { level: 2 }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 2 }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
           title="Überschrift 2"
         >
           H2
         </button>
         <button
           @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-          :class="{ 'bg-dark-500': editor.isActive('heading', { level: 3 }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 3 }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
           title="Überschrift 3"
         >
           H3
@@ -301,11 +301,11 @@ function onCodeChange(event) {
       </div>
 
       <!-- Lists -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().toggleBulletList().run()"
-          :class="{ 'bg-dark-500': editor.isActive('bulletList') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('bulletList') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Aufzählung"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,8 +314,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleOrderedList().run()"
-          :class="{ 'bg-dark-500': editor.isActive('orderedList') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('orderedList') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Nummerierte Liste"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,8 +324,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleTaskList().run()"
-          :class="{ 'bg-dark-500': editor.isActive('taskList') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('taskList') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Checkliste"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,11 +335,11 @@ function onCodeChange(event) {
       </div>
 
       <!-- Alignment -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().setTextAlign('left').run()"
-          :class="{ 'bg-dark-500': editor.isActive({ textAlign: 'left' }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'left' }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Linksbündig"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,8 +348,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().setTextAlign('center').run()"
-          :class="{ 'bg-dark-500': editor.isActive({ textAlign: 'center' }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'center' }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Zentriert"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,8 +358,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().setTextAlign('right').run()"
-          :class="{ 'bg-dark-500': editor.isActive({ textAlign: 'right' }) }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'right' }) }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Rechtsbündig"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,11 +369,11 @@ function onCodeChange(event) {
       </div>
 
       <!-- Special -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().toggleBlockquote().run()"
-          :class="{ 'bg-dark-500': editor.isActive('blockquote') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('blockquote') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Zitat"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -382,8 +382,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleCode().run()"
-          :class="{ 'bg-dark-500': editor.isActive('code') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('code') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Inline-Code"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,8 +392,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleCodeBlock().run()"
-          :class="{ 'bg-dark-500': editor.isActive('codeBlock') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('codeBlock') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Code-Block"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -402,8 +402,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleHighlight().run()"
-          :class="{ 'bg-dark-500': editor.isActive('highlight') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('highlight') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Markieren"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,16 +412,16 @@ function onCodeChange(event) {
         </button>
         <button
           @click="editor.chain().focus().toggleSubscript().run()"
-          :class="{ 'bg-dark-500': editor.isActive('subscript') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          :class="{ 'bg-white/[0.10]': editor.isActive('subscript') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
           title="Tiefgestellt (z.B. H₂O)"
         >
           X₂
         </button>
         <button
           @click="editor.chain().focus().toggleSuperscript().run()"
-          :class="{ 'bg-dark-500': editor.isActive('superscript') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs font-bold"
+          :class="{ 'bg-white/[0.10]': editor.isActive('superscript') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
           title="Hochgestellt (z.B. E=mc²)"
         >
           X²
@@ -429,11 +429,11 @@ function onCodeChange(event) {
       </div>
 
       <!-- Insert -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="setLink"
-          :class="{ 'bg-dark-500': editor.isActive('link') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('link') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Link einfügen"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,7 +442,7 @@ function onCodeChange(event) {
         </button>
         <button
           @click="addImage"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Bild einfügen"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,8 +451,8 @@ function onCodeChange(event) {
         </button>
         <button
           @click="insertTable"
-          :class="{ 'bg-dark-500': editor.isActive('table') }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors"
+          :class="{ 'bg-white/[0.10]': editor.isActive('table') }"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors"
           title="Tabelle einfügen"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -462,31 +462,31 @@ function onCodeChange(event) {
       </div>
 
       <!-- Table Controls (only visible when in table) -->
-      <div v-if="editor.isActive('table')" class="flex gap-1 pr-2 border-r border-dark-600">
+      <div v-if="editor.isActive('table')" class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().addColumnBefore().run()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
           title="Spalte davor"
         >
           +Spalte←
         </button>
         <button
           @click="editor.chain().focus().addColumnAfter().run()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
           title="Spalte danach"
         >
           +Spalte→
         </button>
         <button
           @click="editor.chain().focus().addRowBefore().run()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
           title="Zeile davor"
         >
           +Zeile↑
         </button>
         <button
           @click="editor.chain().focus().addRowAfter().run()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors text-xs"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
           title="Zeile danach"
         >
           +Zeile↓
@@ -501,11 +501,11 @@ function onCodeChange(event) {
       </div>
 
       <!-- Undo/Redo -->
-      <div class="flex gap-1 pr-2 border-r border-dark-600">
+      <div class="flex gap-1 pr-2 border-r border-white/[0.06]">
         <button
           @click="editor.chain().focus().undo().run()"
           :disabled="!editor.can().undo()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors disabled:opacity-30"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors disabled:opacity-30"
           title="Rückgängig (Strg+Z)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -515,7 +515,7 @@ function onCodeChange(event) {
         <button
           @click="editor.chain().focus().redo().run()"
           :disabled="!editor.can().redo()"
-          class="p-2 hover:bg-dark-600 rounded transition-colors disabled:opacity-30"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors disabled:opacity-30"
           title="Wiederholen (Strg+Y)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -529,7 +529,7 @@ function onCodeChange(event) {
         <button
           @click="toggleCodeView"
           :class="{ 'bg-primary-600 text-white': showCodeView }"
-          class="p-2 hover:bg-dark-600 rounded transition-colors flex items-center gap-1"
+          class="p-2 hover:bg-white/[0.06] rounded transition-colors flex items-center gap-1"
           title="HTML-Code bearbeiten"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,20 +545,20 @@ function onCodeChange(event) {
       v-show="!showCodeView"
       :editor="editor"
       class="tiptap-content flex-1 overflow-hidden"
-      :class="editable ? 'border-x border-b border-dark-600 rounded-b-lg' : 'border border-dark-600 rounded-lg'"
+      :class="editable ? 'border-x border-b border-white/[0.06] rounded-b-xl' : 'border border-white/[0.06] rounded-b-xl'"
       :style="{ minHeight: props.minHeight }"
     />
 
     <!-- Code Editor (HTML Mode) -->
     <div
       v-show="showCodeView"
-      class="flex-1 border-x border-b border-dark-600 rounded-b-lg overflow-hidden"
+      class="flex-1 border-x border-b border-white/[0.06] rounded-b-xl overflow-hidden"
       :style="{ minHeight: props.minHeight }"
     >
       <textarea
         :value="htmlCode"
         @input="onCodeChange"
-        class="w-full h-full p-4 bg-dark-900 text-green-400 font-mono text-sm resize-none focus:outline-none"
+        class="w-full h-full p-4 bg-dark-950 text-green-400 font-mono text-sm resize-none focus:outline-none"
         :style="{ minHeight: props.minHeight }"
         placeholder="HTML-Code hier bearbeiten..."
         spellcheck="false"
@@ -616,11 +616,11 @@ function onCodeChange(event) {
 }
 
 .tiptap-content .ProseMirror code {
-  @apply bg-dark-700 px-1.5 py-0.5 rounded text-primary-400 text-sm;
+  @apply bg-white/[0.06] px-1.5 py-0.5 rounded text-primary-400 text-sm;
 }
 
 .tiptap-content .ProseMirror pre {
-  @apply bg-dark-700 rounded-lg p-4 my-4 overflow-x-auto;
+  @apply bg-white/[0.04] rounded-lg p-4 my-4 overflow-x-auto;
 }
 
 .tiptap-content .ProseMirror pre code {
@@ -632,7 +632,7 @@ function onCodeChange(event) {
 }
 
 .tiptap-content .ProseMirror hr {
-  @apply border-dark-600 my-6;
+  @apply border-white/[0.06] my-6;
 }
 
 .tiptap-content .ProseMirror table {
@@ -641,11 +641,11 @@ function onCodeChange(event) {
 
 .tiptap-content .ProseMirror th,
 .tiptap-content .ProseMirror td {
-  @apply border border-dark-600 p-2 text-left;
+  @apply border border-white/[0.06] p-2 text-left;
 }
 
 .tiptap-content .ProseMirror th {
-  @apply bg-dark-700 font-semibold;
+  @apply bg-white/[0.04] font-semibold;
 }
 
 .tiptap-content .ProseMirror .selectedCell {
@@ -666,7 +666,7 @@ function onCodeChange(event) {
 }
 
 .tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
-  @apply w-4 h-4 rounded border-2 border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer;
+  @apply w-4 h-4 rounded border-2 border-white/[0.10] bg-white/[0.04] text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer;
 }
 
 .tiptap-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"]:checked {

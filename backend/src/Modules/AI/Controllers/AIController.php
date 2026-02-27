@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\AI\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\AI\Services\AIService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -23,11 +24,10 @@ class AIController
 
         $settings = $this->aiService->getSettings($userId);
 
-        $response->getBody()->write(json_encode($settings ?? [
+        return JsonResponse::create($settings ?? [
             'is_configured' => false,
             'has_api_key' => false,
-        ]));
-        return $response->withHeader('Content-Type', 'application/json');
+        ]);
     }
 
     /**
@@ -41,13 +41,9 @@ class AIController
         try {
             $settings = $this->aiService->saveSettings($userId, $data);
 
-            $response->getBody()->write(json_encode($settings));
-            return $response->withHeader('Content-Type', 'application/json');
+            return JsonResponse::create($settings);
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'error' => $e->getMessage()
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error($e->getMessage(), 400);
         }
     }
 
@@ -60,8 +56,7 @@ class AIController
 
         $this->aiService->removeApiKey($userId);
 
-        $response->getBody()->write(json_encode(['success' => true]));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'API key removed');
     }
 
     /**
@@ -73,13 +68,12 @@ class AIController
 
         $isConfigured = $this->aiService->isConfigured($userId);
 
-        $response->getBody()->write(json_encode([
+        return JsonResponse::create([
             'is_configured' => $isConfigured,
             'message' => $isConfigured
                 ? 'AI assistant is ready'
                 : 'Please configure your API key in settings to use the AI assistant'
-        ]));
-        return $response->withHeader('Content-Type', 'application/json');
+        ]);
     }
 
     /**
@@ -91,10 +85,7 @@ class AIController
         $data = $request->getParsedBody();
 
         if (empty($data['message'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Message is required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Message is required', 400);
         }
 
         try {
@@ -105,20 +96,13 @@ class AIController
                 $data['context'] ?? []
             );
 
-            $response->getBody()->write(json_encode($result));
-            return $response->withHeader('Content-Type', 'application/json');
+            return JsonResponse::create($result);
         } catch (\RuntimeException $e) {
-            $response->getBody()->write(json_encode([
-                'error' => $e->getMessage()
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error($e->getMessage(), 400);
         } catch (\Throwable $e) {
             // Log the error for debugging
             error_log('AI Chat Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-            $response->getBody()->write(json_encode([
-                'error' => 'Ein Fehler ist aufgetreten: ' . $e->getMessage()
-            ]));
-            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::serverError('Ein Fehler ist aufgetreten: ' . $e->getMessage());
         }
     }
 
@@ -131,8 +115,7 @@ class AIController
 
         $conversations = $this->aiService->getConversations($userId);
 
-        $response->getBody()->write(json_encode($conversations));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::create($conversations);
     }
 
     /**
@@ -146,14 +129,10 @@ class AIController
         $conversation = $this->aiService->getConversation($userId, $conversationId);
 
         if (!$conversation) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Conversation not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Conversation not found');
         }
 
-        $response->getBody()->write(json_encode($conversation));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::create($conversation);
     }
 
     /**
@@ -167,14 +146,10 @@ class AIController
         $deleted = $this->aiService->deleteConversation($userId, $conversationId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Conversation not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Conversation not found');
         }
 
-        $response->getBody()->write(json_encode(['success' => true]));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Conversation deleted');
     }
 
     /**
@@ -186,8 +161,7 @@ class AIController
 
         $prompts = $this->aiService->getPrompts($userId);
 
-        $response->getBody()->write(json_encode($prompts));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::create($prompts);
     }
 
     /**
@@ -199,16 +173,12 @@ class AIController
         $data = $request->getParsedBody();
 
         if (empty($data['name']) || empty($data['prompt_template'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Name and prompt template are required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Name and prompt template are required', 400);
         }
 
         $prompt = $this->aiService->savePrompt($userId, $data);
 
-        $response->getBody()->write(json_encode($prompt));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::create($prompt);
     }
 
     /**
@@ -222,13 +192,9 @@ class AIController
         $deleted = $this->aiService->deletePrompt($userId, $promptId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Prompt not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Prompt not found');
         }
 
-        $response->getBody()->write(json_encode(['success' => true]));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Prompt deleted');
     }
 }

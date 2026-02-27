@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Tags\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\Tags\Services\TagService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -29,12 +30,7 @@ class TagController
 
         $tags = $this->tagService->getAllTags($userId, $filters);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tags,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tags, 'Success');
     }
 
     /**
@@ -48,19 +44,10 @@ class TagController
         $tag = $this->tagService->getTag($userId, $tagId);
 
         if (!$tag) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Tag not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Tag not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tag,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tag, 'Success');
     }
 
     /**
@@ -72,28 +59,15 @@ class TagController
         $body = $request->getParsedBody();
 
         if (empty($body['name'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Name is required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Name is required', 400);
         }
 
         try {
             $tag = $this->tagService->createTag($userId, $body);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $tag,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            return JsonResponse::created($tag, 'Created');
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Tag name already exists',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+            return JsonResponse::error('Tag name already exists', 409);
         }
     }
 
@@ -109,19 +83,10 @@ class TagController
         $tag = $this->tagService->updateTag($userId, $tagId, $body);
 
         if (!$tag) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Tag not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Tag not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tag,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tag, 'Success');
     }
 
     /**
@@ -135,18 +100,10 @@ class TagController
         $deleted = $this->tagService->deleteTag($userId, $tagId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Tag not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Tag not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 
     /**
@@ -156,12 +113,7 @@ class TagController
     {
         $types = $this->tagService->getValidTypes();
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $types,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($types, 'Success');
     }
 
     /**
@@ -174,11 +126,7 @@ class TagController
         $body = $request->getParsedBody();
 
         if (empty($body['taggable_type']) || empty($body['taggable_id'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'taggable_type and taggable_id are required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('taggable_type and taggable_id are required', 400);
         }
 
         $result = $this->tagService->tagItem(
@@ -189,18 +137,10 @@ class TagController
         );
 
         if (!$result) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Invalid tag or item type',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Invalid tag or item type', 400);
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 
     /**
@@ -215,11 +155,7 @@ class TagController
 
         $this->tagService->untagItem($userId, $tagId, $taggableType, $taggableId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 
     /**
@@ -233,12 +169,7 @@ class TagController
 
         $tags = $this->tagService->getItemTags($userId, $taggableType, $taggableId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tags,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tags, 'Success');
     }
 
     /**
@@ -252,21 +183,12 @@ class TagController
         $body = $request->getParsedBody();
 
         if (!isset($body['tag_ids']) || !is_array($body['tag_ids'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'tag_ids array is required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('tag_ids array is required', 400);
         }
 
         $tags = $this->tagService->setItemTags($userId, $taggableType, $taggableId, $body['tag_ids']);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tags,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tags, 'Success');
     }
 
     /**
@@ -278,11 +200,7 @@ class TagController
         $params = $request->getQueryParams();
 
         if (empty($params['tags'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'tags parameter is required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('tags parameter is required', 400);
         }
 
         $tagIds = explode(',', $params['tags']);
@@ -290,12 +208,7 @@ class TagController
 
         $results = $this->tagService->searchByTags($userId, $tagIds, $type);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $results,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($results, 'Success');
     }
 
     /**
@@ -307,38 +220,21 @@ class TagController
         $body = $request->getParsedBody();
 
         if (empty($body['source_ids']) || !is_array($body['source_ids']) || empty($body['target_id'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'source_ids array and target_id are required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('source_ids array and target_id are required', 400);
         }
 
         try {
             $result = $this->tagService->mergeTags($userId, $body['source_ids'], $body['target_id']);
 
             if (!$result) {
-                $response->getBody()->write(json_encode([
-                    'success' => false,
-                    'error' => 'Invalid tags',
-                ]));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                return JsonResponse::error('Invalid tags', 400);
             }
 
             $mergedTag = $this->tagService->getTag($userId, $body['target_id']);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $mergedTag,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json');
+            return JsonResponse::success($mergedTag, 'Success');
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Merge failed',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            return JsonResponse::serverError('Merge failed');
         }
     }
 }

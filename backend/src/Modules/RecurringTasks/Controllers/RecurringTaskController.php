@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\RecurringTasks\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\RecurringTasks\Services\RecurringTaskService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -35,12 +36,7 @@ class RecurringTaskController
 
         $tasks = $this->recurringTaskService->getAllTasks($userId, $filters);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $tasks,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($tasks, 'Success');
     }
 
     /**
@@ -54,12 +50,7 @@ class RecurringTaskController
 
         $upcoming = $this->recurringTaskService->getUpcomingTasks($userId, $days);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $upcoming,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($upcoming, 'Success');
     }
 
     /**
@@ -71,12 +62,7 @@ class RecurringTaskController
 
         $results = $this->recurringTaskService->processDueTasks($userId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $results,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($results, 'Success');
     }
 
     /**
@@ -90,19 +76,10 @@ class RecurringTaskController
         $task = $this->recurringTaskService->getTask($userId, $taskId);
 
         if (!$task) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Task not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Task not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $task,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($task, 'Success');
     }
 
     /**
@@ -114,21 +91,12 @@ class RecurringTaskController
         $body = $request->getParsedBody();
 
         if (empty($body['title']) || empty($body['start_date'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Title and start_date are required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Title and start_date are required', 400);
         }
 
         $task = $this->recurringTaskService->createTask($userId, $body);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $task,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+        return JsonResponse::created($task, 'Created');
     }
 
     /**
@@ -143,19 +111,10 @@ class RecurringTaskController
         $task = $this->recurringTaskService->updateTask($userId, $taskId, $body);
 
         if (!$task) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Task not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Task not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $task,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($task, 'Success');
     }
 
     /**
@@ -169,18 +128,10 @@ class RecurringTaskController
         $deleted = $this->recurringTaskService->deleteTask($userId, $taskId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Task not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Task not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 
     /**
@@ -194,19 +145,10 @@ class RecurringTaskController
         $task = $this->recurringTaskService->toggleActive($userId, $taskId);
 
         if (!$task) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Task not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Task not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $task,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($task, 'Success');
     }
 
     /**
@@ -220,19 +162,10 @@ class RecurringTaskController
         $task = $this->recurringTaskService->skipOccurrence($userId, $taskId);
 
         if (!$task) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Task not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Task not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $task,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($task, 'Success');
     }
 
     /**
@@ -246,12 +179,7 @@ class RecurringTaskController
 
         $instances = $this->recurringTaskService->getTaskInstances($taskId, $limit);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $instances,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($instances, 'Success');
     }
 
     /**
@@ -263,14 +191,11 @@ class RecurringTaskController
 
         $result = $this->recurringTaskService->processTask($taskId);
 
-        $response->getBody()->write(json_encode([
-            'success' => $result['success'],
-            'data' => $result,
-        ]));
+        if ($result['success']) {
+            return JsonResponse::success($result, 'Success');
+        }
 
-        return $response
-            ->withHeader('Content-Type', 'application/json')
-            ->withStatus($result['success'] ? 200 : 400);
+        return JsonResponse::error('Task processing failed', 400);
     }
 
     // Categories
@@ -283,12 +208,7 @@ class RecurringTaskController
         $userId = $request->getAttribute('user_id');
         $categories = $this->recurringTaskService->getCategories($userId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $categories,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($categories, 'Success');
     }
 
     /**
@@ -300,28 +220,15 @@ class RecurringTaskController
         $body = $request->getParsedBody();
 
         if (empty($body['name'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Name is required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Name is required', 400);
         }
 
         try {
             $category = $this->recurringTaskService->createCategory($userId, $body);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $category,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            return JsonResponse::created($category, 'Created');
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category name already exists',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+            return JsonResponse::error('Category name already exists', 409);
         }
     }
 
@@ -337,19 +244,10 @@ class RecurringTaskController
         $category = $this->recurringTaskService->updateCategory($userId, $categoryId, $body);
 
         if (!$category) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Category not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $category,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($category, 'Success');
     }
 
     /**
@@ -363,17 +261,9 @@ class RecurringTaskController
         $deleted = $this->recurringTaskService->deleteCategory($userId, $categoryId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Category not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 }

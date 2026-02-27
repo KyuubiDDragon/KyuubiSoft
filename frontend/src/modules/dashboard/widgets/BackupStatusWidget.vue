@@ -1,5 +1,5 @@
 <script setup>
-import { formatDate } from './widgetUtils.js'
+import { formatDate } from './widgetUtils'
 
 defineProps({ widget: Object, data: Object })
 </script>
@@ -23,7 +23,7 @@ defineProps({ widget: Object, data: Object })
         <span class="text-gray-400 text-sm">Aktive Zeitpläne</span>
         <span class="text-white font-medium">{{ data?.active_schedules || 0 }}</span>
       </div>
-      <div v-if="data?.last_successful" class="pt-2 border-t border-dark-700">
+      <div v-if="data?.last_successful" class="pt-2 border-t border-white/[0.06]">
         <p class="text-xs text-gray-500">Letztes erfolgreiches Backup:</p>
         <p class="text-sm text-white">{{ formatDate(data.last_successful) }}</p>
       </div>

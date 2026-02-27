@@ -562,4 +562,18 @@ return [
             $c->get(\App\Modules\Scripts\Services\ScriptsService::class)
         );
     },
+
+    // Contacts Controller
+    \App\Modules\Contacts\Controllers\ContactController::class => function (ContainerInterface $c): \App\Modules\Contacts\Controllers\ContactController {
+        return new \App\Modules\Contacts\Controllers\ContactController(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Email Controller
+    \App\Modules\Email\Controllers\EmailController::class => function (ContainerInterface $c): \App\Modules\Email\Controllers\EmailController {
+        return new \App\Modules\Email\Controllers\EmailController(
+            $c->get(DBALConnection::class)
+        );
+    },
 ];

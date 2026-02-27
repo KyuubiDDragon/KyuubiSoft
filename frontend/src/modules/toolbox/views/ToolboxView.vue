@@ -455,7 +455,7 @@ function closeTool() {
             v-for="tool in category.tools"
             :key="tool.id"
             @click="openTool(tool)"
-            class="card p-4 text-left hover:bg-dark-700 hover:border-primary-500 transition-all duration-200 group"
+            class="card p-4 text-left hover:bg-white/[0.04] hover:border-primary-500 transition-all duration-200 group"
           >
             <div class="flex items-start gap-3">
               <span class="text-2xl">{{ tool.icon }}</span>
@@ -483,15 +483,15 @@ function closeTool() {
     <Teleport to="body">
       <div
         v-if="activeTool"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
         <div
-          class="bg-dark-800 rounded-xl border border-dark-600 max-h-[90vh] flex flex-col"
+          class="modal max-h-[90vh] flex flex-col"
           :class="activeTool.fullWidth ? 'w-full max-w-6xl' : 'w-full max-w-4xl'"
         >
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white flex items-center gap-2">
               <span>{{ activeTool.icon }}</span>
               {{ activeTool.name }}

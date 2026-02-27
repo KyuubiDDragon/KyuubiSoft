@@ -128,13 +128,13 @@ function clearAll() {
 <template>
   <div class="space-y-4">
     <!-- Tabs -->
-    <div class="flex gap-2 border-b border-dark-600 pb-2">
+    <div class="flex gap-2 border-b border-white/[0.06] pb-2">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         @click="activeTab = tab.id; clearAll()"
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        :class="activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white hover:bg-dark-700'"
+        :class="activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
       >
         {{ tab.name }}
       </button>
@@ -209,7 +209,7 @@ function clearAll() {
     <!-- Output -->
     <div v-if="output" class="relative">
       <label class="text-sm text-gray-400 mb-1 block">Output</label>
-      <pre class="p-4 bg-dark-900 rounded-lg text-sm font-mono text-green-400 overflow-auto max-h-60 whitespace-pre-wrap">{{ output }}</pre>
+      <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono text-green-400 overflow-auto max-h-60 whitespace-pre-wrap">{{ output }}</pre>
       <button
         @click="copyOutput"
         class="absolute top-8 right-2 btn-icon"

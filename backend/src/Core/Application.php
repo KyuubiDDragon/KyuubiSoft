@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Core\Middleware\CorsMiddleware;
+use App\Core\Middleware\CsrfMiddleware;
 use App\Core\Middleware\ErrorMiddleware;
 use App\Core\Middleware\JsonBodyParserMiddleware;
 use DI\Bridge\Slim\Bridge;
@@ -67,6 +68,9 @@ class Application
 
         // CORS
         $this->app->add(CorsMiddleware::class);
+
+        // CSRF protection for cookie-based auth
+        $this->app->add(CsrfMiddleware::class);
 
         // JSON Body Parser
         $this->app->add(JsonBodyParserMiddleware::class);

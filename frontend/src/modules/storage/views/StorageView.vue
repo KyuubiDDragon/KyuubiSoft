@@ -410,12 +410,12 @@ onUnmounted(() => {
             v-model="searchQuery"
             type="text"
             placeholder="Suchen..."
-            class="pl-9 pr-3 py-1.5 text-sm bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="input pl-9 pr-3 py-1.5 text-sm"
           />
         </div>
 
         <!-- View Mode Toggle -->
-        <div class="flex bg-dark-700 rounded-lg p-0.5">
+        <div class="flex bg-white/[0.04] rounded-xl p-0.5">
           <button
             @click="viewMode = 'grid'"
             :class="[
@@ -442,7 +442,7 @@ onUnmounted(() => {
         <button
           @click="fileInput.click()"
           :disabled="isUploading"
-          class="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+          class="btn-primary flex items-center gap-1.5 px-3 py-1.5 text-sm"
         >
           <CloudArrowUpIcon class="w-4 h-4" />
           <span>Hochladen</span>
@@ -458,28 +458,28 @@ onUnmounted(() => {
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <FolderIcon class="w-5 h-5 text-primary-400" />
           <span class="text-gray-400 text-sm">Dateien</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ stats.total_files }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <ChartBarIcon class="w-5 h-5 text-blue-400" />
           <span class="text-gray-400 text-sm">Speicher</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ formatSize(stats.total_size) }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <LinkIcon class="w-5 h-5 text-green-400" />
           <span class="text-gray-400 text-sm">Freigaben</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ stats.active_shares }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <ArrowDownTrayIcon class="w-5 h-5 text-orange-400" />
           <span class="text-gray-400 text-sm">Downloads</span>
@@ -490,16 +490,16 @@ onUnmounted(() => {
 
     <!-- Drop Zone / File Area -->
     <div
-      class="bg-dark-800 rounded-xl border-2 transition-colors"
-      :class="isDragging ? 'border-primary-500 border-dashed' : 'border-dark-700'"
+      class="bg-white/[0.04] rounded-xl border-2 transition-colors"
+      :class="isDragging ? 'border-primary-500 border-dashed' : 'border-white/[0.06]'"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
     >
       <!-- Upload Progress -->
-      <div v-if="isUploading" class="p-4 border-b border-dark-700">
+      <div v-if="isUploading" class="p-4 border-b border-white/[0.06]">
         <div class="flex items-center gap-3">
-          <div class="flex-1 h-2 bg-dark-600 rounded-full overflow-hidden">
+          <div class="flex-1 h-2 bg-white/[0.08] rounded-full overflow-hidden">
             <div
               class="h-full bg-primary-500 transition-all duration-300"
               :style="{ width: `${uploadProgress}%` }"
@@ -529,7 +529,7 @@ onUnmounted(() => {
         <p class="text-gray-400 mb-4">Lade deine erste Datei hoch oder ziehe sie hierher</p>
         <button
           @click="fileInput.click()"
-          class="px-4 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg text-white font-medium"
+          class="btn-primary"
         >
           Datei auswählen
         </button>
@@ -541,7 +541,7 @@ onUnmounted(() => {
           <div
             v-for="file in filteredFiles"
             :key="file.id"
-            class="group relative bg-dark-700 rounded-lg overflow-hidden border border-dark-600 hover:border-primary-500/50 transition-all"
+            class="group relative bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06] hover:border-primary-500/50 transition-all"
           >
             <!-- Thumbnail / Icon -->
             <div
@@ -556,11 +556,11 @@ onUnmounted(() => {
                 class="w-full h-full object-cover"
               />
               <!-- Loading placeholder for images -->
-              <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-dark-600">
+              <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-white/[0.08]">
                 <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
               <!-- Icon for non-images -->
-              <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
+              <div v-else class="w-full h-full flex items-center justify-center bg-white/[0.08]">
                 <component :is="getFileIcon(file)" class="w-8 h-8 text-gray-500" />
               </div>
 
@@ -614,11 +614,11 @@ onUnmounted(() => {
       </div>
 
       <!-- List View -->
-      <div v-else class="divide-y divide-dark-700">
+      <div v-else class="divide-y divide-white/[0.06]">
         <div
           v-for="file in filteredFiles"
           :key="file.id"
-          class="flex items-center gap-3 p-3 hover:bg-dark-700/50 transition-colors group"
+          class="flex items-center gap-3 p-3 hover:bg-white/[0.04] transition-colors group"
         >
           <!-- Thumbnail / Icon -->
           <div
@@ -631,10 +631,10 @@ onUnmounted(() => {
               :alt="file.name"
               class="w-full h-full object-cover"
             />
-            <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-dark-600">
+            <div v-else-if="isImage(file)" class="w-full h-full flex items-center justify-center bg-white/[0.08]">
               <div class="w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <div v-else class="w-full h-full flex items-center justify-center bg-dark-600">
+            <div v-else class="w-full h-full flex items-center justify-center bg-white/[0.08]">
               <component :is="getFileIcon(file)" class="w-5 h-5 text-primary-400" />
             </div>
           </div>
@@ -657,28 +657,28 @@ onUnmounted(() => {
           <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               @click="openRenameModal(file)"
-              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white transition-colors"
               title="Umbenennen"
             >
               <PencilIcon class="w-5 h-5" />
             </button>
             <button
               @click="openShareModal(file)"
-              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white transition-colors"
               title="Freigeben"
             >
               <ShareIcon class="w-5 h-5" />
             </button>
             <button
               @click="downloadFile(file)"
-              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white transition-colors"
               title="Herunterladen"
             >
               <ArrowDownTrayIcon class="w-5 h-5" />
             </button>
             <button
               @click="deleteFile(file)"
-              class="p-2 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+              class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-red-400 transition-colors"
               title="Löschen"
             >
               <TrashIcon class="w-5 h-5" />
@@ -692,17 +692,17 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="showShareModal"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="modal w-full max-w-2xl max-h-[90vh] flex flex-col">
           <!-- Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
               Freigaben: {{ selectedFile?.name }}
             </h3>
             <button
               @click="showShareModal = false"
-              class="p-1 hover:bg-dark-700 rounded-lg transition-colors"
+              class="p-1 hover:bg-white/[0.04] rounded-lg transition-colors"
             >
               <XMarkIcon class="w-5 h-5 text-gray-400" />
             </button>
@@ -717,17 +717,17 @@ onUnmounted(() => {
                 <div
                   v-for="share in shares"
                   :key="share.id"
-                  class="bg-dark-700 rounded-lg p-3 border border-dark-600"
+                  class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]"
                 >
                   <div class="flex items-center gap-2 mb-2">
                     <input
                       :value="getShareLink(share)"
                       readonly
-                      class="flex-1 px-2 py-1 bg-dark-600 border border-dark-500 rounded text-white text-xs"
+                      class="flex-1 px-2 py-1 bg-white/[0.08] border border-white/[0.08] rounded text-white text-xs"
                     />
                     <button
                       @click="copyShareLink(share)"
-                      class="p-1.5 bg-dark-600 hover:bg-dark-500 rounded transition-colors"
+                      class="p-1.5 bg-white/[0.08] hover:bg-white/[0.12] rounded transition-colors"
                       :title="copiedShareId === share.id ? 'Kopiert!' : 'Link kopieren'"
                     >
                       <CheckIcon v-if="copiedShareId === share.id" class="w-4 h-4 text-green-500" />
@@ -736,7 +736,7 @@ onUnmounted(() => {
                     <button
                       @click="toggleShareActive(share)"
                       class="p-1.5 rounded transition-colors"
-                      :class="share.is_active ? 'bg-green-600/20 text-green-400' : 'bg-dark-600 text-gray-400'"
+                      :class="share.is_active ? 'bg-green-600/20 text-green-400' : 'bg-white/[0.08] text-gray-400'"
                       :title="share.is_active ? 'Aktiv - Klicken zum Deaktivieren' : 'Inaktiv - Klicken zum Aktivieren'"
                     >
                       <CheckIcon v-if="share.is_active" class="w-4 h-4" />
@@ -744,7 +744,7 @@ onUnmounted(() => {
                     </button>
                     <button
                       @click="deleteShare(share)"
-                      class="p-1.5 bg-dark-600 hover:bg-red-600/30 rounded transition-colors text-gray-400 hover:text-red-400"
+                      class="p-1.5 bg-white/[0.08] hover:bg-red-600/30 rounded transition-colors text-gray-400 hover:text-red-400"
                       title="Löschen"
                     >
                       <TrashIcon class="w-4 h-4" />
@@ -776,7 +776,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Divider -->
-            <div class="border-t border-dark-600 pt-4">
+            <div class="border-t border-white/[0.06] pt-4">
               <label class="block text-sm font-medium text-gray-300 mb-3">Neue Freigabe erstellen</label>
 
               <!-- Password -->
@@ -787,7 +787,7 @@ onUnmounted(() => {
                     v-model="shareForm.password"
                     :type="showPassword ? 'text' : 'password'"
                     placeholder="Passwort eingeben..."
-                    class="w-full px-3 py-2 pr-10 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 text-sm"
+                    class="input w-full pr-10 text-sm"
                   />
                   <button
                     type="button"
@@ -809,7 +809,7 @@ onUnmounted(() => {
                     type="number"
                     min="1"
                     placeholder="Unbegrenzt"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 text-sm"
+                    class="input w-full text-sm"
                   />
                 </div>
 
@@ -819,7 +819,7 @@ onUnmounted(() => {
                   <input
                     v-model="shareForm.expires_at"
                     type="datetime-local"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm"
+                    class="input w-full text-sm"
                   />
                 </div>
               </div>
@@ -827,17 +827,17 @@ onUnmounted(() => {
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-2 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-2 p-4 border-t border-white/[0.06]">
             <button
               @click="showShareModal = false"
-              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium transition-colors"
+              class="btn-secondary"
             >
               Schließen
             </button>
             <button
               @click="createShare"
               :disabled="isShareLoading"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+              class="btn-primary"
             >
               Neue Freigabe erstellen
             </button>
@@ -850,10 +850,10 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="showRenameModal"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">Datei umbenennen</h3>
           </div>
           <div class="p-4">
@@ -861,20 +861,20 @@ onUnmounted(() => {
               v-model="renameForm.name"
               type="text"
               placeholder="Neuer Name"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
+              class="input w-full"
               @keyup.enter="renameFile"
             />
           </div>
-          <div class="flex justify-end gap-2 p-4 border-t border-dark-700">
+          <div class="flex justify-end gap-2 p-4 border-t border-white/[0.06]">
             <button
               @click="showRenameModal = false"
-              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white font-medium"
+              class="btn-secondary"
             >
               Abbrechen
             </button>
             <button
               @click="renameFile"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg text-white font-medium"
+              class="btn-primary"
             >
               Umbenennen
             </button>
@@ -906,7 +906,7 @@ onUnmounted(() => {
           <span class="text-gray-400">{{ formatSize(previewFile.size) }}</span>
           <button
             @click="downloadFile(previewFile)"
-            class="flex items-center gap-2 px-3 py-1 bg-primary-600 hover:bg-primary-700 rounded-lg text-white text-sm transition-colors"
+            class="btn-primary flex items-center gap-2 px-3 py-1 text-sm"
           >
             <ArrowDownTrayIcon class="w-4 h-4" />
             Download

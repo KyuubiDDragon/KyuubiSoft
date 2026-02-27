@@ -1,5 +1,5 @@
 <script setup>
-import { formatDate } from './widgetUtils.js'
+import { formatDate } from './widgetUtils'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 defineProps({ widget: Object, data: Array })
 </script>

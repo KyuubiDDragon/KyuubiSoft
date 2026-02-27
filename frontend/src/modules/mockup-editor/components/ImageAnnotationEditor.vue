@@ -224,9 +224,9 @@ onUnmounted(() => {
         <div class="absolute inset-0 bg-black/80" @click="handleClose" />
 
         <!-- Modal -->
-        <div class="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="relative bg-white/[0.04] rounded-xl shadow-float w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
           <!-- Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Screenshot bearbeiten</h2>
             <button @click="handleClose" class="p-1 text-gray-400 hover:text-white transition-colors">
               <XMarkIcon class="w-5 h-5" />
@@ -236,7 +236,7 @@ onUnmounted(() => {
           <!-- Content -->
           <div class="flex flex-1 overflow-hidden">
             <!-- Toolbar -->
-            <div class="w-16 bg-gray-900 border-r border-gray-700 flex flex-col items-center py-4 gap-2">
+            <div class="w-16 bg-white/[0.02] border-r border-white/[0.06] flex flex-col items-center py-4 gap-2">
               <!-- Tools -->
               <div class="space-y-1">
                 <button
@@ -244,14 +244,14 @@ onUnmounted(() => {
                   :key="tool.id"
                   @click="currentTool = tool.id"
                   class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors"
-                  :class="currentTool === tool.id ? 'bg-amber-500 text-gray-900' : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+                  :class="currentTool === tool.id ? 'bg-amber-500 text-gray-900' : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
                   :title="tool.name"
                 >
                   {{ tool.icon }}
                 </button>
               </div>
 
-              <div class="w-8 h-px bg-gray-700 my-2" />
+              <div class="w-8 h-px bg-white/[0.04] my-2" />
 
               <!-- Colors -->
               <div class="space-y-1">
@@ -265,7 +265,7 @@ onUnmounted(() => {
                 />
               </div>
 
-              <div class="w-8 h-px bg-gray-700 my-2" />
+              <div class="w-8 h-px bg-white/[0.04] my-2" />
 
               <!-- Actions -->
               <button
@@ -280,7 +280,7 @@ onUnmounted(() => {
               <button
                 v-if="annotations.length > 0"
                 @click="clearAllAnnotations"
-                class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
                 title="Alle löschen"
               >
                 <XMarkIcon class="w-5 h-5" />
@@ -288,7 +288,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Image Preview Area -->
-            <div class="flex-1 p-4 overflow-auto bg-gray-900/50 flex items-center justify-center">
+            <div class="flex-1 p-4 overflow-auto bg-white/[0.01] flex items-center justify-center">
               <div
                 ref="imageContainerRef"
                 class="relative cursor-crosshair select-none"
@@ -306,7 +306,7 @@ onUnmounted(() => {
                   :style="{ borderRadius: element.borderRadius ? `${element.borderRadius}px` : 0 }"
                   draggable="false"
                 />
-                <div v-else class="w-[600px] h-[400px] bg-gray-700 rounded-lg flex items-center justify-center text-gray-500">
+                <div v-else class="w-[600px] h-[400px] bg-white/[0.04] rounded-lg flex items-center justify-center text-gray-500">
                   Kein Bild vorhanden
                 </div>
 
@@ -413,7 +413,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Properties Panel -->
-            <div class="w-64 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+            <div class="w-64 bg-white/[0.04] border-l border-white/[0.06] p-4 overflow-y-auto">
               <h3 class="text-sm font-medium text-gray-400 mb-4">Eigenschaften</h3>
 
               <template v-if="selectedAnnotationId">
@@ -433,7 +433,7 @@ onUnmounted(() => {
                       type="text"
                       :value="annotations.find(a => a.id === selectedAnnotationId)?.text"
                       @input="(e) => mockupStore.updateAnnotation(elementId, selectedAnnotationId, { text: e.target.value })"
-                      class="w-full mt-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                      class="w-full mt-1 px-3 py-2 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
@@ -524,7 +524,7 @@ onUnmounted(() => {
                       :key="tool.id"
                       @click="currentTool = tool.id"
                       class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-                      :class="currentTool === tool.id ? 'bg-amber-500 text-gray-900' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                      :class="currentTool === tool.id ? 'bg-amber-500 text-gray-900' : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.04]'"
                     >
                       {{ tool.name }}
                     </button>
@@ -534,8 +534,8 @@ onUnmounted(() => {
                 <div class="mt-4">
                   <div class="text-xs text-gray-500 mb-2">Tastenkürzel</div>
                   <div class="text-xs text-gray-400 space-y-1">
-                    <div><kbd class="px-1 bg-gray-700 rounded">Del</kbd> - Löschen</div>
-                    <div><kbd class="px-1 bg-gray-700 rounded">Esc</kbd> - Abwählen/Schließen</div>
+                    <div><kbd class="px-1 bg-white/[0.04] rounded">Del</kbd> - Löschen</div>
+                    <div><kbd class="px-1 bg-white/[0.04] rounded">Esc</kbd> - Abwählen/Schließen</div>
                   </div>
                 </div>
               </template>
@@ -543,7 +543,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-3 px-4 py-3 border-t border-gray-700">
+          <div class="flex items-center justify-end gap-3 px-4 py-3 border-t border-white/[0.06]">
             <span class="text-sm text-gray-500 mr-auto">
               {{ annotations.length }} Annotation{{ annotations.length !== 1 ? 'en' : '' }}
             </span>
@@ -583,7 +583,7 @@ export default {
 }
 
 input[type="range"] {
-  @apply h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer;
+  @apply h-2 bg-white/[0.04] rounded-lg appearance-none cursor-pointer;
 }
 
 input[type="range"]::-webkit-slider-thumb {

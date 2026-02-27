@@ -137,7 +137,7 @@ function formatTime(dateStr) {
   <button
     v-if="!isOpen"
     @click="toggleOpen"
-    class="fixed bottom-6 right-44 w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-full shadow-lg flex items-center justify-center text-white transition-all z-50 group"
+    class="fixed bottom-6 right-44 w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
     title="AI Assistent"
   >
     <SparklesIcon class="w-6 h-6" />
@@ -154,11 +154,11 @@ function formatTime(dateStr) {
   >
     <div
       v-if="isOpen"
-      class="fixed bottom-6 right-44 w-[420px] bg-dark-800 border border-dark-600 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col"
+      class="fixed bottom-6 right-44 w-[420px] bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-float z-50 overflow-hidden flex flex-col"
       :class="isMinimized ? 'h-auto' : 'h-[600px]'"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-b border-dark-600">
+      <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
           <SparklesIcon class="w-5 h-5 text-purple-400" />
           <div>
@@ -211,7 +211,7 @@ function formatTime(dateStr) {
       <!-- Content -->
       <div v-if="!isMinimized" class="flex-1 flex flex-col overflow-hidden">
         <!-- Not Configured Warning -->
-        <div v-if="!isConfigured" class="p-4 bg-yellow-900/20 border-b border-yellow-900/30">
+        <div v-if="!isConfigured" class="p-4 bg-yellow-500/[0.06] border-b border-yellow-500/20">
           <div class="flex items-start gap-3">
             <ExclamationTriangleIcon class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
             <div>
@@ -232,14 +232,14 @@ function formatTime(dateStr) {
         <!-- History Panel -->
         <div
           v-if="showHistory"
-          class="border-b border-dark-600 max-h-48 overflow-y-auto"
+          class="border-b border-white/[0.06] max-h-48 overflow-y-auto"
         >
-          <div class="p-2 bg-dark-700/50">
+          <div class="p-2 bg-white/[0.02]">
             <p class="text-xs text-gray-500 px-2 py-1">Letzte Unterhaltungen</p>
             <div
               v-for="conv in aiStore.conversations"
               :key="conv.id"
-              class="flex items-center justify-between px-2 py-1.5 hover:bg-dark-600 rounded cursor-pointer group"
+              class="flex items-center justify-between px-2 py-1.5 hover:bg-white/[0.04] rounded cursor-pointer group"
               @click="loadConversation(conv)"
             >
               <div class="flex-1 min-w-0">
@@ -282,7 +282,7 @@ function formatTime(dateStr) {
               class="max-w-[85%] rounded-lg px-3 py-2 text-sm"
               :class="{
                 'bg-purple-600 text-white': msg.role === 'user',
-                'bg-dark-700 text-gray-200': msg.role === 'assistant',
+                'bg-white/[0.04] text-gray-200': msg.role === 'assistant',
                 'bg-red-900/30 text-red-300 border border-red-800': msg.role === 'system'
               }"
             >
@@ -292,7 +292,7 @@ function formatTime(dateStr) {
 
           <!-- Loading -->
           <div v-if="aiStore.chatLoading" class="flex justify-start">
-            <div class="bg-dark-700 rounded-lg px-4 py-3">
+            <div class="bg-white/[0.04] rounded-lg px-4 py-3">
               <div class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
                 <div class="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
@@ -303,7 +303,7 @@ function formatTime(dateStr) {
         </div>
 
         <!-- Input -->
-        <div class="p-3 border-t border-dark-600 bg-dark-800">
+        <div class="p-3 border-t border-white/[0.06] bg-white/[0.02]">
           <div class="flex gap-2">
             <input
               v-model="message"
@@ -311,12 +311,12 @@ function formatTime(dateStr) {
               type="text"
               placeholder="Schreibe eine Nachricht..."
               :disabled="!isConfigured || aiStore.chatLoading"
-              class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 disabled:opacity-50"
+              class="flex-1 px-3 py-2 input text-sm focus:border-purple-500 disabled:opacity-50"
             />
             <button
               @click="sendMessage"
               :disabled="!message.trim() || !isConfigured || aiStore.chatLoading"
-              class="px-3 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              class="px-3 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
             >
               <PaperAirplaneIcon class="w-4 h-4 text-white" />
             </button>

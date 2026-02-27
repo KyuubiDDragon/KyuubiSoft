@@ -161,7 +161,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Progress Bar -->
-      <div class="w-full h-3 bg-dark-700 rounded-full mt-4 overflow-hidden">
+      <div class="w-full h-3 bg-white/[0.04] rounded-full mt-4 overflow-hidden">
         <div
           class="h-full transition-all duration-1000"
           :class="isOvertime ? 'bg-red-500' : progress > 80 ? 'bg-yellow-500' : 'bg-primary-500'"
@@ -207,7 +207,7 @@ onUnmounted(() => {
           :key="preset"
           @click="meetingDuration = preset"
           class="px-4 py-2 rounded-lg text-sm transition-colors"
-          :class="meetingDuration === preset ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+          :class="meetingDuration === preset ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
         >
           {{ preset }} min
         </button>
@@ -246,7 +246,7 @@ onUnmounted(() => {
           :key="name"
           @click="setSpeaker(name)"
           class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
-          :class="currentSpeaker === name ? 'bg-primary-600/30 ring-1 ring-primary-500' : 'bg-dark-700 hover:bg-dark-600'"
+          :class="currentSpeaker === name ? 'bg-primary-600/30 ring-1 ring-primary-500' : 'bg-white/[0.04] hover:bg-white/[0.04]'"
         >
           <div
             class="w-3 h-3 rounded-full"

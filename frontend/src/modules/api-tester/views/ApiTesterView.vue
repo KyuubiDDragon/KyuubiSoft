@@ -578,7 +578,7 @@ onMounted(() => {
           <div class="space-y-1">
             <div v-for="collection in collections" :key="collection.id">
               <div
-                class="flex items-center justify-between p-2 rounded-lg hover:bg-dark-700 cursor-pointer group"
+                class="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] cursor-pointer group"
                 @click="toggleCollection(collection.id)"
               >
                 <div class="flex items-center gap-2">
@@ -608,7 +608,7 @@ onMounted(() => {
                   v-for="req in getCollectionRequests(collection.id)"
                   :key="req.id"
                   class="flex items-center gap-2 p-2 rounded-lg cursor-pointer group"
-                  :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                  :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-white/[0.04]'"
                   @click="selectRequest(req)"
                 >
                   <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(req.method)">
@@ -627,14 +627,14 @@ onMounted(() => {
           </div>
 
           <!-- Uncategorized -->
-          <div class="mt-4 pt-4 border-t border-dark-600">
+          <div class="mt-4 pt-4 border-t border-white/[0.06]">
             <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Unkategorisiert</h4>
             <div class="space-y-1">
               <div
                 v-for="req in uncategorizedRequests"
                 :key="req.id"
                 class="flex items-center gap-2 p-2 rounded-lg cursor-pointer group"
-                :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                :class="currentRequest?.id === req.id ? 'bg-primary-600' : 'hover:bg-white/[0.04]'"
                 @click="selectRequest(req)"
               >
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(req.method)">
@@ -699,7 +699,7 @@ onMounted(() => {
 
         <!-- Request Tabs -->
         <div class="card p-4">
-          <div class="flex border-b border-dark-600 -mx-4 -mt-4 px-4">
+          <div class="flex border-b border-white/[0.06] -mx-4 -mt-4 px-4">
             <button
               v-for="tab in ['params', 'headers', 'body', 'auth']"
               :key="tab"
@@ -829,7 +829,7 @@ onMounted(() => {
           </div>
 
           <div v-if="response">
-            <div class="flex border-b border-dark-600 -mx-4 px-4 mb-4">
+            <div class="flex border-b border-white/[0.06] -mx-4 px-4 mb-4">
               <button
                 v-for="tab in ['body', 'headers']"
                 :key="tab"
@@ -845,11 +845,11 @@ onMounted(() => {
               <div v-if="response.error" class="p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-400">
                 {{ response.error }}
               </div>
-              <pre v-else class="p-4 bg-dark-900 rounded-lg text-sm font-mono text-gray-300 overflow-auto max-h-96">{{ formatResponseBody(response.body) }}</pre>
+              <pre v-else class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono text-gray-300 overflow-auto max-h-96">{{ formatResponseBody(response.body) }}</pre>
             </div>
 
             <div v-if="activeResponseTab === 'headers'" class="space-y-1">
-              <div v-for="(value, key) in response.headers" :key="key" class="flex gap-4 py-1 border-b border-dark-700">
+              <div v-for="(value, key) in response.headers" :key="key" class="flex gap-4 py-1 border-b border-white/[0.06]">
                 <span class="text-primary-400 font-medium w-48 shrink-0">{{ key }}</span>
                 <span class="text-gray-300 font-mono text-sm break-all">{{ value }}</span>
               </div>
@@ -914,13 +914,13 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <div class="flex gap-6">
-            <div class="w-48 border-r border-dark-600 pr-6">
+            <div class="w-48 border-r border-white/[0.06] pr-6">
               <div class="space-y-1">
                 <div
                   v-for="env in environments"
                   :key="env.id"
                   class="p-2 rounded-lg cursor-pointer flex items-center justify-between"
-                  :class="editingEnvironment?.id === env.id ? 'bg-primary-600' : 'hover:bg-dark-700'"
+                  :class="editingEnvironment?.id === env.id ? 'bg-primary-600' : 'hover:bg-white/[0.04]'"
                   @click="selectEnvironment(env)"
                 >
                   <span class="text-sm">{{ env.name }}</span>
@@ -992,7 +992,7 @@ onMounted(() => {
             <div
               v-for="item in history"
               :key="item.id"
-              class="flex items-center gap-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600"
+              class="flex items-center gap-3 p-3 bg-white/[0.04] rounded-lg cursor-pointer hover:bg-white/[0.08]"
               @click="loadFromHistory(item)"
             >
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded" :class="getMethodClass(item.method)">

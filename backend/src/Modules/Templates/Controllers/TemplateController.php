@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Templates\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\Templates\Services\TemplateService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -38,12 +39,7 @@ class TemplateController
 
         $templates = $this->templateService->getAllTemplates($userId, $filters);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $templates,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($templates, 'Success');
     }
 
     /**
@@ -53,12 +49,7 @@ class TemplateController
     {
         $types = $this->templateService->getValidTypes();
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $types,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($types, 'Success');
     }
 
     /**
@@ -72,19 +63,10 @@ class TemplateController
         $template = $this->templateService->getTemplate($userId, $templateId);
 
         if (!$template) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Template not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Template not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $template,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($template, 'Success');
     }
 
     /**
@@ -96,28 +78,15 @@ class TemplateController
         $body = $request->getParsedBody();
 
         if (empty($body['name']) || empty($body['type'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Name and type are required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Name and type are required', 400);
         }
 
         try {
             $template = $this->templateService->createTemplate($userId, $body);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $template,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            return JsonResponse::created($template, 'Created');
         } catch (\InvalidArgumentException $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error($e->getMessage(), 400);
         }
     }
 
@@ -133,19 +102,10 @@ class TemplateController
         $template = $this->templateService->updateTemplate($userId, $templateId, $body);
 
         if (!$template) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Template not found or not owned by user',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Template not found or not owned by user');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $template,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($template, 'Success');
     }
 
     /**
@@ -159,18 +119,10 @@ class TemplateController
         $deleted = $this->templateService->deleteTemplate($userId, $templateId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Template not found or not owned by user',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Template not found or not owned by user');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 
     /**
@@ -184,18 +136,9 @@ class TemplateController
         try {
             $result = $this->templateService->useTemplate($userId, $templateId);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $result,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json');
+            return JsonResponse::success($result, 'Success');
         } catch (\InvalidArgumentException $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound($e->getMessage());
         }
     }
 
@@ -208,11 +151,7 @@ class TemplateController
         $body = $request->getParsedBody();
 
         if (empty($body['type']) || empty($body['item_data']) || empty($body['template_name'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'type, item_data, and template_name are required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('type, item_data, and template_name are required', 400);
         }
 
         try {
@@ -230,18 +169,9 @@ class TemplateController
                 ]
             );
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $template,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            return JsonResponse::created($template, 'Created');
         } catch (\InvalidArgumentException $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error($e->getMessage(), 400);
         }
     }
 
@@ -253,12 +183,7 @@ class TemplateController
         $userId = $request->getAttribute('user_id');
         $categories = $this->templateService->getCategories($userId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $categories,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($categories, 'Success');
     }
 
     /**
@@ -270,28 +195,15 @@ class TemplateController
         $body = $request->getParsedBody();
 
         if (empty($body['name'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Name is required',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::error('Name is required', 400);
         }
 
         try {
             $category = $this->templateService->createCategory($userId, $body);
 
-            $response->getBody()->write(json_encode([
-                'success' => true,
-                'data' => $category,
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            return JsonResponse::created($category, 'Created');
         } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category name already exists',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+            return JsonResponse::error('Category name already exists', 409);
         }
     }
 
@@ -307,19 +219,10 @@ class TemplateController
         $category = $this->templateService->updateCategory($userId, $categoryId, $body);
 
         if (!$category) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Category not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $category,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($category, 'Success');
     }
 
     /**
@@ -333,17 +236,9 @@ class TemplateController
         $deleted = $this->templateService->deleteCategory($userId, $categoryId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Category not found',
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            return JsonResponse::notFound('Category not found');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Success');
     }
 }

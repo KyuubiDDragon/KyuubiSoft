@@ -23,6 +23,7 @@ export const useUiStore = defineStore('ui', () => {
   const showQuickNotes = ref<boolean>(false)
   const showQuickCapture = ref<boolean>(false)
   const showAIAssistant = ref<boolean>(false)
+  const showCommandPalette = ref<boolean>(false)
 
   // Initialize from localStorage (fallback)
   const storedDarkMode = localStorage.getItem('darkMode')
@@ -193,6 +194,7 @@ export const useUiStore = defineStore('ui', () => {
     showQuickNotes,
     showQuickCapture,
     showAIAssistant,
+    showCommandPalette,
 
     // Actions
     toggleDarkMode,

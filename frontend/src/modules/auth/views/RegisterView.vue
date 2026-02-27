@@ -108,7 +108,7 @@ async function handleSubmit() {
         Dein Konto muss erst von einem Administrator freigeschaltet werden.
         Du wirst benachrichtigt, sobald dein Konto aktiviert wurde.
       </p>
-      <div class="bg-gray-800/50 rounded-lg p-4 text-left">
+      <div class="bg-white/[0.02] rounded-lg p-4 text-left">
         <p class="text-sm text-gray-400">
           <span class="font-medium text-gray-300">Was passiert als nächstes?</span><br>
           Ein Administrator wird deine Registrierung prüfen und dein Konto freischalten.

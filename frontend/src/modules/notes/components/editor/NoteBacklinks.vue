@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { stripHtml } from '@/core/services/sanitize'
 import { LinkIcon, ChevronRightIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 
 defineProps({
@@ -17,11 +18,7 @@ function navigate(noteId) {
   emit('navigate', noteId)
 }
 
-function stripHtml(html) {
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html || ''
-  return tmp.textContent || tmp.innerText || ''
-}
+
 </script>
 
 <template>

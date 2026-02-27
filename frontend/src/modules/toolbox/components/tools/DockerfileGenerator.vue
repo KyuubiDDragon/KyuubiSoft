@@ -343,7 +343,7 @@ function removeEnvVar(index) {
             'p-2 rounded-lg border text-center transition-all',
             selectedTemplate === key
               ? 'border-primary-500 bg-primary-500/10'
-              : 'border-dark-600 hover:border-dark-500'
+              : 'border-white/[0.06] hover:border-white/[0.08]'
           ]"
         >
           <span class="text-xl">{{ tpl.icon }}</span>
@@ -381,15 +381,15 @@ function removeEnvVar(index) {
     <!-- Options -->
     <div class="flex flex-wrap gap-4">
       <label class="flex items-center gap-2 text-sm">
-        <input v-model="config.useMultistage" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+        <input v-model="config.useMultistage" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
         <span>Multi-stage Build</span>
       </label>
       <label class="flex items-center gap-2 text-sm">
-        <input v-model="config.addHealthcheck" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+        <input v-model="config.addHealthcheck" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
         <span>Healthcheck</span>
       </label>
       <label class="flex items-center gap-2 text-sm">
-        <input v-model="config.runAsNonRoot" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+        <input v-model="config.runAsNonRoot" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
         <span>Non-Root User</span>
       </label>
     </div>
@@ -438,7 +438,7 @@ function removeEnvVar(index) {
           </button>
         </div>
       </div>
-      <pre class="bg-dark-900 p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-80 whitespace-pre-wrap">{{ dockerfile }}</pre>
+      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-80 whitespace-pre-wrap">{{ dockerfile }}</pre>
     </div>
   </div>
 </template>

@@ -994,7 +994,7 @@ const filteredBots = computed(() => {
       <div
         v-for="backup in activeBackups"
         :key="backup.id"
-        class="bg-dark-800 border-b border-dark-600 shadow-lg"
+        class="bg-white/[0.04] border-b border-white/[0.06] shadow-float"
       >
         <div class="max-w-7xl mx-auto px-4 py-3">
           <div class="flex items-center gap-4">
@@ -1010,7 +1010,7 @@ const filteredBots = computed(() => {
                   {{ backup.progress_percent || 0 }}%
                 </span>
               </div>
-              <div class="w-full bg-dark-600 rounded-full h-2">
+              <div class="w-full bg-white/[0.08] rounded-full h-2">
                 <div
                   class="bg-primary-500 h-2 rounded-full transition-all duration-300"
                   :style="{ width: `${backup.progress_percent || 0}%` }"
@@ -1096,7 +1096,7 @@ const filteredBots = computed(() => {
       <!-- Left: Server/DM Browser -->
       <div class="lg:col-span-1 space-y-4">
         <!-- Tabs -->
-        <div class="flex border-b border-dark-600">
+        <div class="flex border-b border-white/[0.06]">
           <button
             @click="activeTab = 'servers'"
             :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'servers' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
@@ -1144,7 +1144,7 @@ const filteredBots = computed(() => {
         <!-- Server List -->
         <div v-if="activeTab === 'servers'" class="card">
           <!-- Search Input -->
-          <div class="p-3 border-b border-dark-600">
+          <div class="p-3 border-b border-white/[0.06]">
             <div class="relative">
               <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -1156,12 +1156,12 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[450px] overflow-y-auto">
             <div
               v-for="server in filteredServers"
               :key="server.id"
               @click="selectServer(server)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedServer?.id === server.id ? 'bg-dark-700' : '']"
+              :class="['p-4 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedServer?.id === server.id ? 'bg-white/[0.04]' : '']"
             >
               <div class="flex items-center gap-3">
                 <img
@@ -1170,7 +1170,7 @@ const filteredBots = computed(() => {
                   class="w-10 h-10 rounded-full"
                   alt=""
                 />
-                <div v-else class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+                <div v-else class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center">
                   <ServerIcon class="w-5 h-5 text-gray-400" />
                 </div>
 
@@ -1201,7 +1201,7 @@ const filteredBots = computed(() => {
         <!-- DM List -->
         <div v-if="activeTab === 'dms'" class="card">
           <!-- Search Input -->
-          <div class="p-3 border-b border-dark-600">
+          <div class="p-3 border-b border-white/[0.06]">
             <div class="relative">
               <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -1213,15 +1213,15 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[450px] overflow-y-auto">
             <div
               v-for="dm in sortedDMChannels"
               :key="dm.id"
               @click="selectDM(dm)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedDM?.id === dm.id ? 'bg-dark-700' : '']"
+              :class="['p-4 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedDM?.id === dm.id ? 'bg-white/[0.04]' : '']"
             >
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center overflow-hidden">
                   <img
                     v-if="dm.recipient_avatar && dm.recipient_id"
                     :src="`https://cdn.discordapp.com/avatars/${dm.recipient_id}/${dm.recipient_avatar}.png?size=64`"
@@ -1253,7 +1253,7 @@ const filteredBots = computed(() => {
         <!-- Backups List -->
         <div v-if="activeTab === 'backups'" class="card">
           <!-- Header -->
-          <div class="p-4 border-b border-dark-600 space-y-3">
+          <div class="p-4 border-b border-white/[0.06] space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="font-semibold text-white flex items-center gap-2">
                 <CloudArrowDownIcon class="w-5 h-5 text-primary-400" />
@@ -1282,12 +1282,12 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Backup List -->
-          <div class="divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[500px] overflow-y-auto">
             <div
               v-for="backup in filteredAllBackups"
               :key="backup.id"
               @click="selectBackupForView(backup)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedViewBackup?.id === backup.id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
+              :class="['p-4 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedViewBackup?.id === backup.id ? 'bg-white/[0.04] border-l-2 border-l-primary-500' : '']"
             >
               <div class="flex items-center gap-3">
                 <!-- Source Type Icon -->
@@ -1333,14 +1333,14 @@ const filteredBots = computed(() => {
                   <button
                     v-if="backup.status === 'completed'"
                     @click.stop="viewBackupMessages(backup)"
-                    class="p-2 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    class="p-2 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-white/[0.04] transition-colors"
                     title="Nachrichten anzeigen"
                   >
                     <ChatBubbleLeftRightIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click.stop="deleteBackupConfirm(backup)"
-                    class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04] transition-colors"
                     title="Backup löschen"
                   >
                     <TrashIcon class="w-5 h-5" />
@@ -1357,7 +1357,7 @@ const filteredBots = computed(() => {
                   </span>
                   <span class="font-medium">{{ backup.progress_percent }}%</span>
                 </div>
-                <div class="w-full bg-dark-600 rounded-full h-2">
+                <div class="w-full bg-white/[0.08] rounded-full h-2">
                   <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-2 rounded-full transition-all" :style="{ width: backup.progress_percent + '%' }"></div>
                 </div>
               </div>
@@ -1388,7 +1388,7 @@ const filteredBots = computed(() => {
         <!-- Bot List -->
         <div v-if="activeTab === 'bots'" class="card">
           <!-- Header with Add Button -->
-          <div class="p-4 border-b border-dark-600 space-y-3">
+          <div class="p-4 border-b border-white/[0.06] space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="font-semibold text-white flex items-center gap-2">
                 <CpuChipIcon class="w-5 h-5 text-primary-400" />
@@ -1411,12 +1411,12 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Bot List -->
-          <div class="divide-y divide-dark-600 max-h-[450px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[450px] overflow-y-auto">
             <div
               v-for="bot in filteredBots"
               :key="bot.id"
               @click="selectBot(bot)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBot?.id === bot.id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
+              :class="['p-4 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedBot?.id === bot.id ? 'bg-white/[0.04] border-l-2 border-l-primary-500' : '']"
             >
               <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-primary-500/20 flex items-center justify-center overflow-hidden">
@@ -1446,21 +1446,21 @@ const filteredBots = computed(() => {
                   <button
                     @click.stop="syncBot(bot)"
                     :disabled="isSyncingBot"
-                    class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-600 transition-colors"
+                    class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
                     title="Server synchronisieren"
                   >
                     <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': isSyncingBot }" />
                   </button>
                   <button
                     @click.stop="copyInviteUrl(bot)"
-                    class="p-1.5 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    class="p-1.5 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-white/[0.04] transition-colors"
                     title="Invite-Link kopieren"
                   >
                     <ClipboardDocumentIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click.stop="removeBot(bot)"
-                    class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-600 transition-colors"
+                    class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04] transition-colors"
                     title="Bot entfernen"
                   >
                     <TrashIcon class="w-4 h-4" />
@@ -1521,19 +1521,19 @@ const filteredBots = computed(() => {
       <div class="lg:col-span-2 space-y-6">
         <!-- Search Results -->
         <div v-if="activeTab === 'search' && globalSearchResults.length > 0" class="card">
-          <div class="p-4 border-b border-dark-600">
+          <div class="p-4 border-b border-white/[0.06]">
             <h3 class="font-semibold text-white">Suchergebnisse</h3>
             <span class="text-sm text-gray-400">{{ globalSearchTotal }} Nachrichten gefunden</span>
           </div>
 
-          <div class="divide-y divide-dark-600 max-h-[600px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[600px] overflow-y-auto">
             <div
               v-for="msg in globalSearchResults"
               :key="msg.id"
-              class="p-4 hover:bg-dark-700"
+              class="p-4 hover:bg-white/[0.04]"
             >
               <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
+                <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0">
                   <UserIcon class="w-5 h-5 text-gray-400" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -1564,10 +1564,10 @@ const filteredBots = computed(() => {
         <div v-if="activeTab === 'backups' && selectedViewBackup" class="space-y-4">
           <!-- Backup Header -->
           <div class="card overflow-hidden">
-            <div class="h-16 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
+            <div class="h-16 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-white/[0.04] relative">
               <div class="absolute -bottom-6 left-4">
                 <div :class="[
-                  'w-12 h-12 rounded-xl border-4 border-dark-800 flex items-center justify-center shadow-lg',
+                  'w-12 h-12 rounded-xl border-4 border-white/[0.04] flex items-center justify-center shadow-float',
                   selectedViewBackup.source_type === 'bot' ? 'bg-primary-500/30' : 'bg-blue-500/30'
                 ]">
                   <CpuChipIcon v-if="selectedViewBackup.source_type === 'bot'" class="w-6 h-6 text-primary-400" />
@@ -1576,7 +1576,7 @@ const filteredBots = computed(() => {
               </div>
               <button
                 @click="deleteBackupConfirm(selectedViewBackup)"
-                class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-dark-800/50"
+                class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04]/50"
                 title="Backup löschen"
               >
                 <TrashIcon class="w-5 h-5" />
@@ -1600,7 +1600,7 @@ const filteredBots = computed(() => {
             </div>
 
             <!-- Stats -->
-            <div class="grid grid-cols-4 divide-x divide-dark-600 border-t border-dark-600 bg-dark-800/50">
+            <div class="grid grid-cols-4 divide-x divide-white/[0.06] border-t border-white/[0.06] bg-white/[0.04]/50">
               <div class="p-3 text-center">
                 <div class="text-xl font-bold text-white">{{ backupChannels.length }}</div>
                 <div class="text-xs text-gray-500">Channels</div>
@@ -1629,7 +1629,7 @@ const filteredBots = computed(() => {
                   <span class="text-white">{{ selectedViewBackup.current_action || 'Verarbeite...' }}</span>
                   <span class="text-primary-400 font-bold">{{ selectedViewBackup.progress_percent || 0 }}%</span>
                 </div>
-                <div class="w-full bg-dark-600 rounded-full h-2">
+                <div class="w-full bg-white/[0.08] rounded-full h-2">
                   <div class="bg-gradient-to-r from-primary-600 to-primary-400 h-2 rounded-full transition-all" :style="{ width: (selectedViewBackup.progress_percent || 0) + '%' }"></div>
                 </div>
               </div>
@@ -1650,7 +1650,7 @@ const filteredBots = computed(() => {
           <!-- Content Tabs -->
           <div v-if="selectedViewBackup.status === 'completed'" class="card">
             <!-- Tab Headers -->
-            <div class="flex border-b border-dark-600">
+            <div class="flex border-b border-white/[0.06]">
               <button
                 @click="backupDetailTab = 'channels'"
                 :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'channels' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
@@ -1681,12 +1681,12 @@ const filteredBots = computed(() => {
             </div>
 
             <!-- Channels Tab -->
-            <div v-else-if="backupDetailTab === 'channels'" class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+            <div v-else-if="backupDetailTab === 'channels'" class="divide-y divide-white/[0.06] max-h-[400px] overflow-y-auto">
               <div
                 v-for="channel in backupChannels"
                 :key="channel.discord_channel_id"
                 @click="selectBackupChannel(channel)"
-                :class="['p-3 cursor-pointer hover:bg-dark-700 transition-colors', selectedBackupChannel?.discord_channel_id === channel.discord_channel_id ? 'bg-dark-700 border-l-2 border-l-primary-500' : '']"
+                :class="['p-3 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedBackupChannel?.discord_channel_id === channel.discord_channel_id ? 'bg-white/[0.04] border-l-2 border-l-primary-500' : '']"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
@@ -1713,7 +1713,7 @@ const filteredBots = computed(() => {
                   v-for="media in backupMedia"
                   :key="media.id"
                   @click="openLightbox(media, backupMedia)"
-                  class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-dark-700"
+                  class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity bg-white/[0.04]"
                 >
                   <img
                     v-if="media.mime_type?.startsWith('image/')"
@@ -1734,11 +1734,11 @@ const filteredBots = computed(() => {
             </div>
 
             <!-- Links Tab -->
-            <div v-else-if="backupDetailTab === 'links'" class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+            <div v-else-if="backupDetailTab === 'links'" class="divide-y divide-white/[0.06] max-h-[400px] overflow-y-auto">
               <div
                 v-for="(link, index) in backupLinks"
                 :key="index"
-                class="p-3 hover:bg-dark-700"
+                class="p-3 hover:bg-white/[0.04]"
               >
                 <a
                   :href="link.url"
@@ -1761,7 +1761,7 @@ const filteredBots = computed(() => {
 
           <!-- Channel Messages Panel -->
           <div v-if="selectedBackupChannel && backupChannelMessages.length > 0" class="card">
-            <div class="p-3 border-b border-dark-600 flex items-center justify-between">
+            <div class="p-3 border-b border-white/[0.06] flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <button @click="selectedBackupChannel = null" class="p-1 text-gray-400 hover:text-white rounded">
                   <ChevronLeftIcon class="w-4 h-4" />
@@ -1771,11 +1771,11 @@ const filteredBots = computed(() => {
               </div>
               <span class="text-xs text-gray-500">{{ backupChannelMessages.length }} Nachrichten</span>
             </div>
-            <div class="max-h-[350px] overflow-y-auto p-3 space-y-2 bg-dark-900">
+            <div class="max-h-[350px] overflow-y-auto p-3 space-y-2 bg-white/[0.02]">
               <div
                 v-for="msg in backupChannelMessages"
                 :key="msg.id"
-                class="bg-dark-700 rounded-lg p-3"
+                class="bg-white/[0.04] rounded-lg p-3"
               >
                 <div class="flex items-center gap-2 mb-1">
                   <span class="font-medium text-primary-400 text-sm">{{ msg.author_username }}</span>
@@ -1800,7 +1800,7 @@ const filteredBots = computed(() => {
 
         <!-- Links Panel -->
         <div v-if="activeTab === 'links'" class="card">
-          <div class="p-4 border-b border-dark-600">
+          <div class="p-4 border-b border-white/[0.06]">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-medium text-white">
                 <LinkIcon class="w-5 h-5 inline mr-2" />
@@ -1842,7 +1842,7 @@ const filteredBots = computed(() => {
                   'text-xs px-2 py-1 rounded-full transition-colors',
                   hiddenDomains.includes(domain)
                     ? 'bg-red-500/20 text-red-400 line-through'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 {{ domain }} ({{ count }})
@@ -1864,8 +1864,8 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Links List -->
-          <div v-else-if="filteredLinks.length > 0" class="divide-y divide-dark-600 max-h-[500px] overflow-y-auto">
-            <div v-for="link in filteredLinks" :key="link.url + link.message_id" class="p-4 hover:bg-dark-700">
+          <div v-else-if="filteredLinks.length > 0" class="divide-y divide-white/[0.06] max-h-[500px] overflow-y-auto">
+            <div v-for="link in filteredLinks" :key="link.url + link.message_id" class="p-4 hover:bg-white/[0.04]">
               <div class="flex items-start gap-3">
                 <LinkIcon class="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
@@ -1878,7 +1878,7 @@ const filteredBots = computed(() => {
                     {{ link.url }}
                   </a>
                   <div class="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
+                    <span class="bg-white/[0.08] px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
                     <span>{{ link.author_username }}</span>
                     <span>{{ formatDate(link.message_timestamp) }}</span>
                   </div>
@@ -1909,7 +1909,7 @@ const filteredBots = computed(() => {
           <div class="p-6">
             <div class="flex items-start gap-6">
               <!-- Avatar -->
-              <div class="w-20 h-20 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div class="w-20 h-20 rounded-full bg-white/[0.08] flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img
                   v-if="selectedDM.recipient_avatar && selectedDM.recipient_id"
                   :src="`https://cdn.discordapp.com/avatars/${selectedDM.recipient_id}/${selectedDM.recipient_avatar}.png?size=128`"
@@ -1929,15 +1929,15 @@ const filteredBots = computed(() => {
                 </p>
 
                 <div class="mt-4 flex flex-wrap gap-4 text-sm">
-                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                  <div class="bg-white/[0.04] rounded-lg px-4 py-2">
                     <span class="text-gray-500">Discord ID</span>
                     <p class="text-white font-mono">{{ selectedDM.recipient_id || selectedDM.discord_channel_id }}</p>
                   </div>
-                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                  <div class="bg-white/[0.04] rounded-lg px-4 py-2">
                     <span class="text-gray-500">Backups</span>
                     <p class="text-white">{{ selectedDM.backup_count || 0 }}</p>
                   </div>
-                  <div class="bg-dark-700 rounded-lg px-4 py-2">
+                  <div class="bg-white/[0.04] rounded-lg px-4 py-2">
                     <span class="text-gray-500">Synchronisiert</span>
                     <p class="text-white">{{ formatDate(selectedDM.cached_at) }}</p>
                   </div>
@@ -1959,13 +1959,13 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Loading Channel Data -->
-          <div v-if="isLoadingChannelData" class="p-6 border-t border-dark-600 text-center">
+          <div v-if="isLoadingChannelData" class="p-6 border-t border-white/[0.06] text-center">
             <ArrowPathIcon class="w-6 h-6 mx-auto text-primary-400 animate-spin" />
             <p class="text-gray-400 text-sm mt-2">Lade Medien & Links...</p>
           </div>
 
           <!-- Media Gallery -->
-          <div v-else-if="channelMedia.length > 0" class="p-6 border-t border-dark-600">
+          <div v-else-if="channelMedia.length > 0" class="p-6 border-t border-white/[0.06]">
             <div class="flex items-center justify-between mb-3">
               <h4 class="text-lg font-medium text-white flex items-center gap-2">
                 <PhotoIcon class="w-5 h-5" />
@@ -2002,7 +2002,7 @@ const filteredBots = computed(() => {
                   'text-xs px-3 py-1.5 rounded-full transition-colors',
                   mediaTypeFilter === 'all'
                     ? 'bg-primary-500 text-white'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 Alle ({{ mediaTypeCounts.all }})
@@ -2013,7 +2013,7 @@ const filteredBots = computed(() => {
                   'text-xs px-3 py-1.5 rounded-full transition-colors',
                   mediaTypeFilter === 'image'
                     ? 'bg-primary-500 text-white'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 Bilder ({{ mediaTypeCounts.image }})
@@ -2024,7 +2024,7 @@ const filteredBots = computed(() => {
                   'text-xs px-3 py-1.5 rounded-full transition-colors',
                   mediaTypeFilter === 'video'
                     ? 'bg-primary-500 text-white'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 Videos ({{ mediaTypeCounts.video }})
@@ -2036,7 +2036,7 @@ const filteredBots = computed(() => {
                   'text-xs px-3 py-1.5 rounded-full transition-colors',
                   mediaTypeFilter === 'other'
                     ? 'bg-primary-500 text-white'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 Andere ({{ mediaTypeCounts.other }})
@@ -2053,7 +2053,7 @@ const filteredBots = computed(() => {
                 v-for="(media, index) in filteredChannelMedia"
                 :key="media.id"
                 @click="openLightbox(media, index)"
-                class="aspect-square bg-dark-700 rounded-lg overflow-hidden cursor-pointer relative group will-change-transform transform-gpu transition-transform duration-150 hover:scale-105 hover:z-10"
+                class="aspect-square bg-white/[0.04] rounded-lg overflow-hidden cursor-pointer relative group will-change-transform transform-gpu transition-transform duration-150 hover:scale-105 hover:z-10"
                 style="contain: layout style paint;"
               >
                 <img
@@ -2064,7 +2064,7 @@ const filteredBots = computed(() => {
                   loading="lazy"
                   decoding="async"
                 />
-                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-dark-800">
+                <div v-else-if="media.mime_type?.startsWith('video/')" class="w-full h-full flex items-center justify-center bg-white/[0.04]">
                   <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                     <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
@@ -2104,7 +2104,7 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Links -->
-          <div v-if="channelLinks.length > 0" class="p-6 border-t border-dark-600">
+          <div v-if="channelLinks.length > 0" class="p-6 border-t border-white/[0.06]">
             <div class="flex items-center justify-between mb-3">
               <h4 class="text-lg font-medium text-white flex items-center gap-2">
                 <LinkIcon class="w-5 h-5" />
@@ -2146,7 +2146,7 @@ const filteredBots = computed(() => {
                   'text-xs px-2 py-1 rounded-full transition-colors',
                   hiddenDomains.includes(domain)
                     ? 'bg-red-500/20 text-red-400 line-through'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
                 {{ domain }} ({{ count }})
@@ -2168,11 +2168,11 @@ const filteredBots = computed(() => {
                 :href="link.url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="block p-2 bg-dark-700 rounded hover:bg-dark-600 transition-colors"
+                class="block p-2 bg-white/[0.04] rounded hover:bg-white/[0.04] transition-colors"
               >
                 <span class="text-primary-400 text-sm break-all">{{ link.url }}</span>
                 <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                  <span class="bg-dark-600 px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
+                  <span class="bg-white/[0.08] px-1.5 py-0.5 rounded">{{ getDomain(link.url) }}</span>
                   <span>{{ link.author_username }}</span>
                   <span>{{ formatDate(link.message_timestamp) }}</span>
                 </div>
@@ -2190,16 +2190,16 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- No Data Yet -->
-          <div v-if="!isLoadingChannelData && channelMedia.length === 0 && channelLinks.length === 0" class="p-6 border-t border-dark-600 text-center text-gray-500">
+          <div v-if="!isLoadingChannelData && channelMedia.length === 0 && channelLinks.length === 0" class="p-6 border-t border-white/[0.06] text-center text-gray-500">
             <p>Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.</p>
           </div>
         </div>
 
         <!-- Selected Bot with Servers -->
         <div v-if="activeTab === 'bots' && selectedBot" class="card">
-          <div class="p-4 border-b border-dark-600">
+          <div class="p-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-4">
-              <div class="w-14 h-14 rounded-full bg-dark-600 overflow-hidden flex-shrink-0">
+              <div class="w-14 h-14 rounded-full bg-white/[0.08] overflow-hidden flex-shrink-0">
                 <img
                   v-if="selectedBot.avatar_url"
                   :src="selectedBot.avatar_url"
@@ -2229,15 +2229,15 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Bot Server List -->
-          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[400px] overflow-y-auto">
             <div
               v-for="server in botServers"
               :key="server.id"
               @click="selectBotServer(server)"
-              :class="['p-4 cursor-pointer hover:bg-dark-700 transition-colors', selectedBotServer?.id === server.id ? 'bg-dark-700' : '']"
+              :class="['p-4 cursor-pointer hover:bg-white/[0.04] transition-colors', selectedBotServer?.id === server.id ? 'bg-white/[0.04]' : '']"
             >
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center overflow-hidden">
+                <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center overflow-hidden">
                   <img
                     v-if="server.icon_url"
                     :src="server.icon_url"
@@ -2278,9 +2278,9 @@ const filteredBots = computed(() => {
           <!-- Server Header Card -->
           <div class="card overflow-hidden">
             <!-- Banner Area with Gradient -->
-            <div class="h-24 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-dark-700 relative">
+            <div class="h-24 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-white/[0.04] relative">
               <div class="absolute -bottom-10 left-6">
-                <div class="w-20 h-20 rounded-2xl bg-dark-700 border-4 border-dark-800 flex items-center justify-center overflow-hidden shadow-lg">
+                <div class="w-20 h-20 rounded-2xl bg-white/[0.04] border-4 border-white/[0.04] flex items-center justify-center overflow-hidden shadow-float">
                   <img
                     v-if="selectedBotServer.icon_url"
                     :src="selectedBotServer.icon_url"
@@ -2309,7 +2309,7 @@ const filteredBots = computed(() => {
                 </div>
                 <button
                   @click.stop="toggleBotServerFavorite(selectedBotServer)"
-                  class="p-2 rounded-lg hover:bg-dark-600 transition-colors"
+                  class="p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
                   :title="selectedBotServer.is_favorite ? 'Favorit entfernen' : 'Als Favorit markieren'"
                 >
                   <StarSolidIcon v-if="selectedBotServer.is_favorite" class="w-6 h-6 text-yellow-400" />
@@ -2320,7 +2320,7 @@ const filteredBots = computed(() => {
               <!-- Discord Guild ID -->
               <div class="mt-4 flex items-center gap-2">
                 <span class="text-xs text-gray-500">Guild ID:</span>
-                <code class="text-xs text-gray-400 bg-dark-700 px-2 py-1 rounded font-mono">{{ selectedBotServer.discord_guild_id }}</code>
+                <code class="text-xs text-gray-400 bg-white/[0.04] px-2 py-1 rounded font-mono">{{ selectedBotServer.discord_guild_id }}</code>
                 <button
                   @click="navigator.clipboard.writeText(selectedBotServer.discord_guild_id); uiStore.showSuccess('Guild ID kopiert!')"
                   class="p-1 text-gray-500 hover:text-primary-400 rounded"
@@ -2332,7 +2332,7 @@ const filteredBots = computed(() => {
             </div>
 
             <!-- Server Stats -->
-            <div class="grid grid-cols-4 divide-x divide-dark-600 border-t border-dark-600 bg-dark-800/50">
+            <div class="grid grid-cols-4 divide-x divide-white/[0.06] border-t border-white/[0.06] bg-white/[0.04]/50">
               <div class="p-4 text-center">
                 <div class="text-2xl font-bold text-white">{{ selectedBotServer.channels?.length || 0 }}</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Channels</div>
@@ -2355,7 +2355,7 @@ const filteredBots = computed(() => {
           </div>
 
           <!-- Backup Button Card -->
-          <div class="card p-5 bg-gradient-to-r from-dark-800 to-dark-700 border border-dark-600">
+          <div class="card p-5 bg-gradient-to-r from-white/[0.04] to-white/[0.04] border border-white/[0.06]">
             <div class="flex items-center justify-between gap-4">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
@@ -2375,18 +2375,18 @@ const filteredBots = computed(() => {
 
           <!-- Channels List -->
           <div class="card">
-            <div class="p-4 border-b border-dark-600 flex items-center justify-between">
+            <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <h4 class="font-medium text-white flex items-center gap-2">
                 <HashtagIcon class="w-5 h-5 text-gray-400" />
                 Channels
               </h4>
               <span class="text-sm text-gray-500">{{ selectedBotServer.channels?.length || 0 }} verfügbar</span>
             </div>
-            <div class="divide-y divide-dark-600 max-h-[350px] overflow-y-auto">
+            <div class="divide-y divide-white/[0.06] max-h-[350px] overflow-y-auto">
               <div
                 v-for="channel in selectedBotServer.channels"
                 :key="channel.id"
-                class="p-3 hover:bg-dark-700 transition-colors"
+                class="p-3 hover:bg-white/[0.04] transition-colors"
               >
                 <div class="flex items-center gap-3">
                   <div :class="[
@@ -2396,7 +2396,7 @@ const filteredBots = computed(() => {
                     channel.type === 'announcement' ? 'bg-yellow-500/20' :
                     channel.type === 'forum' ? 'bg-blue-500/20' :
                     channel.type === 'stage' ? 'bg-purple-500/20' :
-                    'bg-dark-600'
+                    'bg-white/[0.08]'
                   ]">
                     <HashtagIcon :class="[
                       'w-4 h-4',
@@ -2416,7 +2416,7 @@ const filteredBots = computed(() => {
                     channel.type === 'announcement' ? 'bg-yellow-500/20 text-yellow-400' :
                     channel.type === 'forum' ? 'bg-blue-500/20 text-blue-400' :
                     channel.type === 'stage' ? 'bg-purple-500/20 text-purple-400' :
-                    'bg-dark-600 text-gray-500'
+                    'bg-white/[0.08] text-gray-500'
                   ]">{{ channel.type }}</span>
                 </div>
               </div>
@@ -2432,7 +2432,7 @@ const filteredBots = computed(() => {
 
         <!-- Selected Server Channels -->
         <div v-if="selectedServer" class="card">
-          <div class="p-4 border-b border-dark-600">
+          <div class="p-4 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <img
@@ -2453,17 +2453,17 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="divide-y divide-dark-600 max-h-[400px] overflow-y-auto">
+          <div class="divide-y divide-white/[0.06] max-h-[400px] overflow-y-auto">
             <div
               v-for="channel in selectedServer.channels"
               :key="channel.id"
-              class="p-4 hover:bg-dark-700"
+              class="p-4 hover:bg-white/[0.04]"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <HashtagIcon class="w-5 h-5 text-gray-400" />
                   <span class="text-white">{{ channel.name }}</span>
-                  <span class="text-xs text-gray-500 bg-dark-600 px-2 py-0.5 rounded">{{ channel.type }}</span>
+                  <span class="text-xs text-gray-500 bg-white/[0.08] px-2 py-0.5 rounded">{{ channel.type }}</span>
                 </div>
 
                 <div class="flex gap-2">
@@ -2481,11 +2481,11 @@ const filteredBots = computed(() => {
 
         <!-- Delete Jobs -->
         <div v-if="deleteJobs.length > 0" class="card">
-          <div class="p-4 border-b border-dark-600">
+          <div class="p-4 border-b border-white/[0.06]">
             <h3 class="font-semibold text-white">Lösch-Jobs</h3>
           </div>
 
-          <div class="divide-y divide-dark-600">
+          <div class="divide-y divide-white/[0.06]">
             <div
               v-for="job in deleteJobs"
               :key="job.id"
@@ -2523,9 +2523,9 @@ const filteredBots = computed(() => {
 
     <!-- Add Account Modal -->
     <Teleport to="body">
-      <div v-if="showAddAccountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
-          <div class="p-6 border-b border-dark-600">
+      <div v-if="showAddAccountModal" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold text-white">Discord Account hinzufügen</h2>
               <button @click="showAddAccountModal = false" class="text-gray-400 hover:text-white">
@@ -2556,7 +2556,7 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+          <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
             <button @click="showAddAccountModal = false" class="btn-secondary">Abbrechen</button>
             <button @click="addAccount" :disabled="isAddingAccount" class="btn-primary">
               <ArrowPathIcon v-if="isAddingAccount" class="w-5 h-5 mr-2 animate-spin" />
@@ -2569,9 +2569,9 @@ const filteredBots = computed(() => {
 
     <!-- Backup Modal -->
     <Teleport to="body">
-      <div v-if="showBackupModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
-          <div class="p-6 border-b border-dark-600">
+      <div v-if="showBackupModal" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold text-white">Backup erstellen</h2>
               <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
@@ -2590,7 +2590,7 @@ const filteredBots = computed(() => {
                     'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
                     backupForm.backup_mode === 'full'
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'
+                      : 'border-white/[0.06] hover:border-white/[0.08]'
                   ]"
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="full" class="sr-only" />
@@ -2602,7 +2602,7 @@ const filteredBots = computed(() => {
                     'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
                     backupForm.backup_mode === 'media_only'
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'
+                      : 'border-white/[0.06] hover:border-white/[0.08]'
                   ]"
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="media_only" class="sr-only" />
@@ -2614,7 +2614,7 @@ const filteredBots = computed(() => {
                     'flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all',
                     backupForm.backup_mode === 'links_only'
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'
+                      : 'border-white/[0.06] hover:border-white/[0.08]'
                   ]"
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="links_only" class="sr-only" />
@@ -2661,7 +2661,7 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+          <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
             <button @click="showBackupModal = false" class="btn-secondary">Abbrechen</button>
             <button @click="createBackup" class="btn-primary">
               <CloudArrowDownIcon class="w-5 h-5 mr-2" />
@@ -2674,9 +2674,9 @@ const filteredBots = computed(() => {
 
     <!-- Delete Modal -->
     <Teleport to="body">
-      <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg">
-          <div class="p-6 border-b border-dark-600">
+      <div v-if="showDeleteModal" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
+          <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold text-white">Nachrichten löschen</h2>
               <button @click="showDeleteModal = false" class="text-gray-400 hover:text-white">
@@ -2715,7 +2715,7 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="p-6 border-t border-dark-600 flex justify-end gap-3">
+          <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
             <button @click="showDeleteModal = false" class="btn-secondary">Abbrechen</button>
             <button @click="createDeleteJob" class="btn-danger">
               <TrashIcon class="w-5 h-5 mr-2" />
@@ -2728,9 +2728,9 @@ const filteredBots = computed(() => {
 
     <!-- Messages Modal -->
     <Teleport to="body">
-      <div v-if="showMessagesModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-dark-800 rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
-          <div class="p-6 border-b border-dark-600">
+      <div v-if="showMessagesModal" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-white/[0.04] rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+          <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold text-white">Backup: {{ selectedBackup?.target_name }}</h2>
               <button @click="showMessagesModal = false" class="text-gray-400 hover:text-white">
@@ -2752,7 +2752,7 @@ const filteredBots = computed(() => {
             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-dark-900">
+          <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
             <div
               v-for="msg in backupMessages"
               :key="msg.id"
@@ -2766,7 +2766,7 @@ const filteredBots = computed(() => {
                   'max-w-[75%] rounded-2xl px-4 py-2',
                   msg.discord_author_id === ownerDiscordId
                     ? 'bg-primary-600 text-white rounded-br-sm'
-                    : 'bg-dark-700 text-gray-100 rounded-bl-sm'
+                    : 'bg-white/[0.04] text-gray-100 rounded-bl-sm'
                 ]"
               >
                 <!-- Author name (only for incoming messages) -->
@@ -2856,17 +2856,17 @@ const filteredBots = computed(() => {
           <img
             v-if="lightboxMedia.mime_type?.startsWith('image/')"
             :src="getMediaUrl(lightboxMedia)"
-            class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-float"
             :alt="lightboxMedia.filename"
           />
           <video
             v-else-if="lightboxMedia.mime_type?.startsWith('video/')"
             :src="getMediaUrl(lightboxMedia)"
-            class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+            class="max-w-full max-h-[85vh] rounded-lg shadow-float"
             controls
             autoplay
           />
-          <div v-else class="bg-dark-800 rounded-lg p-8 text-center">
+          <div v-else class="bg-white/[0.04] rounded-lg p-8 text-center">
             <DocumentTextIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p class="text-white font-medium">{{ lightboxMedia.filename }}</p>
             <a

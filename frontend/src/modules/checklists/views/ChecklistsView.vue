@@ -141,7 +141,7 @@ onMounted(() => {
 
       <button
         @click="showCreateModal = true"
-        class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+        class="btn-primary"
       >
         <PlusIcon class="w-5 h-5" />
         <span>Neue Checkliste</span>
@@ -149,7 +149,7 @@ onMounted(() => {
     </div>
 
     <!-- Content -->
-    <div class="bg-dark-800 rounded-xl border border-dark-700">
+    <div class="bg-white/[0.04] rounded-xl border border-white/[0.06]">
       <!-- Loading -->
       <div v-if="isLoading" class="p-12 text-center">
         <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -163,18 +163,18 @@ onMounted(() => {
         <p class="text-gray-400 mb-6">Erstelle deine erste Checkliste für kollaboratives Testen</p>
         <button
           @click="showCreateModal = true"
-          class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+          class="btn-primary"
         >
           Checkliste erstellen
         </button>
       </div>
 
       <!-- Checklists List -->
-      <div v-else class="divide-y divide-dark-700">
+      <div v-else class="divide-y divide-white/[0.06]">
         <div
           v-for="checklist in checklists"
           :key="checklist.id"
-          class="p-4 hover:bg-dark-700/30 transition-colors cursor-pointer"
+          class="p-4 hover:bg-white/[0.04] transition-colors cursor-pointer"
           @click="openChecklist(checklist)"
         >
           <div class="flex items-start justify-between gap-4">
@@ -203,7 +203,7 @@ onMounted(() => {
                   <span>{{ checklist.completed_entries || 0 }} Tests</span>
                 </div>
                 <div v-if="checklist.item_count > 0" class="flex items-center gap-2">
-                  <div class="w-24 h-1.5 bg-dark-600 rounded-full overflow-hidden">
+                  <div class="w-24 h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
                     <div
                       class="h-full bg-green-500 rounded-full transition-all"
                       :style="{ width: getProgress(checklist) + '%' }"
@@ -219,7 +219,7 @@ onMounted(() => {
               <!-- Copy Link -->
               <button
                 @click="copyShareLink(checklist)"
-                class="p-2 hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                 :title="copiedToken === checklist.share_token ? 'Kopiert!' : 'Link kopieren'"
               >
                 <CheckIcon v-if="copiedToken === checklist.share_token" class="w-5 h-5 text-green-500" />
@@ -229,7 +229,7 @@ onMounted(() => {
               <!-- Toggle Active -->
               <button
                 @click="toggleActive(checklist)"
-                class="p-2 hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                 :title="checklist.is_active ? 'Deaktivieren' : 'Aktivieren'"
               >
                 <CheckCircleIcon v-if="checklist.is_active" class="w-5 h-5 text-green-400" />
@@ -239,7 +239,7 @@ onMounted(() => {
               <!-- Delete -->
               <button
                 @click="deleteChecklist(checklist)"
-                class="p-2 hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                 title="Löschen"
               >
                 <TrashIcon class="w-5 h-5 text-gray-400 hover:text-red-400" />
@@ -254,10 +254,10 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showCreateModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Neue Checkliste erstellen</h2>
           </div>
 
@@ -269,7 +269,7 @@ onMounted(() => {
                 v-model="newChecklist.title"
                 type="text"
                 placeholder="z.B. System-Test Sprint 23"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
                 @keyup.enter="createChecklist"
               />
             </div>
@@ -281,7 +281,7 @@ onMounted(() => {
                 v-model="newChecklist.description"
                 rows="3"
                 placeholder="Optionale Beschreibung..."
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                class="textarea"
               ></textarea>
             </div>
 
@@ -291,7 +291,7 @@ onMounted(() => {
                 <input
                   type="checkbox"
                   v-model="newChecklist.require_name"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Name bei Einträgen erforderlich</span>
               </label>
@@ -300,7 +300,7 @@ onMounted(() => {
                 <input
                   type="checkbox"
                   v-model="newChecklist.allow_add_items"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Externe dürfen Punkte hinzufügen</span>
               </label>
@@ -309,14 +309,14 @@ onMounted(() => {
                 <input
                   type="checkbox"
                   v-model="newChecklist.allow_comments"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Kommentare/Notizen erlauben</span>
               </label>
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="showCreateModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -325,7 +325,7 @@ onMounted(() => {
             </button>
             <button
               @click="createChecklist"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Erstellen
             </button>

@@ -805,20 +805,20 @@ onUnmounted(() => {
   <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-8 px-4">
     <div class="max-w-4xl mx-auto">
       <!-- Loading -->
-      <div v-if="isLoading" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-12 text-center">
+      <div v-if="isLoading" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-12 text-center">
         <div class="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
         <p class="text-gray-400 mt-4">Lade Checkliste...</p>
       </div>
 
       <!-- Error -->
-      <div v-else-if="error" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-12 text-center">
+      <div v-else-if="error" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-12 text-center">
         <ExclamationTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
         <h2 class="text-xl font-semibold text-white mb-2">Nicht verfügbar</h2>
         <p class="text-gray-400">{{ error }}</p>
       </div>
 
       <!-- Password Required -->
-      <div v-else-if="requiresPassword" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center max-w-md mx-auto">
+      <div v-else-if="requiresPassword" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-8 text-center max-w-md mx-auto">
         <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-500/20 flex items-center justify-center">
           <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -832,14 +832,14 @@ onUnmounted(() => {
             v-model="passwordInput"
             type="password"
             placeholder="Passwort eingeben"
-            class="w-full px-4 py-3 bg-gray-700/50 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            :class="passwordError ? 'border-red-500' : 'border-gray-600'"
+            class="input"
+            :class="passwordError ? 'border-red-500' : ''"
             @keyup.enter="submitPassword"
           />
           <p v-if="passwordError" class="text-red-400 text-sm">Falsches Passwort</p>
           <button
             @click="submitPassword"
-            class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium transition-colors"
+            class="btn-primary w-full py-3"
           >
             Entsperren
           </button>
@@ -872,7 +872,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Header -->
-        <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 mb-6">
+        <div class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-6 mb-6">
           <div class="flex items-start justify-between gap-4">
             <div>
               <h1 class="text-2xl font-bold text-white">{{ checklist.title }}</h1>
@@ -890,7 +890,7 @@ onUnmounted(() => {
                 {{ checklist.progress.total_completed }} / {{ checklist.progress.total_required }}
               </span>
             </div>
-            <div class="w-full h-4 bg-gray-700 rounded-full overflow-hidden">
+            <div class="w-full h-4 bg-white/[0.06] rounded-full overflow-hidden">
               <div
                 class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
                 :style="{ width: checklist.progress.percentage + '%' }"
@@ -903,21 +903,21 @@ onUnmounted(() => {
         </div>
 
         <!-- Your Name -->
-        <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-4 mb-6">
+        <div class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-4 mb-6">
           <div class="flex items-center gap-3">
             <UserIcon class="w-5 h-5 text-gray-400" />
             <input
               v-model="testerName"
               type="text"
               :placeholder="checklist.require_name ? 'Dein Name (erforderlich) *' : 'Dein Name (optional)'"
-              class="flex-1 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="flex-1 px-3 py-2 input"
               @change="testerName && localStorage.setItem('checklist_tester_name', testerName)"
             />
           </div>
         </div>
 
         <!-- Search & Filter Bar -->
-        <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-4 mb-6">
+        <div class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-4 mb-6">
           <div class="flex flex-col sm:flex-row gap-3">
             <!-- Search Input -->
             <div class="relative flex-1">
@@ -926,7 +926,7 @@ onUnmounted(() => {
                 v-model="searchQuery"
                 type="text"
                 placeholder="Testpunkte suchen..."
-                class="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="w-full pl-10 pr-4 py-2 input"
               />
               <button
                 v-if="searchQuery"
@@ -1054,7 +1054,7 @@ onUnmounted(() => {
           <!-- No results message -->
           <div
             v-if="itemsByCategory.length === 0 && activeFiltersCount > 0"
-            class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center"
+            class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-8 text-center"
           >
             <MagnifyingGlassIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
             <h3 class="text-white font-medium mb-2">Keine Ergebnisse</h3>
@@ -1072,7 +1072,7 @@ onUnmounted(() => {
           <div
             v-for="category in itemsByCategory"
             :key="category.id || 'uncategorized'"
-            class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden"
+            class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] overflow-hidden"
           >
             <!-- Category Header -->
             <div

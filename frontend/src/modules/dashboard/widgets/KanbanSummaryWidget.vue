@@ -1,5 +1,5 @@
 <script setup>
-import { formatDate } from './widgetUtils.js'
+import { formatDate } from './widgetUtils'
 defineProps({ widget: Object, data: Object })
 </script>
 
@@ -17,7 +17,7 @@ defineProps({ widget: Object, data: Object })
             v-for="board in (data?.boards || []).slice(0, 3)"
             :key="board.id"
             :to="`/kanban/${board.id}`"
-            class="flex items-center justify-between p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
+            class="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
           >
             <span class="text-sm text-white truncate">{{ board.title }}</span>
             <span class="text-xs text-gray-500">{{ board.card_count }}</span>

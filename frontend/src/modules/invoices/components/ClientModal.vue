@@ -71,7 +71,7 @@ function handleSubmit() {
     >
       <div
         v-if="show"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         @click.self="$emit('close')"
       >
         <Transition
@@ -84,10 +84,10 @@ function handleSubmit() {
         >
           <div
             v-if="show"
-            class="bg-dark-800 rounded-2xl w-full max-w-lg border border-dark-600 shadow-2xl max-h-[90vh] overflow-y-auto"
+            class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto"
           >
             <!-- Header -->
-            <div class="sticky top-0 bg-dark-800 px-6 py-4 border-b border-dark-700 flex items-center justify-between z-10">
+            <div class="sticky top-0 bg-white/[0.04] px-6 py-4 border-b border-white/[0.06] flex items-center justify-between z-10">
               <div class="flex items-center gap-3">
                 <div
                   class="w-8 h-8 rounded-full shrink-0"
@@ -97,7 +97,7 @@ function handleSubmit() {
                   {{ editingClient ? 'Kunde bearbeiten' : 'Neuer Kunde' }}
                 </h2>
               </div>
-              <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors">
+              <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
@@ -169,7 +169,7 @@ function handleSubmit() {
                     type="button"
                     @click="form.color = color"
                     class="w-8 h-8 rounded-full border-2 transition-all hover:scale-110"
-                    :class="form.color === color ? 'border-white scale-110 ring-2 ring-offset-2 ring-offset-dark-800 ring-white/50' : 'border-transparent'"
+                    :class="form.color === color ? 'border-white scale-110 ring-2 ring-offset-2 ring-offset-black ring-white/50' : 'border-transparent'"
                     :style="{ backgroundColor: color }"
                     :title="color"
                   ></button>

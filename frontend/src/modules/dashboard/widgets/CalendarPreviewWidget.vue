@@ -1,5 +1,5 @@
 <script setup>
-import { formatDate } from './widgetUtils.js'
+import { formatDate } from './widgetUtils'
 defineProps({ widget: Object, data: Array })
 </script>
 
@@ -13,7 +13,7 @@ defineProps({ widget: Object, data: Array })
       <div
         v-for="event in (data || []).slice(0, 5)"
         :key="event.id"
-        class="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
+        class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
       >
         <div class="w-1 h-8 rounded-full flex-shrink-0" :style="{ backgroundColor: event.color }"></div>
         <div class="flex-1 min-w-0">

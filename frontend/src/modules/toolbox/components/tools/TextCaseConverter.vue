@@ -196,7 +196,7 @@ function setExample() {
           Kopieren
         </button>
       </div>
-      <div class="p-3 bg-dark-700 rounded-lg font-mono text-green-400 break-all select-all">
+      <div class="p-3 bg-white/[0.04] rounded-lg font-mono text-green-400 break-all select-all">
         {{ output }}
       </div>
     </div>
@@ -208,7 +208,7 @@ function setExample() {
         <div
           v-for="conv in allConversions"
           :key="conv.value"
-          class="flex items-center justify-between gap-2 p-2 bg-dark-700 rounded-lg group"
+          class="flex items-center justify-between gap-2 p-2 bg-white/[0.04] rounded-lg group"
         >
           <div class="flex-1 min-w-0">
             <span class="text-xs text-gray-500">{{ conv.name }}</span>

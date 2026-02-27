@@ -413,19 +413,19 @@ onMounted(async () => {
 
 <template>
   <!-- Negative margin to counteract parent padding, calc height to fill available space -->
-  <div class="flex bg-dark-900 -m-4 lg:-m-6" style="min-height: calc(100vh - 64px);">
+  <div class="flex bg-white/[0.02] -m-4 lg:-m-6" style="min-height: calc(100vh - 64px);">
     <!-- Sidebar -->
     <aside
-      class="bg-dark-800 border-r border-dark-600 flex flex-col transition-all duration-200"
+      class="bg-white/[0.04] border-r border-white/[0.06] flex flex-col transition-all duration-200"
       :class="sidebarCollapsed ? 'w-12' : 'w-72'"
     >
-      <div class="flex items-center justify-between p-4 border-b border-dark-600">
+      <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
         <div v-if="!sidebarCollapsed" class="flex items-center gap-2">
           <BookOpenIcon class="w-6 h-6 text-indigo-400" />
           <h2 class="text-lg font-semibold text-white">Wiki</h2>
         </div>
         <button
-          class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-700"
+          class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04]"
           @click="sidebarCollapsed = !sidebarCollapsed"
         >
           <ChevronLeftIcon v-if="!sidebarCollapsed" class="w-5 h-5" />
@@ -441,7 +441,7 @@ onMounted(async () => {
             v-model="searchQuery"
             type="text"
             placeholder="Suchen..."
-            class="w-full pl-9 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+            class="input w-full pl-9 text-sm"
             @input="debouncedSearch"
           />
         </div>
@@ -449,14 +449,14 @@ onMounted(async () => {
         <!-- Actions -->
         <div class="flex gap-2">
           <button
-            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+            class="btn-primary flex-1 flex items-center justify-center gap-2 text-sm"
             @click="createNewPage"
           >
             <PlusIcon class="w-4 h-4" />
             Neue Seite
           </button>
           <button
-            class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white"
+            class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white"
             @click="showGraphView = true"
             title="Graph-Ansicht"
           >
@@ -470,7 +470,7 @@ onMounted(async () => {
           <button
             v-for="result in wikiStore.searchResults"
             :key="result.id"
-            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-gray-300 hover:bg-dark-700"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-gray-300 hover:bg-white/[0.04]"
             @click="selectPage(result.id)"
           >
             <DocumentTextIcon class="w-4 h-4 text-gray-500" />
@@ -483,7 +483,7 @@ onMounted(async () => {
           <!-- All Pages -->
           <button
             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
-            :class="!selectedCategory ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-dark-700'"
+            :class="!selectedCategory ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-white/[0.04]'"
             @click="selectedCategory = null"
           >
             <FolderIcon class="w-4 h-4" />
@@ -495,7 +495,7 @@ onMounted(async () => {
           <div v-for="category in wikiStore.categories" :key="category.id">
             <button
               class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
-              :class="selectedCategory === category.id ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-dark-700'"
+              :class="selectedCategory === category.id ? 'bg-indigo-600/20 text-indigo-300' : 'text-gray-300 hover:bg-white/[0.04]'"
               @click="selectedCategory = category.id"
             >
               <div
@@ -522,7 +522,7 @@ onMounted(async () => {
               v-for="page in filteredPages"
               :key="page.id"
               class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors"
-              :class="currentPageId === page.id ? 'bg-dark-600 text-white' : 'text-gray-300 hover:bg-dark-700'"
+              :class="currentPageId === page.id ? 'bg-white/[0.08] text-white' : 'text-gray-300 hover:bg-white/[0.04]'"
               @click="selectPage(page.id)"
             >
               <DocumentTextIcon class="w-4 h-4 text-gray-500" />
@@ -537,7 +537,7 @@ onMounted(async () => {
             <button
               v-for="page in wikiStore.recentPages.slice(0, 5)"
               :key="page.id"
-              class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-xs text-gray-400 hover:bg-dark-700 hover:text-gray-300"
+              class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-xs text-gray-400 hover:bg-white/[0.04] hover:text-gray-300"
               @click="selectPage(page.id)"
             >
               <ClockIcon class="w-3 h-3" />
@@ -562,7 +562,7 @@ onMounted(async () => {
         <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
         <p class="text-gray-500 mb-6">Wähle eine Seite aus der Sidebar oder erstelle eine neue.</p>
         <button
-          class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white"
+          class="btn-primary flex items-center gap-2"
           @click="createNewPage"
         >
           <PlusIcon class="w-5 h-5" />
@@ -573,7 +573,7 @@ onMounted(async () => {
       <!-- Page Editor/Viewer -->
       <div v-else class="max-w-4xl mx-auto p-8">
         <!-- Header -->
-        <div class="flex items-start justify-between mb-6 pb-4 border-b border-dark-600">
+        <div class="flex items-start justify-between mb-6 pb-4 border-b border-white/[0.06]">
           <div class="flex-1">
             <input
               v-if="isEditing || isCreating"
@@ -609,7 +609,7 @@ onMounted(async () => {
           <div class="flex items-center gap-2">
             <template v-if="isEditing || isCreating">
               <button
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+                class="btn-primary text-sm"
                 :disabled="wikiStore.loading"
                 @click="savePage"
               >
@@ -617,7 +617,7 @@ onMounted(async () => {
                 Speichern
               </button>
               <button
-                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white text-sm"
+                class="btn-secondary text-sm"
                 @click="cancelEdit"
               >
                 Abbrechen
@@ -625,7 +625,7 @@ onMounted(async () => {
             </template>
             <template v-else>
               <button
-                class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white text-sm"
+                class="btn-secondary text-sm"
                 @click="startEdit"
               >
                 <PencilIcon class="w-4 h-4 inline mr-1" />
@@ -633,39 +633,39 @@ onMounted(async () => {
               </button>
               <div class="relative">
                 <button
-                  class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white"
+                  class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white"
                   @click="showDropdown = !showDropdown"
                 >
                   <EllipsisVerticalIcon class="w-5 h-5" />
                 </button>
                 <div
                   v-if="showDropdown"
-                  class="absolute right-0 top-full mt-1 w-48 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-50 py-1"
+                  class="absolute right-0 top-full mt-1 w-48 bg-white/[0.04] border border-white/[0.06] rounded-lg shadow-float z-50 py-1"
                 >
                   <button
-                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="togglePin"
                   >
                     <BookmarkIcon class="w-4 h-4" />
                     {{ wikiStore.currentPage?.is_pinned ? 'Nicht mehr anpinnen' : 'Anpinnen' }}
                   </button>
                   <button
-                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="togglePublish"
                   >
                     <GlobeAltIcon class="w-4 h-4" />
                     {{ wikiStore.currentPage?.is_published ? 'Verstecken' : 'Veröffentlichen' }}
                   </button>
                   <button
-                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                    class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="showHistoryModal = true; showDropdown = false"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
                     Versionen
                   </button>
-                  <hr class="border-dark-600 my-1" />
+                  <hr class="border-white/[0.06] my-1" />
                   <button
-                    class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-dark-600 flex items-center gap-2"
+                    class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="confirmDelete"
                   >
                     <TrashIcon class="w-4 h-4" />
@@ -678,12 +678,12 @@ onMounted(async () => {
         </div>
 
         <!-- Editor Options -->
-        <div v-if="isEditing || isCreating" class="flex flex-wrap gap-4 mb-4 p-4 bg-dark-800 rounded-lg">
+        <div v-if="isEditing || isCreating" class="flex flex-wrap gap-4 mb-4 p-4 bg-white/[0.04] rounded-xl">
           <div>
             <label class="block text-xs text-gray-500 mb-1">Kategorie</label>
             <select
               v-model="editForm.category_id"
-              class="px-3 py-1.5 bg-dark-700 border border-dark-600 rounded text-sm text-white"
+              class="select text-sm"
             >
               <option :value="null">Keine Kategorie</option>
               <option v-for="cat in wikiStore.categories" :key="cat.id" :value="cat.id">
@@ -696,7 +696,7 @@ onMounted(async () => {
             <label class="block text-xs text-gray-500 mb-1">Übergeordnete Seite</label>
             <select
               v-model="editForm.parent_id"
-              class="px-3 py-1.5 bg-dark-700 border border-dark-600 rounded text-sm text-white"
+              class="select text-sm"
             >
               <option :value="null">Keine</option>
               <option v-for="page in availableParents" :key="page.id" :value="page.id">
@@ -706,12 +706,12 @@ onMounted(async () => {
           </div>
 
           <label class="flex items-center gap-2 text-sm text-gray-300">
-            <input type="checkbox" v-model="editForm.is_published" class="rounded bg-dark-700 border-dark-600 text-indigo-600" />
+            <input type="checkbox" v-model="editForm.is_published" class="rounded bg-white/[0.04] border-white/[0.06] text-indigo-600" />
             Veröffentlicht
           </label>
 
           <label class="flex items-center gap-2 text-sm text-gray-300">
-            <input type="checkbox" v-model="editForm.is_pinned" class="rounded bg-dark-700 border-dark-600 text-indigo-600" />
+            <input type="checkbox" v-model="editForm.is_pinned" class="rounded bg-white/[0.04] border-white/[0.06] text-indigo-600" />
             Angepinnt
           </label>
         </div>
@@ -721,7 +721,7 @@ onMounted(async () => {
           <textarea
             v-if="isEditing || isCreating"
             v-model="editForm.content"
-            class="w-full min-h-[400px] p-4 bg-dark-800 border border-dark-600 rounded-lg text-white font-mono text-sm resize-y focus:outline-none focus:border-indigo-500"
+            class="textarea w-full min-h-[400px] font-mono text-sm resize-y"
             placeholder="Schreibe deinen Inhalt in Markdown...
 
 Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
@@ -735,7 +735,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         </div>
 
         <!-- Backlinks -->
-        <div v-if="wikiStore.currentPage?.backlinks?.length && !isEditing" class="mt-8 pt-4 border-t border-dark-600">
+        <div v-if="wikiStore.currentPage?.backlinks?.length && !isEditing" class="mt-8 pt-4 border-t border-white/[0.06]">
           <h4 class="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
             <LinkIcon class="w-4 h-4" />
             Backlinks
@@ -744,7 +744,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
             <button
               v-for="link in wikiStore.currentPage.backlinks"
               :key="link.id"
-              class="px-3 py-1 bg-dark-700 hover:bg-dark-600 rounded-full text-sm text-gray-300"
+              class="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.04] rounded-full text-sm text-gray-300"
               @click="selectPage(link.id)"
             >
               {{ link.title }}
@@ -762,7 +762,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
             <button
               v-for="child in wikiStore.currentPage.children"
               :key="child.id"
-              class="flex items-center gap-2 p-3 bg-dark-800 hover:bg-dark-700 rounded-lg text-left"
+              class="flex items-center gap-2 p-3 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-left"
               @click="selectPage(child.id)"
             >
               <DocumentTextIcon class="w-5 h-5 text-gray-500" />
@@ -776,15 +776,15 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
     <!-- Graph Modal -->
     <Teleport to="body">
       <div v-if="showGraphView" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showGraphView = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 w-full max-w-4xl h-[600px] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showGraphView = false"></div>
+        <div class="modal relative w-full max-w-4xl h-[600px] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">Wissensgraph</h3>
             <button class="p-1 text-gray-400 hover:text-white" @click="showGraphView = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
-          <div ref="graphContainer" class="flex-1 bg-dark-900 rounded-b-xl"></div>
+          <div ref="graphContainer" class="flex-1 bg-white/[0.02] rounded-b-xl"></div>
         </div>
       </div>
     </Teleport>
@@ -792,8 +792,8 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
     <!-- Category Modal -->
     <Teleport to="body">
       <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showCategoryModal = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 p-6 w-full max-w-md">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showCategoryModal = false"></div>
+        <div class="modal relative p-6 w-full max-w-md">
           <h3 class="text-lg font-semibold text-white mb-4">
             {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
           </h3>
@@ -803,7 +803,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
               <input
                 v-model="categoryForm.name"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                class="input w-full"
                 placeholder="Kategoriename"
               />
             </div>
@@ -812,24 +812,24 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
               <input
                 v-model="categoryForm.color"
                 type="color"
-                class="w-16 h-10 bg-dark-700 border border-dark-600 rounded cursor-pointer"
+                class="w-16 h-10 bg-white/[0.04] border border-white/[0.06] rounded cursor-pointer"
               />
             </div>
             <div>
               <label class="block text-sm text-gray-400 mb-1">Beschreibung</label>
               <textarea
                 v-model="categoryForm.description"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white resize-none"
+                class="textarea w-full resize-none"
                 rows="2"
                 placeholder="Optionale Beschreibung"
               ></textarea>
             </div>
           </div>
           <div class="flex justify-end gap-2 mt-6">
-            <button class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white" @click="showCategoryModal = false">
+            <button class="btn-secondary" @click="showCategoryModal = false">
               Abbrechen
             </button>
-            <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white" @click="saveCategory">
+            <button class="btn-primary" @click="saveCategory">
               Speichern
             </button>
           </div>
@@ -840,9 +840,9 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
     <!-- History Modal -->
     <Teleport to="body">
       <div v-if="showHistoryModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showHistoryModal = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg max-h-[80vh] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-600">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showHistoryModal = false"></div>
+        <div class="modal relative w-full max-w-lg max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">Versionshistorie</h3>
             <button class="p-1 text-gray-400 hover:text-white" @click="showHistoryModal = false">
               <XMarkIcon class="w-6 h-6" />
@@ -856,7 +856,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
               <div
                 v-for="entry in wikiStore.pageHistory"
                 :key="entry.id"
-                class="flex items-center justify-between p-4 bg-dark-700 rounded-lg"
+                class="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg"
               >
                 <div>
                   <div class="flex items-center gap-2">
@@ -871,7 +871,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
                   </div>
                 </div>
                 <button
-                  class="px-3 py-1.5 bg-dark-600 hover:bg-dark-500 rounded text-sm text-white"
+                  class="px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.08] rounded text-sm text-white"
                   @click="restoreVersion(entry.id)"
                 >
                   Wiederherstellen

@@ -104,7 +104,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
     <!-- Results -->
     <div v-if="result" class="space-y-4">
       <!-- Score Header -->
-      <div class="flex items-center justify-between p-4 bg-dark-700 rounded-lg">
+      <div class="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg">
         <div>
           <h3 class="text-lg font-medium text-white">{{ result.url }}</h3>
           <p class="text-sm text-gray-400">
@@ -143,7 +143,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
               <p class="text-xs text-gray-400 mt-1">{{ check.description }}</p>
 
               <div v-if="check.value" class="mt-2">
-                <code class="text-xs text-gray-300 bg-dark-900 px-2 py-1 rounded block break-all">
+                <code class="text-xs text-gray-300 bg-white/[0.02] px-2 py-1 rounded block break-all">
                   {{ check.value }}
                 </code>
               </div>
@@ -157,7 +157,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
       </div>
 
       <!-- Summary -->
-      <div class="p-4 bg-dark-700 rounded-lg">
+      <div class="p-4 bg-white/[0.04] rounded-lg">
         <h4 class="text-sm text-gray-400 mb-2">Zusammenfassung</h4>
         <div class="grid grid-cols-3 gap-4 text-center">
           <div>

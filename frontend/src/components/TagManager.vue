@@ -208,7 +208,7 @@ function cancelMerge() {
     </div>
 
     <!-- Merge Info Banner -->
-    <div v-if="mergeMode" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+    <div v-if="mergeMode" class="bg-yellow-500/[0.06] border border-yellow-500/20 rounded-xl p-4">
       <h3 class="text-yellow-400 font-medium mb-2">Tags zusammenführen</h3>
       <p class="text-sm text-gray-400 mb-3">
         Wähle die Tags aus, die zusammengeführt werden sollen, und bestimme dann den Ziel-Tag.
@@ -327,7 +327,7 @@ function cancelMerge() {
               type="checkbox"
               :checked="selectedForMerge.includes(tag.id)"
               @change="toggleMergeSelection(tag.id)"
-              class="rounded border-gray-600 bg-dark-700 text-yellow-600 focus:ring-yellow-600"
+              class="rounded border-white/[0.08] bg-white/[0.04] text-yellow-600 focus:ring-yellow-600"
             />
           </label>
 
@@ -341,7 +341,7 @@ function cancelMerge() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <h4 class="font-medium text-white">{{ tag.name }}</h4>
-              <span class="text-xs text-gray-500 bg-dark-700 px-2 py-0.5 rounded-full">
+              <span class="text-xs text-gray-500 bg-white/[0.06] px-2 py-0.5 rounded-full">
                 {{ tag.usage_count || 0 }} Verwendungen
               </span>
             </div>
@@ -364,7 +364,7 @@ function cancelMerge() {
           <div v-if="!mergeMode" class="flex gap-1">
             <button
               @click="startEdit(tag)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg"
             >
               <PencilIcon class="w-4 h-4" />
             </button>

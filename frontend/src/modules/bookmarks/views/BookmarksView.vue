@@ -422,7 +422,7 @@ function isGroupExpanded(groupId) {
       <div v-for="group in filteredGroups" :key="group.id" class="card overflow-hidden">
         <!-- Group Header -->
         <div
-          class="flex items-center justify-between p-4 bg-dark-700/50 cursor-pointer hover:bg-dark-700 transition-colors"
+          class="flex items-center justify-between p-4 bg-white/[0.03] cursor-pointer hover:bg-white/[0.04] transition-colors"
           @click="toggleGroupCollapse(group)"
         >
           <div class="flex items-center gap-3">
@@ -441,7 +441,7 @@ function isGroupExpanded(groupId) {
           <div class="flex items-center gap-2">
             <button
               @click.stop="openCreateModal(group.id)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               title="Lesezeichen hinzufügen"
             >
               <PlusIcon class="w-5 h-5" />
@@ -449,25 +449,25 @@ function isGroupExpanded(groupId) {
             <div class="relative">
               <button
                 @click.stop="showGroupMenu = showGroupMenu === group.id ? null : group.id"
-                class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               >
                 <EllipsisVerticalIcon class="w-5 h-5" />
               </button>
               <!-- Group Menu -->
               <div
                 v-if="showGroupMenu === group.id"
-                class="absolute right-0 top-full mt-1 w-40 bg-dark-700 border border-dark-600 rounded-lg shadow-xl z-10"
+                class="absolute right-0 top-full mt-1 w-40 bg-white/[0.04] border border-white/[0.06] rounded-lg shadow-xl z-10"
               >
                 <button
                   @click.stop="editGroup(group)"
-                  class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-dark-600 flex items-center gap-2"
+                  class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                 >
                   <PencilIcon class="w-4 h-4" />
                   Bearbeiten
                 </button>
                 <button
                   @click.stop="deleteGroup(group); showGroupMenu = null"
-                  class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-dark-600 flex items-center gap-2"
+                  class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-white/[0.04] flex items-center gap-2"
                 >
                   <TrashIcon class="w-4 h-4" />
                   Löschen
@@ -490,7 +490,7 @@ function isGroupExpanded(groupId) {
             <div
               v-for="bookmark in group.bookmarks"
               :key="bookmark.id"
-              class="card-hover p-4 group cursor-pointer bg-dark-800"
+              class="card-hover p-4 group cursor-pointer bg-white/[0.04]"
               @click="openBookmark(bookmark)"
             >
               <div class="flex items-start gap-3">
@@ -524,25 +524,25 @@ function isGroupExpanded(groupId) {
                 <span
                   v-for="tag in bookmark.tags"
                   :key="tag.id"
-                  class="px-2 py-0.5 text-xs rounded-full bg-dark-600 text-gray-300"
+                  class="px-2 py-0.5 text-xs rounded-full bg-white/[0.08] text-gray-300"
                 >
                   {{ tag.name }}
                 </span>
               </div>
 
               <!-- Actions -->
-              <div class="flex items-center justify-between mt-3 pt-3 border-t border-dark-700">
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
                 <span class="text-xs text-gray-500">{{ bookmark.click_count || 0 }} Klicks</span>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     @click.stop="openEditModal(bookmark)"
-                    class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                    class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click.stop="deleteBookmark(bookmark)"
-                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -594,25 +594,25 @@ function isGroupExpanded(groupId) {
               <span
                 v-for="tag in bookmark.tags"
                 :key="tag.id"
-                class="px-2 py-0.5 text-xs rounded-full bg-dark-600 text-gray-300"
+                class="px-2 py-0.5 text-xs rounded-full bg-white/[0.08] text-gray-300"
               >
                 {{ tag.name }}
               </span>
             </div>
 
             <!-- Actions -->
-            <div class="flex items-center justify-between mt-3 pt-3 border-t border-dark-700">
+            <div class="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
               <span class="text-xs text-gray-500">{{ bookmark.click_count || 0 }} Klicks</span>
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   @click.stop="openEditModal(bookmark)"
-                  class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                  class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click.stop="deleteBookmark(bookmark)"
-                  class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+                  class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -627,11 +627,11 @@ function isGroupExpanded(groupId) {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
               {{ editingBookmark ? 'Lesezeichen bearbeiten' : 'Neues Lesezeichen' }}
             </h2>
@@ -679,7 +679,7 @@ function isGroupExpanded(groupId) {
                   class="px-3 py-1 rounded-full text-sm transition-colors"
                   :class="form.tag_ids.includes(tag.id)
                     ? 'bg-primary-600 text-white'
-                    : 'bg-dark-600 text-gray-300 hover:bg-dark-500'"
+                    : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.12]'"
                 >
                   {{ tag.name }}
                 </button>
@@ -710,11 +710,11 @@ function isGroupExpanded(groupId) {
     <Teleport to="body">
       <div
         v-if="showTagModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">Tags verwalten</h2>
             <button @click="showTagModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -739,7 +739,7 @@ function isGroupExpanded(groupId) {
               <div
                 v-for="tag in tags"
                 :key="tag.id"
-                class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+                class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg"
               >
                 <div class="flex items-center gap-2">
                   <span class="text-white">{{ tag.name }}</span>
@@ -765,11 +765,11 @@ function isGroupExpanded(groupId) {
     <Teleport to="body">
       <div
         v-if="showGroupModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
-          <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
               {{ editingGroup ? 'Gruppe bearbeiten' : 'Neue Gruppe' }}
             </h2>
@@ -799,7 +799,7 @@ function isGroupExpanded(groupId) {
                   type="button"
                   @click="groupForm.color = color"
                   class="w-8 h-8 rounded-lg transition-transform hover:scale-110"
-                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': groupForm.color === color }"
+                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-transparent': groupForm.color === color }"
                   :style="{ backgroundColor: color }"
                 ></button>
               </div>

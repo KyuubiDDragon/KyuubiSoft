@@ -281,11 +281,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-dark-700">
+  <div class="flex h-full gap-0 overflow-hidden rounded-xl border border-white/[0.06]">
     <!-- Sidebar -->
-    <div class="w-64 flex-shrink-0 flex flex-col bg-dark-900 border-r border-dark-700">
+    <div class="w-64 flex-shrink-0 flex flex-col bg-white/[0.02] border-r border-white/[0.06]">
       <!-- Header -->
-      <div class="px-4 py-3 border-b border-dark-700">
+      <div class="px-4 py-3 border-b border-white/[0.06]">
         <div class="flex items-center justify-between mb-2">
           <h2 class="font-semibold text-white text-sm flex items-center gap-2">
             <CommandLineIcon class="w-4 h-4 text-primary-400" />
@@ -307,7 +307,7 @@ onMounted(async () => {
             v-model="searchQuery"
             type="text"
             placeholder="Suchen…"
-            class="w-full bg-dark-700 border border-dark-600 rounded-lg pl-7 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+            class="input pl-7 pr-3 py-1.5 text-xs w-full"
           />
         </div>
 
@@ -344,7 +344,7 @@ onMounted(async () => {
           :key="script.id"
           @click="selectScript(script)"
           class="group relative px-3 py-2 rounded-lg cursor-pointer transition-colors"
-          :class="selectedScript?.id === script.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-dark-700 hover:text-white'"
+          :class="selectedScript?.id === script.id ? 'bg-primary-500/20 text-white' : 'text-gray-400 hover:bg-white/[0.04] hover:text-white'"
         >
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-medium truncate flex-1">{{ script.name }}</span>
@@ -367,7 +367,7 @@ onMounted(async () => {
             </div>
           </div>
           <div class="flex items-center gap-2 mt-0.5">
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-dark-700 text-gray-500 capitalize">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-gray-500 capitalize">
               {{ script.language }}
             </span>
             <span v-if="script.is_favorite" class="text-yellow-400">
@@ -379,7 +379,7 @@ onMounted(async () => {
     </div>
 
     <!-- Main panel -->
-    <div class="flex-1 flex flex-col min-w-0 bg-dark-950">
+    <div class="flex-1 flex flex-col min-w-0 bg-white/[0.02]">
       <!-- No script selected -->
       <div v-if="!editForm" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
@@ -397,7 +397,7 @@ onMounted(async () => {
 
       <template v-else>
         <!-- Toolbar -->
-        <div class="flex items-center gap-3 px-4 py-2 border-b border-dark-700 flex-shrink-0">
+        <div class="flex items-center gap-3 px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
           <!-- Name -->
           <input
             v-model="editForm.name"
@@ -409,7 +409,7 @@ onMounted(async () => {
           <!-- Language -->
           <select
             v-model="editForm.language"
-            class="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-primary-500"
+            class="select px-2 py-1 text-xs"
           >
             <option v-for="lang in languages" :key="lang" :value="lang" class="capitalize">{{ lang }}</option>
           </select>
@@ -417,7 +417,7 @@ onMounted(async () => {
           <!-- Connection selector -->
           <select
             v-model="selectedConnectionId"
-            class="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-primary-500"
+            class="select px-2 py-1 text-xs"
           >
             <option value="">Lokal</option>
             <option v-for="conn in connections" :key="conn.id" :value="conn.id">
@@ -428,7 +428,7 @@ onMounted(async () => {
           <!-- Save -->
           <button
             @click="saveScript"
-            class="px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-gray-300 hover:text-white text-xs rounded-lg transition-colors"
+            class="btn-secondary px-3 py-1.5 text-xs"
           >
             Speichern
           </button>
@@ -445,7 +445,7 @@ onMounted(async () => {
         </div>
 
         <!-- Tabs -->
-        <div class="flex border-b border-dark-700 px-4 flex-shrink-0">
+        <div class="flex border-b border-white/[0.06] px-4 flex-shrink-0">
           <button
             @click="switchTab('editor')"
             class="px-3 py-2 text-xs border-b-2 transition-colors -mb-px"
@@ -461,7 +461,7 @@ onMounted(async () => {
         <!-- Editor tab -->
         <template v-if="activeTab === 'editor'">
           <!-- Description -->
-          <div class="px-4 py-2 border-b border-dark-700 flex-shrink-0">
+          <div class="px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
             <input
               v-model="editForm.description"
               type="text"
@@ -481,8 +481,8 @@ onMounted(async () => {
           </div>
 
           <!-- Output panel -->
-          <div v-if="output" class="h-48 border-t border-dark-700 flex flex-col flex-shrink-0">
-            <div class="flex items-center gap-3 px-4 py-2 bg-dark-900 border-b border-dark-700 flex-shrink-0">
+          <div v-if="output" class="h-48 border-t border-white/[0.06] flex flex-col flex-shrink-0">
+            <div class="flex items-center gap-3 px-4 py-2 bg-white/[0.02] border-b border-white/[0.06] flex-shrink-0">
               <component
                 :is="output.success ? CheckCircleIcon : XCircleIcon"
                 class="w-4 h-4"
@@ -519,7 +519,7 @@ onMounted(async () => {
 
           <table v-else class="w-full text-xs">
             <thead>
-              <tr class="text-gray-500 border-b border-dark-700">
+              <tr class="text-gray-500 border-b border-white/[0.06]">
                 <th class="px-4 py-2 text-left font-medium">Zeitpunkt</th>
                 <th class="px-4 py-2 text-left font-medium">Exit Code</th>
                 <th class="px-4 py-2 text-left font-medium">Dauer</th>
@@ -530,7 +530,7 @@ onMounted(async () => {
               <tr
                 v-for="exec in history"
                 :key="exec.id"
-                class="border-b border-dark-800 hover:bg-dark-800/40 transition-colors"
+                class="border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors"
               >
                 <td class="px-4 py-2 text-gray-300">{{ formatTs(exec.executed_at) }}</td>
                 <td class="px-4 py-2">

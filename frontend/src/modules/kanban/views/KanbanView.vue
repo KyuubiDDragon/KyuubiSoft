@@ -1005,7 +1005,7 @@ onMounted(async () => {
         <button
           v-if="selectedBoard"
           @click="backToBoards"
-          class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+          class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -1024,7 +1024,7 @@ onMounted(async () => {
         <button
           v-if="selectedBoard"
           @click="openTagModal()"
-          class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
           title="Tags verwalten"
         >
           <TagIcon class="w-5 h-5" />
@@ -1033,7 +1033,7 @@ onMounted(async () => {
         <button
           v-if="selectedBoard"
           @click="openColumnModal()"
-          class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
           <span>Spalte</span>
@@ -1041,7 +1041,7 @@ onMounted(async () => {
         <button
           v-if="selectedBoard"
           @click="openBoardModal(selectedBoard)"
-          class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
         >
           <PencilIcon class="w-5 h-5" />
           <span>Bearbeiten</span>
@@ -1068,7 +1068,7 @@ onMounted(async () => {
         v-for="board in boards"
         :key="board.id"
         @click="selectBoard(board)"
-        class="bg-dark-800 border border-dark-700 rounded-xl p-4 cursor-pointer hover:border-dark-600 transition-all group"
+        class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 cursor-pointer hover:border-white/[0.06] transition-all group"
       >
         <div class="flex items-start justify-between mb-3">
           <div
@@ -1080,13 +1080,13 @@ onMounted(async () => {
           <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               @click.stop="openBoardModal(board)"
-              class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+              class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.08] rounded"
             >
               <PencilIcon class="w-4 h-4" />
             </button>
             <button
               @click.stop="deleteBoard(board)"
-              class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+              class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.08] rounded"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -1106,7 +1106,7 @@ onMounted(async () => {
       <div
         v-if="boards.length === 0"
         @click="openBoardModal()"
-        class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 cursor-pointer hover:border-dark-500 transition-colors flex flex-col items-center justify-center text-center col-span-full"
+        class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 cursor-pointer hover:border-white/[0.08] transition-colors flex flex-col items-center justify-center text-center col-span-full"
       >
         <ViewColumnsIcon class="w-12 h-12 text-gray-500 mb-3" />
         <p class="text-gray-400">Kein Board vorhanden</p>
@@ -1125,9 +1125,9 @@ onMounted(async () => {
         @end="onColumnDragEnd"
       >
         <template #item="{ element: column }">
-          <div class="flex-shrink-0 w-80 bg-dark-800 rounded-xl border border-dark-700">
+          <div class="flex-shrink-0 w-80 bg-white/[0.04] rounded-xl border border-white/[0.06]">
             <!-- Column Header -->
-            <div class="p-3 border-b border-dark-700 column-handle cursor-move">
+            <div class="p-3 border-b border-white/[0.06] column-handle cursor-move">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <div
@@ -1140,7 +1140,7 @@ onMounted(async () => {
                     class="w-4 h-4 text-green-500"
                     title="Abgeschlossen-Spalte"
                   />
-                  <span class="text-xs text-gray-500 bg-dark-700 px-2 py-0.5 rounded-full">
+                  <span class="text-xs text-gray-500 bg-white/[0.04] px-2 py-0.5 rounded-full">
                     {{ column.cards?.length || 0 }}
                     <template v-if="column.wip_limit">/ {{ column.wip_limit }}</template>
                   </span>
@@ -1148,19 +1148,19 @@ onMounted(async () => {
                 <div class="flex items-center gap-1">
                   <button
                     @click="openCardModal(column.id)"
-                    class="p-1 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                    class="p-1 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded"
                   >
                     <PlusIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="openColumnModal(column)"
-                    class="p-1 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                    class="p-1 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteColumn(column)"
-                    class="p-1 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+                    class="p-1 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -1180,7 +1180,7 @@ onMounted(async () => {
                 <template #item="{ element: card }">
                   <div
                     @click="openCardModal(column.id, card)"
-                    class="bg-dark-700 rounded-lg p-3 cursor-pointer hover:bg-dark-600 transition-colors group"
+                    class="bg-white/[0.04] rounded-lg p-3 cursor-pointer hover:bg-white/[0.04] transition-colors group"
                     :class="{ 'border-l-4': card.color }"
                     :style="card.color ? { borderLeftColor: card.color } : {}"
                   >
@@ -1219,7 +1219,7 @@ onMounted(async () => {
                       <div
                         v-for="attachment in card.attachments.slice(0, 3)"
                         :key="attachment.id"
-                        class="w-12 h-12 rounded overflow-hidden bg-dark-600"
+                        class="w-12 h-12 rounded overflow-hidden bg-white/[0.08]"
                       >
                         <img
                           :src="getAttachmentUrl(attachment.filename)"
@@ -1229,7 +1229,7 @@ onMounted(async () => {
                       </div>
                       <div
                         v-if="card.attachments.length > 3"
-                        class="w-12 h-12 rounded bg-dark-600 flex items-center justify-center text-xs text-gray-400"
+                        class="w-12 h-12 rounded bg-white/[0.08] flex items-center justify-center text-xs text-gray-400"
                       >
                         +{{ card.attachments.length - 3 }}
                       </div>
@@ -1298,7 +1298,7 @@ onMounted(async () => {
               <!-- Add card button -->
               <button
                 @click="openCardModal(column.id)"
-                class="w-full p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                class="w-full p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 <PlusIcon class="w-4 h-4" />
                 <span>Karte hinzufügen</span>
@@ -1311,7 +1311,7 @@ onMounted(async () => {
       <!-- Add column button -->
       <div
         @click="openColumnModal()"
-        class="flex-shrink-0 w-80 bg-dark-800/50 border-2 border-dashed border-dark-600 rounded-xl p-4 cursor-pointer hover:border-dark-500 transition-colors flex items-center justify-center"
+        class="flex-shrink-0 w-80 bg-white/[0.02] border-2 border-dashed border-white/[0.06] rounded-xl p-4 cursor-pointer hover:border-white/[0.08] transition-colors flex items-center justify-center"
       >
         <div class="text-center">
           <PlusIcon class="w-8 h-8 text-gray-500 mx-auto mb-2" />
@@ -1324,11 +1324,11 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showBoardModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingBoard ? 'Board bearbeiten' : 'Neues Board' }}
             </h2>
@@ -1346,7 +1346,7 @@ onMounted(async () => {
               <input
                 v-model="boardForm.title"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Board Name"
               />
             </div>
@@ -1356,7 +1356,7 @@ onMounted(async () => {
               <textarea
                 v-model="boardForm.description"
                 rows="3"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
                 placeholder="Optionale Beschreibung..."
               ></textarea>
             </div>
@@ -1376,16 +1376,16 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="showBoardModal = false"
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              class="btn-secondary"
             >
               Abbrechen
             </button>
             <button
               @click="saveBoard"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              class="btn-primary"
             >
               {{ editingBoard ? 'Speichern' : 'Erstellen' }}
             </button>
@@ -1398,11 +1398,11 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showColumnModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingColumn ? 'Spalte bearbeiten' : 'Neue Spalte' }}
             </h2>
@@ -1420,7 +1420,7 @@ onMounted(async () => {
               <input
                 v-model="columnForm.title"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Spaltenname"
               />
             </div>
@@ -1445,17 +1445,17 @@ onMounted(async () => {
                 v-model.number="columnForm.wip_limit"
                 type="number"
                 min="0"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Max. Anzahl Karten"
               />
             </div>
 
-            <div class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg">
+            <div class="flex items-center gap-3 p-3 bg-white/[0.04] rounded-lg">
               <input
                 v-model="columnForm.is_completed"
                 type="checkbox"
                 id="is_completed"
-                class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-green-500 focus:ring-green-500 focus:ring-offset-0"
+                class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-green-500 focus:ring-green-500 focus:ring-offset-0"
               />
               <label for="is_completed" class="flex-1">
                 <span class="block text-sm font-medium text-gray-300">Als "Abgeschlossen" markieren</span>
@@ -1464,16 +1464,16 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="showColumnModal = false"
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              class="btn-secondary"
             >
               Abbrechen
             </button>
             <button
               @click="saveColumn"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              class="btn-primary"
             >
               {{ editingColumn ? 'Speichern' : 'Erstellen' }}
             </button>
@@ -1486,11 +1486,11 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showCardModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingCard ? 'Karte bearbeiten' : 'Neue Karte' }}
             </h2>
@@ -1510,7 +1510,7 @@ onMounted(async () => {
                 <input
                   v-model="cardForm.title"
                   type="text"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="Kartenname"
                 />
               </div>
@@ -1520,7 +1520,7 @@ onMounted(async () => {
                 <textarea
                   v-model="cardForm.description"
                   rows="3"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                  class="textarea"
                   placeholder="Details zur Karte..."
                 ></textarea>
               </div>
@@ -1536,7 +1536,7 @@ onMounted(async () => {
                   <div
                     v-for="checklist in checklists"
                     :key="checklist.id"
-                    class="bg-dark-700 rounded-lg p-3"
+                    class="bg-white/[0.04] rounded-lg p-3"
                   >
                     <div class="flex items-center justify-between mb-2">
                       <h4 class="text-white font-medium text-sm">{{ checklist.title }}</h4>
@@ -1553,7 +1553,7 @@ onMounted(async () => {
                       </div>
                     </div>
 
-                    <div v-if="checklist.items?.length" class="h-1 bg-dark-600 rounded-full mb-2 overflow-hidden">
+                    <div v-if="checklist.items?.length" class="h-1 bg-white/[0.08] rounded-full mb-2 overflow-hidden">
                       <div
                         class="h-full bg-green-500 transition-all duration-300"
                         :style="{ width: getChecklistProgress(checklist).percent + '%' }"
@@ -1592,7 +1592,7 @@ onMounted(async () => {
                       <input
                         v-model="newItemContents[checklist.id]"
                         type="text"
-                        class="flex-1 bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                        class="flex-1 bg-white/[0.08] border border-white/[0.08] rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                         placeholder="Neuer Eintrag..."
                         @keydown.enter="addChecklistItem(checklist.id)"
                       />
@@ -1610,13 +1610,13 @@ onMounted(async () => {
                   <input
                     v-model="newChecklistTitle"
                     type="text"
-                    class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                    class="flex-1 input text-sm"
                     placeholder="Neue Checkliste..."
                     @keydown.enter="createChecklist"
                   />
                   <button
                     @click="createChecklist"
-                    class="px-3 py-2 bg-dark-600 text-gray-300 rounded-lg hover:bg-dark-500 transition-colors"
+                    class="px-3 py-2 bg-white/[0.08] text-gray-300 rounded-lg hover:bg-white/[0.08] transition-colors"
                     :disabled="!newChecklistTitle.trim()"
                   >
                     <PlusIcon class="w-4 h-4" />
@@ -1632,7 +1632,7 @@ onMounted(async () => {
                   </label>
                   <select
                     v-model="cardForm.priority"
-                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                    class="select"
                   >
                     <option v-for="p in priorities" :key="p.value" :value="p.value">
                       {{ p.label }}
@@ -1648,7 +1648,7 @@ onMounted(async () => {
                   <input
                     v-model="cardForm.due_date"
                     type="date"
-                    class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                    class="input"
                   />
                 </div>
               </div>
@@ -1660,7 +1660,7 @@ onMounted(async () => {
                 </label>
                 <select
                   v-model="cardForm.assigned_to"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option :value="null">Niemand</option>
                   <option v-for="user in boardUsers" :key="user.id" :value="user.id">
@@ -1693,7 +1693,7 @@ onMounted(async () => {
                 <div class="flex flex-wrap gap-2">
                   <button
                     @click="cardForm.color = null"
-                    class="w-8 h-8 rounded-lg bg-dark-600 flex items-center justify-center transition-transform hover:scale-110"
+                    class="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center transition-transform hover:scale-110"
                     :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': !cardForm.color }"
                   >
                     <XMarkIcon class="w-4 h-4 text-gray-400" />
@@ -1720,7 +1720,7 @@ onMounted(async () => {
                   <div
                     v-for="attachment in cardForm.attachments"
                     :key="attachment.id"
-                    class="relative group aspect-square bg-dark-700 rounded-lg overflow-hidden"
+                    class="relative group aspect-square bg-white/[0.04] rounded-lg overflow-hidden"
                   >
                     <img
                       :src="getAttachmentUrl(attachment.filename)"
@@ -1741,7 +1741,7 @@ onMounted(async () => {
 
                 <div
                   v-if="editingCard"
-                  class="border-2 border-dashed border-dark-600 rounded-lg p-3 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                  class="border-2 border-dashed border-white/[0.06] rounded-lg p-3 text-center hover:border-primary-500 transition-colors cursor-pointer"
                   @click="$refs.attachmentInput.click()"
                 >
                   <input
@@ -1797,7 +1797,7 @@ onMounted(async () => {
                   <div
                     v-for="link in cardForm.links"
                     :key="link.id"
-                    class="flex items-center justify-between p-2 bg-dark-700 rounded-lg group"
+                    class="flex items-center justify-between p-2 bg-white/[0.04] rounded-lg group"
                   >
                     <div
                       class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary-400"
@@ -1818,7 +1818,7 @@ onMounted(async () => {
 
                 <button
                   @click="openLinkModal"
-                  class="w-full p-2 border-2 border-dashed border-dark-600 rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
+                  class="w-full p-2 border-2 border-dashed border-white/[0.06] rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <LinkIcon class="w-4 h-4" />
                   Element verknüpfen
@@ -1827,9 +1827,9 @@ onMounted(async () => {
             </div>
 
             <!-- Right Column: Comments & Activities -->
-            <div v-if="editingCard" class="w-80 border-l border-dark-700 flex flex-col bg-dark-850">
+            <div v-if="editingCard" class="w-80 border-l border-white/[0.06] flex flex-col bg-white/[0.02]">
               <!-- Tabs -->
-              <div class="flex border-b border-dark-700">
+              <div class="flex border-b border-white/[0.06]">
                 <button
                   @click="showActivities = false"
                   :class="[
@@ -1863,7 +1863,7 @@ onMounted(async () => {
                     <textarea
                       v-model="newComment"
                       rows="2"
-                      class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                      class="textarea text-sm"
                       placeholder="Kommentar schreiben..."
                     ></textarea>
                     <button
@@ -1883,7 +1883,7 @@ onMounted(async () => {
                     :key="comment.id"
                     class="flex gap-2"
                   >
-                    <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-gray-300 text-xs font-medium flex-shrink-0">
                       {{ comment.username?.[0]?.toUpperCase() || '?' }}
                     </div>
                     <div class="flex-1 min-w-0">
@@ -1911,7 +1911,7 @@ onMounted(async () => {
                         <textarea
                           v-model="editCommentContent"
                           rows="2"
-                          class="w-full bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500 resize-none"
+                          class="textarea text-sm"
                         ></textarea>
                         <div class="flex gap-2">
                           <button
@@ -1928,7 +1928,7 @@ onMounted(async () => {
                           </button>
                         </div>
                       </div>
-                      <p v-else class="text-gray-300 text-sm whitespace-pre-wrap bg-dark-700 rounded-lg p-2">{{ comment.content }}</p>
+                      <p v-else class="text-gray-300 text-sm whitespace-pre-wrap bg-white/[0.04] rounded-lg p-2">{{ comment.content }}</p>
                     </div>
                   </div>
 

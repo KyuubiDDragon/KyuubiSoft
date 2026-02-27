@@ -183,7 +183,7 @@ const typeIcons = {
             v-model="localText"
             @input="updateText"
             rows="3"
-            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+            class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             placeholder="Text eingeben..."
           />
         </div>
@@ -194,7 +194,7 @@ const typeIcons = {
           <select
             :value="mockupStore.selectedElement.fontFamily"
             @change="(e) => updateFontFamily(e.target.value)"
-            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             <option v-for="font in fontFamilies" :key="font.value" :value="font.value">
               {{ font.label }}
@@ -213,7 +213,7 @@ const typeIcons = {
                 type="number"
                 min="8"
                 max="200"
-                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <span class="text-gray-500 text-sm">px</span>
             </div>
@@ -224,7 +224,7 @@ const typeIcons = {
             <select
               :value="mockupStore.selectedElement.fontWeight"
               @change="(e) => updateFontWeight(e.target.value)"
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option v-for="weight in fontWeights" :key="weight.value" :value="weight.value">
                 {{ weight.label }}
@@ -247,7 +247,7 @@ const typeIcons = {
               v-model="localColor"
               @input="updateColor"
               type="text"
-              class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              class="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
         </div>
@@ -261,7 +261,7 @@ const typeIcons = {
             <div
               v-for="(word, index) in localHighlightWords"
               :key="index"
-              class="flex items-center gap-2 p-2 bg-gray-700/50 rounded-lg"
+              class="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg"
             >
               <input
                 :value="word.color"
@@ -292,7 +292,7 @@ const typeIcons = {
               v-model="newHighlightText"
               type="text"
               placeholder="Wort hinzufugen..."
-              class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              class="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               @keypress.enter="addHighlightWord"
             />
             <button
@@ -316,7 +316,7 @@ const typeIcons = {
           <!-- Preview -->
           <div v-if="mockupStore.selectedElement.src" class="space-y-2">
             <label class="block text-sm font-medium text-gray-300">Vorschau</label>
-            <div class="aspect-video bg-gray-700 rounded-lg overflow-hidden">
+            <div class="aspect-video bg-white/[0.04] rounded-lg overflow-hidden">
               <img
                 :src="mockupStore.selectedElement.src"
                 class="w-full h-full object-cover"
@@ -331,7 +331,7 @@ const typeIcons = {
           </div>
 
           <!-- Placeholder info -->
-          <div v-else class="p-4 bg-gray-700/50 rounded-lg text-center">
+          <div v-else class="p-4 bg-white/[0.02] rounded-lg text-center">
             <PhotoIcon class="w-8 h-8 mx-auto text-gray-500" />
             <p class="mt-2 text-sm text-gray-400">Kein Bild geladen</p>
             <p class="text-xs text-gray-500 mt-1">Ziehe ein Bild auf das Element im Canvas</p>
@@ -339,11 +339,11 @@ const typeIcons = {
 
           <!-- Position & Size Info -->
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Position</span>
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Größe</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
@@ -355,11 +355,11 @@ const typeIcons = {
       <template v-else-if="mockupStore.selectedElement.type === 'line'">
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Position</span>
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Größe</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
@@ -378,7 +378,7 @@ const typeIcons = {
       <!-- Corner Properties -->
       <template v-else-if="mockupStore.selectedElement.type === 'corner'">
         <div class="space-y-4">
-          <div class="bg-gray-700/50 rounded-lg p-3 text-sm">
+          <div class="bg-white/[0.02] rounded-lg p-3 text-sm">
             <span class="text-gray-500">Position</span>
             <p class="text-white capitalize">{{ mockupStore.selectedElement.position?.replace('-', ' ') }}</p>
           </div>
@@ -387,7 +387,7 @@ const typeIcons = {
             <label class="block text-sm font-medium text-gray-300">Farbe</label>
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded border border-gray-600"
+                class="w-10 h-10 rounded border border-white/[0.06]"
                 :style="{ backgroundColor: mockupStore.selectedElement.color }"
               />
               <span class="text-white text-sm">{{ mockupStore.selectedElement.color }}</span>
@@ -405,16 +405,16 @@ const typeIcons = {
               v-model="localText"
               @input="updateText"
               type="text"
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Position</span>
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Größe</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
@@ -426,11 +426,11 @@ const typeIcons = {
       <template v-else>
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="bg-gray-700/50 rounded-lg p-3">
+            <div class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Typ</span>
               <p class="text-white capitalize">{{ mockupStore.selectedElement.type }}</p>
             </div>
-            <div v-if="mockupStore.selectedElement.x !== undefined" class="bg-gray-700/50 rounded-lg p-3">
+            <div v-if="mockupStore.selectedElement.x !== undefined" class="bg-white/[0.02] rounded-lg p-3">
               <span class="text-gray-500">Position</span>
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>

@@ -900,7 +900,7 @@ watch(activeTab, (tab) => {
             :class="[
               activeTab === tab.id
                 ? 'bg-primary-600 text-white'
-                : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+                : 'text-gray-400 hover:bg-white/[0.04] hover:text-white'
             ]"
           >
             <component :is="tab.icon" class="w-5 h-5" />
@@ -930,7 +930,7 @@ watch(activeTab, (tab) => {
               <input
                 v-model="profile.email"
                 type="email"
-                class="input bg-dark-700/50"
+                class="input bg-white/[0.03]"
                 disabled
               />
               <p class="mt-1 text-xs text-gray-500">E-Mail kann nicht geändert werden</p>
@@ -1026,7 +1026,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- 2FA Setup Flow -->
-            <div v-if="twoFactorSetup" class="space-y-4 border-t border-dark-700 pt-4">
+            <div v-if="twoFactorSetup" class="space-y-4 border-t border-white/[0.06] pt-4">
               <p class="text-gray-300">Scanne den QR-Code mit deiner Authenticator-App:</p>
 
               <div class="bg-white p-4 rounded-lg inline-block">
@@ -1039,7 +1039,7 @@ watch(activeTab, (tab) => {
                 </div>
               </div>
 
-              <div class="bg-dark-700/50 rounded-lg p-4">
+              <div class="bg-white/[0.03] rounded-lg p-4">
                 <p class="text-sm text-gray-400 mb-2">Manueller Schlüssel:</p>
                 <code class="text-primary-400 text-sm break-all">{{ twoFactorSetup.secret }}</code>
               </div>
@@ -1068,7 +1068,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- 2FA Disable Flow -->
-            <div v-else-if="isDisabling2FA" class="space-y-4 border-t border-dark-700 pt-4">
+            <div v-else-if="isDisabling2FA" class="space-y-4 border-t border-white/[0.06] pt-4">
               <p class="text-gray-300">Gib deinen aktuellen 2FA-Code ein, um 2FA zu deaktivieren:</p>
 
               <div>
@@ -1150,7 +1150,7 @@ watch(activeTab, (tab) => {
 
               <!-- Status & Toggle -->
               <div v-else class="mb-6">
-                <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-white/[0.03] rounded-lg">
                   <div class="flex items-center gap-3">
                     <div v-if="isSubscribed" class="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
                     <div v-else class="w-3 h-3 rounded-full bg-gray-500" />
@@ -1194,7 +1194,7 @@ watch(activeTab, (tab) => {
                   <div
                     v-for="sub in pushSubscriptions"
                     :key="sub.id"
-                    class="flex items-center justify-between p-3 bg-dark-700/50 rounded-lg text-sm"
+                    class="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg text-sm"
                   >
                     <div>
                       <p class="text-white">{{ sub.device_name || 'Unbekanntes Gerät' }}</p>
@@ -1220,7 +1220,7 @@ watch(activeTab, (tab) => {
                 <button
                   @click="pushPreferences.push_enabled = !pushPreferences.push_enabled"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="pushPreferences.push_enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                  :class="pushPreferences.push_enabled ? 'bg-primary-600' : 'bg-white/[0.08]'"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -1237,7 +1237,7 @@ watch(activeTab, (tab) => {
                 <button
                   @click="pushPreferences.email_enabled = !pushPreferences.email_enabled"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="pushPreferences.email_enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                  :class="pushPreferences.email_enabled ? 'bg-primary-600' : 'bg-white/[0.08]'"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -1248,7 +1248,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- Quiet Hours -->
-            <div class="border-t border-dark-700 pt-4 mb-6">
+            <div class="border-t border-white/[0.06] pt-4 mb-6">
               <h3 class="text-sm font-medium text-gray-400 mb-3">Ruhezeiten</h3>
               <p class="text-xs text-gray-500 mb-3">Keine Benachrichtigungen in diesem Zeitraum</p>
               <div class="flex items-center gap-4">
@@ -1272,78 +1272,78 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- Category Settings -->
-            <div class="border-t border-dark-700 pt-4">
+            <div class="border-t border-white/[0.06] pt-4">
               <h3 class="text-sm font-medium text-gray-400 mb-3">Benachrichtigungen nach Kategorie</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_tasks"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Aufgaben & Listen</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_calendar"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Kalender-Erinnerungen</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_tickets"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Tickets</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_uptime"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Uptime-Warnungen</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_chat"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Chat-Nachrichten</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_inbox"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Inbox</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_recurring"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Wiederkehrende Aufgaben</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_backups"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">Backup-Status</span>
                 </label>
-                <label class="flex items-center gap-3 p-3 bg-dark-700/50 rounded-lg cursor-pointer hover:bg-dark-700">
+                <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
                     v-model="pushPreferences.notify_system"
                     type="checkbox"
-                    class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-white">System-Benachrichtigungen</span>
                 </label>
@@ -1360,7 +1360,7 @@ watch(activeTab, (tab) => {
             <h2 class="text-lg font-semibold text-white mb-6">Externe Benachrichtigungskanäle</h2>
 
             <!-- ntfy.sh -->
-            <div class="mb-6 pb-6 border-b border-dark-700">
+            <div class="mb-6 pb-6 border-b border-white/[0.06]">
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-white">ntfy.sh</h3>
@@ -1369,7 +1369,7 @@ watch(activeTab, (tab) => {
                 <button
                   @click="ntfyConfig.enabled = !ntfyConfig.enabled"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="ntfyConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                  :class="ntfyConfig.enabled ? 'bg-primary-600' : 'bg-white/[0.08]'"
                 >
                   <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="ntfyConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
@@ -1400,7 +1400,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- Gotify -->
-            <div class="mb-6 pb-6 border-b border-dark-700">
+            <div class="mb-6 pb-6 border-b border-white/[0.06]">
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-white">Gotify</h3>
@@ -1409,7 +1409,7 @@ watch(activeTab, (tab) => {
                 <button
                   @click="gotifyConfig.enabled = !gotifyConfig.enabled"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="gotifyConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                  :class="gotifyConfig.enabled ? 'bg-primary-600' : 'bg-white/[0.08]'"
                 >
                   <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="gotifyConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
@@ -1443,7 +1443,7 @@ watch(activeTab, (tab) => {
                 <button
                   @click="healthchecksConfig.enabled = !healthchecksConfig.enabled"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="healthchecksConfig.enabled ? 'bg-primary-600' : 'bg-dark-600'"
+                  :class="healthchecksConfig.enabled ? 'bg-primary-600' : 'bg-white/[0.08]'"
                 >
                   <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="healthchecksConfig.enabled ? 'translate-x-6' : 'translate-x-1'" />
@@ -1487,7 +1487,7 @@ watch(activeTab, (tab) => {
                 <XCircleIcon class="w-6 h-6" />
               </button>
             </div>
-            <div class="bg-dark-800 rounded-lg p-4">
+            <div class="bg-white/[0.04] rounded-lg p-4">
               <div class="flex items-center justify-between gap-4">
                 <code class="text-primary-400 font-mono text-sm break-all flex-1">{{ newApiKeyResult.key }}</code>
                 <button @click="copyToClipboard(newApiKeyResult.key)" class="btn-secondary shrink-0">
@@ -1520,13 +1520,13 @@ watch(activeTab, (tab) => {
                     v-for="(label, scope) in availableScopes"
                     :key="scope"
                     class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
-                    :class="newKeyForm.scopes.includes(scope) ? 'bg-primary-600/20 border border-primary-500' : 'bg-dark-700 hover:bg-dark-600'"
+                    :class="newKeyForm.scopes.includes(scope) ? 'bg-primary-600/20 border border-primary-500' : 'bg-white/[0.04] hover:bg-white/[0.04]'"
                   >
                     <input
                       type="checkbox"
                       :checked="newKeyForm.scopes.includes(scope)"
                       @change="toggleScope(scope)"
-                      class="rounded border-gray-600 bg-dark-700 text-primary-600 focus:ring-primary-600"
+                      class="rounded border-gray-600 bg-white/[0.04] text-primary-600 focus:ring-primary-600"
                     />
                     <span class="text-sm text-gray-300">{{ label }}</span>
                   </label>
@@ -1576,7 +1576,7 @@ watch(activeTab, (tab) => {
               <div
                 v-for="key in apiKeys"
                 :key="key.id"
-                class="bg-dark-700/50 rounded-lg p-4"
+                class="bg-white/[0.03] rounded-lg p-4"
                 :class="{ 'opacity-50': !key.is_active }"
               >
                 <div class="flex items-start justify-between gap-4">
@@ -1634,7 +1634,7 @@ watch(activeTab, (tab) => {
             <p class="text-gray-400 text-sm mb-4">
               Füge den API-Key im Header <code class="text-primary-400">X-API-Key</code> hinzu:
             </p>
-            <div class="bg-dark-800 rounded-lg p-4">
+            <div class="bg-white/[0.04] rounded-lg p-4">
               <code class="text-sm text-gray-300">
                 curl -H "X-API-Key: ks_xxx..." /api/v1/lists
               </code>
@@ -1765,14 +1765,14 @@ watch(activeTab, (tab) => {
               </div>
 
               <!-- Context & Tools Settings -->
-              <div class="border-t border-dark-600 pt-4 mt-4">
+              <div class="border-t border-white/[0.06] pt-4 mt-4">
                 <h3 class="text-sm font-semibold text-gray-300 mb-3">Kontext & Tools</h3>
                 <div class="space-y-3">
                   <label class="flex items-center gap-3 cursor-pointer">
                     <input
                       v-model="aiForm.context_enabled"
                       type="checkbox"
-                      class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500"
+                      class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                     />
                     <div>
                       <span class="text-white">Benutzerkontext einbeziehen</span>
@@ -1783,7 +1783,7 @@ watch(activeTab, (tab) => {
                     <input
                       v-model="aiForm.tools_enabled"
                       type="checkbox"
-                      class="w-4 h-4 rounded border-dark-500 bg-dark-700 text-primary-500 focus:ring-primary-500"
+                      class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                     />
                     <div>
                       <span class="text-white">System-Tools aktivieren</span>
@@ -1808,15 +1808,15 @@ watch(activeTab, (tab) => {
           <div v-if="aiStore.settings && aiStore.settings.total_requests > 0" class="card p-6">
             <h3 class="text-lg font-semibold text-white mb-4">Nutzungsstatistiken</h3>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div class="bg-dark-700 rounded-lg p-4">
+              <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-2xl font-bold text-white">{{ aiStore.settings.total_requests || 0 }}</p>
                 <p class="text-sm text-gray-400">Anfragen</p>
               </div>
-              <div class="bg-dark-700 rounded-lg p-4">
+              <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-2xl font-bold text-white">{{ (aiStore.settings.total_tokens_used || 0).toLocaleString() }}</p>
                 <p class="text-sm text-gray-400">Tokens verwendet</p>
               </div>
-              <div class="bg-dark-700 rounded-lg p-4">
+              <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-sm font-bold text-white">{{ aiStore.settings.last_used_at ? formatDate(aiStore.settings.last_used_at) : '-' }}</p>
                 <p class="text-sm text-gray-400">Letzte Nutzung</p>
               </div>
@@ -1863,7 +1863,7 @@ watch(activeTab, (tab) => {
                 <div
                   v-for="type in allExportTypes"
                   :key="type.id"
-                  class="flex items-center justify-between p-2 bg-dark-700/50 rounded-lg text-sm"
+                  class="flex items-center justify-between p-2 bg-white/[0.03] rounded-lg text-sm"
                 >
                   <span class="text-gray-300">{{ type.icon }} {{ type.name }}</span>
                   <span class="text-primary-400 font-medium">{{ exportImportStore.stats[type.id] || 0 }}</span>
@@ -1890,13 +1890,13 @@ watch(activeTab, (tab) => {
                   v-for="type in allExportTypes"
                   :key="type.id"
                   class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
-                  :class="exportTypes.includes(type.id) ? 'bg-primary-600/20 border border-primary-500' : 'bg-dark-700 hover:bg-dark-600'"
+                  :class="exportTypes.includes(type.id) ? 'bg-primary-600/20 border border-primary-500' : 'bg-white/[0.04] hover:bg-white/[0.04]'"
                 >
                   <input
                     type="checkbox"
                     :checked="exportTypes.includes(type.id)"
                     @change="toggleExportType(type.id)"
-                    class="rounded border-gray-600 bg-dark-700 text-primary-600 focus:ring-primary-600"
+                    class="rounded border-gray-600 bg-white/[0.04] text-primary-600 focus:ring-primary-600"
                   />
                   <span class="text-sm text-gray-300">{{ type.icon }} {{ type.name }}</span>
                 </label>
@@ -1977,7 +1977,7 @@ watch(activeTab, (tab) => {
                     v-for="type in exportImportStore.importValidation.types"
                     :key="type"
                     class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors"
-                    :class="selectedImportTypes.includes(type) ? 'bg-green-600/20 border border-green-500' : 'bg-dark-700 hover:bg-dark-600'"
+                    :class="selectedImportTypes.includes(type) ? 'bg-green-600/20 border border-green-500' : 'bg-white/[0.04] hover:bg-white/[0.04]'"
                   >
                     <input
                       type="checkbox"
@@ -1987,7 +1987,7 @@ watch(activeTab, (tab) => {
                         if (idx >= 0) selectedImportTypes.splice(idx, 1)
                         else selectedImportTypes.push(type)
                       }"
-                      class="rounded border-gray-600 bg-dark-700 text-green-600 focus:ring-green-600"
+                      class="rounded border-gray-600 bg-white/[0.04] text-green-600 focus:ring-green-600"
                     />
                     <span class="text-sm text-gray-300">
                       {{ allExportTypes.find(t => t.id === type)?.name || type }}
@@ -2084,7 +2084,7 @@ watch(activeTab, (tab) => {
                     </span>
                   </div>
                 </div>
-                <div v-if="Object.keys(exportImportStore.importResult.errors).length > 0" class="mt-4 pt-4 border-t border-dark-700">
+                <div v-if="Object.keys(exportImportStore.importResult.errors).length > 0" class="mt-4 pt-4 border-t border-white/[0.06]">
                   <h4 class="text-red-400 font-medium mb-2">Fehler:</h4>
                   <ul class="text-sm text-gray-400 list-disc list-inside">
                     <li v-for="(errors, type) in exportImportStore.importResult.errors" :key="type">
@@ -2112,7 +2112,7 @@ watch(activeTab, (tab) => {
               <button
                 @click="invoiceSettings.kleinunternehmer_mode = !invoiceSettings.kleinunternehmer_mode"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="invoiceSettings.kleinunternehmer_mode ? 'bg-primary-600' : 'bg-dark-600'"
+                :class="invoiceSettings.kleinunternehmer_mode ? 'bg-primary-600' : 'bg-white/[0.08]'"
               >
                 <span
                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -2224,7 +2224,7 @@ watch(activeTab, (tab) => {
 
             <!-- Upload area -->
             <div>
-              <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-dark-500 rounded-lg cursor-pointer hover:border-primary-500 hover:bg-dark-700 transition-colors">
+              <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-white/[0.08] rounded-lg cursor-pointer hover:border-primary-500 hover:bg-white/[0.04] transition-colors">
                 <div class="flex flex-col items-center gap-2">
                   <PhotoIcon class="w-8 h-8 text-gray-400" />
                   <p class="text-sm text-gray-400">
@@ -2280,7 +2280,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- Add/Edit Form -->
-            <div v-if="showCatalogForm" class="bg-dark-700 rounded-lg p-4 space-y-3 border border-dark-500">
+            <div v-if="showCatalogForm" class="bg-white/[0.04] rounded-lg p-4 space-y-3 border border-white/[0.08]">
               <h3 class="text-sm font-medium text-white">{{ editingCatalogItem ? 'Leistung bearbeiten' : 'Neue Leistung' }}</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -2317,7 +2317,7 @@ watch(activeTab, (tab) => {
             <div v-else-if="serviceCatalog.length === 0 && !showCatalogForm" class="text-center py-8 text-gray-500 text-sm">
               Noch keine Leistungen angelegt. Klicke auf „Leistung hinzufügen".
             </div>
-            <div v-else class="divide-y divide-dark-600">
+            <div v-else class="divide-y divide-white/[0.06]">
               <div
                 v-for="item in serviceCatalog"
                 :key="item.id"
@@ -2357,7 +2357,7 @@ watch(activeTab, (tab) => {
               <button
                 @click="uiStore.toggleDarkMode"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="uiStore.isDarkMode ? 'bg-primary-600' : 'bg-dark-600'"
+                :class="uiStore.isDarkMode ? 'bg-primary-600' : 'bg-white/[0.08]'"
               >
                 <span
                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -2374,7 +2374,7 @@ watch(activeTab, (tab) => {
               <button
                 @click="uiStore.toggleSidebarCollapse"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="uiStore.sidebarCollapsed ? 'bg-primary-600' : 'bg-dark-600'"
+                :class="uiStore.sidebarCollapsed ? 'bg-primary-600' : 'bg-white/[0.08]'"
               >
                 <span
                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"

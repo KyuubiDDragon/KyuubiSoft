@@ -176,14 +176,14 @@ function formatDate(date) {
 </script>
 
 <template>
-  <div class="database-calendar-view bg-dark-800 rounded-lg overflow-hidden">
+  <div class="database-calendar-view bg-white/[0.04] rounded-xl overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-dark-700">
+    <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
       <div class="flex items-center gap-2">
         <h3 class="text-lg font-medium text-white">{{ monthName }}</h3>
         <button
           @click="goToToday"
-          class="px-2 py-1 text-xs text-gray-400 hover:text-white bg-dark-700 hover:bg-dark-600 rounded transition-colors"
+          class="px-2 py-1 text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.04] rounded transition-colors"
         >
           Heute
         </button>
@@ -195,7 +195,7 @@ function formatDate(date) {
           v-if="dateProperties.length > 1"
           :value="activeDateProperty?.id"
           @change="emit('change-date-property', $event.target.value)"
-          class="bg-dark-700 border border-dark-600 rounded px-2 py-1 text-sm text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="select"
         >
           <option v-for="prop in dateProperties" :key="prop.id" :value="prop.id">
             {{ prop.name }}
@@ -206,13 +206,13 @@ function formatDate(date) {
         <div class="flex items-center gap-1">
           <button
             @click="previousMonth"
-            class="p-1 text-gray-400 hover:text-white hover:bg-dark-700 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
           >
             <ChevronLeftIcon class="w-5 h-5" />
           </button>
           <button
             @click="nextMonth"
-            class="p-1 text-gray-400 hover:text-white hover:bg-dark-700 rounded transition-colors"
+            class="p-1 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
           >
             <ChevronRightIcon class="w-5 h-5" />
           </button>
@@ -247,9 +247,9 @@ function formatDate(date) {
           @click="selectDate(day)"
           :class="[
             'min-h-[100px] p-1 rounded-lg border transition-colors cursor-pointer',
-            day.isCurrentMonth ? 'bg-dark-700 border-dark-600' : 'bg-dark-800/50 border-transparent',
+            day.isCurrentMonth ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white/[0.02] border-transparent',
             day.isToday ? 'ring-2 ring-primary-500' : '',
-            selectedDate?.getTime() === day.date.getTime() ? 'bg-dark-600' : 'hover:bg-dark-600/50',
+            selectedDate?.getTime() === day.date.getTime() ? 'bg-white/[0.08]' : 'hover:bg-white/[0.04]',
           ]"
         >
           <!-- Date number -->

@@ -14,10 +14,10 @@ import {
   PlusIcon,
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
-import { navigationConfig } from '@/core/config/navigation'
+import { getAllNavItems } from '@/core/config/navigation'
 
 // Navigation items sourced from shared config
-const navigationItems = navigationConfig
+const navigationItems = getAllNavItems()
 
 // Quick actions shown when no search query
 const quickActions = [
@@ -172,11 +172,11 @@ defineExpose({ open, close })
   <!-- Trigger Button -->
   <button
     @click="open"
-    class="flex items-center gap-2 px-3 py-1.5 bg-dark-700/60 hover:bg-dark-700 border border-dark-600/50 rounded-lg transition-all duration-150 text-gray-500 hover:text-gray-300 group"
+    class="flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-300 group"
   >
     <MagnifyingGlassIcon class="w-4 h-4" />
-    <span class="hidden sm:inline text-sm">Suchen…</span>
-    <kbd class="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] bg-dark-600/80 border border-dark-500/50 rounded-md font-mono">
+    <span class="hidden sm:inline text-sm">Suchen...</span>
+    <kbd class="kbd hidden md:inline-flex">
       <span>⌘</span><span>K</span>
     </kbd>
   </button>
@@ -193,13 +193,13 @@ defineExpose({ open, close })
     >
       <div
         v-if="isOpen"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-[12vh] px-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-start justify-center pt-[12vh] px-4"
         @click.self="close"
       >
-        <div class="bg-dark-800 rounded-2xl w-full max-w-2xl border border-dark-700/80 shadow-2xl overflow-hidden animate-scale-in">
+        <div class="bg-dark-900/95 backdrop-blur-2xl rounded-2xl w-full max-w-2xl border border-white/[0.08] shadow-float overflow-hidden animate-scale-in">
 
           <!-- Search Input -->
-          <div class="flex items-center gap-3 px-4 py-3.5 border-b border-dark-700/60">
+          <div class="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
             <MagnifyingGlassIcon class="w-5 h-5 text-gray-500 shrink-0" />
             <input
               v-model="searchQuery"
@@ -376,19 +376,16 @@ defineExpose({ open, close })
           </div>
 
           <!-- Footer hints -->
-          <div class="px-4 py-2.5 border-t border-dark-700/60 flex items-center justify-between text-[11px] text-gray-600">
+          <div class="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-dark-700/80 border border-dark-600/60 rounded font-mono">↑↓</kbd>
-                Navigieren
+              <span class="flex items-center gap-1.5 text-2xs text-gray-500">
+                <kbd class="kbd">↑↓</kbd> Navigieren
               </span>
-              <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-dark-700/80 border border-dark-600/60 rounded font-mono">↵</kbd>
-                Öffnen
+              <span class="flex items-center gap-1.5 text-2xs text-gray-500">
+                <kbd class="kbd">↵</kbd> Öffnen
               </span>
-              <span class="flex items-center gap-1">
-                <kbd class="px-1.5 py-0.5 bg-dark-700/80 border border-dark-600/60 rounded font-mono">Esc</kbd>
-                Schließen
+              <span class="flex items-center gap-1.5 text-2xs text-gray-500">
+                <kbd class="kbd">Esc</kbd> Schließen
               </span>
             </div>
             <span v-if="searchQuery.length >= 2 && results.total > 0">{{ results.total }} Inhaltstreffer</span>

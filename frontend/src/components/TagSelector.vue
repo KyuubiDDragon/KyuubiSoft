@@ -133,7 +133,7 @@ const predefinedColors = [
   <div class="tag-selector relative">
     <!-- Selected Tags & Input -->
     <div
-      class="flex flex-wrap items-center gap-1.5 p-2 bg-dark-700 border border-dark-600 rounded-lg min-h-[42px] cursor-text"
+      class="flex flex-wrap items-center gap-1.5 p-2 bg-white/[0.04] border border-white/[0.06] rounded-xl min-h-[42px] cursor-text"
       :class="{ 'border-primary-500': isOpen }"
       @click="!readonly && (isOpen = true)"
     >
@@ -186,14 +186,14 @@ const predefinedColors = [
     >
       <div
         v-if="isOpen && !readonly"
-        class="absolute z-50 mt-1 w-full bg-dark-800 border border-dark-600 rounded-lg shadow-xl overflow-hidden"
+        class="absolute z-50 mt-1 w-full bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08] rounded-xl shadow-float overflow-hidden"
       >
         <!-- Search Input -->
-        <div class="p-2 border-b border-dark-700">
+        <div class="p-2 border-b border-white/[0.06]">
           <input
             v-model="searchQuery"
             type="text"
-            class="w-full px-3 py-1.5 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+            class="w-full px-3 py-1.5 input text-sm"
             placeholder="Tag suchen oder erstellen..."
             @keydown.enter="canCreateTag ? createAndSelectTag() : null"
           />
@@ -205,7 +205,7 @@ const predefinedColors = [
           <button
             v-if="canCreateTag"
             @click="createAndSelectTag"
-            class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-dark-700 text-primary-400"
+            class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-white/[0.04] text-primary-400"
             :disabled="isCreating"
           >
             <PlusIcon class="w-4 h-4" />
@@ -220,7 +220,7 @@ const predefinedColors = [
             v-for="tag in filteredTags"
             :key="tag.id"
             @click="selectTag(tag)"
-            class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-dark-700 text-gray-300"
+            class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-white/[0.04] text-gray-300"
           >
             <span
               class="w-3 h-3 rounded-full shrink-0"

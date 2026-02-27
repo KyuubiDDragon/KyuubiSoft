@@ -408,7 +408,7 @@ function formatDate(dateString) {
           </div>
           <button
             @click="toggleFavorite(conn)"
-            class="p-1.5 rounded hover:bg-dark-600 transition-colors"
+            class="p-1.5 rounded hover:bg-white/[0.04] transition-colors"
           >
             <StarIconSolid v-if="conn.is_favorite" class="w-5 h-5 text-yellow-400" />
             <StarIcon v-else class="w-5 h-5 text-gray-500 hover:text-yellow-400" />
@@ -435,7 +435,7 @@ function formatDate(dateString) {
           <span
             v-for="tag in conn.tags"
             :key="tag.id"
-            class="px-2 py-0.5 text-xs rounded-full bg-dark-600 text-gray-300"
+            class="px-2 py-0.5 text-xs rounded-full bg-white/[0.08] text-gray-300"
           >
             {{ tag.name }}
           </span>
@@ -464,7 +464,7 @@ function formatDate(dateString) {
           </button>
           <button
             @click="openEditModal(conn)"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <PencilIcon class="w-4 h-4" />
           </button>
@@ -482,11 +482,11 @@ function formatDate(dateString) {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700 max-h-[90vh] overflow-y-auto">
-          <div class="p-6 border-b border-dark-700">
+        <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div class="p-6 border-b border-white/[0.06]">
             <h2 class="text-xl font-bold text-white">
               {{ editingConnection ? 'Verbindung bearbeiten' : 'Neue Verbindung' }}
             </h2>
@@ -576,7 +576,7 @@ function formatDate(dateString) {
                     class="px-3 py-1 rounded-full text-sm transition-colors"
                     :class="form.tag_ids.includes(tag.id)
                       ? 'bg-primary-600 text-white'
-                      : 'bg-dark-600 text-gray-300 hover:bg-dark-500'"
+                      : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.12]'"
                   >
                     {{ tag.name }}
                   </button>
@@ -611,11 +611,11 @@ function formatDate(dateString) {
     <Teleport to="body">
       <div
         v-if="showCredentialsModal && viewingCredentials"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-lg border border-dark-700">
-          <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-lg">
+          <div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-xl font-bold text-white">{{ viewingCredentials.name }}</h2>
             <button @click="showCredentialsModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -633,7 +633,7 @@ function formatDate(dateString) {
 
             <!-- Credentials list -->
             <div class="space-y-3">
-              <div class="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+              <div class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div>
                   <span class="text-xs text-gray-400">Host</span>
                   <p class="font-mono text-white">{{ viewingCredentials.host }}</p>
@@ -647,7 +647,7 @@ function formatDate(dateString) {
                 </button>
               </div>
 
-              <div v-if="viewingCredentials.port" class="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+              <div v-if="viewingCredentials.port" class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div>
                   <span class="text-xs text-gray-400">Port</span>
                   <p class="font-mono text-white">{{ viewingCredentials.port }}</p>
@@ -661,7 +661,7 @@ function formatDate(dateString) {
                 </button>
               </div>
 
-              <div v-if="viewingCredentials.username" class="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+              <div v-if="viewingCredentials.username" class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div>
                   <span class="text-xs text-gray-400">Benutzername</span>
                   <p class="font-mono text-white">{{ viewingCredentials.username }}</p>
@@ -675,7 +675,7 @@ function formatDate(dateString) {
                 </button>
               </div>
 
-              <div v-if="viewingCredentials.password" class="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+              <div v-if="viewingCredentials.password" class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div class="flex-1 min-w-0">
                   <span class="text-xs text-gray-400">Passwort</span>
                   <p class="font-mono text-white truncate">
@@ -700,7 +700,7 @@ function formatDate(dateString) {
                 </div>
               </div>
 
-              <div v-if="viewingCredentials.private_key" class="p-3 bg-dark-700 rounded-lg">
+              <div v-if="viewingCredentials.private_key" class="p-3 bg-white/[0.04] rounded-lg">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-xs text-gray-400">Private Key</span>
                   <div class="flex gap-1">
@@ -733,11 +733,11 @@ function formatDate(dateString) {
     <Teleport to="body">
       <div
         v-if="showTagModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+
       >
-        <div class="bg-dark-800 rounded-xl w-full max-w-md border border-dark-700">
-          <div class="p-6 border-b border-dark-700 flex items-center justify-between">
+        <div class="modal w-full max-w-md">
+          <div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-xl font-bold text-white">Tags verwalten</h2>
             <button @click="showTagModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -769,7 +769,7 @@ function formatDate(dateString) {
               <div
                 v-for="tag in tags"
                 :key="tag.id"
-                class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+                class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg"
               >
                 <div class="flex items-center gap-2">
                   <div

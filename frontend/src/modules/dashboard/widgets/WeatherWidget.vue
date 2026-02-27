@@ -1,6 +1,6 @@
 <script setup>
 import { MapPinIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
-import { getWeatherIcon } from './widgetUtils.js'
+import { getWeatherIcon } from './widgetUtils'
 
 defineProps({ widget: Object, data: Object, loading: Boolean })
 defineEmits(['open-config'])
@@ -48,11 +48,11 @@ defineEmits(['open-config'])
 
       <!-- Details -->
       <div class="grid grid-cols-2 gap-2 text-sm mb-4">
-        <div class="bg-dark-700/50 rounded p-2">
+        <div class="bg-white/[0.04] rounded p-2">
           <p class="text-gray-500 text-xs">Gefühlt</p>
           <p class="text-white">{{ data.current?.feels_like }}°</p>
         </div>
-        <div class="bg-dark-700/50 rounded p-2">
+        <div class="bg-white/[0.04] rounded p-2">
           <p class="text-gray-500 text-xs">Wind</p>
           <p class="text-white">{{ data.current?.wind_speed }} km/h</p>
         </div>
@@ -63,7 +63,7 @@ defineEmits(['open-config'])
         <div
           v-for="day in (data.forecast || []).slice(1, 5)"
           :key="day.date"
-          class="flex-shrink-0 text-center p-2 bg-dark-700/50 rounded"
+          class="flex-shrink-0 text-center p-2 bg-white/[0.04] rounded"
         >
           <p class="text-xs text-gray-500">{{ day.day?.substring(0, 2) }}</p>
           <p class="text-sm font-medium text-white">{{ day.temp_max }}°</p>

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
-import { navigationConfig } from '@/core/config/navigation'
+import { getAllNavItems, findGroupByHref } from '@/core/config/navigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,12 +10,11 @@ const router = useRouter()
 const breadcrumbs = computed(() => {
   const currentPath = route.path
 
-  // Dashboard has no breadcrumbs
   if (currentPath === '/') return []
 
   // Find the best matching nav item (longest prefix match)
   let best = null
-  for (const item of navigationConfig) {
+  for (const item of getAllNavItems()) {
     if (item.href === '/') continue
     if (
       currentPath === item.href ||
@@ -31,9 +30,10 @@ const breadcrumbs = computed(() => {
 
   const crumbs = []
 
-  // Add group if present
-  if (best.group) {
-    crumbs.push({ name: best.group, href: null, isGroup: true })
+  // Add group name if item belongs to a group
+  const group = findGroupByHref(best.href)
+  if (group && group.children) {
+    crumbs.push({ name: group.name, href: null, isGroup: true })
   }
 
   // Add the page
@@ -41,10 +41,8 @@ const breadcrumbs = computed(() => {
 
   // Add sub-detail if on a deeper route (e.g. /tickets/123)
   if (currentPath !== best.href) {
-    // Check if the extra segment looks like an ID (numeric)
     const extra = currentPath.slice(best.href.length).replace(/^\//, '')
     if (extra && !extra.includes('/')) {
-      // Only show "Details" for ID-looking segments, skip for named sub-routes
       if (/^\d+$/.test(extra)) {
         crumbs.push({ name: '#' + extra, href: null, isGroup: false })
       }

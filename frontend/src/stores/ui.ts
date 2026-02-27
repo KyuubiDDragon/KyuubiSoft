@@ -14,6 +14,7 @@ export const useUiStore = defineStore('ui', () => {
   const isDarkMode = ref<boolean>(true)
   const sidebarOpen = ref<boolean>(true)
   const sidebarCollapsed = ref<boolean>(false)
+  const themePreset = ref<string>('slate')
   const notification = ref<Notification | null>(null)
   const isLoading = ref<boolean>(false)
   const isAuthenticated = ref<boolean>(false)
@@ -34,6 +35,11 @@ export const useUiStore = defineStore('ui', () => {
   const storedSidebarCollapsed = localStorage.getItem('sidebarCollapsed')
   if (storedSidebarCollapsed !== null) {
     sidebarCollapsed.value = storedSidebarCollapsed === 'true'
+  }
+
+  const storedThemePreset = localStorage.getItem('themePreset')
+  if (storedThemePreset) {
+    themePreset.value = storedThemePreset
   }
 
   // Initialize widget visibility from localStorage
@@ -57,6 +63,9 @@ export const useUiStore = defineStore('ui', () => {
     document.documentElement.classList.remove('dark')
   }
 
+  // Apply theme preset immediately
+  document.documentElement.setAttribute('data-theme', themePreset.value)
+
   // Load settings from backend
   async function loadUserSettings(): Promise<void> {
     if (!isAuthenticated.value) return
@@ -72,6 +81,10 @@ export const useUiStore = defineStore('ui', () => {
         }
         if (settings.sidebar_collapsed !== undefined) {
           sidebarCollapsed.value = settings.sidebar_collapsed
+        }
+        if (settings.theme_preset) {
+          themePreset.value = settings.theme_preset
+          document.documentElement.setAttribute('data-theme', settings.theme_preset)
         }
       }
       settingsLoaded.value = true
@@ -137,6 +150,15 @@ export const useUiStore = defineStore('ui', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
+  function setThemePreset(preset: string): void {
+    themePreset.value = preset
+    localStorage.setItem('themePreset', preset)
+    document.documentElement.setAttribute('data-theme', preset)
+    if (settingsLoaded.value) {
+      saveUserSetting('theme_preset', preset)
+    }
+  }
+
   function showNotification(message: string, type: NotificationType = 'info', duration = 3000): void {
     notification.value = { message, type }
 
@@ -189,6 +211,7 @@ export const useUiStore = defineStore('ui', () => {
     isDarkMode,
     sidebarOpen,
     sidebarCollapsed,
+    themePreset,
     notification,
     isLoading,
     showQuickNotes,
@@ -200,6 +223,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleDarkMode,
     toggleSidebar,
     toggleSidebarCollapse,
+    setThemePreset,
     toggleQuickNotes,
     toggleQuickCapture,
     toggleAIAssistant,

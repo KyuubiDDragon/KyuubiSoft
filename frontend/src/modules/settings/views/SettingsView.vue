@@ -2345,42 +2345,141 @@ watch(activeTab, (tab) => {
         </div>
 
         <!-- Appearance -->
-        <div v-if="activeTab === 'appearance'" class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-6">Darstellung</h2>
+        <div v-if="activeTab === 'appearance'" class="space-y-6">
+          <!-- Theme Presets -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-2">Farbschema</h2>
+            <p class="text-sm text-gray-400 mb-5">Wähle ein Farbschema für die Benutzeroberfläche</p>
 
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-white font-medium">Dark Mode</p>
-                <p class="text-gray-400 text-sm">Dunkles Farbschema verwenden</p>
-              </div>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Slate preset -->
               <button
-                @click="uiStore.toggleDarkMode"
-                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="uiStore.isDarkMode ? 'bg-primary-600' : 'bg-white/[0.08]'"
+                @click="uiStore.setThemePreset('slate')"
+                class="relative p-4 rounded-xl border-2 transition-all duration-200 text-left"
+                :class="uiStore.themePreset === 'slate'
+                  ? 'border-primary-500 bg-primary-500/5'
+                  : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'"
               >
-                <span
-                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                  :class="uiStore.isDarkMode ? 'translate-x-6' : 'translate-x-1'"
-                />
+                <div v-if="uiStore.themePreset === 'slate'" class="absolute top-2 right-2">
+                  <CheckCircleIcon class="w-5 h-5 text-primary-400" />
+                </div>
+                <p class="text-sm font-semibold text-white mb-1">Standard</p>
+                <p class="text-2xs text-gray-500 mb-3">Neutral & modern</p>
+                <div class="flex gap-1.5">
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(26, 26, 32)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(32, 32, 40)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(46, 46, 56)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(60, 60, 72)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(107, 107, 128)" />
+                </div>
+              </button>
+
+              <!-- Midnight preset -->
+              <button
+                @click="uiStore.setThemePreset('midnight')"
+                class="relative p-4 rounded-xl border-2 transition-all duration-200 text-left"
+                :class="uiStore.themePreset === 'midnight'
+                  ? 'border-primary-500 bg-primary-500/5'
+                  : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'"
+              >
+                <div v-if="uiStore.themePreset === 'midnight'" class="absolute top-2 right-2">
+                  <CheckCircleIcon class="w-5 h-5 text-primary-400" />
+                </div>
+                <p class="text-sm font-semibold text-white mb-1">Dunkel</p>
+                <p class="text-2xs text-gray-500 mb-3">Ideal für OLED & Nachtarbeit</p>
+                <div class="flex gap-1.5">
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(10, 10, 15)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(17, 17, 24)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(28, 28, 38)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(42, 42, 54)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(107, 107, 128)" />
+                </div>
+              </button>
+
+              <!-- Stone preset -->
+              <button
+                @click="uiStore.setThemePreset('stone')"
+                class="relative p-4 rounded-xl border-2 transition-all duration-200 text-left"
+                :class="uiStore.themePreset === 'stone'
+                  ? 'border-primary-500 bg-primary-500/5'
+                  : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'"
+              >
+                <div v-if="uiStore.themePreset === 'stone'" class="absolute top-2 right-2">
+                  <CheckCircleIcon class="w-5 h-5 text-primary-400" />
+                </div>
+                <p class="text-sm font-semibold text-white mb-1">Warm</p>
+                <p class="text-2xs text-gray-500 mb-3">Warme Grautöne, angenehm</p>
+                <div class="flex gap-1.5">
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(28, 27, 26)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(36, 34, 32)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(52, 50, 46)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(66, 64, 58)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(107, 105, 100)" />
+                </div>
+              </button>
+
+              <!-- Nord preset -->
+              <button
+                @click="uiStore.setThemePreset('nord')"
+                class="relative p-4 rounded-xl border-2 transition-all duration-200 text-left"
+                :class="uiStore.themePreset === 'nord'
+                  ? 'border-primary-500 bg-primary-500/5'
+                  : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'"
+              >
+                <div v-if="uiStore.themePreset === 'nord'" class="absolute top-2 right-2">
+                  <CheckCircleIcon class="w-5 h-5 text-primary-400" />
+                </div>
+                <p class="text-sm font-semibold text-white mb-1">Nordisch</p>
+                <p class="text-2xs text-gray-500 mb-3">Kühle Blautöne</p>
+                <div class="flex gap-1.5">
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(22, 27, 36)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(30, 35, 46)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(46, 52, 66)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(59, 66, 82)" />
+                  <span class="w-5 h-5 rounded-md" style="background: rgb(107, 117, 138)" />
+                </div>
               </button>
             </div>
+          </div>
 
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-white font-medium">Kompakte Sidebar</p>
-                <p class="text-gray-400 text-sm">Sidebar standardmäßig einklappen</p>
+          <!-- Other appearance settings -->
+          <div class="card p-6">
+            <h2 class="text-lg font-semibold text-white mb-6">Allgemein</h2>
+
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-white font-medium">Dark Mode</p>
+                  <p class="text-gray-400 text-sm">Dunkles Farbschema verwenden</p>
+                </div>
+                <button
+                  @click="uiStore.toggleDarkMode"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="uiStore.isDarkMode ? 'bg-primary-600' : 'bg-white/[0.08]'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="uiStore.isDarkMode ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
               </div>
-              <button
-                @click="uiStore.toggleSidebarCollapse"
-                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="uiStore.sidebarCollapsed ? 'bg-primary-600' : 'bg-white/[0.08]'"
-              >
-                <span
-                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                  :class="uiStore.sidebarCollapsed ? 'translate-x-6' : 'translate-x-1'"
-                />
-              </button>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-white font-medium">Kompakte Sidebar</p>
+                  <p class="text-gray-400 text-sm">Sidebar standardmäßig einklappen</p>
+                </div>
+                <button
+                  @click="uiStore.toggleSidebarCollapse"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="uiStore.sidebarCollapsed ? 'bg-primary-600' : 'bg-white/[0.08]'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="uiStore.sidebarCollapsed ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>

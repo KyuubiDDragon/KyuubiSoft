@@ -71,6 +71,9 @@ const MockupEditorView = () => import('@/modules/mockup-editor/views/MockupEdito
 const DatabaseBrowserView = () => import('@/modules/database-browser/views/DatabaseBrowserView.vue')
 const LogsView = () => import('@/modules/logs/views/LogsView.vue')
 const ScriptsView = () => import('@/modules/scripts/views/ScriptsView.vue')
+const EmailView = () => import('@/modules/email/views/EmailView.vue')
+const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
+const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
 
 const routes = [
   // Auth routes
@@ -323,6 +326,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/email',
+    name: 'email',
+    component: EmailView,
+    meta: { requiresAuth: true, title: 'E-Mail' },
+  },
+  {
     path: '/wiki',
     name: 'wiki',
     component: WikiView,
@@ -381,6 +390,18 @@ const routes = [
     name: 'scripts',
     component: ScriptsView,
     meta: { requiresAuth: true, fullBleed: true },
+  },
+  {
+    path: '/contacts',
+    name: 'contacts',
+    component: ContactsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/contacts/:id',
+    name: 'contact-detail',
+    component: ContactDetailView,
+    meta: { requiresAuth: true },
   },
 
   // Admin routes (role-protected)

@@ -41,6 +41,7 @@ import {
   InboxArrowDownIcon,
   CircleStackIcon,
   QueueListIcon,
+  EnvelopeIcon,
 } from '@heroicons/vue/24/outline'
 
 /**
@@ -115,6 +116,7 @@ export const iconMap: Record<string, Component> = {
   InboxArrowDownIcon,
   CircleStackIcon,
   QueueListIcon,
+  EnvelopeIcon,
 }
 
 /**
@@ -267,7 +269,9 @@ export const navigationGroups: NavGroup[] = [
     name: 'Kommunikation',
     icon: ChatBubbleLeftRightIcon,
     children: [
+      { id: 'contacts', name: 'Kontakte', href: '/contacts', icon: UsersIcon },
       { id: 'inbox', name: 'Inbox', href: '/inbox', icon: InboxArrowDownIcon },
+      { id: 'email', name: 'E-Mail', href: '/email', icon: EnvelopeIcon },
       { id: 'chat', name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
       { id: 'discord', name: 'Discord', href: '/discord', icon: ChatBubbleLeftRightIcon, feature: 'discord', permission: 'discord.view' },
     ],

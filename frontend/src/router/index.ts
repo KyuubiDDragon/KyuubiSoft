@@ -90,11 +90,14 @@ const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
 const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
 const AuditView = () => import('@/modules/audit/views/AuditView.vue')
 const CronView = () => import('@/modules/cron/views/CronView.vue')
+const DnsView = () => import('@/modules/dns/views/DnsView.vue')
 const NotificationRulesView = () => import('@/modules/notification-rules/views/NotificationRulesView.vue')
 const StatusPageAdmin = () => import('@/modules/status-page/views/StatusPageAdmin.vue')
 const PublicStatusPage = () => import('@/modules/status-page/views/PublicStatusPage.vue')
 const KnowledgeBaseAdmin = () => import('@/modules/knowledge-base/views/KnowledgeBaseAdmin.vue')
 const PublicKnowledgeBase = () => import('@/modules/knowledge-base/views/PublicKnowledgeBase.vue')
+const EnvironmentsView = () => import('@/modules/environments/views/EnvironmentsView.vue')
+const DeploymentsView = () => import('@/modules/deployments/views/DeploymentsView.vue')
 
 const routes: RouteRecordRaw[] = [
   // Auth routes
@@ -463,6 +466,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/dns',
+    name: 'dns-manager',
+    component: DnsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/deployments',
+    name: 'deployments',
+    component: DeploymentsView,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/notification-rules',
     name: 'notification-rules',
     component: NotificationRulesView,
@@ -495,6 +510,14 @@ const routes: RouteRecordRaw[] = [
     name: 'public-kb',
     component: PublicKnowledgeBase,
     meta: { layout: 'none', guest: true },
+  },
+
+  // Environments
+  {
+    path: '/environments',
+    name: 'environments',
+    component: EnvironmentsView,
+    meta: { requiresAuth: true },
   },
 
   // Ticket routes

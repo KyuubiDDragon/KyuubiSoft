@@ -43,6 +43,8 @@ import {
   QueueListIcon,
   EnvelopeIcon,
   BellAlertIcon,
+  RocketLaunchIcon,
+  GlobeAltIcon,
 } from '@heroicons/vue/24/outline'
 
 /**
@@ -119,6 +121,8 @@ export const iconMap: Record<string, Component> = {
   QueueListIcon,
   EnvelopeIcon,
   BellAlertIcon,
+  RocketLaunchIcon,
+  GlobeAltIcon,
 }
 
 /**
@@ -223,6 +227,9 @@ export const navigationGroups: NavGroup[] = [
       { id: 'toolbox', name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
       { id: 'workflows', name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
       { id: 'cron', name: 'Cron Jobs', href: '/cron', icon: ClockIcon, feature: 'server', permission: 'server.view' },
+      { id: 'dns', name: 'DNS Manager', href: '/dns', icon: GlobeAltIcon, permission: 'server.view' },
+      { id: 'environments', name: 'Umgebungsvariablen', href: '/environments', icon: KeyIcon, permission: 'server.view' },
+      { id: 'deployments', name: 'Deployments', href: '/deployments', icon: RocketLaunchIcon, permission: 'server.view' },
     ],
   },
 

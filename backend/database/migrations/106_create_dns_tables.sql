@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS dns_domains (
+    id CHAR(36) PRIMARY KEY,
+    user_id CHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    provider VARCHAR(50) DEFAULT 'manual',
+    provider_config JSON DEFAULT NULL,
+    notes TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_dns_domains_user (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS dns_records (
+    id CHAR(36) PRIMARY KEY,
+    domain_id CHAR(36) NOT NULL,
+    type VARCHAR(10) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '@',
+    value TEXT NOT NULL,
+    ttl INT DEFAULT 3600,
+    priority INT DEFAULT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (domain_id) REFERENCES dns_domains(id) ON DELETE CASCADE,
+    INDEX idx_dns_records_domain (domain_id)
+);

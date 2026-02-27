@@ -84,7 +84,10 @@ use App\Modules\Audit\Controllers\AuditController;
 use App\Modules\NotificationRules\Controllers\NotificationRuleController;
 use App\Modules\StatusPage\Controllers\StatusPageController;
 use App\Modules\Cron\Controllers\CronController;
+use App\Modules\Dns\Controllers\DnsController;
+use App\Modules\Deployments\Controllers\DeploymentController;
 use App\Modules\KnowledgeBase\Controllers\KnowledgeBaseController;
+use App\Modules\Environments\Controllers\EnvironmentController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1414,6 +1417,33 @@ class Router
                 $protected->post('/cron/{id}/toggle', [CronController::class, 'toggle']);
                 $protected->get('/cron/{id}/history', [CronController::class, 'history']);
 
+                // DNS Management
+                $protected->get('/dns/domains', [DnsController::class, 'listDomains']);
+                $protected->post('/dns/domains', [DnsController::class, 'createDomain']);
+                $protected->get('/dns/domains/{id}', [DnsController::class, 'showDomain']);
+                $protected->put('/dns/domains/{id}', [DnsController::class, 'updateDomain']);
+                $protected->delete('/dns/domains/{id}', [DnsController::class, 'deleteDomain']);
+                $protected->get('/dns/domains/{id}/records', [DnsController::class, 'listRecords']);
+                $protected->post('/dns/domains/{id}/records', [DnsController::class, 'createRecord']);
+                $protected->put('/dns/records/{id}', [DnsController::class, 'updateRecord']);
+                $protected->delete('/dns/records/{id}', [DnsController::class, 'deleteRecord']);
+                $protected->post('/dns/records/{id}/propagation', [DnsController::class, 'checkPropagation']);
+                $protected->get('/dns/domains/{id}/export', [DnsController::class, 'exportZone']);
+                $protected->post('/dns/domains/{id}/import', [DnsController::class, 'importZone']);
+
+                // Deployments
+                $protected->get('/deployments/stats', [DeploymentController::class, 'getStats']);
+                $protected->get('/deployments/pipelines', [DeploymentController::class, 'listPipelines']);
+                $protected->post('/deployments/pipelines', [DeploymentController::class, 'createPipeline']);
+                $protected->get('/deployments/pipelines/{id}', [DeploymentController::class, 'showPipeline']);
+                $protected->put('/deployments/pipelines/{id}', [DeploymentController::class, 'updatePipeline']);
+                $protected->delete('/deployments/pipelines/{id}', [DeploymentController::class, 'deletePipeline']);
+                $protected->post('/deployments/pipelines/{id}/deploy', [DeploymentController::class, 'deploy']);
+                $protected->get('/deployments/pipelines/{id}/deployments', [DeploymentController::class, 'getDeployments']);
+                $protected->get('/deployments/{id}', [DeploymentController::class, 'getDeployment']);
+                $protected->post('/deployments/{id}/cancel', [DeploymentController::class, 'cancelDeployment']);
+                $protected->post('/deployments/{id}/rollback', [DeploymentController::class, 'rollback']);
+
                 // Knowledge Base (admin)
                 $protected->get('/knowledge-base/categories', [KnowledgeBaseController::class, 'listCategories']);
                 $protected->post('/knowledge-base/categories', [KnowledgeBaseController::class, 'createCategory']);
@@ -1424,6 +1454,20 @@ class Router
                 $protected->get('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'showArticle']);
                 $protected->put('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'updateArticle']);
                 $protected->delete('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'deleteArticle']);
+
+                // Environments (secrets/config vault)
+                $protected->get('/environments', [EnvironmentController::class, 'index']);
+                $protected->post('/environments', [EnvironmentController::class, 'create']);
+                $protected->get('/environments/{id}', [EnvironmentController::class, 'show']);
+                $protected->put('/environments/{id}', [EnvironmentController::class, 'update']);
+                $protected->delete('/environments/{id}', [EnvironmentController::class, 'delete']);
+                $protected->get('/environments/{id}/variables', [EnvironmentController::class, 'getVariables']);
+                $protected->put('/environments/{id}/variables', [EnvironmentController::class, 'setVariables']);
+                $protected->delete('/environments/{id}/variables/{varId}', [EnvironmentController::class, 'deleteVariable']);
+                $protected->get('/environments/{id}/history', [EnvironmentController::class, 'getHistory']);
+                $protected->post('/environments/{id}/duplicate', [EnvironmentController::class, 'duplicate']);
+                $protected->get('/environments/{id}/export', [EnvironmentController::class, 'exportEnv']);
+                $protected->post('/environments/{id}/import', [EnvironmentController::class, 'importEnv']);
 
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 

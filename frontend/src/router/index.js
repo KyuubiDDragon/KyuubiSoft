@@ -368,19 +368,19 @@ const routes = [
     path: '/database-browser',
     name: 'database-browser',
     component: DatabaseBrowserView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, fullBleed: true },
   },
   {
     path: '/logs',
     name: 'logs',
     component: LogsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, fullBleed: true },
   },
   {
     path: '/scripts',
     name: 'scripts',
     component: ScriptsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, fullBleed: true },
   },
 
   // Admin routes (role-protected)

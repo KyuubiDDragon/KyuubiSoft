@@ -91,7 +91,7 @@ function goToSettings() {
     <div v-if="quickAccessStore.items.length > 0 && !isMobile" class="flex items-center gap-0.5 shrink-0">
       <button
         v-for="item in quickAccessStore.visibleItems"
-        :key="item.id"
+        :key="item.nav_id"
         @click="navigateToQuickAccess(item)"
         class="btn-icon-sm"
         :title="item.nav_name"
@@ -116,7 +116,7 @@ function goToSettings() {
           >
             <button
               v-for="item in quickAccessStore.overflowItems"
-              :key="item.id"
+              :key="item.nav_id"
               @click="navigateToQuickAccess(item)"
               class="dropdown-item"
             >

@@ -127,7 +127,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }: UseCollabor
       isCollaborating.value = true
 
       // Register update handler
-      collaborationStore.onMessage('update', handleRemoteUpdate)
+      collaborationStore.onMessage('update', handleRemoteUpdate as (data: Record<string, unknown>) => void)
 
       // Register sync handler
       collaborationStore.onMessage('sync_response', handleSyncResponse)

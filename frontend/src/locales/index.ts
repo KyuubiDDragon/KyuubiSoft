@@ -135,7 +135,7 @@ const i18n = createI18n(i18nOptions)
 // Helper to change locale
 export function setLocale(locale: string): void {
   if (availableLocales.some((l: LocaleOption) => l.code === locale)) {
-    i18n.global.locale.value = locale
+    ;(i18n.global.locale as unknown as { value: string }).value = locale
     localStorage.setItem('locale', locale)
     document.documentElement.lang = locale
   }
@@ -143,7 +143,7 @@ export function setLocale(locale: string): void {
 
 // Get current locale
 export function getLocale(): string {
-  return i18n.global.locale.value
+  return (i18n.global.locale as unknown as { value: string }).value
 }
 
 export default i18n

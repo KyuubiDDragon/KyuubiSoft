@@ -133,12 +133,12 @@ class PushNotificationService {
       const vapidPublicKey: string = vapidResponse.data.publicKey
 
       // Convert VAPID key to Uint8Array
-      const applicationServerKey: Uint8Array = this.urlBase64ToUint8Array(vapidPublicKey)
+      const applicationServerKey = this.urlBase64ToUint8Array(vapidPublicKey)
 
       // Subscribe to push service
       const subscription: PushSubscription = await this.swRegistration!.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer
       })
 
       // Send subscription to server

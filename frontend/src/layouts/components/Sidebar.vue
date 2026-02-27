@@ -221,7 +221,7 @@ function navigateToFavorite(fav: any) {
   if (props.isMobile) emit('close')
 }
 
-function selectProject(projectId: number) {
+function selectProject(projectId: string) {
   projectStore.selectProject(projectId)
   showProjectDropdown.value = false
 }
@@ -438,13 +438,13 @@ function clearProjectSelection() {
           </div>
           <button
             v-for="fav in favoritesStore.favorites.slice(0, 5)"
-            :key="fav.id"
+            :key="fav.item_id"
             @click="navigateToFavorite(fav)"
             class="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-gray-500
                    hover:bg-white/[0.04] hover:text-gray-300 transition-colors truncate"
           >
             <StarIcon class="w-3 h-3 shrink-0 text-yellow-500/60" />
-            <span class="truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
+            <span class="truncate">{{ (fav as any).item?.title || (fav as any).item?.name || 'Unbenannt' }}</span>
           </button>
         </div>
       </div>

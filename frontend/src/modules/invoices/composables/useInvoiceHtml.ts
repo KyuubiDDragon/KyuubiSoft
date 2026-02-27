@@ -264,7 +264,7 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
       filename: `${inv.invoice_number}.pdf`,
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }).from(html, 'string').save()
+    }).from(html as unknown as HTMLElement).save()
   }
 
   return {

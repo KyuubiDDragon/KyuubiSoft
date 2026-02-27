@@ -120,7 +120,8 @@ export const InlineDatabase = Node.create<InlineDatabaseOptions>({
         (attributes: Partial<InlineDatabaseAttributes> = {}) =>
         ({ commands, editor }) => {
           // Get the current note ID from editor options or state
-          const noteId = (editor.options as Record<string, unknown>)?.editorProps?.noteId || attributes.noteId
+          const editorProps = (editor.options as unknown as Record<string, unknown>)?.editorProps as Record<string, unknown> | undefined
+          const noteId = editorProps?.noteId || attributes.noteId
 
           return commands.insertContent({
             type: this.name,

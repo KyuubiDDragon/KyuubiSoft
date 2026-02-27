@@ -157,7 +157,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
     isConnected.value = true
 
     // Authenticate with JWT token
-    const token = (authStore as Record<string, unknown>).token as string | undefined
+    const token = (authStore as unknown as Record<string, unknown>).token as string | undefined
     if (token) {
       send({
         type: 'auth',

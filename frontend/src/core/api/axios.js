@@ -9,6 +9,9 @@ const api = axios.create({
   },
 })
 
+// CSRF token storage
+let csrfToken = null
+
 // Track if we're currently refreshing to prevent multiple refresh attempts
 let isRefreshing = false
 let failedQueue = []
@@ -36,6 +39,11 @@ api.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
+
+      // Attach CSRF token to state-changing requests
+      if (csrfToken && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase())) {
+        config.headers['X-CSRF-Token'] = csrfToken
+      }
     }
 
     return config
@@ -47,7 +55,14 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Capture CSRF token from response headers
+    const token = response.headers['x-csrf-token']
+    if (token) {
+      csrfToken = token
+    }
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
 

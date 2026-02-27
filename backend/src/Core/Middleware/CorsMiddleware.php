@@ -56,6 +56,7 @@ class CorsMiddleware implements MiddlewareInterface
             ->withHeader('Access-Control-Allow-Origin', $allowedOrigin ?: '*')
             ->withHeader('Access-Control-Allow-Methods', implode(', ', $this->allowedMethods))
             ->withHeader('Access-Control-Allow-Headers', implode(', ', $this->allowedHeaders))
+            ->withHeader('Access-Control-Expose-Headers', 'X-CSRF-Token')
             ->withHeader('Access-Control-Allow-Credentials', 'true')
             ->withHeader('Access-Control-Max-Age', '86400');
     }

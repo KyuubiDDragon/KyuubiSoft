@@ -155,9 +155,9 @@ import { computed } from 'vue'
 <template>
   <div class="flex h-[500px] -m-4">
     <!-- Sidebar / Note List -->
-    <div class="w-64 bg-dark-800 border-r border-dark-600 flex flex-col">
+    <div class="w-64 bg-white/[0.04] border-r border-white/[0.06] flex flex-col">
       <!-- Header -->
-      <div class="p-3 border-b border-dark-600">
+      <div class="p-3 border-b border-white/[0.06]">
         <button
           @click="createNote"
           class="w-full btn-primary py-2 text-sm"
@@ -167,7 +167,7 @@ import { computed } from 'vue'
       </div>
 
       <!-- Search -->
-      <div class="p-2 border-b border-dark-600">
+      <div class="p-2 border-b border-white/[0.06]">
         <input
           v-model="searchQuery"
           type="text"
@@ -182,8 +182,8 @@ import { computed } from 'vue'
           v-for="note in filteredNotes"
           :key="note.id"
           @click="selectNote(note)"
-          class="p-3 border-b border-dark-700 cursor-pointer hover:bg-dark-700 transition-colors"
-          :class="currentNote?.id === note.id ? 'bg-dark-700' : ''"
+          class="p-3 border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition-colors"
+          :class="currentNote?.id === note.id ? 'bg-white/[0.04]' : ''"
         >
           <div class="flex items-start gap-2">
             <div
@@ -207,7 +207,7 @@ import { computed } from 'vue'
       </div>
 
       <!-- Footer -->
-      <div class="p-2 border-t border-dark-600 flex gap-1">
+      <div class="p-2 border-t border-white/[0.06] flex gap-1">
         <button @click="exportNotes" class="text-xs text-gray-400 hover:text-white px-2">
           Export
         </button>
@@ -219,10 +219,10 @@ import { computed } from 'vue'
     </div>
 
     <!-- Editor -->
-    <div class="flex-1 flex flex-col bg-dark-900">
+    <div class="flex-1 flex flex-col bg-white/[0.02]">
       <template v-if="currentNote">
         <!-- Toolbar -->
-        <div class="p-3 border-b border-dark-600 flex items-center gap-3">
+        <div class="p-3 border-b border-white/[0.06] flex items-center gap-3">
           <input
             v-model="currentNote.title"
             type="text"
@@ -276,7 +276,7 @@ import { computed } from 'vue'
         ></textarea>
 
         <!-- Status bar -->
-        <div class="px-3 py-2 border-t border-dark-600 text-xs text-gray-500 flex justify-between">
+        <div class="px-3 py-2 border-t border-white/[0.06] text-xs text-gray-500 flex justify-between">
           <span>{{ currentNote.content.length }} Zeichen</span>
           <span>Zuletzt bearbeitet: {{ formatDate(currentNote.updatedAt) }}</span>
         </div>
@@ -293,10 +293,10 @@ import { computed } from 'vue'
     <!-- Delete Confirmation Modal -->
     <div
       v-if="showDeleteConfirm"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
       
     >
-      <div class="bg-dark-800 rounded-lg p-6 max-w-sm">
+      <div class="bg-white/[0.04] rounded-lg p-6 max-w-sm">
         <h3 class="text-lg font-medium text-white mb-2">Notiz löschen?</h3>
         <p class="text-gray-400 text-sm mb-4">
           Möchtest du "{{ noteToDelete?.title }}" wirklich löschen?

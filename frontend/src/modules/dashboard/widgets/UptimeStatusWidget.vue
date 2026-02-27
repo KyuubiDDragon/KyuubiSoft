@@ -13,7 +13,7 @@ defineProps({ widget: Object, data: Array })
       <div
         v-for="monitor in (data || []).slice(0, 5)"
         :key="monitor.id"
-        class="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
+        class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
       >
         <span class="w-2 h-2 rounded-full flex-shrink-0" :class="getStatusBg(monitor.status)"></span>
         <div class="flex-1 min-w-0">

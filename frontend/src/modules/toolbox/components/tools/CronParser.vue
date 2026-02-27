@@ -201,7 +201,7 @@ function usePreset(cron) {
 
     <!-- Field Reference -->
     <div class="grid grid-cols-5 gap-2 text-center text-xs">
-      <div v-for="field in fields" :key="field.position" class="p-2 bg-dark-700 rounded">
+      <div v-for="field in fields" :key="field.position" class="p-2 bg-white/[0.04] rounded">
         <div class="font-medium text-white">{{ field.name }}</div>
         <div class="text-gray-500">{{ field.range }}</div>
       </div>
@@ -215,7 +215,7 @@ function usePreset(cron) {
           v-for="preset in presets"
           :key="preset.cron"
           @click="usePreset(preset.cron)"
-          class="px-2 py-1 text-xs bg-dark-700 text-gray-300 rounded hover:bg-dark-600"
+          class="px-2 py-1 text-xs bg-white/[0.04] text-gray-300 rounded hover:bg-white/[0.04]"
           :class="cronExpression === preset.cron ? 'ring-1 ring-primary-500' : ''"
         >
           {{ preset.name }}
@@ -241,7 +241,7 @@ function usePreset(cron) {
         <div
           v-for="(exec, i) in nextExecutions"
           :key="i"
-          class="p-2 bg-dark-700 rounded text-sm font-mono"
+          class="p-2 bg-white/[0.04] rounded text-sm font-mono"
         >
           {{ exec }}
         </div>

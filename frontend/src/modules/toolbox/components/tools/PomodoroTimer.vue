@@ -213,21 +213,21 @@ onUnmounted(() => {
       <button
         @click="setMode('work'); pause()"
         class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-        :class="mode === 'work' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="mode === 'work' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         Fokus
       </button>
       <button
         @click="setMode('shortBreak'); pause()"
         class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-        :class="mode === 'shortBreak' ? 'bg-green-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="mode === 'shortBreak' ? 'bg-green-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         Kurze Pause
       </button>
       <button
         @click="setMode('longBreak'); pause()"
         class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-        :class="mode === 'longBreak' ? 'bg-blue-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="mode === 'longBreak' ? 'bg-blue-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         Lange Pause
       </button>
@@ -243,7 +243,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Progress Bar -->
-      <div class="w-full h-2 bg-dark-700 rounded-full overflow-hidden mb-6">
+      <div class="w-full h-2 bg-white/[0.04] rounded-full overflow-hidden mb-6">
         <div
           class="h-full transition-all duration-300"
           :class="progressBarColor"
@@ -303,12 +303,12 @@ onUnmounted(() => {
         v-for="i in settings.sessionsBeforeLong"
         :key="i"
         class="w-4 h-4 rounded-full transition-colors"
-        :class="i <= (completedSessions % settings.sessionsBeforeLong || (completedSessions > 0 ? settings.sessionsBeforeLong : 0)) ? 'bg-primary-500' : 'bg-dark-700'"
+        :class="i <= (completedSessions % settings.sessionsBeforeLong || (completedSessions > 0 ? settings.sessionsBeforeLong : 0)) ? 'bg-primary-500' : 'bg-white/[0.04]'"
       ></div>
     </div>
 
     <!-- Settings -->
-    <div class="p-4 bg-dark-700 rounded-lg space-y-3">
+    <div class="p-4 bg-white/[0.04] rounded-lg space-y-3">
       <div class="text-sm font-medium text-white mb-3">Einstellungen (Minuten)</div>
 
       <div class="grid grid-cols-2 gap-4">

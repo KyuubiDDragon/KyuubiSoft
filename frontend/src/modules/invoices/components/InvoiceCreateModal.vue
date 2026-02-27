@@ -32,7 +32,7 @@ const form = ref({
 })
 
 const documentTypes = [
-  { value: 'invoice', label: 'Rechnung', description: 'Standard Rechnung', color: 'text-white', bg: 'bg-dark-600 border-dark-500' },
+  { value: 'invoice', label: 'Rechnung', description: 'Standard Rechnung', color: 'text-white', bg: 'bg-white/[0.08] border-white/[0.08]' },
   { value: 'quote', label: 'Angebot', description: 'Kostenvoranschlag', color: 'text-yellow-300', bg: 'bg-yellow-500/10 border-yellow-500/30' },
   { value: 'proforma', label: 'Proforma', description: 'Vorab-Rechnung', color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
   { value: 'credit_note', label: 'Gutschrift', description: 'Storno / Gutschrift', color: 'text-red-300', bg: 'bg-red-500/10 border-red-500/30' },
@@ -102,7 +102,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
     >
       <div
         v-if="show"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
         @click.self="$emit('close')"
       >
         <Transition
@@ -115,14 +115,14 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
         >
           <div
             v-if="show"
-            class="bg-dark-800 rounded-2xl w-full max-w-xl border border-dark-600 shadow-2xl max-h-[90vh] overflow-y-auto"
+            class="modal w-full max-w-xl max-h-[90vh] overflow-y-auto"
           >
             <!-- Header -->
-            <div class="sticky top-0 bg-dark-800 px-6 py-4 border-b border-dark-700 flex items-center justify-between z-10">
+            <div class="sticky top-0 bg-white/[0.04] px-6 py-4 border-b border-white/[0.06] flex items-center justify-between z-10">
               <h2 class="text-lg font-bold text-white">
                 {{ editingInvoice ? 'Rechnung bearbeiten' : 'Neues Dokument' }}
               </h2>
-              <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors">
+              <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
@@ -140,8 +140,8 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                     @click="form.document_type = dt.value"
                     class="flex flex-col items-center gap-1 p-2.5 rounded-xl border text-center transition-all"
                     :class="form.document_type === dt.value
-                      ? dt.bg + ' ' + dt.color + ' ring-2 ring-offset-1 ring-offset-dark-800 ' + (dt.value === 'invoice' ? 'ring-white/40' : dt.color.replace('text-', 'ring-').replace('-300', '-400'))
-                      : 'bg-dark-700 border-dark-600 text-gray-500 hover:text-gray-300 hover:border-dark-500'"
+                      ? dt.bg + ' ' + dt.color + ' ring-2 ring-offset-1 ring-offset-black ' + (dt.value === 'invoice' ? 'ring-white/40' : dt.color.replace('text-', 'ring-').replace('-300', '-400'))
+                      : 'bg-white/[0.04] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/[0.08]'"
                   >
                     <span class="text-xs font-semibold leading-tight">{{ dt.label }}</span>
                   </button>
@@ -190,7 +190,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
                       :class="form.tax_rate === rate
                         ? 'bg-primary-600 border-primary-500 text-white'
-                        : 'bg-dark-700 border-dark-600 text-gray-400 hover:text-white hover:border-dark-500'"
+                        : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white hover:border-white/[0.08]'"
                     >
                       {{ rate }}%
                     </button>

@@ -226,14 +226,14 @@ function setExample(type) {
           <button
             @click="mode = 'encode'"
             class="flex-1 px-3 py-2 rounded-lg text-sm transition-colors"
-            :class="mode === 'encode' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-300 hover:bg-dark-600'"
+            :class="mode === 'encode' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.04]'"
           >
             Kodieren
           </button>
           <button
             @click="mode = 'decode'"
             class="flex-1 px-3 py-2 rounded-lg text-sm transition-colors"
-            :class="mode === 'decode' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-300 hover:bg-dark-600'"
+            :class="mode === 'decode' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.04]'"
           >
             Dekodieren
           </button>
@@ -277,7 +277,7 @@ function setExample(type) {
     <div class="flex justify-center">
       <button
         @click="swapInputOutput"
-        class="p-2 text-gray-400 hover:text-white bg-dark-700 rounded-lg"
+        class="p-2 text-gray-400 hover:text-white bg-white/[0.04] rounded-lg"
         title="Eingabe/Ausgabe tauschen"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +297,7 @@ function setExample(type) {
           Kopieren
         </button>
       </div>
-      <div class="p-3 bg-dark-700 rounded-lg min-h-[8rem] max-h-48 overflow-auto">
+      <div class="p-3 bg-white/[0.04] rounded-lg min-h-[8rem] max-h-48 overflow-auto">
         <pre class="font-mono text-sm text-green-400 whitespace-pre-wrap break-all">{{ output || '...' }}</pre>
       </div>
     </div>

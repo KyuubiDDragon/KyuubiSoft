@@ -61,11 +61,11 @@ function parseMarkdown(text) {
 
   // Code blocks (before other processing)
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre class="bg-dark-900 p-3 rounded-lg overflow-x-auto my-2"><code class="text-sm text-gray-300">${code.trim()}</code></pre>`
+    return `<pre class="bg-white/[0.02] p-3 rounded-lg overflow-x-auto my-2"><code class="text-sm text-gray-300">${code.trim()}</code></pre>`
   })
 
   // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code class="bg-dark-700 px-1 rounded text-primary-400">$1</code>')
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-white/[0.04] px-1 rounded text-primary-400">$1</code>')
 
   // Headers
   html = html.replace(/^#### (.+)$/gm, '<h4 class="text-md font-semibold text-white mt-4 mb-2">$1</h4>')
@@ -89,7 +89,7 @@ function parseMarkdown(text) {
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="border-l-4 border-primary-500 pl-4 py-1 my-2 text-gray-400 italic">$1</blockquote>')
 
   // Horizontal rule
-  html = html.replace(/^---$/gm, '<hr class="border-dark-600 my-4" />')
+  html = html.replace(/^---$/gm, '<hr class="border-white/[0.06] my-4" />')
 
   // Tables (basic support)
   html = html.replace(/^\|(.+)\|$/gm, (match, content) => {
@@ -97,7 +97,7 @@ function parseMarkdown(text) {
     if (cells.every(c => /^-+$/.test(c))) {
       return '' // Skip separator row
     }
-    const cellHtml = cells.map(c => `<td class="border border-dark-600 px-3 py-2">${c}</td>`).join('')
+    const cellHtml = cells.map(c => `<td class="border border-white/[0.06] px-3 py-2">${c}</td>`).join('')
     return `<tr>${cellHtml}</tr>`
   })
   html = html.replace(/(<tr>[\s\S]*?<\/tr>[\s]*)+/g, (match) => {
@@ -177,21 +177,21 @@ console.log("Hello!");
         <button
           @click="viewMode = 'edit'"
           class="px-3 py-1 text-sm rounded transition-colors"
-          :class="viewMode === 'edit' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+          :class="viewMode === 'edit' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
           Editor
         </button>
         <button
           @click="viewMode = 'split'"
           class="px-3 py-1 text-sm rounded transition-colors"
-          :class="viewMode === 'split' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+          :class="viewMode === 'split' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
           Split
         </button>
         <button
           @click="viewMode = 'preview'"
           class="px-3 py-1 text-sm rounded transition-colors"
-          :class="viewMode === 'preview' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+          :class="viewMode === 'preview' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
           Vorschau
         </button>
@@ -222,7 +222,7 @@ console.log("Hello!");
       </div>
 
       <!-- Preview -->
-      <div v-if="viewMode !== 'edit'" class="bg-dark-700 rounded-lg p-4 h-96 overflow-auto">
+      <div v-if="viewMode !== 'edit'" class="bg-white/[0.04] rounded-lg p-4 h-96 overflow-auto">
         <div class="prose prose-invert max-w-none" v-html="renderedHtml"></div>
       </div>
     </div>
@@ -230,7 +230,7 @@ console.log("Hello!");
     <!-- Quick Reference -->
     <details class="text-sm">
       <summary class="text-gray-400 cursor-pointer hover:text-white">Markdown Kurzreferenz</summary>
-      <div class="mt-2 p-3 bg-dark-700 rounded-lg grid grid-cols-2 gap-2 text-xs font-mono">
+      <div class="mt-2 p-3 bg-white/[0.04] rounded-lg grid grid-cols-2 gap-2 text-xs font-mono">
         <div><span class="text-gray-500"># </span>Überschrift 1</div>
         <div><span class="text-gray-500">## </span>Überschrift 2</div>
         <div><span class="text-gray-500">**</span>fett<span class="text-gray-500">**</span></div>

@@ -315,7 +315,7 @@ function getOtherServices(currentService) {
           v-for="(preset, key) in servicePresets"
           :key="key"
           @click="addServiceFromPreset(key)"
-          class="px-3 py-1 bg-dark-700 hover:bg-dark-600 rounded text-sm transition-colors"
+          class="px-3 py-1 bg-white/[0.04] hover:bg-white/[0.04] rounded text-sm transition-colors"
         >
           {{ preset.name }}
         </button>
@@ -448,7 +448,7 @@ function getOtherServices(currentService) {
                       service.depends_on = service.depends_on.filter(d => d !== other)
                     }
                   }"
-                  class="rounded border-dark-500 bg-dark-700"
+                  class="rounded border-white/[0.08] bg-white/[0.04]"
                 />
                 {{ other }}
               </label>
@@ -502,7 +502,7 @@ function getOtherServices(currentService) {
           </button>
         </div>
       </div>
-      <pre class="bg-dark-900 p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-80">{{ composeYaml }}</pre>
+      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-80">{{ composeYaml }}</pre>
     </div>
   </div>
 </template>

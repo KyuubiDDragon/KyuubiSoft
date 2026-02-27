@@ -135,8 +135,8 @@ function renderMarkdown(content) {
     .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-white">$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
-    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-dark-700 rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>')
-    .replace(/`(.*?)`/gim, '<code class="bg-dark-700 px-1.5 py-0.5 rounded text-primary-400">$1</code>')
+    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-white/[0.04] rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>')
+    .replace(/`(.*?)`/gim, '<code class="bg-white/[0.04] px-1.5 py-0.5 rounded text-primary-400">$1</code>')
     .replace(/^\- (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^\* (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal">$1</li>')
@@ -395,7 +395,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-900 py-8 px-4 lg:px-8">
+  <div class="min-h-screen bg-white/[0.02] py-8 px-4 lg:px-8">
     <div class="max-w-7xl mx-auto">
       <!-- Loading -->
       <div v-if="loading" class="flex items-center justify-center py-20">
@@ -411,7 +411,7 @@ onUnmounted(() => {
 
       <!-- Password Required -->
       <div v-else-if="requiresPassword" class="max-w-md mx-auto">
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-8 text-center">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8 text-center">
           <LockClosedIcon class="w-16 h-16 text-primary-400 mx-auto mb-4" />
           <h1 class="text-xl font-bold text-white mb-2">Passwortgeschützt</h1>
           <p class="text-gray-400 mb-6">Dieses Dokument ist mit einem Passwort geschützt.</p>
@@ -421,7 +421,7 @@ onUnmounted(() => {
               <input
                 v-model="passwordInput"
                 type="password"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input w-full"
                 placeholder="Passwort eingeben..."
                 @keydown.enter="submitPassword"
               />
@@ -430,7 +430,7 @@ onUnmounted(() => {
 
             <button
               @click="submitPassword"
-              class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              class="btn-primary w-full"
             >
               Entsperren
             </button>
@@ -441,7 +441,7 @@ onUnmounted(() => {
       <!-- Document View -->
       <div v-else-if="document">
         <!-- Header -->
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6 mb-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 mb-6">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 rounded-lg bg-primary-600/20 flex items-center justify-center flex-shrink-0">
               <DocumentTextIcon class="w-6 h-6 text-primary-400" />
@@ -511,7 +511,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Connected users -->
-          <div v-if="isEditing && collaborationAvailable && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-dark-700">
+          <div v-if="isEditing && collaborationAvailable && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-white/[0.06]">
             <div class="flex flex-wrap items-center gap-2 text-sm text-gray-400">
               <UsersIcon class="w-4 h-4 flex-shrink-0" />
               <span class="flex-shrink-0">Live-Bearbeiter:</span>
@@ -536,13 +536,13 @@ onUnmounted(() => {
         </div>
 
         <!-- Connecting indicator -->
-        <div v-if="isConnecting" class="bg-dark-800 border border-dark-700 rounded-xl p-8 text-center">
+        <div v-if="isConnecting" class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8 text-center">
           <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p class="text-gray-400">Verbinde mit Collaboration-Server...</p>
         </div>
 
         <!-- Content -->
-        <div v-else class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+        <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
           <!-- Rich Text -->
           <template v-if="document.format === 'richtext' || !document.format">
             <!-- Collaborative editor when editing and collaboration is available -->
@@ -577,8 +577,8 @@ onUnmounted(() => {
           <template v-else-if="document.format === 'markdown'">
             <!-- For markdown with collaboration -->
             <div v-if="isEditing && collaborationAvailable && ydoc && provider && ytext" class="grid grid-cols-1 lg:grid-cols-2">
-              <div class="border-r border-dark-700">
-                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown (Echtzeit-Bearbeitung)</div>
+              <div class="border-r border-white/[0.06]">
+                <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Markdown (Echtzeit-Bearbeitung)</div>
                 <CollaborativeMonacoEditor
                   :ydoc="ydoc"
                   :provider="provider"
@@ -589,7 +589,7 @@ onUnmounted(() => {
                 />
               </div>
               <div>
-                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Vorschau</div>
+                <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
                   v-html="renderMarkdown(ytext ? ytext.toString() : document.content)"
@@ -598,8 +598,8 @@ onUnmounted(() => {
             </div>
             <!-- Fallback Monaco editor when collaboration not available -->
             <div v-else-if="isEditing && !collaborationAvailable" class="grid grid-cols-1 lg:grid-cols-2">
-              <div class="border-r border-dark-700">
-                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Markdown (Lokale Bearbeitung)</div>
+              <div class="border-r border-white/[0.06]">
+                <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Markdown (Lokale Bearbeitung)</div>
                 <MonacoEditor
                   :model-value="document.content"
                   :read-only="false"
@@ -609,7 +609,7 @@ onUnmounted(() => {
                 />
               </div>
               <div>
-                <div class="p-2 bg-dark-700 text-xs text-gray-400 border-b border-dark-600">Vorschau</div>
+                <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
                   v-html="renderMarkdown(localContent || document.content)"

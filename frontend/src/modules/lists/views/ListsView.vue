@@ -256,7 +256,7 @@ function goBack() {
         <button
           v-if="selectedList"
           @click="goBack"
-          class="p-2 hover:bg-dark-700 rounded-lg transition-colors"
+          class="p-2 hover:bg-white/[0.04] rounded-xl transition-colors"
         >
           <ChevronRightIcon class="w-5 h-5 text-gray-400 rotate-180" />
         </button>
@@ -324,8 +324,8 @@ function goBack() {
       >
         <template #item="{ element: item }">
           <div
-            class="flex items-center gap-3 p-4 bg-dark-800 rounded-lg border border-dark-700 group transition-all"
-            :class="{ 'border-primary-500 shadow-lg shadow-primary-500/10': isDragging }"
+            class="flex items-center gap-3 p-4 bg-white/[0.04] rounded-xl border border-white/[0.06] group transition-all"
+            :class="{ 'border-primary-500 shadow-float shadow-primary-500/10': isDragging }"
           >
             <!-- Drag Handle -->
             <div class="drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 text-gray-600 hover:text-gray-400 transition-colors">
@@ -349,7 +349,7 @@ function goBack() {
             </span>
             <button
               @click="deleteItem(item.id)"
-              class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+              class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -385,7 +385,7 @@ function goBack() {
         >
           <div class="flex items-start justify-between">
             <div
-              class="w-10 h-10 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 rounded-xl flex items-center justify-center"
               :style="{ backgroundColor: list.color || '#3B82F6' }"
             >
               <ListBulletIcon class="w-5 h-5 text-white" />
@@ -400,7 +400,7 @@ function goBack() {
             <span class="text-sm text-gray-500">{{ list.item_count || 0 }} Einträge</span>
             <button
               @click.stop="deleteList(list.id)"
-              class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+              class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -413,10 +413,10 @@ function goBack() {
     <Teleport to="body">
       <div
         v-if="showCreateModal || showEditModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
         
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-md border border-dark-700">
+        <div class="modal p-6 w-full max-w-md">
           <h2 class="text-xl font-bold text-white mb-6">
             {{ showEditModal ? 'Liste bearbeiten' : 'Neue Liste' }}
           </h2>
@@ -449,7 +449,7 @@ function goBack() {
                   :key="color"
                   type="button"
                   @click="listForm.color = color"
-                  class="w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110"
+                  class="w-8 h-8 rounded-xl border-2 transition-transform hover:scale-110"
                   :class="listForm.color === color ? 'border-white scale-110' : 'border-transparent'"
                   :style="{ backgroundColor: color }"
                 ></button>
@@ -481,7 +481,7 @@ function goBack() {
 }
 
 .chosen-item {
-  @apply shadow-lg shadow-primary-500/20;
+  @apply shadow-float shadow-primary-500/20;
 }
 
 .drag-item {

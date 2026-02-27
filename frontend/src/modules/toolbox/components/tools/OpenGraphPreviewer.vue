@@ -123,7 +123,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
     <!-- Results -->
     <div v-if="result" class="space-y-4">
       <!-- Tabs -->
-      <div class="flex gap-1 bg-dark-800 rounded-lg p-1">
+      <div class="flex gap-1 bg-white/[0.04] rounded-lg p-1">
         <button
           v-for="tab in tabs"
           :key="tab.id"
@@ -138,7 +138,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
       <!-- Preview Tab -->
       <div v-if="activeTab === 'preview'" class="space-y-4">
         <!-- Facebook/LinkedIn Style Preview -->
-        <div class="bg-white rounded-lg overflow-hidden shadow-lg">
+        <div class="bg-white rounded-lg overflow-hidden shadow-float">
           <div v-if="ogImage" class="aspect-video bg-gray-200 relative">
             <img
               :src="ogImage"
@@ -204,19 +204,19 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
 
         <!-- Basic Info -->
         <div class="grid grid-cols-2 gap-3">
-          <div class="p-3 bg-dark-700 rounded-lg">
+          <div class="p-3 bg-white/[0.04] rounded-lg">
             <span class="text-xs text-gray-500">Titel</span>
             <div class="text-white text-sm truncate">{{ result.basic?.title || '-' }}</div>
           </div>
-          <div class="p-3 bg-dark-700 rounded-lg">
+          <div class="p-3 bg-white/[0.04] rounded-lg">
             <span class="text-xs text-gray-500">Sprache</span>
             <div class="text-white text-sm">{{ result.basic?.language || '-' }}</div>
           </div>
-          <div class="p-3 bg-dark-700 rounded-lg col-span-2">
+          <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
             <span class="text-xs text-gray-500">Beschreibung</span>
             <div class="text-white text-sm line-clamp-3">{{ result.basic?.description || '-' }}</div>
           </div>
-          <div v-if="result.favicon" class="p-3 bg-dark-700 rounded-lg col-span-2 flex items-center gap-3">
+          <div v-if="result.favicon" class="p-3 bg-white/[0.04] rounded-lg col-span-2 flex items-center gap-3">
             <img :src="result.favicon" class="w-6 h-6" @error="$event.target.style.display = 'none'" />
             <div>
               <span class="text-xs text-gray-500">Favicon</span>
@@ -234,7 +234,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
         <div
           v-for="(value, key) in result.openGraph"
           :key="key"
-          class="p-3 bg-dark-700 rounded-lg"
+          class="p-3 bg-white/[0.04] rounded-lg"
         >
           <span class="text-xs text-primary-400 font-mono">og:{{ key }}</span>
           <div class="text-white text-sm mt-1 break-all">
@@ -257,7 +257,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
         <div
           v-for="(value, key) in result.twitter"
           :key="key"
-          class="p-3 bg-dark-700 rounded-lg"
+          class="p-3 bg-white/[0.04] rounded-lg"
         >
           <span class="text-xs text-blue-400 font-mono">twitter:{{ key }}</span>
           <div class="text-white text-sm mt-1 break-all">
@@ -278,7 +278,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
           <div
             v-for="(tag, i) in result.allMeta"
             :key="i"
-            class="p-2 bg-dark-700 rounded-lg text-xs"
+            class="p-2 bg-white/[0.04] rounded-lg text-xs"
           >
             <template v-if="tag.name">
               <span class="text-gray-500">{{ tag.name }}:</span>

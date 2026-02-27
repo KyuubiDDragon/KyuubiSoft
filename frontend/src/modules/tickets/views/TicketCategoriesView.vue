@@ -193,7 +193,7 @@ onMounted(() => {
       </div>
       <button
         @click="openModal()"
-        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
+        class="btn-primary flex items-center gap-2"
       >
         <PlusIcon class="w-5 h-5" />
         <span>Neue Kategorie</span>
@@ -206,7 +206,7 @@ onMounted(() => {
     </div>
 
     <!-- Categories List -->
-    <div v-else-if="categories.length > 0" class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+    <div v-else-if="categories.length > 0" class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
       <draggable
         v-model="categories"
         item-key="id"
@@ -214,9 +214,9 @@ onMounted(() => {
         @end="onReorder"
       >
         <template #item="{ element: category }">
-          <div class="border-b border-dark-700 last:border-b-0">
+          <div class="border-b border-white/[0.06] last:border-b-0">
             <!-- Category Row -->
-            <div class="flex items-center gap-3 px-4 py-3 hover:bg-dark-700/50 transition-colors">
+            <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors">
               <!-- Drag handle -->
               <div class="drag-handle cursor-move text-gray-500 hover:text-gray-400">
                 <Bars3Icon class="w-5 h-5" />
@@ -250,7 +250,7 @@ onMounted(() => {
                   <span class="font-medium text-white">{{ category.name }}</span>
                   <span
                     v-if="!category.is_active"
-                    class="text-xs bg-dark-600 text-gray-400 px-2 py-0.5 rounded"
+                    class="text-xs bg-white/[0.08] text-gray-400 px-2 py-0.5 rounded"
                   >
                     Inaktiv
                   </span>
@@ -274,13 +274,13 @@ onMounted(() => {
               <div class="flex items-center gap-1">
                 <button
                   @click="openModal(category)"
-                  class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="deleteCategory(category)"
-                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+                  class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -288,11 +288,11 @@ onMounted(() => {
             </div>
 
             <!-- Children (nested) -->
-            <div v-if="category.children?.length && isExpanded(category.id)" class="pl-12 bg-dark-900/50">
+            <div v-if="category.children?.length && isExpanded(category.id)" class="pl-12 bg-white/[0.02]">
               <div
                 v-for="child in category.children"
                 :key="child.id"
-                class="flex items-center gap-3 px-4 py-3 border-t border-dark-700 hover:bg-dark-700/50 transition-colors"
+                class="flex items-center gap-3 px-4 py-3 border-t border-white/[0.06] hover:bg-white/[0.04] transition-colors"
               >
                 <div class="w-6"></div>
 
@@ -310,7 +310,7 @@ onMounted(() => {
                     <span class="font-medium text-white text-sm">{{ child.name }}</span>
                     <span
                       v-if="!child.is_active"
-                      class="text-xs bg-dark-600 text-gray-400 px-2 py-0.5 rounded"
+                      class="text-xs bg-white/[0.08] text-gray-400 px-2 py-0.5 rounded"
                     >
                       Inaktiv
                     </span>
@@ -324,13 +324,13 @@ onMounted(() => {
                 <div class="flex items-center gap-1">
                   <button
                     @click="openModal(child)"
-                    class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+                    class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteCategory(child)"
-                    class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+                    class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -343,13 +343,13 @@ onMounted(() => {
     </div>
 
     <!-- Empty State -->
-    <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-12 text-center">
+    <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-12 text-center">
       <FolderIcon class="w-16 h-16 text-gray-500 mx-auto mb-4" />
       <h3 class="text-xl font-semibold text-white mb-2">Keine Kategorien</h3>
       <p class="text-gray-400 mb-6">Erstellen Sie Ihre erste Ticket-Kategorie.</p>
       <button
         @click="openModal()"
-        class="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors inline-flex items-center gap-2"
+        class="btn-primary inline-flex items-center gap-2"
       >
         <PlusIcon class="w-5 h-5" />
         Kategorie erstellen
@@ -360,10 +360,10 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
             </h2>
@@ -379,7 +379,7 @@ onMounted(() => {
               <input
                 v-model="form.name"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Kategoriename"
               />
             </div>
@@ -390,7 +390,7 @@ onMounted(() => {
               <textarea
                 v-model="form.description"
                 rows="2"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
                 placeholder="Optionale Beschreibung..."
               ></textarea>
             </div>
@@ -400,7 +400,7 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Übergeordnete Kategorie</label>
               <select
                 v-model="form.parent_id"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                class="select"
               >
                 <option value="">Keine (Hauptkategorie)</option>
                 <option
@@ -422,7 +422,7 @@ onMounted(() => {
                   :key="color"
                   @click="form.color = color"
                   class="w-8 h-8 rounded-lg transition-transform hover:scale-110"
-                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-dark-800': form.color === color }"
+                  :class="{ 'ring-2 ring-white ring-offset-2 ring-offset-transparent': form.color === color }"
                   :style="{ backgroundColor: color }"
                 ></button>
               </div>
@@ -436,7 +436,7 @@ onMounted(() => {
                   v-model.number="form.sla_response_hours"
                   type="number"
                   min="0"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="z.B. 4"
                 />
               </div>
@@ -446,7 +446,7 @@ onMounted(() => {
                   v-model.number="form.sla_resolution_hours"
                   type="number"
                   min="0"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="z.B. 24"
                 />
               </div>
@@ -465,11 +465,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
-            <button @click="showModal = false" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
+            <button @click="showModal = false" class="btn-secondary">
               Abbrechen
             </button>
-            <button @click="saveCategory" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors">
+            <button @click="saveCategory" class="btn-primary">
               {{ editingCategory ? 'Speichern' : 'Erstellen' }}
             </button>
           </div>

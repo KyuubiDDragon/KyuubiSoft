@@ -12,7 +12,7 @@ defineProps({ widget: Object, data: Object })
       <!-- Progress Ring -->
       <div class="relative inline-flex items-center justify-center w-24 h-24 mb-3">
         <svg class="w-24 h-24 transform -rotate-90">
-          <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="none" class="text-dark-600" />
+          <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="none" class="text-white/[0.08]" />
           <circle
             cx="48"
             cy="48"

@@ -196,13 +196,13 @@ const inputPlaceholder = computed(() => {
       <button
         @click="mode = 'csv-to-json'"
         class="px-4 py-2 rounded-lg transition-colors"
-        :class="mode === 'csv-to-json' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="mode === 'csv-to-json' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         CSV → JSON
       </button>
       <button
         @click="swapMode"
-        class="p-2 text-gray-400 hover:text-white bg-dark-700 rounded-lg"
+        class="p-2 text-gray-400 hover:text-white bg-white/[0.04] rounded-lg"
         title="Eingabe/Ausgabe tauschen"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +212,7 @@ const inputPlaceholder = computed(() => {
       <button
         @click="mode = 'json-to-csv'"
         class="px-4 py-2 rounded-lg transition-colors"
-        :class="mode === 'json-to-csv' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:text-white'"
+        :class="mode === 'json-to-csv' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:text-white'"
       >
         JSON → CSV
       </button>
@@ -230,7 +230,7 @@ const inputPlaceholder = computed(() => {
         </select>
       </div>
       <label v-if="mode === 'csv-to-json'" class="flex items-center gap-2 text-sm text-gray-300">
-        <input type="checkbox" v-model="hasHeader" class="rounded bg-dark-600" />
+        <input type="checkbox" v-model="hasHeader" class="rounded bg-white/[0.08]" />
         Erste Zeile ist Header
       </label>
       <div v-if="mode === 'csv-to-json'" class="flex items-center gap-2">
@@ -281,7 +281,7 @@ const inputPlaceholder = computed(() => {
           </button>
         </div>
       </div>
-      <pre class="p-3 bg-dark-900 rounded-lg text-sm text-green-400 font-mono max-h-48 overflow-auto">{{ output }}</pre>
+      <pre class="p-3 bg-white/[0.02] rounded-lg text-sm text-green-400 font-mono max-h-48 overflow-auto">{{ output }}</pre>
     </div>
 
     <!-- Info -->

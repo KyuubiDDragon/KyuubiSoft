@@ -107,8 +107,8 @@ function renderMarkdown(content) {
     .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-white">$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
     // Code blocks
-    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-dark-700 rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>')
-    .replace(/`(.*?)`/gim, '<code class="bg-dark-700 px-1.5 py-0.5 rounded text-primary-400">$1</code>')
+    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-white/[0.04] rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>')
+    .replace(/`(.*?)`/gim, '<code class="bg-white/[0.04] px-1.5 py-0.5 rounded text-primary-400">$1</code>')
     // Lists
     .replace(/^\- (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^\* (.*$)/gim, '<li class="ml-4">$1</li>')
@@ -446,7 +446,7 @@ onMounted(async () => {
         <button
           v-if="selectedDoc"
           @click="goBack"
-          class="p-2 hover:bg-dark-700 rounded-lg transition-colors"
+          class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
         >
           <ChevronRightIcon class="w-5 h-5 text-gray-400 rotate-180" />
         </button>
@@ -507,7 +507,7 @@ onMounted(async () => {
     <template v-else-if="selectedDoc">
       <!-- Rich Text Editor (TipTap) -->
       <template v-if="selectedDoc.format === 'richtext' || !selectedDoc.format">
-        <div class="bg-dark-800 rounded-lg overflow-hidden">
+        <div class="bg-white/[0.04] rounded-xl overflow-hidden">
           <TipTapEditor
             v-model="editContent"
             :editable="isEditing"
@@ -534,14 +534,14 @@ onMounted(async () => {
           <div class="space-y-2">
             <label class="label">Vorschau</label>
             <div
-              class="bg-dark-800 border border-dark-700 rounded-lg p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
+              class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
               v-html="renderMarkdown(editContent)"
             ></div>
           </div>
         </div>
 
         <!-- Read-only View -->
-        <div v-else class="bg-dark-800 border border-dark-700 rounded-lg p-8">
+        <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
           <div
             class="prose prose-invert max-w-none"
             v-html="renderMarkdown(selectedDoc.content)"
@@ -554,7 +554,7 @@ onMounted(async () => {
 
       <!-- Code Editor (Monaco) -->
       <template v-else-if="selectedDoc.format === 'code'">
-        <div class="bg-dark-800 rounded-lg overflow-hidden">
+        <div class="bg-white/[0.04] rounded-xl overflow-hidden">
           <MonacoEditor
             v-model="editContent"
             :read-only="!isEditing"
@@ -568,7 +568,7 @@ onMounted(async () => {
 
       <!-- Spreadsheet (Univer) -->
       <template v-else-if="selectedDoc.format === 'spreadsheet'">
-        <div class="bg-dark-800 rounded-lg overflow-hidden">
+        <div class="bg-white/[0.04] rounded-xl overflow-hidden">
           <UniverSheet
             v-model="editContent"
             :read-only="false"
@@ -580,7 +580,7 @@ onMounted(async () => {
     <!-- Documents List -->
     <template v-else>
       <!-- Tabs -->
-      <div class="flex gap-4 border-b border-dark-700 mb-6">
+      <div class="flex gap-4 border-b border-white/[0.06] mb-6">
         <button
           @click="activeTab = 'all'"
           class="pb-3 px-1 text-sm font-medium transition-colors border-b-2"
@@ -589,7 +589,7 @@ onMounted(async () => {
             : 'text-gray-400 border-transparent hover:text-gray-300'"
         >
           Alle Dokumente
-          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-dark-700">{{ documents.length }}</span>
+          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/[0.04]">{{ documents.length }}</span>
         </button>
         <button
           @click="activeTab = 'shared'"
@@ -600,7 +600,7 @@ onMounted(async () => {
         >
           <GlobeAltIcon class="w-4 h-4 inline mr-1" />
           Geteilte Dokumente
-          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-dark-700">{{ sharedDocuments.length }}</span>
+          <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/[0.04]">{{ sharedDocuments.length }}</span>
         </button>
       </div>
 
@@ -720,10 +720,10 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showCreateModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
         
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-2xl border border-dark-700">
+        <div class="modal p-6 w-full max-w-2xl">
           <h2 class="text-xl font-bold text-white mb-6">Neues Dokument</h2>
 
           <form @submit.prevent="createDocument" class="space-y-6">
@@ -749,7 +749,7 @@ onMounted(async () => {
                   class="p-4 rounded-lg border-2 transition-all text-left"
                   :class="docForm.format === option.value
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-dark-600 hover:border-dark-500'"
+                    : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <component :is="option.icon" class="w-6 h-6 text-primary-400 mb-2" />
                   <p class="font-medium text-white text-sm">{{ option.label }}</p>
@@ -779,9 +779,9 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showShareModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
+        <div class="modal p-6 w-full max-w-lg">
           <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
               <ShareIcon class="w-5 h-5 text-primary-400" />
@@ -851,7 +851,7 @@ onMounted(async () => {
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-3 pt-4 border-t border-dark-700">
+            <div class="flex gap-3 pt-4 border-t border-white/[0.06]">
               <button
                 @click="disableShare"
                 class="btn-secondary flex-1 text-red-400"
@@ -884,7 +884,7 @@ onMounted(async () => {
                   class="p-3 rounded-lg border-2 transition-all text-left"
                   :class="!shareForm.can_edit
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-dark-600 hover:border-dark-500'"
+                    : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <EyeIcon class="w-5 h-5 text-primary-400 mb-1" />
                   <p class="font-medium text-white text-sm">Nur Lesen</p>
@@ -896,7 +896,7 @@ onMounted(async () => {
                   class="p-3 rounded-lg border-2 transition-all text-left"
                   :class="shareForm.can_edit
                     ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-dark-600 hover:border-dark-500'"
+                    : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <PencilSquareIcon class="w-5 h-5 text-blue-400 mb-1" />
                   <p class="font-medium text-white text-sm">Bearbeiten</p>
@@ -955,9 +955,9 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showVersionsModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
       >
-        <div class="bg-dark-800 rounded-xl p-6 w-full max-w-4xl border border-dark-700 max-h-[90vh] flex flex-col">
+        <div class="modal p-6 w-full max-w-4xl max-h-[90vh] flex flex-col">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
@@ -968,7 +968,7 @@ onMounted(async () => {
                 <p class="text-gray-400 text-sm">{{ selectedDoc?.title }}</p>
               </div>
             </div>
-            <button @click="showVersionsModal = false" class="p-2 hover:bg-dark-700 rounded-lg">
+            <button @click="showVersionsModal = false" class="p-2 hover:bg-white/[0.04] rounded-lg">
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -1000,7 +1000,7 @@ onMounted(async () => {
                   class="p-3 rounded-lg border cursor-pointer transition-all"
                   :class="selectedVersion?.id === version.id
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-dark-600 hover:border-dark-500'"
+                    : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <div class="flex items-center justify-between">
                     <span class="text-white font-medium">Version {{ version.version_number }}</span>
@@ -1017,7 +1017,7 @@ onMounted(async () => {
             </div>
 
             <!-- Preview -->
-            <div class="flex-1 flex flex-col overflow-hidden border-l border-dark-700 pl-4">
+            <div class="flex-1 flex flex-col overflow-hidden border-l border-white/[0.06] pl-4">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-medium text-gray-400">
                   {{ selectedVersion ? `Vorschau - Version ${selectedVersion.version_number}` : 'Wähle eine Version' }}
@@ -1039,7 +1039,7 @@ onMounted(async () => {
               </div>
 
               <!-- Preview content -->
-              <div v-else-if="selectedVersion && versionPreviewContent" class="flex-1 overflow-y-auto bg-dark-900 rounded-lg p-4">
+              <div v-else-if="selectedVersion && versionPreviewContent" class="flex-1 overflow-y-auto bg-white/[0.02] rounded-xl p-4">
                 <div
                   v-if="selectedDoc?.format === 'richtext' || !selectedDoc?.format"
                   class="prose prose-invert max-w-none text-sm"

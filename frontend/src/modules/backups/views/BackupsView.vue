@@ -438,7 +438,7 @@ onMounted(fetchData)
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-dark-700">
+    <div class="border-b border-white/[0.06]">
       <nav class="flex gap-4">
         <button
           @click="activeTab = 'backups'"
@@ -487,7 +487,7 @@ onMounted(fetchData)
 
       <div v-else class="card overflow-hidden">
         <table class="w-full">
-          <thead class="bg-dark-700">
+          <thead class="bg-white/[0.03]">
             <tr>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Backup</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Typ</th>
@@ -498,8 +498,8 @@ onMounted(fetchData)
               <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Aktionen</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-dark-700">
-            <tr v-for="backup in backups" :key="backup.id" class="hover:bg-dark-700/50">
+          <tbody class="divide-y divide-white/[0.06]">
+            <tr v-for="backup in backups" :key="backup.id" class="hover:bg-white/[0.04]">
               <td class="px-4 py-3">
                 <p class="text-white text-sm font-medium">{{ backup.file_name || 'Backup' }}</p>
                 <p v-if="backup.schedule_name" class="text-xs text-gray-500">{{ backup.schedule_name }}</p>
@@ -528,7 +528,7 @@ onMounted(fetchData)
                   <button
                     v-if="backup.status === 'completed'"
                     @click="downloadBackup(backup)"
-                    class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+                    class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
                     title="Download"
                   >
                     <DocumentArrowDownIcon class="w-4 h-4" />
@@ -612,7 +612,7 @@ onMounted(fetchData)
               </button>
               <button
                 @click="openScheduleModal(schedule)"
-                class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+                class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
               >
                 <Cog6ToothIcon class="w-4 h-4" />
               </button>
@@ -651,7 +651,7 @@ onMounted(fetchData)
         >
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
-              <div class="p-2 rounded-lg bg-dark-700">
+              <div class="p-2 rounded-lg bg-white/[0.04]">
                 <component
                   :is="storageTypes.find(t => t.value === target.type)?.icon || ServerStackIcon"
                   class="w-6 h-6 text-primary-400"
@@ -682,14 +682,14 @@ onMounted(fetchData)
             <div class="flex items-center gap-2">
               <button
                 @click="testTarget(target)"
-                class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+                class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
                 title="Verbindung testen"
               >
                 <PlayIcon class="w-4 h-4" />
               </button>
               <button
                 @click="openTargetModal(target)"
-                class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg"
+                class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
                 title="Bearbeiten"
               >
                 <Cog6ToothIcon class="w-4 h-4" />
@@ -719,10 +719,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showBackupModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">Backup erstellen</h3>
               <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -733,7 +733,7 @@ onMounted(fetchData)
                 <label class="block text-sm font-medium text-gray-400 mb-2">Speicherziel</label>
                 <select
                   v-model="backupForm.target_id"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="select"
                   required
                 >
                   <option v-for="target in targets" :key="target.id" :value="target.id">
@@ -753,7 +753,7 @@ onMounted(fetchData)
                     class="p-3 rounded-lg border-2 text-center transition-all"
                     :class="backupForm.type === type.value
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'"
+                      : 'border-white/[0.06] hover:border-white/[0.08]'"
                   >
                     <p class="text-sm font-medium text-white">{{ type.label }}</p>
                     <p class="text-xs text-gray-500">{{ type.description }}</p>
@@ -765,7 +765,7 @@ onMounted(fetchData)
                 <label class="block text-sm font-medium text-gray-400 mb-2">Kompression</label>
                 <select
                   v-model="backupForm.compression"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="select"
                 >
                   <option v-for="opt in compressionOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -801,10 +801,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showTargetModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
                 {{ targetForm.id ? 'Speicherziel bearbeiten' : 'Speicherziel hinzufügen' }}
               </h3>
@@ -818,7 +818,7 @@ onMounted(fetchData)
                 <input
                   v-model="targetForm.name"
                   type="text"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="z.B. Lokaler Speicher"
                   required
                 />
@@ -835,7 +835,7 @@ onMounted(fetchData)
                     class="p-3 rounded-lg border-2 flex items-center gap-2 transition-all"
                     :class="targetForm.type === type.value
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'"
+                      : 'border-white/[0.06] hover:border-white/[0.08]'"
                   >
                     <component :is="type.icon" class="w-5 h-5 text-gray-400" />
                     <span class="text-sm text-white">{{ type.label }}</span>
@@ -849,7 +849,7 @@ onMounted(fetchData)
                 <input
                   v-model="targetForm.config.path"
                   type="text"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="/backups"
                 />
               </div>
@@ -861,7 +861,7 @@ onMounted(fetchData)
                   <input
                     v-model="targetForm.config.endpoint"
                     type="text"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                     placeholder="s3.amazonaws.com"
                   />
                 </div>
@@ -870,7 +870,7 @@ onMounted(fetchData)
                   <input
                     v-model="targetForm.config.bucket"
                     type="text"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                     placeholder="my-backups"
                   />
                 </div>
@@ -880,7 +880,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.access_key"
                       type="text"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                   <div>
@@ -888,7 +888,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.secret_key"
                       type="password"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                 </div>
@@ -902,7 +902,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.host"
                       type="text"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                   <div>
@@ -910,7 +910,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.port"
                       type="number"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                       placeholder="22"
                     />
                   </div>
@@ -921,7 +921,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.username"
                       type="text"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                   <div>
@@ -929,7 +929,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.password"
                       type="password"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                 </div>
@@ -938,7 +938,7 @@ onMounted(fetchData)
                   <input
                     v-model="targetForm.config.path"
                     type="text"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                     placeholder="/backups"
                   />
                 </div>
@@ -951,7 +951,7 @@ onMounted(fetchData)
                   <input
                     v-model="targetForm.config.url"
                     type="url"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                     placeholder="https://nextcloud.example.com/remote.php/dav/files/user/"
                   />
                 </div>
@@ -961,7 +961,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.username"
                       type="text"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                   <div>
@@ -969,7 +969,7 @@ onMounted(fetchData)
                     <input
                       v-model="targetForm.config.password"
                       type="password"
-                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                      class="input"
                     />
                   </div>
                 </div>
@@ -979,7 +979,7 @@ onMounted(fetchData)
                 <input
                   type="checkbox"
                   v-model="targetForm.is_default"
-                  class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                 />
                 <span class="text-sm text-gray-400">Als Standard-Speicherziel festlegen</span>
               </label>
@@ -1010,10 +1010,10 @@ onMounted(fetchData)
       >
         <div
           v-if="showScheduleModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700 sticky top-0 bg-dark-800">
+          <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] sticky top-0 bg-white/[0.02]">
               <h3 class="text-lg font-semibold text-white">
                 {{ scheduleForm.id ? 'Zeitplan bearbeiten' : 'Zeitplan erstellen' }}
               </h3>
@@ -1027,7 +1027,7 @@ onMounted(fetchData)
                 <input
                   v-model="scheduleForm.name"
                   type="text"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   placeholder="z.B. Tägliches Backup"
                   required
                 />
@@ -1037,7 +1037,7 @@ onMounted(fetchData)
                 <label class="block text-sm font-medium text-gray-400 mb-2">Speicherziel</label>
                 <select
                   v-model="scheduleForm.target_id"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                   required
                 >
                   <option v-for="target in targets" :key="target.id" :value="target.id">
@@ -1057,7 +1057,7 @@ onMounted(fetchData)
                     class="p-2 rounded-lg border-2 text-center transition-all"
                     :class="scheduleForm.type === type.value
                       ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'"
+                      : 'border-white/[0.06] hover:border-white/[0.08]'"
                   >
                     <p class="text-sm font-medium text-white">{{ type.label }}</p>
                   </button>
@@ -1068,7 +1068,7 @@ onMounted(fetchData)
                 <label class="block text-sm font-medium text-gray-400 mb-2">Zeitplan</label>
                 <select
                   v-model="scheduleForm.cron_expression"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                 >
                   <option v-for="preset in cronPresets" :key="preset.value" :value="preset.value">
                     {{ preset.label }}
@@ -1083,7 +1083,7 @@ onMounted(fetchData)
                     v-model.number="scheduleForm.retention_days"
                     type="number"
                     min="1"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                   />
                 </div>
                 <div>
@@ -1092,7 +1092,7 @@ onMounted(fetchData)
                     v-model.number="scheduleForm.retention_count"
                     type="number"
                     min="1"
-                    class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                    class="input"
                   />
                 </div>
               </div>
@@ -1101,7 +1101,7 @@ onMounted(fetchData)
                 <label class="block text-sm font-medium text-gray-400 mb-2">Kompression</label>
                 <select
                   v-model="scheduleForm.compression"
-                  class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input"
                 >
                   <option v-for="opt in compressionOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
@@ -1114,7 +1114,7 @@ onMounted(fetchData)
                   <input
                     type="checkbox"
                     v-model="scheduleForm.include_uploads"
-                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-sm text-gray-400">Upload-Dateien einschließen</span>
                 </label>
@@ -1122,7 +1122,7 @@ onMounted(fetchData)
                   <input
                     type="checkbox"
                     v-model="scheduleForm.include_logs"
-                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-sm text-gray-400">Log-Dateien einschließen</span>
                 </label>
@@ -1130,7 +1130,7 @@ onMounted(fetchData)
                   <input
                     type="checkbox"
                     v-model="scheduleForm.is_enabled"
-                    class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-500"
+                    class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
                   <span class="text-sm text-gray-400">Zeitplan aktivieren</span>
                 </label>
@@ -1162,9 +1162,9 @@ onMounted(fetchData)
       >
         <div
           v-if="showRestoreConfirm"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
+          <div class="modal w-full max-w-md">
             <div class="p-6 text-center">
               <div class="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
                 <ExclamationTriangleIcon class="w-8 h-8 text-yellow-400" />

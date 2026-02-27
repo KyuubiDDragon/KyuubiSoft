@@ -205,19 +205,19 @@ function copyToClipboard(text) {
       <button @click="setNow" class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-500 text-white rounded">
         Jetzt
       </button>
-      <button @click="setStartOfDay" class="px-3 py-1 text-xs bg-dark-600 hover:bg-dark-500 text-gray-300 rounded">
+      <button @click="setStartOfDay" class="px-3 py-1 text-xs bg-white/[0.08] hover:bg-white/[0.08] text-gray-300 rounded">
         Tagesanfang
       </button>
-      <button @click="setEndOfDay" class="px-3 py-1 text-xs bg-dark-600 hover:bg-dark-500 text-gray-300 rounded">
+      <button @click="setEndOfDay" class="px-3 py-1 text-xs bg-white/[0.08] hover:bg-white/[0.08] text-gray-300 rounded">
         Tagesende
       </button>
       <span class="text-gray-600">|</span>
-      <button @click="addTime(-1, 'hour')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">-1h</button>
-      <button @click="addTime(1, 'hour')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">+1h</button>
-      <button @click="addTime(-1, 'day')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">-1d</button>
-      <button @click="addTime(1, 'day')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">+1d</button>
-      <button @click="addTime(-1, 'week')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">-1w</button>
-      <button @click="addTime(1, 'week')" class="px-2 py-1 text-xs bg-dark-700 hover:bg-dark-600 text-gray-400 rounded">+1w</button>
+      <button @click="addTime(-1, 'hour')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">-1h</button>
+      <button @click="addTime(1, 'hour')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">+1h</button>
+      <button @click="addTime(-1, 'day')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">-1d</button>
+      <button @click="addTime(1, 'day')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">+1d</button>
+      <button @click="addTime(-1, 'week')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">-1w</button>
+      <button @click="addTime(1, 'week')" class="px-2 py-1 text-xs bg-white/[0.04] hover:bg-white/[0.04] text-gray-400 rounded">+1w</button>
     </div>
 
     <!-- Output Section -->
@@ -225,7 +225,7 @@ function copyToClipboard(text) {
       <div
         v-for="(value, key) in outputs"
         :key="key"
-        class="flex items-center justify-between p-2 bg-dark-700 rounded"
+        class="flex items-center justify-between p-2 bg-white/[0.04] rounded"
       >
         <div class="flex-1 min-w-0">
           <span class="text-xs text-gray-500 uppercase">{{ key }}</span>

@@ -239,8 +239,8 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Git Repositories</h1>
-        <p class="text-gray-500 dark:text-gray-400">Verwalte und überwache deine Git Repositories</p>
+        <h1 class="text-3xl font-bold text-white">Git Repositories</h1>
+        <p class="text-gray-400">Verwalte und überwache deine Git Repositories</p>
       </div>
       <div class="flex gap-2">
         <button @click="showFolderModal = true" class="btn-secondary">
@@ -256,21 +256,21 @@ onMounted(() => {
 
     <!-- Stats -->
     <div v-if="stats" class="grid grid-cols-4 gap-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-        <div class="text-gray-500 dark:text-gray-400 text-sm">Repositories</div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_repositories }}</div>
+      <div class="bg-white/[0.04] rounded-lg p-4 shadow-glass">
+        <div class="text-gray-400 text-sm">Repositories</div>
+        <div class="text-2xl font-bold text-white">{{ stats.total_repositories }}</div>
       </div>
-      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 shadow">
-        <div class="text-blue-600 dark:text-blue-400 text-sm">Offene PRs</div>
-        <div class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{ stats.total_open_prs }}</div>
+      <div class="bg-blue-900/20 rounded-lg p-4 shadow-glass">
+        <div class="text-blue-400 text-sm">Offene PRs</div>
+        <div class="text-2xl font-bold text-blue-300">{{ stats.total_open_prs }}</div>
       </div>
-      <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 shadow">
-        <div class="text-amber-600 dark:text-amber-400 text-sm">Offene Issues</div>
-        <div class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ stats.total_open_issues }}</div>
+      <div class="bg-amber-900/20 rounded-lg p-4 shadow-glass">
+        <div class="text-amber-400 text-sm">Offene Issues</div>
+        <div class="text-2xl font-bold text-amber-300">{{ stats.total_open_issues }}</div>
       </div>
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow">
-        <div class="text-gray-500 dark:text-gray-400 text-sm">Provider</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300">
+      <div class="bg-white/[0.03] rounded-lg p-4 shadow-glass">
+        <div class="text-gray-400 text-sm">Provider</div>
+        <div class="text-sm text-gray-300">
           <span v-for="p in stats.by_provider" :key="p.provider" class="mr-2">
             {{ p.provider }}: {{ p.count }}
           </span>
@@ -287,42 +287,42 @@ onMounted(() => {
     <div v-else class="space-y-4">
       <template v-for="(group, folderId) in groupedRepos" :key="folderId">
         <div v-if="group.repositories.length > 0 || group.folder"
-             class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+             class="bg-white/[0.04] rounded-lg shadow overflow-hidden">
           <!-- Folder Header -->
           <div v-if="group.folder"
-               class="px-4 py-3 bg-gray-50 dark:bg-gray-700 cursor-pointer flex items-center justify-between"
+               class="px-4 py-3 bg-white/[0.03] cursor-pointer flex items-center justify-between"
                @click="toggleFolderCollapse(group.folder)">
             <div class="flex items-center gap-2">
               <FolderIcon class="w-5 h-5" :style="{ color: group.folder.color }" />
-              <span class="font-medium text-gray-900 dark:text-white">{{ group.folder.name }}</span>
+              <span class="font-medium text-white">{{ group.folder.name }}</span>
               <span class="text-sm text-gray-500">({{ group.repositories.length }})</span>
             </div>
             <component :is="group.isCollapsed ? ChevronRightIcon : ChevronDownIcon" class="w-5 h-5 text-gray-400" />
           </div>
-          <div v-else class="px-4 py-3 bg-gray-50 dark:bg-gray-700">
-            <span class="font-medium text-gray-900 dark:text-white">Ohne Ordner</span>
+          <div v-else class="px-4 py-3 bg-white/[0.03]">
+            <span class="font-medium text-white">Ohne Ordner</span>
             <span class="text-sm text-gray-500 ml-2">({{ group.repositories.length }})</span>
           </div>
 
           <!-- Repositories -->
-          <div v-if="!group.isCollapsed" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <div v-if="!group.isCollapsed" class="divide-y divide-white/[0.06]">
             <div v-for="repo in group.repositories" :key="repo.id"
-                 class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center justify-between">
+                 class="p-4 hover:bg-white/[0.04] flex items-center justify-between">
               <div class="flex items-center gap-4 flex-1 cursor-pointer" @click="loadRepoDetails(repo.id)">
-                <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <CodeBracketIcon class="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                <div class="w-10 h-10 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                  <CodeBracketIcon class="w-6 h-6 text-gray-400" />
                 </div>
                 <div class="flex-1">
                   <div class="flex items-center gap-2">
-                    <h3 class="font-medium text-gray-900 dark:text-white">{{ repo.name }}</h3>
-                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <h3 class="font-medium text-white">{{ repo.name }}</h3>
+                    <span class="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-gray-400">
                       {{ getProviderIcon(repo.provider) }}
                     </span>
-                    <span v-if="repo.is_private" class="text-xs px-2 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+                    <span v-if="repo.is_private" class="text-xs px-2 py-0.5 rounded bg-yellow-900/30 text-yellow-400">
                       Privat
                     </span>
                   </div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{{ repo.repo_url }}</p>
+                  <p class="text-sm text-gray-400 truncate max-w-md">{{ repo.repo_url }}</p>
                 </div>
                 <div class="flex items-center gap-6 text-sm">
                   <div class="flex items-center gap-1 text-gray-500">
@@ -367,9 +367,9 @@ onMounted(() => {
 
       <!-- Empty State -->
       <div v-if="repositories.length === 0"
-           class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+           class="text-center py-12 bg-white/[0.04] rounded-lg shadow-glass">
         <CodeBracketIcon class="w-12 h-12 mx-auto text-gray-400" />
-        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Keine Repositories</h3>
+        <h3 class="mt-4 text-lg font-medium text-white">Keine Repositories</h3>
         <p class="mt-2 text-gray-500">Füge dein erstes Git Repository hinzu.</p>
         <button @click="showModal = true" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
@@ -382,9 +382,9 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
+          <div class="relative bg-white/[0.04] rounded-lg shadow-float w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold text-white mb-4">
               {{ editingRepo ? 'Repository bearbeiten' : 'Neues Repository' }}
             </h2>
             <form @submit.prevent="saveRepository" class="space-y-4">
@@ -415,11 +415,11 @@ onMounted(() => {
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input v-model="form.auto_sync" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Auto-Sync</span>
+                  <span class="text-sm text-gray-300">Auto-Sync</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.notify_on_new_pr" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">PR Benachrichtigung</span>
+                  <span class="text-sm text-gray-300">PR Benachrichtigung</span>
                 </label>
               </div>
               <div class="flex justify-end gap-3 pt-4">
@@ -436,9 +436,9 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showFolderModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showFolderModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Neuer Ordner</h2>
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showFolderModal = false"></div>
+          <div class="relative bg-white/[0.04] rounded-lg shadow-float w-full max-w-md p-6">
+            <h2 class="text-xl font-bold text-white mb-4">Neuer Ordner</h2>
             <form @submit.prevent="saveFolder" class="space-y-4">
               <div>
                 <label class="label">Name</label>
@@ -450,7 +450,7 @@ onMounted(() => {
                   <button v-for="color in folderColors" :key="color" type="button"
                           @click="folderForm.color = color"
                           class="w-8 h-8 rounded-full border-2"
-                          :class="folderForm.color === color ? 'border-gray-900 dark:border-white' : 'border-transparent'"
+                          :class="folderForm.color === color ? 'border-white' : 'border-transparent'"
                           :style="{ backgroundColor: color }"></button>
                 </div>
               </div>
@@ -468,11 +468,11 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showDetailModal && selectedRepo" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showDetailModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showDetailModal = false"></div>
+          <div class="relative bg-white/[0.04] rounded-lg shadow-float w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <div class="flex justify-between items-start mb-6">
               <div>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ selectedRepo.repository.name }}</h2>
+                <h2 class="text-2xl font-bold text-white">{{ selectedRepo.repository.name }}</h2>
                 <p class="text-gray-500">{{ selectedRepo.repository.repo_url }}</p>
               </div>
               <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-600">
@@ -485,10 +485,10 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-6">
               <!-- Pull Requests -->
               <div>
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Pull Requests</h3>
+                <h3 class="font-semibold text-white mb-3">Pull Requests</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto">
                   <div v-for="pr in selectedRepo.pull_requests" :key="pr.id"
-                       class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                       class="p-3 bg-white/[0.03] rounded-lg">
                     <div class="flex items-center gap-2">
                       <span :class="pr.state === 'open' ? 'text-green-600' : pr.state === 'merged' ? 'text-purple-600' : 'text-red-600'">
                         #{{ pr.number }}
@@ -505,10 +505,10 @@ onMounted(() => {
 
               <!-- Issues -->
               <div>
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Issues</h3>
+                <h3 class="font-semibold text-white mb-3">Issues</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto">
                   <div v-for="issue in selectedRepo.issues" :key="issue.id"
-                       class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                       class="p-3 bg-white/[0.03] rounded-lg">
                     <div class="flex items-center gap-2">
                       <span :class="issue.state === 'open' ? 'text-green-600' : 'text-red-600'">
                         #{{ issue.number }}
@@ -526,13 +526,13 @@ onMounted(() => {
 
             <!-- Recent Commits -->
             <div class="mt-6">
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Letzte Commits</h3>
+              <h3 class="font-semibold text-white mb-3">Letzte Commits</h3>
               <div class="space-y-2 max-h-60 overflow-y-auto">
                 <div v-for="commit in selectedRepo.commits?.slice(0, 10)" :key="commit.id"
-                     class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-start gap-3">
+                     class="p-3 bg-white/[0.03] rounded-lg flex items-start gap-3">
                   <code class="text-xs text-indigo-600 font-mono">{{ commit.sha?.substring(0, 7) }}</code>
                   <div class="flex-1">
-                    <p class="text-sm text-gray-900 dark:text-white line-clamp-1">{{ commit.message }}</p>
+                    <p class="text-sm text-white line-clamp-1">{{ commit.message }}</p>
                     <p class="text-xs text-gray-500">{{ commit.author_name }} - {{ formatDate(commit.committed_at) }}</p>
                   </div>
                 </div>
@@ -545,11 +545,3 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.btn-primary {
-  @apply inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors;
-}
-.btn-secondary {
-  @apply inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
-}
-</style>

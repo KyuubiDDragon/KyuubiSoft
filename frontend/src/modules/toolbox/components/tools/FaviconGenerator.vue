@@ -154,14 +154,14 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
       <button
         @click="mode = 'text'; generateIcons()"
         class="px-4 py-2 text-sm rounded-lg transition-colors"
-        :class="mode === 'text' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+        :class="mode === 'text' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
       >
         Text
       </button>
       <button
         @click="mode = 'image'"
         class="px-4 py-2 text-sm rounded-lg transition-colors"
-        :class="mode === 'image' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+        :class="mode === 'image' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
       >
         Bild
       </button>
@@ -205,7 +205,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
     <!-- Image Mode Settings -->
     <div v-else class="space-y-3">
       <div
-        class="border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+        class="border-2 border-dashed border-white/[0.06] rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
         @click="$refs.imageInput.click()"
       >
         <input
@@ -244,7 +244,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
     </div>
 
     <!-- Preview -->
-    <div class="flex items-center justify-center gap-4 p-4 bg-dark-800 rounded-lg">
+    <div class="flex items-center justify-center gap-4 p-4 bg-white/[0.04] rounded-lg">
       <div
         v-for="icon in generatedIcons.filter(i => [32, 64, 128].includes(i.size))"
         :key="icon.size"
@@ -279,7 +279,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
           v-for="icon in generatedIcons"
           :key="icon.size"
           @click="downloadIcon(icon)"
-          class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-center transition-colors"
+          class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-center transition-colors"
         >
           <img :src="icon.dataUrl" :width="Math.min(icon.size, 48)" class="mx-auto" />
           <div class="text-xs text-gray-400 mt-1">{{ icon.size }}x{{ icon.size }}</div>
@@ -290,7 +290,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
     <!-- Usage Info -->
     <details class="text-sm">
       <summary class="text-gray-400 cursor-pointer hover:text-white">Verwendung</summary>
-      <div class="mt-2 p-3 bg-dark-700 rounded-lg text-xs text-gray-400 font-mono space-y-2">
+      <div class="mt-2 p-3 bg-white/[0.04] rounded-lg text-xs text-gray-400 font-mono space-y-2">
         <p>&lt;!-- HTML Head --&gt;</p>
         <p>&lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"&gt;</p>
         <p>&lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"&gt;</p>

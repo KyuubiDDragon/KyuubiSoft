@@ -13,7 +13,7 @@ defineProps({ widget: Object, data: Array })
       <div
         v-for="task in (data || []).slice(0, 5)"
         :key="task.id"
-        class="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
+        class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
       >
         <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: task.color || '#3B82F6' }"></div>
         <div class="flex-1 min-w-0">

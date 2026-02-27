@@ -221,7 +221,7 @@ function setPayloadTemplate(type) {
 <template>
   <div class="space-y-4">
     <!-- Tabs -->
-    <div class="flex gap-1 bg-dark-800 rounded-lg p-1">
+    <div class="flex gap-1 bg-white/[0.04] rounded-lg p-1">
       <button
         @click="activeTab = 'decode'"
         class="flex-1 px-4 py-2 rounded-md text-sm transition-colors"
@@ -290,7 +290,7 @@ function setPayloadTemplate(type) {
             <span class="w-3 h-3 rounded bg-red-500"></span>
             Header
           </label>
-          <pre class="p-3 bg-dark-900 rounded-lg text-sm font-mono text-red-400 overflow-auto">{{ formatJson(decoded.header) }}</pre>
+          <pre class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono text-red-400 overflow-auto">{{ formatJson(decoded.header) }}</pre>
         </div>
 
         <!-- Payload -->
@@ -299,7 +299,7 @@ function setPayloadTemplate(type) {
             <span class="w-3 h-3 rounded bg-purple-500"></span>
             Payload
           </label>
-          <pre class="p-3 bg-dark-900 rounded-lg text-sm font-mono text-purple-400 overflow-auto">{{ formatJson(decoded.payload) }}</pre>
+          <pre class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono text-purple-400 overflow-auto">{{ formatJson(decoded.payload) }}</pre>
         </div>
 
         <!-- Signature -->
@@ -308,7 +308,7 @@ function setPayloadTemplate(type) {
             <span class="w-3 h-3 rounded bg-cyan-500"></span>
             Signature
           </label>
-          <div class="p-3 bg-dark-900 rounded-lg text-sm font-mono text-cyan-400 break-all">
+          <div class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono text-cyan-400 break-all">
             {{ decoded.signature }}
           </div>
         </div>
@@ -384,7 +384,7 @@ function setPayloadTemplate(type) {
             </button>
           </div>
         </div>
-        <div class="p-3 bg-dark-900 rounded-lg text-sm font-mono text-green-400 break-all max-h-32 overflow-auto">
+        <div class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono text-green-400 break-all max-h-32 overflow-auto">
           {{ generatedToken }}
         </div>
       </div>

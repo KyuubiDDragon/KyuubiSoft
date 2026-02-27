@@ -187,7 +187,7 @@ function clearForm() {
           </p>
 
           <!-- Download Options -->
-          <div class="pt-4 border-t border-dark-600 space-y-4">
+          <div class="pt-4 border-t border-white/[0.06] space-y-4">
             <div class="flex gap-6">
               <!-- Audio Only Toggle -->
               <label class="flex items-center gap-2 cursor-pointer">

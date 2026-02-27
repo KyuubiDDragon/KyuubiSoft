@@ -151,7 +151,7 @@ function getPlaceholderGradient(index) {
           <select
             :value="activeImageProperty?.id"
             @change="emit('change-image-property', $event.target.value)"
-            class="bg-dark-700 border border-dark-600 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="select"
           >
             <option value="">Kein Bild</option>
             <option v-for="prop in imageProperties" :key="prop.id" :value="prop.id">
@@ -163,12 +163,12 @@ function getPlaceholderGradient(index) {
 
       <div class="flex items-center gap-2">
         <!-- Card size selector -->
-        <div class="flex items-center bg-dark-700 rounded-lg p-0.5">
+        <div class="flex items-center bg-white/[0.04] rounded-lg p-0.5">
           <button
             @click="emit('change-card-size', 'small')"
             :class="[
               'px-2 py-1 text-xs rounded transition-colors',
-              cardSize === 'small' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'
+              cardSize === 'small' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
             Klein
@@ -177,7 +177,7 @@ function getPlaceholderGradient(index) {
             @click="emit('change-card-size', 'medium')"
             :class="[
               'px-2 py-1 text-xs rounded transition-colors',
-              cardSize === 'medium' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'
+              cardSize === 'medium' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
             Mittel
@@ -186,7 +186,7 @@ function getPlaceholderGradient(index) {
             @click="emit('change-card-size', 'large')"
             :class="[
               'px-2 py-1 text-xs rounded transition-colors',
-              cardSize === 'large' ? 'bg-dark-600 text-white' : 'text-gray-400 hover:text-white'
+              cardSize === 'large' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
             Groß
@@ -202,7 +202,7 @@ function getPlaceholderGradient(index) {
         v-for="(row, index) in rows"
         :key="row.id"
         @click="emit('select-row', row)"
-        class="group bg-dark-700 rounded-lg overflow-hidden border border-dark-600 hover:border-dark-500 transition-all cursor-pointer hover:shadow-lg"
+        class="group bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06] hover:border-white/[0.08] transition-all cursor-pointer hover:shadow-glass"
       >
         <!-- Image/Cover -->
         <div :class="['relative overflow-hidden', imageHeightClass]">
@@ -262,7 +262,7 @@ function getPlaceholderGradient(index) {
       <button
         @click="emit('add-row')"
         :class="[
-          'border-2 border-dashed border-dark-600 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-dark-500 transition-colors',
+          'border-2 border-dashed border-white/[0.06] rounded-xl flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-white/[0.08] transition-colors',
           imageHeightClass
         ]"
         style="min-height: 150px"

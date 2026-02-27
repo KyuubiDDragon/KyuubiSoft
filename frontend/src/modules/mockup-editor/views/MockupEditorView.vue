@@ -277,9 +277,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-64px)] flex flex-col bg-gray-900">
+  <div class="h-[calc(100vh-64px)] flex flex-col bg-white/[0.02]">
     <!-- Top Toolbar -->
-    <div class="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+    <div class="flex items-center justify-between px-4 py-2 bg-white/[0.04] border-b border-white/[0.06]">
       <div class="flex items-center gap-4">
         <h1 class="text-lg font-semibold text-white flex items-center gap-2">
           <PhotoIcon class="w-5 h-5 text-amber-400" />
@@ -294,7 +294,7 @@ onUnmounted(() => {
 
       <div class="flex items-center gap-2">
         <!-- Zoom Controls -->
-        <div v-if="hasTemplate" class="flex items-center gap-1 bg-gray-700 rounded-lg px-2 py-1">
+        <div v-if="hasTemplate" class="flex items-center gap-1 bg-white/[0.04] rounded-lg px-2 py-1">
           <button @click="handleZoomOut" class="p-1 text-gray-400 hover:text-white transition-colors" title="Verkleinern">
             <MagnifyingGlassMinusIcon class="w-4 h-4" />
           </button>
@@ -302,7 +302,7 @@ onUnmounted(() => {
           <button @click="handleZoomIn" class="p-1 text-gray-400 hover:text-white transition-colors" title="Vergrössern">
             <MagnifyingGlassPlusIcon class="w-4 h-4" />
           </button>
-          <div class="w-px h-4 bg-gray-600 mx-1" />
+          <div class="w-px h-4 bg-white/[0.06] mx-1" />
           <button @click="fitCanvasToView" class="p-1 text-gray-400 hover:text-white transition-colors" title="An Fenster anpassen">
             <span class="text-xs">Fit</span>
           </button>
@@ -324,13 +324,13 @@ onUnmounted(() => {
             <!-- Dropdown Menu -->
             <Transition name="fade">
               <div v-if="showAddElementMenu"
-                   class="absolute top-full left-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                   class="absolute top-full left-0 mt-2 w-56 bg-white/[0.04] border border-white/[0.06] rounded-lg shadow-xl z-50 overflow-hidden">
                 <div class="py-1">
                   <button
                     v-for="item in elementTypes"
                     :key="item.type"
                     @click="handleAddElement(item.type)"
-                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-gray-700 transition-colors"
+                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-white/[0.04] transition-colors"
                   >
                     <component :is="item.icon" class="w-5 h-5 text-amber-400" />
                     <div>
@@ -354,11 +354,11 @@ onUnmounted(() => {
             <!-- Dropdown Menu -->
             <Transition name="fade">
               <div v-if="showSaveMenu"
-                   class="absolute top-full left-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                   class="absolute top-full left-0 mt-2 w-56 bg-white/[0.04] border border-white/[0.06] rounded-lg shadow-xl z-50 overflow-hidden">
                 <div class="py-1">
                   <button
                     @click="handleSaveDraft"
-                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-gray-700 transition-colors"
+                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-white/[0.04] transition-colors"
                   >
                     <FolderIcon class="w-5 h-5 text-blue-400" />
                     <div>
@@ -368,7 +368,7 @@ onUnmounted(() => {
                   </button>
                   <button
                     @click="handleSaveAsTemplate"
-                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-gray-700 transition-colors"
+                    class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-white/[0.04] transition-colors"
                   >
                     <BookmarkIcon class="w-5 h-5 text-amber-400" />
                     <div>
@@ -383,56 +383,56 @@ onUnmounted(() => {
 
           <!-- Element Actions (when selected) -->
           <template v-if="mockupStore.selectedElementId">
-            <div class="w-px h-6 bg-gray-600 mx-1" />
+            <div class="w-px h-6 bg-white/[0.06] mx-1" />
 
             <!-- Alignment buttons -->
             <button @click="handleCenterHorizontally"
-                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                     title="Horizontal zentrieren">
               <Bars3Icon class="w-4 h-4" />
             </button>
             <button @click="handleCenterVertically"
-                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                     title="Vertikal zentrieren">
               <Bars2Icon class="w-4 h-4 rotate-90" />
             </button>
             <button @click="handleCenterBoth"
-                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    class="flex items-center gap-1 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                     title="Mittig zentrieren">
               <StopIcon class="w-4 h-4" />
             </button>
 
-            <div class="w-px h-6 bg-gray-600 mx-1" />
+            <div class="w-px h-6 bg-white/[0.06] mx-1" />
 
             <button @click="handleDuplicateElement"
-                    class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                     title="Element duplizieren">
               <DocumentDuplicateIcon class="w-4 h-4" />
             </button>
             <button @click="handleDeleteElement"
-                    class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
+                    class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
                     title="Element löschen">
               <TrashIcon class="w-4 h-4" />
             </button>
           </template>
 
-          <div class="w-px h-6 bg-gray-600 mx-1" />
+          <div class="w-px h-6 bg-white/[0.06] mx-1" />
 
           <button @click="handleReset"
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
             <ArrowPathIcon class="w-4 h-4" />
             <span class="text-sm">Zurücksetzen</span>
           </button>
 
           <button @click="showTemplateSelector = true"
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
             <Squares2X2Icon class="w-4 h-4" />
             <span class="text-sm">Templates</span>
           </button>
 
           <button @click="showProperties = !showProperties"
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-                  :class="showProperties ? 'bg-amber-500/20 text-amber-400' : 'text-gray-300 hover:text-white hover:bg-gray-700'">
+                  :class="showProperties ? 'bg-amber-500/20 text-amber-400' : 'text-gray-300 hover:text-white hover:bg-white/[0.04]'">
             <AdjustmentsHorizontalIcon class="w-4 h-4" />
             <span class="text-sm">Eigenschaften</span>
           </button>
@@ -450,8 +450,8 @@ onUnmounted(() => {
     <div class="flex-1 flex overflow-hidden">
       <!-- Template Selector Sidebar -->
       <Transition name="slide-left">
-        <div v-if="showTemplateSelector" class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+        <div v-if="showTemplateSelector" class="w-80 bg-white/[0.04] border-r border-white/[0.06] flex flex-col overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <h2 class="font-semibold text-white">Templates</h2>
             <button v-if="hasTemplate" @click="showTemplateSelector = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -464,7 +464,7 @@ onUnmounted(() => {
       </Transition>
 
       <!-- Canvas Area -->
-      <div ref="canvasContainerRef" class="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-8">
+      <div ref="canvasContainerRef" class="flex-1 overflow-auto bg-white/[0.02] flex items-center justify-center p-8">
         <template v-if="hasTemplate">
           <MockupCanvas ref="canvasRef" @edit-image="handleEditImage" />
         </template>
@@ -479,9 +479,9 @@ onUnmounted(() => {
 
       <!-- Properties Panel -->
       <Transition name="slide-right">
-        <div v-if="showProperties && hasTemplate" class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col overflow-hidden">
+        <div v-if="showProperties && hasTemplate" class="w-80 bg-white/[0.04] border-l border-white/[0.06] flex flex-col overflow-hidden">
           <!-- Panel Header with Tabs -->
-          <div class="border-b border-gray-700">
+          <div class="border-b border-white/[0.06]">
             <div class="flex items-center justify-between px-4 py-2">
               <div class="flex gap-1">
                 <button
@@ -489,7 +489,7 @@ onUnmounted(() => {
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                   :class="rightPanelTab === 'properties'
                     ? 'bg-amber-500/20 text-amber-400'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
                 >
                   <AdjustmentsHorizontalIcon class="w-4 h-4" />
                   <span>Element</span>
@@ -499,7 +499,7 @@ onUnmounted(() => {
                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                   :class="rightPanelTab === 'features'
                     ? 'bg-amber-500/20 text-amber-400'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
                 >
                   <SparklesIcon class="w-4 h-4" />
                   <span>Features</span>
@@ -538,8 +538,8 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="fade">
         <div v-if="showSaveTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div class="absolute inset-0 bg-black/50" @click="showSaveTemplateModal = false" />
-          <div class="relative bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showSaveTemplateModal = false" />
+          <div class="relative bg-white/[0.04] rounded-xl shadow-xl w-full max-w-md p-6">
             <h3 class="text-lg font-semibold text-white mb-4">Als Template speichern</h3>
 
             <div class="space-y-4">
@@ -548,7 +548,7 @@ onUnmounted(() => {
                 <input
                   v-model="saveTemplateName"
                   type="text"
-                  class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   placeholder="Template Name"
                 />
               </div>
@@ -558,7 +558,7 @@ onUnmounted(() => {
                 <textarea
                   v-model="saveTemplateDescription"
                   rows="3"
-                  class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                  class="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                   placeholder="Kurze Beschreibung..."
                 />
               </div>

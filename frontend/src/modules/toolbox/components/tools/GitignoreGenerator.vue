@@ -454,16 +454,16 @@ function applyPreset(preset) {
     <div>
       <label class="block text-xs text-gray-400 mb-2">Schnellauswahl</label>
       <div class="flex flex-wrap gap-2">
-        <button @click="applyPreset('fullstack-js')" class="btn-sm bg-dark-700 hover:bg-dark-600">
+        <button @click="applyPreset('fullstack-js')" class="btn-sm bg-white/[0.04] hover:bg-white/[0.04]">
           Fullstack JS
         </button>
-        <button @click="applyPreset('php-laravel')" class="btn-sm bg-dark-700 hover:bg-dark-600">
+        <button @click="applyPreset('php-laravel')" class="btn-sm bg-white/[0.04] hover:bg-white/[0.04]">
           PHP/Laravel
         </button>
-        <button @click="applyPreset('python-ml')" class="btn-sm bg-dark-700 hover:bg-dark-600">
+        <button @click="applyPreset('python-ml')" class="btn-sm bg-white/[0.04] hover:bg-white/[0.04]">
           Python
         </button>
-        <button @click="applyPreset('java-spring')" class="btn-sm bg-dark-700 hover:bg-dark-600">
+        <button @click="applyPreset('java-spring')" class="btn-sm bg-white/[0.04] hover:bg-white/[0.04]">
           Java/Spring
         </button>
         <button @click="clearAll" class="btn-sm bg-red-900/30 hover:bg-red-900/50 text-red-400">
@@ -495,14 +495,14 @@ function applyPreset(preset) {
           <label
             v-for="item in items"
             :key="item.key"
-            class="flex items-center gap-2 p-2 bg-dark-700 rounded cursor-pointer hover:bg-dark-600"
+            class="flex items-center gap-2 p-2 bg-white/[0.04] rounded cursor-pointer hover:bg-white/[0.04]"
             :class="{ 'ring-1 ring-primary-500': selectedTemplates.includes(item.key) }"
           >
             <input
               type="checkbox"
               :checked="selectedTemplates.includes(item.key)"
               @change="toggleTemplate(item.key)"
-              class="rounded bg-dark-600 border-dark-500"
+              class="rounded bg-white/[0.08] border-white/[0.08]"
             />
             <span class="text-sm text-white">{{ item.name }}</span>
           </label>
@@ -535,7 +535,7 @@ function applyPreset(preset) {
           </button>
         </div>
       </div>
-      <pre class="p-3 bg-dark-900 rounded-lg text-xs text-gray-300 font-mono max-h-48 overflow-auto">{{ generatedContent }}</pre>
+      <pre class="p-3 bg-white/[0.02] rounded-lg text-xs text-gray-300 font-mono max-h-48 overflow-auto">{{ generatedContent }}</pre>
     </div>
   </div>
 </template>

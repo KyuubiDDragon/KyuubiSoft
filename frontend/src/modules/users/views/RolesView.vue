@@ -287,7 +287,7 @@ function canDeleteRole(role) {
       </div>
       <button
         @click="openCreateModal"
-        class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        class="btn-primary"
       >
         <PlusIcon class="w-5 h-5" />
         Neue Rolle
@@ -309,7 +309,7 @@ function canDeleteRole(role) {
       <div
         v-for="role in roles"
         :key="role.id"
-        class="bg-dark-800 rounded-lg border border-dark-700 p-4 hover:border-dark-600 transition-colors"
+        class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.06] transition-colors"
       >
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-3">
@@ -346,14 +346,14 @@ function canDeleteRole(role) {
         <div class="flex items-center gap-2">
           <button
             @click="openPermissionsModal(role)"
-            class="flex-1 px-3 py-2 bg-dark-700 text-white text-sm rounded-lg hover:bg-dark-600 transition-colors"
+            class="flex-1 px-3 py-2 bg-white/[0.04] text-white text-sm rounded-lg hover:bg-white/[0.04] transition-colors"
           >
             Berechtigungen
           </button>
           <button
             v-if="canEditRole(role)"
             @click="openEditModal(role)"
-            class="p-2 text-primary-400 hover:text-primary-300 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-primary-400 hover:text-primary-300 hover:bg-white/[0.04] rounded-lg transition-colors"
             title="Bearbeiten"
           >
             <PencilIcon class="w-5 h-5" />
@@ -361,7 +361,7 @@ function canDeleteRole(role) {
           <button
             v-if="canDeleteRole(role)"
             @click="openDeleteModal(role)"
-            class="p-2 text-red-400 hover:text-red-300 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-red-400 hover:text-red-300 hover:bg-white/[0.04] rounded-lg transition-colors"
             title="Löschen"
           >
             <TrashIcon class="w-5 h-5" />
@@ -378,11 +378,11 @@ function canDeleteRole(role) {
     <Teleport to="body">
       <div
         v-if="showRoleModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-md mx-4">
+        <div class="modal w-full max-w-md mx-4">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
               {{ isEditing ? 'Rolle bearbeiten' : 'Neue Rolle erstellen' }}
             </h3>
@@ -405,7 +405,7 @@ function canDeleteRole(role) {
                 v-model="formData.name"
                 type="text"
                 :disabled="isEditing && selectedRole?.is_system"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 disabled:opacity-50"
+                class="input disabled:opacity-50"
                 placeholder="z.B. moderator"
               />
               <p class="mt-1 text-xs text-gray-500">Nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche</p>
@@ -417,7 +417,7 @@ function canDeleteRole(role) {
               <textarea
                 v-model="formData.description"
                 rows="2"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Beschreibung der Rolle..."
               ></textarea>
             </div>
@@ -443,7 +443,7 @@ function canDeleteRole(role) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -453,7 +453,7 @@ function canDeleteRole(role) {
             <button
               @click="saveRole"
               :disabled="isSaving"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+              class="btn-primary disabled:opacity-50"
             >
               {{ isSaving ? 'Speichern...' : (isEditing ? 'Speichern' : 'Erstellen') }}
             </button>
@@ -466,9 +466,9 @@ function canDeleteRole(role) {
     <Teleport to="body">
       <div
         v-if="showDeleteModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-md mx-4">
+        <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
             <h3 class="text-lg font-semibold text-white mb-2">Rolle löschen</h3>
             <p class="text-gray-400">
@@ -481,7 +481,7 @@ function canDeleteRole(role) {
               <p class="text-red-400 text-sm">{{ formErrors.general }}</p>
             </div>
           </div>
-          <div class="flex justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -491,7 +491,7 @@ function canDeleteRole(role) {
             <button
               @click="deleteRole"
               :disabled="isSaving"
-              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              class="btn-danger disabled:opacity-50"
             >
               {{ isSaving ? 'Löschen...' : 'Löschen' }}
             </button>
@@ -504,11 +504,11 @@ function canDeleteRole(role) {
     <Teleport to="body">
       <div
         v-if="showPermissionsModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
       >
-        <div class="bg-dark-800 rounded-lg border border-dark-700 w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+        <div class="modal w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
-          <div class="flex items-center justify-between p-4 border-b border-dark-700 flex-shrink-0">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06] flex-shrink-0">
             <div>
               <h3 class="text-lg font-semibold text-white">
                 Berechtigungen für {{ selectedRole?.name }}
@@ -532,7 +532,7 @@ function canDeleteRole(role) {
             </div>
 
             <!-- Permission count -->
-            <div class="mb-4 p-3 bg-dark-700 rounded-lg">
+            <div class="mb-4 p-3 bg-white/[0.04] rounded-lg">
               <div class="flex items-center gap-2 text-sm">
                 <ShieldCheckIcon class="w-5 h-5 text-primary-400" />
                 <span class="text-gray-300">
@@ -547,7 +547,7 @@ function canDeleteRole(role) {
                 v-model="permissionSearch"
                 type="text"
                 placeholder="Berechtigungen suchen..."
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
               />
             </div>
 
@@ -556,12 +556,12 @@ function canDeleteRole(role) {
               <div
                 v-for="(permissions, module) in filteredPermissions"
                 :key="module"
-                class="bg-dark-700 rounded-lg overflow-hidden"
+                class="bg-white/[0.04] rounded-lg overflow-hidden"
               >
                 <!-- Module Header -->
                 <button
                   @click="toggleModule(module)"
-                  class="w-full px-4 py-3 flex items-center justify-between hover:bg-dark-600 transition-colors"
+                  class="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors"
                 >
                   <div class="flex items-center gap-2">
                     <component
@@ -574,11 +574,11 @@ function canDeleteRole(role) {
                 </button>
 
                 <!-- Module Permissions -->
-                <div v-if="isModuleExpanded(module)" class="border-t border-dark-600">
+                <div v-if="isModuleExpanded(module)" class="border-t border-white/[0.06]">
                   <div
                     v-for="permission in permissions"
                     :key="permission.name"
-                    class="px-4 py-2 flex items-center justify-between hover:bg-dark-600"
+                    class="px-4 py-2 flex items-center justify-between hover:bg-white/[0.04]"
                   >
                     <div class="flex items-center gap-3">
                       <input
@@ -586,7 +586,7 @@ function canDeleteRole(role) {
                         :checked="hasPermission(permission.name)"
                         :disabled="selectedRole?.is_system"
                         @change="togglePermission(permission.name)"
-                        class="w-4 h-4 rounded border-dark-500 bg-dark-600 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                        class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.08] text-primary-600 focus:ring-primary-500 disabled:opacity-50"
                       />
                       <div>
                         <div class="text-sm text-white font-mono">{{ permission.name }}</div>
@@ -609,10 +609,10 @@ function canDeleteRole(role) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex justify-end p-4 border-t border-dark-700 flex-shrink-0">
+          <div class="flex justify-end p-4 border-t border-white/[0.06] flex-shrink-0">
             <button
               @click="closeModals"
-              class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
+              class="btn-secondary"
             >
               Schließen
             </button>

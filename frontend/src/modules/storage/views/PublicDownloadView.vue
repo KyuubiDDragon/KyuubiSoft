@@ -163,13 +163,13 @@ onMounted(() => {
   <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <!-- Loading -->
-      <div v-if="isLoading" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center shadow-2xl">
+      <div v-if="isLoading" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-8 text-center shadow-float">
         <div class="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
         <p class="text-gray-400 mt-4">Lade Freigabe...</p>
       </div>
 
       <!-- Error -->
-      <div v-else-if="error" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center shadow-2xl">
+      <div v-else-if="error" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-8 text-center shadow-float">
         <div class="w-20 h-20 mx-auto bg-red-500/10 rounded-full flex items-center justify-center mb-4">
           <ExclamationTriangleIcon class="w-10 h-10 text-red-500" />
         </div>
@@ -178,15 +178,15 @@ onMounted(() => {
       </div>
 
       <!-- Share Info -->
-      <div v-else-if="shareInfo" class="bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+      <div v-else-if="shareInfo" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] overflow-hidden shadow-float">
         <!-- File Preview -->
-        <div class="p-6 text-center bg-gradient-to-b from-gray-700/30 to-transparent">
+        <div class="p-6 text-center bg-gradient-to-b from-white/[0.03] to-transparent">
           <!-- Image Preview -->
           <div v-if="isImage" class="mb-4">
             <img
               :src="thumbnailUrl"
               :alt="shareInfo.name"
-              class="max-w-full max-h-64 mx-auto rounded-xl shadow-lg ring-1 ring-white/10"
+              class="max-w-full max-h-64 mx-auto rounded-xl shadow-glass ring-1 ring-white/10"
             />
           </div>
           <!-- File Icon (for non-images) -->
@@ -199,7 +199,7 @@ onMounted(() => {
         </div>
 
         <!-- Stats -->
-        <div class="px-6 py-4 bg-gray-900/50 flex justify-center gap-8 border-y border-gray-700/50">
+        <div class="px-6 py-4 bg-white/[0.02] flex justify-center gap-8 border-y border-white/[0.06]">
           <div class="text-center">
             <div class="flex items-center justify-center gap-1.5 text-gray-400">
               <EyeIcon class="w-4 h-4" />
@@ -256,7 +256,7 @@ onMounted(() => {
               v-model="password"
               type="password"
               placeholder="Passwort eingeben..."
-              class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              class="input w-full px-4 py-3"
               @keyup.enter="downloadFile"
             />
           </div>
@@ -276,7 +276,7 @@ onMounted(() => {
           <button
             @click="downloadFile"
             :disabled="!canDownload || isDownloading || (showPasswordField && !password)"
-            class="w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-purple-600 rounded-xl text-white font-medium transition-all shadow-lg shadow-indigo-500/25"
+            class="w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-purple-600 rounded-xl text-white font-medium transition-all shadow-float shadow-indigo-500/25"
           >
             <template v-if="isDownloading">
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -294,7 +294,7 @@ onMounted(() => {
         </div>
 
         <!-- Owner info -->
-        <div class="px-6 py-3 bg-gray-900/50 border-t border-gray-700/50 text-center">
+        <div class="px-6 py-3 bg-white/[0.02] border-t border-white/[0.06] text-center">
           <p class="text-xs text-gray-500">
             Geteilt von <span class="text-gray-400">{{ shareInfo.owner_name }}</span>
           </p>

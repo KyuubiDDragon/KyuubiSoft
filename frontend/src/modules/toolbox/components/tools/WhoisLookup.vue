@@ -112,17 +112,17 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
 
       <!-- Parsed Data -->
       <div v-if="result.parsed && Object.keys(result.parsed).length > 0" class="grid grid-cols-2 gap-3">
-        <div v-if="result.parsed.registrar" class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div v-if="result.parsed.registrar" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Registrar</span>
           <div class="text-white">{{ result.parsed.registrar }}</div>
         </div>
 
-        <div v-if="result.parsed.createdDate" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.createdDate" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Registriert</span>
           <div class="text-white">{{ formatDate(result.parsed.createdDate) }}</div>
         </div>
 
-        <div v-if="result.parsed.expiryDate" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.expiryDate" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Läuft ab</span>
           <div class="text-white">
             {{ formatDate(result.parsed.expiryDate) }}
@@ -136,48 +136,48 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
           </div>
         </div>
 
-        <div v-if="result.parsed.updatedDate" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.updatedDate" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Zuletzt aktualisiert</span>
           <div class="text-white">{{ formatDate(result.parsed.updatedDate) }}</div>
         </div>
 
-        <div v-if="result.parsed.registrantOrg" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.registrantOrg" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Organisation</span>
           <div class="text-white">{{ result.parsed.registrantOrg }}</div>
         </div>
 
-        <div v-if="result.parsed.registrantCountry" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.registrantCountry" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Land</span>
           <div class="text-white">{{ result.parsed.registrantCountry }}</div>
         </div>
 
-        <div v-if="result.parsed.nameServers?.length" class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div v-if="result.parsed.nameServers?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Nameserver</span>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
               v-for="ns in result.parsed.nameServers"
               :key="ns"
-              class="px-2 py-0.5 text-xs bg-dark-600 text-gray-300 rounded font-mono"
+              class="px-2 py-0.5 text-xs bg-white/[0.08] text-gray-300 rounded font-mono"
             >
               {{ ns }}
             </span>
           </div>
         </div>
 
-        <div v-if="result.parsed.status?.length" class="p-3 bg-dark-700 rounded-lg col-span-2">
+        <div v-if="result.parsed.status?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Status</span>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
               v-for="status in result.parsed.status"
               :key="status"
-              class="px-2 py-0.5 text-xs bg-dark-600 text-gray-300 rounded"
+              class="px-2 py-0.5 text-xs bg-white/[0.08] text-gray-300 rounded"
             >
               {{ status.split(' ')[0] }}
             </span>
           </div>
         </div>
 
-        <div v-if="result.parsed.dnssec" class="p-3 bg-dark-700 rounded-lg">
+        <div v-if="result.parsed.dnssec" class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">DNSSEC</span>
           <div class="text-white">{{ result.parsed.dnssec }}</div>
         </div>
@@ -186,7 +186,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
       <!-- Raw Data -->
       <details class="text-sm">
         <summary class="text-gray-400 cursor-pointer hover:text-white">Raw WHOIS Data anzeigen</summary>
-        <pre class="mt-2 p-3 bg-dark-900 rounded-lg text-xs text-gray-400 overflow-auto max-h-64 whitespace-pre-wrap">{{ result.raw }}</pre>
+        <pre class="mt-2 p-3 bg-white/[0.02] rounded-lg text-xs text-gray-400 overflow-auto max-h-64 whitespace-pre-wrap">{{ result.raw }}</pre>
       </details>
     </div>
 

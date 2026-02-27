@@ -1571,7 +1571,7 @@ const tabs = [
 <template>
   <div class="h-full flex flex-col -m-4">
     <!-- Tabs -->
-    <div class="flex border-b border-dark-600 bg-dark-800 px-2 overflow-x-auto">
+    <div class="flex border-b border-white/[0.06] bg-white/[0.04] px-2 overflow-x-auto">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -1625,13 +1625,13 @@ const tabs = [
                 <label
                   v-for="prop in currentEntityProperties"
                   :key="prop.name"
-                  class="flex items-center gap-2 text-sm cursor-pointer hover:bg-dark-700 p-1 rounded"
+                  class="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/[0.04] p-1 rounded"
                 >
                   <input
                     type="checkbox"
                     :checked="selectedColumns.includes(prop.name)"
                     @change="toggleColumn(prop.name)"
-                    class="rounded bg-dark-600 text-primary-500"
+                    class="rounded bg-white/[0.08] text-primary-500"
                   />
                   <span class="text-gray-300">{{ prop.name }}</span>
                   <span class="text-xs text-gray-500">({{ prop.type }})</span>
@@ -1705,7 +1705,7 @@ const tabs = [
                 </div>
                 <div class="flex items-end">
                   <label class="flex items-center gap-2 text-sm text-gray-300">
-                    <input type="checkbox" v-model="distinctResults" class="rounded bg-dark-600" />
+                    <input type="checkbox" v-model="distinctResults" class="rounded bg-white/[0.08]" />
                     DISTINCT
                   </label>
                 </div>
@@ -1726,7 +1726,7 @@ const tabs = [
                   {{ copied ? 'Kopiert!' : 'Kopieren' }}
                 </button>
               </div>
-              <pre class="flex-1 p-3 bg-dark-900 rounded-lg text-sm font-mono overflow-auto text-green-400 whitespace-pre-wrap">{{ generatedQuery || '-- Wähle Entity und Spalten aus' }}</pre>
+              <pre class="flex-1 p-3 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-green-400 whitespace-pre-wrap">{{ generatedQuery || '-- Wähle Entity und Spalten aus' }}</pre>
             </div>
           </div>
         </div>
@@ -1763,11 +1763,11 @@ const tabs = [
               />
             </button>
 
-            <div v-if="expandedCategories.includes(key)" class="border-t border-dark-600">
+            <div v-if="expandedCategories.includes(key)" class="border-t border-white/[0.06]">
               <div
                 v-for="template in category.templates"
                 :key="template.name"
-                class="p-4 border-b border-dark-700 last:border-b-0 hover:bg-dark-700"
+                class="p-4 border-b border-white/[0.06] last:border-b-0 hover:bg-white/[0.04]"
               >
                 <div class="flex items-start justify-between mb-2">
                   <div>
@@ -1782,7 +1782,7 @@ const tabs = [
                     Kopieren
                   </button>
                 </div>
-                <pre class="p-2 bg-dark-900 rounded text-xs font-mono overflow-auto text-green-400 max-h-32">{{ template.query }}</pre>
+                <pre class="p-2 bg-white/[0.02] rounded text-xs font-mono overflow-auto text-green-400 max-h-32">{{ template.query }}</pre>
               </div>
             </div>
           </div>
@@ -1822,7 +1822,7 @@ const tabs = [
               </div>
             </button>
 
-            <div v-if="expandedEntities.includes(entity)" class="border-t border-dark-600 p-3">
+            <div v-if="expandedEntities.includes(entity)" class="border-t border-white/[0.06] p-3">
               <!-- Verbs -->
               <div v-if="data.verbs && data.verbs.length > 0" class="mb-3">
                 <h4 class="text-xs font-semibold text-gray-400 mb-2">Verfügbare Verbs:</h4>
@@ -1847,7 +1847,7 @@ const tabs = [
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="prop in data.properties" :key="prop.name" class="border-t border-dark-700">
+                  <tr v-for="prop in data.properties" :key="prop.name" class="border-t border-white/[0.06]">
                     <td class="py-2 font-mono text-green-400">{{ prop.name }}</td>
                     <td class="py-2 text-yellow-400">{{ prop.type }}</td>
                     <td class="py-2 text-gray-400">{{ prop.description }}</td>
@@ -1875,34 +1875,34 @@ const tabs = [
           <p class="text-xs text-gray-400 mb-3">
             Basierend auf der Query aus dem Query Builder. Wechsle zum Builder-Tab um die Query anzupassen.
           </p>
-          <pre class="p-4 bg-dark-900 rounded-lg text-sm font-mono overflow-auto text-blue-400 max-h-96">{{ powershellScript }}</pre>
+          <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-blue-400 max-h-96">{{ powershellScript }}</pre>
         </div>
 
         <!-- Quick PowerShell Snippets -->
         <div class="card p-4">
           <h3 class="text-sm font-semibold text-white mb-3">Quick Snippets</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Modul installieren</h4>
               <pre class="text-xs font-mono text-green-400">Install-Module SwisPowerShell</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Modul laden</h4>
               <pre class="text-xs font-mono text-green-400">Import-Module SwisPowerShell</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Verbindung mit Credentials</h4>
               <pre class="text-xs font-mono text-green-400">$swis = Connect-Swis -Hostname "orion" -Credential (Get-Credential)</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Verbindung mit Windows Auth</h4>
               <pre class="text-xs font-mono text-green-400">$swis = Connect-Swis -Hostname "orion" -Trusted</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Query mit Parameter</h4>
               <pre class="text-xs font-mono text-green-400">Get-SwisData $swis "SELECT * FROM Orion.Nodes WHERE Caption LIKE @name" @{name='%server%'}</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="text-xs font-semibold text-gray-300 mb-2">Property aktualisieren</h4>
               <pre class="text-xs font-mono text-green-400">Set-SwisObject $swis $uri @{PropertyName='Value'}</pre>
             </div>
@@ -1965,7 +1965,7 @@ const tabs = [
                 {{ copied ? 'Kopiert!' : 'Kopieren' }}
               </button>
             </div>
-            <pre class="p-4 bg-dark-900 rounded-lg text-sm font-mono overflow-auto text-blue-400">{{ verbPowershellScript }}</pre>
+            <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-blue-400">{{ verbPowershellScript }}</pre>
           </div>
         </div>
 
@@ -1973,7 +1973,7 @@ const tabs = [
         <div class="card p-4">
           <h3 class="text-sm font-semibold text-white mb-3">Häufige Anwendungsfälle</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="font-medium text-white mb-2">Mehrere Nodes unmanagen</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$nodeIds = @(1, 2, 3)
 $now = [DateTime]::UtcNow
@@ -1985,7 +1985,7 @@ foreach ($id in $nodeIds) {
     )
 }</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="font-medium text-white mb-2">Alle Alerts acknowledgen</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$alerts = Get-SwisData $swis @"
 SELECT AlertObjectID
@@ -1998,7 +1998,7 @@ $note = "Bulk acknowledged"
 
 Invoke-SwisVerb $swis Orion.AlertActive Acknowledge @($ids, $note)</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="font-medium text-white mb-2">Custom Property für viele Nodes setzen</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$nodes = Get-SwisData $swis @"
 SELECT Uri
@@ -2012,7 +2012,7 @@ foreach ($node in $nodes) {
     }
 }</pre>
             </div>
-            <div class="p-3 bg-dark-700 rounded-lg">
+            <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="font-medium text-white mb-2">Node remanagen nach Maintenance</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$unmanaged = Get-SwisData $swis @"
 SELECT NodeID
@@ -2046,7 +2046,7 @@ foreach ($node in $unmanaged) {
           </div>
 
           <!-- Add Connection Form -->
-          <div v-if="showAddConnection" class="mb-4 p-4 bg-dark-700 rounded-lg">
+          <div v-if="showAddConnection" class="mb-4 p-4 bg-white/[0.04] rounded-lg">
             <h4 class="text-sm font-medium text-white mb-3">Neue Verbindung hinzufügen</h4>
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -2072,7 +2072,7 @@ foreach ($node in $unmanaged) {
             <div
               v-for="conn in connections"
               :key="conn.id"
-              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+              class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg"
               :class="{ 'ring-1 ring-primary-500': conn.id === selectedConnection }"
             >
               <div class="flex items-center gap-3">
@@ -2124,15 +2124,15 @@ foreach ($node in $unmanaged) {
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="text-left text-xs text-gray-500 border-b border-dark-600">
+                <tr class="text-left text-xs text-gray-500 border-b border-white/[0.06]">
                   <th class="pb-2 pr-4">Syntax</th>
                   <th class="pb-2">Beschreibung</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in section.items" :key="item.syntax" class="border-b border-dark-700 last:border-0">
+                <tr v-for="item in section.items" :key="item.syntax" class="border-b border-white/[0.06] last:border-0">
                   <td class="py-2 pr-4">
-                    <code class="text-green-400 font-mono text-xs bg-dark-900 px-2 py-1 rounded">{{ item.syntax }}</code>
+                    <code class="text-green-400 font-mono text-xs bg-white/[0.02] px-2 py-1 rounded">{{ item.syntax }}</code>
                   </td>
                   <td class="py-2 text-gray-400">{{ item.description }}</td>
                 </tr>
@@ -2148,7 +2148,7 @@ foreach ($node in $unmanaged) {
     <Transition name="fade">
       <div
         v-if="copied"
-        class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"
+        class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-float flex items-center gap-2"
       >
         <CheckIcon class="w-5 h-5" />
         In Zwischenablage kopiert!

@@ -86,7 +86,7 @@ onMounted(() => {
   <div class="space-y-6">
     <!-- Password Display -->
     <div class="relative">
-      <div class="flex items-center gap-2 p-4 bg-dark-900 rounded-lg border border-dark-600">
+      <div class="flex items-center gap-2 p-4 bg-white/[0.02] rounded-lg border border-white/[0.06]">
         <input
           v-model="password"
           type="text"
@@ -104,7 +104,7 @@ onMounted(() => {
 
       <!-- Strength Indicator -->
       <div class="mt-2 flex items-center gap-2">
-        <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+        <div class="flex-1 h-2 bg-white/[0.04] rounded-full overflow-hidden">
           <div
             class="h-full transition-all duration-300"
             :class="strength.color"

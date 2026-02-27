@@ -27,19 +27,19 @@ defineEmits(['open-config'])
         <p class="text-2xl font-bold text-green-400">Erreicht!</p>
       </div>
       <div v-else class="grid grid-cols-4 gap-2">
-        <div class="bg-dark-700/50 rounded-lg p-2">
+        <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.days }}</p>
           <p class="text-xs text-gray-500">Tage</p>
         </div>
-        <div class="bg-dark-700/50 rounded-lg p-2">
+        <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.hours }}</p>
           <p class="text-xs text-gray-500">Std</p>
         </div>
-        <div class="bg-dark-700/50 rounded-lg p-2">
+        <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.minutes }}</p>
           <p class="text-xs text-gray-500">Min</p>
         </div>
-        <div class="bg-dark-700/50 rounded-lg p-2">
+        <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.seconds }}</p>
           <p class="text-xs text-gray-500">Sek</p>
         </div>

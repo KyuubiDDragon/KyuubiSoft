@@ -216,7 +216,7 @@ function formatDate(date) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-900 p-6">
+  <div class="min-h-screen bg-white/[0.02] p-6">
     <!-- Header -->
     <div class="mb-6">
       <div class="flex items-center gap-3 mb-2">
@@ -235,19 +235,19 @@ function formatDate(date) {
 
     <!-- Stats -->
     <div class="grid grid-cols-4 gap-4 mb-6">
-      <div class="bg-dark-800 rounded-lg p-4 border border-dark-600">
+      <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-white">{{ inboxStore.stats.total }}</div>
         <div class="text-sm text-gray-400">Gesamt</div>
       </div>
-      <div class="bg-dark-800 rounded-lg p-4 border border-dark-600">
+      <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-indigo-400">{{ inboxStore.stats.inbox }}</div>
         <div class="text-sm text-gray-400">Im Inbox</div>
       </div>
-      <div class="bg-dark-800 rounded-lg p-4 border border-dark-600">
+      <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-yellow-400">{{ inboxStore.stats.processing }}</div>
         <div class="text-sm text-gray-400">In Bearbeitung</div>
       </div>
-      <div class="bg-dark-800 rounded-lg p-4 border border-dark-600">
+      <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-green-400">{{ inboxStore.stats.done }}</div>
         <div class="text-sm text-gray-400">Erledigt</div>
       </div>
@@ -264,7 +264,7 @@ function formatDate(date) {
             @input="refreshItems"
             type="text"
             placeholder="Suchen..."
-            class="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+            class="input w-full pl-10"
           />
         </div>
 
@@ -272,7 +272,7 @@ function formatDate(date) {
         <select
           v-model="filterPriority"
           @change="refreshItems"
-          class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+          class="select"
         >
           <option :value="null">Alle Prioritaten</option>
           <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
@@ -282,7 +282,7 @@ function formatDate(date) {
         <select
           v-model="sortBy"
           @change="refreshItems"
-          class="px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+          class="select"
         >
           <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
@@ -293,19 +293,19 @@ function formatDate(date) {
         <span class="text-sm text-gray-400">{{ selectedItems.length }} ausgewahlt</span>
         <button
           @click="openMoveModal()"
-          class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm text-white"
+          class="btn-primary text-sm"
         >
           Verschieben
         </button>
         <button
           @click="bulkArchive"
-          class="px-3 py-1.5 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm text-white"
+          class="btn-secondary text-sm"
         >
           Archivieren
         </button>
         <button
           @click="bulkDelete"
-          class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 rounded-lg text-sm text-red-400"
+          class="btn-danger text-sm"
         >
           Loschen
         </button>
@@ -315,12 +315,12 @@ function formatDate(date) {
     <!-- Items List -->
     <div class="space-y-2">
       <!-- Select All Header -->
-      <div class="flex items-center gap-3 px-4 py-2 bg-dark-800/50 rounded-lg text-sm text-gray-400">
+      <div class="flex items-center gap-3 px-4 py-2 bg-white/[0.03] rounded-xl text-sm text-gray-400">
         <input
           type="checkbox"
           :checked="allSelected"
           @change="toggleSelectAll"
-          class="w-4 h-4 rounded bg-dark-700 border-dark-500 text-indigo-600 focus:ring-indigo-500"
+          class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.08] text-indigo-600 focus:ring-indigo-500"
         />
         <span class="flex-1">Inhalt</span>
         <span class="w-24 text-center">Prioritat</span>
@@ -344,14 +344,14 @@ function formatDate(date) {
       <div
         v-for="item in filteredItems"
         :key="item.id"
-        class="flex items-start gap-3 p-4 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors"
+        class="flex items-start gap-3 p-4 bg-white/[0.04] rounded-xl border border-white/[0.06] hover:border-white/[0.08] transition-colors"
         :class="{ 'ring-2 ring-indigo-500': selectedItems.includes(item.id) }"
       >
         <input
           type="checkbox"
           :checked="selectedItems.includes(item.id)"
           @change="toggleSelect(item.id)"
-          class="mt-1 w-4 h-4 rounded bg-dark-700 border-dark-500 text-indigo-600 focus:ring-indigo-500"
+          class="mt-1 w-4 h-4 rounded bg-white/[0.04] border-white/[0.08] text-indigo-600 focus:ring-indigo-500"
         />
 
         <div class="flex-1 min-w-0">
@@ -360,24 +360,24 @@ function formatDate(date) {
             <textarea
               v-model="item.content"
               rows="2"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white resize-none focus:outline-none focus:border-indigo-500"
+              class="textarea w-full"
             ></textarea>
             <div class="flex items-center gap-2 mt-2">
               <select
                 v-model="item.priority"
-                class="px-2 py-1 bg-dark-700 border border-dark-600 rounded text-sm text-white"
+                class="select text-sm"
               >
                 <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
               </select>
               <button
                 @click="updateItem(item)"
-                class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-sm text-white"
+                class="btn-primary text-sm"
               >
                 Speichern
               </button>
               <button
                 @click="editingItem = null"
-                class="px-3 py-1 bg-dark-700 hover:bg-dark-600 rounded text-sm text-white"
+                class="btn-secondary text-sm"
               >
                 Abbrechen
               </button>
@@ -395,7 +395,7 @@ function formatDate(date) {
               <span
                 v-for="tag in item.tags"
                 :key="tag"
-                class="px-2 py-0.5 bg-dark-700 text-gray-400 rounded-full text-xs"
+                class="px-2 py-0.5 bg-white/[0.04] text-gray-400 rounded-full text-xs"
               >
                 {{ tag }}
               </span>
@@ -454,8 +454,8 @@ function formatDate(date) {
     <!-- Move Modal -->
     <Teleport to="body">
       <div v-if="showMoveModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showMoveModal = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 p-6 w-full max-w-md">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showMoveModal = false"></div>
+        <div class="relative modal p-6 w-full max-w-md">
           <h3 class="text-lg font-semibold text-white mb-4">Verschieben nach</h3>
 
           <!-- Target Type Selection -->
@@ -467,7 +467,7 @@ function formatDate(date) {
               class="flex items-center gap-2 p-3 rounded-lg border transition-colors"
               :class="moveTargetType === target.type
                 ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                : 'bg-dark-700 border-dark-600 text-gray-400 hover:border-dark-500'"
+                : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:border-white/[0.08]'"
             >
               <component :is="target.icon" class="w-5 h-5" />
               <span class="text-sm">{{ target.label }}</span>
@@ -479,7 +479,7 @@ function formatDate(date) {
             <label class="block text-sm text-gray-400 mb-2">Liste auswahlen</label>
             <select
               v-model="moveTargetId"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+              class="select w-full"
             >
               <option :value="null">Neue Inbox-Liste erstellen</option>
               <option v-for="list in lists" :key="list.id" :value="list.id">{{ list.title }}</option>
@@ -490,7 +490,7 @@ function formatDate(date) {
             <label class="block text-sm text-gray-400 mb-2">Board auswahlen</label>
             <select
               v-model="moveTargetId"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+              class="select w-full"
             >
               <option :value="null" disabled>Board auswahlen...</option>
               <option v-for="board in boards" :key="board.id" :value="board.id">{{ board.title }}</option>
@@ -502,7 +502,7 @@ function formatDate(date) {
             <input
               v-model="moveOptions.start_date"
               type="datetime-local"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+              class="input w-full"
             />
           </div>
 
@@ -512,7 +512,7 @@ function formatDate(date) {
               v-model="moveOptions.title"
               type="text"
               placeholder="Optional - wird aus Inhalt generiert"
-              class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500"
+              class="input w-full"
             />
           </div>
 
@@ -520,14 +520,14 @@ function formatDate(date) {
           <div class="flex justify-end gap-2">
             <button
               @click="showMoveModal = false"
-              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white"
+              class="btn-secondary"
             >
               Abbrechen
             </button>
             <button
               @click="confirmMove"
               :disabled="moveTargetType === 'kanban' && !moveTargetId"
-              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg text-white"
+              class="btn-primary disabled:opacity-50"
             >
               Verschieben
             </button>

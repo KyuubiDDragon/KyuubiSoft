@@ -234,22 +234,22 @@ onMounted(() => {
     <!-- Gallery Grid -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="gallery in galleries" :key="gallery.id"
-           class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+           class="bg-white/[0.04] rounded-xl shadow-glass overflow-hidden hover:shadow-float transition-shadow border border-white/[0.06]">
         <!-- Cover -->
         <div class="h-40 bg-gradient-to-br from-indigo-500 to-purple-600 relative"
              :style="gallery.cover_image_url ? { backgroundImage: `url(${gallery.cover_image_url})`, backgroundSize: 'cover' } : {}">
           <div class="absolute top-2 right-2 flex gap-1">
             <span v-if="gallery.is_password_protected"
-                  class="p-1.5 bg-black/30 rounded-lg backdrop-blur">
+                  class="p-1.5 bg-black/30 rounded-xl backdrop-blur">
               <LockClosedIcon class="w-4 h-4 text-white" />
             </span>
             <span v-if="gallery.is_public"
-                  class="p-1.5 bg-black/30 rounded-lg backdrop-blur">
+                  class="p-1.5 bg-black/30 rounded-xl backdrop-blur">
               <GlobeAltIcon class="w-4 h-4 text-white" />
             </span>
           </div>
           <div class="absolute bottom-2 left-2">
-            <span class="px-2 py-1 bg-black/30 rounded-lg backdrop-blur text-white text-xs">
+            <span class="px-2 py-1 bg-black/30 rounded-xl backdrop-blur text-white text-xs">
               {{ gallery.item_count || 0 }} Elemente
             </span>
           </div>
@@ -278,7 +278,7 @@ onMounted(() => {
           </div>
 
           <!-- Actions -->
-          <div class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between pt-3 border-t border-white/[0.06]">
             <button @click="loadGalleryDetails(gallery.id)"
                     class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
               Öffnen
@@ -304,7 +304,7 @@ onMounted(() => {
 
       <!-- Empty State -->
       <div v-if="galleries.length === 0" class="col-span-full">
-        <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div class="text-center py-12 bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06]">
           <PhotoIcon class="w-12 h-12 mx-auto text-gray-400" />
           <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Keine Galerien</h3>
           <p class="mt-2 text-gray-500">Erstelle deine erste öffentliche Galerie.</p>
@@ -320,8 +320,8 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
+          <div class="relative modal w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
               {{ editingGallery ? 'Galerie bearbeiten' : 'Neue Galerie' }}
             </h2>
@@ -387,8 +387,8 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showDetailModal && selectedGallery" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showDetailModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showDetailModal = false"></div>
+          <div class="relative modal w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <div class="flex justify-between items-start mb-6">
               <div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ selectedGallery.gallery.name }}</h2>
@@ -405,15 +405,15 @@ onMounted(() => {
 
             <!-- Stats -->
             <div v-if="selectedGallery.stats" class="grid grid-cols-3 gap-4 mb-6">
-              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+              <div class="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
                 <div class="text-2xl font-bold">{{ selectedGallery.stats.total_views || 0 }}</div>
                 <div class="text-sm text-gray-500">Aufrufe</div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+              <div class="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
                 <div class="text-2xl font-bold">{{ selectedGallery.stats.unique_visitors || 0 }}</div>
                 <div class="text-sm text-gray-500">Besucher</div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+              <div class="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
                 <div class="text-2xl font-bold">{{ selectedGallery.stats.downloads || 0 }}</div>
                 <div class="text-sm text-gray-500">Downloads</div>
               </div>
@@ -424,8 +424,8 @@ onMounted(() => {
               <h3 class="font-semibold text-gray-900 dark:text-white">Elemente ({{ selectedGallery.items?.length || 0 }})</h3>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div v-for="item in selectedGallery.items" :key="item.id"
-                     class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                  <div class="h-24 bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
+                     class="bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.06]">
+                  <div class="h-24 bg-white/[0.06] flex items-center justify-center"
                        :style="item.thumbnail_url ? { backgroundImage: `url(${item.thumbnail_url})`, backgroundSize: 'cover' } : {}">
                     <PhotoIcon v-if="!item.thumbnail_url" class="w-8 h-8 text-gray-400" />
                   </div>
@@ -444,7 +444,7 @@ onMounted(() => {
 
                 <!-- Add Item Card -->
                 <button @click="showItemModal = true"
-                        class="h-40 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-600 transition-colors">
+                        class="h-40 bg-white/[0.04] rounded-xl border-2 border-dashed border-white/[0.06] flex flex-col items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-600 transition-colors">
                   <PlusIcon class="w-8 h-8" />
                   <span class="text-sm mt-2">Element hinzufügen</span>
                 </button>
@@ -459,8 +459,8 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showItemModal" class="fixed inset-0 z-[60] overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showItemModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showItemModal = false"></div>
+          <div class="relative modal w-full max-w-md p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Element hinzufügen</h2>
             <form @submit.prevent="addItem" class="space-y-4">
               <div>
@@ -505,9 +505,9 @@ onMounted(() => {
 
 <style scoped>
 .btn-primary {
-  @apply inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors;
+  @apply inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors;
 }
 .btn-secondary {
-  @apply inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
+  @apply inline-flex items-center px-4 py-2 bg-white/[0.04] text-gray-300 rounded-xl hover:bg-white/[0.06] transition-colors;
 }
 </style>

@@ -503,7 +503,7 @@ watch(() => route.params.id, () => {
 <template>
   <div class="space-y-4">
     <!-- Loading -->
-    <div v-if="isLoading" class="bg-dark-800 rounded-xl border border-dark-700 p-12 text-center">
+    <div v-if="isLoading" class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-12 text-center">
       <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
       <p class="text-gray-400 mt-4">Lade Checkliste...</p>
     </div>
@@ -514,7 +514,7 @@ watch(() => route.params.id, () => {
         <div class="flex items-start gap-4">
           <button
             @click="router.push({ name: 'checklists' })"
-            class="p-2 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <ArrowLeftIcon class="w-5 h-5 text-gray-400" />
           </button>
@@ -535,14 +535,14 @@ watch(() => route.params.id, () => {
         <div class="flex items-center gap-2">
           <button
             @click="loadChecklist"
-            class="p-2 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
             title="Aktualisieren"
           >
             <ArrowPathIcon class="w-5 h-5 text-gray-400" />
           </button>
           <button
             @click="copyShareLink"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            class="flex items-center gap-2 btn-secondary"
           >
             <CheckIcon v-if="copiedToken" class="w-5 h-5 text-green-500" />
             <LinkIcon v-else class="w-5 h-5" />
@@ -556,7 +556,7 @@ watch(() => route.params.id, () => {
           </button>
           <button
             @click="showSettingsModal = true"
-            class="p-2 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <Cog6ToothIcon class="w-5 h-5 text-gray-400" />
           </button>
@@ -564,12 +564,12 @@ watch(() => route.params.id, () => {
       </div>
 
       <!-- Progress Card -->
-      <div class="bg-dark-800 rounded-xl border border-dark-700 p-4">
+      <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-gray-400 text-sm">Gesamtfortschritt</span>
           <span class="text-white font-medium">{{ totalProgress.completed }} / {{ totalProgress.total }} Tests</span>
         </div>
-        <div class="w-full h-3 bg-dark-600 rounded-full overflow-hidden">
+        <div class="w-full h-3 bg-white/[0.08] rounded-full overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
             :style="{ width: totalProgress.percentage + '%' }"
@@ -585,21 +585,21 @@ watch(() => route.params.id, () => {
         <div class="flex items-center gap-2">
           <button
             @click="showAddCategoryModal = true"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            class="flex items-center gap-2 btn-secondary"
           >
             <FolderIcon class="w-4 h-4" />
             <span>Kategorie</span>
           </button>
           <button
             @click="showAddItemModal = true"
-            class="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+            class="flex items-center gap-2 btn-primary"
           >
             <PlusIcon class="w-4 h-4" />
             <span>Testpunkt</span>
           </button>
           <button
             @click="showBatchAddModal = true"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            class="flex items-center gap-2 btn-secondary"
             title="Mehrere Testpunkte auf einmal hinzufügen"
           >
             <ListBulletIcon class="w-4 h-4" />
@@ -609,7 +609,7 @@ watch(() => route.params.id, () => {
         <div class="flex items-center gap-2">
           <button
             @click="duplicateChecklist"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white transition-colors"
+            class="flex items-center gap-2 btn-secondary"
             title="Checkliste duplizieren"
           >
             <DocumentDuplicateIcon class="w-4 h-4" />
@@ -617,7 +617,7 @@ watch(() => route.params.id, () => {
           </button>
           <button
             @click="resetEntries"
-            class="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-red-600/20 text-gray-300 hover:text-red-400 rounded-lg transition-colors"
+            class="flex items-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-red-600/20 text-gray-300 hover:text-red-400 rounded-lg transition-colors"
             title="Alle Einträge zurücksetzen"
           >
             <ArrowUturnLeftIcon class="w-4 h-4" />
@@ -631,11 +631,11 @@ watch(() => route.params.id, () => {
         <div
           v-for="category in itemsByCategory"
           :key="category.id || 'uncategorized'"
-          class="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden"
+          class="bg-white/[0.04] rounded-xl border border-white/[0.06] overflow-hidden"
         >
           <!-- Category Header -->
           <div
-            class="flex items-center justify-between p-4 bg-dark-700/50 cursor-pointer"
+            class="flex items-center justify-between p-4 bg-white/[0.03] cursor-pointer"
             @click="toggleCategory(category.id)"
           >
             <div class="flex items-center gap-3">
@@ -652,14 +652,14 @@ watch(() => route.params.id, () => {
             <div class="flex items-center gap-1" @click.stop>
               <button
                 @click="openAddItemInCategory(category.id)"
-                class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                 title="Testpunkt hinzufügen"
               >
                 <PlusIcon class="w-4 h-4 text-primary-400" />
               </button>
               <button
                 @click="openBatchAddInCategory(category.id)"
-                class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                 title="Mehrere Testpunkte hinzufügen"
               >
                 <ListBulletIcon class="w-4 h-4 text-gray-400" />
@@ -667,13 +667,13 @@ watch(() => route.params.id, () => {
               <template v-if="category.id">
                 <button
                   @click="editingCategory = { ...category }"
-                  class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                 >
                   <PencilIcon class="w-4 h-4 text-gray-400" />
                 </button>
                 <button
                   @click="deleteCategory(category)"
-                  class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                 >
                   <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
                 </button>
@@ -682,7 +682,7 @@ watch(() => route.params.id, () => {
           </div>
 
           <!-- Items -->
-          <div v-if="expandedCategories[category.id]" class="divide-y divide-dark-700">
+          <div v-if="expandedCategories[category.id]" class="divide-y divide-white/[0.06]">
             <div v-if="category.items.length === 0" class="p-8 text-center text-gray-500">
               Keine Testpunkte in dieser Kategorie
             </div>
@@ -742,7 +742,7 @@ watch(() => route.params.id, () => {
                     <div
                       v-for="entry in item.entries"
                       :key="entry.id"
-                      class="p-3 bg-dark-700/50 rounded-lg text-sm"
+                      class="p-3 bg-white/[0.03] rounded-lg text-sm"
                     >
                       <div class="flex items-center gap-3">
                         <span
@@ -765,7 +765,7 @@ watch(() => route.params.id, () => {
                         <div class="flex items-center gap-1 ml-2">
                           <!-- Image Upload -->
                           <label
-                            class="p-1.5 hover:bg-dark-600 rounded cursor-pointer transition-colors"
+                            class="p-1.5 hover:bg-white/[0.04] rounded cursor-pointer transition-colors"
                             :title="entry.image_path ? 'Bild ersetzen' : 'Bild hinzufügen'"
                           >
                             <PhotoIcon
@@ -783,7 +783,7 @@ watch(() => route.params.id, () => {
                           <!-- Delete Entry -->
                           <button
                             @click="deleteEntry(entry, item)"
-                            class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                            class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                             title="Eintrag löschen"
                           >
                             <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
@@ -821,13 +821,13 @@ watch(() => route.params.id, () => {
                 <div class="flex items-center gap-1">
                   <button
                     @click="editingItem = { ...item }"
-                    class="p-2 hover:bg-dark-600 rounded-lg transition-colors"
+                    class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                   >
                     <PencilIcon class="w-4 h-4 text-gray-400" />
                   </button>
                   <button
                     @click="deleteItem(item)"
-                    class="p-2 hover:bg-dark-600 rounded-lg transition-colors"
+                    class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
                   >
                     <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
                   </button>
@@ -841,12 +841,12 @@ watch(() => route.params.id, () => {
       <!-- Empty State -->
       <div
         v-if="(!checklist.items || checklist.items.length === 0) && (!checklist.categories || checklist.categories.length === 0)"
-        class="bg-dark-800 rounded-xl border border-dark-700 p-12 text-center"
+        class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-12 text-center"
       >
         <p class="text-gray-400 mb-4">Füge Testpunkte hinzu, um loszulegen</p>
         <button
           @click="showAddItemModal = true"
-          class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+          class="btn-primary"
         >
           Ersten Testpunkt erstellen
         </button>
@@ -857,10 +857,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="showSettingsModal && checklist"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Einstellungen</h2>
           </div>
 
@@ -870,7 +870,7 @@ watch(() => route.params.id, () => {
               <input
                 v-model="checklist.title"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
             </div>
 
@@ -879,7 +879,7 @@ watch(() => route.params.id, () => {
               <textarea
                 v-model="checklist.description"
                 rows="3"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                class="textarea"
               ></textarea>
             </div>
 
@@ -888,7 +888,7 @@ watch(() => route.params.id, () => {
                 <input
                   type="checkbox"
                   v-model="checklist.is_active"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Checkliste aktiv</span>
               </label>
@@ -897,7 +897,7 @@ watch(() => route.params.id, () => {
                 <input
                   type="checkbox"
                   v-model="checklist.require_name"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Name bei Einträgen erforderlich</span>
               </label>
@@ -906,7 +906,7 @@ watch(() => route.params.id, () => {
                 <input
                   type="checkbox"
                   v-model="checklist.allow_add_items"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Externe dürfen Punkte hinzufügen</span>
               </label>
@@ -915,14 +915,14 @@ watch(() => route.params.id, () => {
                 <input
                   type="checkbox"
                   v-model="checklist.allow_comments"
-                  class="w-4 h-4 rounded border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300 text-sm">Kommentare/Notizen erlauben</span>
               </label>
             </div>
 
             <!-- Password Protection -->
-            <div class="pt-4 border-t border-dark-700">
+            <div class="pt-4 border-t border-white/[0.06]">
               <label class="block text-sm font-medium text-gray-300 mb-1">
                 Passwortschutz
                 <span v-if="checklist.has_password" class="text-green-400 text-xs ml-2">(aktiv)</span>
@@ -932,7 +932,7 @@ watch(() => route.params.id, () => {
                   v-model="newPassword"
                   type="password"
                   :placeholder="checklist.has_password ? 'Neues Passwort (leer = entfernen)' : 'Passwort setzen (optional)'"
-                  class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  class="input flex-1"
                 />
               </div>
               <p class="text-gray-500 text-xs mt-1">
@@ -941,7 +941,7 @@ watch(() => route.params.id, () => {
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="showSettingsModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -950,7 +950,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="updateSettings"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Speichern
             </button>
@@ -963,10 +963,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="showAddCategoryModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Neue Kategorie</h2>
           </div>
 
@@ -977,7 +977,7 @@ watch(() => route.params.id, () => {
                 v-model="newCategory.name"
                 type="text"
                 placeholder="z.B. Login-Tests"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
                 @keyup.enter="addCategory"
               />
             </div>
@@ -988,12 +988,12 @@ watch(() => route.params.id, () => {
                 v-model="newCategory.description"
                 type="text"
                 placeholder="Optional..."
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="showAddCategoryModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -1002,7 +1002,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="addCategory"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Erstellen
             </button>
@@ -1015,10 +1015,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="showAddItemModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Neuer Testpunkt</h2>
           </div>
 
@@ -1029,7 +1029,7 @@ watch(() => route.params.id, () => {
                 v-model="newItem.title"
                 type="text"
                 placeholder="z.B. Login mit E-Mail"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
                 @keyup.enter="addItem"
               />
             </div>
@@ -1040,7 +1040,7 @@ watch(() => route.params.id, () => {
                 v-model="newItem.description"
                 rows="2"
                 placeholder="Testanweisungen..."
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                class="textarea"
               ></textarea>
             </div>
 
@@ -1048,7 +1048,7 @@ watch(() => route.params.id, () => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
               <select
                 v-model="newItem.category_id"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               >
                 <option :value="null">Keine Kategorie</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
@@ -1063,13 +1063,13 @@ watch(() => route.params.id, () => {
                 v-model.number="newItem.required_testers"
                 type="number"
                 min="-1"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
               <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞), sonst Anzahl der Tester</p>
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="showAddItemModal = false; newItem.category_id = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -1078,7 +1078,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="addItem"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Erstellen
             </button>
@@ -1091,10 +1091,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="showBatchAddModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Mehrere Testpunkte hinzufügen</h2>
             <p class="text-gray-400 text-sm mt-1">Ein Testpunkt pro Zeile</p>
           </div>
@@ -1106,10 +1106,10 @@ watch(() => route.params.id, () => {
                 v-model="batchAdd.items"
                 rows="8"
                 placeholder="Login mit E-Mail&#10;Login mit Google&#10;Passwort vergessen || Überprüfe ob E-Mail gesendet wird&#10;Logout-Funktion"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none font-mono text-sm"
+                class="textarea font-mono text-sm"
               ></textarea>
               <p class="text-gray-500 text-xs mt-1">
-                Tipp: Für Beschreibung <code class="bg-dark-600 px-1 rounded">||</code> oder Tab verwenden: <code class="bg-dark-600 px-1 rounded">Titel || Beschreibung</code>
+                Tipp: Für Beschreibung <code class="bg-white/[0.08] px-1 rounded">||</code> oder Tab verwenden: <code class="bg-white/[0.08] px-1 rounded">Titel || Beschreibung</code>
               </p>
             </div>
 
@@ -1117,7 +1117,7 @@ watch(() => route.params.id, () => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
               <select
                 v-model="batchAdd.category_id"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               >
                 <option :value="null">Keine Kategorie</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
@@ -1132,12 +1132,12 @@ watch(() => route.params.id, () => {
                 v-model.number="batchAdd.required_testers"
                 type="number"
                 min="-1"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
               <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
             </div>
 
-            <div class="p-3 bg-dark-700/50 rounded-lg">
+            <div class="p-3 bg-white/[0.03] rounded-lg">
               <p class="text-gray-400 text-sm">
                 <span class="text-white font-medium">
                   {{ batchAdd.items.split('\n').filter(l => l.trim()).length }}
@@ -1146,7 +1146,7 @@ watch(() => route.params.id, () => {
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="showBatchAddModal = false; batchAdd.category_id = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -1155,7 +1155,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="addBatchItems"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Alle erstellen
             </button>
@@ -1168,10 +1168,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="editingItem"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Testpunkt bearbeiten</h2>
           </div>
 
@@ -1181,7 +1181,7 @@ watch(() => route.params.id, () => {
               <input
                 v-model="editingItem.title"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
             </div>
 
@@ -1190,7 +1190,7 @@ watch(() => route.params.id, () => {
               <textarea
                 v-model="editingItem.description"
                 rows="2"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                class="textarea"
               ></textarea>
             </div>
 
@@ -1198,7 +1198,7 @@ watch(() => route.params.id, () => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
               <select
                 v-model="editingItem.category_id"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               >
                 <option :value="null">Keine Kategorie</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
@@ -1213,13 +1213,13 @@ watch(() => route.params.id, () => {
                 v-model.number="editingItem.required_testers"
                 type="number"
                 min="-1"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
               <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="editingItem = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -1228,7 +1228,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="updateItem(editingItem)"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Speichern
             </button>
@@ -1241,10 +1241,10 @@ watch(() => route.params.id, () => {
     <Teleport to="body">
       <div
         v-if="editingCategory"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
       >
-        <div class="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-md">
-          <div class="p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-md">
+          <div class="p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">Kategorie bearbeiten</h2>
           </div>
 
@@ -1254,7 +1254,7 @@ watch(() => route.params.id, () => {
               <input
                 v-model="editingCategory.name"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
             </div>
 
@@ -1263,12 +1263,12 @@ watch(() => route.params.id, () => {
               <input
                 v-model="editingCategory.description"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="input"
               />
             </div>
           </div>
 
-          <div class="p-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button
               @click="editingCategory = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -1277,7 +1277,7 @@ watch(() => route.params.id, () => {
             </button>
             <button
               @click="updateCategory(editingCategory)"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
+              class="btn-primary"
             >
               Speichern
             </button>

@@ -129,11 +129,11 @@ function setExample(type) {
     <!-- Options -->
     <div class="flex flex-wrap gap-4">
       <label class="flex items-center gap-2 text-sm text-gray-300">
-        <input type="checkbox" v-model="uppercase" class="rounded bg-dark-600" />
+        <input type="checkbox" v-model="uppercase" class="rounded bg-white/[0.08]" />
         Großbuchstaben
       </label>
       <label class="flex items-center gap-2 text-sm text-gray-300">
-        <input type="checkbox" v-model="lineBreakBeforeAnd" class="rounded bg-dark-600" />
+        <input type="checkbox" v-model="lineBreakBeforeAnd" class="rounded bg-white/[0.08]" />
         AND/OR in neuer Zeile
       </label>
       <div class="flex items-center gap-2">
@@ -173,14 +173,14 @@ function setExample(type) {
         <label class="text-xs text-gray-400">Formatiert</label>
         <button @click="copyOutput" class="text-xs text-primary-400 hover:text-primary-300">Kopieren</button>
       </div>
-      <pre class="p-3 bg-dark-900 rounded-lg text-sm font-mono max-h-64 overflow-auto"><code class="text-blue-400">{{ output }}</code></pre>
+      <pre class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono max-h-64 overflow-auto"><code class="text-blue-400">{{ output }}</code></pre>
     </div>
 
     <!-- Keyword Reference -->
     <details class="text-xs">
       <summary class="text-gray-500 cursor-pointer hover:text-gray-400">SQL Keywords Referenz</summary>
-      <div class="mt-2 p-2 bg-dark-700 rounded-lg text-gray-400 flex flex-wrap gap-1">
-        <span v-for="kw in keywords.slice(0, 30)" :key="kw" class="px-1 bg-dark-600 rounded">
+      <div class="mt-2 p-2 bg-white/[0.04] rounded-lg text-gray-400 flex flex-wrap gap-1">
+        <span v-for="kw in keywords.slice(0, 30)" :key="kw" class="px-1 bg-white/[0.08] rounded">
           {{ uppercase ? kw : kw.toLowerCase() }}
         </span>
         <span class="text-gray-600">...</span>

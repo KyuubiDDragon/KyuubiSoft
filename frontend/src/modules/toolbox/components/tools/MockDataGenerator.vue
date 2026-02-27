@@ -262,7 +262,7 @@ generate()
                 type="checkbox"
                 :checked="selectedFields.includes(field.id)"
                 @change="toggleField(field.id)"
-                class="rounded bg-dark-600 border-dark-500"
+                class="rounded bg-white/[0.08] border-white/[0.08]"
               />
               {{ field.name }}
             </label>
@@ -284,7 +284,7 @@ generate()
           Kopieren
         </button>
       </div>
-      <pre class="p-3 bg-dark-900 rounded-lg text-xs text-green-400 font-mono max-h-64 overflow-auto">{{ output }}</pre>
+      <pre class="p-3 bg-white/[0.02] rounded-lg text-xs text-green-400 font-mono max-h-64 overflow-auto">{{ output }}</pre>
     </div>
   </div>
 </template>

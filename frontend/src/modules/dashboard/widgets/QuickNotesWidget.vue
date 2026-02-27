@@ -9,7 +9,7 @@ defineProps({ widget: Object, data: Array })
       <div
         v-for="note in (data || []).slice(0, 4)"
         :key="note.id"
-        class="p-2 rounded-lg bg-dark-700/50 text-sm text-gray-300 line-clamp-2"
+        class="p-2 rounded-lg bg-white/[0.04] text-sm text-gray-300 line-clamp-2"
       >
         {{ note.content }}
       </div>

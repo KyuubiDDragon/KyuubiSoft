@@ -69,12 +69,12 @@ const close = () => {
     <Transition name="fade">
       <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/70" @click="close" />
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="close" />
 
         <!-- Modal -->
-        <div class="relative bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-gray-700">
+        <div class="relative modal w-full max-w-md mx-4 overflow-hidden">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
                 <ArrowDownTrayIcon class="w-5 h-5 text-amber-400" />
@@ -84,7 +84,7 @@ const close = () => {
                 <p class="text-sm text-gray-400">{{ mockupStore.currentTemplate?.name }}</p>
               </div>
             </div>
-            <button @click="close" class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700">
+            <button @click="close" class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.04]">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
@@ -102,7 +102,7 @@ const close = () => {
                   class="relative p-4 rounded-lg border-2 transition-all text-left"
                   :class="format === opt.value
                     ? 'border-amber-500 bg-amber-500/10'
-                    : 'border-gray-600 hover:border-gray-500 bg-gray-700/50'"
+                    : 'border-white/[0.06] hover:border-gray-500 bg-white/[0.02]'"
                 >
                   <div class="flex items-center justify-between">
                     <span class="font-semibold text-white">{{ opt.label }}</span>
@@ -128,7 +128,7 @@ const close = () => {
                   min="10"
                   max="100"
                   step="5"
-                  class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  class="w-full h-2 bg-white/[0.04] rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
                 <div class="flex justify-between text-xs text-gray-500">
                   <span>Kleinere Datei</span>
@@ -146,7 +146,7 @@ const close = () => {
                     type="checkbox"
                     class="sr-only peer"
                   />
-                  <div class="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-amber-500 transition-colors" />
+                  <div class="w-11 h-6 bg-white/[0.04] rounded-full peer-checked:bg-amber-500 transition-colors" />
                   <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
                 </div>
                 <div>
@@ -167,7 +167,7 @@ const close = () => {
                     type="checkbox"
                     class="sr-only peer"
                   />
-                  <div class="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-blue-500 transition-colors" />
+                  <div class="w-11 h-6 bg-white/[0.04] rounded-full peer-checked:bg-blue-500 transition-colors" />
                   <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
                 </div>
                 <div>
@@ -188,7 +188,7 @@ const close = () => {
                     type="checkbox"
                     class="sr-only peer"
                   />
-                  <div class="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-purple-500 transition-colors" />
+                  <div class="w-11 h-6 bg-white/[0.04] rounded-full peer-checked:bg-purple-500 transition-colors" />
                   <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
                 </div>
                 <div>
@@ -201,7 +201,7 @@ const close = () => {
             </div>
 
             <!-- Preview Info -->
-            <div class="bg-gray-900/50 rounded-lg p-4">
+            <div class="bg-white/[0.01] rounded-lg p-4">
               <div class="flex items-center gap-3">
                 <PhotoIcon class="w-8 h-8 text-gray-500" />
                 <div class="flex-1">
@@ -216,7 +216,7 @@ const close = () => {
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700 bg-gray-900/30">
+          <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06] bg-white/[0.01]">
             <button
               @click="close"
               class="px-4 py-2 text-gray-300 hover:text-white transition-colors"

@@ -162,14 +162,14 @@ generate()
 
       <div class="flex items-end gap-4">
         <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" v-model="uppercase" class="rounded bg-dark-700 border-dark-600" />
+          <input type="checkbox" v-model="uppercase" class="rounded bg-white/[0.04] border-white/[0.06]" />
           <span class="text-sm text-gray-300">UPPERCASE</span>
         </label>
       </div>
 
       <div class="flex items-end gap-4">
         <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" v-model="noDashes" class="rounded bg-dark-700 border-dark-600" />
+          <input type="checkbox" v-model="noDashes" class="rounded bg-white/[0.04] border-white/[0.06]" />
           <span class="text-sm text-gray-300">Ohne Bindestriche</span>
         </label>
       </div>
@@ -211,7 +211,7 @@ generate()
         <div
           v-for="uuid in generatedUuids"
           :key="uuid.id"
-          class="flex items-center gap-2 p-2 bg-dark-700 rounded-lg group"
+          class="flex items-center gap-2 p-2 bg-white/[0.04] rounded-lg group"
         >
           <code class="flex-1 text-sm font-mono text-green-400 select-all">
             {{ uuid.value }}

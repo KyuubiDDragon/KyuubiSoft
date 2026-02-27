@@ -15,7 +15,7 @@ defineProps({ widget: Object, data: Array })
         v-for="doc in (data || []).slice(0, 5)"
         :key="doc.id"
         :to="`/documents?open=${doc.id}`"
-        class="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 transition-colors"
+        class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
       >
         <DocumentTextIcon class="w-5 h-5 text-green-400 flex-shrink-0" />
         <div class="flex-1 min-w-0">

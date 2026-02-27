@@ -418,11 +418,11 @@ watch(() => projectStore.selectedProjectId, () => {
             </p>
 
             <!-- Actions -->
-            <div class="flex items-center justify-between pt-3 border-t border-dark-600">
+            <div class="flex items-center justify-between pt-3 border-t border-white/[0.06]">
               <div class="flex items-center gap-2">
                 <button
                   @click="testConnection(host)"
-                  class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
                   :disabled="testingConnection === host.id"
                   title="Verbindung testen"
                 >
@@ -434,7 +434,7 @@ watch(() => projectStore.selectedProjectId, () => {
                 <button
                   v-if="!host.is_default"
                   @click="setDefault(host)"
-                  class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] rounded transition-colors"
                   title="Als Standard setzen"
                 >
                   <StarIcon class="w-4 h-4" />
@@ -443,14 +443,14 @@ watch(() => projectStore.selectedProjectId, () => {
               <div class="flex items-center gap-2">
                 <button
                   @click="openEditModal(host)"
-                  class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
                   title="Bearbeiten"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="deleteHost(host)"
-                  class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded transition-colors"
+                  class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded transition-colors"
                   title="Löschen"
                 >
                   <TrashIcon class="w-4 h-4" />
@@ -465,8 +465,8 @@ watch(() => projectStore.selectedProjectId, () => {
     <!-- Create/Edit Modal -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-        <div class="relative bg-dark-700 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
+        <div class="relative modal max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <h2 class="text-xl font-bold text-white mb-6">
               {{ editMode ? 'Docker Host bearbeiten' : 'Docker Host hinzufügen' }}
@@ -499,7 +499,7 @@ watch(() => projectStore.selectedProjectId, () => {
               <!-- Project -->
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Projekt</label>
-                <select v-model="form.project_id" class="input w-full">
+                <select v-model="form.project_id" class="select w-full">
                   <option value="">Kein Projekt</option>
                   <option v-for="project in projects" :key="project.id" :value="project.id">
                     {{ project.name }}
@@ -518,7 +518,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     :class="
                       form.type === 'socket'
                         ? 'border-primary-500 bg-primary-500/10'
-                        : 'border-dark-500 hover:border-dark-400'
+                        : 'border-white/[0.08] hover:border-white/[0.12]'
                     "
                   >
                     <ComputerDesktopIcon class="w-5 h-5 text-blue-400 mb-1" />
@@ -532,7 +532,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     :class="
                       form.type === 'tcp'
                         ? 'border-primary-500 bg-primary-500/10'
-                        : 'border-dark-500 hover:border-dark-400'
+                        : 'border-white/[0.08] hover:border-white/[0.12]'
                     "
                   >
                     <GlobeAltIcon class="w-5 h-5 text-purple-400 mb-1" />
@@ -583,7 +583,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     v-model="form.tls_enabled"
                     type="checkbox"
                     id="tls_enabled"
-                    class="rounded bg-dark-600 border-dark-500 text-primary-500 focus:ring-primary-500"
+                    class="rounded bg-white/[0.08] border-white/[0.08] text-primary-500 focus:ring-primary-500"
                   />
                   <label for="tls_enabled" class="text-sm text-gray-300">
                     TLS/SSL aktivieren (Port 2376)
@@ -596,7 +596,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     <label class="block text-sm font-medium text-gray-300 mb-1">CA Zertifikat</label>
                     <textarea
                       v-model="form.tls_ca"
-                      class="input w-full h-20 text-xs font-mono"
+                      class="textarea w-full h-20 text-xs font-mono"
                       placeholder="-----BEGIN CERTIFICATE-----"
                     ></textarea>
                   </div>
@@ -604,7 +604,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     <label class="block text-sm font-medium text-gray-300 mb-1">Client Zertifikat</label>
                     <textarea
                       v-model="form.tls_cert"
-                      class="input w-full h-20 text-xs font-mono"
+                      class="textarea w-full h-20 text-xs font-mono"
                       placeholder="-----BEGIN CERTIFICATE-----"
                     ></textarea>
                   </div>
@@ -612,7 +612,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     <label class="block text-sm font-medium text-gray-300 mb-1">Client Key</label>
                     <textarea
                       v-model="form.tls_key"
-                      class="input w-full h-20 text-xs font-mono"
+                      class="textarea w-full h-20 text-xs font-mono"
                       placeholder="-----BEGIN RSA PRIVATE KEY-----"
                     ></textarea>
                   </div>
@@ -620,7 +620,7 @@ watch(() => projectStore.selectedProjectId, () => {
               </template>
 
               <!-- Portainer Integration (only in edit mode) -->
-              <div v-if="editMode" class="border-t border-dark-600 pt-4 mt-4">
+              <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
                 <h4 class="text-sm font-medium text-white mb-3">Portainer Integration (Optional)</h4>
                 <p class="text-xs text-gray-400 mb-3">
                   Konfiguriere Portainer, um Compose-Dateien direkt von der Portainer API zu laden, wenn sie nicht im Dateisystem verfügbar sind.
@@ -655,12 +655,12 @@ watch(() => projectStore.selectedProjectId, () => {
                     />
                     <p class="text-xs text-gray-500 mt-1">Die Endpoint ID findest du in Portainer unter Environments</p>
                   </div>
-                  <div class="bg-dark-700 rounded-lg p-4 border border-primary-500/30">
+                  <div class="bg-white/[0.04] rounded-lg p-4 border border-primary-500/30">
                     <label class="flex items-center gap-3 cursor-pointer">
                       <input
                         v-model="form.portainer_only"
                         type="checkbox"
-                        class="w-5 h-5 rounded border-gray-600 bg-dark-800 text-primary-500 focus:ring-primary-500"
+                        class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                       />
                       <div>
                         <span class="text-sm font-medium text-white">Nur Portainer API verwenden</span>
@@ -684,7 +684,7 @@ watch(() => projectStore.selectedProjectId, () => {
               </div>
 
               <!-- SSH Access (only in edit mode) -->
-              <div v-if="editMode" class="border-t border-dark-600 pt-4 mt-4">
+              <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
                 <h4 class="text-sm font-medium text-white mb-3">SSH-Zugang (Optional)</h4>
                 <p class="text-xs text-gray-400 mb-3">
                   SSH-Zugang für das Lesen von Compose-Dateien auf Remote-Servern. Ermöglicht Backups für nicht über Portainer erstellte Stacks.
@@ -695,7 +695,7 @@ watch(() => projectStore.selectedProjectId, () => {
                       v-model="form.ssh_enabled"
                       type="checkbox"
                       id="ssh_enabled"
-                      class="rounded bg-dark-600 border-dark-500 text-primary-500 focus:ring-primary-500"
+                      class="rounded bg-white/[0.08] border-white/[0.08] text-primary-500 focus:ring-primary-500"
                     />
                     <label for="ssh_enabled" class="text-sm text-gray-300">
                       SSH-Zugang aktivieren
@@ -745,7 +745,7 @@ watch(() => projectStore.selectedProjectId, () => {
                       <label class="block text-sm font-medium text-gray-300 mb-1">Private Key (alternativ zum Passwort)</label>
                       <textarea
                         v-model="form.ssh_private_key"
-                        class="input w-full h-24 text-xs font-mono"
+                        class="textarea w-full h-24 text-xs font-mono"
                         placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
                       ></textarea>
                       <p class="text-xs text-gray-500 mt-1">Falls kein Passwort verwendet wird, hier den Private Key einfügen</p>

@@ -179,7 +179,7 @@ function updateDate(dateStr) {
         @click.stop="toggleCheckbox"
         :class="[
           'w-5 h-5 rounded border flex items-center justify-center transition-colors',
-          value ? 'bg-primary-600 border-primary-600' : 'border-dark-500 hover:border-primary-500'
+          value ? 'bg-primary-600 border-primary-600' : 'border-white/[0.08] hover:border-primary-500'
         ]"
       >
         <CheckIcon v-if="value" class="w-3 h-3 text-white" />
@@ -214,7 +214,7 @@ function updateDate(dateStr) {
         ref="inputRef"
         v-model="localValue"
         :type="property.type === 'email' ? 'email' : property.type === 'url' ? 'url' : 'text'"
-        class="database-cell-editor w-full bg-dark-700 border border-primary-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+        class="input database-cell-editor w-full"
         @keydown="handleKeydown"
         @blur="save"
       />
@@ -231,7 +231,7 @@ function updateDate(dateStr) {
         v-model.number="localValue"
         type="number"
         step="any"
-        class="database-cell-editor w-full bg-dark-700 border border-primary-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+        class="input database-cell-editor w-full"
         @keydown="handleKeydown"
         @blur="save"
       />
@@ -248,7 +248,7 @@ function updateDate(dateStr) {
         ref="inputRef"
         :value="value?.start?.split('T')[0] || ''"
         type="date"
-        class="database-cell-editor w-full bg-dark-700 border border-primary-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+        class="input database-cell-editor w-full"
         @change="updateDate($event.target.value)"
         @keydown="handleKeydown"
       />
@@ -268,7 +268,7 @@ function updateDate(dateStr) {
         </span>
         <span v-else class="text-gray-500 text-sm">—</span>
       </div>
-      <div v-else class="database-cell-editor absolute z-10 mt-1 w-48 bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden">
+      <div v-else class="database-cell-editor absolute z-10 mt-1 w-48 bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-glass overflow-hidden">
         <div class="max-h-48 overflow-y-auto p-1">
           <button
             v-for="option in selectOptions"
@@ -276,7 +276,7 @@ function updateDate(dateStr) {
             @click="selectOption(option)"
             :class="[
               'w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left',
-              (value === option.id || value === option.name) ? 'bg-primary-600/20' : 'hover:bg-dark-600'
+              (value === option.id || value === option.name) ? 'bg-primary-600/20' : 'hover:bg-white/[0.04]'
             ]"
           >
             <span :class="['w-3 h-3 rounded-full', `bg-${option.color}-500`]"></span>
@@ -304,7 +304,7 @@ function updateDate(dateStr) {
         </span>
         <span v-if="displayValue.length === 0" class="text-gray-500 text-sm">—</span>
       </div>
-      <div v-else class="database-cell-editor absolute z-10 mt-1 w-48 bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden">
+      <div v-else class="database-cell-editor absolute z-10 mt-1 w-48 bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-glass overflow-hidden">
         <div class="max-h-48 overflow-y-auto p-1">
           <button
             v-for="option in selectOptions"
@@ -312,12 +312,12 @@ function updateDate(dateStr) {
             @click.stop="toggleMultiSelectOption(option)"
             :class="[
               'w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left',
-              isMultiSelectSelected(option) ? 'bg-primary-600/20' : 'hover:bg-dark-600'
+              isMultiSelectSelected(option) ? 'bg-primary-600/20' : 'hover:bg-white/[0.04]'
             ]"
           >
             <span :class="[
               'w-4 h-4 rounded border flex items-center justify-center',
-              isMultiSelectSelected(option) ? 'bg-primary-600 border-primary-600' : 'border-dark-500'
+              isMultiSelectSelected(option) ? 'bg-primary-600 border-primary-600' : 'border-white/[0.08]'
             ]">
               <CheckIcon v-if="isMultiSelectSelected(option)" class="w-3 h-3 text-white" />
             </span>

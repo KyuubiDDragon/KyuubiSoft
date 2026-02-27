@@ -90,8 +90,8 @@ const deleteCustomTemplate = async (e, template) => {
           class="group relative bg-amber-500/10 hover:bg-amber-500/20 rounded-lg overflow-hidden transition-all duration-200 text-left border border-amber-500/30 hover:border-amber-500/50"
         >
           <!-- Thumbnail Preview -->
-          <div class="aspect-video bg-gray-900 relative overflow-hidden">
-            <div class="absolute inset-2 bg-gray-700/50 rounded-lg flex items-center justify-center">
+          <div class="aspect-video bg-white/[0.02] relative overflow-hidden">
+            <div class="absolute inset-2 bg-white/[0.02] rounded-lg flex items-center justify-center">
               <FolderIcon class="w-8 h-8 text-amber-500/50" />
             </div>
 
@@ -130,7 +130,7 @@ const deleteCustomTemplate = async (e, template) => {
     </div>
 
     <!-- Divider if custom templates exist -->
-    <div v-if="mockupStore.customTemplates.length > 0" class="border-t border-gray-700" />
+    <div v-if="mockupStore.customTemplates.length > 0" class="border-t border-white/[0.06]" />
 
     <!-- Built-in Categories -->
     <div v-for="(templates, category) in templatesByCategory" :key="category" class="space-y-3">
@@ -146,11 +146,11 @@ const deleteCustomTemplate = async (e, template) => {
           v-for="template in templates"
           :key="template.id"
           @click="selectTemplate(template.id)"
-          class="group relative bg-gray-700/50 hover:bg-gray-700 rounded-lg overflow-hidden transition-all duration-200 text-left border border-transparent hover:border-amber-500/50"
+          class="group relative bg-white/[0.02] hover:bg-white/[0.04] rounded-lg overflow-hidden transition-all duration-200 text-left border border-transparent hover:border-amber-500/50"
           :class="{ 'ring-2 ring-amber-500': mockupStore.currentTemplate?.id === template.id }"
         >
           <!-- Thumbnail Preview -->
-          <div class="aspect-video bg-gray-900 relative overflow-hidden">
+          <div class="aspect-video bg-white/[0.02] relative overflow-hidden">
             <!-- Mini Preview based on template -->
             <div v-if="template.id === 'single-image-hero'" class="absolute inset-2 flex">
               <div class="w-3/5 bg-gradient-to-r from-gray-700 to-gray-800 rounded-l-lg"></div>
@@ -160,11 +160,11 @@ const deleteCustomTemplate = async (e, template) => {
               </div>
             </div>
             <div v-else-if="template.id === 'feature-showcase'" class="absolute inset-2 flex gap-1">
-              <div class="w-2/3 bg-gray-700 rounded-lg"></div>
+              <div class="w-2/3 bg-white/[0.04] rounded-lg"></div>
               <div class="w-1/3 flex flex-col gap-1">
-                <div class="flex-1 bg-gray-700 rounded"></div>
-                <div class="flex-1 bg-gray-700 rounded"></div>
-                <div class="flex-1 bg-gray-700 rounded"></div>
+                <div class="flex-1 bg-white/[0.04] rounded"></div>
+                <div class="flex-1 bg-white/[0.04] rounded"></div>
+                <div class="flex-1 bg-white/[0.04] rounded"></div>
               </div>
             </div>
             <div v-else-if="template.id === 'corner-frame'" class="absolute inset-2">
@@ -176,16 +176,16 @@ const deleteCustomTemplate = async (e, template) => {
               </div>
             </div>
             <div v-else-if="template.id === 'price-banner'" class="absolute inset-2 flex items-center gap-2">
-              <div class="w-8 h-8 bg-gray-700 rounded"></div>
+              <div class="w-8 h-8 bg-white/[0.04] rounded"></div>
               <div class="flex-1">
                 <div class="h-2 w-12 bg-gray-600 rounded mb-1"></div>
-                <div class="h-1 w-8 bg-gray-700 rounded"></div>
+                <div class="h-1 w-8 bg-white/[0.04] rounded"></div>
               </div>
               <div class="h-3 w-8 bg-amber-500 rounded"></div>
             </div>
             <div v-else-if="template.id === 'minimal-dark'" class="absolute inset-2 flex flex-col items-center justify-center gap-1">
-              <div class="w-4 h-1.5 bg-gray-700 rounded"></div>
-              <div class="w-4/5 h-3/5 bg-gray-700 rounded-lg shadow-lg shadow-amber-500/10"></div>
+              <div class="w-4 h-1.5 bg-white/[0.04] rounded"></div>
+              <div class="w-4/5 h-3/5 bg-white/[0.04] rounded-lg shadow-float shadow-amber-500/10"></div>
             </div>
             <!-- Single Image Hero Right -->
             <div v-else-if="template.id === 'single-image-hero-right'" class="absolute inset-2 flex">
@@ -207,9 +207,9 @@ const deleteCustomTemplate = async (e, template) => {
                 <div class="w-4 h-1 bg-gray-600 rounded"></div>
               </div>
               <div class="flex-1 flex items-end justify-center gap-1 pb-1">
-                <div class="w-6 h-8 bg-gray-700 rounded transform rotate-[8deg] origin-bottom"></div>
+                <div class="w-6 h-8 bg-white/[0.04] rounded transform rotate-[8deg] origin-bottom"></div>
                 <div class="w-7 h-10 bg-gray-600 rounded"></div>
-                <div class="w-6 h-8 bg-gray-700 rounded transform -rotate-[8deg] origin-bottom"></div>
+                <div class="w-6 h-8 bg-white/[0.04] rounded transform -rotate-[8deg] origin-bottom"></div>
               </div>
             </div>
             <!-- Wide Screens Banner -->
@@ -219,9 +219,9 @@ const deleteCustomTemplate = async (e, template) => {
                 <div class="h-0.5 w-10 bg-amber-500/30 rounded mx-auto mt-1"></div>
               </div>
               <div class="flex-1 flex items-end justify-center gap-1 pb-1">
-                <div class="w-6 h-7 bg-gray-700 rounded transform rotate-[8deg] origin-bottom"></div>
+                <div class="w-6 h-7 bg-white/[0.04] rounded transform rotate-[8deg] origin-bottom"></div>
                 <div class="w-8 h-9 bg-gray-600 rounded"></div>
-                <div class="w-6 h-7 bg-gray-700 rounded transform -rotate-[8deg] origin-bottom"></div>
+                <div class="w-6 h-7 bg-white/[0.04] rounded transform -rotate-[8deg] origin-bottom"></div>
               </div>
             </div>
             <!-- Feature Gallery 3D -->
@@ -231,27 +231,27 @@ const deleteCustomTemplate = async (e, template) => {
               </div>
               <div class="flex-1 grid grid-cols-4 gap-0.5 px-0.5">
                 <div class="flex flex-col gap-0.5">
-                  <div class="flex-1 bg-gray-700 rounded transform -rotate-3"></div>
+                  <div class="flex-1 bg-white/[0.04] rounded transform -rotate-3"></div>
                   <div class="h-1 w-6 bg-gray-600 rounded"></div>
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <div class="flex-1 bg-gray-700 rounded"></div>
+                  <div class="flex-1 bg-white/[0.04] rounded"></div>
                   <div class="h-1 w-6 bg-gray-600 rounded"></div>
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <div class="flex-1 bg-gray-700 rounded"></div>
+                  <div class="flex-1 bg-white/[0.04] rounded"></div>
                   <div class="h-1 w-6 bg-gray-600 rounded"></div>
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <div class="flex-1 bg-gray-700 rounded transform rotate-3"></div>
+                  <div class="flex-1 bg-white/[0.04] rounded transform rotate-3"></div>
                   <div class="h-1 w-6 bg-gray-600 rounded"></div>
                 </div>
               </div>
-              <div class="h-4 mx-4 mt-1 bg-gray-700 rounded"></div>
+              <div class="h-4 mx-4 mt-1 bg-white/[0.04] rounded"></div>
             </div>
             <!-- Feature Cards Premium -->
             <div v-else-if="template.id === 'feature-cards-premium'" class="absolute inset-2 flex items-end justify-center gap-1 pb-1">
-              <div class="w-6 h-12 bg-gray-700 rounded flex flex-col p-0.5 gap-0.5">
+              <div class="w-6 h-12 bg-white/[0.04] rounded flex flex-col p-0.5 gap-0.5">
                 <div class="flex-1 bg-gray-600 rounded transform -rotate-2"></div>
                 <div class="h-0.5 w-3 bg-gray-500 rounded"></div>
               </div>
@@ -259,12 +259,12 @@ const deleteCustomTemplate = async (e, template) => {
                 <div class="flex-1 bg-gray-500 rounded"></div>
                 <div class="h-0.5 w-4 bg-amber-500 rounded"></div>
               </div>
-              <div class="w-6 h-12 bg-gray-700 rounded flex flex-col p-0.5 gap-0.5">
+              <div class="w-6 h-12 bg-white/[0.04] rounded flex flex-col p-0.5 gap-0.5">
                 <div class="flex-1 bg-gray-600 rounded transform rotate-2"></div>
                 <div class="h-0.5 w-3 bg-gray-500 rounded"></div>
               </div>
             </div>
-            <div v-else class="absolute inset-2 bg-gray-700 rounded-lg"></div>
+            <div v-else class="absolute inset-2 bg-white/[0.04] rounded-lg"></div>
 
             <!-- Transparent BG indicator -->
             <div v-if="template.transparentBg" class="absolute top-1 right-1 px-1.5 py-0.5 bg-purple-500/80 text-white text-[10px] rounded">

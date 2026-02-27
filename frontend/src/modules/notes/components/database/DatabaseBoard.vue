@@ -258,12 +258,12 @@ function handleDrop(event, groupId) {
       <div
         v-for="(group, groupId) in groupedRows"
         :key="groupId"
-        class="board-column flex-shrink-0 w-72 bg-dark-700 rounded-lg flex flex-col max-h-full"
+        class="board-column flex-shrink-0 w-72 bg-white/[0.03] rounded-xl flex flex-col max-h-full"
         @dragover="handleDragOver"
         @drop="handleDrop($event, groupId)"
       >
         <!-- Column header -->
-        <div class="column-header flex items-center gap-2 px-3 py-2 border-b border-dark-600">
+        <div class="column-header flex items-center gap-2 px-3 py-2 border-b border-white/[0.06]">
           <span :class="['w-3 h-3 rounded-full flex-shrink-0', getColorClass(group.option.color)]"></span>
           <span class="text-sm font-medium text-white truncate flex-1">
             {{ group.option.name }}
@@ -276,7 +276,7 @@ function handleDrop(event, groupId) {
           <div
             v-for="row in group.rows"
             :key="row.id"
-            class="board-card bg-dark-800 border border-dark-600 rounded-lg p-3 cursor-grab hover:border-dark-500 transition-colors group"
+            class="board-card bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 cursor-grab hover:border-white/[0.08] transition-colors group"
             draggable="true"
             @dragstart="handleDragStart($event, row.id)"
           >
@@ -307,17 +307,17 @@ function handleDrop(event, groupId) {
           <!-- Empty state -->
           <div
             v-if="group.rows.length === 0"
-            class="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-dark-600 rounded-lg"
+            class="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-white/[0.06] rounded-xl"
           >
             Keine Einträge
           </div>
         </div>
 
         <!-- Add card button -->
-        <div class="p-2 border-t border-dark-600">
+        <div class="p-2 border-t border-white/[0.06]">
           <button
             @click="addRow(groupId)"
-            class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <PlusIcon class="w-4 h-4" />
             Neu

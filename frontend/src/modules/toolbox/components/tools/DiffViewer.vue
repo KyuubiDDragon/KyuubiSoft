@@ -117,14 +117,14 @@ function swapTexts() {
         <button
           @click="viewMode = 'split'"
           class="px-3 py-1 text-sm rounded transition-colors"
-          :class="viewMode === 'split' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+          :class="viewMode === 'split' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
           Split
         </button>
         <button
           @click="viewMode = 'unified'"
           class="px-3 py-1 text-sm rounded transition-colors"
-          :class="viewMode === 'unified' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400'"
+          :class="viewMode === 'unified' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
           Unified
         </button>
@@ -132,11 +132,11 @@ function swapTexts() {
 
       <div class="flex gap-4">
         <label class="flex items-center gap-2 text-sm text-gray-400">
-          <input type="checkbox" v-model="ignoreWhitespace" class="rounded bg-dark-700 border-dark-600" />
+          <input type="checkbox" v-model="ignoreWhitespace" class="rounded bg-white/[0.04] border-white/[0.06]" />
           Leerzeichen ignorieren
         </label>
         <label class="flex items-center gap-2 text-sm text-gray-400">
-          <input type="checkbox" v-model="ignoreCase" class="rounded bg-dark-700 border-dark-600" />
+          <input type="checkbox" v-model="ignoreCase" class="rounded bg-white/[0.04] border-white/[0.06]" />
           Groß/Klein ignorieren
         </label>
       </div>
@@ -182,9 +182,9 @@ function swapTexts() {
     </div>
 
     <!-- Diff Result -->
-    <div v-if="diffResult.length > 0" class="bg-dark-900 rounded-lg overflow-hidden border border-dark-600">
+    <div v-if="diffResult.length > 0" class="bg-white/[0.02] rounded-lg overflow-hidden border border-white/[0.06]">
       <!-- Split View -->
-      <div v-if="viewMode === 'split'" class="grid grid-cols-2 divide-x divide-dark-600 max-h-96 overflow-auto">
+      <div v-if="viewMode === 'split'" class="grid grid-cols-2 divide-x divide-white/[0.06] max-h-96 overflow-auto">
         <!-- Left (Original) -->
         <div class="font-mono text-sm">
           <template v-for="(line, idx) in diffResult" :key="'a-' + idx">
@@ -195,7 +195,7 @@ function swapTexts() {
                 'bg-red-900/30': line.type === 'remove',
               }"
             >
-              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-dark-700 flex-shrink-0">
+              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-white/[0.06] flex-shrink-0">
                 {{ line.lineA || '' }}
               </span>
               <span
@@ -203,8 +203,8 @@ function swapTexts() {
                 :class="line.type === 'remove' ? 'text-red-400' : 'text-gray-300'"
               >{{ line.textA ?? '' }}</span>
             </div>
-            <div v-else class="flex bg-dark-800">
-              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-dark-700 flex-shrink-0"></span>
+            <div v-else class="flex bg-white/[0.04]">
+              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-white/[0.06] flex-shrink-0"></span>
               <span class="pl-2 whitespace-pre flex-1"></span>
             </div>
           </template>
@@ -220,7 +220,7 @@ function swapTexts() {
                 'bg-green-900/30': line.type === 'add',
               }"
             >
-              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-dark-700 flex-shrink-0">
+              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-white/[0.06] flex-shrink-0">
                 {{ line.lineB || '' }}
               </span>
               <span
@@ -228,8 +228,8 @@ function swapTexts() {
                 :class="line.type === 'add' ? 'text-green-400' : 'text-gray-300'"
               >{{ line.textB ?? '' }}</span>
             </div>
-            <div v-else class="flex bg-dark-800">
-              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-dark-700 flex-shrink-0"></span>
+            <div v-else class="flex bg-white/[0.04]">
+              <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-white/[0.06] flex-shrink-0"></span>
               <span class="pl-2 whitespace-pre flex-1"></span>
             </div>
           </template>
@@ -250,7 +250,7 @@ function swapTexts() {
           <span class="w-6 text-center text-gray-600 select-none flex-shrink-0">
             {{ line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' ' }}
           </span>
-          <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-dark-700 flex-shrink-0">
+          <span class="w-10 text-right pr-2 text-gray-600 select-none border-r border-white/[0.06] flex-shrink-0">
             {{ line.lineA || line.lineB || '' }}
           </span>
           <span

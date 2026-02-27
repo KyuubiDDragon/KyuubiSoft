@@ -312,7 +312,7 @@ function copyToClipboard() {
             'px-4 py-2 rounded-lg transition-colors',
             command === cmd
               ? 'bg-primary-500 text-white'
-              : 'bg-dark-700 text-gray-300 hover:bg-dark-600'
+              : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.04]'
           ]"
         >
           docker {{ cmd }}
@@ -342,27 +342,27 @@ function copyToClipboard() {
       <!-- Runtime Options -->
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.detached" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.detached" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Detached (-d)</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.interactive" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.interactive" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Interactive (-i)</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.tty" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.tty" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>TTY (-t)</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.rm" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.rm" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Remove on exit (--rm)</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.privileged" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.privileged" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Privileged</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.init" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.init" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Init</span>
         </label>
       </div>
@@ -466,11 +466,11 @@ function copyToClipboard() {
 
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.interactive" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.interactive" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>Interactive (-i)</span>
         </label>
         <label class="flex items-center gap-2 text-sm">
-          <input v-model="config.tty" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+          <input v-model="config.tty" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
           <span>TTY (-t)</span>
         </label>
       </div>
@@ -510,7 +510,7 @@ function copyToClipboard() {
       </div>
 
       <label class="flex items-center gap-2 text-sm">
-        <input v-model="config.readonly" type="checkbox" class="rounded border-dark-500 bg-dark-700" />
+        <input v-model="config.readonly" type="checkbox" class="rounded border-white/[0.08] bg-white/[0.04]" />
         <span>No Cache</span>
       </label>
     </template>
@@ -524,7 +524,7 @@ function copyToClipboard() {
           {{ copied ? 'Kopiert!' : 'Kopieren' }}
         </button>
       </div>
-      <pre class="bg-dark-900 p-4 rounded-lg text-sm text-green-400 font-mono overflow-auto whitespace-pre-wrap">{{ generatedCommand }}</pre>
+      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-green-400 font-mono overflow-auto whitespace-pre-wrap">{{ generatedCommand }}</pre>
     </div>
   </div>
 </template>

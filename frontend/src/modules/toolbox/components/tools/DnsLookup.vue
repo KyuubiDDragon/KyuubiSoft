@@ -205,7 +205,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
         <div
           v-for="(record, i) in results.answers"
           :key="i"
-          class="p-3 bg-dark-700 rounded-lg"
+          class="p-3 bg-white/[0.04] rounded-lg"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
@@ -239,7 +239,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
         <div
           v-for="(record, i) in records"
           :key="i"
-          class="p-3 bg-dark-700 rounded-lg"
+          class="p-3 bg-white/[0.04] rounded-lg"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">

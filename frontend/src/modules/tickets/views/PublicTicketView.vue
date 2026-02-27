@@ -263,7 +263,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-900 py-12 px-4">
+  <div class="min-h-screen bg-white/[0.02] py-12 px-4">
     <div class="w-full max-w-7xl mx-auto">
       <!-- Logo/Header -->
       <div class="text-center mb-8">
@@ -292,13 +292,13 @@ onMounted(() => {
 
       <!-- Home View -->
       <div v-if="viewMode === 'home'" class="space-y-4">
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6 space-y-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 space-y-6">
           <h2 class="text-lg font-semibold text-white text-center">Was möchten Sie tun?</h2>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               @click="viewMode = 'create'"
-              class="p-6 bg-dark-700 hover:bg-dark-600 rounded-xl transition-colors text-left"
+              class="p-6 bg-white/[0.04] hover:bg-white/[0.04] rounded-xl transition-colors text-left"
             >
               <PlusIcon class="w-10 h-10 text-primary-400 mb-3" />
               <h3 class="font-medium text-white">Neues Ticket erstellen</h3>
@@ -307,7 +307,7 @@ onMounted(() => {
 
             <button
               @click="viewMode = 'lookup'"
-              class="p-6 bg-dark-700 hover:bg-dark-600 rounded-xl transition-colors text-left"
+              class="p-6 bg-white/[0.04] hover:bg-white/[0.04] rounded-xl transition-colors text-left"
             >
               <MagnifyingGlassIcon class="w-10 h-10 text-primary-400 mb-3" />
               <h3 class="font-medium text-white">Ticket nachverfolgen</h3>
@@ -327,7 +327,7 @@ onMounted(() => {
           Zurück
         </button>
 
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-6">Neues Ticket erstellen</h2>
 
           <div class="space-y-4">
@@ -337,7 +337,7 @@ onMounted(() => {
                 <input
                   v-model="createForm.guest_name"
                   type="text"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="Max Mustermann"
                 />
               </div>
@@ -347,7 +347,7 @@ onMounted(() => {
                 <input
                   v-model="createForm.guest_email"
                   type="email"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  class="input"
                   placeholder="max@beispiel.de"
                 />
               </div>
@@ -358,7 +358,7 @@ onMounted(() => {
               <input
                 v-model="createForm.title"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input"
                 placeholder="Kurze Beschreibung Ihres Anliegens"
               />
             </div>
@@ -368,7 +368,7 @@ onMounted(() => {
               <textarea
                 v-model="createForm.description"
                 rows="5"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea"
                 placeholder="Beschreiben Sie Ihr Anliegen so detailliert wie möglich..."
               ></textarea>
             </div>
@@ -378,7 +378,7 @@ onMounted(() => {
                 <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
                 <select
                   v-model="createForm.category_id"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option value="">Bitte wählen...</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
@@ -391,7 +391,7 @@ onMounted(() => {
                 <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
                 <select
                   v-model="createForm.priority"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="select"
                 >
                   <option v-for="p in priorityOptions" :key="p.value" :value="p.value">
                     {{ p.label }}
@@ -415,7 +415,7 @@ onMounted(() => {
             <button
               @click="createTicket"
               :disabled="loading || !captchaToken"
-              class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              class="w-full btn-primary flex items-center justify-center gap-2"
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>{{ loading ? 'Wird erstellt...' : 'Ticket absenden' }}</span>
@@ -434,7 +434,7 @@ onMounted(() => {
           Zurück
         </button>
 
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
           <h2 class="text-lg font-semibold text-white mb-6">Ticket nachverfolgen</h2>
 
           <div class="space-y-4">
@@ -443,7 +443,7 @@ onMounted(() => {
               <input
                 v-model="accessCode"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 font-mono"
+                class="input font-mono"
                 placeholder="TKT-XXXXXXXX"
                 @keydown.enter="lookupTicket"
               />
@@ -455,7 +455,7 @@ onMounted(() => {
             <button
               @click="lookupTicket"
               :disabled="loading"
-              class="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              class="w-full btn-primary flex items-center justify-center gap-2"
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <MagnifyingGlassIcon v-else class="w-5 h-5" />
@@ -476,7 +476,7 @@ onMounted(() => {
         </button>
 
         <!-- Ticket Details -->
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
           <div class="flex items-start justify-between gap-4 mb-4">
             <div>
               <div class="flex items-center gap-2 mb-1">
@@ -492,7 +492,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="bg-dark-700 rounded-lg p-4 mb-4">
+          <div class="bg-white/[0.04] rounded-lg p-4 mb-4">
             <p class="text-gray-300 whitespace-pre-wrap">{{ ticket.description }}</p>
           </div>
 
@@ -517,7 +517,7 @@ onMounted(() => {
         </div>
 
         <!-- Comments -->
-        <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+        <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
           <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <ChatBubbleLeftIcon class="w-5 h-5" />
             Kommunikation
@@ -532,13 +532,13 @@ onMounted(() => {
             >
               <div
                 class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
-                :class="comment.user_id ? 'bg-primary-600' : 'bg-dark-600'"
+                :class="comment.user_id ? 'bg-primary-600' : 'bg-white/[0.08]'"
               >
                 {{ (comment.username || comment.guest_name)?.[0]?.toUpperCase() || '?' }}
               </div>
               <div
                 class="flex-1 max-w-[80%] rounded-lg p-3"
-                :class="comment.user_id ? 'bg-primary-600/20' : 'bg-dark-700'"
+                :class="comment.user_id ? 'bg-primary-600/20' : 'bg-white/[0.04]'"
               >
                 <div class="flex items-center gap-2 mb-1">
                   <span class="font-medium text-white text-sm">
@@ -559,25 +559,25 @@ onMounted(() => {
           </div>
 
           <!-- Add Comment -->
-          <div v-if="ticket.status !== 'closed'" class="border-t border-dark-700 pt-4">
+          <div v-if="ticket.status !== 'closed'" class="border-t border-white/[0.06] pt-4">
             <textarea
               v-model="newComment"
               rows="3"
-              class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+              class="textarea"
               placeholder="Ihre Nachricht..."
             ></textarea>
             <div class="flex justify-end mt-3">
               <button
                 @click="addComment"
                 :disabled="!newComment.trim() || submittingComment"
-                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-primary"
               >
                 {{ submittingComment ? 'Wird gesendet...' : 'Nachricht senden' }}
               </button>
             </div>
           </div>
 
-          <div v-else class="border-t border-dark-700 pt-4 text-center text-gray-500">
+          <div v-else class="border-t border-white/[0.06] pt-4 text-center text-gray-500">
             Dieses Ticket wurde geschlossen. Keine weiteren Nachrichten möglich.
           </div>
         </div>

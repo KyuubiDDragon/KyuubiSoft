@@ -117,7 +117,7 @@ onMounted(async () => {
           {{ totalActive > 0 ? Math.round((completedCount / totalActive) * 100) : 0 }}%
         </span>
       </div>
-      <div class="h-2 bg-dark-600 rounded-full overflow-hidden">
+      <div class="h-2 bg-white/[0.08] rounded-full overflow-hidden">
         <div
           class="h-full bg-primary-500 rounded-full transition-all duration-500"
           :style="{ width: `${totalActive > 0 ? (completedCount / totalActive) * 100 : 0}%` }"
@@ -128,8 +128,8 @@ onMounted(async () => {
     <!-- Loading -->
     <div v-if="habitStore.isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
-        <div class="h-4 bg-dark-600 rounded w-1/2 mb-3"></div>
-        <div class="h-10 bg-dark-600 rounded w-full"></div>
+        <div class="h-4 bg-white/[0.08] rounded w-1/2 mb-3"></div>
+        <div class="h-10 bg-white/[0.08] rounded w-full"></div>
       </div>
     </div>
 
@@ -175,7 +175,7 @@ onMounted(async () => {
             v-for="day in last7Days"
             :key="day"
             class="flex-1 h-2 rounded-sm"
-            :class="day === today ? 'border border-dark-500' : ''"
+            :class="day === today ? 'border border-white/[0.06]' : ''"
             :style="{
               backgroundColor: habit.completed_today && day === today
                 ? habit.color
@@ -217,8 +217,8 @@ onMounted(async () => {
       <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
                   leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showForm" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showForm = false">
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-float w-full max-w-md">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">{{ editingHabit ? 'Habit bearbeiten' : 'Neuer Habit' }}</h3>
               <button @click="showForm = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />

@@ -162,7 +162,7 @@ function regenerate() {
         <input
           type="checkbox"
           v-model="startWithLorem"
-          class="rounded bg-dark-700 border-dark-600"
+          class="rounded bg-white/[0.04] border-white/[0.06]"
         />
         Mit "Lorem ipsum" beginnen
       </label>
@@ -192,7 +192,7 @@ function regenerate() {
     </div>
 
     <!-- Output -->
-    <div class="p-4 bg-dark-700 rounded-lg max-h-96 overflow-auto">
+    <div class="p-4 bg-white/[0.04] rounded-lg max-h-96 overflow-auto">
       <p
         v-for="(paragraph, i) in generatedText.split('\n\n')"
         :key="i"
@@ -219,7 +219,7 @@ function regenerate() {
           ]"
           :key="preset.label"
           @click="amount = preset.amount; unit = preset.unit"
-          class="px-3 py-1 text-xs bg-dark-600 text-gray-300 rounded hover:bg-dark-500 transition-colors"
+          class="px-3 py-1 text-xs bg-white/[0.08] text-gray-300 rounded hover:bg-white/[0.08] transition-colors"
         >
           {{ preset.label }}
         </button>

@@ -276,23 +276,23 @@ onMounted(() => {
 
     <!-- Stats -->
     <div v-if="stats" class="grid grid-cols-5 gap-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+      <div class="bg-white/[0.04] rounded-xl p-4 shadow-glass border border-white/[0.06]">
         <div class="text-gray-500 dark:text-gray-400 text-sm">Gesamt</div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
       </div>
-      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 shadow">
+      <div class="bg-green-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
         <div class="text-green-600 dark:text-green-400 text-sm">Gültig</div>
         <div class="text-2xl font-bold text-green-700 dark:text-green-300">{{ stats.valid }}</div>
       </div>
-      <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 shadow">
+      <div class="bg-amber-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
         <div class="text-amber-600 dark:text-amber-400 text-sm">Bald ablaufend</div>
         <div class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ stats.expiring_soon }}</div>
       </div>
-      <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 shadow">
+      <div class="bg-red-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
         <div class="text-red-600 dark:text-red-400 text-sm">Abgelaufen</div>
         <div class="text-2xl font-bold text-red-700 dark:text-red-300">{{ stats.expired }}</div>
       </div>
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow">
+      <div class="bg-white/[0.04] rounded-xl p-4 shadow-glass border border-white/[0.06]">
         <div class="text-gray-500 dark:text-gray-400 text-sm">Fehler</div>
         <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.error }}</div>
       </div>
@@ -307,10 +307,10 @@ onMounted(() => {
     <div v-else class="space-y-4">
       <template v-for="(group, folderId) in groupedCerts" :key="folderId">
         <div v-if="group.certificates.length > 0 || group.folder"
-             class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+             class="bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06] overflow-hidden">
           <!-- Folder Header -->
           <div v-if="group.folder"
-               class="px-4 py-3 bg-gray-50 dark:bg-gray-700 cursor-pointer flex items-center justify-between"
+               class="px-4 py-3 bg-white/[0.03] cursor-pointer flex items-center justify-between"
                @click="toggleFolderCollapse(group.folder)">
             <div class="flex items-center gap-2">
               <FolderIcon class="w-5 h-5" :style="{ color: group.folder.color }" />
@@ -319,15 +319,15 @@ onMounted(() => {
             </div>
             <component :is="group.isCollapsed ? ChevronRightIcon : ChevronDownIcon" class="w-5 h-5 text-gray-400" />
           </div>
-          <div v-else class="px-4 py-3 bg-gray-50 dark:bg-gray-700">
+          <div v-else class="px-4 py-3 bg-white/[0.03]">
             <span class="font-medium text-gray-900 dark:text-white">Ohne Ordner</span>
             <span class="text-sm text-gray-500 ml-2">({{ group.certificates.length }})</span>
           </div>
 
           <!-- Certificates -->
-          <div v-if="!group.isCollapsed" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <div v-if="!group.isCollapsed" class="divide-y divide-white/[0.06]">
             <div v-for="cert in group.certificates" :key="cert.id"
-                 class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center justify-between">
+                 class="p-4 hover:bg-white/[0.04] flex items-center justify-between">
               <div class="flex items-center gap-4 flex-1 cursor-pointer" @click="loadCertDetails(cert.id)">
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center"
                      :class="getStatusColor(cert.current_status)">
@@ -383,7 +383,7 @@ onMounted(() => {
 
       <!-- Empty State -->
       <div v-if="certificates.length === 0"
-           class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+           class="text-center py-12 bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06]">
         <ShieldCheckIcon class="w-12 h-12 mx-auto text-gray-400" />
         <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Keine Zertifikate</h3>
         <p class="mt-2 text-gray-500">Füge dein erstes SSL-Zertifikat zur Überwachung hinzu.</p>
@@ -398,8 +398,8 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
+          <div class="relative modal w-full max-w-lg p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
               {{ editingCert ? 'Zertifikat bearbeiten' : 'Neues Zertifikat' }}
             </h2>
@@ -460,14 +460,14 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showFolderModal" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showFolderModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showFolderModal = false"></div>
+          <div class="relative modal w-full max-w-md p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Neuer Ordner</h2>
             <form @submit.prevent="saveFolder" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
                 <input v-model="folderForm.name" type="text" required
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
+                       class="input" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farbe</label>
@@ -493,8 +493,8 @@ onMounted(() => {
     <Teleport to="body">
       <div v-if="showDetailModal && selectedCert" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-          <div class="fixed inset-0 bg-black/50" @click="showDetailModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showDetailModal = false"></div>
+          <div class="relative modal w-full max-w-2xl p-6">
             <div class="flex justify-between items-start mb-6">
               <div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ selectedCert.certificate.name }}</h2>
@@ -505,19 +505,19 @@ onMounted(() => {
 
             <!-- Certificate Info -->
             <div class="grid grid-cols-2 gap-4 mb-6">
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div class="bg-white/[0.04] p-4 rounded-xl">
                 <div class="text-sm text-gray-500">Subject</div>
                 <div class="font-medium">{{ selectedCert.certificate.subject || '-' }}</div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div class="bg-white/[0.04] p-4 rounded-xl">
                 <div class="text-sm text-gray-500">Issuer</div>
                 <div class="font-medium">{{ selectedCert.certificate.issuer || '-' }}</div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div class="bg-white/[0.04] p-4 rounded-xl">
                 <div class="text-sm text-gray-500">Gültig von</div>
                 <div class="font-medium">{{ formatDate(selectedCert.certificate.valid_from) }}</div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div class="bg-white/[0.04] p-4 rounded-xl">
                 <div class="text-sm text-gray-500">Gültig bis</div>
                 <div class="font-medium">{{ formatDate(selectedCert.certificate.valid_until) }}</div>
               </div>
@@ -528,7 +528,7 @@ onMounted(() => {
               <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Subject Alternative Names</h3>
               <div class="flex flex-wrap gap-2">
                 <span v-for="san in selectedCert.certificate.san_domains" :key="san"
-                      class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm">
+                      class="px-2 py-1 bg-white/[0.04] rounded text-sm">
                   {{ san }}
                 </span>
               </div>
@@ -539,7 +539,7 @@ onMounted(() => {
               <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Letzte Prüfungen</h3>
               <div class="space-y-2 max-h-40 overflow-y-auto">
                 <div v-for="check in selectedCert.checks?.slice(0, 10)" :key="check.id"
-                     class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                     class="flex items-center justify-between p-2 bg-white/[0.04] rounded">
                   <div class="flex items-center gap-2">
                     <component :is="getStatusIcon(check.status)" class="w-4 h-4" :class="getStatusColor(check.status).split(' ')[0]" />
                     <span class="text-sm">{{ getStatusLabel(check.status) }}</span>
@@ -557,11 +557,3 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.btn-primary {
-  @apply inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors;
-}
-.btn-secondary {
-  @apply inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors;
-}
-</style>

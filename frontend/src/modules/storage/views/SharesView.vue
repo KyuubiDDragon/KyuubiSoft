@@ -154,7 +154,7 @@ onMounted(() => {
         <FunnelIcon class="w-4 h-4 text-gray-400" />
         <select
           v-model="statusFilter"
-          class="px-3 py-1.5 text-sm bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="select px-3 py-1.5 text-sm"
         >
           <option value="all">Alle ({{ summary.total }})</option>
           <option value="active">Aktiv ({{ summary.active }})</option>
@@ -166,28 +166,28 @@ onMounted(() => {
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <LinkIcon class="w-5 h-5 text-primary-400" />
           <span class="text-gray-400 text-sm">Gesamt</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.total }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <CheckCircleIcon class="w-5 h-5 text-green-400" />
           <span class="text-gray-400 text-sm">Aktiv</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.active }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <EyeIcon class="w-5 h-5 text-blue-400" />
           <span class="text-gray-400 text-sm">Aufrufe</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.total_views }}</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 border border-dark-700">
+      <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <ArrowDownTrayIcon class="w-5 h-5 text-orange-400" />
           <span class="text-gray-400 text-sm">Downloads</span>
@@ -197,7 +197,7 @@ onMounted(() => {
     </div>
 
     <!-- Shares List -->
-    <div class="bg-dark-800 rounded-xl border border-dark-700">
+    <div class="bg-white/[0.04] rounded-xl border border-white/[0.06]">
       <!-- Loading -->
       <div v-if="isLoading" class="p-12 text-center">
         <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -214,7 +214,7 @@ onMounted(() => {
       <!-- Shares Table -->
       <div v-else class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-dark-700/50">
+          <thead class="bg-white/[0.03]">
             <tr>
               <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Datei</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
@@ -225,11 +225,11 @@ onMounted(() => {
               <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Aktionen</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-dark-700">
+          <tbody class="divide-y divide-white/[0.06]">
             <tr
               v-for="share in filteredShares"
               :key="share.id"
-              class="hover:bg-dark-700/30 transition-colors"
+              class="hover:bg-white/[0.04] transition-colors"
             >
               <!-- File -->
               <td class="px-4 py-3">
@@ -289,7 +289,7 @@ onMounted(() => {
                   <!-- Copy Link -->
                   <button
                     @click="copyShareLink(share)"
-                    class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                    class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                     :title="copiedToken === share.share_token ? 'Kopiert!' : 'Link kopieren'"
                   >
                     <CheckIcon v-if="copiedToken === share.share_token" class="w-4 h-4 text-green-500" />
@@ -299,7 +299,7 @@ onMounted(() => {
                   <!-- Toggle Active -->
                   <button
                     @click="toggleShareActive(share)"
-                    class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                    class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                     :title="share.is_active ? 'Deaktivieren' : 'Aktivieren'"
                   >
                     <CheckCircleIcon v-if="share.is_active" class="w-4 h-4 text-green-400 hover:text-green-300" />
@@ -309,7 +309,7 @@ onMounted(() => {
                   <!-- Delete -->
                   <button
                     @click="deleteShare(share)"
-                    class="p-1.5 hover:bg-dark-600 rounded transition-colors"
+                    class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
                     title="Löschen"
                   >
                     <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />

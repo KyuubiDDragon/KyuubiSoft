@@ -113,7 +113,7 @@ watch(() => props.invoice, (val) => {
     >
       <div
         v-if="invoice"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
         @click.self="$emit('close')"
         @keydown="handleKeydown"
         tabindex="-1"
@@ -128,10 +128,10 @@ watch(() => props.invoice, (val) => {
         >
           <div
             v-if="invoice"
-            class="absolute top-0 right-0 h-full w-full max-w-4xl bg-dark-800 border-l border-dark-600 flex flex-col shadow-2xl"
+            class="absolute top-0 right-0 h-full w-full max-w-4xl bg-white/[0.04] border-l border-white/[0.06] flex flex-col shadow-float"
           >
             <!-- Header -->
-            <div class="flex-none px-6 py-4 border-b border-dark-700 bg-dark-800">
+            <div class="flex-none px-6 py-4 border-b border-white/[0.06] bg-white/[0.04]">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-3 flex-wrap">
@@ -167,14 +167,14 @@ watch(() => props.invoice, (val) => {
                       >
                         <div
                           v-if="statusMenuOpen && allowedTransitions.length"
-                          class="absolute top-full left-0 mt-1 w-44 bg-dark-700 border border-dark-600 rounded-xl shadow-xl z-10 overflow-hidden"
+                          class="absolute top-full left-0 mt-1 w-44 bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-float z-10 overflow-hidden"
                           v-click-outside="() => statusMenuOpen = false"
                         >
                           <button
                             v-for="opt in allowedTransitions"
                             :key="opt.value"
                             @click="handleStatusChange(opt.value)"
-                            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left hover:bg-dark-600 transition-colors"
+                            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left hover:bg-white/[0.04] transition-colors"
                             :class="opt.textColor"
                           >
                             <component :is="opt.icon" class="w-4 h-4 shrink-0" />
@@ -194,7 +194,7 @@ watch(() => props.invoice, (val) => {
                 <div class="flex items-center gap-1 shrink-0">
                   <button
                     @click="$emit('download-pdf', invoice)"
-                    class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
+                    class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
                     :class="{ 'text-primary-400 animate-pulse': pdfGenerating === invoice.id }"
                     :disabled="pdfGenerating === invoice.id"
                     title="Als PDF herunterladen"
@@ -203,29 +203,29 @@ watch(() => props.invoice, (val) => {
                   </button>
                   <button
                     @click="$emit('duplicate', invoice)"
-                    class="p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-dark-600 transition-colors"
+                    class="p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-white/[0.04] transition-colors"
                     title="Rechnung duplizieren"
                   >
                     <DocumentDuplicateIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('edit', invoice)"
-                    class="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-dark-600 transition-colors"
+                    class="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] transition-colors"
                     title="Rechnung bearbeiten"
                   >
                     <PencilIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('delete', invoice)"
-                    class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-dark-600 transition-colors"
+                    class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-white/[0.04] transition-colors"
                     title="Rechnung löschen"
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
-                  <div class="w-px h-6 bg-dark-600 mx-1"></div>
+                  <div class="w-px h-6 bg-white/[0.08] mx-1"></div>
                   <button
                     @click="$emit('close')"
-                    class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
+                    class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
                     title="Schließen (Esc)"
                   >
                     <XMarkIcon class="w-5 h-5" />
@@ -245,13 +245,13 @@ watch(() => props.invoice, (val) => {
                   @click="activeTab = tab.id"
                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
                   :class="activeTab === tab.id
-                    ? 'bg-dark-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-dark-700'"
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'"
                 >
                   {{ tab.label }}
                   <span
                     v-if="tab.id === 'items' && invoice.items?.length"
-                    class="ml-1.5 text-xs bg-dark-500 text-gray-300 px-1.5 py-0.5 rounded-full"
+                    class="ml-1.5 text-xs bg-white/[0.06] text-gray-300 px-1.5 py-0.5 rounded-full"
                   >{{ invoice.items.length }}</span>
                 </button>
               </div>
@@ -265,7 +265,7 @@ watch(() => props.invoice, (val) => {
 
                 <!-- Sender / Recipient cards -->
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                  <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Von</p>
                     <p class="font-semibold text-white">{{ invoice.sender_name || '–' }}</p>
                     <p v-if="invoice.sender_company" class="text-gray-400 text-sm">{{ invoice.sender_company }}</p>
@@ -274,7 +274,7 @@ watch(() => props.invoice, (val) => {
                     <p v-if="invoice.sender_email" class="text-gray-400 text-sm mt-1">{{ invoice.sender_email }}</p>
                     <p v-if="invoice.sender_phone" class="text-gray-400 text-sm">{{ invoice.sender_phone }}</p>
                   </div>
-                  <div class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                  <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
                       {{ invoice.document_type === 'quote' ? 'Angeboten für' : invoice.document_type === 'credit_note' ? 'Gutschrift für' : 'Rechnungsempfänger' }}
                     </p>
@@ -287,7 +287,7 @@ watch(() => props.invoice, (val) => {
                 </div>
 
                 <!-- Dates grid -->
-                <div class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                   <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Daten</p>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
@@ -312,7 +312,7 @@ watch(() => props.invoice, (val) => {
                 </div>
 
                 <!-- Totals -->
-                <div class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                   <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Beträge</p>
                   <div class="space-y-2">
                     <div class="flex justify-between text-sm">
@@ -323,7 +323,7 @@ watch(() => props.invoice, (val) => {
                       <span class="text-gray-400">MwSt. ({{ invoice.tax_rate }}%)</span>
                       <span class="text-white">{{ formatCurrency(invoice.tax_amount) }}</span>
                     </div>
-                    <div class="flex justify-between pt-2 border-t border-dark-500">
+                    <div class="flex justify-between pt-2 border-t border-white/[0.08]">
                       <span class="text-white font-bold text-lg">Gesamt</span>
                       <span class="text-white font-bold text-2xl">{{ formatCurrency(invoice.total) }}</span>
                     </div>
@@ -331,7 +331,7 @@ watch(() => props.invoice, (val) => {
                 </div>
 
                 <!-- Positions summary -->
-                <div v-if="invoice.items?.length" class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                <div v-if="invoice.items?.length" class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                   <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Positionen ({{ invoice.items.length }})
@@ -357,7 +357,7 @@ watch(() => props.invoice, (val) => {
                     </p>
                   </div>
                 </div>
-                <div v-else class="bg-dark-700/30 rounded-xl p-6 border border-dashed border-dark-600 text-center">
+                <div v-else class="bg-white/[0.02] rounded-xl p-6 border border-dashed border-white/[0.06] text-center">
                   <p class="text-gray-500 text-sm">Noch keine Positionen</p>
                   <button
                     @click="activeTab = 'items'"
@@ -369,12 +369,12 @@ watch(() => props.invoice, (val) => {
 
                 <!-- Notes / Payment Terms -->
                 <div v-if="invoice.payment_terms || invoice.notes" class="space-y-3">
-                  <div v-if="invoice.payment_terms" class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                  <div v-if="invoice.payment_terms" class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Zahlungsbedingungen</p>
                     <p class="text-gray-300 text-sm">{{ invoice.payment_terms }}</p>
                     <p v-if="invoice.sender_bank_details" class="text-gray-500 text-sm mt-2 whitespace-pre-line">{{ invoice.sender_bank_details }}</p>
                   </div>
-                  <div v-if="invoice.notes" class="bg-dark-700/50 rounded-xl p-4 border border-dark-600">
+                  <div v-if="invoice.notes" class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Anmerkungen</p>
                     <p class="text-gray-300 text-sm whitespace-pre-line">{{ invoice.notes }}</p>
                   </div>

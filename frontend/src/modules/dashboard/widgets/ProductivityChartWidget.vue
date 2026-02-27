@@ -11,7 +11,7 @@ defineProps({ widget: Object, data: Object })
         <span class="text-gray-400 text-sm">Produktivitäts-Score</span>
         <span class="text-2xl font-bold text-white">{{ data.productivity_score.score }}/100</span>
       </div>
-      <div class="h-2 bg-dark-600 rounded-full overflow-hidden">
+      <div class="h-2 bg-white/[0.08] rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-500"
           :class="data.productivity_score.score >= 70 ? 'bg-green-500' : data.productivity_score.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'"
@@ -44,7 +44,7 @@ defineProps({ widget: Object, data: Object })
           :style="{ height: `${Math.min(100, (day.count / Math.max(...data.tasks_completed.daily.map(d => d.count || 1))) * 100)}%` }"
         >
           <div class="absolute bottom-0 left-0 right-0 bg-primary-500 rounded-t" style="height: 100%"></div>
-          <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-dark-600 px-1 py-0.5 rounded text-xs text-white opacity-0 group-hover/bar:opacity-100 whitespace-nowrap z-10">
+          <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-white/[0.08] px-1 py-0.5 rounded text-xs text-white opacity-0 group-hover/bar:opacity-100 whitespace-nowrap z-10">
             {{ day.count }}
           </div>
         </div>

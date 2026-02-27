@@ -154,7 +154,7 @@ const presets = [
       <div
         v-for="conv in conversions"
         :key="conv.value"
-        class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+        class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg"
         :class="{ 'opacity-50': conv.error }"
       >
         <div class="flex-1">
@@ -182,7 +182,7 @@ const presets = [
       <div
         v-for="format in additionalFormats"
         :key="format.name"
-        class="flex items-center justify-between p-2 bg-dark-800 rounded"
+        class="flex items-center justify-between p-2 bg-white/[0.04] rounded"
       >
         <div>
           <span class="text-xs text-gray-500">{{ format.name }}</span>
@@ -205,7 +205,7 @@ const presets = [
           v-for="preset in presets"
           :key="preset.label"
           @click="setInput(preset.value, preset.base)"
-          class="px-3 py-1 text-xs bg-dark-600 hover:bg-dark-500 text-gray-300 rounded"
+          class="px-3 py-1 text-xs bg-white/[0.08] hover:bg-white/[0.08] text-gray-300 rounded"
         >
           {{ preset.label }}
         </button>

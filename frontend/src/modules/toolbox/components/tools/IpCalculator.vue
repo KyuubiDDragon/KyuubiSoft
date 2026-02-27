@@ -167,42 +167,42 @@ function copyToClipboard(text) {
     <div v-if="calculations" class="space-y-3">
       <!-- Main Info -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Netzwerk-Adresse</span>
           <div class="font-mono text-white">{{ calculations.networkAddress }}/{{ calculations.cidr }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Broadcast-Adresse</span>
           <div class="font-mono text-white">{{ calculations.broadcastAddress }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Erster Host</span>
           <div class="font-mono text-white">{{ calculations.firstHost }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Letzter Host</span>
           <div class="font-mono text-white">{{ calculations.lastHost }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Subnetz-Maske</span>
           <div class="font-mono text-white">{{ calculations.subnetMask }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Wildcard-Maske</span>
           <div class="font-mono text-white">{{ calculations.wildcardMask }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Nutzbare Hosts</span>
           <div class="font-mono text-white">{{ calculations.usableHosts }}</div>
         </div>
-        <div class="p-3 bg-dark-700 rounded-lg">
+        <div class="p-3 bg-white/[0.04] rounded-lg">
           <span class="text-xs text-gray-500">Gesamt Adressen</span>
           <div class="font-mono text-white">{{ calculations.totalHosts }}</div>
         </div>
       </div>
 
       <!-- Additional Info -->
-      <div class="p-3 bg-dark-800 rounded-lg space-y-2">
+      <div class="p-3 bg-white/[0.04] rounded-lg space-y-2">
         <div class="flex justify-between">
           <span class="text-sm text-gray-400">IP-Klasse:</span>
           <span class="text-white">{{ calculations.ipClass }}</span>
@@ -214,7 +214,7 @@ function copyToClipboard(text) {
       </div>
 
       <!-- Binary Representation -->
-      <div class="p-3 bg-dark-800 rounded-lg space-y-2">
+      <div class="p-3 bg-white/[0.04] rounded-lg space-y-2">
         <div>
           <span class="text-xs text-gray-500">IP (Binär)</span>
           <div class="font-mono text-xs text-white break-all">{{ calculations.binaryIp }}</div>
@@ -234,7 +234,7 @@ function copyToClipboard(text) {
           v-for="subnet in commonSubnets"
           :key="subnet.cidr"
           @click="cidrInput = subnet.cidr"
-          class="p-2 text-left bg-dark-700 hover:bg-dark-600 rounded text-sm transition-colors"
+          class="p-2 text-left bg-white/[0.04] hover:bg-white/[0.04] rounded text-sm transition-colors"
           :class="cidrInput === subnet.cidr ? 'ring-1 ring-primary-500' : ''"
         >
           <div class="text-white">{{ subnet.name }}</div>

@@ -172,7 +172,7 @@ function copyToClipboard(text) {
     <!-- Color Preview -->
     <div class="flex gap-4">
       <div
-        class="w-32 h-32 rounded-xl border-2 border-dark-600 flex items-center justify-center text-sm font-mono"
+        class="w-32 h-32 rounded-xl border-2 border-white/[0.06] flex items-center justify-center text-sm font-mono"
         :style="{ backgroundColor: colorHex, color: contrastColor }"
       >
         {{ colorHex }}
@@ -319,7 +319,7 @@ function copyToClipboard(text) {
           v-for="color in presets"
           :key="color"
           @click="setFromHex(color)"
-          class="w-8 h-8 rounded-lg border-2 border-dark-600 hover:border-primary-500 transition-colors"
+          class="w-8 h-8 rounded-lg border-2 border-white/[0.06] hover:border-primary-500 transition-colors"
           :style="{ backgroundColor: color }"
           :class="colorHex.toUpperCase() === color ? 'ring-2 ring-primary-500' : ''"
           :title="color"

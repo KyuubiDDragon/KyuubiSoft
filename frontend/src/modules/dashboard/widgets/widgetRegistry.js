@@ -13,6 +13,9 @@ import CountdownWidget from './CountdownWidget.vue'
 import LinkStatsWidget from './LinkStatsWidget.vue'
 import StorageUsageWidget from './StorageUsageWidget.vue'
 import BackupStatusWidget from './BackupStatusWidget.vue'
+import SystemHealthWidget from './SystemHealthWidget.vue'
+import GitHubActivityWidget from './GitHubActivityWidget.vue'
+import PomodoroTimerWidget from './PomodoroTimerWidget.vue'
 
 export const widgetRegistry = {
   quick_stats: QuickStatsWidget,
@@ -30,4 +33,7 @@ export const widgetRegistry = {
   link_stats: LinkStatsWidget,
   storage_usage: StorageUsageWidget,
   backup_status: BackupStatusWidget,
+  system_health: SystemHealthWidget,
+  github_activity: GitHubActivityWidget,
+  pomodoro_timer: PomodoroTimerWidget,
 }

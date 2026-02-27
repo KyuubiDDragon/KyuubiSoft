@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick, type Component } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -44,6 +44,10 @@ const quickAccessStore = useQuickAccessStore()
 const showProjectDropdown = ref(false)
 const popoverGroup = ref<NavGroup | null>(null)
 const popoverPosition = ref({ top: 0, left: 0 })
+
+// Tree filter
+const treeFilter = ref('')
+const treeFilterInput = ref<HTMLInputElement | null>(null)
 
 // Sidebar collapsed state (use store)
 const collapsed = computed(() => !props.isMobile && uiStore.sidebarCollapsed)
@@ -111,9 +115,29 @@ const filteredGroups = computed<NavGroup[]>(() => {
     .filter((g): g is NavGroup => g !== null)
 })
 
-// Separate direct-link groups from section groups
-const directGroups = computed(() => filteredGroups.value.filter(g => g.href))
-const sectionGroups = computed(() => filteredGroups.value.filter(g => g.children))
+// Tree-filtered navigation groups (applies text filter on top of permission/feature filtering)
+const filteredTreeGroups = computed<NavGroup[]>(() => {
+  const query = treeFilter.value.trim().toLowerCase()
+  if (!query) return filteredGroups.value
+
+  return filteredGroups.value
+    .map(group => {
+      const groupNameMatches = group.name.toLowerCase().includes(query)
+
+      if (group.href) {
+        return groupNameMatches ? group : null
+      }
+
+      const matchingChildren = group.children?.filter(
+        child => child.name.toLowerCase().includes(query)
+      ) ?? []
+
+      if (groupNameMatches) return group
+      if (matchingChildren.length > 0) return { ...group, children: matchingChildren }
+      return null
+    })
+    .filter((g): g is NavGroup => g !== null)
+})
 
 // All navigation hrefs for sibling detection
 const allHrefs = computed(() => {
@@ -151,6 +175,7 @@ function toggleSection(groupId: string) {
 }
 
 function isSectionExpanded(groupId: string): boolean {
+  if (treeFilter.value.trim()) return true
   return expandedSections.value[groupId] ?? false
 }
 
@@ -174,9 +199,22 @@ function handleCollapsedGroupClick(group: NavGroup, event: MouseEvent) {
   }
 }
 
+// Tree filter highlight
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function highlightMatch(text: string): string {
+  if (!treeFilter.value.trim()) return text
+  const query = treeFilter.value.trim()
+  const regex = new RegExp(`(${escapeRegex(query)})`, 'gi')
+  return text.replace(regex, '<mark class="tree-highlight">$1</mark>')
+}
+
 // Navigation
 function navigateTo(href: string) {
   router.push(href)
+  treeFilter.value = ''
   popoverGroup.value = null
   if (props.isMobile) emit('close')
 }
@@ -277,77 +315,70 @@ function closePopover() {
       </button>
     </div>
 
-    <!-- Search -->
+    <!-- Tree Filter / Search -->
     <div class="shrink-0" :class="collapsed ? 'px-2 pb-2' : 'px-3 pb-2'">
+      <!-- Collapsed: icon button opens command palette -->
       <button
+        v-if="collapsed"
         @click="uiStore.showCommandPalette = true"
-        class="w-full flex items-center rounded-xl transition-all duration-200
+        class="w-full flex items-center justify-center p-2 rounded-xl
                bg-white/[0.03] border border-white/[0.06]
-               hover:bg-white/[0.06] hover:border-white/[0.10]"
-        :class="collapsed ? 'p-2 justify-center' : 'px-3 py-2 gap-2.5'"
+               hover:bg-white/[0.06] hover:border-white/[0.10]
+               transition-all duration-200"
         title="Suche (Ctrl+K)"
       >
-        <MagnifyingGlassIcon class="w-4 h-4 text-gray-500 shrink-0" />
-        <template v-if="!collapsed">
-          <span class="flex-1 text-left text-xs text-gray-500">Suche...</span>
-          <kbd class="hidden sm:inline-flex items-center px-1.5 py-0.5 text-2xs text-gray-600 bg-white/[0.04] border border-white/[0.08] rounded">
-            &#8984;K
-          </kbd>
-        </template>
+        <MagnifyingGlassIcon class="w-4 h-4 text-gray-500" />
       </button>
+
+      <!-- Expanded: inline filter input -->
+      <div v-else class="relative">
+        <MagnifyingGlassIcon class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+        <input
+          ref="treeFilterInput"
+          v-model="treeFilter"
+          type="text"
+          placeholder="Filter..."
+          class="w-full pl-8 pr-8 py-1.5 rounded-lg text-xs text-gray-200
+                 bg-white/[0.04] border border-white/[0.08]
+                 placeholder-gray-600
+                 focus:outline-none focus:bg-white/[0.06] focus:border-white/[0.12]
+                 transition-all duration-200"
+          @keydown.escape="treeFilter = ''; ($event.target as HTMLInputElement).blur()"
+          @keydown.meta.k.prevent="uiStore.showCommandPalette = true"
+          @keydown.ctrl.k.prevent="uiStore.showCommandPalette = true"
+        />
+        <button
+          v-if="treeFilter"
+          @click="treeFilter = ''"
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          <XMarkIcon class="w-3 h-3" />
+        </button>
+        <kbd
+          v-else
+          class="absolute right-2 top-1/2 -translate-y-1/2
+                 hidden sm:inline-flex items-center px-1 py-0.5
+                 text-2xs text-gray-600 bg-white/[0.04] border border-white/[0.06] rounded
+                 cursor-pointer"
+          @click="uiStore.showCommandPalette = true"
+        >
+          &#8984;K
+        </kbd>
+      </div>
     </div>
 
     <!-- Divider -->
     <div class="mx-3 h-px bg-white/[0.08]" />
 
-    <!-- Scrollable Navigation -->
-    <nav class="flex-1 overflow-y-auto scrollbar-hide py-2" :class="collapsed ? 'px-2' : 'px-3'">
+    <!-- Scrollable Tree Navigation -->
+    <nav class="flex-1 overflow-y-auto scrollbar-hide py-1" :class="collapsed ? 'px-2' : 'px-1'">
 
-      <!-- Direct link items (Dashboard, News, Wiki) -->
-      <div class="space-y-0.5 mb-2">
-        <template v-for="group in directGroups" :key="group.id">
-          <!-- Collapsed mode -->
-          <button
-            v-if="collapsed"
-            @click="navigateTo(group.href!)"
-            class="sidebar-item-collapsed w-full"
-            :class="{ 'sidebar-item-collapsed-active': isGroupActive(group) }"
-            :title="group.name"
-          >
-            <span
-              v-if="isGroupActive(group)"
-              class="nav-active-bar"
-            />
-            <component :is="group.icon" class="w-5 h-5" />
-          </button>
-
-          <!-- Expanded mode -->
-          <button
-            v-else
-            @click="navigateTo(group.href!)"
-            class="sidebar-item"
-            :class="{ 'sidebar-item-active': isGroupActive(group) }"
-          >
-            <span
-              v-if="isGroupActive(group)"
-              class="nav-active-bar"
-            />
-            <component :is="group.icon" class="w-4.5 h-4.5 shrink-0" />
-            <span class="truncate">{{ group.name }}</span>
-          </button>
-        </template>
-      </div>
-
-      <!-- Divider between direct links and sections -->
-      <div v-if="directGroups.length > 0 && sectionGroups.length > 0" class="h-px bg-white/[0.06] my-2" />
-
-      <!-- Section groups -->
-      <div class="space-y-1">
-        <template v-for="group in sectionGroups" :key="group.id">
-          <!-- Collapsed mode: single icon per group -->
-          <div v-if="collapsed" class="relative group/collapsed">
+      <!-- ===== COLLAPSED MODE ===== -->
+      <template v-if="collapsed">
+        <div class="space-y-0.5">
+          <template v-for="group in filteredGroups" :key="group.id">
             <button
-              @click="handleCollapsedGroupClick(group, $event)"
+              @click="group.href ? navigateTo(group.href) : handleCollapsedGroupClick(group, $event)"
               class="sidebar-item-collapsed w-full"
               :class="{
                 'sidebar-item-collapsed-active': isGroupActive(group),
@@ -355,79 +386,15 @@ function closePopover() {
               }"
               :title="group.name"
             >
-              <span
-                v-if="isGroupActive(group)"
-                class="nav-active-bar"
-              />
+              <span v-if="isGroupActive(group)" class="nav-active-bar" />
               <component :is="group.icon" class="w-5 h-5" />
             </button>
-          </div>
-
-          <!-- Expanded mode: collapsible section -->
-          <div v-else>
-            <!-- Section header -->
-            <button
-              @click="toggleSection(group.id)"
-              class="sidebar-section-header"
-              :class="{ 'text-gray-400': isGroupActive(group) }"
-            >
-              <ChevronRightIcon
-                class="w-3 h-3 shrink-0 transition-transform duration-200"
-                :class="{ 'rotate-90': isSectionExpanded(group.id) }"
-              />
-              <component :is="group.icon" class="w-3.5 h-3.5 shrink-0" />
-              <span class="flex-1 text-left truncate">{{ group.name }}</span>
-              <span
-                v-if="isGroupActive(group) && !isSectionExpanded(group.id)"
-                class="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0"
-              />
-            </button>
-
-            <!-- Section children -->
-            <Transition name="slide-section">
-              <div v-show="isSectionExpanded(group.id)" class="space-y-0.5 mt-0.5 ml-2">
-                <button
-                  v-for="item in group.children"
-                  :key="item.id"
-                  @click="navigateTo(item.href)"
-                  class="sidebar-item pl-6"
-                  :class="{ 'sidebar-item-active': isActive(item.href) }"
-                >
-                  <span
-                    v-if="isActive(item.href)"
-                    class="nav-active-bar"
-                  />
-                  <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                  <span class="truncate">{{ item.name }}</span>
-                </button>
-              </div>
-            </Transition>
-          </div>
-        </template>
-      </div>
-
-      <!-- Favorites -->
-      <template v-if="favoritesStore.favorites.length > 0">
-        <div class="h-px bg-white/[0.06] my-2" />
-
-        <div v-if="!collapsed">
-          <div class="flex items-center gap-2 px-3 py-1.5 mb-0.5">
-            <StarIcon class="w-3.5 h-3.5 text-yellow-500/80" />
-            <span class="text-2xs font-semibold uppercase tracking-wider text-gray-500">Favoriten</span>
-          </div>
-          <button
-            v-for="fav in favoritesStore.favorites.slice(0, 5)"
-            :key="fav.item_id"
-            @click="navigateToFavorite(fav)"
-            class="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-gray-500
-                   hover:bg-white/[0.04] hover:text-gray-300 transition-colors truncate"
-          >
-            <StarIcon class="w-3 h-3 shrink-0 text-yellow-500/60" />
-            <span class="truncate">{{ (fav as any).item?.title || (fav as any).item?.name || 'Unbenannt' }}</span>
-          </button>
+          </template>
         </div>
 
-        <div v-else class="flex justify-center">
+        <!-- Collapsed: Favorites icon -->
+        <template v-if="favoritesStore.favorites.length > 0">
+          <div class="h-px bg-white/[0.06] my-2" />
           <button
             class="sidebar-item-collapsed w-full"
             title="Favoriten"
@@ -435,6 +402,142 @@ function closePopover() {
           >
             <StarIcon class="w-5 h-5 text-yellow-500/60" />
           </button>
+        </template>
+      </template>
+
+      <!-- ===== EXPANDED MODE: TREE VIEW ===== -->
+      <template v-else>
+        <div class="tree-root">
+          <template v-for="group in filteredTreeGroups" :key="group.id">
+
+            <!-- LEAF NODE: Direct link groups (Dashboard, News, Wiki) -->
+            <div v-if="group.href" class="relative">
+              <button
+                @click="navigateTo(group.href!)"
+                class="tree-node-row"
+                :class="{ 'tree-node-row-active': isGroupActive(group) }"
+              >
+                <span v-if="isGroupActive(group)" class="nav-active-bar" />
+                <span class="tree-arrow-spacer" />
+                <component :is="group.icon" class="tree-icon" />
+                <span
+                  v-if="!treeFilter.trim()"
+                  class="tree-label"
+                >{{ group.name }}</span>
+                <span
+                  v-else
+                  class="tree-label"
+                  v-html="highlightMatch(group.name)"
+                />
+              </button>
+            </div>
+
+            <!-- FOLDER NODE: Section groups -->
+            <div v-else class="relative">
+              <!-- Folder row -->
+              <button
+                @click="toggleSection(group.id)"
+                class="tree-node-row tree-folder-row"
+                :class="{
+                  'tree-node-row-active': isGroupActive(group) && !isSectionExpanded(group.id),
+                }"
+              >
+                <ChevronRightIcon
+                  class="tree-arrow"
+                  :class="{ 'tree-arrow-expanded': isSectionExpanded(group.id) }"
+                />
+                <component :is="group.icon" class="tree-icon" />
+                <span
+                  v-if="!treeFilter.trim()"
+                  class="tree-label"
+                >{{ group.name }}</span>
+                <span
+                  v-else
+                  class="tree-label"
+                  v-html="highlightMatch(group.name)"
+                />
+                <span
+                  v-if="isGroupActive(group) && !isSectionExpanded(group.id)"
+                  class="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0 ml-auto"
+                />
+              </button>
+
+              <!-- Children (with tree lines) -->
+              <Transition name="tree-expand">
+                <div v-show="isSectionExpanded(group.id)" class="tree-children">
+                  <div
+                    v-for="item in group.children"
+                    :key="item.id"
+                    class="tree-child-node"
+                  >
+                    <button
+                      @click="navigateTo(item.href)"
+                      class="tree-node-row"
+                      :class="{ 'tree-node-row-active': isActive(item.href) }"
+                    >
+                      <span v-if="isActive(item.href)" class="nav-active-bar" />
+                      <span class="tree-indent" />
+                      <component :is="item.icon" class="tree-icon tree-icon-sm" />
+                      <span
+                        v-if="!treeFilter.trim()"
+                        class="tree-label"
+                      >{{ item.name }}</span>
+                      <span
+                        v-else
+                        class="tree-label"
+                        v-html="highlightMatch(item.name)"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+          </template>
+
+          <!-- Favorites "folder" -->
+          <template v-if="favoritesStore.favorites.length > 0 && !treeFilter.trim()">
+            <div class="tree-divider" />
+            <div class="relative">
+              <button
+                @click="toggleSection('_favorites')"
+                class="tree-node-row tree-folder-row"
+              >
+                <ChevronRightIcon
+                  class="tree-arrow"
+                  :class="{ 'tree-arrow-expanded': isSectionExpanded('_favorites') }"
+                />
+                <StarIcon class="tree-icon text-yellow-500/80" />
+                <span class="tree-label text-gray-500">Favoriten</span>
+              </button>
+
+              <Transition name="tree-expand">
+                <div v-show="isSectionExpanded('_favorites')" class="tree-children">
+                  <div
+                    v-for="fav in favoritesStore.favorites.slice(0, 5)"
+                    :key="fav.item_id"
+                    class="tree-child-node"
+                  >
+                    <button
+                      @click="navigateToFavorite(fav)"
+                      class="tree-node-row"
+                    >
+                      <span class="tree-indent" />
+                      <StarIcon class="tree-icon tree-icon-sm text-yellow-500/60" />
+                      <span class="tree-label truncate">
+                        {{ (fav as any).item?.title || (fav as any).item?.name || 'Unbenannt' }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </template>
+        </div>
+
+        <!-- Empty state when filter matches nothing -->
+        <div v-if="filteredTreeGroups.length === 0 && treeFilter.trim()" class="px-3 py-6 text-center">
+          <p class="text-xs text-gray-500">Keine Ergebnisse</p>
         </div>
       </template>
     </nav>
@@ -555,22 +658,22 @@ function closePopover() {
 </template>
 
 <style scoped>
-/* Section expand/collapse transition */
-.slide-section-enter-active {
+/* Tree expand/collapse transition */
+.tree-expand-enter-active {
   transition: all 0.2s ease-out;
   overflow: hidden;
 }
-.slide-section-leave-active {
+.tree-expand-leave-active {
   transition: all 0.15s ease-in;
   overflow: hidden;
 }
-.slide-section-enter-from,
-.slide-section-leave-to {
+.tree-expand-enter-from,
+.tree-expand-leave-to {
   opacity: 0;
   max-height: 0;
 }
-.slide-section-enter-to,
-.slide-section-leave-from {
+.tree-expand-enter-to,
+.tree-expand-leave-from {
   opacity: 1;
   max-height: 40rem;
 }

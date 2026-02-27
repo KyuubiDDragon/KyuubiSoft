@@ -18,6 +18,7 @@ import SystemHealthWidget from './SystemHealthWidget.vue'
 import GitHubActivityWidget from './GitHubActivityWidget.vue'
 import PomodoroTimerWidget from './PomodoroTimerWidget.vue'
 import AuditActivityWidget from './AuditActivityWidget.vue'
+import CronJobsWidget from './CronJobsWidget.vue'
 
 /**
  * Widget type identifiers
@@ -42,6 +43,7 @@ export type WidgetType =
   | 'github_activity'
   | 'pomodoro_timer'
   | 'audit_activity'
+  | 'cron_jobs'
 
 /**
  * Registry mapping widget type keys to their Vue components
@@ -66,4 +68,5 @@ export const widgetRegistry: Record<WidgetType, Component> = {
   github_activity: GitHubActivityWidget,
   pomodoro_timer: PomodoroTimerWidget,
   audit_activity: AuditActivityWidget,
+  cron_jobs: CronJobsWidget,
 }

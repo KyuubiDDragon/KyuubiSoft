@@ -83,6 +83,8 @@ use App\Modules\Email\Controllers\EmailController;
 use App\Modules\Audit\Controllers\AuditController;
 use App\Modules\NotificationRules\Controllers\NotificationRuleController;
 use App\Modules\StatusPage\Controllers\StatusPageController;
+use App\Modules\Cron\Controllers\CronController;
+use App\Modules\KnowledgeBase\Controllers\KnowledgeBaseController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1402,7 +1404,34 @@ class Router
                 $protected->put('/status-page/incidents/{id}', [StatusPageController::class, 'updateIncident']);
                 $protected->post('/status-page/incidents/{id}/updates', [StatusPageController::class, 'addIncidentUpdate']);
 
+                // Cron Jobs
+                $protected->get('/cron', [CronController::class, 'index']);
+                $protected->post('/cron', [CronController::class, 'create']);
+                $protected->post('/cron/parse', [CronController::class, 'parseExpression']);
+                $protected->get('/cron/{id}', [CronController::class, 'show']);
+                $protected->put('/cron/{id}', [CronController::class, 'update']);
+                $protected->delete('/cron/{id}', [CronController::class, 'delete']);
+                $protected->post('/cron/{id}/toggle', [CronController::class, 'toggle']);
+                $protected->get('/cron/{id}/history', [CronController::class, 'history']);
+
+                // Knowledge Base (admin)
+                $protected->get('/knowledge-base/categories', [KnowledgeBaseController::class, 'listCategories']);
+                $protected->post('/knowledge-base/categories', [KnowledgeBaseController::class, 'createCategory']);
+                $protected->put('/knowledge-base/categories/{id}', [KnowledgeBaseController::class, 'updateCategory']);
+                $protected->delete('/knowledge-base/categories/{id}', [KnowledgeBaseController::class, 'deleteCategory']);
+                $protected->get('/knowledge-base/articles', [KnowledgeBaseController::class, 'listArticles']);
+                $protected->post('/knowledge-base/articles', [KnowledgeBaseController::class, 'createArticle']);
+                $protected->get('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'showArticle']);
+                $protected->put('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'updateArticle']);
+                $protected->delete('/knowledge-base/articles/{id}', [KnowledgeBaseController::class, 'deleteArticle']);
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
+
+            // Knowledge Base (public, no auth required)
+            $group->get('/kb/categories', [KnowledgeBaseController::class, 'publicCategories']);
+            $group->get('/kb/search', [KnowledgeBaseController::class, 'publicSearch']);
+            $group->get('/kb/articles/{slug}', [KnowledgeBaseController::class, 'publicArticle']);
+            $group->post('/kb/articles/{slug}/rate', [KnowledgeBaseController::class, 'rateArticle']);
 
             // Status Page (public, no auth required)
             $group->get('/status-page/public', [StatusPageController::class, 'publicIndex']);

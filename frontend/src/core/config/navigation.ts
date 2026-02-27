@@ -222,6 +222,7 @@ export const navigationGroups: NavGroup[] = [
       { id: 'ssl', name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl', permission: 'ssl.view' },
       { id: 'toolbox', name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
       { id: 'workflows', name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
+      { id: 'cron', name: 'Cron Jobs', href: '/cron', icon: ClockIcon, feature: 'server', permission: 'server.view' },
     ],
   },
 
@@ -252,6 +253,7 @@ export const navigationGroups: NavGroup[] = [
     children: [
       { id: 'tickets', name: 'Tickets', href: '/tickets', icon: TicketIcon, permission: 'tickets.view' },
       { id: 'ticket-categories', name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, permission: 'tickets.manage' },
+      { id: 'knowledge-base', name: 'Wissensbasis', href: '/knowledge-base', icon: BookOpenIcon, permission: 'tickets.view' },
     ],
   },
 

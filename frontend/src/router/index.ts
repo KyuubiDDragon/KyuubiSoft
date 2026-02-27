@@ -89,9 +89,12 @@ const EmailView = () => import('@/modules/email/views/EmailView.vue')
 const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
 const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
 const AuditView = () => import('@/modules/audit/views/AuditView.vue')
+const CronView = () => import('@/modules/cron/views/CronView.vue')
 const NotificationRulesView = () => import('@/modules/notification-rules/views/NotificationRulesView.vue')
 const StatusPageAdmin = () => import('@/modules/status-page/views/StatusPageAdmin.vue')
 const PublicStatusPage = () => import('@/modules/status-page/views/PublicStatusPage.vue')
+const KnowledgeBaseAdmin = () => import('@/modules/knowledge-base/views/KnowledgeBaseAdmin.vue')
+const PublicKnowledgeBase = () => import('@/modules/knowledge-base/views/PublicKnowledgeBase.vue')
 
 const routes: RouteRecordRaw[] = [
   // Auth routes
@@ -454,6 +457,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, permission: 'system.admin' },
   },
   {
+    path: '/cron',
+    name: 'cron',
+    component: CronView,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/notification-rules',
     name: 'notification-rules',
     component: NotificationRulesView,
@@ -471,6 +480,20 @@ const routes: RouteRecordRaw[] = [
     path: '/status',
     name: 'public-status',
     component: PublicStatusPage,
+    meta: { layout: 'none', guest: true },
+  },
+
+  // Knowledge Base routes
+  {
+    path: '/knowledge-base',
+    name: 'knowledge-base',
+    component: KnowledgeBaseAdmin,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/kb',
+    name: 'public-kb',
+    component: PublicKnowledgeBase,
     meta: { layout: 'none', guest: true },
   },
 

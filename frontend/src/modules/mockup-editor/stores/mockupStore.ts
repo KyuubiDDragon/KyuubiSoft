@@ -2,25 +2,113 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+export interface MockupElement {
+  id: string
+  type: string
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  color?: string
+  gradient?: string
+  src?: string
+  placeholder?: string
+  text?: string
+  fontFamily?: string
+  fontSize?: number
+  fontWeight?: number
+  lineHeight?: number
+  letterSpacing?: string
+  textTransform?: string
+  textAlign?: string
+  textShadow?: string
+  highlightText?: string
+  highlightColor?: string
+  clipPath?: string | null
+  objectFit?: string
+  overlay?: string
+  borderRadius?: number
+  backgroundColor?: string
+  border?: string
+  boxShadow?: string
+  pointerEvents?: string
+  padding?: string
+  transform?: string
+  size?: number
+  position?: string
+  thickness?: number
+  perspective?: string
+  label?: string
+  value?: string
+  annotations?: MockupAnnotation[]
+  [key: string]: unknown
+}
+
+export interface MockupAnnotation {
+  id: string
+  type?: string
+  x?: number
+  y?: number
+  text?: string
+  color?: string
+  [key: string]: unknown
+}
+
+export interface MockupTemplate {
+  id: string
+  name: string
+  description?: string
+  thumbnail?: string | null
+  width: number
+  height: number
+  aspectRatio?: string
+  category?: string
+  transparentBg?: boolean
+  transparent_bg?: boolean
+  elements: MockupElement[]
+  isCustom?: boolean
+  isDraft?: boolean
+  [key: string]: unknown
+}
+
+export interface MockupDraft {
+  id: string
+  name?: string
+  template_id?: string
+  templateId?: string
+  width: number
+  height: number
+  elements: MockupElement[]
+  created_at?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+export interface MockupElementOptions {
+  text?: string
+  perspective?: string
+  [key: string]: unknown
+}
+
 export const useMockupStore = defineStore('mockup', () => {
   // API state
-  const customTemplates = ref([])
-  const drafts = ref([])
-  const currentDraftId = ref(null)
-  const isLoading = ref(false)
-  const error = ref(null)
+  const customTemplates = ref<MockupTemplate[]>([])
+  const drafts = ref<MockupDraft[]>([])
+  const currentDraftId = ref<string | null>(null)
+  const isLoading = ref<boolean>(false)
+  const error = ref<string | null>(null)
 
   // Current mockup state
-  const currentTemplate = ref(null)
-  const elements = ref([])
-  const selectedElementId = ref(null)
-  const canvasWidth = ref(1920)
-  const canvasHeight = ref(1080)
-  const backgroundColor = ref('transparent')
-  const zoom = ref(1)
+  const currentTemplate = ref<MockupTemplate | null>(null)
+  const elements = ref<MockupElement[]>([])
+  const selectedElementId = ref<string | null>(null)
+  const canvasWidth = ref<number>(1920)
+  const canvasHeight = ref<number>(1080)
+  const backgroundColor = ref<string>('transparent')
+  const zoom = ref<number>(1)
 
   // Template presets for Tebex store
-  const templates = ref([
+  const templates = ref<MockupTemplate[]>([
     {
       id: 'single-image-hero',
       name: 'Single Image Hero',
@@ -2243,14 +2331,14 @@ export const useMockupStore = defineStore('mockup', () => {
   ])
 
   // Selected element
-  const selectedElement = computed(() => {
+  const selectedElement = computed<MockupElement | null>(() => {
     if (!selectedElementId.value) return null
-    return elements.value.find(el => el.id === selectedElementId.value)
+    return elements.value.find((el: MockupElement) => el.id === selectedElementId.value) || null
   })
 
   // Actions
-  function selectTemplate(templateId) {
-    const template = templates.value.find(t => t.id === templateId)
+  function selectTemplate(templateId: string): void {
+    const template = templates.value.find((t: MockupTemplate) => t.id === templateId)
     if (template) {
       currentTemplate.value = template
       elements.value = JSON.parse(JSON.stringify(template.elements))
@@ -2261,33 +2349,33 @@ export const useMockupStore = defineStore('mockup', () => {
     }
   }
 
-  function selectElement(elementId) {
+  function selectElement(elementId: string): void {
     selectedElementId.value = elementId
   }
 
-  function updateElement(elementId, updates) {
-    const index = elements.value.findIndex(el => el.id === elementId)
+  function updateElement(elementId: string, updates: Partial<MockupElement>): void {
+    const index = elements.value.findIndex((el: MockupElement) => el.id === elementId)
     if (index !== -1) {
       elements.value[index] = { ...elements.value[index], ...updates }
     }
   }
 
-  function setElementImage(elementId, imageUrl) {
+  function setElementImage(elementId: string, imageUrl: string): void {
     updateElement(elementId, { src: imageUrl })
   }
 
-  function setZoom(newZoom) {
+  function setZoom(newZoom: number): void {
     zoom.value = Math.max(0.25, Math.min(2, newZoom))
   }
 
-  function resetMockup() {
+  function resetMockup(): void {
     if (currentTemplate.value) {
       elements.value = JSON.parse(JSON.stringify(currentTemplate.value.elements))
     }
     selectedElementId.value = null
   }
 
-  function clearMockup() {
+  function clearMockup(): void {
     currentTemplate.value = null
     elements.value = []
     selectedElementId.value = null
@@ -2296,9 +2384,9 @@ export const useMockupStore = defineStore('mockup', () => {
     backgroundColor.value = 'transparent'
   }
 
-  function addElement(type, options = {}) {
+  function addElement(type: string, options: MockupElementOptions = {}): MockupElement | null {
     const id = `custom-${type}-${Date.now()}`
-    let newElement = { id, type }
+    let newElement: MockupElement = { id, type }
 
     // Default positions centered in canvas
     const centerX = Math.round(canvasWidth.value / 2)
@@ -2422,8 +2510,8 @@ export const useMockupStore = defineStore('mockup', () => {
     return newElement
   }
 
-  function deleteElement(elementId) {
-    const index = elements.value.findIndex(el => el.id === elementId)
+  function deleteElement(elementId: string): void {
+    const index = elements.value.findIndex((el: MockupElement) => el.id === elementId)
     if (index !== -1) {
       elements.value.splice(index, 1)
       if (selectedElementId.value === elementId) {
@@ -2432,12 +2520,12 @@ export const useMockupStore = defineStore('mockup', () => {
     }
   }
 
-  function duplicateElement(elementId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function duplicateElement(elementId: string): MockupElement | null {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element) return null
 
     const newId = `${element.type}-copy-${Date.now()}`
-    const newElement = {
+    const newElement: MockupElement = {
       ...JSON.parse(JSON.stringify(element)),
       id: newId,
       x: (element.x || 0) + 20,
@@ -2451,23 +2539,23 @@ export const useMockupStore = defineStore('mockup', () => {
 
   // ==================== Alignment Functions ====================
 
-  function centerElementHorizontally(elementId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function centerElementHorizontally(elementId: string): void {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element || element.width === undefined) return
 
     const newX = Math.round((canvasWidth.value - element.width) / 2)
     updateElement(elementId, { x: newX })
   }
 
-  function centerElementVertically(elementId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function centerElementVertically(elementId: string): void {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element || element.height === undefined) return
 
     const newY = Math.round((canvasHeight.value - element.height) / 2)
     updateElement(elementId, { y: newY })
   }
 
-  function centerElement(elementId) {
+  function centerElement(elementId: string): void {
     centerElementHorizontally(elementId)
     centerElementVertically(elementId)
   }
@@ -2475,14 +2563,15 @@ export const useMockupStore = defineStore('mockup', () => {
   // ==================== API Functions ====================
 
   // Fetch custom templates from backend
-  async function fetchCustomTemplates() {
+  async function fetchCustomTemplates(): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
       const response = await api.get('/api/v1/mockup/templates')
       customTemplates.value = response.data.data.items || []
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to load templates'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to load templates'
       console.error('Failed to fetch custom templates:', err)
     } finally {
       isLoading.value = false
@@ -2490,7 +2579,7 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Save current mockup as a custom template
-  async function saveAsTemplate(name, description = '', category = 'custom') {
+  async function saveAsTemplate(name: string, description: string = '', category: string = 'custom'): Promise<MockupTemplate> {
     isLoading.value = true
     error.value = null
     try {
@@ -2506,14 +2595,15 @@ export const useMockupStore = defineStore('mockup', () => {
       }
 
       const response = await api.post('/api/v1/mockup/templates', templateData)
-      const newTemplate = response.data.data
+      const newTemplate: MockupTemplate = response.data.data
 
       // Add to local list
       customTemplates.value.unshift(newTemplate)
 
       return newTemplate
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to save template'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to save template'
       throw err
     } finally {
       isLoading.value = false
@@ -2521,22 +2611,23 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Update a custom template
-  async function updateCustomTemplate(templateId, updates) {
+  async function updateCustomTemplate(templateId: string, updates: Partial<MockupTemplate>): Promise<MockupTemplate> {
     isLoading.value = true
     error.value = null
     try {
       const response = await api.put(`/api/v1/mockup/templates/${templateId}`, updates)
-      const updatedTemplate = response.data.data
+      const updatedTemplate: MockupTemplate = response.data.data
 
       // Update local list
-      const index = customTemplates.value.findIndex(t => t.id === templateId)
+      const index = customTemplates.value.findIndex((t: MockupTemplate) => t.id === templateId)
       if (index !== -1) {
         customTemplates.value[index] = updatedTemplate
       }
 
       return updatedTemplate
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to update template'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to update template'
       throw err
     } finally {
       isLoading.value = false
@@ -2544,18 +2635,19 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Delete a custom template
-  async function deleteCustomTemplate(templateId) {
+  async function deleteCustomTemplate(templateId: string): Promise<boolean> {
     isLoading.value = true
     error.value = null
     try {
       await api.delete(`/api/v1/mockup/templates/${templateId}`)
 
       // Remove from local list
-      customTemplates.value = customTemplates.value.filter(t => t.id !== templateId)
+      customTemplates.value = customTemplates.value.filter((t: MockupTemplate) => t.id !== templateId)
 
       return true
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to delete template'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to delete template'
       throw err
     } finally {
       isLoading.value = false
@@ -2563,7 +2655,7 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Load a custom template
-  function loadCustomTemplate(template) {
+  function loadCustomTemplate(template: MockupTemplate): void {
     currentTemplate.value = {
       ...template,
       isCustom: true,
@@ -2579,14 +2671,15 @@ export const useMockupStore = defineStore('mockup', () => {
   // ==================== Draft Functions ====================
 
   // Fetch drafts from backend
-  async function fetchDrafts() {
+  async function fetchDrafts(): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
       const response = await api.get('/api/v1/mockup/drafts')
       drafts.value = response.data.data.items || []
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to load drafts'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to load drafts'
       console.error('Failed to fetch drafts:', err)
     } finally {
       isLoading.value = false
@@ -2594,7 +2687,7 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Save current mockup as draft
-  async function saveDraft(name = null) {
+  async function saveDraft(name: string | null = null): Promise<MockupDraft> {
     isLoading.value = true
     error.value = null
     try {
@@ -2608,13 +2701,13 @@ export const useMockupStore = defineStore('mockup', () => {
       }
 
       const response = await api.post('/api/v1/mockup/drafts', draftData)
-      const savedDraft = response.data.data
+      const savedDraft: MockupDraft = response.data.data
 
       // Update current draft ID
       currentDraftId.value = savedDraft.id
 
       // Update local drafts list
-      const index = drafts.value.findIndex(d => d.id === savedDraft.id)
+      const index = drafts.value.findIndex((d: MockupDraft) => d.id === savedDraft.id)
       if (index !== -1) {
         drafts.value[index] = savedDraft
       } else {
@@ -2622,8 +2715,9 @@ export const useMockupStore = defineStore('mockup', () => {
       }
 
       return savedDraft
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to save draft'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to save draft'
       throw err
     } finally {
       isLoading.value = false
@@ -2631,13 +2725,14 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Load a draft
-  function loadDraft(draft) {
+  function loadDraft(draft: MockupDraft): void {
     currentTemplate.value = {
-      id: draft.template_id,
-      name: draft.name,
+      id: draft.template_id || draft.id,
+      name: draft.name || 'Untitled Draft',
       width: draft.width,
       height: draft.height,
       isDraft: true,
+      elements: draft.elements,
     }
     elements.value = JSON.parse(JSON.stringify(draft.elements))
     canvasWidth.value = draft.width
@@ -2647,14 +2742,14 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Delete a draft
-  async function deleteDraft(draftId) {
+  async function deleteDraft(draftId: string): Promise<boolean> {
     isLoading.value = true
     error.value = null
     try {
       await api.delete(`/api/v1/mockup/drafts/${draftId}`)
 
       // Remove from local list
-      drafts.value = drafts.value.filter(d => d.id !== draftId)
+      drafts.value = drafts.value.filter((d: MockupDraft) => d.id !== draftId)
 
       // Clear current draft ID if this was the active draft
       if (currentDraftId.value === draftId) {
@@ -2662,8 +2757,9 @@ export const useMockupStore = defineStore('mockup', () => {
       }
 
       return true
-    } catch (err) {
-      error.value = err.response?.data?.message || 'Failed to delete draft'
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      error.value = axiosErr.response?.data?.message || 'Failed to delete draft'
       throw err
     } finally {
       isLoading.value = false
@@ -2673,12 +2769,12 @@ export const useMockupStore = defineStore('mockup', () => {
   // ==================== Annotation Functions ====================
 
   // Add annotation to an image element
-  function addAnnotation(elementId, annotation) {
-    const element = elements.value.find(el => el.id === elementId)
+  function addAnnotation(elementId: string, annotation: Partial<MockupAnnotation>): MockupAnnotation | null {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element || (element.type !== 'image' && element.type !== 'screen3d')) return null
 
     const annotationId = `annotation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const newAnnotation = {
+    const newAnnotation: MockupAnnotation = {
       id: annotationId,
       ...annotation,
     }
@@ -2692,11 +2788,11 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Update an annotation
-  function updateAnnotation(elementId, annotationId, updates) {
-    const element = elements.value.find(el => el.id === elementId)
+  function updateAnnotation(elementId: string, annotationId: string, updates: Partial<MockupAnnotation>): void {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element || !element.annotations) return
 
-    const annotationIndex = element.annotations.findIndex(a => a.id === annotationId)
+    const annotationIndex = element.annotations.findIndex((a: MockupAnnotation) => a.id === annotationId)
     if (annotationIndex !== -1) {
       element.annotations[annotationIndex] = {
         ...element.annotations[annotationIndex],
@@ -2706,31 +2802,31 @@ export const useMockupStore = defineStore('mockup', () => {
   }
 
   // Delete an annotation
-  function deleteAnnotation(elementId, annotationId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function deleteAnnotation(elementId: string, annotationId: string): void {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (!element || !element.annotations) return
 
-    element.annotations = element.annotations.filter(a => a.id !== annotationId)
+    element.annotations = element.annotations.filter((a: MockupAnnotation) => a.id !== annotationId)
   }
 
   // Get annotations for an element
-  function getAnnotations(elementId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function getAnnotations(elementId: string): MockupAnnotation[] {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     return element?.annotations || []
   }
 
   // Clear all annotations from an element
-  function clearAnnotations(elementId) {
-    const element = elements.value.find(el => el.id === elementId)
+  function clearAnnotations(elementId: string): void {
+    const element = elements.value.find((el: MockupElement) => el.id === elementId)
     if (element) {
       element.annotations = []
     }
   }
 
   // Computed: All templates (built-in + custom)
-  const allTemplates = computed(() => {
+  const allTemplates = computed<MockupTemplate[]>(() => {
     // Mark custom templates
-    const marked = customTemplates.value.map(t => ({
+    const marked = customTemplates.value.map((t: MockupTemplate) => ({
       ...t,
       isCustom: true,
     }))

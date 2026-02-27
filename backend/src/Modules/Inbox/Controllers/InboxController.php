@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inbox\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\Inbox\Services\InboxService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -23,16 +24,12 @@ class InboxController
         $data = $request->getParsedBody();
 
         if (empty($data['content'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Content is required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Content is required', 400);
         }
 
         $item = $this->inboxService->capture($userId, $data);
 
-        $response->getBody()->write(json_encode($item));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::created($item, 'Captured');
     }
 
     /**
@@ -59,8 +56,7 @@ class InboxController
 
         $items = $this->inboxService->getItems($userId, $filters);
 
-        $response->getBody()->write(json_encode($items));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($items, 'Success');
     }
 
     /**
@@ -74,14 +70,10 @@ class InboxController
         $item = $this->inboxService->getItem($userId, $itemId);
 
         if (!$item) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Item not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Item not found');
         }
 
-        $response->getBody()->write(json_encode($item));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($item, 'Success');
     }
 
     /**
@@ -96,14 +88,10 @@ class InboxController
         $item = $this->inboxService->updateItem($userId, $itemId, $data);
 
         if (!$item) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Item not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Item not found');
         }
 
-        $response->getBody()->write(json_encode($item));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($item, 'Success');
     }
 
     /**
@@ -116,10 +104,7 @@ class InboxController
         $data = $request->getParsedBody();
 
         if (empty($data['target_type'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Target type is required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Target type is required', 400);
         }
 
         try {
@@ -131,13 +116,9 @@ class InboxController
                 $data['options'] ?? []
             );
 
-            $response->getBody()->write(json_encode($result));
-            return $response->withHeader('Content-Type', 'application/json');
+            return JsonResponse::success($result, 'Success');
         } catch (\InvalidArgumentException $e) {
-            $response->getBody()->write(json_encode([
-                'error' => $e->getMessage()
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error($e->getMessage(), 400);
         }
     }
 
@@ -152,14 +133,10 @@ class InboxController
         $deleted = $this->inboxService->deleteItem($userId, $itemId);
 
         if (!$deleted) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Item not found'
-            ]));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::notFound('Item not found');
         }
 
-        $response->getBody()->write(json_encode(['success' => true]));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success(null, 'Deleted');
     }
 
     /**
@@ -171,8 +148,7 @@ class InboxController
 
         $stats = $this->inboxService->getStats($userId);
 
-        $response->getBody()->write(json_encode($stats));
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($stats, 'Success');
     }
 
     /**
@@ -184,17 +160,11 @@ class InboxController
         $data = $request->getParsedBody();
 
         if (empty($data['ids']) || !is_array($data['ids'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Item IDs are required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Item IDs are required', 400);
         }
 
         if (empty($data['action'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Action is required'
-            ]));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            return JsonResponse::error('Action is required', 400);
         }
 
         $results = [];
@@ -243,10 +213,9 @@ class InboxController
             }
         }
 
-        $response->getBody()->write(json_encode([
+        return JsonResponse::success([
             'results' => $results,
-            'errors' => $errors
-        ]));
-        return $response->withHeader('Content-Type', 'application/json');
+            'errors' => $errors,
+        ], 'Success');
     }
 }

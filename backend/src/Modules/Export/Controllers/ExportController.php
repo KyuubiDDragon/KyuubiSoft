@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Export\Controllers;
 
+use App\Core\Http\JsonResponse;
 use App\Modules\Export\Services\ExportService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -22,12 +23,7 @@ class ExportController
         $userId = $request->getAttribute('user_id');
         $stats = $this->exportService->getExportStats($userId);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $stats,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($stats, 'Export statistics retrieved');
     }
 
     /**
@@ -46,11 +42,9 @@ class ExportController
         if ($format === 'json') {
             $filename = 'kyuubisoft-export-' . date('Y-m-d-His') . '.json';
 
-            $response->getBody()->write(json_encode($exportData, JSON_PRETTY_PRINT));
-
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            return JsonResponse::create($exportData, 200, [
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
         }
 
         // CSV format - export each type as separate CSV in a zip
@@ -78,12 +72,7 @@ class ExportController
                 ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
         }
 
-        $response->getBody()->write(json_encode([
-            'success' => false,
-            'error' => 'Invalid format',
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        return JsonResponse::error('Invalid format', 400);
     }
 
     /**
@@ -96,12 +85,7 @@ class ExportController
 
         $validation = $this->exportService->validateImportData($data);
 
-        $response->getBody()->write(json_encode([
-            'success' => true,
-            'data' => $validation,
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
+        return JsonResponse::success($validation, 'Validation completed');
     }
 
     /**
@@ -121,24 +105,16 @@ class ExportController
         // Validate first
         $validation = $this->exportService->validateImportData($data);
         if (!$validation['valid']) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'error' => 'Invalid import data',
-                'validation_errors' => $validation['errors'],
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            return JsonResponse::validationError($validation['errors'], 'Invalid import data');
         }
 
         $result = $this->exportService->importData($userId, $data, $options);
 
-        $response->getBody()->write(json_encode([
-            'success' => $result['success'],
-            'data' => $result,
-        ]));
+        if (!$result['success']) {
+            return JsonResponse::serverError('Import failed');
+        }
 
-        return $response
-            ->withHeader('Content-Type', 'application/json')
-            ->withStatus($result['success'] ? 200 : 500);
+        return JsonResponse::success($result, 'Import completed');
     }
 
     /**

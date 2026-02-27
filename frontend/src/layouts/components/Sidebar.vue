@@ -250,7 +250,7 @@ function clearProjectSelection() {
     ]"
   >
     <!-- Rail bar -->
-    <div class="w-rail bg-dark-950/80 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col items-center">
+    <div class="w-rail bg-dark-900/85 backdrop-blur-2xl border-r border-white/[0.08] flex flex-col items-center">
       <!-- Logo -->
       <div class="h-16 flex items-center justify-center shrink-0">
         <img
@@ -266,7 +266,7 @@ function clearProjectSelection() {
         <button
           @click="showProjectDropdown = !showProjectDropdown"
           class="w-full flex items-center justify-center p-2 rounded-xl
-                 bg-white/[0.03] border border-white/[0.06]
+                 bg-white/[0.03] border border-white/[0.08]
                  hover:bg-white/[0.06] hover:border-white/[0.10]
                  transition-all duration-200 relative"
           :title="projectStore.selectedProject?.name || 'Alle Projekte'"
@@ -318,7 +318,7 @@ function clearProjectSelection() {
       </div>
 
       <!-- Divider -->
-      <div class="w-8 h-px bg-white/[0.06] mb-2" />
+      <div class="w-8 h-px bg-white/[0.10] mb-2" />
 
       <!-- Navigation groups -->
       <nav class="flex-1 w-full px-2 py-1 overflow-y-auto scrollbar-hide space-y-1">
@@ -387,12 +387,12 @@ function clearProjectSelection() {
     <Transition name="slide">
       <div
         v-if="showFlyout"
-        class="w-flyout bg-dark-950/90 backdrop-blur-2xl border-r border-white/[0.06] shadow-float flex flex-col"
+        class="w-flyout bg-dark-900/92 backdrop-blur-2xl border-r border-white/[0.08] shadow-float flex flex-col"
         @mouseenter="handleFlyoutEnter"
         @mouseleave="handleFlyoutLeave"
       >
         <!-- Flyout header -->
-        <div class="h-16 flex items-center px-4 border-b border-white/[0.06] shrink-0">
+        <div class="h-16 flex items-center px-4 border-b border-white/[0.08] shrink-0">
           <h2 class="text-sm font-semibold text-gray-200">{{ activeGroupName }}</h2>
         </div>
 
@@ -430,7 +430,7 @@ function clearProjectSelection() {
         <!-- Favorites section (in flyout) -->
         <div
           v-if="favoritesStore.favorites.length > 0"
-          class="border-t border-white/[0.06] px-2 py-2 shrink-0"
+          class="border-t border-white/[0.08] px-2 py-2 shrink-0"
         >
           <div class="flex items-center gap-2 px-3 py-1.5 mb-1">
             <StarIcon class="w-3.5 h-3.5 text-yellow-500/80" />

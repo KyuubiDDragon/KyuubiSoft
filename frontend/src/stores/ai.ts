@@ -131,7 +131,7 @@ export const useAIStore = defineStore('ai', () => {
     error.value = null
     try {
       const response = await api.get('/api/v1/ai/settings')
-      settings.value = response.data
+      settings.value = response.data.data
     } catch (err: unknown) {
       error.value = (err as ApiError).response?.data?.error || 'Failed to fetch AI settings'
     } finally {
@@ -144,8 +144,8 @@ export const useAIStore = defineStore('ai', () => {
     error.value = null
     try {
       const response = await api.post('/api/v1/ai/settings', data)
-      settings.value = response.data
-      return response.data
+      settings.value = response.data.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as ApiError).response?.data?.error || 'Failed to save AI settings'
       throw err
@@ -170,7 +170,7 @@ export const useAIStore = defineStore('ai', () => {
   async function checkStatus(): Promise<AIStatus> {
     try {
       const response = await api.get('/api/v1/ai/status')
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       return { is_configured: false }
     }
@@ -187,14 +187,15 @@ export const useAIStore = defineStore('ai', () => {
       })
 
       // Update current conversation if we have one
-      if (currentConversation.value && currentConversation.value.id === response.data.conversation_id) {
+      const chatData = response.data.data
+      if (currentConversation.value && currentConversation.value.id === chatData.conversation_id) {
         currentConversation.value.messages.push(
           { role: 'user', content: message },
-          { role: 'assistant', content: response.data.message }
+          { role: 'assistant', content: chatData.message }
         )
       }
 
-      return response.data
+      return chatData
     } catch (err: unknown) {
       error.value = (err as ApiError).response?.data?.error || 'Failed to send message'
       throw err
@@ -206,7 +207,7 @@ export const useAIStore = defineStore('ai', () => {
   async function fetchConversations(): Promise<void> {
     try {
       const response = await api.get('/api/v1/ai/conversations')
-      conversations.value = response.data
+      conversations.value = response.data.data
     } catch (err: unknown) {
       console.error('Failed to fetch conversations:', err)
     }
@@ -215,8 +216,8 @@ export const useAIStore = defineStore('ai', () => {
   async function fetchConversation(id: string): Promise<Conversation> {
     try {
       const response = await api.get(`/api/v1/ai/conversations/${id}`)
-      currentConversation.value = response.data
-      return response.data
+      currentConversation.value = response.data.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as ApiError).response?.data?.error || 'Failed to fetch conversation'
       throw err
@@ -243,7 +244,7 @@ export const useAIStore = defineStore('ai', () => {
   async function fetchPrompts(): Promise<void> {
     try {
       const response = await api.get('/api/v1/ai/prompts')
-      prompts.value = response.data
+      prompts.value = response.data.data
     } catch (err: unknown) {
       console.error('Failed to fetch prompts:', err)
     }
@@ -252,13 +253,14 @@ export const useAIStore = defineStore('ai', () => {
   async function savePrompt(data: Partial<AIPrompt>): Promise<AIPrompt> {
     try {
       const response = await api.post('/api/v1/ai/prompts', data)
-      const index = prompts.value.findIndex(p => p.id === response.data.id)
+      const promptData = response.data.data
+      const index = prompts.value.findIndex(p => p.id === promptData.id)
       if (index !== -1) {
-        prompts.value[index] = response.data
+        prompts.value[index] = promptData
       } else {
-        prompts.value.push(response.data)
+        prompts.value.push(promptData)
       }
-      return response.data
+      return promptData
     } catch (err: unknown) {
       error.value = (err as ApiError).response?.data?.error || 'Failed to save prompt'
       throw err

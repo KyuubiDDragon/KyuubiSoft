@@ -64,7 +64,7 @@ function goToSettings() {
 </script>
 
 <template>
-  <header class="h-14 bg-dark-950/60 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 lg:px-6 gap-3 shrink-0 relative z-20">
+  <header class="h-14 bg-dark-900/75 backdrop-blur-xl border-b border-white/[0.08] shadow-lg shadow-black/20 flex items-center justify-between px-4 lg:px-6 gap-3 shrink-0 relative z-20">
     <!-- Mobile menu button -->
     <button
       v-if="isMobile"
@@ -128,7 +128,7 @@ function goToSettings() {
       </div>
 
       <!-- Divider -->
-      <div class="w-px h-5 bg-white/[0.06] mx-1.5" />
+      <div class="w-px h-5 bg-white/[0.10] mx-1.5" />
     </div>
 
     <!-- Actions -->
@@ -152,7 +152,7 @@ function goToSettings() {
       </button>
 
       <!-- Divider -->
-      <div class="w-px h-5 bg-white/[0.06] mx-1" />
+      <div class="w-px h-5 bg-white/[0.10] mx-1" />
 
       <!-- Notifications -->
       <NotificationCenter />
@@ -233,7 +233,7 @@ function goToSettings() {
       <div class="relative ml-0.5">
         <button
           @click="showUserMenu = !showUserMenu"
-          class="flex items-center p-1 rounded-xl hover:bg-white/[0.06] transition-colors"
+          class="flex items-center p-1 rounded-xl hover:bg-white/[0.10] transition-colors"
         >
           <div class="avatar">
             <span class="text-xs font-bold text-white">

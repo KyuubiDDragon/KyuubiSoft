@@ -71,7 +71,7 @@ export const useInboxStore = defineStore('inbox', () => {
     try {
       const params = { ...filters.value, ...customFilters }
       const response = await api.get('/api/v1/inbox', { params })
-      items.value = response.data
+      items.value = response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to fetch inbox items'
       throw err
@@ -83,7 +83,7 @@ export const useInboxStore = defineStore('inbox', () => {
   async function fetchStats(): Promise<void> {
     try {
       const response = await api.get('/api/v1/inbox/stats')
-      stats.value = response.data
+      stats.value = response.data.data
     } catch (err: unknown) {
       console.error('Failed to fetch inbox stats:', err)
     }
@@ -94,9 +94,9 @@ export const useInboxStore = defineStore('inbox', () => {
     error.value = null
     try {
       const response = await api.post('/api/v1/inbox', data)
-      items.value.unshift(response.data)
+      items.value.unshift(response.data.data)
       await fetchStats()
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to capture item'
       throw err
@@ -110,9 +110,9 @@ export const useInboxStore = defineStore('inbox', () => {
       const response = await api.put(`/api/v1/inbox/${id}`, data)
       const index = items.value.findIndex(item => item.id === id)
       if (index !== -1) {
-        items.value[index] = response.data
+        items.value[index] = response.data.data
       }
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to update item'
       throw err
@@ -140,7 +140,7 @@ export const useInboxStore = defineStore('inbox', () => {
       // Remove from inbox list
       items.value = items.value.filter(item => item.id !== id)
       await fetchStats()
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to move item'
       throw err
@@ -158,7 +158,7 @@ export const useInboxStore = defineStore('inbox', () => {
         items.value = items.value.filter(item => !ids.includes(item.id))
       }
       await fetchStats()
-      return response.data
+      return response.data.data
     } catch (err: unknown) {
       error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to perform bulk action'
       throw err

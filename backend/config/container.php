@@ -569,4 +569,11 @@ return [
             $c->get(DBALConnection::class)
         );
     },
+
+    // Email Controller
+    \App\Modules\Email\Controllers\EmailController::class => function (ContainerInterface $c): \App\Modules\Email\Controllers\EmailController {
+        return new \App\Modules\Email\Controllers\EmailController(
+            $c->get(DBALConnection::class)
+        );
+    },
 ];

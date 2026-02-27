@@ -34,18 +34,18 @@ export default {
           900: '#064e3b',
         },
         dark: {
-          50: '#f8f8fa',
-          100: '#ededf2',
-          200: '#dcdce6',
-          300: '#c0c0d0',
-          400: '#9090a8',
-          500: '#6b6b80',
-          600: '#3a3a48',
-          700: '#2a2a36',
-          800: '#1c1c26',
-          850: '#16161e',
-          900: '#111118',
-          950: '#0a0a0f',
+          50:  'rgb(var(--dark-50) / <alpha-value>)',
+          100: 'rgb(var(--dark-100) / <alpha-value>)',
+          200: 'rgb(var(--dark-200) / <alpha-value>)',
+          300: 'rgb(var(--dark-300) / <alpha-value>)',
+          400: 'rgb(var(--dark-400) / <alpha-value>)',
+          500: 'rgb(var(--dark-500) / <alpha-value>)',
+          600: 'rgb(var(--dark-600) / <alpha-value>)',
+          700: 'rgb(var(--dark-700) / <alpha-value>)',
+          800: 'rgb(var(--dark-800) / <alpha-value>)',
+          850: 'rgb(var(--dark-850) / <alpha-value>)',
+          900: 'rgb(var(--dark-900) / <alpha-value>)',
+          950: 'rgb(var(--dark-950) / <alpha-value>)',
         },
         glass: {
           white: 'rgba(255, 255, 255, 0.07)',
@@ -69,8 +69,9 @@ export default {
         '15': '3.75rem',
         '18': '4.5rem',
         '22': '5.5rem',
-        'rail': '4.5rem', // 72px - Icon rail width
-        'flyout': '15rem', // 240px - Flyout panel width
+        'rail': '4.5rem', // 72px - Icon rail width (legacy)
+        'flyout': '15rem', // 240px - Flyout panel width (legacy)
+        'sidebar': '15rem', // 240px - Expanded sidebar width
       },
       borderRadius: {
         '2xl': '1rem',

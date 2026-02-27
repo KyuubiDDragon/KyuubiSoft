@@ -7,6 +7,69 @@
    Glassmorphism Dark Theme
    ============================================ */
 
+/* ---- THEME PRESETS ---- */
+
+/* Default preset: Slate (lighter neutral gray) */
+:root, [data-theme="slate"] {
+  --dark-950: 26 26 32;
+  --dark-900: 32 32 40;
+  --dark-850: 38 38 48;
+  --dark-800: 46 46 56;
+  --dark-700: 60 60 72;
+  --dark-600: 74 74 88;
+  --dark-500: 107 107 128;
+  --dark-400: 144 144 168;
+  --dark-300: 192 192 208;
+  --dark-200: 220 220 230;
+  --dark-100: 237 237 242;
+  --dark-50:  248 248 250;
+}
+
+[data-theme="midnight"] {
+  --dark-950: 10 10 15;
+  --dark-900: 17 17 24;
+  --dark-850: 22 22 30;
+  --dark-800: 28 28 38;
+  --dark-700: 42 42 54;
+  --dark-600: 58 58 72;
+  --dark-500: 107 107 128;
+  --dark-400: 144 144 168;
+  --dark-300: 192 192 208;
+  --dark-200: 220 220 230;
+  --dark-100: 237 237 242;
+  --dark-50:  248 248 250;
+}
+
+[data-theme="stone"] {
+  --dark-950: 28 27 26;
+  --dark-900: 36 34 32;
+  --dark-850: 44 42 38;
+  --dark-800: 52 50 46;
+  --dark-700: 66 64 58;
+  --dark-600: 80 78 72;
+  --dark-500: 107 105 100;
+  --dark-400: 144 140 134;
+  --dark-300: 192 188 182;
+  --dark-200: 220 218 214;
+  --dark-100: 237 236 234;
+  --dark-50:  248 247 246;
+}
+
+[data-theme="nord"] {
+  --dark-950: 22 27 36;
+  --dark-900: 30 35 46;
+  --dark-850: 37 43 55;
+  --dark-800: 46 52 66;
+  --dark-700: 59 66 82;
+  --dark-600: 76 86 106;
+  --dark-500: 107 117 138;
+  --dark-400: 144 150 168;
+  --dark-300: 192 196 210;
+  --dark-200: 220 222 232;
+  --dark-100: 237 238 244;
+  --dark-50:  248 248 252;
+}
+
 /* ---- BASE LAYER ---- */
 @layer base {
   html {
@@ -498,32 +561,41 @@
     @apply status-dot bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.4)];
   }
 
-  /* ========== NAVIGATION (Icon Rail) ========== */
-  .nav-rail {
-    @apply fixed left-0 top-0 h-screen w-rail
-           bg-dark-950/80 backdrop-blur-2xl
-           border-r border-white/[0.10]
-           flex flex-col items-center
-           z-40;
-  }
-
-  .nav-rail-item {
-    @apply w-10 h-10 rounded-xl flex items-center justify-center
-           text-gray-500 transition-all duration-200
-           hover:text-white hover:bg-white/[0.12]
+  /* ========== SIDEBAR NAVIGATION ========== */
+  .sidebar-item {
+    @apply w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm
+           text-gray-400 transition-all duration-150
+           hover:text-gray-100 hover:bg-white/[0.08]
            relative cursor-pointer;
   }
 
-  .nav-rail-item-active {
-    @apply nav-rail-item text-primary-400 bg-primary-500/10;
+  .sidebar-item-active {
+    @apply sidebar-item text-primary-300 bg-primary-500/10;
   }
 
-  .nav-flyout {
-    @apply fixed left-rail top-0 h-screen w-flyout
-           bg-dark-950/90 backdrop-blur-2xl
-           border-r border-white/[0.10]
-           shadow-float
-           z-30 animate-slide-in-left;
+  .sidebar-item-collapsed {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center
+           text-gray-400 transition-all duration-200
+           hover:text-white hover:bg-white/[0.10]
+           relative cursor-pointer;
+  }
+
+  .sidebar-item-collapsed-active {
+    @apply sidebar-item-collapsed text-primary-400 bg-primary-500/10;
+  }
+
+  .sidebar-section-header {
+    @apply w-full flex items-center gap-2 px-3 py-1.5
+           text-2xs font-semibold uppercase tracking-[0.08em] text-gray-500
+           hover:text-gray-400 cursor-pointer select-none
+           transition-colors duration-150;
+  }
+
+  .sidebar-popover {
+    @apply fixed z-50 py-1.5
+           bg-dark-900/[0.98] backdrop-blur-2xl
+           border border-white/[0.12] rounded-xl shadow-float
+           min-w-[12rem] animate-scale-in;
   }
 
   .nav-active-bar {

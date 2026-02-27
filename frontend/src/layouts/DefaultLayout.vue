@@ -52,11 +52,11 @@ function closeMobileSidebar() {
       @close="closeMobileSidebar"
     />
 
-    <!-- Main content - offset by rail width -->
+    <!-- Main content - offset by sidebar width -->
     <div
       class="transition-all duration-300 flex flex-col"
       :class="[
-        isMobile ? '' : 'ml-rail',
+        isMobile ? '' : (uiStore.sidebarCollapsed ? 'ml-16' : 'ml-60'),
         isFullBleed ? 'h-screen' : '',
       ]"
     >

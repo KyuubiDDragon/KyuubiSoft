@@ -160,9 +160,8 @@ class LogsController
         }
 
         try {
-            $dockerUrl = $this->getDockerApiUrl($host);
-            $client    = new HttpClient(['timeout' => 10, 'verify' => false]);
-            $res       = $client->get($dockerUrl . '/containers/json?all=true');
+            [$client, $baseUrl] = $this->createDockerClient($host);
+            $res       = $client->get($baseUrl . '/containers/json?all=true');
             $containers = json_decode($res->getBody()->getContents(), true);
 
             $simplified = array_map(fn($c) => [
@@ -182,9 +181,8 @@ class LogsController
 
     private function fetchDockerLogs(array $host, string $containerId, int $tail): array
     {
-        $dockerUrl = $this->getDockerApiUrl($host);
-        $client    = new HttpClient(['timeout' => 15, 'verify' => false]);
-        $res       = $client->get($dockerUrl . "/containers/{$containerId}/logs?stdout=true&stderr=true&tail={$tail}&timestamps=true");
+        [$client, $baseUrl] = $this->createDockerClient($host, 15);
+        $res = $client->get($baseUrl . "/containers/{$containerId}/logs?stdout=true&stderr=true&tail={$tail}&timestamps=true");
 
         $rawLogs = $res->getBody()->getContents();
 
@@ -231,13 +229,28 @@ class LogsController
         return $lines;
     }
 
-    private function getDockerApiUrl(array $host): string
+    /**
+     * Create a Guzzle HTTP client configured for the Docker host.
+     * For socket-type hosts, uses CURLOPT_UNIX_SOCKET_PATH.
+     *
+     * @return array{0: HttpClient, 1: string} [client, baseUrl]
+     */
+    private function createDockerClient(array $host, int $timeout = 10): array
     {
+        $options = ['timeout' => $timeout, 'verify' => false];
+
         if ($host['type'] === 'socket') {
-            return 'http://localhost';
+            $socketPath = !empty($host['socket_path']) ? $host['socket_path'] : '/var/run/docker.sock';
+            $options['curl'] = [
+                CURLOPT_UNIX_SOCKET_PATH => $socketPath,
+            ];
+            $baseUrl = 'http://localhost';
+        } else {
+            $proto = ($host['tls_enabled'] ?? false) ? 'https' : 'http';
+            $baseUrl = "{$proto}://{$host['tcp_host']}:{$host['tcp_port']}";
         }
-        $proto = ($host['tls_enabled'] ?? false) ? 'https' : 'http';
-        return "{$proto}://{$host['tcp_host']}:{$host['tcp_port']}";
+
+        return [new HttpClient($options), $baseUrl];
     }
 
     private function detectLevel(string $message): string

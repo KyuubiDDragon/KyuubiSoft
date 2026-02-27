@@ -16,7 +16,7 @@ import {
   UserGroupIcon,
   DocumentTextIcon,
 } from '@heroicons/vue/24/outline'
-import { useFinanceStore } from '../stores/financeStore.js'
+import { useFinanceStore } from '../stores/financeStore'
 import { useToast } from '@/composables/useToast'
 import api from '@/core/api/axios'
 

@@ -1,3 +1,4 @@
+import type { Component } from 'vue'
 import QuickStatsWidget from './QuickStatsWidget.vue'
 import RecentTasksWidget from './RecentTasksWidget.vue'
 import RecentDocumentsWidget from './RecentDocumentsWidget.vue'
@@ -17,7 +18,33 @@ import SystemHealthWidget from './SystemHealthWidget.vue'
 import GitHubActivityWidget from './GitHubActivityWidget.vue'
 import PomodoroTimerWidget from './PomodoroTimerWidget.vue'
 
-export const widgetRegistry = {
+/**
+ * Widget type identifiers
+ */
+export type WidgetType =
+  | 'quick_stats'
+  | 'recent_tasks'
+  | 'recent_documents'
+  | 'productivity_chart'
+  | 'calendar_preview'
+  | 'uptime_status'
+  | 'time_tracking_today'
+  | 'kanban_summary'
+  | 'recent_activity'
+  | 'quick_notes'
+  | 'weather'
+  | 'countdown'
+  | 'link_stats'
+  | 'storage_usage'
+  | 'backup_status'
+  | 'system_health'
+  | 'github_activity'
+  | 'pomodoro_timer'
+
+/**
+ * Registry mapping widget type keys to their Vue components
+ */
+export const widgetRegistry: Record<WidgetType, Component> = {
   quick_stats: QuickStatsWidget,
   recent_tasks: RecentTasksWidget,
   recent_documents: RecentDocumentsWidget,

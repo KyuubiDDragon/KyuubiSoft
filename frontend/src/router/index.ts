@@ -1,10 +1,24 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw, type NavigationGuardNext, type RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/core/api/axios'
 
+// Extend RouteMeta for custom meta fields
+declare module 'vue-router' {
+  interface RouteMeta {
+    layout?: 'auth' | 'public' | 'none'
+    guest?: boolean
+    isSetup?: boolean
+    requiresAuth?: boolean
+    fullBleed?: boolean
+    roles?: string[]
+    permission?: string
+    title?: string
+  }
+}
+
 // Setup status cache
-let setupChecked = false
-let setupRequired = false
+let setupChecked: boolean = false
+let setupRequired: boolean = false
 
 // Lazy load views
 const LoginView = () => import('@/modules/auth/views/LoginView.vue')
@@ -75,7 +89,7 @@ const EmailView = () => import('@/modules/email/views/EmailView.vue')
 const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
 const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   // Auth routes
   {
     path: '/login',
@@ -515,7 +529,7 @@ const router = createRouter({
 })
 
 // Navigation guard
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const authStore = useAuthStore()
 
   // Public routes that don't need any auth checks - check this FIRST before any API calls
@@ -593,7 +607,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Check roles if required
   if (to.meta.roles) {
-    const hasRequiredRole = to.meta.roles.some(role => authStore.hasRole(role))
+    const hasRequiredRole = to.meta.roles.some((role: string) => authStore.hasRole(role))
     if (!hasRequiredRole) {
       return next({ name: 'dashboard' })
     }
@@ -603,7 +617,7 @@ router.beforeEach(async (to, from, next) => {
 })
 
 // Function to mark setup as complete (called from SetupView after successful setup)
-export function markSetupComplete() {
+export function markSetupComplete(): void {
   setupRequired = false
 }
 

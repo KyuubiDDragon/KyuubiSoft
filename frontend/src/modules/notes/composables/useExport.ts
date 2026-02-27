@@ -1,14 +1,63 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import TurndownService from 'turndown'
 import { gfm } from 'turndown-plugin-gfm'
 import { stripHtml, sanitizeHtml } from '@/core/services/sanitize'
 
 /**
+ * Note data structure used for exports
+ */
+export interface ExportableNote {
+  id?: string
+  title?: string
+  content?: string
+  icon?: string
+  cover?: string
+  parent_id?: string | null
+  created_at?: string
+  updated_at?: string
+  tags?: string[]
+  properties?: Record<string, unknown>
+}
+
+/**
+ * JSON export envelope
+ */
+export interface NoteExportData {
+  version: string
+  exported_at: string
+  note: {
+    id?: string
+    title?: string
+    content?: string
+    icon?: string
+    cover?: string
+    parent_id?: string | null
+    created_at?: string
+    updated_at?: string
+    tags: string[]
+    properties: Record<string, unknown>
+  }
+}
+
+/**
+ * Return type of the useExport composable
+ */
+export interface UseExportReturn {
+  isExporting: Ref<boolean>
+  exportError: Ref<string | null>
+  exportMarkdown: (note: ExportableNote) => boolean
+  exportHTML: (note: ExportableNote) => boolean
+  exportPDF: (note: ExportableNote) => Promise<boolean>
+  exportText: (note: ExportableNote) => boolean
+  exportJSON: (note: ExportableNote) => boolean
+}
+
+/**
  * Composable for exporting notes in various formats
  */
-export function useExport() {
-  const isExporting = ref(false)
-  const exportError = ref(null)
+export function useExport(): UseExportReturn {
+  const isExporting = ref<boolean>(false)
+  const exportError = ref<string | null>(null)
 
   // Initialize Turndown for HTML to Markdown conversion
   const turndownService = new TurndownService({
@@ -25,10 +74,10 @@ export function useExport() {
 
   // Custom rules for wiki links
   turndownService.addRule('wikiLink', {
-    filter: (node) => {
+    filter: (node: HTMLElement) => {
       return node.nodeName === 'SPAN' && node.hasAttribute('data-wiki-link')
     },
-    replacement: (content, node) => {
+    replacement: (content: string, node: HTMLElement) => {
       const href = node.getAttribute('data-wiki-link') || content
       return `[[${content}]]`
     },
@@ -36,27 +85,27 @@ export function useExport() {
 
   // Custom rules for callouts
   turndownService.addRule('callout', {
-    filter: (node) => {
+    filter: (node: HTMLElement) => {
       return node.nodeName === 'DIV' && node.hasAttribute('data-callout')
     },
-    replacement: (content, node) => {
+    replacement: (content: string, node: HTMLElement) => {
       const type = node.getAttribute('data-callout') || 'info'
-      const typeEmoji = {
-        info: 'ℹ️',
-        warning: '⚠️',
-        tip: '💡',
-        danger: '❌',
+      const typeEmoji: Record<string, string> = {
+        info: '\u2139\uFE0F',
+        warning: '\u26A0\uFE0F',
+        tip: '\uD83D\uDCA1',
+        danger: '\u274C',
       }
-      return `\n> ${typeEmoji[type] || '📝'} **${type.charAt(0).toUpperCase() + type.slice(1)}**\n> ${content.trim().replace(/\n/g, '\n> ')}\n\n`
+      return `\n> ${typeEmoji[type] || '\uD83D\uDCDD'} **${type.charAt(0).toUpperCase() + type.slice(1)}**\n> ${content.trim().replace(/\n/g, '\n> ')}\n\n`
     },
   })
 
   // Custom rules for toggles/collapsibles
   turndownService.addRule('toggle', {
-    filter: (node) => {
+    filter: (node: HTMLElement) => {
       return node.nodeName === 'DIV' && node.hasAttribute('data-toggle')
     },
-    replacement: (content, node) => {
+    replacement: (content: string, node: HTMLElement) => {
       const titleNode = node.querySelector('[data-toggle-title]')
       const contentNode = node.querySelector('[data-toggle-content]')
       const title = titleNode ? titleNode.textContent : 'Toggle'
@@ -68,10 +117,10 @@ export function useExport() {
 
   // Custom rules for task lists
   turndownService.addRule('taskListItem', {
-    filter: (node) => {
+    filter: (node: HTMLElement) => {
       return node.nodeName === 'LI' && node.hasAttribute('data-checked')
     },
-    replacement: (content, node) => {
+    replacement: (content: string, node: HTMLElement) => {
       const isChecked = node.getAttribute('data-checked') === 'true'
       return `- [${isChecked ? 'x' : ' '}] ${content.trim()}\n`
     },
@@ -80,7 +129,7 @@ export function useExport() {
   /**
    * Export note as Markdown
    */
-  function exportMarkdown(note) {
+  function exportMarkdown(note: ExportableNote): boolean {
     try {
       isExporting.value = true
       exportError.value = null
@@ -91,7 +140,7 @@ export function useExport() {
         `title: "${note.title || 'Untitled'}"`,
         `created: ${note.created_at || new Date().toISOString()}`,
         `updated: ${note.updated_at || new Date().toISOString()}`,
-        note.tags?.length ? `tags: [${note.tags.map(t => `"${t}"`).join(', ')}]` : null,
+        note.tags?.length ? `tags: [${note.tags.map((t: string) => `"${t}"`).join(', ')}]` : null,
         '---',
         '',
       ].filter(Boolean).join('\n')
@@ -107,9 +156,9 @@ export function useExport() {
       downloadFile(fullContent, `${sanitizeFilename(note.title)}.md`, 'text/markdown')
 
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Export Markdown error:', error)
-      exportError.value = error.message
+      exportError.value = error instanceof Error ? error.message : String(error)
       return false
     } finally {
       isExporting.value = false
@@ -119,7 +168,7 @@ export function useExport() {
   /**
    * Export note as HTML
    */
-  function exportHTML(note) {
+  function exportHTML(note: ExportableNote): boolean {
     try {
       isExporting.value = true
       exportError.value = null
@@ -306,9 +355,9 @@ export function useExport() {
       downloadFile(htmlContent, `${sanitizeFilename(note.title)}.html`, 'text/html')
 
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Export HTML error:', error)
-      exportError.value = error.message
+      exportError.value = error instanceof Error ? error.message : String(error)
       return false
     } finally {
       isExporting.value = false
@@ -319,7 +368,7 @@ export function useExport() {
    * Export note as PDF
    * Uses html2pdf.js library for client-side PDF generation
    */
-  async function exportPDF(note) {
+  async function exportPDF(note: ExportableNote): Promise<boolean> {
     try {
       isExporting.value = true
       exportError.value = null
@@ -378,9 +427,9 @@ export function useExport() {
       await html2pdf().set(options).from(container).save()
 
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Export PDF error:', error)
-      exportError.value = error.message
+      exportError.value = error instanceof Error ? error.message : String(error)
       return false
     } finally {
       isExporting.value = false
@@ -390,7 +439,7 @@ export function useExport() {
   /**
    * Export note as plain text
    */
-  function exportText(note) {
+  function exportText(note: ExportableNote): boolean {
     try {
       isExporting.value = true
       exportError.value = null
@@ -414,9 +463,9 @@ export function useExport() {
       downloadFile(text, `${sanitizeFilename(note.title)}.txt`, 'text/plain')
 
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Export Text error:', error)
-      exportError.value = error.message
+      exportError.value = error instanceof Error ? error.message : String(error)
       return false
     } finally {
       isExporting.value = false
@@ -426,12 +475,12 @@ export function useExport() {
   /**
    * Export note as JSON (for backup/import)
    */
-  function exportJSON(note) {
+  function exportJSON(note: ExportableNote): boolean {
     try {
       isExporting.value = true
       exportError.value = null
 
-      const exportData = {
+      const exportData: NoteExportData = {
         version: '1.0',
         exported_at: new Date().toISOString(),
         note: {
@@ -452,9 +501,9 @@ export function useExport() {
       downloadFile(json, `${sanitizeFilename(note.title)}.json`, 'application/json')
 
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Export JSON error:', error)
-      exportError.value = error.message
+      exportError.value = error instanceof Error ? error.message : String(error)
       return false
     } finally {
       isExporting.value = false
@@ -464,7 +513,7 @@ export function useExport() {
   /**
    * Helper: Download file
    */
-  function downloadFile(content, filename, mimeType) {
+  function downloadFile(content: string, filename: string, mimeType: string): void {
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -479,11 +528,11 @@ export function useExport() {
   /**
    * Helper: Sanitize filename
    */
-  function sanitizeFilename(name) {
+  function sanitizeFilename(name: string | undefined): string {
     if (!name) return 'untitled'
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9äöüß\s-]/g, '')
+      .replace(/[^a-z0-9\u00e4\u00f6\u00fc\u00df\s-]/g, '')
       .replace(/\s+/g, '-')
       .slice(0, 100)
   }
@@ -491,7 +540,7 @@ export function useExport() {
   /**
    * Helper: Escape HTML
    */
-  function escapeHtml(text) {
+  function escapeHtml(text: string | undefined): string {
     if (!text) return ''
     return text
       .replace(/&/g, '&amp;')
@@ -504,7 +553,7 @@ export function useExport() {
   /**
    * Helper: Format date
    */
-  function formatDate(dateString) {
+  function formatDate(dateString: string | undefined): string {
     if (!dateString) return '-'
     try {
       return new Date(dateString).toLocaleDateString('de-DE', {

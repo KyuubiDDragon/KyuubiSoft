@@ -3,10 +3,42 @@ import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import InlineDatabaseNode from '../components/database/InlineDatabaseNode.vue'
 
 /**
+ * Database view types
+ */
+export type DatabaseView = 'table' | 'board' | 'gallery' | 'list' | 'calendar'
+
+/**
+ * Options for the InlineDatabase extension
+ */
+export interface InlineDatabaseOptions {
+  HTMLAttributes: Record<string, unknown>
+}
+
+/**
+ * InlineDatabase node attributes
+ */
+export interface InlineDatabaseAttributes {
+  databaseId: string | null
+  name: string
+  view: DatabaseView
+  noteId: string | null
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    inlineDatabase: {
+      insertDatabase: (attributes?: Partial<InlineDatabaseAttributes>) => ReturnType
+      updateDatabase: (databaseId: string, attributes: Partial<InlineDatabaseAttributes>) => ReturnType
+      deleteDatabase: (databaseId: string) => ReturnType
+    }
+  }
+}
+
+/**
  * InlineDatabase Extension for TipTap
  * Allows embedding Notion-style databases inline within notes
  */
-export const InlineDatabase = Node.create({
+export const InlineDatabase = Node.create<InlineDatabaseOptions>({
   name: 'inlineDatabase',
 
   addOptions() {
@@ -25,29 +57,29 @@ export const InlineDatabase = Node.create({
     return {
       databaseId: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-database-id'),
-        renderHTML: (attributes) => ({
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-database-id'),
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-database-id': attributes.databaseId,
         }),
       },
       name: {
         default: 'Neue Datenbank',
-        parseHTML: (element) => element.getAttribute('data-database-name'),
-        renderHTML: (attributes) => ({
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-database-name'),
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-database-name': attributes.name,
         }),
       },
       view: {
-        default: 'table',
-        parseHTML: (element) => element.getAttribute('data-database-view') || 'table',
-        renderHTML: (attributes) => ({
+        default: 'table' as DatabaseView,
+        parseHTML: (element: HTMLElement) => (element.getAttribute('data-database-view') || 'table') as DatabaseView,
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-database-view': attributes.view,
         }),
       },
       noteId: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-note-id'),
-        renderHTML: (attributes) => ({
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-note-id'),
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-note-id': attributes.noteId,
         }),
       },
@@ -85,10 +117,10 @@ export const InlineDatabase = Node.create({
   addCommands() {
     return {
       insertDatabase:
-        (attributes = {}) =>
+        (attributes: Partial<InlineDatabaseAttributes> = {}) =>
         ({ commands, editor }) => {
           // Get the current note ID from editor options or state
-          const noteId = editor.options?.editorProps?.noteId || attributes.noteId
+          const noteId = (editor.options as Record<string, unknown>)?.editorProps?.noteId || attributes.noteId
 
           return commands.insertContent({
             type: this.name,
@@ -102,7 +134,7 @@ export const InlineDatabase = Node.create({
         },
 
       updateDatabase:
-        (databaseId, attributes) =>
+        (databaseId: string, attributes: Partial<InlineDatabaseAttributes>) =>
         ({ commands, tr, state }) => {
           // Find and update the database node
           let found = false
@@ -119,7 +151,7 @@ export const InlineDatabase = Node.create({
         },
 
       deleteDatabase:
-        (databaseId) =>
+        (databaseId: string) =>
         ({ commands, state }) => {
           let found = false
           state.doc.descendants((node, pos) => {

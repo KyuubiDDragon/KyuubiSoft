@@ -3,45 +3,94 @@ import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/core/api/axios'
 
+export interface CollaborationParticipant {
+  id: string
+  name?: string
+  color?: string
+  [key: string]: unknown
+}
+
+export interface CursorPosition {
+  line?: number
+  column?: number
+  offset?: number
+  user?: CollaborationParticipant
+  [key: string]: unknown
+}
+
+export interface SelectionRange {
+  anchor?: number
+  head?: number
+  from?: number
+  to?: number
+  user?: CollaborationParticipant
+  [key: string]: unknown
+}
+
+export interface AwarenessData {
+  user?: CollaborationParticipant
+  [key: string]: unknown
+}
+
+export interface CollaborationMessage {
+  type: string
+  token?: string
+  roomId?: string
+  noteId?: string
+  update?: unknown
+  version?: number
+  cursor?: CursorPosition
+  selection?: SelectionRange
+  awareness?: Record<string, unknown>
+  userId?: string
+  user?: CollaborationParticipant
+  participants?: CollaborationParticipant[]
+  state?: { version?: number; [key: string]: unknown }
+  message?: string
+  [key: string]: unknown
+}
+
+type MessageHandler = (data: CollaborationMessage) => void
+
 /**
  * Real-time Collaboration Store
  * Manages WebSocket connection for note collaboration
  */
 export const useCollaborationStore = defineStore('noteCollaboration', () => {
   // State
-  const socket = ref(null)
-  const isConnected = ref(false)
-  const isConnecting = ref(false)
-  const connectionError = ref(null)
-  const currentRoom = ref(null)
-  const participants = ref([])
-  const cursors = ref({}) // userId => cursor position
-  const selections = ref({}) // userId => selection range
-  const awareness = ref({}) // userId => awareness data
-  const pendingUpdates = ref([])
-  const lastSyncVersion = ref(0)
+  const socket = ref<WebSocket | null>(null)
+  const isConnected = ref<boolean>(false)
+  const isConnecting = ref<boolean>(false)
+  const connectionError = ref<string | null>(null)
+  const currentRoom = ref<string | null>(null)
+  const participants = ref<CollaborationParticipant[]>([])
+  const cursors = ref<Record<string, CursorPosition>>({}) // userId => cursor position
+  const selections = ref<Record<string, SelectionRange>>({}) // userId => selection range
+  const awareness = ref<Record<string, AwarenessData>>({}) // userId => awareness data
+  const pendingUpdates = ref<unknown[]>([])
+  const lastSyncVersion = ref<number>(0)
 
   // WebSocket URL (will be fetched from API)
-  const wsUrl = ref(null)
+  const wsUrl = ref<string | null>(null)
 
   // Auth store for token
   const authStore = useAuthStore()
 
   // Computed
-  const isAuthenticated = computed(() => socket.value && isConnected.value)
-  const participantCount = computed(() => participants.value.length)
-  const otherParticipants = computed(() => {
+  const isAuthenticated = computed<boolean>(() => !!socket.value && isConnected.value)
+  const participantCount = computed<number>(() => participants.value.length)
+  const otherParticipants = computed<CollaborationParticipant[]>(() => {
     const userId = authStore.user?.id
-    return participants.value.filter(p => p.id !== userId)
+    return participants.value.filter((p: CollaborationParticipant) => p.id !== userId)
   })
 
   // Message handlers
-  const messageHandlers = new Map()
+  const messageHandlers = new Map<string, MessageHandler>()
 
   /**
    * Initialize - fetch WebSocket URL
    */
-  async function initialize() {
+  async function initialize(): Promise<boolean> {
     try {
       const response = await api.get('/api/v1/collaboration/status')
       wsUrl.value = response.data.websocket_url
@@ -55,7 +104,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Connect to WebSocket server
    */
-  async function connect() {
+  async function connect(): Promise<void> {
     if (isConnected.value || isConnecting.value) {
       return
     }
@@ -72,7 +121,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
     connectionError.value = null
 
     try {
-      socket.value = new WebSocket(wsUrl.value)
+      socket.value = new WebSocket(wsUrl.value!)
 
       socket.value.onopen = handleOpen
       socket.value.onmessage = handleMessage
@@ -80,7 +129,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
       socket.value.onerror = handleError
     } catch (error) {
       console.error('WebSocket connection error:', error)
-      connectionError.value = error.message
+      connectionError.value = (error as Error).message
       isConnecting.value = false
     }
   }
@@ -88,7 +137,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Disconnect from WebSocket server
    */
-  function disconnect() {
+  function disconnect(): void {
     if (socket.value) {
       socket.value.close()
       socket.value = null
@@ -103,12 +152,12 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Handle WebSocket open
    */
-  function handleOpen() {
+  function handleOpen(): void {
     isConnecting.value = false
     isConnected.value = true
 
     // Authenticate with JWT token
-    const token = authStore.token
+    const token = (authStore as Record<string, unknown>).token as string | undefined
     if (token) {
       send({
         type: 'auth',
@@ -120,9 +169,9 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Handle incoming WebSocket message
    */
-  function handleMessage(event) {
+  function handleMessage(event: MessageEvent): void {
     try {
-      const data = JSON.parse(event.data)
+      const data: CollaborationMessage = JSON.parse(event.data)
       const type = data.type
 
       // Call registered handler
@@ -142,7 +191,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
           break
 
         case 'joined':
-          currentRoom.value = data.roomId
+          currentRoom.value = data.roomId ?? null
           participants.value = data.participants || []
           lastSyncVersion.value = data.state?.version || 0
           break
@@ -189,7 +238,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
 
         case 'error':
           console.error('Collaboration error:', data.message)
-          connectionError.value = data.message
+          connectionError.value = data.message ?? null
           break
 
         case 'pong':
@@ -204,7 +253,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Handle WebSocket close
    */
-  function handleClose(event) {
+  function handleClose(event: CloseEvent): void {
     isConnected.value = false
     isConnecting.value = false
 
@@ -216,7 +265,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
             if (currentRoom.value) {
               joinRoom(currentRoom.value)
             }
-          }).catch(error => {
+          }).catch((error: unknown) => {
             console.error('Reconnection failed:', error)
           })
         }
@@ -227,7 +276,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Handle WebSocket error
    */
-  function handleError(error) {
+  function handleError(error: Event): void {
     console.error('WebSocket error:', error)
     connectionError.value = 'Connection error'
     isConnecting.value = false
@@ -236,7 +285,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Send message through WebSocket
    */
-  function send(data) {
+  function send(data: Record<string, unknown>): boolean {
     if (socket.value && socket.value.readyState === WebSocket.OPEN) {
       socket.value.send(JSON.stringify(data))
       return true
@@ -247,7 +296,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Join a collaboration room (note)
    */
-  async function joinRoom(noteId) {
+  async function joinRoom(noteId: string): Promise<void> {
     if (!isConnected.value) {
       await connect()
     }
@@ -264,7 +313,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Leave current room
    */
-  function leaveRoom() {
+  function leaveRoom(): void {
     if (currentRoom.value) {
       send({
         type: 'leave',
@@ -280,7 +329,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Send document update
    */
-  function sendUpdate(update, version = null) {
+  function sendUpdate(update: unknown, version: number | null = null): boolean {
     if (!currentRoom.value) return false
 
     return send({
@@ -294,7 +343,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Send cursor position
    */
-  function sendCursor(cursor) {
+  function sendCursor(cursor: CursorPosition): boolean {
     if (!currentRoom.value) return false
 
     return send({
@@ -307,7 +356,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Send selection
    */
-  function sendSelection(selection) {
+  function sendSelection(selection: SelectionRange): boolean {
     if (!currentRoom.value) return false
 
     return send({
@@ -320,7 +369,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Send awareness update
    */
-  function sendAwareness(awarenessData) {
+  function sendAwareness(awarenessData: Record<string, unknown>): boolean {
     if (!currentRoom.value) return false
 
     return send({
@@ -333,7 +382,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Request sync
    */
-  function requestSync() {
+  function requestSync(): boolean {
     if (!currentRoom.value) return false
 
     return send({
@@ -345,7 +394,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Register custom message handler
    */
-  function onMessage(type, handler) {
+  function onMessage(type: string, handler: MessageHandler): () => void {
     messageHandlers.set(type, handler)
     return () => messageHandlers.delete(type)
   }
@@ -353,8 +402,8 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Start keepalive ping
    */
-  let pingInterval = null
-  function startPing() {
+  let pingInterval: ReturnType<typeof setInterval> | null = null
+  function startPing(): void {
     if (pingInterval) return
 
     pingInterval = setInterval(() => {
@@ -364,7 +413,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
     }, 30000) // Every 30 seconds
   }
 
-  function stopPing() {
+  function stopPing(): void {
     if (pingInterval) {
       clearInterval(pingInterval)
       pingInterval = null
@@ -372,7 +421,7 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   }
 
   // Watch connection state to manage ping
-  watch(isConnected, (connected) => {
+  watch(isConnected, (connected: boolean) => {
     if (connected) {
       startPing()
     } else {
@@ -383,8 +432,8 @@ export const useCollaborationStore = defineStore('noteCollaboration', () => {
   /**
    * Get color for user
    */
-  function getUserColor(userId) {
-    const participant = participants.value.find(p => p.id === userId)
+  function getUserColor(userId: string): string {
+    const participant = participants.value.find((p: CollaborationParticipant) => p.id === userId)
     return participant?.color || '#6366F1'
   }
 

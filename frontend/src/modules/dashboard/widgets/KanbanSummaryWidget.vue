@@ -1,5 +1,5 @@
 <script setup>
-import { formatDate } from './widgetUtils.js'
+import { formatDate } from './widgetUtils'
 defineProps({ widget: Object, data: Object })
 </script>
 

@@ -6,7 +6,7 @@ import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
 import { useDashboardGrid } from '../composables/useDashboardGrid'
 import WidgetWrapper from '../components/WidgetWrapper.vue'
-import { widgetRegistry } from '../widgets/widgetRegistry.js'
+import { widgetRegistry } from '../widgets/widgetRegistry'
 import {
   ListBulletIcon,
   DocumentTextIcon,

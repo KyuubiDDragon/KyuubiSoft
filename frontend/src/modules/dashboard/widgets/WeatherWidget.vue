@@ -1,6 +1,6 @@
 <script setup>
 import { MapPinIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
-import { getWeatherIcon } from './widgetUtils.js'
+import { getWeatherIcon } from './widgetUtils'
 
 defineProps({ widget: Object, data: Object, loading: Boolean })
 defineEmits(['open-config'])

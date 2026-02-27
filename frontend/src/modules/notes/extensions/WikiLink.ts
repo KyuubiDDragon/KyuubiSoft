@@ -1,11 +1,40 @@
 import { Mark, mergeAttributes } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
+import type { EditorView } from '@tiptap/pm/view'
+
+/**
+ * Options for the WikiLink extension
+ */
+export interface WikiLinkOptions {
+  HTMLAttributes: Record<string, unknown>
+  onNavigate: ((href: string) => void) | null
+  validateLink: ((href: string) => boolean) | null
+}
+
+/**
+ * WikiLink mark attributes
+ */
+export interface WikiLinkAttributes {
+  href: string | null
+  title: string | null
+  exists: boolean
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    wikiLink: {
+      setWikiLink: (attributes: Partial<WikiLinkAttributes>) => ReturnType
+      toggleWikiLink: (attributes: Partial<WikiLinkAttributes>) => ReturnType
+      unsetWikiLink: () => ReturnType
+    }
+  }
+}
 
 /**
  * WikiLink Extension for TipTap
  * Handles [[wiki links]] syntax in notes
  */
-export const WikiLink = Mark.create({
+export const WikiLink = Mark.create<WikiLinkOptions>({
   name: 'wikiLink',
 
   addOptions() {
@@ -22,24 +51,24 @@ export const WikiLink = Mark.create({
     return {
       href: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-href'),
-        renderHTML: (attributes) => {
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-href'),
+        renderHTML: (attributes: Record<string, unknown>) => {
           if (!attributes.href) return {}
           return { 'data-href': attributes.href }
         },
       },
       title: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-title'),
-        renderHTML: (attributes) => {
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-title'),
+        renderHTML: (attributes: Record<string, unknown>) => {
           if (!attributes.title) return {}
           return { 'data-title': attributes.title }
         },
       },
       exists: {
         default: true,
-        parseHTML: (element) => element.getAttribute('data-exists') !== 'false',
-        renderHTML: (attributes) => {
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-exists') !== 'false',
+        renderHTML: (attributes: Record<string, unknown>) => {
           return { 'data-exists': attributes.exists ? 'true' : 'false' }
         },
       },
@@ -70,12 +99,12 @@ export const WikiLink = Mark.create({
   addCommands() {
     return {
       setWikiLink:
-        (attributes) =>
+        (attributes: Partial<WikiLinkAttributes>) =>
         ({ commands }) => {
           return commands.setMark(this.name, attributes)
         },
       toggleWikiLink:
-        (attributes) =>
+        (attributes: Partial<WikiLinkAttributes>) =>
         ({ commands }) => {
           return commands.toggleMark(this.name, attributes)
         },
@@ -94,8 +123,8 @@ export const WikiLink = Mark.create({
       new Plugin({
         key: new PluginKey('wikiLinkClick'),
         props: {
-          handleClick(view, pos, event) {
-            const target = event.target
+          handleClick(view: EditorView, pos: number, event: MouseEvent): boolean {
+            const target = event.target as HTMLElement
             if (target.hasAttribute('data-wiki-link')) {
               const href = target.getAttribute('data-href')
               if (href && onNavigate) {
@@ -116,7 +145,7 @@ export const WikiLink = Mark.create({
     return [
       {
         find: /\[\[([^\]]+)\]\]/g,
-        handler: ({ state, range, match }) => {
+        handler: ({ state, range, match }: { state: any; range: { from: number; to: number }; match: RegExpMatchArray }) => {
           const text = match[1]
           const { tr } = state
 

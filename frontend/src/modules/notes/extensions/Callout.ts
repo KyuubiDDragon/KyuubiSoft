@@ -1,10 +1,43 @@
 import { Node, mergeAttributes } from '@tiptap/core'
+import type { NodeSpec } from '@tiptap/pm/model'
+
+/**
+ * Callout type options
+ */
+export type CalloutType = 'info' | 'warning' | 'tip' | 'danger'
+
+/**
+ * Options for the Callout extension
+ */
+export interface CalloutOptions {
+  HTMLAttributes: Record<string, unknown>
+  types: CalloutType[]
+}
+
+/**
+ * Callout node attributes
+ */
+export interface CalloutAttributes {
+  type: CalloutType
+  title: string | null
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    callout: {
+      setCallout: (attributes?: Partial<CalloutAttributes>) => ReturnType
+      toggleCallout: (attributes?: Partial<CalloutAttributes>) => ReturnType
+      unsetCallout: () => ReturnType
+      setCalloutType: (type: CalloutType) => ReturnType
+    }
+  }
+}
 
 /**
  * Callout Extension for TipTap
  * Provides styled info/warning/tip/danger callout blocks
  */
-export const Callout = Node.create({
+export const Callout = Node.create<CalloutOptions>({
   name: 'callout',
 
   addOptions() {
@@ -23,16 +56,16 @@ export const Callout = Node.create({
   addAttributes() {
     return {
       type: {
-        default: 'info',
-        parseHTML: (element) => element.getAttribute('data-callout-type') || 'info',
-        renderHTML: (attributes) => ({
+        default: 'info' as CalloutType,
+        parseHTML: (element: HTMLElement) => (element.getAttribute('data-callout-type') || 'info') as CalloutType,
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-callout-type': attributes.type,
         }),
       },
       title: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-callout-title'),
-        renderHTML: (attributes) => {
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-callout-title'),
+        renderHTML: (attributes: Record<string, unknown>) => {
           if (!attributes.title) return {}
           return { 'data-callout-title': attributes.title }
         },
@@ -49,19 +82,19 @@ export const Callout = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const type = node.attrs.type || 'info'
-    const typeClasses = {
+    const type = (node.attrs.type || 'info') as CalloutType
+    const typeClasses: Record<CalloutType, string> = {
       info: 'callout-info border-blue-500 bg-blue-500/10',
       warning: 'callout-warning border-yellow-500 bg-yellow-500/10',
       tip: 'callout-tip border-green-500 bg-green-500/10',
       danger: 'callout-danger border-red-500 bg-red-500/10',
     }
 
-    const icons = {
-      info: 'ℹ️',
-      warning: '⚠️',
-      tip: '💡',
-      danger: '❌',
+    const icons: Record<CalloutType, string> = {
+      info: '\u2139\uFE0F',
+      warning: '\u26A0\uFE0F',
+      tip: '\uD83D\uDCA1',
+      danger: '\u274C',
     }
 
     return [
@@ -95,12 +128,12 @@ export const Callout = Node.create({
   addCommands() {
     return {
       setCallout:
-        (attributes) =>
+        (attributes?: Partial<CalloutAttributes>) =>
         ({ commands }) => {
           return commands.wrapIn(this.name, attributes)
         },
       toggleCallout:
-        (attributes) =>
+        (attributes?: Partial<CalloutAttributes>) =>
         ({ commands }) => {
           return commands.toggleWrap(this.name, attributes)
         },
@@ -110,7 +143,7 @@ export const Callout = Node.create({
           return commands.lift(this.name)
         },
       setCalloutType:
-        (type) =>
+        (type: CalloutType) =>
         ({ commands }) => {
           return commands.updateAttributes(this.name, { type })
         },

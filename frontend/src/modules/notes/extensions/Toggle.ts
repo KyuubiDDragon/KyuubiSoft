@@ -1,10 +1,33 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 
 /**
+ * Options for the Toggle extension
+ */
+export interface ToggleOptions {
+  HTMLAttributes: Record<string, unknown>
+}
+
+/**
+ * Toggle node attributes
+ */
+export interface ToggleAttributes {
+  open: boolean
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    toggle: {
+      setToggle: () => ReturnType
+      toggleToggle: () => ReturnType
+    }
+  }
+}
+
+/**
  * Toggle Extension for TipTap
  * Provides collapsible content sections (like Notion's toggle blocks)
  */
-export const Toggle = Node.create({
+export const Toggle = Node.create<ToggleOptions>({
   name: 'toggle',
 
   addOptions() {
@@ -23,8 +46,8 @@ export const Toggle = Node.create({
     return {
       open: {
         default: true,
-        parseHTML: (element) => element.getAttribute('data-open') !== 'false',
-        renderHTML: (attributes) => ({
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-open') !== 'false',
+        renderHTML: (attributes: Record<string, unknown>) => ({
           'data-open': attributes.open ? 'true' : 'false',
         }),
       },
@@ -123,7 +146,7 @@ export const ToggleTitle = Node.create({
       [
         'span',
         { class: 'toggle-icon transition-transform' },
-        '▶',
+        '\u25B6',
       ],
       [
         'span',

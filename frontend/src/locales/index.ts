@@ -1,24 +1,31 @@
-import { createI18n } from 'vue-i18n'
+import { createI18n, type I18nOptions } from 'vue-i18n'
 import de from './de.json'
 import en from './en.json'
 
+/** Represents an available locale option */
+export interface LocaleOption {
+  code: string
+  name: string
+  flag: string
+}
+
 // Available languages
-export const availableLocales = [
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
+export const availableLocales: LocaleOption[] = [
+  { code: 'de', name: 'Deutsch', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'en', name: 'English', flag: '\u{1F1EC}\u{1F1E7}' },
 ]
 
 // Get stored locale or browser language
-function getDefaultLocale() {
+function getDefaultLocale(): string {
   // Check localStorage first
-  const stored = localStorage.getItem('locale')
-  if (stored && availableLocales.some(l => l.code === stored)) {
+  const stored: string | null = localStorage.getItem('locale')
+  if (stored && availableLocales.some((l: LocaleOption) => l.code === stored)) {
     return stored
   }
 
   // Check browser language
-  const browserLang = navigator.language?.split('-')[0]
-  if (availableLocales.some(l => l.code === browserLang)) {
+  const browserLang: string | undefined = navigator.language?.split('-')[0]
+  if (browserLang && availableLocales.some((l: LocaleOption) => l.code === browserLang)) {
     return browserLang
   }
 
@@ -26,8 +33,8 @@ function getDefaultLocale() {
   return 'de'
 }
 
-// Create i18n instance
-const i18n = createI18n({
+// i18n configuration
+const i18nOptions: I18nOptions = {
   legacy: false, // Use Composition API mode
   globalInjection: true, // Enable $t in templates
   locale: getDefaultLocale(),
@@ -120,11 +127,14 @@ const i18n = createI18n({
       },
     },
   },
-})
+}
+
+// Create i18n instance
+const i18n = createI18n(i18nOptions)
 
 // Helper to change locale
-export function setLocale(locale) {
-  if (availableLocales.some(l => l.code === locale)) {
+export function setLocale(locale: string): void {
+  if (availableLocales.some((l: LocaleOption) => l.code === locale)) {
     i18n.global.locale.value = locale
     localStorage.setItem('locale', locale)
     document.documentElement.lang = locale
@@ -132,7 +142,7 @@ export function setLocale(locale) {
 }
 
 // Get current locale
-export function getLocale() {
+export function getLocale(): string {
   return i18n.global.locale.value
 }
 

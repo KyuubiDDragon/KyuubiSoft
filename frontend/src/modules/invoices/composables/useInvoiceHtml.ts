@@ -1,26 +1,91 @@
 import api from '@/core/api/axios'
 
-export function useInvoiceHtml() {
-  function escapeHtml(str) {
+/**
+ * Invoice line item for HTML generation
+ */
+export interface InvoiceHtmlItem {
+  description?: string
+  quantity?: number
+  unit?: string
+  unit_price?: number
+  total?: number
+}
+
+/**
+ * Invoice data used for HTML generation
+ */
+export interface InvoiceHtmlData {
+  invoice_number?: string
+  document_type?: string
+  issue_date?: string
+  due_date?: string
+  service_date?: string
+  sender_name?: string
+  sender_company?: string
+  sender_address?: string
+  sender_email?: string
+  sender_phone?: string
+  sender_vat_id?: string
+  sender_logo_file_id?: string | null
+  sender_bank_details?: string
+  client_name?: string
+  client_company?: string
+  client_address?: string
+  client_email?: string
+  client_vat_id?: string
+  items?: InvoiceHtmlItem[]
+  subtotal?: number
+  tax_rate?: string | number
+  tax_amount?: number
+  total?: number
+  notes?: string
+  terms?: string
+  payment_terms?: string
+  mahnung_level?: number
+  mahnung_fee?: number
+  [key: string]: unknown
+}
+
+/**
+ * Sender settings used for HTML generation
+ */
+export interface InvoiceSenderHtmlSettings {
+  invoice_steuernummer?: string
+  logo_file_id?: string | null
+  default_payment_terms?: string
+  [key: string]: unknown
+}
+
+/**
+ * Return type of the useInvoiceHtml composable
+ */
+export interface UseInvoiceHtmlReturn {
+  generateHtml: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, logoDataUrl?: string) => string
+  downloadPdf: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings) => Promise<void>
+  loadLogoDataUrl: (logoFileId: string | null | undefined) => Promise<string>
+}
+
+export function useInvoiceHtml(): UseInvoiceHtmlReturn {
+  function escapeHtml(str: string | undefined | null): string {
     return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 
-  function formatCurrency(amount) {
+  function formatCurrency(amount: number | undefined): string {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount || 0)
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('de-DE')
   }
 
-  async function loadLogoDataUrl(logoFileId) {
+  async function loadLogoDataUrl(logoFileId: string | null | undefined): Promise<string> {
     if (!logoFileId) return ''
     try {
       const logoResp = await api.get(`/api/v1/storage/${logoFileId}/thumbnail`, { responseType: 'blob' })
-      return await new Promise((resolve) => {
+      return await new Promise<string>((resolve) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
+        reader.onloadend = () => resolve(reader.result as string)
         reader.readAsDataURL(logoResp.data)
       })
     } catch {
@@ -28,18 +93,18 @@ export function useInvoiceHtml() {
     }
   }
 
-  function generateHtml(inv, senderSettings, logoDataUrl = '') {
+  function generateHtml(inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, logoDataUrl: string = ''): string {
     const docType = inv.document_type || 'invoice'
-    const isKleinunternehmer = parseFloat(inv.tax_rate) === 0
+    const isKleinunternehmer = parseFloat(String(inv.tax_rate)) === 0
     const isCreditNote = docType === 'credit_note'
     const isQuote = docType === 'quote'
     const isProforma = docType === 'proforma'
     const isReminder = docType === 'reminder'
 
-    const mahnung_labels = ['Zahlungserinnerung', '1. Mahnung', '2. Mahnung', '3. Mahnung (Letzte Frist)']
+    const mahnung_labels: string[] = ['Zahlungserinnerung', '1. Mahnung', '2. Mahnung', '3. Mahnung (Letzte Frist)']
     const mahnungLabel = mahnung_labels[inv.mahnung_level ?? 0] ?? 'Zahlungserinnerung'
 
-    const docTitles = {
+    const docTitles: Record<string, string> = {
       invoice: 'Rechnung',
       proforma: 'Proforma-Rechnung',
       quote: 'Angebot',
@@ -50,19 +115,19 @@ export function useInvoiceHtml() {
 
     const steuernummer = senderSettings?.invoice_steuernummer || ''
 
-    const signedAmount = (amount) =>
+    const signedAmount = (amount: number | undefined): string =>
       isCreditNote ? formatCurrency(-(Math.abs(amount ?? 0))) : formatCurrency(amount ?? 0)
 
-    const itemsHtml = (inv.items || []).map(item => `
+    const itemsHtml = (inv.items || []).map((item: InvoiceHtmlItem) => `
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(item.quantity ?? 0).toLocaleString('de-DE')} ${escapeHtml(item.unit ?? '')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(String(item.quantity ?? 0)).toLocaleString('de-DE')} ${escapeHtml(item.unit ?? '')}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${signedAmount(item.unit_price)}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;font-weight:500;">${signedAmount(item.total)}</td>
       </tr>`).join('')
 
     const totalLabel = isCreditNote ? 'Gutschriftbetrag' : 'Gesamtbetrag'
-    let totalsHtml
+    let totalsHtml: string
     if (isProforma || isQuote) {
       totalsHtml = `<tr><td colspan="3" style="padding:10px 14px;text-align:right;font-weight:600;color:#374151;">${totalLabel} (netto)</td><td style="padding:10px 14px;text-align:right;font-weight:700;font-size:15px;">${signedAmount(inv.subtotal)}</td></tr>`
     } else if (isKleinunternehmer) {
@@ -89,19 +154,19 @@ export function useInvoiceHtml() {
           : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : ''))
       : ''
 
-    const dueDateLabel = isQuote ? 'Angebot gültig bis' : (isReminder ? 'Neue Zahlungsfrist bis' : 'Fällig bis')
+    const dueDateLabel = isQuote ? 'Angebot g\u00FCltig bis' : (isReminder ? 'Neue Zahlungsfrist bis' : 'F\u00E4llig bis')
     const issueDateLabel = isQuote ? 'Angebotsdatum' : (isProforma ? 'Ausstellungsdatum' : (isReminder ? 'Mahndatum' : 'Rechnungsdatum'))
 
     const proformaNotice = isProforma
       ? `<div style="margin-top:20px;padding:14px 16px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:4px;font-size:12px;color:#1e40af;">
-          Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des § 14 UStG. Es entsteht keine Zahlungsverpflichtung.
+          Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.
          </div>` : ''
 
     const mahnungNotice = isReminder
       ? `<div style="margin-top:20px;padding:14px 16px;background:#fff7ed;border-left:4px solid #f97316;border-radius:4px;font-size:12px;color:#9a3412;">
           <strong style="display:block;margin-bottom:6px;">${mahnungLabel}</strong>
           Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.
-          ${inv.mahnung_fee > 0 ? `<br>Mahngebühr: ${formatCurrency(inv.mahnung_fee)}` : ''}
+          ${(inv.mahnung_fee ?? 0) > 0 ? `<br>Mahngeb\u00FChr: ${formatCurrency(inv.mahnung_fee)}` : ''}
          </div>` : ''
 
     const paymentTerms = inv.payment_terms || senderSettings?.default_payment_terms || ''
@@ -109,7 +174,7 @@ export function useInvoiceHtml() {
 
     const kleinunternehmerNotice = (isKleinunternehmer && !isProforma && !isQuote)
       ? `<div style="margin-top:16px;font-size:11px;color:#6b7280;line-height:1.5;">
-          Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+          Gem\u00E4\u00DF \u00A7 19 UStG wird keine Umsatzsteuer berechnet.
          </div>` : ''
 
     return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
@@ -153,7 +218,7 @@ export function useInvoiceHtml() {
         ${inv.sender_phone ? `<div style="color:#6b7280;font-size:12px;">${escapeHtml(inv.sender_phone)}</div>` : ''}
       </div>
       <div style="flex:1;min-width:0;">
-        <div class="label">${isQuote ? 'Angeboten für' : (isCreditNote ? 'Gutschrift für' : (isReminder ? 'Empfänger' : 'Rechnungsempfänger'))}</div>
+        <div class="label">${isQuote ? 'Angeboten f\u00FCr' : (isCreditNote ? 'Gutschrift f\u00FCr' : (isReminder ? 'Empf\u00E4nger' : 'Rechnungsempf\u00E4nger'))}</div>
         <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.client_name ?? '')}</div>
         ${inv.client_company ? `<div style="color:#374151;">${escapeHtml(inv.client_company)}</div>` : ''}
         ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.client_address)}</div>` : ''}
@@ -190,7 +255,7 @@ export function useInvoiceHtml() {
     </body></html>`
   }
 
-  async function downloadPdf(inv, senderSettings) {
+  async function downloadPdf(inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings): Promise<void> {
     const logoDataUrl = await loadLogoDataUrl(inv.sender_logo_file_id || senderSettings?.logo_file_id)
     const html = generateHtml(inv, senderSettings, logoDataUrl)
     const { default: html2pdf } = await import('html2pdf.js')

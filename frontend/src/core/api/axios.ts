@@ -1,6 +1,17 @@
-import axios from 'axios'
+import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
 
-const api = axios.create({
+/** Queued request that is waiting for a token refresh to complete */
+interface QueuedRequest {
+  resolve: (value: string | PromiseLike<string>) => void
+  reject: (reason?: unknown) => void
+}
+
+/** Extended request config with retry flag */
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
+
+const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
   timeout: 30000,
   headers: {
@@ -10,18 +21,18 @@ const api = axios.create({
 })
 
 // CSRF token storage
-let csrfToken = null
+let csrfToken: string | null = null
 
 // Track if we're currently refreshing to prevent multiple refresh attempts
-let isRefreshing = false
-let failedQueue = []
+let isRefreshing: boolean = false
+let failedQueue: QueuedRequest[] = []
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+const processQueue = (error: unknown, token: string | null = null): void => {
+  failedQueue.forEach((prom: QueuedRequest) => {
     if (error) {
       prom.reject(error)
     } else {
-      prom.resolve(token)
+      prom.resolve(token as string)
     }
   })
   failedQueue = []
@@ -29,53 +40,53 @@ const processQueue = (error, token = null) => {
 
 // Request interceptor
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     // Don't send auth header for public API routes
-    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/s/']
-    const isPublicApi = publicApiPaths.some(path => config.url?.includes(path))
+    const publicApiPaths: string[] = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/s/']
+    const isPublicApi: boolean = publicApiPaths.some((path: string) => config.url?.includes(path))
 
     if (!isPublicApi) {
-      const token = localStorage.getItem('access_token')
+      const token: string | null = localStorage.getItem('access_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
 
       // Attach CSRF token to state-changing requests
-      if (csrfToken && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase())) {
+      if (csrfToken && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase() as string)) {
         config.headers['X-CSRF-Token'] = csrfToken
       }
     }
 
     return config
   },
-  (error) => {
+  (error: AxiosError): Promise<never> => {
     return Promise.reject(error)
   }
 )
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse): AxiosResponse => {
     // Capture CSRF token from response headers
-    const token = response.headers['x-csrf-token']
+    const token: string | undefined = response.headers['x-csrf-token'] as string | undefined
     if (token) {
       csrfToken = token
     }
     return response
   },
-  async (error) => {
-    const originalRequest = error.config
+  async (error: AxiosError): Promise<AxiosResponse | never> => {
+    const originalRequest = error.config as RetryableRequestConfig | undefined
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPagePaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/']
-    const isPublicPage = publicPagePaths.some(path => window.location.pathname.includes(path))
+    const publicPagePaths: string[] = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/']
+    const isPublicPage: boolean = publicPagePaths.some((path: string) => window.location.pathname.includes(path))
 
     // Check if the original request was to a public API endpoint
-    const publicApiPaths = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/setup/', '/public/', '/s/']
-    const isPublicApiRequest = publicApiPaths.some(path => originalRequest?.url?.includes(path))
+    const publicApiPaths: string[] = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/setup/', '/public/', '/s/']
+    const isPublicApiRequest: boolean = publicApiPaths.some((path: string) => originalRequest?.url?.includes(path))
 
     // If 401 and not already retried
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       // On public pages or for public API requests, don't try to refresh or redirect - just return the error
       if (isPublicPage || isPublicApiRequest) {
         return Promise.reject(error)
@@ -83,12 +94,12 @@ api.interceptors.response.use(
 
       // If we're already refreshing, queue this request
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
-        }).then(token => {
+        }).then((token: string) => {
           originalRequest.headers.Authorization = `Bearer ${token}`
           return api(originalRequest)
-        }).catch(err => {
+        }).catch((err: unknown) => {
           return Promise.reject(err)
         })
       }
@@ -96,12 +107,12 @@ api.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      const refreshToken = localStorage.getItem('refresh_token')
+      const refreshToken: string | null = localStorage.getItem('refresh_token')
 
       if (refreshToken) {
         try {
           // Try to refresh token
-          const response = await axios.post(
+          const response: AxiosResponse = await axios.post(
             `${api.defaults.baseURL}/api/v1/auth/refresh`,
             { refresh_token: refreshToken },
             {
@@ -112,7 +123,10 @@ api.interceptors.response.use(
             }
           )
 
-          const { access_token, refresh_token: newRefreshToken } = response.data.data
+          const { access_token, refresh_token: newRefreshToken } = response.data.data as {
+            access_token: string
+            refresh_token?: string
+          }
 
           // Store new tokens
           localStorage.setItem('access_token', access_token)
@@ -128,7 +142,7 @@ api.interceptors.response.use(
           // Retry original request
           originalRequest.headers.Authorization = `Bearer ${access_token}`
           return api(originalRequest)
-        } catch (refreshError) {
+        } catch (refreshError: unknown) {
           isRefreshing = false
 
           // Refresh failed, process queue with error

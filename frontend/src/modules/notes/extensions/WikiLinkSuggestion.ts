@@ -1,17 +1,60 @@
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import type { EditorView } from '@tiptap/pm/view'
+
+/**
+ * A suggestion item returned by getSuggestions
+ */
+export interface WikiLinkSuggestionItem {
+  id: string
+  title: string
+  [key: string]: unknown
+}
+
+/**
+ * Internal plugin state for the suggestion menu
+ */
+export interface WikiLinkSuggestionState {
+  active: boolean
+  range: { from: number; to: number } | null
+  query: string
+  suggestions: WikiLinkSuggestionItem[]
+  selectedIndex: number
+  decorationSet: DecorationSet
+}
+
+/**
+ * Custom event detail for wiki-link-suggestion events
+ */
+export interface WikiLinkSuggestionEventDetail {
+  active: boolean
+  query: string
+  suggestions: WikiLinkSuggestionItem[]
+  selectedIndex: number
+  range: { from: number; to: number } | null
+  coords: { top: number; left: number; right: number; bottom: number } | null
+}
+
+/**
+ * Options for the WikiLinkSuggestion extension
+ */
+export interface WikiLinkSuggestionOptions {
+  getSuggestions: (query: string) => Promise<WikiLinkSuggestionItem[]>
+  onSelect: ((view: EditorView, range: { from: number; to: number } | null, suggestion: WikiLinkSuggestionItem) => void) | null
+  char: string
+}
 
 /**
  * WikiLink Suggestion Extension
  * Provides autocomplete suggestions when typing [[ in the editor
  */
-export const WikiLinkSuggestion = Extension.create({
+export const WikiLinkSuggestion = Extension.create<WikiLinkSuggestionOptions>({
   name: 'wikiLinkSuggestion',
 
   addOptions() {
     return {
-      getSuggestions: async () => [], // async function to get suggestions
+      getSuggestions: async (_query: string) => [], // async function to get suggestions
       onSelect: null, // callback when a suggestion is selected
       char: '[[', // trigger character(s)
     }
@@ -25,7 +68,7 @@ export const WikiLinkSuggestion = Extension.create({
       new Plugin({
         key: pluginKey,
         state: {
-          init() {
+          init(): WikiLinkSuggestionState {
             return {
               active: false,
               range: null,
@@ -35,7 +78,7 @@ export const WikiLinkSuggestion = Extension.create({
               decorationSet: DecorationSet.empty,
             }
           },
-          apply(tr, state, oldState, newState) {
+          apply(tr, state: WikiLinkSuggestionState, oldState, newState): WikiLinkSuggestionState {
             // Check if the plugin state has been updated via meta
             const meta = tr.getMeta(pluginKey)
             if (meta) {
@@ -64,8 +107,8 @@ export const WikiLinkSuggestion = Extension.create({
           },
         },
         props: {
-          handleKeyDown(view, event) {
-            const state = pluginKey.getState(view.state)
+          handleKeyDown(view: EditorView, event: KeyboardEvent): boolean {
+            const state = pluginKey.getState(view.state) as WikiLinkSuggestionState
             if (!state.active) return false
 
             if (event.key === 'ArrowDown') {
@@ -109,8 +152,8 @@ export const WikiLinkSuggestion = Extension.create({
             return false
           },
 
-          handleTextInput(view, from, to, text) {
-            const state = pluginKey.getState(view.state)
+          handleTextInput(view: EditorView, from: number, to: number, text: string): boolean {
+            const state = pluginKey.getState(view.state) as WikiLinkSuggestionState
             const { $from } = view.state.selection
             const textBefore = $from.parent.textBetween(0, $from.parentOffset) + text
 
@@ -156,28 +199,28 @@ export const WikiLinkSuggestion = Extension.create({
         },
 
         view() {
-          let component = null
+          let component: unknown = null
 
           return {
-            update(view, prevState) {
-              const state = pluginKey.getState(view.state)
-              const prevPluginState = pluginKey.getState(prevState)
+            update(view: EditorView, prevState) {
+              const state = pluginKey.getState(view.state) as WikiLinkSuggestionState
+              const prevPluginState = pluginKey.getState(prevState) as WikiLinkSuggestionState | undefined
 
               // Emit custom event for the Vue component to handle
               if (state.active !== prevPluginState?.active ||
                   state.suggestions !== prevPluginState?.suggestions ||
                   state.selectedIndex !== prevPluginState?.selectedIndex) {
 
-                const event = new CustomEvent('wiki-link-suggestion', {
-                  detail: {
-                    active: state.active,
-                    query: state.query,
-                    suggestions: state.suggestions,
-                    selectedIndex: state.selectedIndex,
-                    range: state.range,
-                    coords: state.active ? view.coordsAtPos(view.state.selection.from) : null,
-                  },
-                })
+                const detail: WikiLinkSuggestionEventDetail = {
+                  active: state.active,
+                  query: state.query,
+                  suggestions: state.suggestions,
+                  selectedIndex: state.selectedIndex,
+                  range: state.range,
+                  coords: state.active ? view.coordsAtPos(view.state.selection.from) : null,
+                }
+
+                const event = new CustomEvent('wiki-link-suggestion', { detail })
                 view.dom.dispatchEvent(event)
               }
             },

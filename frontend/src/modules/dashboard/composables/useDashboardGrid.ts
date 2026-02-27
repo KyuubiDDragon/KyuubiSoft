@@ -1,20 +1,103 @@
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, type Ref, type ComputedRef } from 'vue'
+
+/**
+ * Grid position coordinates
+ */
+export interface GridPosition {
+  x: number
+  y: number
+}
+
+/**
+ * Grid size dimensions
+ */
+export interface GridSize {
+  w: number
+  h: number
+}
+
+/**
+ * Cell dimensions computed from the grid element
+ */
+export interface CellDimensions {
+  width: number
+  height: number
+  gridLeft: number
+  gridTop: number
+}
+
+/**
+ * Widget data structure used by the grid
+ */
+export interface DashboardWidget {
+  id?: string
+  widget_type: string
+  position_x?: number
+  position_y?: number
+  width?: number
+  height?: number
+  [key: string]: unknown
+}
+
+/**
+ * CSS style object for grid placement
+ */
+export interface GridStyle {
+  gridColumn: string
+  gridRow: string
+}
+
+/**
+ * Resize direction identifiers
+ */
+export type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+
+/**
+ * Empty cell placeholder for edit mode
+ */
+export interface EmptyCell {
+  x: number
+  y: number
+}
+
+/**
+ * Return type of the useDashboardGrid composable
+ */
+export interface UseDashboardGridReturn {
+  GRID_COLS: number
+  draggedWidget: Ref<DashboardWidget | null>
+  resizingWidget: Ref<DashboardWidget | null>
+  ghostPosition: Ref<GridPosition | null>
+  ghostSize: Ref<GridSize | null>
+  gridRows: ComputedRef<number>
+  gridMap: ComputedRef<Record<string, string>>
+  emptyCells: ComputedRef<EmptyCell[]>
+  canPlaceWidget: (widget: DashboardWidget, newX: number, newY: number, newWidth?: number | null, newHeight?: number | null) => boolean
+  findNextAvailablePosition: (width?: number, height?: number) => GridPosition
+  startDrag: (widget: DashboardWidget, event: DragEvent) => void
+  onDrag: (event: DragEvent, gridElement: HTMLElement | null) => void
+  endDrag: (event: DragEvent | null) => void
+  dropOnCell: (widget: DashboardWidget, newX: number, newY: number) => boolean
+  startResize: (widget: DashboardWidget, direction: ResizeDirection, event: MouseEvent) => void
+  getWidgetStyle: (widget: DashboardWidget) => GridStyle
+  getGhostStyle: () => GridStyle | null
+}
 
 const GRID_COLS = 4
 const MIN_CELL_HEIGHT = 20
 
-export function useDashboardGrid(widgets, isEditMode) {
-  const draggedWidget = ref(null)
-  const resizingWidget = ref(null)
-  const resizeDirection = ref(null)
-  const ghostPosition = ref(null)
-  const ghostSize = ref(null)
-  const gridRef = ref(null)
+export function useDashboardGrid(widgets: Ref<DashboardWidget[]>, isEditMode: Ref<boolean>): UseDashboardGridReturn {
+  const draggedWidget = ref<DashboardWidget | null>(null)
+  const resizingWidget = ref<DashboardWidget | null>(null)
+  const resizeDirection = ref<ResizeDirection | null>(null)
+  const ghostPosition = ref<GridPosition | null>(null)
+  const ghostSize = ref<GridSize | null>(null)
+  const gridRef = ref<HTMLElement | null>(null)
 
   // Create a grid map to track occupied cells
-  const gridMap = computed(() => {
-    const map = {}
-    widgets.value.forEach(widget => {
+  const gridMap = computed<Record<string, string>>(() => {
+    const map: Record<string, string> = {}
+    widgets.value.forEach((widget: DashboardWidget) => {
       const x = widget.position_x ?? 0
       const y = widget.position_y ?? 0
       const w = widget.width ?? 1
@@ -31,7 +114,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   })
 
   // Check if a position is valid for a widget
-  function canPlaceWidget(widget, newX, newY, newWidth = null, newHeight = null) {
+  function canPlaceWidget(widget: DashboardWidget, newX: number, newY: number, newWidth: number | null = null, newHeight: number | null = null): boolean {
     const w = newWidth ?? widget.width ?? 1
     const h = newHeight ?? widget.height ?? 1
     const widgetId = widget.id || `temp-${widget.widget_type}`
@@ -54,7 +137,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Find the next available position for a new widget
-  function findNextAvailablePosition(width = 1, height = 1) {
+  function findNextAvailablePosition(width: number = 1, height: number = 1): GridPosition {
     const maxRows = getMaxRow() + 5
     for (let row = 0; row < maxRows; row++) {
       for (let col = 0; col <= GRID_COLS - width; col++) {
@@ -75,9 +158,9 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Get the maximum row used
-  function getMaxRow() {
+  function getMaxRow(): number {
     let maxRow = 0
-    widgets.value.forEach(widget => {
+    widgets.value.forEach((widget: DashboardWidget) => {
       const y = widget.position_y ?? 0
       const h = widget.height ?? 1
       maxRow = Math.max(maxRow, y + h)
@@ -86,12 +169,12 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Calculate grid rows needed
-  const gridRows = computed(() => {
+  const gridRows = computed<number>(() => {
     return Math.max(getMaxRow() + (isEditMode.value ? 2 : 0), 4)
   })
 
   // Get cell dimensions from grid - uses fixed 120px row height
-  function getCellDimensions(gridElement) {
+  function getCellDimensions(gridElement: HTMLElement | null): CellDimensions {
     const gap = 24 // 1.5rem gap
 
     if (!gridElement) return { width: 200, height: MIN_CELL_HEIGHT + gap, gridLeft: 0, gridTop: 0 }
@@ -112,15 +195,15 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Drag handlers
-  function startDrag(widget, event) {
+  function startDrag(widget: DashboardWidget, event: DragEvent): void {
     if (!isEditMode.value) return
 
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', widget.id || widget.widget_type)
+    event.dataTransfer!.effectAllowed = 'move'
+    event.dataTransfer!.setData('text/plain', widget.id || widget.widget_type)
 
     // Set drag image to be more visible
     if (event.target) {
-      event.dataTransfer.setDragImage(event.target, 50, 50)
+      event.dataTransfer!.setDragImage(event.target as HTMLElement, 50, 50)
     }
 
     draggedWidget.value = widget
@@ -130,12 +213,12 @@ export function useDashboardGrid(widgets, isEditMode) {
     // Visual feedback with delay for drag image
     setTimeout(() => {
       if (event.target) {
-        event.target.style.opacity = '0.4'
+        (event.target as HTMLElement).style.opacity = '0.4'
       }
     }, 0)
   }
 
-  function onDrag(event, gridElement) {
+  function onDrag(event: DragEvent, gridElement: HTMLElement | null): void {
     if (!draggedWidget.value || !gridElement || event.clientX === 0) return
 
     const dims = getCellDimensions(gridElement)
@@ -160,10 +243,10 @@ export function useDashboardGrid(widgets, isEditMode) {
     }
   }
 
-  function endDrag(event) {
+  function endDrag(event: DragEvent | null): void {
     // Reset visual
     if (event && event.target) {
-      event.target.style.opacity = '1'
+      (event.target as HTMLElement).style.opacity = '1'
     }
 
     // Apply position if we have a ghost position
@@ -184,7 +267,7 @@ export function useDashboardGrid(widgets, isEditMode) {
     ghostSize.value = null
   }
 
-  function dropOnCell(widget, newX, newY) {
+  function dropOnCell(widget: DashboardWidget, newX: number, newY: number): boolean {
     if (!widget) return false
 
     if (canPlaceWidget(widget, newX, newY)) {
@@ -196,7 +279,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Resize handlers
-  function startResize(widget, direction, event) {
+  function startResize(widget: DashboardWidget, direction: ResizeDirection, event: MouseEvent): void {
     if (!isEditMode.value) return
 
     event.preventDefault()
@@ -208,8 +291,8 @@ export function useDashboardGrid(widgets, isEditMode) {
     ghostPosition.value = { x: widget.position_x ?? 0, y: widget.position_y ?? 0 }
 
     // Add listeners
-    const onMove = (e) => onResizeMove(e)
-    const onEnd = () => {
+    const onMove = (e: MouseEvent): void => onResizeMove(e)
+    const onEnd = (): void => {
       endResize()
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onEnd)
@@ -219,10 +302,10 @@ export function useDashboardGrid(widgets, isEditMode) {
     document.addEventListener('mouseup', onEnd)
   }
 
-  function onResizeMove(event) {
+  function onResizeMove(event: MouseEvent): void {
     if (!resizingWidget.value) return
 
-    const gridElement = document.querySelector('.dashboard-grid')
+    const gridElement = document.querySelector('.dashboard-grid') as HTMLElement | null
     if (!gridElement) return
 
     const dims = getCellDimensions(gridElement)
@@ -253,23 +336,23 @@ export function useDashboardGrid(widgets, isEditMode) {
     let newH = origH
 
     // Calculate new dimensions based on resize direction
-    if (dir.includes('e')) {
+    if (dir?.includes('e')) {
       // Resize from right edge - width changes, position stays
       const newRight = Math.max(origX + 1, Math.min(GRID_COLS, mouseCol))
       newW = newRight - origX
     }
-    if (dir.includes('w')) {
+    if (dir?.includes('w')) {
       // Resize from left edge - both position and width change
       const newLeft = Math.max(0, Math.min(origRight - 1, mouseCol))
       newX = newLeft
       newW = origRight - newLeft
     }
-    if (dir.includes('s')) {
+    if (dir?.includes('s')) {
       // Resize from bottom edge - height changes, position stays
       const newBottom = Math.max(origY + 1, mouseRow)
       newH = newBottom - origY
     }
-    if (dir.includes('n')) {
+    if (dir?.includes('n')) {
       // Resize from top edge - both position and height change
       const newTop = Math.max(0, Math.min(origBottom - 1, mouseRow))
       newY = newTop
@@ -287,7 +370,7 @@ export function useDashboardGrid(widgets, isEditMode) {
     }
   }
 
-  function endResize() {
+  function endResize(): void {
     if (resizingWidget.value && ghostSize.value && ghostPosition.value) {
       // Apply the new size and position
       resizingWidget.value.width = ghostSize.value.w
@@ -304,7 +387,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Get widget style for grid positioning
-  function getWidgetStyle(widget) {
+  function getWidgetStyle(widget: DashboardWidget): GridStyle {
     const x = widget.position_x ?? 0
     const y = widget.position_y ?? 0
     const w = widget.width ?? 1
@@ -317,7 +400,7 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Get ghost preview style
-  function getGhostStyle() {
+  function getGhostStyle(): GridStyle | null {
     if (!ghostPosition.value || !ghostSize.value) return null
 
     return {
@@ -327,10 +410,10 @@ export function useDashboardGrid(widgets, isEditMode) {
   }
 
   // Generate empty cell placeholders for edit mode
-  const emptyCells = computed(() => {
+  const emptyCells = computed<EmptyCell[]>(() => {
     if (!isEditMode.value) return []
 
-    const cells = []
+    const cells: EmptyCell[] = []
     const rows = gridRows.value
 
     for (let row = 0; row < rows; row++) {

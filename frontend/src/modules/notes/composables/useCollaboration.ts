@@ -1,33 +1,124 @@
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { useCollaborationStore } from '../stores/collaborationStore'
+import type { Editor } from '@tiptap/core'
+
+/**
+ * Cursor decoration data for rendering remote cursors
+ */
+export interface CursorDecoration {
+  userId: string
+  position: number
+  user: CollaborationUser | undefined
+  color: string
+}
+
+/**
+ * Selection decoration data for rendering remote selections
+ */
+export interface SelectionDecoration {
+  userId: string
+  from: number
+  to: number
+  user: CollaborationUser | undefined
+  color: string
+}
+
+/**
+ * Remote update payload from collaboration server
+ */
+export interface RemoteUpdateData {
+  update: string
+  userId?: string
+  [key: string]: unknown
+}
+
+/**
+ * Sync response payload from collaboration server
+ */
+export interface SyncResponseData {
+  document?: unknown
+  [key: string]: unknown
+}
+
+/**
+ * Collaboration user info
+ */
+export interface CollaborationUser {
+  name?: string
+  color?: string
+  [key: string]: unknown
+}
+
+/**
+ * Cursor data from the collaboration store
+ */
+export interface CursorData {
+  position?: number
+  user?: CollaborationUser
+  [key: string]: unknown
+}
+
+/**
+ * Selection data from the collaboration store
+ */
+export interface SelectionData {
+  from?: number
+  to?: number
+  user?: CollaborationUser
+  [key: string]: unknown
+}
+
+/**
+ * Options for the useCollaboration composable
+ */
+export interface UseCollaborationOptions {
+  editor: Ref<Editor | null>
+  noteId: string
+  onRemoteUpdate?: (data: RemoteUpdateData) => void
+}
+
+/**
+ * Return type of the useCollaboration composable
+ */
+export interface UseCollaborationReturn {
+  isCollaborating: Ref<boolean>
+  syncError: Ref<string | null>
+  participants: ComputedRef<unknown[]>
+  otherParticipants: ComputedRef<unknown[]>
+  cursors: ComputedRef<Record<string, CursorData>>
+  selections: ComputedRef<Record<string, SelectionData>>
+  startCollaboration: () => Promise<void>
+  stopCollaboration: () => void
+  sendUpdate: (content: string | object) => void
+  sendCursorPosition: (position: number) => void
+  sendSelection: (from: number, to: number) => void
+  sendAwareness: (data: Record<string, unknown>) => void
+  getCursorDecorations: () => CursorDecoration[]
+  getSelectionDecorations: () => SelectionDecoration[]
+}
 
 /**
  * Composable for TipTap collaboration integration
- *
- * @param {Object} options
- * @param {Ref<Editor>} options.editor - TipTap editor instance
- * @param {string} options.noteId - Current note ID
- * @param {Function} options.onRemoteUpdate - Callback for remote updates
  */
-export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
+export function useCollaboration({ editor, noteId, onRemoteUpdate }: UseCollaborationOptions): UseCollaborationReturn {
   const collaborationStore = useCollaborationStore()
 
-  const isCollaborating = ref(false)
-  const syncError = ref(null)
-  const lastLocalUpdate = ref(null)
+  const isCollaborating = ref<boolean>(false)
+  const syncError = ref<string | null>(null)
+  const lastLocalUpdate = ref<string | null>(null)
 
   // Throttle cursor updates
-  let cursorThrottle = null
+  let cursorThrottle: ReturnType<typeof setTimeout> | null = null
   const CURSOR_THROTTLE_MS = 50
 
   // Throttle selection updates
-  let selectionThrottle = null
+  let selectionThrottle: ReturnType<typeof setTimeout> | null = null
   const SELECTION_THROTTLE_MS = 100
 
   /**
    * Start collaboration for this note
    */
-  async function startCollaboration() {
+  async function startCollaboration(): Promise<void> {
     if (!noteId) return
 
     try {
@@ -40,16 +131,16 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
 
       // Register sync handler
       collaborationStore.onMessage('sync_response', handleSyncResponse)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to start collaboration:', error)
-      syncError.value = error.message
+      syncError.value = error instanceof Error ? error.message : String(error)
     }
   }
 
   /**
    * Stop collaboration
    */
-  function stopCollaboration() {
+  function stopCollaboration(): void {
     collaborationStore.leaveRoom()
     isCollaborating.value = false
   }
@@ -57,7 +148,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Handle remote update from another user
    */
-  function handleRemoteUpdate(data) {
+  function handleRemoteUpdate(data: RemoteUpdateData): void {
     // Ignore our own updates
     if (data.update === lastLocalUpdate.value) {
       return
@@ -89,7 +180,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
           const newTo = Math.min(to, docSize)
           editor.value.commands.setTextSelection({ from: newFrom, to: newTo })
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to apply remote update:', error)
       }
     }
@@ -98,14 +189,14 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Handle sync response
    */
-  function handleSyncResponse(data) {
+  function handleSyncResponse(_data: SyncResponseData): void {
     // Handle full sync if needed - data contains the current document state
   }
 
   /**
    * Send local update to server
    */
-  function sendUpdate(content) {
+  function sendUpdate(content: string | object): void {
     if (!isCollaborating.value) return
 
     const update = typeof content === 'string' ? content : JSON.stringify(content)
@@ -116,7 +207,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Send cursor position
    */
-  function sendCursorPosition(position) {
+  function sendCursorPosition(position: number): void {
     if (!isCollaborating.value) return
 
     // Throttle cursor updates
@@ -134,7 +225,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Send selection range
    */
-  function sendSelection(from, to) {
+  function sendSelection(from: number, to: number): void {
     if (!isCollaborating.value) return
 
     // Throttle selection updates
@@ -153,7 +244,7 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Send awareness (typing status, etc.)
    */
-  function sendAwareness(data) {
+  function sendAwareness(data: Record<string, unknown>): void {
     if (!isCollaborating.value) return
     collaborationStore.sendAwareness(data)
   }
@@ -161,9 +252,9 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Get cursor decorations for other users
    */
-  function getCursorDecorations() {
-    const cursors = collaborationStore.cursors
-    const decorations = []
+  function getCursorDecorations(): CursorDecoration[] {
+    const cursors = collaborationStore.cursors as Record<string, CursorData>
+    const decorations: CursorDecoration[] = []
 
     for (const [userId, cursorData] of Object.entries(cursors)) {
       if (cursorData && cursorData.position !== undefined) {
@@ -182,16 +273,16 @@ export function useCollaboration({ editor, noteId, onRemoteUpdate }) {
   /**
    * Get selection decorations for other users
    */
-  function getSelectionDecorations() {
-    const selections = collaborationStore.selections
-    const decorations = []
+  function getSelectionDecorations(): SelectionDecoration[] {
+    const selections = collaborationStore.selections as Record<string, SelectionData>
+    const decorations: SelectionDecoration[] = []
 
     for (const [userId, selectionData] of Object.entries(selections)) {
       if (selectionData && selectionData.from !== undefined) {
         decorations.push({
           userId,
           from: selectionData.from,
-          to: selectionData.to,
+          to: selectionData.to!,
           user: selectionData.user,
           color: selectionData.user?.color || '#6366F1',
         })

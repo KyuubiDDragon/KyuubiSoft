@@ -1,5 +1,5 @@
 <script setup>
-import { getStatusBg, getStatusColor } from './widgetUtils.js'
+import { getStatusBg, getStatusColor } from './widgetUtils'
 defineProps({ widget: Object, data: Array })
 </script>
 

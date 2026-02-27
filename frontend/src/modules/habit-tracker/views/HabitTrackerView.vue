@@ -9,7 +9,7 @@ import {
   TrashIcon,
   SparklesIcon,
 } from '@heroicons/vue/24/outline'
-import { useHabitStore } from '../stores/habitStore.js'
+import { useHabitStore } from '../stores/habitStore'
 
 const habitStore = useHabitStore()
 

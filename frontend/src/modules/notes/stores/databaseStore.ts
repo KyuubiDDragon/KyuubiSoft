@@ -2,15 +2,71 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+export interface DatabaseProperty {
+  id: string
+  name?: string
+  type: string
+  sort_order: number
+  options?: SelectOption[]
+  [key: string]: unknown
+}
+
+export interface SelectOption {
+  id?: string
+  label: string
+  color?: string
+  [key: string]: unknown
+}
+
+export interface DatabaseRow {
+  id: string
+  cells: Record<string, unknown>
+  sort_order: number
+  created_at?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+export interface DatabaseView {
+  id: string
+  name?: string
+  type?: string
+  filters?: Record<string, unknown>[]
+  sorts?: Record<string, unknown>[]
+  [key: string]: unknown
+}
+
+export interface Database {
+  id: string
+  note_id?: string
+  name?: string
+  properties: DatabaseProperty[]
+  rows: DatabaseRow[]
+  views: DatabaseView[]
+  [key: string]: unknown
+}
+
+export interface PropertyTypeConfig {
+  value: string
+  label: string
+  icon: string
+}
+
+export interface SelectColorConfig {
+  value: string
+  label: string
+  class: string
+}
+
 export const useDatabaseStore = defineStore('noteDatabase', () => {
   // State
-  const databases = ref({})  // Cached databases by ID
-  const currentDatabase = ref(null)
-  const isLoading = ref(false)
-  const isSaving = ref(false)
+  const databases = ref<Record<string, Database>>({})  // Cached databases by ID
+  const currentDatabase = ref<Database | null>(null)
+  const isLoading = ref<boolean>(false)
+  const isSaving = ref<boolean>(false)
 
   // Property type configurations
-  const propertyTypes = [
+  const propertyTypes: PropertyTypeConfig[] = [
     { value: 'text', label: 'Text', icon: 'Aa' },
     { value: 'number', label: 'Zahl', icon: '#' },
     { value: 'select', label: 'Auswahl', icon: '▼' },
@@ -27,7 +83,7 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   ]
 
   // Select colors
-  const selectColors = [
+  const selectColors: SelectColorConfig[] = [
     { value: 'gray', label: 'Grau', class: 'bg-gray-500/20 text-gray-400' },
     { value: 'red', label: 'Rot', class: 'bg-red-500/20 text-red-400' },
     { value: 'orange', label: 'Orange', class: 'bg-orange-500/20 text-orange-400' },
@@ -43,13 +99,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Create a new database
    */
-  async function createDatabase(noteId, data = {}) {
+  async function createDatabase(noteId: string, data: Partial<Database> = {}): Promise<Database> {
     try {
       const response = await api.post('/api/v1/databases', {
         note_id: noteId,
         ...data
       })
-      const database = response.data.data
+      const database: Database = response.data.data
       databases.value[database.id] = database
       return database
     } catch (error) {
@@ -61,11 +117,11 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Fetch a database with all data
    */
-  async function fetchDatabase(databaseId) {
+  async function fetchDatabase(databaseId: string): Promise<Database> {
     isLoading.value = true
     try {
       const response = await api.get(`/api/v1/databases/${databaseId}`)
-      const database = response.data.data
+      const database: Database = response.data.data
       databases.value[databaseId] = database
       currentDatabase.value = database
       return database
@@ -80,7 +136,7 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Get cached database or fetch
    */
-  async function getDatabase(databaseId) {
+  async function getDatabase(databaseId: string): Promise<Database> {
     if (databases.value[databaseId]) {
       currentDatabase.value = databases.value[databaseId]
       return databases.value[databaseId]
@@ -91,11 +147,11 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Update database settings
    */
-  async function updateDatabase(databaseId, data) {
+  async function updateDatabase(databaseId: string, data: Partial<Database>): Promise<Database> {
     isSaving.value = true
     try {
       const response = await api.put(`/api/v1/databases/${databaseId}`, data)
-      const database = response.data.data
+      const database: Database = response.data.data
       if (databases.value[databaseId]) {
         databases.value[databaseId] = { ...databases.value[databaseId], ...database }
       }
@@ -114,7 +170,7 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Delete a database
    */
-  async function deleteDatabase(databaseId) {
+  async function deleteDatabase(databaseId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/databases/${databaseId}`)
       delete databases.value[databaseId]
@@ -130,12 +186,12 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Duplicate a database
    */
-  async function duplicateDatabase(databaseId, noteId = null) {
+  async function duplicateDatabase(databaseId: string, noteId: string | null = null): Promise<Database> {
     try {
       const response = await api.post(`/api/v1/databases/${databaseId}/duplicate`, {
         note_id: noteId
       })
-      const database = response.data.data
+      const database: Database = response.data.data
       databases.value[database.id] = database
       return database
     } catch (error) {
@@ -151,10 +207,10 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Add a property to database
    */
-  async function addProperty(databaseId, data) {
+  async function addProperty(databaseId: string, data: Partial<DatabaseProperty>): Promise<DatabaseProperty> {
     try {
       const response = await api.post(`/api/v1/databases/${databaseId}/properties`, data)
-      const property = response.data.data
+      const property: DatabaseProperty = response.data.data
 
       // Update local cache
       if (databases.value[databaseId]) {
@@ -174,14 +230,14 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Update a property
    */
-  async function updateProperty(databaseId, propertyId, data) {
+  async function updateProperty(databaseId: string, propertyId: string, data: Partial<DatabaseProperty>): Promise<DatabaseProperty> {
     try {
       const response = await api.put(`/api/v1/databases/${databaseId}/properties/${propertyId}`, data)
-      const property = response.data.data
+      const property: DatabaseProperty = response.data.data
 
       // Update local cache
-      const updateProps = (props) => {
-        const index = props.findIndex(p => p.id === propertyId)
+      const updateProps = (props: DatabaseProperty[]): void => {
+        const index = props.findIndex((p: DatabaseProperty) => p.id === propertyId)
         if (index !== -1) {
           props[index] = { ...props[index], ...property }
         }
@@ -204,13 +260,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Delete a property
    */
-  async function deleteProperty(databaseId, propertyId) {
+  async function deleteProperty(databaseId: string, propertyId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/databases/${databaseId}/properties/${propertyId}`)
 
       // Update local cache
-      const removeFromProps = (props) => {
-        const index = props.findIndex(p => p.id === propertyId)
+      const removeFromProps = (props: DatabaseProperty[]): void => {
+        const index = props.findIndex((p: DatabaseProperty) => p.id === propertyId)
         if (index !== -1) {
           props.splice(index, 1)
         }
@@ -231,19 +287,19 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Reorder properties
    */
-  async function reorderProperties(databaseId, order) {
+  async function reorderProperties(databaseId: string, order: string[]): Promise<void> {
     try {
       await api.put(`/api/v1/databases/${databaseId}/properties/reorder`, { order })
 
       // Update local sort order
-      const updateOrder = (props) => {
-        order.forEach((propId, index) => {
-          const prop = props.find(p => p.id === propId)
+      const updateOrder = (props: DatabaseProperty[]): void => {
+        order.forEach((propId: string, index: number) => {
+          const prop = props.find((p: DatabaseProperty) => p.id === propId)
           if (prop) {
             prop.sort_order = index
           }
         })
-        props.sort((a, b) => a.sort_order - b.sort_order)
+        props.sort((a: DatabaseProperty, b: DatabaseProperty) => a.sort_order - b.sort_order)
       }
 
       if (databases.value[databaseId]?.properties) {
@@ -265,10 +321,10 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Add a row
    */
-  async function addRow(databaseId, cells = {}) {
+  async function addRow(databaseId: string, cells: Record<string, unknown> = {}): Promise<DatabaseRow> {
     try {
       const response = await api.post(`/api/v1/databases/${databaseId}/rows`, { cells })
-      const row = response.data.data
+      const row: DatabaseRow = response.data.data
 
       // Update local cache
       if (databases.value[databaseId]?.rows) {
@@ -288,13 +344,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Update row cells
    */
-  async function updateRow(databaseId, rowId, cells) {
+  async function updateRow(databaseId: string, rowId: string, cells: Record<string, unknown>): Promise<void> {
     try {
       await api.put(`/api/v1/databases/${databaseId}/rows/${rowId}`, { cells })
 
       // Update local cache
-      const updateRowCells = (rows) => {
-        const row = rows.find(r => r.id === rowId)
+      const updateRowCells = (rows: DatabaseRow[]): void => {
+        const row = rows.find((r: DatabaseRow) => r.id === rowId)
         if (row) {
           row.cells = { ...row.cells, ...cells }
           row.updated_at = new Date().toISOString()
@@ -316,13 +372,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Delete a row
    */
-  async function deleteRow(databaseId, rowId) {
+  async function deleteRow(databaseId: string, rowId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/databases/${databaseId}/rows/${rowId}`)
 
       // Update local cache
-      const removeRow = (rows) => {
-        const index = rows.findIndex(r => r.id === rowId)
+      const removeRow = (rows: DatabaseRow[]): void => {
+        const index = rows.findIndex((r: DatabaseRow) => r.id === rowId)
         if (index !== -1) {
           rows.splice(index, 1)
         }
@@ -343,19 +399,19 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Reorder rows
    */
-  async function reorderRows(databaseId, order) {
+  async function reorderRows(databaseId: string, order: string[]): Promise<void> {
     try {
       await api.put(`/api/v1/databases/${databaseId}/rows/reorder`, { order })
 
       // Update local sort order
-      const updateOrder = (rows) => {
-        order.forEach((rowId, index) => {
-          const row = rows.find(r => r.id === rowId)
+      const updateOrder = (rows: DatabaseRow[]): void => {
+        order.forEach((rowId: string, index: number) => {
+          const row = rows.find((r: DatabaseRow) => r.id === rowId)
           if (row) {
             row.sort_order = index
           }
         })
-        rows.sort((a, b) => a.sort_order - b.sort_order)
+        rows.sort((a: DatabaseRow, b: DatabaseRow) => a.sort_order - b.sort_order)
       }
 
       if (databases.value[databaseId]?.rows) {
@@ -377,10 +433,10 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Create a view
    */
-  async function createView(databaseId, data) {
+  async function createView(databaseId: string, data: Partial<DatabaseView>): Promise<DatabaseView> {
     try {
       const response = await api.post(`/api/v1/databases/${databaseId}/views`, data)
-      const view = response.data.data
+      const view: DatabaseView = response.data.data
 
       // Update local cache
       if (databases.value[databaseId]?.views) {
@@ -400,13 +456,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Update a view
    */
-  async function updateView(databaseId, viewId, data) {
+  async function updateView(databaseId: string, viewId: string, data: Partial<DatabaseView>): Promise<void> {
     try {
       await api.put(`/api/v1/databases/${databaseId}/views/${viewId}`, data)
 
       // Update local cache
-      const updateViewData = (views) => {
-        const view = views.find(v => v.id === viewId)
+      const updateViewData = (views: DatabaseView[]): void => {
+        const view = views.find((v: DatabaseView) => v.id === viewId)
         if (view) {
           Object.assign(view, data)
         }
@@ -427,13 +483,13 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Delete a view
    */
-  async function deleteView(databaseId, viewId) {
+  async function deleteView(databaseId: string, viewId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/databases/${databaseId}/views/${viewId}`)
 
       // Update local cache
-      const removeView = (views) => {
-        const index = views.findIndex(v => v.id === viewId)
+      const removeView = (views: DatabaseView[]): void => {
+        const index = views.findIndex((v: DatabaseView) => v.id === viewId)
         if (index !== -1) {
           views.splice(index, 1)
         }
@@ -458,22 +514,22 @@ export const useDatabaseStore = defineStore('noteDatabase', () => {
   /**
    * Get color class for select option
    */
-  function getColorClass(color) {
-    const colorConfig = selectColors.find(c => c.value === color)
+  function getColorClass(color: string): string {
+    const colorConfig = selectColors.find((c: SelectColorConfig) => c.value === color)
     return colorConfig?.class || 'bg-gray-500/20 text-gray-400'
   }
 
   /**
    * Clear current database
    */
-  function clearCurrentDatabase() {
+  function clearCurrentDatabase(): void {
     currentDatabase.value = null
   }
 
   /**
    * Invalidate cache for a database
    */
-  function invalidateCache(databaseId) {
+  function invalidateCache(databaseId: string): void {
     delete databases.value[databaseId]
   }
 

@@ -2,34 +2,120 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+export interface Note {
+  id: string
+  title?: string
+  content?: string
+  slug?: string
+  parent_id: string | null
+  sort_order?: number
+  is_pinned: boolean
+  is_archived: boolean
+  is_favorite: boolean
+  is_template: boolean
+  is_shared?: boolean
+  public_token?: string
+  share_url?: string
+  tags?: NoteTag[]
+  created_at?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+export interface NoteTreeNode {
+  id: string
+  title?: string
+  children?: NoteTreeNode[]
+  parent_id?: string | null
+  sort_order?: number
+  is_pinned?: boolean
+  [key: string]: unknown
+}
+
+export interface NoteTag {
+  id: string
+  name: string
+  [key: string]: unknown
+}
+
+export interface NoteVersion {
+  id: string
+  note_id: string
+  content?: string
+  created_at?: string
+  [key: string]: unknown
+}
+
+export interface NoteTemplates {
+  system_templates: Note[]
+  custom_templates: Note[]
+  note_templates: Note[]
+}
+
+export interface NoteStats {
+  total_notes?: number
+  total_favorites?: number
+  total_archived?: number
+  [key: string]: unknown
+}
+
+export interface NoteSuggestion {
+  id: string
+  title?: string
+  [key: string]: unknown
+}
+
+export interface ShareData {
+  token?: string
+  url?: string
+  [key: string]: unknown
+}
+
+export interface ShareSettings {
+  [key: string]: unknown
+}
+
+export interface ReorderItem {
+  id: string
+  sort_order?: number
+  parent_id?: string | null
+}
+
+export interface NoteShareStatus {
+  is_shared: boolean
+  token?: string
+  url?: string
+  [key: string]: unknown
+}
+
 export const useNotesStore = defineStore('notes', () => {
   // State
-  const notes = ref([])
-  const noteTree = ref([])
-  const currentNote = ref(null)
-  const recentNotes = ref([])
-  const favoriteNotes = ref([])
-  const trashedNotes = ref([])
-  const templates = ref({ system_templates: [], custom_templates: [], note_templates: [] })
-  const searchResults = ref([])
-  const stats = ref(null)
+  const notes = ref<Note[]>([])
+  const noteTree = ref<NoteTreeNode[]>([])
+  const currentNote = ref<Note | null>(null)
+  const recentNotes = ref<Note[]>([])
+  const favoriteNotes = ref<Note[]>([])
+  const trashedNotes = ref<Note[]>([])
+  const templates = ref<NoteTemplates>({ system_templates: [], custom_templates: [], note_templates: [] })
+  const searchResults = ref<Note[]>([])
+  const stats = ref<NoteStats | null>(null)
 
-  const isLoading = ref(false)
-  const isLoadingTree = ref(false)
-  const isLoadingNote = ref(false)
-  const isSaving = ref(false)
+  const isLoading = ref<boolean>(false)
+  const isLoadingTree = ref<boolean>(false)
+  const isLoadingNote = ref<boolean>(false)
+  const isSaving = ref<boolean>(false)
 
   // Computed
-  const pinnedNotes = computed(() =>
-    notes.value.filter(n => n.is_pinned && !n.is_archived)
+  const pinnedNotes = computed<Note[]>(() =>
+    notes.value.filter((n: Note) => n.is_pinned && !n.is_archived)
   )
 
-  const archivedNotes = computed(() =>
-    notes.value.filter(n => n.is_archived)
+  const archivedNotes = computed<Note[]>(() =>
+    notes.value.filter((n: Note) => n.is_archived)
   )
 
-  const rootNotes = computed(() =>
-    notes.value.filter(n => !n.parent_id && !n.is_archived && !n.is_template)
+  const rootNotes = computed<Note[]>(() =>
+    notes.value.filter((n: Note) => !n.parent_id && !n.is_archived && !n.is_template)
   )
 
   // Actions
@@ -37,7 +123,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load all notes (flat list)
    */
-  async function fetchNotes(params = {}) {
+  async function fetchNotes(params: Record<string, unknown> = {}): Promise<Note[]> {
     isLoading.value = true
     try {
       const response = await api.get('/api/v1/notes', { params })
@@ -54,7 +140,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load note tree for sidebar
    */
-  async function fetchTree() {
+  async function fetchTree(): Promise<NoteTreeNode[]> {
     isLoadingTree.value = true
     try {
       const response = await api.get('/api/v1/notes/tree')
@@ -71,7 +157,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load single note with full details
    */
-  async function fetchNote(noteId) {
+  async function fetchNote(noteId: string): Promise<Note | null> {
     isLoadingNote.value = true
     try {
       const response = await api.get(`/api/v1/notes/${noteId}`)
@@ -88,10 +174,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Create a new note
    */
-  async function createNote(data) {
+  async function createNote(data: Partial<Note>): Promise<Note> {
     try {
       const response = await api.post('/api/v1/notes', data)
-      const newNote = response.data.data
+      const newNote: Note = response.data.data
 
       // Update local state
       notes.value.unshift(newNote)
@@ -107,14 +193,14 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Update a note
    */
-  async function updateNote(noteId, data) {
+  async function updateNote(noteId: string, data: Partial<Note>): Promise<Note> {
     isSaving.value = true
     try {
       const response = await api.put(`/api/v1/notes/${noteId}`, data)
-      const updatedNote = response.data.data
+      const updatedNote: Note = response.data.data
 
       // Update in notes array
-      const index = notes.value.findIndex(n => n.id === noteId)
+      const index = notes.value.findIndex((n: Note) => n.id === noteId)
       if (index !== -1) {
         notes.value[index] = { ...notes.value[index], ...updatedNote }
       }
@@ -136,12 +222,12 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Delete a note (soft delete)
    */
-  async function deleteNote(noteId) {
+  async function deleteNote(noteId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/notes/${noteId}`)
 
       // Remove from local state
-      notes.value = notes.value.filter(n => n.id !== noteId)
+      notes.value = notes.value.filter((n: Note) => n.id !== noteId)
 
       // Clear current note if it was deleted
       if (currentNote.value?.id === noteId) {
@@ -158,12 +244,12 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Move note to new parent
    */
-  async function moveNote(noteId, parentId) {
+  async function moveNote(noteId: string, parentId: string | null): Promise<Note> {
     try {
       const response = await api.put(`/api/v1/notes/${noteId}/move`, { parent_id: parentId })
 
       // Update local state
-      const noteIndex = notes.value.findIndex(n => n.id === noteId)
+      const noteIndex = notes.value.findIndex((n: Note) => n.id === noteId)
       if (noteIndex !== -1) {
         notes.value[noteIndex].parent_id = parentId
       }
@@ -184,14 +270,14 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Reorder notes
    */
-  async function reorderNotes(items) {
+  async function reorderNotes(items: ReorderItem[]): Promise<unknown> {
     try {
       // items is an array of { id, sort_order } or { id, parent_id, sort_order }
       const response = await api.put('/api/v1/notes/reorder', { items })
 
       // Update local state with new sort orders
-      items.forEach(item => {
-        const noteIndex = notes.value.findIndex(n => n.id === item.id)
+      items.forEach((item: ReorderItem) => {
+        const noteIndex = notes.value.findIndex((n: Note) => n.id === item.id)
         if (noteIndex !== -1) {
           if (item.sort_order !== undefined) {
             notes.value[noteIndex].sort_order = item.sort_order
@@ -214,8 +300,8 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Toggle favorite
    */
-  async function toggleFavorite(noteId) {
-    const note = notes.value.find(n => n.id === noteId) || currentNote.value
+  async function toggleFavorite(noteId: string): Promise<void> {
+    const note = notes.value.find((n: Note) => n.id === noteId) || currentNote.value
     if (!note) return
 
     try {
@@ -243,8 +329,8 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Toggle pin
    */
-  async function togglePin(noteId) {
-    const note = notes.value.find(n => n.id === noteId) || currentNote.value
+  async function togglePin(noteId: string): Promise<void> {
+    const note = notes.value.find((n: Note) => n.id === noteId) || currentNote.value
     if (!note) return
 
     try {
@@ -272,7 +358,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load recent notes
    */
-  async function fetchRecent(limit = 10) {
+  async function fetchRecent(limit: number = 10): Promise<Note[]> {
     try {
       const response = await api.get('/api/v1/notes/recent', { params: { limit } })
       recentNotes.value = response.data.data || []
@@ -286,7 +372,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load favorite notes
    */
-  async function fetchFavorites() {
+  async function fetchFavorites(): Promise<Note[]> {
     try {
       const response = await api.get('/api/v1/notes/favorites')
       favoriteNotes.value = response.data.data || []
@@ -300,7 +386,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load trashed notes
    */
-  async function fetchTrash() {
+  async function fetchTrash(): Promise<Note[]> {
     try {
       const response = await api.get('/api/v1/notes/trash')
       trashedNotes.value = response.data.data || []
@@ -314,10 +400,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Restore note from trash
    */
-  async function restoreNote(noteId) {
+  async function restoreNote(noteId: string): Promise<void> {
     try {
       await api.post(`/api/v1/notes/${noteId}/restore`)
-      trashedNotes.value = trashedNotes.value.filter(n => n.id !== noteId)
+      trashedNotes.value = trashedNotes.value.filter((n: Note) => n.id !== noteId)
       await fetchTree()
     } catch (error) {
       console.error('Error restoring note:', error)
@@ -328,10 +414,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Permanently delete note
    */
-  async function permanentDeleteNote(noteId) {
+  async function permanentDeleteNote(noteId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/notes/${noteId}/permanent`)
-      trashedNotes.value = trashedNotes.value.filter(n => n.id !== noteId)
+      trashedNotes.value = trashedNotes.value.filter((n: Note) => n.id !== noteId)
     } catch (error) {
       console.error('Error permanently deleting note:', error)
       throw error
@@ -341,7 +427,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Empty trash
    */
-  async function emptyTrash() {
+  async function emptyTrash(): Promise<void> {
     try {
       await api.delete('/api/v1/notes/trash')
       trashedNotes.value = []
@@ -354,7 +440,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Search notes
    */
-  async function search(query, limit = 20) {
+  async function search(query: string, limit: number = 20): Promise<Note[]> {
     try {
       const response = await api.get('/api/v1/notes/search', {
         params: { q: query, limit }
@@ -370,7 +456,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get search suggestions (for wiki links)
    */
-  async function getSuggestions(query) {
+  async function getSuggestions(query: string): Promise<NoteSuggestion[]> {
     try {
       const response = await api.get('/api/v1/notes/search/suggestions', {
         params: { q: query }
@@ -385,7 +471,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load templates
    */
-  async function fetchTemplates() {
+  async function fetchTemplates(): Promise<NoteTemplates> {
     try {
       const response = await api.get('/api/v1/notes/templates')
       templates.value = response.data.data || { system_templates: [], custom_templates: [], note_templates: [] }
@@ -399,17 +485,17 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get templates (alias)
    */
-  async function getTemplates() {
+  async function getTemplates(): Promise<NoteTemplates> {
     return fetchTemplates()
   }
 
   /**
    * Create note from template
    */
-  async function createFromTemplate(templateId, data = {}) {
+  async function createFromTemplate(templateId: string, data: Partial<Note> = {}): Promise<Note> {
     try {
       const response = await api.post(`/api/v1/notes/from-template/${templateId}`, data)
-      const newNote = response.data.data
+      const newNote: Note = response.data.data
       notes.value.unshift(newNote)
       await fetchTree()
       return newNote
@@ -422,10 +508,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Duplicate note
    */
-  async function duplicateNote(noteId) {
+  async function duplicateNote(noteId: string): Promise<Note> {
     try {
       const response = await api.post(`/api/v1/notes/${noteId}/duplicate`)
-      const newNote = response.data.data
+      const newNote: Note = response.data.data
       notes.value.unshift(newNote)
       await fetchTree()
       return newNote
@@ -438,7 +524,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get note versions
    */
-  async function fetchVersions(noteId) {
+  async function fetchVersions(noteId: string): Promise<NoteVersion[]> {
     try {
       const response = await api.get(`/api/v1/notes/${noteId}/versions`)
       return response.data.data || []
@@ -451,14 +537,14 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get note versions (alias)
    */
-  async function getVersions(noteId) {
+  async function getVersions(noteId: string): Promise<NoteVersion[]> {
     return fetchVersions(noteId)
   }
 
   /**
    * Get single version with content
    */
-  async function getVersion(noteId, versionId) {
+  async function getVersion(noteId: string, versionId: string): Promise<NoteVersion> {
     try {
       const response = await api.get(`/api/v1/notes/${noteId}/versions/${versionId}`)
       return response.data.data
@@ -471,7 +557,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Restore version
    */
-  async function restoreVersion(noteId, versionId) {
+  async function restoreVersion(noteId: string, versionId: string): Promise<unknown> {
     try {
       const response = await api.post(`/api/v1/notes/${noteId}/versions/${versionId}/restore`)
       // Reload current note
@@ -488,7 +574,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get backlinks
    */
-  async function fetchBacklinks(noteId) {
+  async function fetchBacklinks(noteId: string): Promise<Note[]> {
     try {
       const response = await api.get(`/api/v1/notes/${noteId}/backlinks`)
       return response.data.data || []
@@ -501,7 +587,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Load stats
    */
-  async function fetchStats() {
+  async function fetchStats(): Promise<NoteStats | null> {
     try {
       const response = await api.get('/api/v1/notes/stats')
       stats.value = response.data.data
@@ -515,7 +601,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get note by slug
    */
-  async function fetchNoteBySlug(slug) {
+  async function fetchNoteBySlug(slug: string): Promise<Note> {
     try {
       const response = await api.get(`/api/v1/notes/by-slug/${slug}`)
       return response.data.data
@@ -528,14 +614,14 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Clear current note
    */
-  function clearCurrentNote() {
+  function clearCurrentNote(): void {
     currentNote.value = null
   }
 
   /**
    * Initialize store (load initial data)
    */
-  async function initialize() {
+  async function initialize(): Promise<void> {
     await Promise.all([
       fetchTree(),
       fetchRecent(),
@@ -550,7 +636,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get tags for a note
    */
-  async function getTags(noteId) {
+  async function getTags(noteId: string): Promise<NoteTag[]> {
     try {
       const response = await api.get(`/api/v1/notes/${noteId}/tags`)
       return response.data.data || []
@@ -563,7 +649,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Add tags to a note
    */
-  async function addTags(noteId, tagIds) {
+  async function addTags(noteId: string, tagIds: string[]): Promise<void> {
     try {
       await api.post(`/api/v1/notes/${noteId}/tags`, { tag_ids: tagIds })
 
@@ -580,13 +666,13 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Remove tag from note
    */
-  async function removeTag(noteId, tagId) {
+  async function removeTag(noteId: string, tagId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/notes/${noteId}/tags/${tagId}`)
 
       // Update current note if applicable
       if (currentNote.value?.id === noteId && currentNote.value.tags) {
-        currentNote.value.tags = currentNote.value.tags.filter(t => t.id !== tagId)
+        currentNote.value.tags = currentNote.value.tags.filter((t: NoteTag) => t.id !== tagId)
       }
     } catch (error) {
       console.error('Error removing tag:', error)
@@ -601,7 +687,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Get share status for a note
    */
-  async function getShareStatus(noteId) {
+  async function getShareStatus(noteId: string): Promise<NoteShareStatus> {
     try {
       const response = await api.get(`/api/v1/notes/${noteId}/share/status`)
       return response.data.data
@@ -614,10 +700,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Share a note (generate/update public link)
    */
-  async function shareNote(noteId, settings = {}) {
+  async function shareNote(noteId: string, settings: ShareSettings = {}): Promise<ShareData> {
     try {
       const response = await api.post(`/api/v1/notes/${noteId}/share`, settings)
-      const shareData = response.data.data
+      const shareData: ShareData = response.data.data
 
       // Update current note if applicable
       if (currentNote.value?.id === noteId) {
@@ -636,7 +722,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Disable sharing for a note
    */
-  async function unshareNote(noteId) {
+  async function unshareNote(noteId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/notes/${noteId}/share`)
 
@@ -653,10 +739,10 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Regenerate share token for a note
    */
-  async function regenerateShareToken(noteId) {
+  async function regenerateShareToken(noteId: string): Promise<ShareData> {
     try {
       const response = await api.post(`/api/v1/notes/${noteId}/share/regenerate`)
-      const shareData = response.data.data
+      const shareData: ShareData = response.data.data
 
       // Update current note if applicable
       if (currentNote.value?.id === noteId) {

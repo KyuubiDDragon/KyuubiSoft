@@ -1,12 +1,54 @@
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import type { EditorView } from '@tiptap/pm/view'
+
+/**
+ * Cursor data for rendering remote cursors
+ */
+export interface CursorInfo {
+  userId: string
+  position: number
+  user?: {
+    name?: string
+    color?: string
+    [key: string]: unknown
+  }
+  color?: string
+}
+
+/**
+ * Selection data for rendering remote selections
+ */
+export interface SelectionInfo {
+  userId: string
+  from: number
+  to: number
+  user?: {
+    name?: string
+    color?: string
+    [key: string]: unknown
+  }
+  color?: string
+}
+
+/**
+ * Options for the CollaborationCursor extension
+ */
+export interface CollaborationCursorOptions {
+  getCursors: () => CursorInfo[]
+  getSelections: () => SelectionInfo[]
+  cursorWidth: number
+  selectionOpacity: number
+  updateInterval: number
+}
 
 /**
  * Collaboration Cursor Extension for TipTap
  * Renders remote user cursors and selections in the editor
  */
-export const CollaborationCursor = Extension.create({
+export const CollaborationCursor = Extension.create<CollaborationCursorOptions>({
   name: 'collaborationCursor',
 
   addOptions() {
@@ -39,11 +81,11 @@ export const CollaborationCursor = Extension.create({
         key: pluginKey,
 
         state: {
-          init() {
+          init(): DecorationSet {
             return DecorationSet.empty
           },
 
-          apply(tr, decorationSet, oldState, newState) {
+          apply(tr, decorationSet, oldState, newState): DecorationSet {
             // Map existing decorations through the transaction
             decorationSet = decorationSet.map(tr.mapping, tr.doc)
 
@@ -63,7 +105,7 @@ export const CollaborationCursor = Extension.create({
           },
         },
 
-        view(editorView) {
+        view(editorView: EditorView) {
           // Set up periodic updates
           const intervalId = setInterval(() => {
             if (!updateScheduled) {
@@ -91,8 +133,14 @@ export const CollaborationCursor = Extension.create({
 /**
  * Create decorations for cursors and selections
  */
-function createDecorations(doc, getCursors, getSelections, cursorWidth, selectionOpacity) {
-  const decorations = []
+function createDecorations(
+  doc: ProseMirrorNode,
+  getCursors: () => CursorInfo[],
+  getSelections: () => SelectionInfo[],
+  cursorWidth: number,
+  selectionOpacity: number
+): DecorationSet {
+  const decorations: Decoration[] = []
 
   // Add cursor decorations
   const cursors = getCursors()
@@ -173,7 +221,7 @@ function createDecorations(doc, getCursors, getSelections, cursorWidth, selectio
 /**
  * Convert hex color to rgba
  */
-function hexToRgba(hex, alpha) {
+function hexToRgba(hex: string, alpha: number): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   if (!result) return `rgba(99, 102, 241, ${alpha})`
 

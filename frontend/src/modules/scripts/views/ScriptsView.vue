@@ -69,7 +69,7 @@ async function loadScripts() {
 async function loadConnections() {
   try {
     const res = await api.get('/api/v1/connections')
-    connections.value = (res.data.data || []).filter(
+    connections.value = (res.data.data?.items || res.data.data || []).filter(
       c => c.type === 'ssh' || c.type === 'server'
     )
   } catch {

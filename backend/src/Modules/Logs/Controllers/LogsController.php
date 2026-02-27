@@ -135,7 +135,7 @@ class LogsController
         $userId = $request->getAttribute('user_id');
 
         $hosts = $this->db->fetchAllAssociative(
-            'SELECT id, name, connection_type, host FROM docker_hosts WHERE user_id = ? ORDER BY name',
+            'SELECT id, name, type, tcp_host, tcp_port FROM docker_hosts WHERE user_id = ? ORDER BY name',
             [$userId]
         );
 
@@ -233,11 +233,11 @@ class LogsController
 
     private function getDockerApiUrl(array $host): string
     {
-        if ($host['connection_type'] === 'socket') {
+        if ($host['type'] === 'socket') {
             return 'http://localhost';
         }
         $proto = ($host['tls_enabled'] ?? false) ? 'https' : 'http';
-        return "{$proto}://{$host['host']}:{$host['port']}";
+        return "{$proto}://{$host['tcp_host']}:{$host['tcp_port']}";
     }
 
     private function detectLevel(string $message): string

@@ -406,12 +406,61 @@ watch(activeTab, (newTab) => {
       <div class="card p-4">
         <p class="text-xs text-gray-400 mb-1">Memory</p>
         <p class="text-lg font-semibold text-white">{{ systemInfo.memory?.percent }}%</p>
+        <div class="w-full h-1.5 bg-dark-600 rounded-full mt-1.5 mb-1">
+          <div
+            class="h-full rounded-full transition-all"
+            :class="systemInfo.memory?.percent >= 90 ? 'bg-red-500' : systemInfo.memory?.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
+            :style="{ width: systemInfo.memory?.percent + '%' }"
+          ></div>
+        </div>
         <p class="text-xs text-gray-500">{{ systemInfo.memory?.used }} / {{ systemInfo.memory?.total }}</p>
       </div>
       <div class="card p-4">
-        <p class="text-xs text-gray-400 mb-1">Disk</p>
-        <p class="text-lg font-semibold text-white">{{ systemInfo.disk?.percent }}%</p>
-        <p class="text-xs text-gray-500">{{ systemInfo.disk?.used }} / {{ systemInfo.disk?.total }}</p>
+        <p class="text-xs text-gray-400 mb-1">CPU</p>
+        <p class="text-lg font-semibold text-white">{{ systemInfo.cpu?.percent ?? '–' }}%</p>
+        <div class="w-full h-1.5 bg-dark-600 rounded-full mt-1.5 mb-1">
+          <div
+            class="h-full rounded-full transition-all"
+            :class="systemInfo.cpu?.percent >= 90 ? 'bg-red-500' : systemInfo.cpu?.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
+            :style="{ width: (systemInfo.cpu?.percent ?? 0) + '%' }"
+          ></div>
+        </div>
+        <p class="text-xs text-gray-500">{{ systemInfo.cpu?.cores }} Kerne</p>
+      </div>
+
+      <!-- All Disks -->
+      <div v-if="systemInfo.disks?.length" class="col-span-2 sm:col-span-4 card p-4">
+        <p class="text-xs text-gray-400 mb-3">Festplatten</p>
+        <div class="space-y-2">
+          <div v-for="disk in systemInfo.disks" :key="disk.mount" class="flex items-center gap-3">
+            <span class="text-xs text-gray-400 w-28 truncate shrink-0 font-mono">{{ disk.mount }}</span>
+            <div class="flex-1 h-2 bg-dark-600 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all"
+                :class="disk.percent >= 90 ? 'bg-red-500' : disk.percent >= 70 ? 'bg-yellow-500' : 'bg-primary-500'"
+                :style="{ width: disk.percent + '%' }"
+              ></div>
+            </div>
+            <span class="text-xs text-white w-10 text-right shrink-0">{{ disk.percent }}%</span>
+            <span class="text-xs text-gray-500 w-36 text-right shrink-0 hidden sm:block">{{ disk.used }} / {{ disk.total }}</span>
+            <span class="text-xs text-gray-600 w-28 truncate shrink-0 font-mono hidden md:block">{{ disk.device }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Interfaces -->
+      <div v-if="systemInfo.network?.length" class="col-span-2 sm:col-span-4 card p-4">
+        <p class="text-xs text-gray-400 mb-3">Netzwerk</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div v-for="iface in systemInfo.network" :key="iface.name" class="bg-dark-800 rounded-lg px-3 py-2">
+            <p class="text-xs font-semibold text-white font-mono">{{ iface.name }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ iface.ip }}</p>
+            <div class="flex gap-3 mt-1 text-xs text-gray-500">
+              <span>↓ {{ iface.rx }}</span>
+              <span>↑ {{ iface.tx }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

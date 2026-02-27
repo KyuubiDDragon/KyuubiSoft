@@ -198,6 +198,16 @@ class FeatureService
                 'download_media' => ['full'],
             ],
         ],
+        'connections' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_CONNECTIONS',
+            'description' => 'Connection manager (SSH, database, API, etc.)',
+            'subFeatures' => [
+                'view' => ['full'],
+                'manage' => ['full'],
+            ],
+        ],
     ];
 
     private array $featureCache = [];

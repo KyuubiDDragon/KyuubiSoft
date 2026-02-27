@@ -9,6 +9,7 @@ export interface DnsDomain {
   name: string
   provider: string
   provider_config: Record<string, any> | null
+  external_zone_id: string | null
   notes: string | null
   record_count: number
   records?: DnsRecord[]
@@ -16,9 +17,18 @@ export interface DnsDomain {
   updated_at: string
 }
 
+export interface CloudflareZone {
+  id: string
+  name: string
+  status: string
+  name_servers: string[]
+  plan: string
+}
+
 export interface DnsRecord {
   id: string
   domain_id: string
+  external_id: string | null
   type: string
   name: string
   value: string
@@ -322,6 +332,86 @@ export const useDnsStore = defineStore('dns', () => {
     }
   }
 
+  // ==================== Cloudflare Actions ====================
+
+  async function verifyCloudflareToken(apiToken: string): Promise<boolean> {
+    try {
+      await api.post('/api/v1/dns/cloudflare/verify', { api_token: apiToken })
+      uiStore.showSuccess('Cloudflare-Token ist gueltig')
+      return true
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Token-Validierung fehlgeschlagen'
+      uiStore.showError(msg)
+      return false
+    }
+  }
+
+  async function listCloudflareZones(apiToken: string): Promise<CloudflareZone[]> {
+    try {
+      const response = await api.post('/api/v1/dns/cloudflare/zones', { api_token: apiToken })
+      return response.data.data?.items || []
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Fehler beim Laden der Cloudflare-Zonen'
+      uiStore.showError(msg)
+      return []
+    }
+  }
+
+  async function importCloudflareZone(apiToken: string, zoneId: string, zoneName: string): Promise<DnsDomain | null> {
+    try {
+      const response = await api.post('/api/v1/dns/cloudflare/import', {
+        api_token: apiToken,
+        zone_id: zoneId,
+        zone_name: zoneName,
+      })
+      const result = response.data.data
+      if (result?.domain) {
+        domains.value.push(result.domain)
+        uiStore.showSuccess(`${result.imported_count} Records von Cloudflare importiert`)
+        return result.domain
+      }
+      return null
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Cloudflare-Import fehlgeschlagen'
+      uiStore.showError(msg)
+      return null
+    }
+  }
+
+  async function syncProvider(domainId: string): Promise<{ added: number; updated: number } | null> {
+    try {
+      const response = await api.post(`/api/v1/dns/domains/${domainId}/sync-provider`)
+      const result = response.data.data
+      uiStore.showSuccess(response.data.message || 'Sync abgeschlossen')
+      // Refresh records
+      await fetchDomain(domainId)
+      return result
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Sync fehlgeschlagen'
+      uiStore.showError(msg)
+      return null
+    }
+  }
+
+  async function pushProvider(domainId: string): Promise<{ created: number; updated: number; errors: string[] } | null> {
+    try {
+      const response = await api.post(`/api/v1/dns/domains/${domainId}/push-provider`)
+      const result = response.data.data
+      if (result.errors?.length > 0) {
+        uiStore.showError(`${result.errors.length} Fehler beim Push`)
+      } else {
+        uiStore.showSuccess(response.data.message || 'Push abgeschlossen')
+      }
+      // Refresh records to get updated external_ids
+      await fetchDomain(domainId)
+      return result
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Push fehlgeschlagen'
+      uiStore.showError(msg)
+      return null
+    }
+  }
+
   return {
     // State
     domains,
@@ -342,5 +432,12 @@ export const useDnsStore = defineStore('dns', () => {
     checkPropagation,
     exportZone,
     importZone,
+
+    // Cloudflare
+    verifyCloudflareToken,
+    listCloudflareZones,
+    importCloudflareZone,
+    syncProvider,
+    pushProvider,
   }
 })

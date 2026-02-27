@@ -72,6 +72,93 @@ class GitProviderService
         };
     }
 
+    /**
+     * Discover all repositories accessible to the user via their API token.
+     *
+     * @return array<int, array{name: string, full_name: string, description: ?string, html_url: string, private: bool, stars: int, forks: int, language: ?string, updated_at: string}>
+     */
+    public function discoverUserRepositories(string $provider, string $token): array
+    {
+        return match ($provider) {
+            'github' => $this->discoverGitHubRepos($token),
+            'gitlab' => $this->discoverGitLabRepos($token),
+            default => [],
+        };
+    }
+
+    private function discoverGitHubRepos(string $token): array
+    {
+        $repos = [];
+        $page  = 1;
+
+        do {
+            $response = $this->makeGitHubRequest(
+                "/user/repos?per_page=100&sort=updated&type=all&page={$page}",
+                $token
+            );
+
+            if (!$response || !is_array($response) || empty($response)) {
+                break;
+            }
+
+            foreach ($response as $repo) {
+                $repos[] = [
+                    'name'        => $repo['name'],
+                    'full_name'   => $repo['full_name'],
+                    'description' => $repo['description'],
+                    'html_url'    => $repo['html_url'],
+                    'private'     => $repo['private'] ?? false,
+                    'stars'       => $repo['stargazers_count'] ?? 0,
+                    'forks'       => $repo['forks_count'] ?? 0,
+                    'language'    => $repo['language'],
+                    'updated_at'  => $repo['updated_at'],
+                    'default_branch' => $repo['default_branch'] ?? 'main',
+                ];
+            }
+
+            $page++;
+            // Safety limit: max 5 pages (500 repos)
+        } while (count($response) === 100 && $page <= 5);
+
+        return $repos;
+    }
+
+    private function discoverGitLabRepos(string $token): array
+    {
+        $repos = [];
+        $page  = 1;
+
+        do {
+            $response = $this->makeGitLabRequest(
+                self::GITLAB_API . "/projects?membership=true&per_page=100&order_by=updated_at&page={$page}",
+                $token
+            );
+
+            if (!$response || !is_array($response) || empty($response)) {
+                break;
+            }
+
+            foreach ($response as $project) {
+                $repos[] = [
+                    'name'        => $project['name'],
+                    'full_name'   => $project['path_with_namespace'],
+                    'description' => $project['description'],
+                    'html_url'    => $project['web_url'],
+                    'private'     => ($project['visibility'] ?? 'private') !== 'public',
+                    'stars'       => $project['star_count'] ?? 0,
+                    'forks'       => $project['forks_count'] ?? 0,
+                    'language'    => null,
+                    'updated_at'  => $project['last_activity_at'] ?? $project['updated_at'] ?? '',
+                    'default_branch' => $project['default_branch'] ?? 'main',
+                ];
+            }
+
+            $page++;
+        } while (count($response) === 100 && $page <= 5);
+
+        return $repos;
+    }
+
     // ==================== GitHub Methods ====================
 
     private function fetchGitHubRepo(array $repository): ?array

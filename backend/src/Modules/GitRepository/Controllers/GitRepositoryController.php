@@ -414,6 +414,111 @@ class GitRepositoryController
         return JsonResponse::success($stats);
     }
 
+    /**
+     * Discover repositories from a user's provider account.
+     * POST /git/repositories/discover
+     */
+    public function discover(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+
+        $provider = trim((string) ($data['provider'] ?? ''));
+        $apiToken = trim((string) ($data['api_token'] ?? ''));
+
+        if ($provider === '' || $apiToken === '') {
+            return JsonResponse::error('Provider und API-Token sind erforderlich', 400);
+        }
+
+        if (!in_array($provider, ['github', 'gitlab'], true)) {
+            return JsonResponse::error('Nur GitHub und GitLab werden unterstuetzt', 400);
+        }
+
+        try {
+            $repos = $this->gitProvider->discoverUserRepositories($provider, $apiToken);
+
+            // Mark which repos are already imported
+            $existingUrls = $this->db->fetchFirstColumn(
+                'SELECT repo_url FROM git_repositories WHERE user_id = ?',
+                [$userId]
+            );
+
+            $existingUrlsLower = array_map('strtolower', $existingUrls);
+
+            foreach ($repos as &$repo) {
+                $repo['already_imported'] = in_array(strtolower($repo['html_url']), $existingUrlsLower, true);
+            }
+
+            return JsonResponse::success(['items' => $repos, 'total' => count($repos)]);
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Fehler beim Laden der Repositories: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Bulk import selected repositories.
+     * POST /git/repositories/import-bulk
+     */
+    public function importBulk(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+
+        $provider   = trim((string) ($data['provider'] ?? ''));
+        $apiToken   = trim((string) ($data['api_token'] ?? ''));
+        $folderId   = !empty($data['folder_id']) ? $data['folder_id'] : null;
+        $repositories = $data['repositories'] ?? [];
+
+        if ($provider === '' || $apiToken === '') {
+            return JsonResponse::error('Provider und API-Token sind erforderlich', 400);
+        }
+
+        if (empty($repositories) || !is_array($repositories)) {
+            return JsonResponse::error('Keine Repositories ausgewaehlt', 400);
+        }
+
+        // Get already imported URLs to skip duplicates
+        $existingUrls = $this->db->fetchFirstColumn(
+            'SELECT LOWER(repo_url) FROM git_repositories WHERE user_id = ?',
+            [$userId]
+        );
+        $existingUrlsSet = array_flip($existingUrls);
+
+        $imported = 0;
+
+        foreach ($repositories as $repo) {
+            $repoUrl = $repo['html_url'] ?? $repo['repo_url'] ?? '';
+            if ($repoUrl === '' || isset($existingUrlsSet[strtolower($repoUrl)])) {
+                continue;
+            }
+
+            $id = Uuid::uuid4()->toString();
+
+            $this->db->insert('git_repositories', [
+                'id'          => $id,
+                'user_id'     => $userId,
+                'folder_id'   => $folderId,
+                'name'        => $repo['name'] ?? basename($repoUrl),
+                'description' => $repo['description'] ?? null,
+                'provider'    => $provider,
+                'repo_url'    => $repoUrl,
+                'api_token'   => $apiToken,
+                'default_branch' => $repo['default_branch'] ?? 'main',
+                'is_private'  => !empty($repo['private']) ? 1 : 0,
+                'is_active'   => 1,
+                'auto_sync'   => 1,
+                'sync_interval' => 300,
+            ]);
+
+            $imported++;
+        }
+
+        return JsonResponse::success([
+            'imported_count' => $imported,
+            'total_requested' => count($repositories),
+        ], "{$imported} Repositories importiert");
+    }
+
     // ==================== Folder Methods ====================
 
     /**

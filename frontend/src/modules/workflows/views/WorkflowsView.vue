@@ -295,9 +295,9 @@ function getStatusIcon(status) {
     <!-- Loading -->
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
-        <div class="h-5 bg-dark-600 rounded w-1/2 mb-4"></div>
-        <div class="h-4 bg-dark-600 rounded w-full mb-2"></div>
-        <div class="h-4 bg-dark-600 rounded w-3/4"></div>
+        <div class="h-5 bg-white/[0.08] rounded w-1/2 mb-4"></div>
+        <div class="h-4 bg-white/[0.08] rounded w-full mb-2"></div>
+        <div class="h-4 bg-white/[0.08] rounded w-3/4"></div>
       </div>
     </div>
 
@@ -344,7 +344,7 @@ function getStatusIcon(status) {
           <button
             @click="toggleWorkflow(workflow)"
             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-            :class="workflow.is_enabled ? 'bg-green-600' : 'bg-dark-600'"
+            :class="workflow.is_enabled ? 'bg-green-600' : 'bg-white/[0.08]'"
           >
             <span
               class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -362,11 +362,11 @@ function getStatusIcon(status) {
           <span
             v-for="action in workflow.actions.slice(0, 3)"
             :key="action.id"
-            class="px-2 py-1 rounded text-xs bg-dark-700 text-gray-400"
+            class="px-2 py-1 rounded text-xs bg-white/[0.04] text-gray-400"
           >
             {{ getActionLabel(action.action_type) }}
           </span>
-          <span v-if="workflow.actions.length > 3" class="px-2 py-1 rounded text-xs bg-dark-700 text-gray-500">
+          <span v-if="workflow.actions.length > 3" class="px-2 py-1 rounded text-xs bg-white/[0.04] text-gray-500">
             +{{ workflow.actions.length - 3 }}
           </span>
         </div>
@@ -380,12 +380,12 @@ function getStatusIcon(status) {
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center justify-between pt-4 border-t border-dark-700">
+        <div class="flex items-center justify-between pt-4 border-t border-white/[0.06]">
           <div class="flex items-center gap-2">
             <button
               @click="executeWorkflow(workflow)"
               :disabled="isExecuting[workflow.id]"
-              class="p-2 rounded-lg hover:bg-dark-700 text-green-400 transition-colors"
+              class="p-2 rounded-lg hover:bg-white/[0.04] text-green-400 transition-colors"
               title="Ausführen"
             >
               <PlayIcon v-if="!isExecuting[workflow.id]" class="w-4 h-4" />
@@ -396,7 +396,7 @@ function getStatusIcon(status) {
             </button>
             <button
               @click="showHistory(workflow)"
-              class="p-2 rounded-lg hover:bg-dark-700 text-gray-400 transition-colors"
+              class="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"
               title="Historie"
             >
               <ClockIcon class="w-4 h-4" />
@@ -405,14 +405,14 @@ function getStatusIcon(status) {
           <div class="flex items-center gap-2">
             <button
               @click="editWorkflow(workflow)"
-              class="p-2 rounded-lg hover:bg-dark-700 text-gray-400 transition-colors"
+              class="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"
               title="Bearbeiten"
             >
               <PencilSquareIcon class="w-4 h-4" />
             </button>
             <button
               @click="deleteWorkflow(workflow)"
-              class="p-2 rounded-lg hover:bg-dark-700 text-red-400 transition-colors"
+              class="p-2 rounded-lg hover:bg-white/[0.04] text-red-400 transition-colors"
               title="Löschen"
             >
               <TrashIcon class="w-4 h-4" />
@@ -434,10 +434,10 @@ function getStatusIcon(status) {
       >
         <div
           v-if="showCreateModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700 sticky top-0 bg-dark-800">
+          <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] sticky top-0 bg-white/[0.03]">
               <h3 class="text-lg font-semibold text-white">
                 {{ editMode ? 'Workflow bearbeiten' : 'Neuer Workflow' }}
               </h3>
@@ -500,7 +500,7 @@ function getStatusIcon(status) {
                   </button>
                 </div>
 
-                <div v-if="workflowForm.actions.length === 0" class="text-center py-8 bg-dark-700/30 rounded-lg">
+                <div v-if="workflowForm.actions.length === 0" class="text-center py-8 bg-white/[0.03] rounded-lg">
                   <p class="text-gray-500">Keine Aktionen definiert</p>
                   <button @click="addAction" class="text-sm text-primary-400 hover:text-primary-300 mt-2">
                     Erste Aktion hinzufügen
@@ -511,7 +511,7 @@ function getStatusIcon(status) {
                   <div
                     v-for="(action, index) in workflowForm.actions"
                     :key="index"
-                    class="p-4 bg-dark-700/30 rounded-lg"
+                    class="p-4 bg-white/[0.03] rounded-lg"
                   >
                     <div class="flex items-center justify-between mb-3">
                       <span class="text-xs text-gray-500">Aktion {{ index + 1 }}</span>
@@ -560,7 +560,7 @@ function getStatusIcon(status) {
               </div>
             </div>
 
-            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-dark-700">
+            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
               <button @click="showCreateModal = false" class="btn-secondary">
                 Abbrechen
               </button>
@@ -585,10 +585,10 @@ function getStatusIcon(status) {
       >
         <div
           v-if="showTemplatesModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">Workflow-Vorlagen</h3>
               <button @click="showTemplatesModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -599,7 +599,7 @@ function getStatusIcon(status) {
               <div
                 v-for="template in templates"
                 :key="template.id"
-                class="p-4 bg-dark-700/50 rounded-lg hover:bg-dark-700 transition-colors"
+                class="p-4 bg-white/[0.04] rounded-lg hover:bg-white/[0.04] transition-colors"
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
@@ -642,10 +642,10 @@ function getStatusIcon(status) {
       >
         <div
           v-if="showHistoryModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
                 Ausführungs-Historie: {{ selectedWorkflow?.name }}
               </h3>
@@ -664,7 +664,7 @@ function getStatusIcon(status) {
                 <div
                   v-for="run in runHistory"
                   :key="run.id"
-                  class="flex items-center justify-between p-4 bg-dark-700/50 rounded-lg"
+                  class="flex items-center justify-between p-4 bg-white/[0.04] rounded-lg"
                 >
                   <div class="flex items-center gap-3">
                     <div

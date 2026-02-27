@@ -209,7 +209,7 @@ onMounted(() => {
       </div>
       <button
         @click="openModal()"
-        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
+        class="btn-primary flex items-center gap-2"
       >
         <PlusIcon class="w-5 h-5" />
         <span>Neuer Webhook</span>
@@ -226,7 +226,7 @@ onMounted(() => {
       <div
         v-for="webhook in webhooks"
         :key="webhook.id"
-        class="bg-dark-800 border border-dark-700 rounded-xl p-4"
+        class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4"
       >
         <div class="flex items-start justify-between">
           <div class="flex items-start gap-4">
@@ -248,7 +248,7 @@ onMounted(() => {
                 <span
                   v-for="event in webhook.events"
                   :key="event"
-                  class="px-2 py-0.5 bg-dark-700 text-gray-300 text-xs rounded"
+                  class="px-2 py-0.5 bg-white/[0.04] text-gray-300 text-xs rounded"
                 >
                   {{ event }}
                 </span>
@@ -273,7 +273,7 @@ onMounted(() => {
             <button
               @click="testWebhook(webhook)"
               :disabled="testing === webhook.id"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors disabled:opacity-50"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors disabled:opacity-50"
               title="Test senden"
             >
               <BeakerIcon v-if="testing !== webhook.id" class="w-5 h-5" />
@@ -281,20 +281,20 @@ onMounted(() => {
             </button>
             <button
               @click="toggleActive(webhook)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               :title="webhook.is_active ? 'Deaktivieren' : 'Aktivieren'"
             >
               <BellIcon class="w-5 h-5" :class="{ 'text-green-400': webhook.is_active }" />
             </button>
             <button
               @click="openModal(webhook)"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
             >
               <PencilIcon class="w-5 h-5" />
             </button>
             <button
               @click="deleteWebhook(webhook)"
-              class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
             >
               <TrashIcon class="w-5 h-5" />
             </button>
@@ -305,13 +305,13 @@ onMounted(() => {
       <!-- Empty state -->
       <div
         v-if="webhooks.length === 0"
-        class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 text-center"
+        class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 text-center"
       >
         <LinkIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
         <p class="text-gray-400">Keine Webhooks eingerichtet</p>
         <button
           @click="openModal()"
-          class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+          class="btn-primary mt-4"
         >
           Webhook erstellen
         </button>
@@ -322,11 +322,11 @@ onMounted(() => {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingWebhook ? 'Webhook bearbeiten' : 'Neuer Webhook' }}
             </h2>
@@ -341,7 +341,7 @@ onMounted(() => {
               <input
                 v-model="form.name"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input w-full"
                 placeholder="Mein Discord Webhook"
               />
             </div>
@@ -356,7 +356,7 @@ onMounted(() => {
                   class="flex-1 px-3 py-2 rounded-lg border transition-colors"
                   :class="form.type === type.value
                     ? 'bg-primary-600 border-primary-500 text-white'
-                    : 'bg-dark-700 border-dark-600 text-gray-300 hover:border-dark-500'"
+                    : 'bg-white/[0.04] border-white/[0.06] text-gray-300 hover:border-white/[0.08]'"
                 >
                   <span class="mr-1">{{ type.icon }}</span>
                   {{ type.label }}
@@ -369,7 +369,7 @@ onMounted(() => {
               <input
                 v-model="form.url"
                 type="url"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 font-mono text-sm"
+                class="input w-full font-mono text-sm"
                 placeholder="https://discord.com/api/webhooks/..."
               />
             </div>
@@ -379,7 +379,7 @@ onMounted(() => {
               <input
                 v-model="form.secret"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input w-full"
                 placeholder="HMAC Secret für Signatur"
               />
               <p class="text-xs text-gray-500 mt-1">Wird für X-Signature Header verwendet</p>
@@ -398,7 +398,7 @@ onMounted(() => {
                       class="px-3 py-1 text-sm rounded-lg border transition-colors"
                       :class="form.events.includes(event.value)
                         ? 'bg-primary-600 border-primary-500 text-white'
-                        : 'bg-dark-700 border-dark-600 text-gray-300 hover:border-dark-500'"
+                        : 'bg-white/[0.04] border-white/[0.06] text-gray-300 hover:border-white/[0.08]'"
                     >
                       {{ event.label }}
                     </button>
@@ -408,7 +408,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="showModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -417,7 +417,7 @@ onMounted(() => {
             </button>
             <button
               @click="saveWebhook"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              class="btn-primary"
             >
               {{ editingWebhook ? 'Speichern' : 'Erstellen' }}
             </button>

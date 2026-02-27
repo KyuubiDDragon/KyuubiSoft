@@ -201,11 +201,11 @@ function toggleParticipant(userId) {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-64px)] flex bg-dark-900 -m-4 lg:-m-6">
+  <div class="h-[calc(100vh-64px)] flex bg-white/[0.02] -m-4 lg:-m-6">
     <!-- Sidebar: Room List -->
-    <div class="w-80 bg-dark-800 border-r border-dark-600 flex flex-col">
+    <div class="w-80 bg-white/[0.04] border-r border-white/[0.06] flex flex-col">
       <!-- Header -->
-      <div class="p-4 border-b border-dark-600">
+      <div class="p-4 border-b border-white/[0.06]">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <ChatBubbleLeftRightIcon class="w-6 h-6 text-primary-400" />
@@ -214,14 +214,14 @@ function toggleParticipant(userId) {
           <div class="flex items-center gap-1">
             <button
               @click="showNewDMModal = true"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               title="Neue Direktnachricht"
             >
               <UserIcon class="w-5 h-5" />
             </button>
             <button
               @click="showNewRoomModal = true"
-              class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
               title="Neuer Raum"
             >
               <PlusIcon class="w-5 h-5" />
@@ -236,7 +236,7 @@ function toggleParticipant(userId) {
             v-model="searchQuery"
             type="text"
             placeholder="Suchen..."
-            class="w-full pl-9 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+            class="input w-full pl-9 pr-4 py-2 text-sm"
           />
         </div>
       </div>
@@ -256,10 +256,10 @@ function toggleParticipant(userId) {
             v-for="room in filteredRooms"
             :key="room.id"
             @click="selectRoom(room)"
-            class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-dark-700 transition-colors"
-            :class="{ 'bg-dark-700': chatStore.currentRoom?.id === room.id }"
+            class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.04] transition-colors"
+            :class="{ 'bg-white/[0.04]': chatStore.currentRoom?.id === room.id }"
           >
-            <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center">
               <component :is="getRoomIcon(room)" class="w-5 h-5 text-gray-400" />
             </div>
             <div class="flex-1 min-w-0">
@@ -290,7 +290,7 @@ function toggleParticipant(userId) {
       <!-- Chat Content -->
       <template v-else>
         <!-- Chat Header -->
-        <div class="px-6 py-4 border-b border-dark-600 flex items-center justify-between">
+        <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
           <div class="flex items-center gap-3">
             <button
               @click="chatStore.selectRoom(null)"
@@ -298,7 +298,7 @@ function toggleParticipant(userId) {
             >
               <ArrowLeftIcon class="w-5 h-5" />
             </button>
-            <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center">
               <component :is="getRoomIcon(chatStore.currentRoom)" class="w-5 h-5 text-gray-400" />
             </div>
             <div>
@@ -333,7 +333,7 @@ function toggleParticipant(userId) {
             class="flex gap-3"
             :class="{ 'flex-row-reverse': message.user_id === currentUserId }"
           >
-            <div class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0">
               <UserIcon class="w-4 h-4 text-gray-400" />
             </div>
 
@@ -351,7 +351,7 @@ function toggleParticipant(userId) {
               <div
                 v-if="editingMessage !== message.id"
                 class="rounded-lg px-4 py-2"
-                :class="message.user_id === currentUserId ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-200'"
+                :class="message.user_id === currentUserId ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-200'"
               >
                 <p class="whitespace-pre-wrap">{{ message.content }}</p>
               </div>
@@ -362,7 +362,7 @@ function toggleParticipant(userId) {
                   v-model="editContent"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
-                  class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                  class="input flex-1"
                   autofocus
                 />
                 <button @click="saveEdit" class="text-green-400 hover:text-green-300">
@@ -380,7 +380,7 @@ function toggleParticipant(userId) {
                 <span
                   v-for="(count, emoji) in message.reactions"
                   :key="emoji"
-                  class="px-2 py-0.5 bg-dark-600 rounded-full text-xs"
+                  class="px-2 py-0.5 bg-white/[0.08] rounded-full text-xs"
                 >
                   {{ emoji }} {{ count }}
                 </span>
@@ -401,7 +401,7 @@ function toggleParticipant(userId) {
                   <!-- Emoji Picker -->
                   <div
                     v-if="showEmojiPicker === message.id"
-                    class="absolute bottom-full left-0 mb-1 p-2 bg-dark-700 rounded-lg shadow-lg flex gap-1 z-10"
+                    class="absolute bottom-full left-0 mb-1 p-2 bg-white/[0.04] rounded-lg shadow-glass flex gap-1 z-10"
                   >
                     <button
                       v-for="emoji in emojis"
@@ -438,7 +438,7 @@ function toggleParticipant(userId) {
         </div>
 
         <!-- Input -->
-        <div class="p-4 border-t border-dark-600">
+        <div class="p-4 border-t border-white/[0.06]">
           <div class="flex items-center gap-3">
             <input
               v-model="messageInput"
@@ -446,12 +446,12 @@ function toggleParticipant(userId) {
               @input="handleTyping"
               type="text"
               placeholder="Nachricht schreiben..."
-              class="flex-1 px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              class="input flex-1"
             />
             <button
               @click="sendMessage"
               :disabled="!messageInput.trim()"
-              class="p-3 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-lg transition-colors"
+              class="btn-primary p-3"
             >
               <PaperAirplaneIcon class="w-5 h-5 text-white" />
             </button>
@@ -463,8 +463,8 @@ function toggleParticipant(userId) {
     <!-- New Room Modal -->
     <Teleport to="body">
       <div v-if="showNewRoomModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showNewRoomModal = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 p-6 w-full max-w-md">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showNewRoomModal = false"></div>
+        <div class="relative modal p-6 w-full max-w-md">
           <h3 class="text-lg font-semibold text-white mb-4">Neuen Raum erstellen</h3>
 
           <div class="space-y-4">
@@ -473,7 +473,7 @@ function toggleParticipant(userId) {
               <input
                 v-model="newRoomForm.name"
                 type="text"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white"
+                class="input w-full"
                 placeholder="Raumname"
               />
             </div>
@@ -483,7 +483,7 @@ function toggleParticipant(userId) {
               <textarea
                 v-model="newRoomForm.description"
                 rows="2"
-                class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white resize-none"
+                class="textarea w-full resize-none"
                 placeholder="Optional"
               ></textarea>
             </div>
@@ -494,13 +494,13 @@ function toggleParticipant(userId) {
                 <label
                   v-for="user in chatStore.availableUsers"
                   :key="user.id"
-                  class="flex items-center gap-2 p-2 hover:bg-dark-700 rounded cursor-pointer"
+                  class="flex items-center gap-2 p-2 hover:bg-white/[0.04] rounded cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     :checked="newRoomForm.participants.includes(user.id)"
                     @change="toggleParticipant(user.id)"
-                    class="rounded bg-dark-600 border-dark-500 text-primary-600"
+                    class="rounded bg-white/[0.08] border-white/[0.08] text-primary-600"
                   />
                   <span class="text-gray-300">{{ user.username }}</span>
                 </label>
@@ -511,14 +511,14 @@ function toggleParticipant(userId) {
           <div class="flex justify-end gap-2 mt-6">
             <button
               @click="showNewRoomModal = false"
-              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white"
+              class="btn-secondary"
             >
               Abbrechen
             </button>
             <button
               @click="createRoom"
               :disabled="!newRoomForm.name.trim()"
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-lg text-white"
+              class="btn-primary"
             >
               Erstellen
             </button>
@@ -530,8 +530,8 @@ function toggleParticipant(userId) {
     <!-- New DM Modal -->
     <Teleport to="body">
       <div v-if="showNewDMModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showNewDMModal = false"></div>
-        <div class="relative bg-dark-800 rounded-xl border border-dark-600 p-6 w-full max-w-md">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showNewDMModal = false"></div>
+        <div class="relative modal p-6 w-full max-w-md">
           <h3 class="text-lg font-semibold text-white mb-4">Neue Direktnachricht</h3>
 
           <div class="space-y-1 max-h-80 overflow-y-auto">
@@ -539,9 +539,9 @@ function toggleParticipant(userId) {
               v-for="user in chatStore.availableUsers"
               :key="user.id"
               @click="startDM(user.id)"
-              class="flex items-center gap-3 p-3 hover:bg-dark-700 rounded-lg cursor-pointer"
+              class="flex items-center gap-3 p-3 hover:bg-white/[0.04] rounded-lg cursor-pointer"
             >
-              <div class="w-10 h-10 rounded-full bg-dark-600 flex items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center">
                 <UserIcon class="w-5 h-5 text-gray-400" />
               </div>
               <div>
@@ -554,7 +554,7 @@ function toggleParticipant(userId) {
           <div class="flex justify-end mt-4">
             <button
               @click="showNewDMModal = false"
-              class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-white"
+              class="btn-secondary"
             >
               Abbrechen
             </button>

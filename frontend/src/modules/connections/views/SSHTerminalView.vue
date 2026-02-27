@@ -244,7 +244,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-3">
           <button
             @click="router.push('/connections')"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <ArrowLeftIcon class="w-5 h-5" />
           </button>
@@ -287,7 +287,7 @@ onUnmounted(() => {
           <button
             v-if="wsStatus !== 'connecting'"
             @click="reconnect"
-            class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
             title="Neu verbinden"
           >
             <ArrowPathIcon class="w-4 h-4" />
@@ -296,7 +296,7 @@ onUnmounted(() => {
           <button
             v-if="wsStatus === 'connected'"
             @click="disconnect"
-            class="p-2 text-gray-400 hover:text-red-400 hover:bg-dark-700 rounded-lg transition-colors"
+            class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
             title="Trennen"
           >
             <XMarkIcon class="w-4 h-4" />
@@ -316,7 +316,7 @@ onUnmounted(() => {
       <!-- xterm.js terminal — fills available height -->
       <div
         ref="terminalEl"
-        class="flex-1 min-h-0 rounded-xl overflow-hidden border border-dark-700 cursor-text"
+        class="flex-1 min-h-0 rounded-xl overflow-hidden border border-white/[0.06] cursor-text"
         style="background: #0d1117;"
       ></div>
     </template>

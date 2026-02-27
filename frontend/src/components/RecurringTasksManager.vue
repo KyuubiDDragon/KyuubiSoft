@@ -260,21 +260,21 @@ function getDaysUntil(dateStr) {
       <button
         @click="filterActive = 'all'"
         class="px-4 py-2 rounded-lg text-sm transition-colors"
-        :class="filterActive === 'all' ? 'bg-primary-600 text-white' : 'bg-dark-700 text-gray-400 hover:bg-dark-600'"
+        :class="filterActive === 'all' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.06]'"
       >
         Alle ({{ store.tasks.length }})
       </button>
       <button
         @click="filterActive = 'active'"
         class="px-4 py-2 rounded-lg text-sm transition-colors"
-        :class="filterActive === 'active' ? 'bg-green-600 text-white' : 'bg-dark-700 text-gray-400 hover:bg-dark-600'"
+        :class="filterActive === 'active' ? 'bg-green-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.06]'"
       >
         Aktiv ({{ store.activeTasks.length }})
       </button>
       <button
         @click="filterActive = 'inactive'"
         class="px-4 py-2 rounded-lg text-sm transition-colors"
-        :class="filterActive === 'inactive' ? 'bg-gray-600 text-white' : 'bg-dark-700 text-gray-400 hover:bg-dark-600'"
+        :class="filterActive === 'inactive' ? 'bg-gray-600 text-white' : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.06]'"
       >
         Pausiert ({{ store.inactiveTasks.length }})
       </button>
@@ -419,9 +419,9 @@ function getDaysUntil(dateStr) {
     <!-- Create/Edit Modal -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50" @click="showModal = false" />
-        <div class="relative bg-dark-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          <div class="sticky top-0 bg-dark-800 px-6 py-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false" />
+        <div class="relative modal max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div class="sticky top-0 bg-dark-900/95 backdrop-blur-xl px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <h3 class="text-lg font-semibold text-white">
               {{ isEditing ? 'Aufgabe bearbeiten' : 'Neue wiederkehrende Aufgabe' }}
             </h3>
@@ -473,7 +473,7 @@ function getDaysUntil(dateStr) {
                   class="w-10 h-10 rounded-lg text-sm font-medium transition-colors"
                   :class="form.days_of_week.includes(day.value)
                     ? 'bg-primary-600 text-white'
-                    : 'bg-dark-700 text-gray-400 hover:bg-dark-600'"
+                    : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.06]'"
                 >
                   {{ day.label }}
                 </button>
@@ -510,7 +510,7 @@ function getDaysUntil(dateStr) {
             </div>
           </div>
 
-          <div class="sticky bottom-0 bg-dark-800 px-6 py-4 border-t border-dark-700 flex justify-end gap-3">
+          <div class="sticky bottom-0 bg-dark-900/95 backdrop-blur-xl px-6 py-4 border-t border-white/[0.06] flex justify-end gap-3">
             <button @click="showModal = false" class="btn-secondary">Abbrechen</button>
             <button @click="saveTask" class="btn-primary">
               <CheckIcon class="w-5 h-5 mr-2" />
@@ -524,9 +524,9 @@ function getDaysUntil(dateStr) {
     <!-- Instances Modal -->
     <Teleport to="body">
       <div v-if="showInstancesModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50" @click="showInstancesModal = false" />
-        <div class="relative bg-dark-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          <div class="sticky top-0 bg-dark-800 px-6 py-4 border-b border-dark-700 flex items-center justify-between">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showInstancesModal = false" />
+        <div class="relative modal max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div class="sticky top-0 bg-dark-900/95 backdrop-blur-xl px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <h3 class="text-lg font-semibold text-white">Ausführungs-Historie</h3>
             <button @click="showInstancesModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -547,7 +547,7 @@ function getDaysUntil(dateStr) {
               <div
                 v-for="instance in instances"
                 :key="instance.id"
-                class="bg-dark-700/50 rounded-lg p-3 flex items-center justify-between"
+                class="bg-white/[0.03] rounded-xl p-3 flex items-center justify-between"
               >
                 <div>
                   <p class="text-white text-sm">{{ formatDateTime(instance.created_at) }}</p>

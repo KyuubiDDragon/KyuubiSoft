@@ -295,7 +295,7 @@ watch(runningEntry, (val) => {
 <template>
   <div class="space-y-6">
     <!-- Header with Timer -->
-    <div class="bg-dark-800 border border-dark-700 rounded-xl p-6">
+    <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
       <div v-if="runningEntry" class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
@@ -326,13 +326,13 @@ watch(runningEntry, (val) => {
         <input
           v-model="quickForm.task_name"
           type="text"
-          class="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+          class="input flex-1"
           placeholder="Was arbeitest du gerade?"
           @keyup.enter="startTimer"
         />
         <select
           v-model="quickForm.project_id"
-          class="bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary-500"
+          class="select"
         >
           <option :value="null">Kein Projekt</option>
           <option v-for="project in projects" :key="project.id" :value="project.id">
@@ -347,7 +347,7 @@ watch(runningEntry, (val) => {
         </button>
         <button
           @click="openModal()"
-          class="p-3 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+          class="p-3 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors"
           title="Manueller Eintrag"
         >
           <PlusIcon class="w-6 h-6" />
@@ -357,7 +357,7 @@ watch(runningEntry, (val) => {
 
     <!-- Stats -->
     <div v-if="stats" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
             <ClockIcon class="w-5 h-5 text-blue-400" />
@@ -368,7 +368,7 @@ watch(runningEntry, (val) => {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
             <CurrencyEuroIcon class="w-5 h-5 text-green-400" />
@@ -379,7 +379,7 @@ watch(runningEntry, (val) => {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
             <ChartBarIcon class="w-5 h-5 text-purple-400" />
@@ -390,7 +390,7 @@ watch(runningEntry, (val) => {
           </div>
         </div>
       </div>
-      <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
             <CurrencyEuroIcon class="w-5 h-5 text-yellow-400" />
@@ -408,7 +408,7 @@ watch(runningEntry, (val) => {
       <select
         v-model="filterProjectId"
         @change="fetchData"
-        class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+        class="select"
       >
         <option value="">Alle Projekte</option>
         <option v-for="project in projects" :key="project.id" :value="project.id">
@@ -419,14 +419,14 @@ watch(runningEntry, (val) => {
         v-model="filterFrom"
         type="date"
         @change="fetchData"
-        class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+        class="input"
       />
       <span class="text-gray-400">bis</span>
       <input
         v-model="filterTo"
         type="date"
         @change="fetchData"
-        class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+        class="input"
       />
     </div>
 
@@ -447,7 +447,7 @@ watch(runningEntry, (val) => {
           <div
             v-for="entry in group.entries"
             :key="entry.id"
-            class="bg-dark-800 border border-dark-700 rounded-lg p-4 group"
+            class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 group"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-4">
@@ -481,13 +481,13 @@ watch(runningEntry, (val) => {
                 <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     @click="openModal(entry)"
-                    class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
+                    class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteEntry(entry)"
-                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
+                    class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -499,7 +499,7 @@ watch(runningEntry, (val) => {
       </div>
 
       <!-- Empty state -->
-      <div v-if="groupedEntries.length === 0" class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 text-center">
+      <div v-if="groupedEntries.length === 0" class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 text-center">
         <ClockIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
         <p class="text-gray-400">Keine Zeiteinträge vorhanden</p>
         <p class="text-sm text-gray-500 mt-1">Starte den Timer oben um Zeit zu erfassen</p>
@@ -510,11 +510,11 @@ watch(runningEntry, (val) => {
     <Teleport to="body">
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
         
       >
-        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+        <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
               {{ editingEntry ? 'Eintrag bearbeiten' : 'Manueller Eintrag' }}
             </h2>
@@ -529,7 +529,7 @@ watch(runningEntry, (val) => {
               <input
                 v-model="form.task_name"
                 type="text"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="input w-full"
                 placeholder="Was hast du gemacht?"
               />
             </div>
@@ -539,7 +539,7 @@ watch(runningEntry, (val) => {
               <textarea
                 v-model="form.description"
                 rows="2"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+                class="textarea w-full resize-none"
                 placeholder="Optionale Details..."
               ></textarea>
             </div>
@@ -548,7 +548,7 @@ watch(runningEntry, (val) => {
               <label class="block text-sm font-medium text-gray-300 mb-1">Projekt</label>
               <select
                 v-model="form.project_id"
-                class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                class="select w-full"
               >
                 <option :value="null">Kein Projekt</option>
                 <option v-for="project in projects" :key="project.id" :value="project.id">
@@ -563,7 +563,7 @@ watch(runningEntry, (val) => {
                 <input
                   v-model="form.started_at"
                   type="datetime-local"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="input w-full"
                 />
               </div>
               <div>
@@ -571,7 +571,7 @@ watch(runningEntry, (val) => {
                 <input
                   v-model="form.ended_at"
                   type="datetime-local"
-                  class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                  class="input w-full"
                 />
               </div>
             </div>
@@ -581,7 +581,7 @@ watch(runningEntry, (val) => {
                 <input
                   v-model="form.is_billable"
                   type="checkbox"
-                  class="w-4 h-4 rounded bg-dark-700 border-dark-600 text-primary-600 focus:ring-primary-500"
+                  class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-gray-300">Abrechenbar</span>
               </label>
@@ -590,7 +590,7 @@ watch(runningEntry, (val) => {
                   v-model.number="form.hourly_rate"
                   type="number"
                   step="0.01"
-                  class="w-24 bg-dark-700 border border-dark-600 rounded-lg px-3 py-1 text-white focus:outline-none focus:border-primary-500"
+                  class="input w-24"
                   placeholder="0.00"
                 />
                 <span class="text-gray-400">EUR/h</span>
@@ -598,7 +598,7 @@ watch(runningEntry, (val) => {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 p-4 border-t border-dark-700">
+          <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button
               @click="showModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -607,7 +607,7 @@ watch(runningEntry, (val) => {
             </button>
             <button
               @click="saveEntry"
-              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+              class="btn-primary"
             >
               {{ editingEntry ? 'Speichern' : 'Erstellen' }}
             </button>

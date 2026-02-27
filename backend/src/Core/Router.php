@@ -78,6 +78,8 @@ use App\Modules\Terminal\Controllers\TerminalController;
 use App\Modules\DatabaseBrowser\Controllers\DatabaseBrowserController;
 use App\Modules\Logs\Controllers\LogsController;
 use App\Modules\Scripts\Controllers\ScriptsController;
+use App\Modules\Contacts\Controllers\ContactController;
+use App\Modules\Email\Controllers\EmailController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -436,6 +438,33 @@ class Router
                 $protected->delete('/bookmarks/{id}', [BookmarkController::class, 'delete']);
                 $protected->post('/bookmarks/{id}/click', [BookmarkController::class, 'click']);
                 $protected->put('/bookmarks/{id}/move', [BookmarkController::class, 'moveBookmarkToGroup']);
+
+                // Contacts / CRM
+                $protected->get('/contacts', [ContactController::class, 'index']);
+                $protected->post('/contacts', [ContactController::class, 'create']);
+                $protected->get('/contacts/stats', [ContactController::class, 'getStats']);
+                $protected->get('/contacts/{id}', [ContactController::class, 'show']);
+                $protected->put('/contacts/{id}', [ContactController::class, 'update']);
+                $protected->delete('/contacts/{id}', [ContactController::class, 'delete']);
+                $protected->post('/contacts/{id}/favorite', [ContactController::class, 'toggleFavorite']);
+                $protected->get('/contacts/{id}/activities', [ContactController::class, 'getActivities']);
+                $protected->post('/contacts/{id}/activities', [ContactController::class, 'createActivity']);
+                $protected->delete('/contacts/{id}/activities/{activityId}', [ContactController::class, 'deleteActivity']);
+
+                // Email
+                $protected->get('/email/accounts', [EmailController::class, 'getAccounts']);
+                $protected->post('/email/accounts', [EmailController::class, 'createAccount']);
+                $protected->put('/email/accounts/{id}', [EmailController::class, 'updateAccount']);
+                $protected->delete('/email/accounts/{id}', [EmailController::class, 'deleteAccount']);
+                $protected->post('/email/accounts/{id}/test', [EmailController::class, 'testConnection']);
+                $protected->get('/email/messages', [EmailController::class, 'getMessages']);
+                $protected->get('/email/messages/{id}', [EmailController::class, 'getMessage']);
+                $protected->post('/email/messages', [EmailController::class, 'sendMessage']);
+                $protected->delete('/email/messages/{id}', [EmailController::class, 'deleteMessage']);
+                $protected->post('/email/messages/{id}/read', [EmailController::class, 'toggleRead']);
+                $protected->post('/email/messages/{id}/star', [EmailController::class, 'toggleStar']);
+                $protected->get('/email/folders', [EmailController::class, 'getFolders']);
+                $protected->get('/email/stats', [EmailController::class, 'getStats']);
 
                 // Habit Tracker
                 $protected->get('/habits', [HabitController::class, 'index']);

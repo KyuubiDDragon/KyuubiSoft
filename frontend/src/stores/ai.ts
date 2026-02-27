@@ -1,24 +1,84 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { Ref, ComputedRef } from 'vue'
 import api from '@/core/api/axios'
+
+// Interfaces
+interface AIModel {
+  id: string
+  name: string
+}
+
+interface AIProvider {
+  value: string
+  label: string
+  models: AIModel[]
+}
+
+interface AISettings {
+  has_api_key: boolean
+  is_enabled: boolean
+  model: string
+  provider: string
+  [key: string]: unknown
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+interface Conversation {
+  id: string
+  messages: ChatMessage[]
+  [key: string]: unknown
+}
+
+interface ChatContext {
+  [key: string]: unknown
+}
+
+interface ChatResponse {
+  message: string
+  conversation_id: string
+  [key: string]: unknown
+}
+
+interface AIStatus {
+  is_configured: boolean
+  [key: string]: unknown
+}
+
+interface AIPrompt {
+  id: string
+  [key: string]: unknown
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string
+    }
+  }
+}
 
 export const useAIStore = defineStore('ai', () => {
   // State
-  const settings = ref(null)
-  const conversations = ref([])
-  const currentConversation = ref(null)
-  const prompts = ref([])
-  const loading = ref(false)
-  const chatLoading = ref(false)
-  const error = ref(null)
+  const settings: Ref<AISettings | null> = ref<AISettings | null>(null)
+  const conversations: Ref<Conversation[]> = ref<Conversation[]>([])
+  const currentConversation: Ref<Conversation | null> = ref<Conversation | null>(null)
+  const prompts: Ref<AIPrompt[]> = ref<AIPrompt[]>([])
+  const loading: Ref<boolean> = ref<boolean>(false)
+  const chatLoading: Ref<boolean> = ref<boolean>(false)
+  const error: Ref<string | null> = ref<string | null>(null)
 
   // Computed
-  const isConfigured = computed(() => settings.value?.has_api_key || false)
-  const currentModel = computed(() => settings.value?.model || 'gpt-4o-mini')
-  const currentProvider = computed(() => settings.value?.provider || 'openai')
+  const isConfigured: ComputedRef<boolean> = computed<boolean>(() => settings.value?.has_api_key || false)
+  const currentModel: ComputedRef<string> = computed<string>(() => settings.value?.model || 'gpt-4o-mini')
+  const currentProvider: ComputedRef<string> = computed<string>(() => settings.value?.provider || 'openai')
 
   // Available providers and models - use correct model IDs!
-  const providers = [
+  const providers: AIProvider[] = [
     {
       value: 'openai',
       label: 'OpenAI',
@@ -66,57 +126,57 @@ export const useAIStore = defineStore('ai', () => {
   ]
 
   // Actions
-  async function fetchSettings() {
+  async function fetchSettings(): Promise<void> {
     loading.value = true
     error.value = null
     try {
       const response = await api.get('/api/v1/ai/settings')
       settings.value = response.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to fetch AI settings'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to fetch AI settings'
     } finally {
       loading.value = false
     }
   }
 
-  async function saveSettings(data) {
+  async function saveSettings(data: Partial<AISettings>): Promise<AISettings> {
     loading.value = true
     error.value = null
     try {
       const response = await api.post('/api/v1/ai/settings', data)
       settings.value = response.data
       return response.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to save AI settings'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to save AI settings'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  async function removeApiKey() {
+  async function removeApiKey(): Promise<void> {
     try {
       await api.delete('/api/v1/ai/settings/api-key')
       if (settings.value) {
         settings.value.has_api_key = false
         settings.value.is_enabled = false
       }
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to remove API key'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to remove API key'
       throw err
     }
   }
 
-  async function checkStatus() {
+  async function checkStatus(): Promise<AIStatus> {
     try {
       const response = await api.get('/api/v1/ai/status')
       return response.data
-    } catch (err) {
+    } catch (err: unknown) {
       return { is_configured: false }
     }
   }
 
-  async function chat(message, conversationId = null, context = {}) {
+  async function chat(message: string, conversationId: string | null = null, context: ChatContext = {}): Promise<ChatResponse> {
     chatLoading.value = true
     error.value = null
     try {
@@ -135,61 +195,61 @@ export const useAIStore = defineStore('ai', () => {
       }
 
       return response.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to send message'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to send message'
       throw err
     } finally {
       chatLoading.value = false
     }
   }
 
-  async function fetchConversations() {
+  async function fetchConversations(): Promise<void> {
     try {
       const response = await api.get('/api/v1/ai/conversations')
       conversations.value = response.data
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to fetch conversations:', err)
     }
   }
 
-  async function fetchConversation(id) {
+  async function fetchConversation(id: string): Promise<Conversation> {
     try {
       const response = await api.get(`/api/v1/ai/conversations/${id}`)
       currentConversation.value = response.data
       return response.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to fetch conversation'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to fetch conversation'
       throw err
     }
   }
 
-  async function deleteConversation(id) {
+  async function deleteConversation(id: string): Promise<void> {
     try {
       await api.delete(`/api/v1/ai/conversations/${id}`)
       conversations.value = conversations.value.filter(c => c.id !== id)
       if (currentConversation.value?.id === id) {
         currentConversation.value = null
       }
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to delete conversation'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to delete conversation'
       throw err
     }
   }
 
-  function newConversation() {
+  function newConversation(): void {
     currentConversation.value = null
   }
 
-  async function fetchPrompts() {
+  async function fetchPrompts(): Promise<void> {
     try {
       const response = await api.get('/api/v1/ai/prompts')
       prompts.value = response.data
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to fetch prompts:', err)
     }
   }
 
-  async function savePrompt(data) {
+  async function savePrompt(data: Partial<AIPrompt>): Promise<AIPrompt> {
     try {
       const response = await api.post('/api/v1/ai/prompts', data)
       const index = prompts.value.findIndex(p => p.id === response.data.id)
@@ -199,18 +259,18 @@ export const useAIStore = defineStore('ai', () => {
         prompts.value.push(response.data)
       }
       return response.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to save prompt'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to save prompt'
       throw err
     }
   }
 
-  async function deletePrompt(id) {
+  async function deletePrompt(id: string): Promise<void> {
     try {
       await api.delete(`/api/v1/ai/prompts/${id}`)
       prompts.value = prompts.value.filter(p => p.id !== id)
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to delete prompt'
+    } catch (err: unknown) {
+      error.value = (err as ApiError).response?.data?.error || 'Failed to delete prompt'
       throw err
     }
   }

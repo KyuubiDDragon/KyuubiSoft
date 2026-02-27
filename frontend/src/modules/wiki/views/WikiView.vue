@@ -449,7 +449,7 @@ onMounted(async () => {
         <!-- Actions -->
         <div class="flex gap-2">
           <button
-            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+            class="btn-primary flex-1 flex items-center justify-center gap-2 text-sm"
             @click="createNewPage"
           >
             <PlusIcon class="w-4 h-4" />
@@ -562,7 +562,7 @@ onMounted(async () => {
         <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
         <p class="text-gray-500 mb-6">Wähle eine Seite aus der Sidebar oder erstelle eine neue.</p>
         <button
-          class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white"
+          class="btn-primary flex items-center gap-2"
           @click="createNewPage"
         >
           <PlusIcon class="w-5 h-5" />
@@ -609,7 +609,7 @@ onMounted(async () => {
           <div class="flex items-center gap-2">
             <template v-if="isEditing || isCreating">
               <button
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm"
+                class="btn-primary text-sm"
                 :disabled="wikiStore.loading"
                 @click="savePage"
               >
@@ -829,7 +829,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
             <button class="btn-secondary" @click="showCategoryModal = false">
               Abbrechen
             </button>
-            <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white" @click="saveCategory">
+            <button class="btn-primary" @click="saveCategory">
               Speichern
             </button>
           </div>

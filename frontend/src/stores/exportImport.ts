@@ -2,30 +2,48 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/core/api/axios'
 
-export const useExportImportStore = defineStore('exportImport', () => {
-  const stats = ref({})
-  const isLoading = ref(false)
-  const isExporting = ref(false)
-  const isImporting = ref(false)
-  const importValidation = ref(null)
-  const importResult = ref(null)
-  const error = ref(null)
+interface ExportStats {
+  [key: string]: unknown
+}
 
-  async function loadStats() {
+interface ImportValidation {
+  [key: string]: unknown
+}
+
+interface ImportResult {
+  [key: string]: unknown
+}
+
+interface ImportOptions {
+  conflictResolution?: string
+  types?: string[]
+  [key: string]: unknown
+}
+
+export const useExportImportStore = defineStore('exportImport', () => {
+  const stats = ref<ExportStats>({})
+  const isLoading = ref<boolean>(false)
+  const isExporting = ref<boolean>(false)
+  const isImporting = ref<boolean>(false)
+  const importValidation = ref<ImportValidation | null>(null)
+  const importResult = ref<ImportResult | null>(null)
+  const error = ref<string | null>(null)
+
+  async function loadStats(): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
       const response = await api.get('/api/v1/export/stats')
       stats.value = response.data.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to load export stats'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to load export stats'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  async function exportData(types, format = 'json') {
+  async function exportData(types: string[], format: string = 'json'): Promise<boolean> {
     isExporting.value = true
     error.value = null
     try {
@@ -61,31 +79,31 @@ export const useExportImportStore = defineStore('exportImport', () => {
       window.URL.revokeObjectURL(url)
 
       return true
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Export failed'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Export failed'
       throw err
     } finally {
       isExporting.value = false
     }
   }
 
-  async function validateImport(data) {
+  async function validateImport(data: unknown): Promise<ImportValidation> {
     isLoading.value = true
     error.value = null
     importValidation.value = null
     try {
       const response = await api.post('/api/v1/import/validate', { data })
       importValidation.value = response.data.data
-      return importValidation.value
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Validation failed'
+      return importValidation.value as ImportValidation
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Validation failed'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  async function importData(data, options = {}) {
+  async function importData(data: unknown, options: ImportOptions = {}): Promise<ImportResult> {
     isImporting.value = true
     error.value = null
     importResult.value = null
@@ -96,16 +114,16 @@ export const useExportImportStore = defineStore('exportImport', () => {
         types: options.types
       })
       importResult.value = response.data.data
-      return importResult.value
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Import failed'
+      return importResult.value as ImportResult
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Import failed'
       throw err
     } finally {
       isImporting.value = false
     }
   }
 
-  function reset() {
+  function reset(): void {
     importValidation.value = null
     importResult.value = null
     error.value = null

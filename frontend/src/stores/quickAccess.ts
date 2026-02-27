@@ -2,30 +2,51 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+interface NavItem {
+  id: string
+  name: string
+  href: string
+  icon: string
+  [key: string]: unknown
+}
+
+interface QuickAccessItem {
+  nav_id: string
+  nav_name: string
+  nav_href: string
+  nav_icon: string
+  [key: string]: unknown
+}
+
+interface ReorderItem {
+  nav_id: string
+  position: number
+}
+
 export const useQuickAccessStore = defineStore('quickAccess', () => {
   // State
-  const items = ref([])
-  const maxVisible = ref(5)
-  const isLoading = ref(false)
-  const isInitialized = ref(false)
+  const items = ref<QuickAccessItem[]>([])
+  const maxVisible = ref<number>(5)
+  const isLoading = ref<boolean>(false)
+  const isInitialized = ref<boolean>(false)
 
   // Getters
-  const count = computed(() => items.value.length)
+  const count = computed<number>(() => items.value.length)
 
-  const visibleItems = computed(() => {
+  const visibleItems = computed<QuickAccessItem[]>(() => {
     return items.value.slice(0, maxVisible.value)
   })
 
-  const overflowItems = computed(() => {
+  const overflowItems = computed<QuickAccessItem[]>(() => {
     return items.value.slice(maxVisible.value)
   })
 
-  const hasOverflow = computed(() => {
+  const hasOverflow = computed<boolean>(() => {
     return items.value.length > maxVisible.value
   })
 
   // Actions
-  async function load() {
+  async function load(): Promise<void> {
     if (isLoading.value) return
 
     isLoading.value = true
@@ -41,7 +62,7 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  async function toggle(navItem) {
+  async function toggle(navItem: NavItem): Promise<boolean> {
     try {
       const response = await api.post('/api/v1/quick-access/toggle', {
         nav_id: navItem.id,
@@ -57,7 +78,7 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  async function add(navItem) {
+  async function add(navItem: NavItem): Promise<void> {
     try {
       await api.post('/api/v1/quick-access', {
         nav_id: navItem.id,
@@ -72,7 +93,7 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  async function remove(navId) {
+  async function remove(navId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/quick-access/${navId}`)
       items.value = items.value.filter(item => item.nav_id !== navId)
@@ -82,7 +103,7 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  async function reorder(order) {
+  async function reorder(order: ReorderItem[]): Promise<void> {
     try {
       await api.put('/api/v1/quick-access/reorder', { order })
     } catch (error) {
@@ -91,7 +112,7 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  async function updateMaxVisible(value) {
+  async function updateMaxVisible(value: number): Promise<void> {
     try {
       await api.put('/api/v1/quick-access/settings', { max_visible: value })
       maxVisible.value = value
@@ -101,11 +122,11 @@ export const useQuickAccessStore = defineStore('quickAccess', () => {
     }
   }
 
-  function isPinned(navId) {
+  function isPinned(navId: string): boolean {
     return items.value.some(item => item.nav_id === navId)
   }
 
-  function reset() {
+  function reset(): void {
     items.value = []
     maxVisible.value = 5
     isInitialized.value = false

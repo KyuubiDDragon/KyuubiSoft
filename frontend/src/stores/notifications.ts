@@ -2,21 +2,62 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+interface Notification {
+  id: string
+  is_read: boolean
+  priority: string
+  type: string
+  [key: string]: unknown
+}
+
+interface LoadNotificationsOptions {
+  unreadOnly?: boolean
+  limit?: number
+  offset?: number
+}
+
+interface NotificationChannel {
+  channel_type: string
+  [key: string]: unknown
+}
+
+interface NotificationPreference {
+  notification_type: string
+  [key: string]: unknown
+}
+
+interface NotificationTypeMap {
+  [key: string]: unknown
+}
+
+interface PreferencesResponse {
+  preferences: NotificationPreference[]
+  types: NotificationTypeMap
+}
+
+interface ChannelUpdateData {
+  [key: string]: unknown
+}
+
+interface PreferenceUpdateData {
+  [key: string]: unknown
+}
+
 export const useNotificationsStore = defineStore('notifications', () => {
-  const notifications = ref([])
-  const unreadCount = ref(0)
-  const channels = ref([])
-  const preferences = ref([])
-  const notificationTypes = ref({})
-  const isLoading = ref(false)
-  const error = ref(null)
+  const notifications = ref<Notification[]>([])
+  const unreadCount = ref<number>(0)
+  const channels = ref<NotificationChannel[]>([])
+  const preferences = ref<NotificationPreference[]>([])
+  const notificationTypes = ref<NotificationTypeMap>({})
+  const isLoading = ref<boolean>(false)
+  const error = ref<string | null>(null)
 
   // Polling interval for unread count
-  let pollInterval = null
+  let pollInterval: ReturnType<typeof setInterval> | null = null
 
-  const hasUnread = computed(() => unreadCount.value > 0)
+  const hasUnread = computed<boolean>(() => unreadCount.value > 0)
 
-  const channelLabels = {
+  const channelLabels: Record<string, string> = {
     in_app: 'In-App',
     email: 'E-Mail',
     webhook: 'Webhook',
@@ -24,11 +65,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
     telegram: 'Telegram',
   }
 
-  async function loadNotifications(options = {}) {
+  async function loadNotifications(options: LoadNotificationsOptions = {}): Promise<Notification[]> {
     isLoading.value = true
     error.value = null
     try {
-      const params = {}
+      const params: Record<string, string | number> = {}
       if (options.unreadOnly) params.unread = 'true'
       if (options.limit) params.limit = options.limit
       if (options.offset) params.offset = options.offset
@@ -37,15 +78,16 @@ export const useNotificationsStore = defineStore('notifications', () => {
       notifications.value = response.data.data
       unreadCount.value = response.data.meta?.unread_count || 0
       return response.data.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to load notifications'
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      error.value = axiosError.response?.data?.error || 'Failed to load notifications'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  async function loadUnreadCount() {
+  async function loadUnreadCount(): Promise<number> {
     try {
       const response = await api.get('/api/v1/notifications/unread-count')
       unreadCount.value = response.data.data?.count || 0
@@ -56,7 +98,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function markAsRead(notificationId) {
+  async function markAsRead(notificationId: string): Promise<void> {
     try {
       await api.post(`/api/v1/notifications/${notificationId}/read`)
       const notification = notifications.value.find(n => n.id === notificationId)
@@ -69,7 +111,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function markAllAsRead() {
+  async function markAllAsRead(): Promise<number> {
     try {
       const response = await api.post('/api/v1/notifications/mark-all-read')
       notifications.value.forEach(n => (n.is_read = true))
@@ -80,7 +122,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function deleteNotification(notificationId) {
+  async function deleteNotification(notificationId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/notifications/${notificationId}`)
       const notification = notifications.value.find(n => n.id === notificationId)
@@ -93,7 +135,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function loadChannels() {
+  async function loadChannels(): Promise<NotificationChannel[]> {
     try {
       const response = await api.get('/api/v1/notifications/channels')
       channels.value = response.data.data
@@ -104,7 +146,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function updateChannel(channelType, data) {
+  async function updateChannel(channelType: string, data: ChannelUpdateData): Promise<NotificationChannel> {
     try {
       const response = await api.put(`/api/v1/notifications/channels/${channelType}`, data)
       const index = channels.value.findIndex(c => c.channel_type === channelType)
@@ -119,7 +161,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function testChannel(channelType) {
+  async function testChannel(channelType: string): Promise<boolean> {
     try {
       await api.post(`/api/v1/notifications/channels/${channelType}/test`)
       return true
@@ -128,7 +170,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function loadPreferences() {
+  async function loadPreferences(): Promise<PreferencesResponse> {
     try {
       const response = await api.get('/api/v1/notifications/preferences')
       preferences.value = response.data.data?.preferences || []
@@ -140,7 +182,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function updatePreference(notificationType, data) {
+  async function updatePreference(notificationType: string, data: PreferenceUpdateData): Promise<NotificationPreference> {
     try {
       const response = await api.put(`/api/v1/notifications/preferences/${notificationType}`, data)
       const index = preferences.value.findIndex(p => p.notification_type === notificationType)
@@ -155,7 +197,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function loadTypes() {
+  async function loadTypes(): Promise<NotificationTypeMap> {
     try {
       const response = await api.get('/api/v1/notifications/types')
       notificationTypes.value = response.data.data
@@ -166,24 +208,24 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  function startPolling(intervalMs = 60000) {
+  function startPolling(intervalMs: number = 60000): void {
     stopPolling()
     loadUnreadCount()
     pollInterval = setInterval(loadUnreadCount, intervalMs)
   }
 
-  function stopPolling() {
+  function stopPolling(): void {
     if (pollInterval) {
       clearInterval(pollInterval)
       pollInterval = null
     }
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return '-'
     const date = new Date(dateStr)
     const now = new Date()
-    const diff = now - date
+    const diff = now.getTime() - date.getTime()
 
     // Less than 1 minute
     if (diff < 60000) {
@@ -212,7 +254,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     })
   }
 
-  function getPriorityColor(priority) {
+  function getPriorityColor(priority: string): string {
     switch (priority) {
       case 'urgent':
         return 'text-red-500'
@@ -227,8 +269,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  function getTypeIcon(type) {
-    const icons = {
+  function getTypeIcon(type: string): string {
+    const icons: Record<string, string> = {
       task_due: 'ClockIcon',
       task_assigned: 'UserPlusIcon',
       mention: 'AtSymbolIcon',

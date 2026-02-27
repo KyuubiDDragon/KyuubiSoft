@@ -1,12 +1,75 @@
 import { ref, onUnmounted, computed } from 'vue'
+import type { Ref } from 'vue'
 import * as Y from 'yjs'
+
+// Interfaces
+interface CollaborationOptions {
+  serverUrl?: string
+  userName?: string
+  userColor?: string
+}
+
+interface ConnectedUser {
+  clientId: number
+  name: string
+  color: string
+  isCurrentUser: boolean
+}
+
+interface ConnectResult {
+  ydoc: Y.Doc | null
+  provider: WebsocketProviderInstance | null
+  awareness: AwarenessInstance | null
+  isAvailable: boolean
+}
+
+interface AwarenessState {
+  user?: {
+    name: string
+    color: string
+  }
+  [key: string]: unknown
+}
+
+interface AwarenessInstance {
+  clientID: number
+  setLocalStateField: (field: string, value: unknown) => void
+  getStates: () => Map<number, AwarenessState>
+  on: (event: string, callback: (...args: unknown[]) => void) => void
+}
+
+interface WebsocketProviderInstance {
+  awareness: AwarenessInstance
+  on: (event: string, callback: (...args: unknown[]) => void) => void
+  disconnect: () => void
+  destroy: () => void
+}
+
+interface UseCollaborationReturn {
+  // State
+  isConnected: Ref<boolean>
+  isSynced: Ref<boolean>
+  connectionError: Ref<string | null>
+  connectedUsers: Ref<ConnectedUser[]>
+  isAvailable: Ref<boolean>
+
+  // Methods
+  connect: () => Promise<ConnectResult>
+  disconnect: () => void
+  updateUserInfo: (name?: string, color?: string) => void
+  getXmlFragment: (name?: string) => Y.XmlFragment
+  getText: (name?: string) => Y.Text
+
+  // Getters (for external access)
+  getYdoc: () => Y.Doc | null
+  getProvider: () => WebsocketProviderInstance | null
+  getAwareness: () => AwarenessInstance | null
+}
 
 /**
  * Composable for real-time collaboration using Yjs
- * @param {string} roomName - The document room name (usually the share token)
- * @param {object} options - Options for the collaboration
  */
-export function useCollaboration(roomName, options = {}) {
+export function useCollaboration(roomName: string, options: CollaborationOptions = {}): UseCollaborationReturn {
   const {
     serverUrl = getCollaborationServerUrl(),
     userName = 'Anonym',
@@ -14,23 +77,23 @@ export function useCollaboration(roomName, options = {}) {
   } = options
 
   // State
-  const isConnected = ref(false)
-  const isSynced = ref(false)
-  const connectionError = ref(null)
-  const connectedUsers = ref([])
-  const isAvailable = ref(false)
+  const isConnected: Ref<boolean> = ref<boolean>(false)
+  const isSynced: Ref<boolean> = ref<boolean>(false)
+  const connectionError: Ref<string | null> = ref<string | null>(null)
+  const connectedUsers: Ref<ConnectedUser[]> = ref<ConnectedUser[]>([])
+  const isAvailable: Ref<boolean> = ref<boolean>(false)
 
   // Yjs instances
-  let ydoc = null
-  let provider = null
-  let awareness = null
-  let connectionAttempts = 0
-  const MAX_CONNECTION_ATTEMPTS = 3
+  let ydoc: Y.Doc | null = null
+  let provider: WebsocketProviderInstance | null = null
+  let awareness: AwarenessInstance | null = null
+  let connectionAttempts: number = 0
+  const MAX_CONNECTION_ATTEMPTS: number = 3
 
   /**
    * Initialize collaboration connection
    */
-  async function connect() {
+  async function connect(): Promise<ConnectResult> {
     if (provider) {
       console.warn('Already connected to collaboration server')
       return { ydoc, provider, awareness, isAvailable: isAvailable.value }
@@ -47,7 +110,7 @@ export function useCollaboration(roomName, options = {}) {
       provider = new WebsocketProvider(serverUrl, roomName, ydoc, {
         connect: true,
         maxBackoffTime: 10000, // Max 10 seconds between retries
-      })
+      }) as unknown as WebsocketProviderInstance
 
       awareness = provider.awareness
 
@@ -58,7 +121,7 @@ export function useCollaboration(roomName, options = {}) {
       })
 
       // Connection status handlers
-      provider.on('status', ({ status }) => {
+      provider.on('status', ({ status }: { status: string }) => {
         isConnected.value = status === 'connected'
         if (status === 'connected') {
           isAvailable.value = true
@@ -72,11 +135,11 @@ export function useCollaboration(roomName, options = {}) {
         }
       })
 
-      provider.on('sync', (synced) => {
+      provider.on('sync', (synced: boolean) => {
         isSynced.value = synced
       })
 
-      provider.on('connection-error', (error) => {
+      provider.on('connection-error', (error: Error) => {
         connectionAttempts++
         console.warn(`WebSocket connection error (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})`)
 
@@ -91,7 +154,7 @@ export function useCollaboration(roomName, options = {}) {
       })
 
       // Handle WebSocket close events
-      provider.on('connection-close', (event) => {
+      provider.on('connection-close', (event: Event) => {
         connectionAttempts++
         if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS && !isAvailable.value) {
           connectionError.value = 'Collaboration-Server nicht erreichbar. Lokale Bearbeitung möglich.'
@@ -103,14 +166,14 @@ export function useCollaboration(roomName, options = {}) {
 
       // Track connected users via awareness
       awareness.on('change', () => {
-        const states = Array.from(awareness.getStates().entries())
+        const states: [number, AwarenessState][] = Array.from(awareness!.getStates().entries())
         connectedUsers.value = states
-          .filter(([_, state]) => state.user)
-          .map(([clientId, state]) => ({
+          .filter(([_, state]: [number, AwarenessState]) => state.user)
+          .map(([clientId, state]: [number, AwarenessState]) => ({
             clientId,
-            name: state.user.name,
-            color: state.user.color,
-            isCurrentUser: clientId === awareness.clientID,
+            name: state.user!.name,
+            color: state.user!.color,
+            isCurrentUser: clientId === awareness!.clientID,
           }))
       })
 
@@ -122,9 +185,9 @@ export function useCollaboration(roomName, options = {}) {
       }, 5000)
 
       return { ydoc, provider, awareness, isAvailable: true }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to initialize collaboration:', error)
-      connectionError.value = 'Collaboration konnte nicht initialisiert werden: ' + error.message
+      connectionError.value = 'Collaboration konnte nicht initialisiert werden: ' + (error as Error).message
       return { ydoc, provider: null, awareness: null, isAvailable: false }
     }
   }
@@ -132,7 +195,7 @@ export function useCollaboration(roomName, options = {}) {
   /**
    * Disconnect from collaboration
    */
-  function disconnect() {
+  function disconnect(): void {
     if (provider) {
       provider.disconnect()
       provider.destroy()
@@ -151,7 +214,7 @@ export function useCollaboration(roomName, options = {}) {
   /**
    * Update local user info
    */
-  function updateUserInfo(name, color) {
+  function updateUserInfo(name?: string, color?: string): void {
     if (awareness) {
       awareness.setLocalStateField('user', {
         name: name || userName,
@@ -163,7 +226,7 @@ export function useCollaboration(roomName, options = {}) {
   /**
    * Get the Yjs text type for rich text (ProseMirror/TipTap)
    */
-  function getXmlFragment(name = 'prosemirror') {
+  function getXmlFragment(name: string = 'prosemirror'): Y.XmlFragment {
     if (!ydoc) {
       throw new Error('Not connected. Call connect() first.')
     }
@@ -173,7 +236,7 @@ export function useCollaboration(roomName, options = {}) {
   /**
    * Get the Yjs text type for plain text (Monaco)
    */
-  function getText(name = 'monaco') {
+  function getText(name: string = 'monaco'): Y.Text {
     if (!ydoc) {
       throw new Error('Not connected. Call connect() first.')
     }
@@ -201,19 +264,19 @@ export function useCollaboration(roomName, options = {}) {
     getText,
 
     // Getters (for external access)
-    getYdoc: () => ydoc,
-    getProvider: () => provider,
-    getAwareness: () => awareness,
+    getYdoc: (): Y.Doc | null => ydoc,
+    getProvider: (): WebsocketProviderInstance | null => provider,
+    getAwareness: (): AwarenessInstance | null => awareness,
   }
 }
 
 /**
  * Get collaboration server URL based on environment
  */
-function getCollaborationServerUrl() {
+function getCollaborationServerUrl(): string {
   // Use WebSocket through nginx proxy
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.host // includes port if non-standard
+  const protocol: string = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host: string = window.location.host // includes port if non-standard
 
   // Use /collab/ path which is proxied by nginx to the collaboration server
   return `${protocol}//${host}/collab`
@@ -222,8 +285,8 @@ function getCollaborationServerUrl() {
 /**
  * Generate a random color for user cursor
  */
-function getRandomColor() {
-  const colors = [
+function getRandomColor(): string {
+  const colors: string[] = [
     '#3b82f6', // blue
     '#10b981', // green
     '#f59e0b', // amber

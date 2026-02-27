@@ -2,17 +2,29 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+interface FavoriteItem {
+  item_type: string
+  item_id: string
+  [key: string]: unknown
+}
+
+interface ReorderItem {
+  item_type: string
+  item_id: string
+  position: number
+}
+
 export const useFavoritesStore = defineStore('favorites', () => {
   // State
-  const favorites = ref([])
-  const isLoading = ref(false)
-  const isInitialized = ref(false)
+  const favorites = ref<FavoriteItem[]>([])
+  const isLoading = ref<boolean>(false)
+  const isInitialized = ref<boolean>(false)
 
   // Getters
-  const count = computed(() => favorites.value.length)
+  const count = computed<number>(() => favorites.value.length)
 
   // Actions
-  async function load() {
+  async function load(): Promise<void> {
     if (isLoading.value) return
 
     isLoading.value = true
@@ -27,7 +39,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
-  async function toggle(itemType, itemId) {
+  async function toggle(itemType: string, itemId: string): Promise<boolean> {
     try {
       const response = await api.post('/api/v1/favorites/toggle', {
         item_type: itemType,
@@ -42,7 +54,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
-  async function add(itemType, itemId) {
+  async function add(itemType: string, itemId: string): Promise<void> {
     try {
       await api.post('/api/v1/favorites', {
         item_type: itemType,
@@ -55,7 +67,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
-  async function remove(itemType, itemId) {
+  async function remove(itemType: string, itemId: string): Promise<void> {
     try {
       await api.delete(`/api/v1/favorites/${itemType}/${itemId}`)
       favorites.value = favorites.value.filter(
@@ -67,7 +79,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
-  async function reorder(order) {
+  async function reorder(order: ReorderItem[]): Promise<void> {
     try {
       await api.put('/api/v1/favorites/reorder', { order })
     } catch (error) {
@@ -76,19 +88,19 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
-  function isFavorite(itemType, itemId) {
+  function isFavorite(itemType: string, itemId: string): boolean {
     return favorites.value.some(
       f => f.item_type === itemType && f.item_id === itemId
     )
   }
 
-  function getFavoritesByType(type) {
+  function getFavoritesByType(type: string): FavoriteItem[] {
     return favorites.value.filter(f => f.item_type === type)
   }
 
   // Get icon for item type
-  function getItemIcon(type) {
-    const icons = {
+  function getItemIcon(type: string): string {
+    const icons: Record<string, string> = {
       list: 'ListBulletIcon',
       document: 'DocumentTextIcon',
       kanban_board: 'ViewColumnsIcon',
@@ -102,8 +114,8 @@ export const useFavoritesStore = defineStore('favorites', () => {
   }
 
   // Get route for item
-  function getItemRoute(favorite) {
-    const routes = {
+  function getItemRoute(favorite: FavoriteItem): string {
+    const routes: Record<string, string> = {
       list: `/lists/${favorite.item_id}`,
       document: `/documents/${favorite.item_id}`,
       kanban_board: `/kanban/${favorite.item_id}`,

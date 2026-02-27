@@ -3,6 +3,30 @@ import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 import { useAuthStore } from '@/stores/auth'
 
+interface FeatureModes {
+  [key: string]: string
+}
+
+interface FeatureDetails {
+  [key: string]: {
+    restricted?: string[]
+    [key: string]: unknown
+  }
+}
+
+interface FeaturesApiResponse {
+  features?: FeatureModes
+  details?: FeatureDetails
+}
+
+interface SubFeatureDefinition {
+  [subFeature: string]: string[]
+}
+
+interface SubFeatureMap {
+  [feature: string]: SubFeatureDefinition
+}
+
 /**
  * Feature Store - Manages feature flags and permissions
  *
@@ -12,13 +36,13 @@ import { useAuthStore } from '@/stores/auth'
  */
 export const useFeatureStore = defineStore('features', () => {
   // State
-  const features = ref({})           // Feature modes (from /api/v1/features)
-  const details = ref({})            // Feature details with restricted sub-features
-  const isLoaded = ref(false)
-  const isLoading = ref(false)
+  const features = ref<FeatureModes>({})           // Feature modes (from /api/v1/features)
+  const details = ref<FeatureDetails>({})            // Feature details with restricted sub-features
+  const isLoaded = ref<boolean>(false)
+  const isLoading = ref<boolean>(false)
 
   // Sub-feature definitions (mirrors backend FeatureService)
-  const subFeatures = {
+  const subFeatures: SubFeatureMap = {
     docker: {
       view: ['portainer_only', 'own', 'full'],
       hosts_manage: ['own', 'full'],
@@ -91,7 +115,7 @@ export const useFeatureStore = defineStore('features', () => {
   /**
    * Check if a feature is enabled on this instance (any mode except disabled)
    */
-  const isEnabled = computed(() => (feature) => {
+  const isEnabled = computed<(feature: string) => boolean>(() => (feature: string): boolean => {
     const mode = features.value[feature]
     return !!mode && mode !== 'disabled'
   })
@@ -99,28 +123,28 @@ export const useFeatureStore = defineStore('features', () => {
   /**
    * Get the current mode of a feature
    */
-  const getMode = computed(() => (feature) => {
+  const getMode = computed<(feature: string) => string>(() => (feature: string): string => {
     return features.value[feature] || 'disabled'
   })
 
   /**
    * Check if a feature has a specific mode
    */
-  const hasMode = computed(() => (feature, mode) => {
+  const hasMode = computed<(feature: string, mode: string) => boolean>(() => (feature: string, mode: string): boolean => {
     return features.value[feature] === mode
   })
 
   /**
    * Check if feature has full access
    */
-  const hasFull = computed(() => (feature) => {
+  const hasFull = computed<(feature: string) => boolean>(() => (feature: string): boolean => {
     return features.value[feature] === 'full'
   })
 
   /**
    * Check if a sub-feature is allowed by the current instance mode
    */
-  function isSubFeatureAllowed(feature, subFeature) {
+  function isSubFeatureAllowed(feature: string, subFeature: string): boolean {
     const mode = features.value[feature]
 
     if (!mode || mode === 'disabled') {
@@ -140,18 +164,18 @@ export const useFeatureStore = defineStore('features', () => {
    * Check sub-feature access (Instance-Level only)
    * Use canAccess() for combined Instance + Permission check
    */
-  function checkAccess(feature, subFeature) {
+  function checkAccess(feature: string, subFeature: string): boolean {
     return isSubFeatureAllowed(feature, subFeature)
   }
 
   /**
    * Combined access check: Instance-Level AND User Permission
    *
-   * @param {string} feature - The feature name (e.g., 'docker')
-   * @param {string|null} subFeature - Optional sub-feature (e.g., 'system_socket')
-   * @returns {boolean}
+   * @param feature - The feature name (e.g., 'docker')
+   * @param subFeature - Optional sub-feature (e.g., 'system_socket')
+   * @returns boolean
    */
-  function canAccess(feature, subFeature = null) {
+  function canAccess(feature: string, subFeature: string | null = null): boolean {
     // 1. Instance-Level Check
     if (!isEnabled.value(feature)) {
       return false
@@ -174,21 +198,21 @@ export const useFeatureStore = defineStore('features', () => {
   /**
    * Check if user can view a feature (Instance + Permission)
    */
-  function canView(feature) {
+  function canView(feature: string): boolean {
     return canAccess(feature, 'view')
   }
 
   /**
    * Check if user can manage a feature (Instance + Permission)
    */
-  function canManage(feature) {
+  function canManage(feature: string): boolean {
     return canAccess(feature, 'manage')
   }
 
   /**
    * Get restricted sub-features for a feature based on current mode
    */
-  function getRestrictedSubFeatures(feature) {
+  function getRestrictedSubFeatures(feature: string): string[] {
     return details.value[feature]?.restricted || []
   }
 
@@ -197,13 +221,13 @@ export const useFeatureStore = defineStore('features', () => {
   /**
    * Load features from API
    */
-  async function loadFeatures() {
+  async function loadFeatures(): Promise<void> {
     if (isLoading.value) return
 
     isLoading.value = true
     try {
       const response = await api.get('/api/v1/features')
-      const data = response.data.data || {}
+      const data: FeaturesApiResponse = response.data.data || {}
 
       // Extract modes
       features.value = data.features || {}
@@ -239,66 +263,66 @@ export const useFeatureStore = defineStore('features', () => {
 
   // Convenience methods for common feature checks
 
-  function canAccessDocker() {
+  function canAccessDocker(): boolean {
     return isEnabled.value('docker')
   }
 
-  function canAccessServer() {
+  function canAccessServer(): boolean {
     return isEnabled.value('server')
   }
 
-  function canAccessTools() {
+  function canAccessTools(): boolean {
     return isEnabled.value('tools')
   }
 
-  function canAccessUptime() {
+  function canAccessUptime(): boolean {
     return isEnabled.value('uptime')
   }
 
-  function canAccessInvoices() {
+  function canAccessInvoices(): boolean {
     return isEnabled.value('invoices')
   }
 
-  function canAccessTickets() {
+  function canAccessTickets(): boolean {
     return isEnabled.value('tickets')
   }
 
-  function canAccessApiTester() {
+  function canAccessApiTester(): boolean {
     return isEnabled.value('api_tester')
   }
 
-  function canAccessYoutube() {
+  function canAccessYoutube(): boolean {
     return isEnabled.value('youtube')
   }
 
-  function canAccessPasswords() {
+  function canAccessPasswords(): boolean {
     return isEnabled.value('passwords')
   }
 
   // Docker-specific checks
-  function canUseDockerSystemSocket() {
+  function canUseDockerSystemSocket(): boolean {
     return canAccess('docker', 'system_socket')
   }
 
-  function canManageDockerHosts() {
+  function canManageDockerHosts(): boolean {
     return canAccess('docker', 'hosts_manage')
   }
 
-  function canUsePortainer() {
+  function canUsePortainer(): boolean {
     return canAccess('docker', 'portainer')
   }
 
   // Server-specific checks
-  function canAccessLocalhost() {
+  function canAccessLocalhost(): boolean {
     return canAccess('server', 'localhost')
   }
 
   // Tools-specific checks
-  function canUseSSHTerminal() {
+  function canUseSSHTerminal(): boolean {
     return canAccess('tools', 'ssh')
   }
 
-  function canUsePortScanner() {
+  function canUsePortScanner(): boolean {
     return canAccess('tools', 'port_check')
   }
 

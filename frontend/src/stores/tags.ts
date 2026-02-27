@@ -2,36 +2,63 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
-export const useTagsStore = defineStore('tags', () => {
-  const tags = ref([])
-  const isLoading = ref(false)
-  const error = ref(null)
-  const validTypes = ref([])
+interface Tag {
+  id: number
+  name: string
+  slug: string
+  color?: string
+  type?: string
+  usage_count?: number
+  [key: string]: unknown
+}
 
-  const tagById = computed(() => {
-    const map = {}
-    tags.value.forEach(tag => {
+interface TagInput {
+  name: string
+  color?: string
+  type?: string
+  [key: string]: unknown
+}
+
+interface TaggableItem {
+  id: number
+  type: string
+  [key: string]: unknown
+}
+
+interface TagByIdMap {
+  [id: number]: Tag
+}
+
+export const useTagsStore = defineStore('tags', () => {
+  const tags = ref<Tag[]>([])
+  const isLoading = ref<boolean>(false)
+  const error = ref<string | null>(null)
+  const validTypes = ref<string[]>([])
+
+  const tagById = computed<TagByIdMap>(() => {
+    const map: TagByIdMap = {}
+    tags.value.forEach((tag: Tag) => {
       map[tag.id] = tag
     })
     return map
   })
 
-  async function loadTags(search = '') {
+  async function loadTags(search: string = ''): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
-      const params = search ? { search } : {}
+      const params: { search?: string } = search ? { search } : {}
       const response = await api.get('/api/v1/tags', { params })
       tags.value = response.data.data
-    } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to load tags'
+    } catch (err: unknown) {
+      error.value = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to load tags'
       throw err
     } finally {
       isLoading.value = false
     }
   }
 
-  async function loadValidTypes() {
+  async function loadValidTypes(): Promise<void> {
     try {
       const response = await api.get('/api/v1/tags/types')
       validTypes.value = response.data.data
@@ -40,7 +67,7 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function getTag(id) {
+  async function getTag(id: number): Promise<Tag> {
     try {
       const response = await api.get(`/api/v1/tags/${id}`)
       return response.data.data
@@ -49,10 +76,10 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function createTag(data) {
+  async function createTag(data: TagInput): Promise<Tag> {
     try {
       const response = await api.post('/api/v1/tags', data)
-      const newTag = response.data.data
+      const newTag: Tag = response.data.data
       tags.value.push(newTag)
       return newTag
     } catch (err) {
@@ -60,11 +87,11 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function updateTag(id, data) {
+  async function updateTag(id: number, data: TagInput): Promise<Tag> {
     try {
       const response = await api.put(`/api/v1/tags/${id}`, data)
-      const updatedTag = response.data.data
-      const index = tags.value.findIndex(t => t.id === id)
+      const updatedTag: Tag = response.data.data
+      const index = tags.value.findIndex((t: Tag) => t.id === id)
       if (index !== -1) {
         tags.value[index] = updatedTag
       }
@@ -74,23 +101,23 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function deleteTag(id) {
+  async function deleteTag(id: number): Promise<void> {
     try {
       await api.delete(`/api/v1/tags/${id}`)
-      tags.value = tags.value.filter(t => t.id !== id)
+      tags.value = tags.value.filter((t: Tag) => t.id !== id)
     } catch (err) {
       throw err
     }
   }
 
-  async function tagItem(tagId, taggableType, taggableId) {
+  async function tagItem(tagId: number, taggableType: string, taggableId: number): Promise<void> {
     try {
       await api.post(`/api/v1/tags/${tagId}/tag`, {
         taggable_type: taggableType,
         taggable_id: taggableId
       })
       // Update local tag usage count
-      const tag = tags.value.find(t => t.id === tagId)
+      const tag = tags.value.find((t: Tag) => t.id === tagId)
       if (tag) {
         tag.usage_count = (tag.usage_count || 0) + 1
       }
@@ -99,12 +126,12 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function untagItem(tagId, taggableType, taggableId) {
+  async function untagItem(tagId: number, taggableType: string, taggableId: number): Promise<void> {
     try {
       await api.delete(`/api/v1/tags/${tagId}/${taggableType}/${taggableId}`)
       // Update local tag usage count
-      const tag = tags.value.find(t => t.id === tagId)
-      if (tag && tag.usage_count > 0) {
+      const tag = tags.value.find((t: Tag) => t.id === tagId)
+      if (tag && tag.usage_count && tag.usage_count > 0) {
         tag.usage_count--
       }
     } catch (err) {
@@ -112,7 +139,7 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function getItemTags(taggableType, taggableId) {
+  async function getItemTags(taggableType: string, taggableId: number): Promise<Tag[]> {
     try {
       const response = await api.get(`/api/v1/taggable/${taggableType}/${taggableId}`)
       return response.data.data
@@ -121,7 +148,7 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function setItemTags(taggableType, taggableId, tagIds) {
+  async function setItemTags(taggableType: string, taggableId: number, tagIds: number[]): Promise<Tag[]> {
     try {
       const response = await api.put(`/api/v1/taggable/${taggableType}/${taggableId}`, {
         tag_ids: tagIds
@@ -132,9 +159,9 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function searchByTags(tagIds, type = null) {
+  async function searchByTags(tagIds: number[], type: string | null = null): Promise<TaggableItem[]> {
     try {
-      const params = { tags: tagIds.join(',') }
+      const params: { tags: string; type?: string } = { tags: tagIds.join(',') }
       if (type) params.type = type
       const response = await api.get('/api/v1/tags/search', { params })
       return response.data.data
@@ -143,16 +170,16 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function mergeTags(sourceIds, targetId) {
+  async function mergeTags(sourceIds: number[], targetId: number): Promise<Tag> {
     try {
       const response = await api.post('/api/v1/tags/merge', {
         source_ids: sourceIds,
         target_id: targetId
       })
       // Remove merged source tags from local state
-      tags.value = tags.value.filter(t => !sourceIds.includes(t.id))
+      tags.value = tags.value.filter((t: Tag) => !sourceIds.includes(t.id))
       // Update target tag
-      const index = tags.value.findIndex(t => t.id === targetId)
+      const index = tags.value.findIndex((t: Tag) => t.id === targetId)
       if (index !== -1) {
         tags.value[index] = response.data.data
       }

@@ -462,7 +462,7 @@ function getStatusIcon(status) {
               <!-- Trigger -->
               <div>
                 <label class="label">Trigger (Auslöser)</label>
-                <select v-model="workflowForm.trigger_type" class="input">
+                <select v-model="workflowForm.trigger_type" class="select">
                   <option v-for="(label, type) in options.trigger_types" :key="type" :value="type">
                     {{ label }}
                   </option>
@@ -471,7 +471,7 @@ function getStatusIcon(status) {
                 <!-- Event trigger config -->
                 <div v-if="workflowForm.trigger_type === 'event'" class="mt-3">
                   <label class="label text-sm">Ereignis</label>
-                  <select v-model="workflowForm.trigger_config.event" class="input">
+                  <select v-model="workflowForm.trigger_config.event" class="select">
                     <option v-for="(label, event) in options.events" :key="event" :value="event">
                       {{ label }}
                     </option>
@@ -520,7 +520,7 @@ function getStatusIcon(status) {
                       </button>
                     </div>
 
-                    <select v-model="action.action_type" class="input mb-3">
+                    <select v-model="action.action_type" class="select mb-3">
                       <option v-for="(info, type) in options.action_types" :key="type" :value="type">
                         {{ info.name }}
                       </option>
@@ -534,7 +534,7 @@ function getStatusIcon(status) {
 
                     <div v-if="action.action_type === 'http_request'" class="space-y-2">
                       <div class="flex gap-2">
-                        <select v-model="action.config.method" class="input w-24">
+                        <select v-model="action.config.method" class="select w-24">
                           <option value="GET">GET</option>
                           <option value="POST">POST</option>
                           <option value="PUT">PUT</option>

@@ -2,17 +2,88 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
 
+interface PasswordCategory {
+  id: string
+  name: string
+  description?: string
+  [key: string]: unknown
+}
+
+interface PasswordEntry {
+  id: string
+  name?: string
+  username?: string
+  password?: string
+  url?: string
+  notes?: string
+  category_id?: string | null
+  is_favorite: boolean
+  is_archived?: boolean
+  totp_secret?: string
+  [key: string]: unknown
+}
+
+interface TOTPData {
+  code: string
+  remaining_seconds: number
+  [key: string]: unknown
+}
+
+interface GeneratePasswordOptions {
+  length?: number
+  uppercase?: boolean
+  lowercase?: boolean
+  numbers?: boolean
+  symbols?: boolean
+}
+
+interface CreatePasswordData {
+  name: string
+  username?: string
+  password?: string
+  url?: string
+  notes?: string
+  category_id?: string | null
+  is_favorite?: boolean
+  totp_secret?: string
+  [key: string]: unknown
+}
+
+interface UpdatePasswordData {
+  name?: string
+  username?: string
+  password?: string
+  url?: string
+  notes?: string
+  category_id?: string | null
+  is_favorite?: boolean
+  totp_secret?: string
+  [key: string]: unknown
+}
+
+interface CreateCategoryData {
+  name: string
+  description?: string
+  [key: string]: unknown
+}
+
+interface UpdateCategoryData {
+  name?: string
+  description?: string
+  [key: string]: unknown
+}
+
 export const usePasswordsStore = defineStore('passwords', () => {
   // State
-  const passwords = ref([])
-  const categories = ref([])
-  const selectedCategory = ref(null)
-  const searchQuery = ref('')
-  const isLoading = ref(false)
-  const currentPassword = ref(null)
+  const passwords = ref<PasswordEntry[]>([])
+  const categories = ref<PasswordCategory[]>([])
+  const selectedCategory = ref<string | null>(null)
+  const searchQuery = ref<string>('')
+  const isLoading = ref<boolean>(false)
+  const currentPassword = ref<PasswordEntry | null>(null)
 
   // Getters
-  const filteredPasswords = computed(() => {
+  const filteredPasswords = computed<PasswordEntry[]>(() => {
     let result = passwords.value
 
     // Filter by category
@@ -33,12 +104,12 @@ export const usePasswordsStore = defineStore('passwords', () => {
     return result
   })
 
-  const favorites = computed(() =>
+  const favorites = computed<PasswordEntry[]>(() =>
     passwords.value.filter(p => p.is_favorite)
   )
 
   // Actions
-  async function loadPasswords(categoryId = null, includeArchived = false) {
+  async function loadPasswords(categoryId: string | null = null, includeArchived: boolean = false): Promise<void> {
     isLoading.value = true
     try {
       const params = new URLSearchParams()
@@ -47,7 +118,7 @@ export const usePasswordsStore = defineStore('passwords', () => {
 
       const response = await api.get(`/api/v1/passwords?${params}`)
       passwords.value = response.data.data.items || []
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to load passwords:', error)
       throw error
     } finally {
@@ -55,59 +126,59 @@ export const usePasswordsStore = defineStore('passwords', () => {
     }
   }
 
-  async function loadCategories() {
+  async function loadCategories(): Promise<void> {
     try {
       const response = await api.get('/api/v1/passwords/categories')
       categories.value = response.data.data.items || []
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to load categories:', error)
     }
   }
 
-  async function getPassword(id) {
+  async function getPassword(id: string): Promise<PasswordEntry> {
     try {
       const response = await api.get(`/api/v1/passwords/${id}`)
       currentPassword.value = response.data.data
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get password:', error)
       throw error
     }
   }
 
-  async function createPassword(data) {
+  async function createPassword(data: CreatePasswordData): Promise<PasswordEntry> {
     try {
       const response = await api.post('/api/v1/passwords', data)
       await loadPasswords()
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to create password:', error)
       throw error
     }
   }
 
-  async function updatePassword(id, data) {
+  async function updatePassword(id: string, data: UpdatePasswordData): Promise<PasswordEntry> {
     try {
       const response = await api.put(`/api/v1/passwords/${id}`, data)
       await loadPasswords()
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to update password:', error)
       throw error
     }
   }
 
-  async function deletePassword(id) {
+  async function deletePassword(id: string): Promise<void> {
     try {
       await api.delete(`/api/v1/passwords/${id}`)
       passwords.value = passwords.value.filter(p => p.id !== id)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to delete password:', error)
       throw error
     }
   }
 
-  async function toggleFavorite(id) {
+  async function toggleFavorite(id: string): Promise<boolean> {
     try {
       const response = await api.post(`/api/v1/passwords/${id}/favorite`)
       const index = passwords.value.findIndex(p => p.id === id)
@@ -115,52 +186,52 @@ export const usePasswordsStore = defineStore('passwords', () => {
         passwords.value[index].is_favorite = response.data.data.is_favorite
       }
       return response.data.data.is_favorite
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to toggle favorite:', error)
       throw error
     }
   }
 
-  async function generateTOTP(id) {
+  async function generateTOTP(id: string): Promise<TOTPData> {
     try {
       const response = await api.get(`/api/v1/passwords/${id}/totp`)
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to generate TOTP:', error)
       throw error
     }
   }
 
-  async function generatePassword(options = {}) {
+  async function generatePassword(options: GeneratePasswordOptions = {}): Promise<string> {
     try {
       const params = new URLSearchParams()
-      if (options.length) params.append('length', options.length)
-      if (options.uppercase !== undefined) params.append('uppercase', options.uppercase)
-      if (options.lowercase !== undefined) params.append('lowercase', options.lowercase)
-      if (options.numbers !== undefined) params.append('numbers', options.numbers)
-      if (options.symbols !== undefined) params.append('symbols', options.symbols)
+      if (options.length) params.append('length', String(options.length))
+      if (options.uppercase !== undefined) params.append('uppercase', String(options.uppercase))
+      if (options.lowercase !== undefined) params.append('lowercase', String(options.lowercase))
+      if (options.numbers !== undefined) params.append('numbers', String(options.numbers))
+      if (options.symbols !== undefined) params.append('symbols', String(options.symbols))
 
       const response = await api.get(`/api/v1/passwords/generate?${params}`)
       return response.data.data.password
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to generate password:', error)
       throw error
     }
   }
 
   // Category actions
-  async function createCategory(data) {
+  async function createCategory(data: CreateCategoryData): Promise<PasswordCategory> {
     try {
       const response = await api.post('/api/v1/passwords/categories', data)
       categories.value.push(response.data.data)
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to create category:', error)
       throw error
     }
   }
 
-  async function updateCategory(id, data) {
+  async function updateCategory(id: string, data: UpdateCategoryData): Promise<PasswordCategory> {
     try {
       const response = await api.put(`/api/v1/passwords/categories/${id}`, data)
       const index = categories.value.findIndex(c => c.id === id)
@@ -168,34 +239,34 @@ export const usePasswordsStore = defineStore('passwords', () => {
         categories.value[index] = response.data.data
       }
       return response.data.data
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to update category:', error)
       throw error
     }
   }
 
-  async function deleteCategory(id) {
+  async function deleteCategory(id: string): Promise<void> {
     try {
       await api.delete(`/api/v1/passwords/categories/${id}`)
       categories.value = categories.value.filter(c => c.id !== id)
       if (selectedCategory.value === id) {
         selectedCategory.value = null
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to delete category:', error)
       throw error
     }
   }
 
-  function selectCategory(categoryId) {
+  function selectCategory(categoryId: string | null): void {
     selectedCategory.value = categoryId
   }
 
-  function setSearchQuery(query) {
+  function setSearchQuery(query: string): void {
     searchQuery.value = query
   }
 
-  function clearCurrentPassword() {
+  function clearCurrentPassword(): void {
     currentPassword.value = null
   }
 

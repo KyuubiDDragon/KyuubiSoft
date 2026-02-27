@@ -1,9 +1,27 @@
 import { onMounted, onUnmounted, ref, computed } from 'vue'
+import type { Ref, ComputedRef } from 'vue'
 import { useRouter } from 'vue-router'
+import type { Router } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 
+// Interfaces
+interface ShortcutDefinition {
+  key: string
+  description: string
+  route?: string
+  action?: string
+}
+
+interface UseKeyboardShortcutsReturn {
+  shortcuts: ComputedRef<ShortcutDefinition[]>
+  isShortcutsModalOpen: Ref<boolean>
+  openShortcutsModal: () => void
+  closeShortcutsModal: () => void
+  pendingKeys: Ref<string>
+}
+
 // Global shortcut definitions
-const globalShortcuts = [
+const globalShortcuts: ShortcutDefinition[] = [
   // Navigation
   { key: 'g h', description: 'Dashboard öffnen', route: '/' },
   { key: 'g l', description: 'Listen öffnen', route: '/lists' },
@@ -26,27 +44,28 @@ const globalShortcuts = [
 ]
 
 // Store for the keyboard shortcuts state
-const isShortcutsModalOpen = ref(false)
-const pendingKeys = ref('')
-const pendingTimeout = ref(null)
+const isShortcutsModalOpen: Ref<boolean> = ref<boolean>(false)
+const pendingKeys: Ref<string> = ref<string>('')
+const pendingTimeout: Ref<ReturnType<typeof setTimeout> | null> = ref<ReturnType<typeof setTimeout> | null>(null)
 
-export function useKeyboardShortcuts() {
-  const router = useRouter()
+export function useKeyboardShortcuts(): UseKeyboardShortcutsReturn {
+  const router: Router = useRouter()
   const uiStore = useUiStore()
 
-  const shortcuts = computed(() => globalShortcuts)
+  const shortcuts: ComputedRef<ShortcutDefinition[]> = computed<ShortcutDefinition[]>(() => globalShortcuts)
 
-  function isInputElement(element) {
-    const tagName = element?.tagName?.toLowerCase()
+  function isInputElement(element: EventTarget | null): boolean {
+    const el = element as HTMLElement | null
+    const tagName: string | undefined = el?.tagName?.toLowerCase()
     return tagName === 'input' ||
            tagName === 'textarea' ||
            tagName === 'select' ||
-           element?.isContentEditable
+           el?.isContentEditable || false
   }
 
-  function normalizeKey(e) {
-    let key = e.key
-    const parts = []
+  function normalizeKey(e: KeyboardEvent): string {
+    let key: string = e.key
+    const parts: string[] = []
 
     if (e.ctrlKey || e.metaKey) parts.push('Ctrl')
     if (e.altKey) parts.push('Alt')
@@ -60,7 +79,7 @@ export function useKeyboardShortcuts() {
     return parts.join('+')
   }
 
-  function executeAction(shortcut) {
+  function executeAction(shortcut: ShortcutDefinition): boolean {
     if (shortcut.route) {
       router.push(shortcut.route)
       return true
@@ -93,7 +112,7 @@ export function useKeyboardShortcuts() {
     }
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: KeyboardEvent): void {
     // Ignore if in input field (except for some specific shortcuts)
     if (isInputElement(e.target)) {
       // Allow Ctrl+K for command palette even in input fields
@@ -110,7 +129,7 @@ export function useKeyboardShortcuts() {
       return
     }
 
-    const normalizedKey = normalizeKey(e)
+    const normalizedKey: string = normalizeKey(e)
 
     // Clear pending timeout
     if (pendingTimeout.value) {
@@ -120,8 +139,8 @@ export function useKeyboardShortcuts() {
 
     // Handle multi-key sequences (like 'g h')
     if (pendingKeys.value) {
-      const fullKey = `${pendingKeys.value} ${normalizedKey}`
-      const shortcut = globalShortcuts.find(s => s.key === fullKey)
+      const fullKey: string = `${pendingKeys.value} ${normalizedKey}`
+      const shortcut: ShortcutDefinition | undefined = globalShortcuts.find(s => s.key === fullKey)
 
       if (shortcut) {
         e.preventDefault()
@@ -135,7 +154,7 @@ export function useKeyboardShortcuts() {
     }
 
     // Check for single key shortcuts
-    const singleKeyShortcut = globalShortcuts.find(s => s.key === normalizedKey && !s.key.includes(' '))
+    const singleKeyShortcut: ShortcutDefinition | undefined = globalShortcuts.find(s => s.key === normalizedKey && !s.key.includes(' '))
     if (singleKeyShortcut) {
       e.preventDefault()
       executeAction(singleKeyShortcut)
@@ -143,7 +162,7 @@ export function useKeyboardShortcuts() {
     }
 
     // Check if this could be the start of a multi-key sequence
-    const couldBeSequenceStart = globalShortcuts.some(s => s.key.startsWith(normalizedKey + ' '))
+    const couldBeSequenceStart: boolean = globalShortcuts.some(s => s.key.startsWith(normalizedKey + ' '))
     if (couldBeSequenceStart) {
       pendingKeys.value = normalizedKey
 
@@ -154,11 +173,11 @@ export function useKeyboardShortcuts() {
     }
   }
 
-  function openShortcutsModal() {
+  function openShortcutsModal(): void {
     isShortcutsModalOpen.value = true
   }
 
-  function closeShortcutsModal() {
+  function closeShortcutsModal(): void {
     isShortcutsModalOpen.value = false
   }
 

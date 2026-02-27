@@ -4,20 +4,26 @@ import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { availableLocales, setLocale as setI18nLocale, getLocale } from '@/locales'
 
+interface LocaleInfo {
+  code: string
+  name: string
+  flag: string
+}
+
 export const useLocaleStore = defineStore('locale', () => {
   const { locale } = useI18n({ useScope: 'global' })
-  const currentLocale = ref(getLocale())
-  const isLoading = ref(false)
+  const currentLocale = ref<string>(getLocale())
+  const isLoading = ref<boolean>(false)
 
   // Watch for locale changes
-  watch(currentLocale, (newLocale) => {
+  watch(currentLocale, (newLocale: string) => {
     setI18nLocale(newLocale)
     // Optionally sync with backend
     syncLocaleToBackend(newLocale)
   })
 
-  async function setLocale(localeCode) {
-    if (!availableLocales.some(l => l.code === localeCode)) {
+  async function setLocale(localeCode: string): Promise<void> {
+    if (!availableLocales.some((l: LocaleInfo) => l.code === localeCode)) {
       console.warn(`Locale ${localeCode} is not available`)
       return
     }
@@ -25,7 +31,7 @@ export const useLocaleStore = defineStore('locale', () => {
     setI18nLocale(localeCode)
   }
 
-  async function syncLocaleToBackend(localeCode) {
+  async function syncLocaleToBackend(localeCode: string): Promise<void> {
     try {
       await api.put('/api/v1/users/me/preferences', {
         locale: localeCode,
@@ -36,11 +42,11 @@ export const useLocaleStore = defineStore('locale', () => {
     }
   }
 
-  async function loadLocaleFromBackend() {
+  async function loadLocaleFromBackend(): Promise<void> {
     try {
       const response = await api.get('/api/v1/users/me/preferences')
-      const serverLocale = response.data.data?.locale
-      if (serverLocale && availableLocales.some(l => l.code === serverLocale)) {
+      const serverLocale: string | undefined = response.data.data?.locale
+      if (serverLocale && availableLocales.some((l: LocaleInfo) => l.code === serverLocale)) {
         currentLocale.value = serverLocale
         setI18nLocale(serverLocale)
       }
@@ -50,12 +56,12 @@ export const useLocaleStore = defineStore('locale', () => {
     }
   }
 
-  function getAvailableLocales() {
+  function getAvailableLocales(): LocaleInfo[] {
     return availableLocales
   }
 
-  function getCurrentLocaleInfo() {
-    return availableLocales.find(l => l.code === currentLocale.value) || availableLocales[0]
+  function getCurrentLocaleInfo(): LocaleInfo {
+    return availableLocales.find((l: LocaleInfo) => l.code === currentLocale.value) || availableLocales[0]
   }
 
   return {

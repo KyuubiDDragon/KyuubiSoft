@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useMockupStore } from '../stores/mockupStore'
+import { sanitizeHtml } from '@/core/services/sanitize'
 import { useToast } from '@/composables/useToast'
 import {
   PhotoIcon,
@@ -538,7 +539,7 @@ const renderTextWithHighlight = (element) => {
           class="transition-all whitespace-pre-wrap select-none"
           :class="{ 'ring-2 ring-amber-500 ring-offset-2 ring-offset-transparent rounded': isSelected(element.id) }"
           @mousedown="(e) => startElementDrag(e, element.id)"
-          v-html="element.highlightText ? renderTextWithHighlight(element) : element.text"
+          v-html="sanitizeHtml(element.highlightText ? renderTextWithHighlight(element) : element.text)"
         />
 
         <!-- Line (hidden when contentOnly export) -->
@@ -700,7 +701,7 @@ const renderTextWithHighlight = (element) => {
             <div class="text-xs text-[#606068]">{{ element.label }}</div>
             <div
               class="mt-0.5 font-mono font-medium text-sm text-white"
-              v-html="element.highlightText ? renderTextWithHighlight(element) : element.value"
+              v-html="sanitizeHtml(element.highlightText ? renderTextWithHighlight(element) : element.value)"
             />
           </div>
         </div>

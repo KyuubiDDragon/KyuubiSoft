@@ -34,6 +34,7 @@ import {
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/24/solid'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { sanitizeHtml } from '@/core/services/sanitize'
 
 const uiStore = useUiStore()
 
@@ -600,7 +601,7 @@ onMounted(async () => {
                    prose-ul:text-gray-300 prose-ol:text-gray-300
                    prose-li:mb-1 prose-blockquote:border-primary-500
                    prose-code:text-primary-300 prose-pre:bg-white/[0.02]"
-            v-html="getFullContent(item)"
+            v-html="sanitizeHtml(getFullContent(item))"
           ></div>
 
           <!-- Action buttons -->
@@ -829,7 +830,7 @@ onMounted(async () => {
                      prose-code:text-primary-300 prose-code:bg-white/[0.04] prose-code:px-1 prose-code:rounded
                      prose-pre:bg-white/[0.02] prose-pre:p-4 prose-pre:rounded-lg
                      prose-img:rounded-lg prose-img:my-4"
-              v-html="getFullContent(selectedArticle)"
+              v-html="sanitizeHtml(getFullContent(selectedArticle))"
             ></div>
           </div>
 

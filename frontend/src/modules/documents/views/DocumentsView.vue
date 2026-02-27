@@ -28,6 +28,7 @@ import { useProjectStore } from '@/stores/project'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import TipTapEditor from '@/components/TipTapEditor.vue'
+import { sanitizeHtml, sanitizeHtmlWithLinks } from '@/core/services/sanitize'
 
 // Lazy load heavy editors
 const MonacoEditor = defineAsyncComponent(() => import('@/components/MonacoEditor.vue'))
@@ -535,7 +536,7 @@ onMounted(async () => {
             <label class="label">Vorschau</label>
             <div
               class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-              v-html="renderMarkdown(editContent)"
+              v-html="sanitizeHtmlWithLinks(renderMarkdown(editContent))"
             ></div>
           </div>
         </div>
@@ -544,7 +545,7 @@ onMounted(async () => {
         <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
           <div
             class="prose prose-invert max-w-none"
-            v-html="renderMarkdown(selectedDoc.content)"
+            v-html="sanitizeHtmlWithLinks(renderMarkdown(selectedDoc.content))"
           ></div>
           <div v-if="!selectedDoc.content" class="text-center py-12 text-gray-400">
             Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Inhalt hinzuzufügen.
@@ -1043,12 +1044,12 @@ onMounted(async () => {
                 <div
                   v-if="selectedDoc?.format === 'richtext' || !selectedDoc?.format"
                   class="prose prose-invert max-w-none text-sm"
-                  v-html="versionPreviewContent"
+                  v-html="sanitizeHtml(versionPreviewContent)"
                 ></div>
                 <div
                   v-else-if="selectedDoc?.format === 'markdown'"
                   class="prose prose-invert max-w-none text-sm"
-                  v-html="renderMarkdown(versionPreviewContent)"
+                  v-html="sanitizeHtmlWithLinks(renderMarkdown(versionPreviewContent))"
                 ></div>
                 <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap">{{ versionPreviewContent }}</pre>
               </div>

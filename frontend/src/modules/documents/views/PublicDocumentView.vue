@@ -16,6 +16,7 @@ import {
   SignalSlashIcon,
 } from '@heroicons/vue/24/outline'
 import TipTapEditor from '@/components/TipTapEditor.vue'
+import { sanitizeHtml, sanitizeHtmlWithLinks } from '@/core/services/sanitize'
 
 // Lazy load heavy editors
 const MonacoEditor = defineAsyncComponent(() => import('@/components/MonacoEditor.vue'))
@@ -569,7 +570,7 @@ onUnmounted(() => {
             <div
               v-else
               class="p-8 prose prose-invert max-w-none"
-              v-html="document.content"
+              v-html="sanitizeHtml(document.content)"
             ></div>
           </template>
 
@@ -592,7 +593,7 @@ onUnmounted(() => {
                 <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-                  v-html="renderMarkdown(ytext ? ytext.toString() : document.content)"
+                  v-html="sanitizeHtmlWithLinks(renderMarkdown(ytext ? ytext.toString() : document.content))"
                 ></div>
               </div>
             </div>
@@ -612,14 +613,14 @@ onUnmounted(() => {
                 <div class="p-2 bg-white/[0.04] text-xs text-gray-400 border-b border-white/[0.06]">Vorschau</div>
                 <div
                   class="p-4 h-[600px] overflow-y-auto prose prose-invert max-w-none"
-                  v-html="renderMarkdown(localContent || document.content)"
+                  v-html="sanitizeHtmlWithLinks(renderMarkdown(localContent || document.content))"
                 ></div>
               </div>
             </div>
             <div
               v-else
               class="p-8 prose prose-invert max-w-none"
-              v-html="renderMarkdown(document.content)"
+              v-html="sanitizeHtmlWithLinks(renderMarkdown(document.content))"
             ></div>
           </template>
 

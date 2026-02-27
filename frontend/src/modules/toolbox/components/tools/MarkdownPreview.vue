@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { sanitizeHtmlWithLinks } from '@/core/services/sanitize'
 
 const markdown = ref(`# Markdown Preview
 
@@ -223,7 +224,7 @@ console.log("Hello!");
 
       <!-- Preview -->
       <div v-if="viewMode !== 'edit'" class="bg-white/[0.04] rounded-lg p-4 h-96 overflow-auto">
-        <div class="prose prose-invert max-w-none" v-html="renderedHtml"></div>
+        <div class="prose prose-invert max-w-none" v-html="sanitizeHtmlWithLinks(renderedHtml)"></div>
       </div>
     </div>
 

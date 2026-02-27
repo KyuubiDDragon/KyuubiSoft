@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import TurndownService from 'turndown'
 import { gfm } from 'turndown-plugin-gfm'
+import { stripHtml, sanitizeHtml } from '@/core/services/sanitize'
 
 /**
  * Composable for exporting notes in various formats
@@ -296,7 +297,7 @@ export function useExport() {
       ${note.updated_at ? `<span> | Aktualisiert: ${formatDate(note.updated_at)}</span>` : ''}
     </div>
     <div class="content">
-      ${note.content || '<p>Keine Inhalte</p>'}
+      ${sanitizeHtml(note.content || '<p>Keine Inhalte</p>')}
     </div>
   </article>
 </body>
@@ -336,7 +337,7 @@ export function useExport() {
             ${note.updated_at ? ` | Aktualisiert: ${formatDate(note.updated_at)}` : ''}
           </div>
           <div style="line-height: 1.6;">
-            ${note.content || '<p>Keine Inhalte</p>'}
+            ${sanitizeHtml(note.content || '<p>Keine Inhalte</p>')}
           </div>
         </div>
       `
@@ -394,9 +395,8 @@ export function useExport() {
       isExporting.value = true
       exportError.value = null
 
-      // Create a temporary element to strip HTML
-      const temp = document.createElement('div')
-      temp.innerHTML = note.content || ''
+      // Strip HTML safely using DOMPurify-based helper
+      const textContent = stripHtml(note.content || '') || 'Keine Inhalte'
 
       // Get text content with basic formatting
       const text = [
@@ -408,7 +408,7 @@ export function useExport() {
         '',
         '---',
         '',
-        temp.textContent || temp.innerText || 'Keine Inhalte',
+        textContent,
       ].filter(line => line !== null).join('\n')
 
       downloadFile(text, `${sanitizeFilename(note.title)}.txt`, 'text/plain')

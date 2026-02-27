@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { sanitizeHtml } from '@/core/services/sanitize'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -255,7 +256,7 @@ watch(() => props.show, (show) => {
               <div
                 v-if="previewContent"
                 class="prose prose-invert prose-sm max-w-none"
-                v-html="previewContent"
+                v-html="sanitizeHtml(previewContent)"
               />
               <div v-else class="flex items-center justify-center h-full text-gray-500">
                 Vorschau wird geladen...

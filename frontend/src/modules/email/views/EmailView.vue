@@ -206,7 +206,7 @@
           <div
             v-if="emailStore.currentMessage.body_html"
             class="prose prose-invert max-w-none text-sm email-body"
-            v-html="emailStore.currentMessage.body_html"
+            v-html="sanitizeHtml(emailStore.currentMessage.body_html)"
           />
           <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap font-sans">{{ emailStore.currentMessage.body_text || 'Kein Inhalt' }}</pre>
         </div>
@@ -387,6 +387,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useEmailStore } from '@/stores/email'
+import { sanitizeHtml } from '@/core/services/sanitize'
 import {
   PencilSquareIcon,
   InboxIcon,

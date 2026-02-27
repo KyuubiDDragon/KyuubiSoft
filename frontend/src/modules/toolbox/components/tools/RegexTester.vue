@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { sanitizeHtml } from '@/core/services/sanitize'
 
 const pattern = ref('')
 const flags = ref('g')
@@ -163,7 +164,7 @@ function usePattern(p) {
         <label class="text-sm text-gray-400 mb-1 block">Hervorgehobener Text</label>
         <div
           class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono whitespace-pre-wrap break-all min-h-[100px]"
-          v-html="highlightedText"
+          v-html="sanitizeHtml(highlightedText)"
         ></div>
       </div>
 

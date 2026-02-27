@@ -754,16 +754,78 @@ class ServerController
             $memUsed = (int) ($memParts[2] ?? 0);
             $memFree = (int) ($memParts[3] ?? 0);
 
-            // Disk from host
-            $diskInfo = $this->execOnHost("df -B1 / | tail -1");
-            $diskParts = preg_split('/\s+/', trim($diskInfo));
-            $diskTotal = (int) ($diskParts[1] ?? 0);
-            $diskUsed = (int) ($diskParts[2] ?? 0);
-            $diskFree = (int) ($diskParts[3] ?? 0);
+            // Disks from host – all real filesystems (exclude tmpfs, devtmpfs, squashfs, overlay)
+            $dfOutput = $this->execOnHost(
+                "df -B1 --output=target,size,used,avail,source " .
+                "--exclude-type=tmpfs --exclude-type=devtmpfs " .
+                "--exclude-type=squashfs --exclude-type=overlay 2>/dev/null | tail -n +2"
+            );
+            $disks = [];
+            foreach (array_filter(explode("\n", trim($dfOutput))) as $dfLine) {
+                $p = preg_split('/\s+/', trim($dfLine));
+                if (count($p) < 5) {
+                    continue;
+                }
+                $dTotal = (int) $p[1];
+                $dUsed  = (int) $p[2];
+                $dFree  = (int) $p[3];
+                $disks[] = [
+                    'mount'       => $p[0],
+                    'device'      => $p[4],
+                    'total'       => $this->formatMemory($dTotal),
+                    'used'        => $this->formatMemory($dUsed),
+                    'free'        => $this->formatMemory($dFree),
+                    'percent'     => $dTotal > 0 ? round(($dUsed / $dTotal) * 100, 1) : 0,
+                    'total_bytes' => $dTotal,
+                    'used_bytes'  => $dUsed,
+                ];
+            }
+            // Backwards-compat single 'disk' key – root fs or first entry
+            $rootDisk  = current(array_filter($disks, fn($d) => $d['mount'] === '/')) ?: ($disks[0] ?? null);
+            $diskTotal = (int) ($rootDisk['total_bytes'] ?? 0);
+            $diskUsed  = (int) ($rootDisk['used_bytes']  ?? 0);
+            $diskFree  = $diskTotal - $diskUsed;
 
             // CPU info from host
             $cpuInfo = $this->execOnHost("lscpu | grep 'Model name' | cut -d':' -f2");
             $cpuCores = (int) trim($this->execOnHost("nproc"));
+
+            // CPU usage % – two /proc/stat samples 500ms apart for real-time accuracy
+            $cpuRaw = trim($this->execOnHost(
+                "sh -c '" .
+                "a=\$(awk \"/^cpu /{print \\\$2,\\\$3,\\\$4,\\\$5,\\\$6,\\\$7,\\\$8}\" /proc/stat); " .
+                "sleep 0.5; " .
+                "b=\$(awk \"/^cpu /{print \\\$2,\\\$3,\\\$4,\\\$5,\\\$6,\\\$7,\\\$8}\" /proc/stat); " .
+                "echo \$a \$b' | " .
+                "awk '{i1=\$4; t1=\$1+\$2+\$3+\$4+\$5+\$6+\$7; " .
+                "i2=\$11; t2=\$8+\$9+\$10+\$11+\$12+\$13+\$14; " .
+                "dt=t2-t1; if(dt>0) printf \"%.1f\", (1-(i2-i1)/dt)*100; else print 0}'"
+            ));
+            $cpuPercent = is_numeric($cpuRaw) ? (float) $cpuRaw : 0.0;
+
+            // Network interfaces – IP addresses and traffic counters
+            $netRaw = trim($this->execOnHost(
+                "ip -o addr show | awk '\$3==\"inet\" && \$2!=\"lo\" {print \$2, \$4}'"
+            ));
+            $netStatRaw = trim($this->execOnHost(
+                "awk 'NR>2 && \$1!~/^lo:/{gsub(\":\",\"\",\$1); print \$1,\$2,\$10}' /proc/net/dev"
+            ));
+            $netInterfaces = [];
+            foreach (array_filter(explode("\n", $netRaw)) as $iLine) {
+                $parts = explode(' ', trim($iLine), 2);
+                if (count($parts) === 2) {
+                    $netInterfaces[$parts[0]] = ['name' => $parts[0], 'ip' => $parts[1], 'rx_bytes' => 0, 'tx_bytes' => 0];
+                }
+            }
+            foreach (array_filter(explode("\n", $netStatRaw)) as $sLine) {
+                $sp = preg_split('/\s+/', trim($sLine));
+                if (count($sp) >= 3 && isset($netInterfaces[$sp[0]])) {
+                    $netInterfaces[$sp[0]]['rx_bytes'] = (int) $sp[1];
+                    $netInterfaces[$sp[0]]['tx_bytes'] = (int) $sp[2];
+                    $netInterfaces[$sp[0]]['rx'] = $this->formatMemory((int) $sp[1]);
+                    $netInterfaces[$sp[0]]['tx'] = $this->formatMemory((int) $sp[2]);
+                }
+            }
 
             // OS info from host
             $osInfo = $this->execOnHost("cat /etc/os-release | grep PRETTY_NAME | cut -d'\"' -f2");
@@ -782,21 +844,24 @@ class ServerController
                     '15min' => round($loadAvg[2], 2),
                 ],
                 'cpu' => [
-                    'model' => trim($cpuInfo),
-                    'cores' => $cpuCores,
+                    'model'   => trim($cpuInfo),
+                    'cores'   => $cpuCores,
+                    'percent' => $cpuPercent,
                 ],
                 'memory' => [
-                    'total' => $this->formatMemory($memTotal),
-                    'used' => $this->formatMemory($memUsed),
-                    'free' => $this->formatMemory($memFree),
+                    'total'   => $this->formatMemory($memTotal),
+                    'used'    => $this->formatMemory($memUsed),
+                    'free'    => $this->formatMemory($memFree),
                     'percent' => $memTotal > 0 ? round(($memUsed / $memTotal) * 100, 1) : 0,
                 ],
                 'disk' => [
-                    'total' => $this->formatMemory($diskTotal),
-                    'used' => $this->formatMemory($diskUsed),
-                    'free' => $this->formatMemory($diskFree),
+                    'total'   => $this->formatMemory($diskTotal),
+                    'used'    => $this->formatMemory($diskUsed),
+                    'free'    => $this->formatMemory($diskFree),
                     'percent' => $diskTotal > 0 ? round(($diskUsed / $diskTotal) * 100, 1) : 0,
                 ],
+                'disks'   => array_values($disks),
+                'network' => array_values($netInterfaces),
             ]);
         } catch (\Exception $e) {
             return JsonResponse::error('Failed to get system info: ' . $e->getMessage(), 500);

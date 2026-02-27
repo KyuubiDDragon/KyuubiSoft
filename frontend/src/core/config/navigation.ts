@@ -42,6 +42,7 @@ import {
   CircleStackIcon,
   QueueListIcon,
   EnvelopeIcon,
+  BellAlertIcon,
 } from '@heroicons/vue/24/outline'
 
 /**
@@ -117,6 +118,7 @@ export const iconMap: Record<string, Component> = {
   CircleStackIcon,
   QueueListIcon,
   EnvelopeIcon,
+  BellAlertIcon,
 }
 
 /**
@@ -216,6 +218,7 @@ export const navigationGroups: NavGroup[] = [
       { id: 'git', name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git', permission: 'git.view' },
       { id: 'webhooks', name: 'Webhooks', href: '/webhooks', icon: BellIcon, permission: 'webhooks.view' },
       { id: 'uptime', name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
+      { id: 'status-page', name: 'Status Page', href: '/status-page', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
       { id: 'ssl', name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl', permission: 'ssl.view' },
       { id: 'toolbox', name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
       { id: 'workflows', name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
@@ -295,6 +298,7 @@ export const navigationGroups: NavGroup[] = [
       { id: 'passwords', name: 'Passwörter', href: '/passwords', icon: KeyIcon, permission: 'passwords.view' },
       { id: 'backups', name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, permission: 'backups.view' },
       { id: 'audit', name: 'Audit Log', href: '/audit', icon: ClipboardDocumentListIcon, permission: 'system.admin' },
+      { id: 'notification-rules', name: 'Benachrichtigungsregeln', href: '/notification-rules', icon: BellAlertIcon, permission: 'settings.view' },
       { id: 'settings', name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, permission: 'settings.view' },
       { id: 'users', name: 'Benutzer', href: '/users', icon: UsersIcon, permission: 'users.view' },
       { id: 'roles', name: 'Rollen', href: '/roles', icon: ShieldCheckIcon, permission: 'users.write' },

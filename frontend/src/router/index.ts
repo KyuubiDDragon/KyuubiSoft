@@ -89,6 +89,9 @@ const EmailView = () => import('@/modules/email/views/EmailView.vue')
 const ContactsView = () => import('@/modules/contacts/views/ContactsView.vue')
 const ContactDetailView = () => import('@/modules/contacts/views/ContactDetailView.vue')
 const AuditView = () => import('@/modules/audit/views/AuditView.vue')
+const NotificationRulesView = () => import('@/modules/notification-rules/views/NotificationRulesView.vue')
+const StatusPageAdmin = () => import('@/modules/status-page/views/StatusPageAdmin.vue')
+const PublicStatusPage = () => import('@/modules/status-page/views/PublicStatusPage.vue')
 
 const routes: RouteRecordRaw[] = [
   // Auth routes
@@ -449,6 +452,26 @@ const routes: RouteRecordRaw[] = [
     name: 'audit',
     component: AuditView,
     meta: { requiresAuth: true, permission: 'system.admin' },
+  },
+  {
+    path: '/notification-rules',
+    name: 'notification-rules',
+    component: NotificationRulesView,
+    meta: { requiresAuth: true },
+  },
+
+  // Status Page routes
+  {
+    path: '/status-page',
+    name: 'status-page',
+    component: StatusPageAdmin,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/status',
+    name: 'public-status',
+    component: PublicStatusPage,
+    meta: { layout: 'none', guest: true },
   },
 
   // Ticket routes

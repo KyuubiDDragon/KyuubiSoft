@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Dns\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Modules\Dns\Services\CloudflareService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -13,9 +14,13 @@ use Slim\Routing\RouteContext;
 
 class DnsController
 {
+    private CloudflareService $cloudflare;
+
     public function __construct(
         private readonly Connection $db
-    ) {}
+    ) {
+        $this->cloudflare = new CloudflareService();
+    }
 
     /**
      * List all DNS domains for the authenticated user with record counts.
@@ -336,10 +341,44 @@ class DnsController
         }
 
         $id = Uuid::uuid4()->toString();
+        $externalId = null;
+
+        // If this is a Cloudflare domain, also create the record on Cloudflare
+        $fullDomain = $this->db->fetchAssociative(
+            'SELECT provider, provider_config, external_zone_id, name as domain_name FROM dns_domains WHERE id = ?',
+            [$domainId]
+        );
+
+        if ($fullDomain && $fullDomain['provider'] === 'cloudflare' && $fullDomain['external_zone_id']) {
+            $config = $fullDomain['provider_config'] ? json_decode($fullDomain['provider_config'], true) : [];
+            $token = $config['api_token'] ?? '';
+
+            if ($token !== '') {
+                $cfName = ($name === '' || $name === '@')
+                    ? $fullDomain['domain_name']
+                    : $name . '.' . $fullDomain['domain_name'];
+
+                $cfData = [
+                    'type'    => $type,
+                    'name'    => $cfName,
+                    'content' => $value,
+                    'ttl'     => $ttl,
+                ];
+                if ($priority !== null) {
+                    $cfData['priority'] = $priority;
+                }
+
+                $cfResult = $this->cloudflare->createRecord($token, $fullDomain['external_zone_id'], $cfData);
+                if ($cfResult) {
+                    $externalId = $cfResult['id'];
+                }
+            }
+        }
 
         $this->db->insert('dns_records', [
             'id' => $id,
             'domain_id' => $domainId,
+            'external_id' => $externalId,
             'type' => $type,
             'name' => $name ?: '@',
             'value' => $value,
@@ -438,6 +477,37 @@ class DnsController
             [$recordId]
         );
 
+        // If Cloudflare domain and record has external_id, also update on Cloudflare
+        if (!empty($updated['external_id'])) {
+            $domain = $this->db->fetchAssociative(
+                'SELECT provider, provider_config, external_zone_id, name as domain_name FROM dns_domains WHERE id = ?',
+                [$updated['domain_id']]
+            );
+
+            if ($domain && $domain['provider'] === 'cloudflare' && $domain['external_zone_id']) {
+                $config = $domain['provider_config'] ? json_decode($domain['provider_config'], true) : [];
+                $token = $config['api_token'] ?? '';
+
+                if ($token !== '') {
+                    $cfName = ($updated['name'] === '@')
+                        ? $domain['domain_name']
+                        : $updated['name'] . '.' . $domain['domain_name'];
+
+                    $cfData = [
+                        'type'    => $updated['type'],
+                        'name'    => $cfName,
+                        'content' => $updated['value'],
+                        'ttl'     => (int) $updated['ttl'],
+                    ];
+                    if ($updated['priority'] !== null) {
+                        $cfData['priority'] = (int) $updated['priority'];
+                    }
+
+                    $this->cloudflare->updateRecord($token, $domain['external_zone_id'], $updated['external_id'], $cfData);
+                }
+            }
+        }
+
         $updated['ttl'] = (int) $updated['ttl'];
         $updated['priority'] = $updated['priority'] !== null ? (int) $updated['priority'] : null;
 
@@ -452,9 +522,10 @@ class DnsController
         $userId = $request->getAttribute('user_id');
         $recordId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
-        // Verify ownership through domain
+        // Verify ownership through domain and get Cloudflare info
         $record = $this->db->fetchAssociative(
-            'SELECT r.id
+            'SELECT r.id, r.external_id, r.domain_id,
+                    d.provider, d.provider_config, d.external_zone_id
              FROM dns_records r
              JOIN dns_domains d ON r.domain_id = d.id
              WHERE r.id = ? AND d.user_id = ?',
@@ -463,6 +534,16 @@ class DnsController
 
         if (!$record) {
             return JsonResponse::error('DNS-Record nicht gefunden', 404);
+        }
+
+        // If Cloudflare domain and record has external_id, also delete from Cloudflare
+        if (!empty($record['external_id']) && $record['provider'] === 'cloudflare' && $record['external_zone_id']) {
+            $config = $record['provider_config'] ? json_decode($record['provider_config'], true) : [];
+            $token = $config['api_token'] ?? '';
+
+            if ($token !== '') {
+                $this->cloudflare->deleteRecord($token, $record['external_zone_id'], $record['external_id']);
+            }
         }
 
         $this->db->delete('dns_records', ['id' => $recordId]);
@@ -666,6 +747,331 @@ class DnsController
             'errors' => $errors,
         ]);
     }
+
+    // ==================== Cloudflare Integration ====================
+
+    /**
+     * Verify a Cloudflare API token.
+     * POST /dns/cloudflare/verify
+     */
+    public function verifyCloudflareToken(Request $request, Response $response): Response
+    {
+        $body = (array) $request->getParsedBody();
+        $token = trim((string) ($body['api_token'] ?? ''));
+
+        if ($token === '') {
+            return JsonResponse::validationError(['api_token' => ['API-Token ist erforderlich']]);
+        }
+
+        try {
+            $valid = $this->cloudflare->validateToken($token);
+            if (!$valid) {
+                return JsonResponse::error('Ungueltiger API-Token', 401);
+            }
+            return JsonResponse::success(['valid' => true], 'Token ist gueltig');
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Token-Validierung fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * List all Cloudflare zones accessible with a token.
+     * POST /dns/cloudflare/zones
+     */
+    public function listCloudflareZones(Request $request, Response $response): Response
+    {
+        $body = (array) $request->getParsedBody();
+        $token = trim((string) ($body['api_token'] ?? ''));
+
+        if ($token === '') {
+            return JsonResponse::validationError(['api_token' => ['API-Token ist erforderlich']]);
+        }
+
+        try {
+            $zones = $this->cloudflare->listZones($token);
+            return JsonResponse::success(['items' => $zones]);
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Fehler beim Laden der Zonen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Import a Cloudflare zone as a new domain with all its records.
+     * POST /dns/cloudflare/import
+     */
+    public function importCloudflareZone(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $body = (array) $request->getParsedBody();
+
+        $token  = trim((string) ($body['api_token'] ?? ''));
+        $zoneId = trim((string) ($body['zone_id'] ?? ''));
+        $zoneName = trim((string) ($body['zone_name'] ?? ''));
+
+        if ($token === '' || $zoneId === '' || $zoneName === '') {
+            return JsonResponse::validationError([
+                'api_token' => $token === '' ? ['API-Token ist erforderlich'] : [],
+                'zone_id'   => $zoneId === '' ? ['Zone-ID ist erforderlich'] : [],
+                'zone_name' => $zoneName === '' ? ['Zone-Name ist erforderlich'] : [],
+            ]);
+        }
+
+        // Check if domain already exists
+        $existing = $this->db->fetchAssociative(
+            'SELECT id FROM dns_domains WHERE user_id = ? AND name = ?',
+            [$userId, $zoneName]
+        );
+
+        if ($existing) {
+            return JsonResponse::validationError([
+                'zone_name' => ['Diese Domain existiert bereits. Nutze Sync um Records zu aktualisieren.'],
+            ]);
+        }
+
+        try {
+            // Create the domain
+            $domainId = Uuid::uuid4()->toString();
+            $this->db->insert('dns_domains', [
+                'id'               => $domainId,
+                'user_id'          => $userId,
+                'name'             => $zoneName,
+                'provider'         => 'cloudflare',
+                'provider_config'  => json_encode(['api_token' => $token]),
+                'external_zone_id' => $zoneId,
+            ]);
+
+            // Fetch and import all records
+            $cfRecords = $this->cloudflare->listRecords($token, $zoneId);
+            $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA'];
+            $importedCount = 0;
+
+            foreach ($cfRecords as $cfRecord) {
+                if (!in_array($cfRecord['type'], $allowedTypes, true)) {
+                    continue;
+                }
+
+                // Convert Cloudflare record name to relative name
+                $recordName = $cfRecord['name'];
+                if ($recordName === $zoneName) {
+                    $recordName = '@';
+                } elseif (str_ends_with($recordName, '.' . $zoneName)) {
+                    $recordName = substr($recordName, 0, -(strlen($zoneName) + 1));
+                }
+
+                $this->db->insert('dns_records', [
+                    'id'          => Uuid::uuid4()->toString(),
+                    'domain_id'   => $domainId,
+                    'external_id' => $cfRecord['id'],
+                    'type'        => $cfRecord['type'],
+                    'name'        => $recordName,
+                    'value'       => $cfRecord['content'],
+                    'ttl'         => $cfRecord['ttl'] === 1 ? 3600 : $cfRecord['ttl'], // Cloudflare uses 1 for "auto"
+                    'priority'    => $cfRecord['priority'],
+                ]);
+
+                $importedCount++;
+            }
+
+            $domain = $this->db->fetchAssociative(
+                'SELECT d.*, COUNT(r.id) as record_count
+                 FROM dns_domains d
+                 LEFT JOIN dns_records r ON d.id = r.domain_id
+                 WHERE d.id = ?
+                 GROUP BY d.id',
+                [$domainId]
+            );
+
+            $domain['record_count'] = (int) $domain['record_count'];
+            if ($domain['provider_config'] !== null) {
+                $domain['provider_config'] = json_decode($domain['provider_config'], true);
+            }
+
+            return JsonResponse::created([
+                'domain'         => $domain,
+                'imported_count' => $importedCount,
+            ], "{$importedCount} Records von Cloudflare importiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Import fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Sync (pull) records from Cloudflare into the local database.
+     * POST /dns/domains/{id}/sync-provider
+     */
+    public function syncProvider(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $domainId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $domain = $this->db->fetchAssociative(
+            'SELECT * FROM dns_domains WHERE id = ? AND user_id = ?',
+            [$domainId, $userId]
+        );
+
+        if (!$domain) {
+            return JsonResponse::error('Domain nicht gefunden', 404);
+        }
+
+        if ($domain['provider'] !== 'cloudflare') {
+            return JsonResponse::error('Sync ist nur fuer Cloudflare-Domains verfuegbar', 400);
+        }
+
+        $config = $domain['provider_config'] ? json_decode($domain['provider_config'], true) : [];
+        $token  = $config['api_token'] ?? '';
+        $zoneId = $domain['external_zone_id'] ?? '';
+
+        if ($token === '' || $zoneId === '') {
+            return JsonResponse::error('Cloudflare-Konfiguration unvollstaendig (Token oder Zone-ID fehlt)', 400);
+        }
+
+        try {
+            $cfRecords = $this->cloudflare->listRecords($token, $zoneId);
+            $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA'];
+            $added = 0;
+            $updated = 0;
+
+            foreach ($cfRecords as $cfRecord) {
+                if (!in_array($cfRecord['type'], $allowedTypes, true)) {
+                    continue;
+                }
+
+                $recordName = $cfRecord['name'];
+                if ($recordName === $domain['name']) {
+                    $recordName = '@';
+                } elseif (str_ends_with($recordName, '.' . $domain['name'])) {
+                    $recordName = substr($recordName, 0, -(strlen($domain['name']) + 1));
+                }
+
+                // Check if record exists by external_id
+                $existing = $this->db->fetchAssociative(
+                    'SELECT id FROM dns_records WHERE domain_id = ? AND external_id = ?',
+                    [$domainId, $cfRecord['id']]
+                );
+
+                $data = [
+                    'type'     => $cfRecord['type'],
+                    'name'     => $recordName,
+                    'value'    => $cfRecord['content'],
+                    'ttl'      => $cfRecord['ttl'] === 1 ? 3600 : $cfRecord['ttl'],
+                    'priority' => $cfRecord['priority'],
+                ];
+
+                if ($existing) {
+                    $this->db->update('dns_records', $data, ['id' => $existing['id']]);
+                    $updated++;
+                } else {
+                    $data['id'] = Uuid::uuid4()->toString();
+                    $data['domain_id'] = $domainId;
+                    $data['external_id'] = $cfRecord['id'];
+                    $this->db->insert('dns_records', $data);
+                    $added++;
+                }
+            }
+
+            return JsonResponse::success([
+                'added'   => $added,
+                'updated' => $updated,
+                'total'   => $added + $updated,
+            ], "Sync abgeschlossen: {$added} neu, {$updated} aktualisiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Sync fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Push local records to Cloudflare.
+     * POST /dns/domains/{id}/push-provider
+     */
+    public function pushProvider(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $domainId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $domain = $this->db->fetchAssociative(
+            'SELECT * FROM dns_domains WHERE id = ? AND user_id = ?',
+            [$domainId, $userId]
+        );
+
+        if (!$domain) {
+            return JsonResponse::error('Domain nicht gefunden', 404);
+        }
+
+        if ($domain['provider'] !== 'cloudflare') {
+            return JsonResponse::error('Push ist nur fuer Cloudflare-Domains verfuegbar', 400);
+        }
+
+        $config = $domain['provider_config'] ? json_decode($domain['provider_config'], true) : [];
+        $token  = $config['api_token'] ?? '';
+        $zoneId = $domain['external_zone_id'] ?? '';
+
+        if ($token === '' || $zoneId === '') {
+            return JsonResponse::error('Cloudflare-Konfiguration unvollstaendig', 400);
+        }
+
+        try {
+            $localRecords = $this->db->fetchAllAssociative(
+                'SELECT * FROM dns_records WHERE domain_id = ?',
+                [$domainId]
+            );
+
+            $created = 0;
+            $updatedCount = 0;
+            $errors = [];
+
+            foreach ($localRecords as $record) {
+                $cfName = $record['name'] === '@'
+                    ? $domain['name']
+                    : $record['name'] . '.' . $domain['name'];
+
+                $cfData = [
+                    'type'    => $record['type'],
+                    'name'    => $cfName,
+                    'content' => $record['value'],
+                    'ttl'     => (int) $record['ttl'],
+                ];
+
+                if ($record['priority'] !== null) {
+                    $cfData['priority'] = (int) $record['priority'];
+                }
+
+                if (!empty($record['external_id'])) {
+                    // Update existing Cloudflare record
+                    $result = $this->cloudflare->updateRecord($token, $zoneId, $record['external_id'], $cfData);
+                    if ($result) {
+                        $updatedCount++;
+                    } else {
+                        $errors[] = "Record {$record['name']} ({$record['type']}) konnte nicht aktualisiert werden";
+                    }
+                } else {
+                    // Create new record on Cloudflare
+                    $result = $this->cloudflare->createRecord($token, $zoneId, $cfData);
+                    if ($result) {
+                        // Save the Cloudflare record ID locally
+                        $this->db->update('dns_records', [
+                            'external_id' => $result['id'],
+                        ], ['id' => $record['id']]);
+                        $created++;
+                    } else {
+                        $errors[] = "Record {$record['name']} ({$record['type']}) konnte nicht erstellt werden";
+                    }
+                }
+            }
+
+            return JsonResponse::success([
+                'created' => $created,
+                'updated' => $updatedCount,
+                'errors'  => $errors,
+            ], "Push abgeschlossen: {$created} erstellt, {$updatedCount} aktualisiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Push fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // ==================== Helper Methods ====================
 
     /**
      * Extract the relevant value from a dns_get_record result entry.

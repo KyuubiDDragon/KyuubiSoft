@@ -9,10 +9,14 @@ import {
   ChevronUpIcon,
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
+  ArrowPathIcon,
+  CloudArrowDownIcon,
+  CloudArrowUpIcon,
   SignalIcon,
   XMarkIcon,
   DocumentTextIcon,
   ClipboardDocumentIcon,
+  CloudIcon,
 } from '@heroicons/vue/24/outline'
 import { useDnsStore } from '@/modules/dns/stores/dnsStore'
 import DnsPropagationChecker from '@/modules/dns/components/DnsPropagationChecker.vue'
@@ -31,6 +35,14 @@ const expandedDomains = ref(new Set())
 const deleteConfirmId = ref(null)
 const deleteRecordConfirmId = ref(null)
 
+// Cloudflare import
+const showCloudflareModal = ref(false)
+const cfToken = ref('')
+const cfZones = ref([])
+const cfZonesLoading = ref(false)
+const cfImporting = ref(false)
+const cfSyncing = ref(null)
+
 // Propagation checker
 const showPropagation = ref(false)
 const propagationRecord = ref(null)
@@ -41,6 +53,7 @@ const domainForm = ref({
   name: '',
   provider: 'manual',
   notes: '',
+  api_token: '',
 })
 
 // Record form
@@ -66,6 +79,7 @@ const providers = [
   { value: 'route53', label: 'AWS Route 53' },
   { value: 'digitalocean', label: 'DigitalOcean' },
   { value: 'hetzner', label: 'Hetzner' },
+  { value: 'webtropia', label: 'Webtropia' },
   { value: 'namecheap', label: 'Namecheap' },
   { value: 'godaddy', label: 'GoDaddy' },
   { value: 'other', label: 'Sonstiger' },
@@ -97,7 +111,7 @@ function getProviderLabel(provider) {
 // Domain CRUD
 function openCreateDomainModal() {
   editingDomain.value = null
-  domainForm.value = { name: '', provider: 'manual', notes: '' }
+  domainForm.value = { name: '', provider: 'manual', notes: '', api_token: '' }
   showDomainModal.value = true
 }
 
@@ -107,6 +121,7 @@ function openEditDomainModal(domain) {
     name: domain.name,
     provider: domain.provider || 'manual',
     notes: domain.notes || '',
+    api_token: domain.provider_config?.api_token || '',
   }
   showDomainModal.value = true
 }
@@ -117,11 +132,22 @@ function closeDomainModal() {
 }
 
 async function saveDomain() {
+  const payload = {
+    name: domainForm.value.name,
+    provider: domainForm.value.provider,
+    notes: domainForm.value.notes,
+  }
+
+  // Include provider_config for providers that need API tokens
+  if (domainForm.value.provider === 'cloudflare' && domainForm.value.api_token) {
+    payload.provider_config = { api_token: domainForm.value.api_token }
+  }
+
   if (editingDomain.value) {
-    const result = await dnsStore.updateDomain(editingDomain.value.id, domainForm.value)
+    const result = await dnsStore.updateDomain(editingDomain.value.id, payload)
     if (result) closeDomainModal()
   } else {
-    const result = await dnsStore.createDomain(domainForm.value)
+    const result = await dnsStore.createDomain(payload)
     if (result) closeDomainModal()
   }
 }
@@ -253,6 +279,61 @@ async function handleImport() {
   }
 }
 
+// Cloudflare import
+function openCloudflareModal() {
+  cfToken.value = ''
+  cfZones.value = []
+  cfZonesLoading.value = false
+  cfImporting.value = false
+  showCloudflareModal.value = true
+}
+
+function closeCloudflareModal() {
+  showCloudflareModal.value = false
+  cfToken.value = ''
+  cfZones.value = []
+}
+
+async function loadCloudflareZones() {
+  if (!cfToken.value.trim()) return
+  cfZonesLoading.value = true
+  try {
+    cfZones.value = await dnsStore.listCloudflareZones(cfToken.value.trim())
+  } finally {
+    cfZonesLoading.value = false
+  }
+}
+
+async function importCfZone(zone) {
+  cfImporting.value = true
+  try {
+    const result = await dnsStore.importCloudflareZone(cfToken.value.trim(), zone.id, zone.name)
+    if (result) {
+      closeCloudflareModal()
+    }
+  } finally {
+    cfImporting.value = false
+  }
+}
+
+async function handleSyncProvider(domainId) {
+  cfSyncing.value = domainId
+  try {
+    await dnsStore.syncProvider(domainId)
+  } finally {
+    cfSyncing.value = null
+  }
+}
+
+async function handlePushProvider(domainId) {
+  cfSyncing.value = domainId
+  try {
+    await dnsStore.pushProvider(domainId)
+  } finally {
+    cfSyncing.value = null
+  }
+}
+
 function getDomainRecords(domainId) {
   const domain = dnsStore.domains.find((d) => d.id === domainId)
   return domain?.records || []
@@ -282,10 +363,16 @@ onMounted(async () => {
         <h1 class="text-2xl font-bold text-white">DNS Manager</h1>
         <p class="text-gray-400 mt-1">Domains und DNS-Records verwalten</p>
       </div>
-      <button @click="openCreateDomainModal" class="btn-primary">
-        <PlusIcon class="w-5 h-5 mr-2" />
-        Domain hinzufuegen
-      </button>
+      <div class="flex items-center gap-3">
+        <button @click="openCloudflareModal" class="btn-secondary">
+          <CloudIcon class="w-5 h-5 mr-2" />
+          Von Cloudflare importieren
+        </button>
+        <button @click="openCreateDomainModal" class="btn-primary">
+          <PlusIcon class="w-5 h-5 mr-2" />
+          Domain hinzufuegen
+        </button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -347,6 +434,24 @@ onMounted(async () => {
               <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
               Import
             </button>
+            <template v-if="domain.provider === 'cloudflare' && domain.external_zone_id">
+              <button
+                @click="handleSyncProvider(domain.id)"
+                :disabled="cfSyncing === domain.id"
+                class="btn-ghost text-xs text-cyan-400/60 hover:text-cyan-400"
+              >
+                <CloudArrowDownIcon class="w-4 h-4 mr-1" :class="{ 'animate-spin': cfSyncing === domain.id }" />
+                Pull
+              </button>
+              <button
+                @click="handlePushProvider(domain.id)"
+                :disabled="cfSyncing === domain.id"
+                class="btn-ghost text-xs text-amber-400/60 hover:text-amber-400"
+              >
+                <CloudArrowUpIcon class="w-4 h-4 mr-1" />
+                Push
+              </button>
+            </template>
             <button @click="openEditDomainModal(domain)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PencilSquareIcon class="w-4 h-4 mr-1" />
               Bearbeiten
@@ -504,6 +609,19 @@ onMounted(async () => {
               <select v-model="domainForm.provider" class="select w-full">
                 <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
               </select>
+            </div>
+
+            <div v-if="domainForm.provider === 'cloudflare'">
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">Cloudflare API Token</label>
+              <input
+                v-model="domainForm.api_token"
+                type="password"
+                class="input w-full"
+                placeholder="Cloudflare API Token..."
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Wird fuer Sync mit Cloudflare benoetigt.
+              </p>
             </div>
 
             <div>
@@ -707,6 +825,96 @@ www 3600 IN CNAME beispiel.de.
               <ArrowUpTrayIcon class="w-4 h-4 mr-2" />
               Importieren
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Cloudflare Import Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showCloudflareModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="closeCloudflareModal"></div>
+        <div class="relative card-glass w-full max-w-2xl flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
+            <h3 class="text-lg font-semibold text-white">
+              <CloudIcon class="w-5 h-5 inline-block mr-2 text-orange-400" />
+              Von Cloudflare importieren
+            </h3>
+            <button @click="closeCloudflareModal" class="btn-icon-sm">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="p-5 space-y-4">
+            <!-- Token Input -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">Cloudflare API Token</label>
+              <div class="flex gap-2">
+                <input
+                  v-model="cfToken"
+                  type="password"
+                  class="input flex-1"
+                  placeholder="Cloudflare API Token eingeben..."
+                />
+                <button
+                  @click="loadCloudflareZones"
+                  :disabled="!cfToken.trim() || cfZonesLoading"
+                  class="btn-primary"
+                >
+                  <ArrowPathIcon v-if="cfZonesLoading" class="w-4 h-4 mr-1 animate-spin" />
+                  Zonen laden
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Erstelle einen API Token unter Cloudflare Dashboard &rarr; My Profile &rarr; API Tokens
+              </p>
+            </div>
+
+            <!-- Zones List -->
+            <div v-if="cfZones.length > 0" class="space-y-2">
+              <h4 class="text-sm font-medium text-gray-300">Verfuegbare Zonen ({{ cfZones.length }})</h4>
+              <div class="max-h-[40vh] overflow-y-auto space-y-1">
+                <div
+                  v-for="zone in cfZones"
+                  :key="zone.id"
+                  class="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] transition-colors"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <GlobeAltIcon class="w-4 h-4 text-primary-400 flex-shrink-0" />
+                      <span class="text-sm font-medium text-white">{{ zone.name }}</span>
+                      <span class="text-xs px-1.5 py-0.5 rounded-full" :class="zone.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-gray-500/15 text-gray-400'">
+                        {{ zone.status }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-0.5">{{ zone.plan }} &middot; NS: {{ zone.name_servers?.join(', ') || '-' }}</div>
+                  </div>
+                  <button
+                    @click="importCfZone(zone)"
+                    :disabled="cfImporting"
+                    class="btn-primary text-xs ml-3"
+                  >
+                    <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
+                    Importieren
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- No zones -->
+            <div v-else-if="!cfZonesLoading && cfToken.trim() && cfZones.length === 0" class="text-sm text-gray-500 text-center py-4">
+              Keine Zonen gefunden. Bitte Token pruefen.
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
+            <button @click="closeCloudflareModal" class="btn-secondary">Schliessen</button>
           </div>
         </div>
       </div>

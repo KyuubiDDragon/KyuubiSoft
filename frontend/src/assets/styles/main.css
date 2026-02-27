@@ -123,6 +123,17 @@
   .dark {
     color-scheme: dark;
   }
+
+  /* Native select dropdown dark styling */
+  select,
+  select option {
+    background-color: rgb(var(--dark-900));
+    color: rgb(var(--dark-100));
+  }
+
+  select option:checked {
+    background-color: rgb(var(--dark-700));
+  }
 }
 
 /* ---- COMPONENT LAYER ---- */

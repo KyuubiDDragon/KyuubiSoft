@@ -1215,6 +1215,10 @@ class Router
                     ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->post('/git/repositories/{id}/sync', [GitRepositoryController::class, 'sync'])
                     ->add(new FeatureMiddleware('git', null, 'sync'));
+                $protected->post('/git/repositories/discover', [GitRepositoryController::class, 'discover'])
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
+                $protected->post('/git/repositories/import-bulk', [GitRepositoryController::class, 'importBulk'])
+                    ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->get('/git/folders', [GitRepositoryController::class, 'index'])
                     ->add(new FeatureMiddleware('git', null, 'view'));
                 $protected->post('/git/folders', [GitRepositoryController::class, 'createFolder'])
@@ -1432,6 +1436,13 @@ class Router
                 $protected->post('/dns/records/{id}/propagation', [DnsController::class, 'checkPropagation']);
                 $protected->get('/dns/domains/{id}/export', [DnsController::class, 'exportZone']);
                 $protected->post('/dns/domains/{id}/import', [DnsController::class, 'importZone']);
+
+                // DNS Cloudflare Integration
+                $protected->post('/dns/cloudflare/verify', [DnsController::class, 'verifyCloudflareToken']);
+                $protected->post('/dns/cloudflare/zones', [DnsController::class, 'listCloudflareZones']);
+                $protected->post('/dns/cloudflare/import', [DnsController::class, 'importCloudflareZone']);
+                $protected->post('/dns/domains/{id}/sync-provider', [DnsController::class, 'syncProvider']);
+                $protected->post('/dns/domains/{id}/push-provider', [DnsController::class, 'pushProvider']);
 
                 // Deployments
                 $protected->get('/deployments/stats', [DeploymentController::class, 'getStats']);

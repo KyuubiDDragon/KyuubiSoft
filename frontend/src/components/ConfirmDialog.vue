@@ -44,7 +44,7 @@ const iconColorMap = {
       >
         <!-- Backdrop -->
         <div
-          class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          class="absolute inset-0 bg-black/60 backdrop-blur-md"
           @click="handleCancel"
         />
 
@@ -59,7 +59,7 @@ const iconColorMap = {
         >
           <div
             v-if="isOpen"
-            class="relative bg-dark-800 border border-dark-700 rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+            class="relative modal max-w-md overflow-hidden"
           >
             <!-- Header -->
             <div class="flex items-center gap-4 px-6 py-5">
@@ -93,17 +93,14 @@ const iconColorMap = {
             </div>
 
             <!-- Footer -->
-            <div class="flex justify-end gap-3 px-6 py-4 bg-dark-700/30 border-t border-dark-700">
-              <button
-                @click="handleCancel"
-                class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
-              >
+            <div class="modal-footer">
+              <button @click="handleCancel" class="btn-secondary btn-sm">
                 {{ dialogConfig.cancelText }}
               </button>
               <button
                 @click="handleConfirm"
                 :class="[
-                  'px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-800',
+                  'btn btn-sm text-white',
                   buttonColorMap[dialogConfig.type] || buttonColorMap.warning
                 ]"
               >

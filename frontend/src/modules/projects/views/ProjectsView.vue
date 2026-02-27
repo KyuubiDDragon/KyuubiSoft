@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -26,6 +26,10 @@ import {
   ArrowTopRightOnSquareIcon,
   UserGroupIcon,
   UserPlusIcon,
+  CurrencyEuroIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  BanknotesIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid, FolderIcon as FolderIconSolid } from '@heroicons/vue/24/solid'
 
@@ -279,6 +283,23 @@ function formatTime(seconds) {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount || 0)
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '–'
+  return new Date(dateStr).toLocaleDateString('de-DE')
+}
+
+const invoiceStatusMap = {
+  draft:     { label: 'Entwurf',    color: 'bg-gray-500/20 text-gray-400' },
+  sent:      { label: 'Gesendet',   color: 'bg-blue-500/20 text-blue-300' },
+  paid:      { label: 'Bezahlt',    color: 'bg-green-500/20 text-green-300' },
+  overdue:   { label: 'Überfällig', color: 'bg-red-500/20 text-red-300' },
+  cancelled: { label: 'Storniert',  color: 'bg-gray-600/20 text-gray-500' },
 }
 
 // Get link icon
@@ -571,7 +592,7 @@ onMounted(() => {
     <!-- Project Detail View -->
     <div v-else class="space-y-6">
       <!-- Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -580,6 +601,17 @@ onMounted(() => {
             <div>
               <p class="text-2xl font-bold text-white">{{ selectedProject.linked_items?.length || 0 }}</p>
               <p class="text-sm text-gray-400">Verknüpfte Elemente</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+              <CurrencyEuroIcon class="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <p class="text-xl font-bold text-white">{{ selectedProject.invoice_stats?.count || 0 }}</p>
+              <p class="text-sm text-gray-400">Rechnungen</p>
             </div>
           </div>
         </div>
@@ -700,6 +732,75 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- Invoices Section -->
+      <div class="bg-dark-800 border border-dark-700 rounded-xl">
+        <div class="flex items-center justify-between p-4 border-b border-dark-700">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-semibold text-white">Rechnungen</h2>
+            <span
+              v-if="selectedProject.invoice_stats?.count"
+              class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-medium"
+            >
+              {{ selectedProject.invoice_stats.count }}
+            </span>
+          </div>
+          <div class="flex items-center gap-4">
+            <!-- Invoice financials summary -->
+            <div v-if="selectedProject.invoice_stats?.count" class="hidden sm:flex items-center gap-4 text-sm">
+              <span class="text-gray-500">Bezahlt: <span class="text-green-400 font-medium">{{ formatCurrency(selectedProject.invoice_stats.total_paid) }}</span></span>
+              <span v-if="selectedProject.invoice_stats.total_outstanding > 0" class="text-gray-500">Ausstehend: <span class="text-yellow-400 font-medium">{{ formatCurrency(selectedProject.invoice_stats.total_outstanding) }}</span></span>
+            </div>
+            <RouterLink
+              :to="`/invoices?project=${selectedProject.id}`"
+              class="text-xs text-primary-400 hover:text-primary-300 transition-colors hidden sm:inline"
+            >
+              Alle anzeigen →
+            </RouterLink>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <div v-if="selectedProject.invoices?.length" class="space-y-2">
+            <div
+              v-for="inv in selectedProject.invoices"
+              :key="inv.id"
+              class="flex items-center justify-between p-3 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors cursor-pointer group"
+              @click="router.push('/invoices')"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="font-mono text-sm font-semibold text-white shrink-0">{{ inv.invoice_number }}</div>
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-300 truncate">{{ inv.client_name || inv.client_company || '–' }}</p>
+                  <p class="text-xs text-gray-500">{{ formatDate(inv.issue_date) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full font-medium"
+                  :class="invoiceStatusMap[inv.status]?.color || 'bg-gray-500/20 text-gray-400'"
+                >
+                  {{ invoiceStatusMap[inv.status]?.label || inv.status }}
+                </span>
+                <span class="text-sm font-semibold text-white">{{ formatCurrency(inv.total) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="text-center py-10">
+            <CurrencyEuroIcon class="w-12 h-12 text-gray-700 mx-auto mb-3" />
+            <p class="text-gray-500 text-sm mb-3">Noch keine Rechnungen für dieses Projekt</p>
+            <RouterLink
+              :to="`/invoices`"
+              class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm rounded-lg transition-colors"
+            >
+              <PlusIcon class="w-4 h-4" />
+              Rechnung erstellen
+            </RouterLink>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Project Modal -->

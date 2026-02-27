@@ -84,6 +84,19 @@ class ProjectController
                 'SELECT COALESCE(SUM(duration_seconds), 0) FROM time_entries WHERE project_id = ?',
                 [$project['id']]
             ) ?? 0);
+
+            // Get invoice stats for this project
+            $invoiceStats = $this->db->fetchAssociative(
+                'SELECT
+                    COUNT(*) as invoice_count,
+                    COALESCE(SUM(CASE WHEN status = \'paid\' THEN total ELSE 0 END), 0) as total_paid,
+                    COALESCE(SUM(CASE WHEN status IN (\'sent\', \'overdue\') THEN total ELSE 0 END), 0) as total_outstanding
+                 FROM invoices WHERE project_id = ? AND user_id = ?',
+                [$project['id'], $userId]
+            );
+            $project['invoice_count'] = (int) ($invoiceStats['invoice_count'] ?? 0);
+            $project['invoice_total_paid'] = (float) ($invoiceStats['total_paid'] ?? 0);
+            $project['invoice_total_outstanding'] = (float) ($invoiceStats['total_outstanding'] ?? 0);
         }
 
         return JsonResponse::success(['items' => $projects]);
@@ -175,6 +188,34 @@ class ProjectController
         ];
         $project['is_favorite'] = (bool) $project['is_favorite'];
         $project['is_owner'] = $project['user_id'] === $userId;
+
+        // Get invoices for this project
+        $invoices = $this->db->fetchAllAssociative(
+            'SELECT i.id, i.invoice_number, i.document_type, i.status, i.issue_date, i.due_date,
+                    i.total, i.subtotal, i.tax_rate, i.tax_amount, i.currency,
+                    i.client_name, i.client_company
+             FROM invoices i
+             WHERE i.project_id = ? AND i.user_id = ?
+             ORDER BY i.issue_date DESC',
+            [$projectId, $userId]
+        );
+
+        $totalPaid = 0;
+        $totalOutstanding = 0;
+        foreach ($invoices as &$inv) {
+            $inv['total'] = (float) $inv['total'];
+            $inv['subtotal'] = (float) $inv['subtotal'];
+            $inv['tax_amount'] = (float) $inv['tax_amount'];
+            if ($inv['status'] === 'paid') $totalPaid += $inv['total'];
+            if (in_array($inv['status'], ['sent', 'overdue'])) $totalOutstanding += $inv['total'];
+        }
+
+        $project['invoices'] = $invoices;
+        $project['invoice_stats'] = [
+            'count' => count($invoices),
+            'total_paid' => round($totalPaid, 2),
+            'total_outstanding' => round($totalOutstanding, 2),
+        ];
 
         return JsonResponse::success( $project);
     }

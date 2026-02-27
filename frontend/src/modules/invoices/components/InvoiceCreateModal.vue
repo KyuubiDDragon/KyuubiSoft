@@ -1,17 +1,21 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import {
   XMarkIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   ReceiptPercentIcon,
   ArrowPathIcon,
+  FolderIcon,
 } from '@heroicons/vue/24/outline'
+import api from '@/core/api/axios'
 
 const props = defineProps({
   show: Boolean,
   editingInvoice: { type: Object, default: null },
   clients: { type: Array, default: () => [] },
+  projects: { type: Array, default: () => [] },
+  preselectedProjectId: { type: String, default: null },
   kleinunternehmerMode: Boolean,
   defaultPaymentTerms: { type: String, default: '' },
 })
@@ -20,6 +24,7 @@ const emit = defineEmits(['close', 'save'])
 
 const form = ref({
   client_id: null,
+  project_id: null,
   document_type: 'invoice',
   issue_date: '',
   due_date: '',
@@ -50,6 +55,7 @@ function initForm() {
   if (props.editingInvoice) {
     form.value = {
       client_id: props.editingInvoice.client_id,
+      project_id: props.editingInvoice.project_id ?? null,
       document_type: props.editingInvoice.document_type ?? 'invoice',
       issue_date: props.editingInvoice.issue_date,
       due_date: props.editingInvoice.due_date ?? '',
@@ -65,6 +71,7 @@ function initForm() {
     const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     form.value = {
       client_id: null,
+      project_id: props.preselectedProjectId ?? null,
       document_type: 'invoice',
       issue_date: today,
       due_date: dueDate,
@@ -148,15 +155,26 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                 </div>
               </div>
 
-              <!-- Client -->
-              <div>
-                <label class="label">Kunde</label>
-                <select v-model="form.client_id" class="input">
-                  <option :value="null">Kein Kunde ausgewählt</option>
-                  <option v-for="c in clients" :key="c.id" :value="c.id">
-                    {{ c.name }}{{ c.company ? ' — ' + c.company : '' }}
-                  </option>
-                </select>
+              <!-- Client + Project row -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="label">Kunde</label>
+                  <select v-model="form.client_id" class="input">
+                    <option :value="null">Kein Kunde</option>
+                    <option v-for="c in clients" :key="c.id" :value="c.id">
+                      {{ c.name }}{{ c.company ? ' — ' + c.company : '' }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Projekt</label>
+                  <select v-model="form.project_id" class="input">
+                    <option :value="null">Kein Projekt</option>
+                    <option v-for="p in projects" :key="p.id" :value="p.id">
+                      {{ p.name }}
+                    </option>
+                  </select>
+                </div>
               </div>
 
               <!-- Dates grid -->

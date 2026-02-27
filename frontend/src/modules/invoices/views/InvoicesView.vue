@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -19,6 +20,7 @@ import {
   DocumentDuplicateIcon,
   EyeIcon,
   Bars2Icon,
+  FolderIcon,
 } from '@heroicons/vue/24/outline'
 import { RouterLink } from 'vue-router'
 import { useInvoices } from '../composables/useInvoices'
@@ -29,11 +31,12 @@ import ClientModal from '../components/ClientModal.vue'
 
 const uiStore = useUiStore()
 const toast = useToast()
+const route = useRoute()
 const { downloadPdf } = useInvoiceHtml()
 
 const {
-  invoices, clients, stats, isLoading,
-  statusFilter, searchQuery, kleinunternehmerMode, invoiceSenderSettings, pdfGenerating,
+  invoices, clients, projects, stats, isLoading,
+  statusFilter, projectFilter, searchQuery, kleinunternehmerMode, invoiceSenderSettings, pdfGenerating,
   statusOptions, filteredInvoices,
   loadData, loadSettings, saveInvoice, deleteInvoice, updateInvoiceStatus,
   duplicateInvoice, toggleKleinunternehmer, saveClient, deleteClient,
@@ -52,10 +55,15 @@ const showTimeEntriesModal = ref(false)
 
 // Time entries modal
 const timeEntriesForm = ref({ client_id: null, project_id: null, hourly_rate: '' })
-const projects = ref([])
+const timeEntryProjects = ref([])
 
 onMounted(async () => {
   await Promise.all([loadData(), loadSettings()])
+
+  // Pre-filter by project if navigated from project page
+  if (route.query.project) {
+    projectFilter.value = route.query.project
+  }
 
   // Keyboard shortcut: Escape closes panel
   window.addEventListener('keydown', handleGlobalKeydown)
@@ -184,9 +192,9 @@ async function handleDeleteClient(client) {
 async function openTimeEntriesModal() {
   try {
     const resp = await api.get('/api/v1/time/projects')
-    projects.value = resp.data.data ?? []
+    timeEntryProjects.value = resp.data.data ?? []
   } catch {
-    projects.value = []
+    timeEntryProjects.value = []
   }
   timeEntriesForm.value = { client_id: null, project_id: null, hourly_rate: '' }
   showTimeEntriesModal.value = true
@@ -377,6 +385,10 @@ async function createFromTimeEntries() {
           <option value="">Alle Status</option>
           <option v-for="s in statusOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
+        <select v-if="projects.length" v-model="projectFilter" class="input w-48">
+          <option value="">Alle Projekte</option>
+          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
       </div>
 
       <!-- Invoices table -->
@@ -386,6 +398,7 @@ async function createFromTimeEntries() {
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nr.</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kunde</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Projekt</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Datum</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Fällig</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -420,6 +433,16 @@ async function createFromTimeEntries() {
                   <p class="text-sm text-gray-200">{{ invoice.client_name || '–' }}</p>
                   <p v-if="invoice.client_company" class="text-xs text-gray-500">{{ invoice.client_company }}</p>
                 </div>
+              </td>
+              <td class="px-4 py-3 hidden lg:table-cell">
+                <span
+                  v-if="invoice.project_name"
+                  class="inline-flex items-center gap-1 text-xs text-gray-400"
+                >
+                  <FolderIcon class="w-3.5 h-3.5 shrink-0" />
+                  {{ invoice.project_name }}
+                </span>
+                <span v-else class="text-xs text-gray-600">–</span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{{ formatDate(invoice.issue_date) }}</td>
               <td class="px-4 py-3 text-sm hidden md:table-cell" :class="invoice.status === 'overdue' ? 'text-red-400 font-medium' : 'text-gray-400'">
@@ -502,12 +525,12 @@ async function createFromTimeEntries() {
       <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-16 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-700 mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">
-          {{ searchQuery || statusFilter ? 'Keine Ergebnisse' : 'Noch keine Rechnungen' }}
+          {{ searchQuery || statusFilter || projectFilter ? 'Keine Ergebnisse' : 'Noch keine Rechnungen' }}
         </h3>
         <p class="text-gray-500 mb-6">
-          {{ searchQuery || statusFilter ? 'Versuche andere Suchkriterien.' : 'Erstelle deine erste Rechnung.' }}
+          {{ searchQuery || statusFilter || projectFilter ? 'Versuche andere Suchkriterien.' : 'Erstelle deine erste Rechnung.' }}
         </p>
-        <button v-if="!searchQuery && !statusFilter" @click="openCreateInvoice" class="btn-primary">
+        <button v-if="!searchQuery && !statusFilter && !projectFilter" @click="openCreateInvoice" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
           Rechnung erstellen
         </button>
@@ -605,6 +628,7 @@ async function createFromTimeEntries() {
       :show="showCreateModal"
       :editing-invoice="editingInvoice"
       :clients="clients"
+      :projects="projects"
       :kleinunternehmer-mode="kleinunternehmerMode"
       :default-payment-terms="invoiceSenderSettings.default_payment_terms"
       @close="showCreateModal = false"
@@ -657,7 +681,7 @@ async function createFromTimeEntries() {
                   <label class="label">Projekt</label>
                   <select v-model="timeEntriesForm.project_id" class="input">
                     <option :value="null">Kein Projekt ausgewählt</option>
-                    <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    <option v-for="p in timeEntryProjects" :key="p.id" :value="p.id">{{ p.name }}</option>
                   </select>
                 </div>
                 <div>

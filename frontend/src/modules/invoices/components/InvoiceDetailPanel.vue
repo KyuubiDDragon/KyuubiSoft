@@ -13,6 +13,7 @@ import {
   PaperAirplaneIcon,
   ExclamationTriangleIcon,
   NoSymbolIcon,
+  FolderIcon,
 } from '@heroicons/vue/24/outline'
 import InvoiceItemsTable from './InvoiceItemsTable.vue'
 import InvoicePdfPreview from './InvoicePdfPreview.vue'
@@ -184,9 +185,16 @@ watch(() => props.invoice, (val) => {
                       </Transition>
                     </div>
                   </div>
-                  <p class="text-sm text-gray-400 mt-1">
-                    {{ invoice.client_name || invoice.client_company || '–' }}
-                    <span v-if="invoice.issue_date" class="ml-2">· {{ formatDate(invoice.issue_date) }}</span>
+                  <p class="text-sm text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
+                    <span>{{ invoice.client_name || invoice.client_company || '–' }}</span>
+                    <span v-if="invoice.issue_date">· {{ formatDate(invoice.issue_date) }}</span>
+                    <span
+                      v-if="invoice.project_name"
+                      class="inline-flex items-center gap-1 text-xs bg-indigo-500/15 text-indigo-300 px-2 py-0.5 rounded-full"
+                    >
+                      <FolderIcon class="w-3 h-3" />
+                      {{ invoice.project_name }}
+                    </span>
                   </p>
                 </div>
 
@@ -283,6 +291,15 @@ watch(() => props.invoice, (val) => {
                     <p class="text-gray-400 text-sm mt-1 whitespace-pre-line">{{ invoice.client_address }}</p>
                     <p v-if="invoice.client_vat_id" class="text-gray-500 text-xs mt-1">USt-IdNr.: {{ invoice.client_vat_id }}</p>
                     <p v-if="invoice.client_email" class="text-gray-400 text-sm mt-1">{{ invoice.client_email }}</p>
+                  </div>
+                </div>
+
+                <!-- Project badge -->
+                <div v-if="invoice.project_name" class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-3 flex items-center gap-2">
+                  <FolderIcon class="w-4 h-4 text-indigo-400 shrink-0" />
+                  <div>
+                    <p class="text-xs text-indigo-400 font-semibold">Projekt</p>
+                    <p class="text-white text-sm font-medium">{{ invoice.project_name }}</p>
                   </div>
                 </div>
 

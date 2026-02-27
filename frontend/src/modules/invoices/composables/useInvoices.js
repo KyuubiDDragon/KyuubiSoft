@@ -11,9 +11,11 @@ export function useInvoices() {
 
   const invoices = ref([])
   const clients = ref([])
+  const projects = ref([])
   const stats = ref(null)
   const isLoading = ref(false)
   const statusFilter = ref('')
+  const projectFilter = ref('')
   const searchQuery = ref('')
   const kleinunternehmerMode = ref(false)
   const invoiceSenderSettings = ref({})
@@ -32,12 +34,16 @@ export function useInvoices() {
     if (statusFilter.value) {
       list = list.filter(i => i.status === statusFilter.value)
     }
+    if (projectFilter.value) {
+      list = list.filter(i => i.project_id === projectFilter.value)
+    }
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase().trim()
       list = list.filter(i =>
         (i.invoice_number || '').toLowerCase().includes(q) ||
         (i.client_name || '').toLowerCase().includes(q) ||
-        (i.client_company || '').toLowerCase().includes(q)
+        (i.client_company || '').toLowerCase().includes(q) ||
+        (i.project_name || '').toLowerCase().includes(q)
       )
     }
     return list
@@ -46,14 +52,16 @@ export function useInvoices() {
   async function loadData() {
     isLoading.value = true
     try {
-      const [invoicesRes, clientsRes, statsRes] = await Promise.all([
+      const [invoicesRes, clientsRes, statsRes, projectsRes] = await Promise.all([
         api.get('/api/v1/invoices'),
         api.get('/api/v1/clients'),
         api.get('/api/v1/invoices/stats'),
+        api.get('/api/v1/projects'),
       ])
       invoices.value = invoicesRes.data.data?.items || []
       clients.value = clientsRes.data.data?.items || []
       stats.value = statsRes.data.data
+      projects.value = projectsRes.data.data?.items || []
     } catch {
       uiStore.showError('Fehler beim Laden')
     } finally {
@@ -208,9 +216,11 @@ export function useInvoices() {
   return {
     invoices,
     clients,
+    projects,
     stats,
     isLoading,
     statusFilter,
+    projectFilter,
     searchQuery,
     kleinunternehmerMode,
     invoiceSenderSettings,

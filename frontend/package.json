@@ -9,6 +9,7 @@
     "type-check": "vue-tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts --fix --ignore-path .gitignore",
+    "format": "prettier --write \"src/**/*.{ts,js,vue,css,json}\"",
     "test": "vitest"
   },
   "dependencies": {
@@ -65,12 +66,16 @@
     "yjs": "^13.6.10"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-vue": "^4.5.2",
     "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^9.19.2",
     "postcss": "^8.4.32",
+    "prettier": "^3.8.1",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3",
     "vite": "^5.0.8",

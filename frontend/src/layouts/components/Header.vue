@@ -1,14 +1,14 @@
-<script setup>
-import { ref, onMounted, computed } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useQuickAccessStore } from '@/stores/quickAccess'
+import { getIconComponent } from '@/core/config/navigation'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import NotificationCenter from '@/components/NotificationCenter.vue'
+import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import {
-  MoonIcon,
-  SunIcon,
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
   Bars3Icon,
@@ -18,53 +18,14 @@ import {
   SparklesIcon,
   CheckIcon,
   EllipsisHorizontalIcon,
-  HomeIcon,
-  ListBulletIcon,
-  DocumentTextIcon,
-  ServerIcon,
-  CodeBracketIcon,
-  ViewColumnsIcon,
-  FolderIcon,
-  ClockIcon,
-  BellIcon,
-  BookmarkIcon,
-  SignalIcon,
-  CurrencyDollarIcon,
-  WrenchScrewdriverIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-  DocumentDuplicateIcon,
-  BriefcaseIcon,
-  CommandLineIcon,
-  CalendarIcon,
-  CubeIcon,
-  TicketIcon,
-  TagIcon,
-  NewspaperIcon,
-  CloudArrowUpIcon,
-  CloudIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
-  ClipboardDocumentCheckIcon,
-  KeyIcon,
-  ArrowPathIcon,
   ChatBubbleLeftRightIcon,
-  BookOpenIcon,
-  BoltIcon,
-  ArchiveBoxIcon,
-  LockClosedIcon,
-  PhotoIcon,
 } from '@heroicons/vue/24/outline'
-import Breadcrumbs from '@/components/Breadcrumbs.vue'
 
-const props = defineProps({
-  isMobile: {
-    type: Boolean,
-    default: false
-  }
-})
+defineProps<{
+  isMobile?: boolean
+}>()
 
-const emit = defineEmits(['toggle-sidebar'])
+defineEmits(['toggle-sidebar'])
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -75,69 +36,15 @@ const showUserMenu = ref(false)
 const showWidgetsMenu = ref(false)
 const showQuickAccessOverflow = ref(false)
 
-// Icon mapping from string names to components
-const iconMap = {
-  HomeIcon,
-  ListBulletIcon,
-  DocumentTextIcon,
-  ServerIcon,
-  CodeBracketIcon,
-  ViewColumnsIcon,
-  FolderIcon,
-  ClockIcon,
-  BellIcon,
-  BookmarkIcon,
-  SignalIcon,
-  CurrencyDollarIcon,
-  WrenchScrewdriverIcon,
-  Cog6ToothIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-  DocumentDuplicateIcon,
-  BriefcaseIcon,
-  CommandLineIcon,
-  CalendarIcon,
-  CubeIcon,
-  TicketIcon,
-  TagIcon,
-  NewspaperIcon,
-  CloudArrowUpIcon,
-  CloudIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
-  ClipboardDocumentCheckIcon,
-  KeyIcon,
-  ArrowPathIcon,
-  InboxArrowDownIcon,
-  ChatBubbleLeftRightIcon,
-  BookOpenIcon,
-  BoltIcon,
-  ArchiveBoxIcon,
-  LockClosedIcon,
-  PhotoIcon,
-  PencilSquareIcon,
-}
-
-// Load quick access on mount
 onMounted(() => {
   if (!quickAccessStore.isInitialized) {
     quickAccessStore.load()
   }
 })
 
-// Get icon component from name
-function getIconComponent(iconName) {
-  return iconMap[iconName] || HomeIcon
-}
-
-// Navigate to quick access item
-function navigateToQuickAccess(item) {
+function navigateToQuickAccess(item: any) {
   router.push(item.nav_href)
   showQuickAccessOverflow.value = false
-}
-
-function toggleUserMenu() {
-  showUserMenu.value = !showUserMenu.value
 }
 
 function closeUserMenu() {
@@ -157,26 +64,26 @@ function goToSettings() {
 </script>
 
 <template>
-  <header class="h-14 bg-dark-800/95 border-b border-dark-700/60 flex items-center justify-between px-3 lg:px-5 gap-3 shrink-0">
+  <header class="h-14 bg-dark-950/60 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 lg:px-6 gap-3 shrink-0 relative z-20">
     <!-- Mobile menu button -->
     <button
       v-if="isMobile"
       @click="$emit('toggle-sidebar')"
-      class="btn-icon shrink-0"
+      class="btn-icon-sm shrink-0"
     >
       <Bars3Icon class="w-5 h-5" />
     </button>
 
-    <!-- Left: Search + Breadcrumbs -->
-    <div class="flex items-center gap-3 flex-1 min-w-0">
-      <!-- Global Search (compact) -->
-      <div class="shrink-0">
-        <GlobalSearch />
-      </div>
-
+    <!-- Left: Breadcrumbs + Search -->
+    <div class="flex items-center gap-4 flex-1 min-w-0">
       <!-- Breadcrumbs (desktop only) -->
       <div v-if="!isMobile" class="hidden md:flex items-center min-w-0">
         <Breadcrumbs />
+      </div>
+
+      <!-- Global Search (compact) -->
+      <div class="shrink-0">
+        <GlobalSearch />
       </div>
     </div>
 
@@ -186,39 +93,32 @@ function goToSettings() {
         v-for="item in quickAccessStore.visibleItems"
         :key="item.id"
         @click="navigateToQuickAccess(item)"
-        class="btn-icon"
+        class="btn-icon-sm"
         :title="item.nav_name"
       >
-        <component :is="getIconComponent(item.nav_icon)" class="w-[1.125rem] h-[1.125rem]" />
+        <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4" />
       </button>
 
       <!-- Overflow dropdown -->
       <div v-if="quickAccessStore.hasOverflow" class="relative">
         <button
           @click="showQuickAccessOverflow = !showQuickAccessOverflow"
-          class="btn-icon"
+          class="btn-icon-sm"
           title="Weitere"
         >
-          <EllipsisHorizontalIcon class="w-[1.125rem] h-[1.125rem]" />
+          <EllipsisHorizontalIcon class="w-4 h-4" />
         </button>
 
-        <Transition
-          enter-active-class="transition ease-out duration-100"
-          enter-from-class="transform opacity-0 scale-95"
-          enter-to-class="transform opacity-100 scale-100"
-          leave-active-class="transition ease-in duration-75"
-          leave-from-class="transform opacity-100 scale-100"
-          leave-to-class="transform opacity-0 scale-95"
-        >
+        <Transition name="fade">
           <div
             v-if="showQuickAccessOverflow"
-            class="absolute right-0 mt-2 w-48 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
+            class="dropdown right-0 mt-2"
           >
             <button
               v-for="item in quickAccessStore.overflowItems"
               :key="item.id"
               @click="navigateToQuickAccess(item)"
-              class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
+              class="dropdown-item"
             >
               <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4 shrink-0" />
               {{ item.nav_name }}
@@ -228,7 +128,7 @@ function goToSettings() {
       </div>
 
       <!-- Divider -->
-      <div class="w-px h-5 bg-dark-600/80 mx-1.5"></div>
+      <div class="w-px h-5 bg-white/[0.06] mx-1.5" />
     </div>
 
     <!-- Actions -->
@@ -236,33 +136,23 @@ function goToSettings() {
       <!-- Inbox -->
       <button
         @click="router.push('/inbox')"
-        class="btn-icon"
+        class="btn-icon-sm"
         title="Inbox"
       >
-        <InboxArrowDownIcon class="w-[1.125rem] h-[1.125rem]" />
+        <InboxArrowDownIcon class="w-4 h-4" />
       </button>
 
       <!-- Team Chat -->
       <button
         @click="router.push('/chat')"
-        class="btn-icon"
+        class="btn-icon-sm"
         title="Team Chat"
       >
-        <ChatBubbleLeftRightIcon class="w-[1.125rem] h-[1.125rem]" />
+        <ChatBubbleLeftRightIcon class="w-4 h-4" />
       </button>
 
       <!-- Divider -->
-      <div class="w-px h-5 bg-dark-600/80 mx-1"></div>
-
-      <!-- Dark mode toggle -->
-      <button
-        @click="uiStore.toggleDarkMode"
-        class="btn-icon"
-        title="Dark Mode umschalten"
-      >
-        <SunIcon v-if="uiStore.isDarkMode" class="w-[1.125rem] h-[1.125rem]" />
-        <MoonIcon v-else class="w-[1.125rem] h-[1.125rem]" />
-      </button>
+      <div class="w-px h-5 bg-white/[0.06] mx-1" />
 
       <!-- Notifications -->
       <NotificationCenter />
@@ -271,87 +161,70 @@ function goToSettings() {
       <div class="relative">
         <button
           @click="showWidgetsMenu = !showWidgetsMenu"
-          class="btn-icon"
+          class="btn-icon-sm"
           title="Widgets"
         >
-          <Squares2X2Icon class="w-[1.125rem] h-[1.125rem]" />
+          <Squares2X2Icon class="w-4 h-4" />
         </button>
 
-        <!-- Dropdown -->
-        <Transition
-          enter-active-class="transition ease-out duration-100"
-          enter-from-class="transform opacity-0 scale-95"
-          enter-to-class="transform opacity-100 scale-100"
-          leave-active-class="transition ease-in duration-75"
-          leave-from-class="transform opacity-100 scale-100"
-          leave-to-class="transform opacity-0 scale-95"
-        >
+        <Transition name="fade">
           <div
             v-if="showWidgetsMenu"
-            class="absolute right-0 mt-2 w-52 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
+            class="dropdown right-0 mt-2"
           >
-            <div class="px-3 py-2 border-b border-dark-700/60">
-              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Widgets</p>
-            </div>
+            <div class="dropdown-header">Widgets</div>
 
-            <div class="py-1">
-              <button
-                @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
-                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
-              >
-                <div class="flex items-center gap-2.5">
-                  <PencilSquareIcon class="w-4 h-4 shrink-0" />
-                  <span>Quick Notes</span>
-                </div>
-                <div v-if="uiStore.showQuickNotes" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
-                  <CheckIcon class="w-3 h-3 text-primary-400" />
-                </div>
-              </button>
+            <button
+              @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
+              class="dropdown-item justify-between"
+            >
+              <div class="flex items-center gap-2.5">
+                <PencilSquareIcon class="w-4 h-4 shrink-0" />
+                <span>Quick Notes</span>
+              </div>
+              <div v-if="uiStore.showQuickNotes" class="status-online" />
+            </button>
 
-              <button
-                @click="uiStore.toggleQuickCapture(); showWidgetsMenu = false"
-                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
-              >
-                <div class="flex items-center gap-2.5">
-                  <InboxArrowDownIcon class="w-4 h-4 shrink-0" />
-                  <span>Quick Capture</span>
-                </div>
-                <div v-if="uiStore.showQuickCapture" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
-                  <CheckIcon class="w-3 h-3 text-primary-400" />
-                </div>
-              </button>
+            <button
+              @click="uiStore.toggleQuickCapture(); showWidgetsMenu = false"
+              class="dropdown-item justify-between"
+            >
+              <div class="flex items-center gap-2.5">
+                <InboxArrowDownIcon class="w-4 h-4 shrink-0" />
+                <span>Quick Capture</span>
+              </div>
+              <div v-if="uiStore.showQuickCapture" class="status-online" />
+            </button>
 
-              <button
-                @click="uiStore.toggleAIAssistant(); showWidgetsMenu = false"
-                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
-              >
-                <div class="flex items-center gap-2.5">
-                  <SparklesIcon class="w-4 h-4 shrink-0" />
-                  <span>AI Assistent</span>
-                </div>
-                <div v-if="uiStore.showAIAssistant" class="w-4 h-4 rounded-full bg-primary-500/20 flex items-center justify-center">
-                  <CheckIcon class="w-3 h-3 text-primary-400" />
-                </div>
-              </button>
-            </div>
+            <button
+              @click="uiStore.toggleAIAssistant(); showWidgetsMenu = false"
+              class="dropdown-item justify-between"
+            >
+              <div class="flex items-center gap-2.5">
+                <SparklesIcon class="w-4 h-4 shrink-0" />
+                <span>AI Assistent</span>
+              </div>
+              <div v-if="uiStore.showAIAssistant" class="status-online" />
+            </button>
 
             <!-- Quick Access Settings -->
-            <div v-if="quickAccessStore.items.length > 0" class="border-t border-dark-700/60 pt-1 pb-1">
+            <template v-if="quickAccessStore.items.length > 0">
+              <div class="dropdown-divider" />
               <div class="px-3 py-2">
-                <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Access Anzahl</p>
+                <p class="text-2xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Access Anzahl</p>
                 <div class="flex items-center gap-2.5">
                   <input
                     type="range"
                     :value="quickAccessStore.maxVisible"
-                    @input="quickAccessStore.updateMaxVisible(Number($event.target.value))"
+                    @input="quickAccessStore.updateMaxVisible(Number(($event.target as HTMLInputElement).value))"
                     min="1"
                     max="10"
-                    class="flex-1 h-1 bg-dark-600 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                    class="flex-1 h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-primary-500"
                   />
                   <span class="text-xs text-gray-400 w-4 text-center tabular-nums">{{ quickAccessStore.maxVisible }}</span>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
         </Transition>
       </div>
@@ -359,49 +232,35 @@ function goToSettings() {
       <!-- User menu -->
       <div class="relative ml-0.5">
         <button
-          @click="toggleUserMenu"
-          class="flex items-center p-1 rounded-lg hover:bg-dark-700/60 transition-colors"
+          @click="showUserMenu = !showUserMenu"
+          class="flex items-center p-1 rounded-xl hover:bg-white/[0.06] transition-colors"
         >
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shadow-sm">
+          <div class="avatar">
             <span class="text-xs font-bold text-white">
               {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
             </span>
           </div>
         </button>
 
-        <!-- Dropdown -->
-        <Transition
-          enter-active-class="transition ease-out duration-100"
-          enter-from-class="transform opacity-0 scale-95"
-          enter-to-class="transform opacity-100 scale-100"
-          leave-active-class="transition ease-in duration-75"
-          leave-from-class="transform opacity-100 scale-100"
-          leave-to-class="transform opacity-0 scale-95"
-        >
+        <Transition name="fade">
           <div
             v-if="showUserMenu"
-            class="absolute right-0 mt-2 w-56 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 z-50"
+            class="dropdown right-0 mt-2"
           >
-            <div class="px-3 py-2.5 border-b border-dark-700/60">
+            <div class="px-3 py-3 border-b border-white/[0.06]">
               <p class="text-sm font-semibold text-white">{{ authStore.user?.username }}</p>
               <p class="text-xs text-gray-500 mt-0.5">{{ authStore.user?.email }}</p>
             </div>
 
             <div class="py-1">
-              <button
-                @click="goToSettings"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
-              >
+              <button @click="goToSettings" class="dropdown-item">
                 <Cog6ToothIcon class="w-4 h-4 shrink-0" />
                 Einstellungen
               </button>
             </div>
 
-            <div class="border-t border-dark-700/60 py-1">
-              <button
-                @click="logout"
-                class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-              >
+            <div class="border-t border-white/[0.06] py-1">
+              <button @click="logout" class="dropdown-item-danger">
                 <ArrowRightOnRectangleIcon class="w-4 h-4 shrink-0" />
                 Abmelden
               </button>
@@ -413,7 +272,7 @@ function goToSettings() {
   </header>
 
   <!-- Click outside to close menus -->
-  <div v-if="showUserMenu" @click="closeUserMenu" class="fixed inset-0 z-40" />
-  <div v-if="showWidgetsMenu" @click="showWidgetsMenu = false" class="fixed inset-0 z-40" />
-  <div v-if="showQuickAccessOverflow" @click="showQuickAccessOverflow = false" class="fixed inset-0 z-40" />
+  <div v-if="showUserMenu" @click="closeUserMenu" class="fixed inset-0 z-10" />
+  <div v-if="showWidgetsMenu" @click="showWidgetsMenu = false" class="fixed inset-0 z-10" />
+  <div v-if="showQuickAccessOverflow" @click="showQuickAccessOverflow = false" class="fixed inset-0 z-10" />
 </template>

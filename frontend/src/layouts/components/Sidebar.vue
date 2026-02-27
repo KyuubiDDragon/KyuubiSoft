@@ -1,5 +1,5 @@
-<script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -8,72 +8,23 @@ import { useFeatureStore } from '@/stores/features'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import {
-  HomeIcon,
-  ListBulletIcon,
-  DocumentTextIcon,
-  ServerIcon,
-  CodeBracketIcon,
-  ViewColumnsIcon,
-  FolderIcon,
-  ClockIcon,
-  BellIcon,
-  BookmarkIcon,
-  SignalIcon,
-  CurrencyDollarIcon,
-  BanknotesIcon,
-  WrenchScrewdriverIcon,
-  Cog6ToothIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
+  navigationGroups,
+  type NavGroup,
+  type NavItem,
+} from '@/core/config/navigation'
+import {
   ChevronUpDownIcon,
   XMarkIcon,
-  DocumentDuplicateIcon,
-  BriefcaseIcon,
-  CommandLineIcon,
-  CalendarIcon,
-  CubeIcon,
-  TicketIcon,
-  TagIcon,
-  NewspaperIcon,
-  CloudArrowUpIcon,
-  CloudIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
   StarIcon,
-  ClipboardDocumentCheckIcon,
-  KeyIcon,
-  ArrowPathIcon,
-  InboxArrowDownIcon,
-  ChatBubbleLeftRightIcon,
-  BookOpenIcon,
+  MagnifyingGlassIcon,
   MapPinIcon,
-  BoltIcon,
-  ArchiveBoxIcon,
-  LockClosedIcon,
-  HeartIcon,
-  FireIcon,
-  PhotoIcon,
-  PencilSquareIcon,
-  SwatchIcon,
-  SunIcon,
-  MoonIcon,
-  CircleStackIcon,
-  QueueListIcon,
+  FolderIcon,
 } from '@heroicons/vue/24/outline'
 
-const props = defineProps({
-  isMobile: {
-    type: Boolean,
-    default: false
-  },
-  mobileOpen: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = defineProps<{
+  isMobile?: boolean
+  mobileOpen?: boolean
+}>()
 
 const emit = defineEmits(['close'])
 
@@ -86,138 +37,191 @@ const featureStore = useFeatureStore()
 const favoritesStore = useFavoritesStore()
 const quickAccessStore = useQuickAccessStore()
 
+// State
+const activeGroupId = ref<string | null>(null)
 const showProjectDropdown = ref(false)
-const expandedGroups = ref([]) // Only expand groups with active routes
-const showFavorites = ref(true)
+const flyoutHoverTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
+const isHoveringFlyout = ref(false)
 
-// Reverse icon mapping: component -> string name
-const iconToName = new Map([
-  [HomeIcon, 'HomeIcon'],
-  [ListBulletIcon, 'ListBulletIcon'],
-  [DocumentTextIcon, 'DocumentTextIcon'],
-  [ServerIcon, 'ServerIcon'],
-  [CodeBracketIcon, 'CodeBracketIcon'],
-  [ViewColumnsIcon, 'ViewColumnsIcon'],
-  [FolderIcon, 'FolderIcon'],
-  [ClockIcon, 'ClockIcon'],
-  [BellIcon, 'BellIcon'],
-  [BookmarkIcon, 'BookmarkIcon'],
-  [FireIcon, 'FireIcon'],
-  [SignalIcon, 'SignalIcon'],
-  [CurrencyDollarIcon, 'CurrencyDollarIcon'],
-  [BanknotesIcon, 'BanknotesIcon'],
-  [WrenchScrewdriverIcon, 'WrenchScrewdriverIcon'],
-  [Cog6ToothIcon, 'Cog6ToothIcon'],
-  [UsersIcon, 'UsersIcon'],
-  [ShieldCheckIcon, 'ShieldCheckIcon'],
-  [DocumentDuplicateIcon, 'DocumentDuplicateIcon'],
-  [BriefcaseIcon, 'BriefcaseIcon'],
-  [CommandLineIcon, 'CommandLineIcon'],
-  [CalendarIcon, 'CalendarIcon'],
-  [CubeIcon, 'CubeIcon'],
-  [TicketIcon, 'TicketIcon'],
-  [TagIcon, 'TagIcon'],
-  [NewspaperIcon, 'NewspaperIcon'],
-  [CloudArrowUpIcon, 'CloudArrowUpIcon'],
-  [CloudIcon, 'CloudIcon'],
-  [LinkIcon, 'LinkIcon'],
-  [ClipboardDocumentListIcon, 'ClipboardDocumentListIcon'],
-  [ClipboardDocumentCheckIcon, 'ClipboardDocumentCheckIcon'],
-  [KeyIcon, 'KeyIcon'],
-  [ArrowPathIcon, 'ArrowPathIcon'],
-  [InboxArrowDownIcon, 'InboxArrowDownIcon'],
-  [ChatBubbleLeftRightIcon, 'ChatBubbleLeftRightIcon'],
-  [BookOpenIcon, 'BookOpenIcon'],
-  [BoltIcon, 'BoltIcon'],
-  [ArchiveBoxIcon, 'ArchiveBoxIcon'],
-  [LockClosedIcon, 'LockClosedIcon'],
-  [HeartIcon, 'HeartIcon'],
-  [PhotoIcon, 'PhotoIcon'],
-  [PencilSquareIcon, 'PencilSquareIcon'],
-  [SwatchIcon, 'SwatchIcon'],
-  [CircleStackIcon, 'CircleStackIcon'],
-  [QueueListIcon, 'QueueListIcon'],
-])
-
-// Get icon name from component
-function getIconName(iconComponent) {
-  return iconToName.get(iconComponent) || 'HomeIcon'
+// Icon map for favorites
+const favoriteIcons: Record<string, Component> = {
+  list: () => import('@heroicons/vue/24/outline/ListBulletIcon'),
+  document: () => import('@heroicons/vue/24/outline/DocumentTextIcon'),
+  kanban_board: () => import('@heroicons/vue/24/outline/ViewColumnsIcon'),
+  project: () => import('@heroicons/vue/24/outline/FolderIcon'),
+  checklist: () => import('@heroicons/vue/24/outline/ClipboardDocumentCheckIcon'),
+  snippet: () => import('@heroicons/vue/24/outline/CodeBracketIcon'),
+  bookmark_group: () => import('@heroicons/vue/24/outline/BookmarkIcon'),
+  connection: () => import('@heroicons/vue/24/outline/ServerIcon'),
 }
 
-// Load projects, features, favorites and quick access on mount
+// Load data on mount
 onMounted(async () => {
   await featureStore.loadFeatures()
   projectStore.loadProjects()
   favoritesStore.load()
   quickAccessStore.load()
-  // Expand group containing current route
-  expandGroupForCurrentRoute()
+  // Set initial active group based on current route
+  setActiveGroupFromRoute()
 })
 
-// Toggle quick access for a navigation item
-async function toggleQuickAccess(item, event) {
-  event.stopPropagation()
-  try {
-    // Get the icon name from the component using reverse mapping
-    const iconName = getIconName(item.icon)
-    await quickAccessStore.toggle({
-      id: item.id || item.href.replace(/\//g, '-').replace(/^-/, ''),
-      name: item.name,
-      href: item.href,
-      icon: iconName,
-    })
-  } catch (error) {
-    console.error('Failed to toggle quick access:', error)
-  }
-}
-
-// Check if item is pinned to quick access
-function isPinned(item) {
-  const navId = item.id || item.href.replace(/\//g, '-').replace(/^-/, '')
-  return quickAccessStore.isPinned(navId)
-}
-
-// Icon mapping for favorite item types
-const favoriteIcons = {
-  list: ListBulletIcon,
-  document: DocumentTextIcon,
-  kanban_board: ViewColumnsIcon,
-  project: FolderIcon,
-  checklist: ClipboardDocumentCheckIcon,
-  snippet: CodeBracketIcon,
-  bookmark_group: BookmarkIcon,
-  connection: ServerIcon,
-}
-
-function getFavoriteIcon(type) {
-  return favoriteIcons[type] || StarIcon
-}
-
-function navigateToFavorite(fav) {
-  const route = favoritesStore.getItemRoute(fav)
-  router.push(route)
-  if (props.isMobile) {
-    emit('close')
-  }
-}
-
-// Watch route changes to expand relevant group
+// Watch route changes
 watch(() => route.path, () => {
-  expandGroupForCurrentRoute()
+  setActiveGroupFromRoute()
 })
 
-function expandGroupForCurrentRoute() {
-  for (const group of navigationGroups.value) {
-    if (group.children) {
-      const hasActiveChild = group.children.some(child => isActive(child.href))
-      if (hasActiveChild && !expandedGroups.value.includes(group.id)) {
-        expandedGroups.value.push(group.id)
-      }
+function setActiveGroupFromRoute() {
+  for (const group of filteredGroups.value) {
+    if (group.href && isActive(group.href)) {
+      activeGroupId.value = group.id
+      return
+    }
+    if (group.children?.some(child => isActive(child.href))) {
+      activeGroupId.value = group.id
+      return
     }
   }
 }
 
-function selectProject(projectId) {
+// Filter navigation based on permissions and features
+function filterItem(item: NavItem): boolean {
+  if (item.feature && !featureStore.isEnabled(item.feature)) return false
+  if (item.permission && !authStore.hasPermission(item.permission)) return false
+  return true
+}
+
+const filteredGroups = computed<NavGroup[]>(() => {
+  return navigationGroups
+    .map(group => {
+      if (group.feature && !featureStore.isEnabled(group.feature)) return null
+      if (group.permission && !authStore.hasPermission(group.permission)) return null
+      if (group.children) {
+        const filteredChildren = group.children.filter(filterItem)
+        if (filteredChildren.length === 0) return null
+        return { ...group, children: filteredChildren }
+      }
+      return group
+    })
+    .filter((g): g is NavGroup => g !== null)
+})
+
+// Active group's children for the flyout
+const activeGroupChildren = computed<NavItem[]>(() => {
+  if (!activeGroupId.value) return []
+  const group = filteredGroups.value.find(g => g.id === activeGroupId.value)
+  return group?.children ?? []
+})
+
+const activeGroupName = computed(() => {
+  const group = filteredGroups.value.find(g => g.id === activeGroupId.value)
+  return group?.name ?? ''
+})
+
+// Show flyout only for groups with children
+const showFlyout = computed(() => {
+  if (props.isMobile && props.mobileOpen) return activeGroupChildren.value.length > 0
+  return activeGroupChildren.value.length > 0 && (isHoveringFlyout.value || isGroupActiveByRoute(activeGroupId.value))
+})
+
+function isGroupActiveByRoute(groupId: string | null): boolean {
+  if (!groupId) return false
+  const group = filteredGroups.value.find(g => g.id === groupId)
+  if (!group) return false
+  if (group.href) return isActive(group.href)
+  return group.children?.some(child => isActive(child.href)) ?? false
+}
+
+// All navigation hrefs for sibling detection
+const allHrefs = computed(() => {
+  const hrefs = new Set<string>()
+  for (const group of navigationGroups) {
+    if (group.href) hrefs.add(group.href)
+    if (group.children) {
+      for (const child of group.children) {
+        hrefs.add(child.href)
+      }
+    }
+  }
+  return hrefs
+})
+
+function isActive(href: string): boolean {
+  if (href === '/') return route.path === '/'
+  if (route.path === href) return true
+  if (allHrefs.value.has(route.path)) return false
+
+  const hrefSegments = href.split('/').filter(Boolean)
+  const pathSegments = route.path.split('/').filter(Boolean)
+  if (pathSegments.length <= hrefSegments.length) return false
+  return hrefSegments.every((seg, i) => pathSegments[i] === seg)
+}
+
+function isGroupActive(group: NavGroup): boolean {
+  if (group.href) return isActive(group.href)
+  return group.children?.some(child => isActive(child.href)) ?? false
+}
+
+// Interaction handlers
+function handleRailClick(group: NavGroup) {
+  if (group.href) {
+    // Direct link group
+    navigateTo(group.href)
+    activeGroupId.value = group.id
+    return
+  }
+  // Toggle flyout
+  if (activeGroupId.value === group.id) {
+    activeGroupId.value = null
+  } else {
+    activeGroupId.value = group.id
+  }
+}
+
+function handleRailHover(group: NavGroup) {
+  if (props.isMobile) return
+  if (flyoutHoverTimeout.value) clearTimeout(flyoutHoverTimeout.value)
+  isHoveringFlyout.value = true
+  activeGroupId.value = group.id
+}
+
+function handleRailLeave() {
+  if (props.isMobile) return
+  flyoutHoverTimeout.value = setTimeout(() => {
+    if (!isHoveringFlyout.value) {
+      // Keep flyout open if a child is active
+      if (!isGroupActiveByRoute(activeGroupId.value)) {
+        activeGroupId.value = null
+      }
+    }
+  }, 200)
+}
+
+function handleFlyoutEnter() {
+  isHoveringFlyout.value = true
+  if (flyoutHoverTimeout.value) clearTimeout(flyoutHoverTimeout.value)
+}
+
+function handleFlyoutLeave() {
+  isHoveringFlyout.value = false
+  flyoutHoverTimeout.value = setTimeout(() => {
+    if (!isGroupActiveByRoute(activeGroupId.value)) {
+      activeGroupId.value = null
+    }
+  }, 200)
+}
+
+function navigateTo(href: string) {
+  router.push(href)
+  if (props.isMobile) emit('close')
+}
+
+function navigateToFavorite(fav: any) {
+  const favRoute = favoritesStore.getItemRoute(fav)
+  router.push(favRoute)
+  if (props.isMobile) emit('close')
+}
+
+function selectProject(projectId: number) {
   projectStore.selectProject(projectId)
   showProjectDropdown.value = false
 }
@@ -226,660 +230,241 @@ function clearProjectSelection() {
   projectStore.clearSelection()
   showProjectDropdown.value = false
 }
-
-function toggleGroup(groupId) {
-  const index = expandedGroups.value.indexOf(groupId)
-  if (index === -1) {
-    expandedGroups.value.push(groupId)
-  } else {
-    expandedGroups.value.splice(index, 1)
-  }
-}
-
-function isGroupExpanded(groupId) {
-  return expandedGroups.value.includes(groupId)
-}
-
-// Navigation mit Gruppen
-const allNavigationGroups = [
-  // Dashboard - Standalone
-  { id: 'dashboard', name: 'Dashboard', href: '/', icon: HomeIcon, permission: 'dashboard.view' },
-
-  // News - Standalone
-  { id: 'news', name: 'News', href: '/news', icon: NewspaperIcon, permission: 'news.view' },
-
-  // Inhalte
-  {
-    id: 'inhalte',
-    name: 'Inhalte',
-    icon: DocumentDuplicateIcon,
-    children: [
-      { name: 'Listen', href: '/lists', icon: ListBulletIcon, permission: 'lists.view' },
-      { name: 'Dokumente', href: '/documents', icon: DocumentTextIcon, permission: 'documents.view' },
-      { name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes', permission: 'notes.view' },
-      { name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, permission: 'snippets.view' },
-      { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, permission: 'bookmarks.view' },
-      { name: 'Habit Tracker', href: '/habit-tracker', icon: FireIcon },
-    ],
-  },
-
-  // KyuubiCloud
-  {
-    id: 'kyuubicloud',
-    name: 'KyuubiCloud',
-    icon: CloudIcon,
-    children: [
-      { name: 'Cloud Storage', href: '/storage', icon: CloudArrowUpIcon, permission: 'storage.view' },
-      { name: 'Freigaben', href: '/storage/shares', icon: LinkIcon, permission: 'storage.share' },
-      { name: 'Checklisten', href: '/checklists', icon: ClipboardDocumentListIcon, permission: 'checklists.view' },
-      { name: 'Short Links', href: '/links', icon: LinkIcon, permission: 'links.view' },
-      { name: 'Galerien', href: '/galleries', icon: PhotoIcon, feature: 'galleries', permission: 'galleries.view' },
-      { name: 'Mockup Editor', href: '/mockup-editor', icon: SwatchIcon, permission: 'mockup.view' },
-    ],
-  },
-
-  // Projektmanagement
-  {
-    id: 'projektmanagement',
-    name: 'Projektmanagement',
-    icon: BriefcaseIcon,
-    children: [
-      { name: 'Kanban', href: '/kanban', icon: ViewColumnsIcon, permission: 'kanban.view' },
-      { name: 'Projekte', href: '/projects', icon: FolderIcon, permission: 'projects.view' },
-      { name: 'Kalender', href: '/calendar', icon: CalendarIcon, permission: 'calendar.view' },
-      { name: 'Zeiterfassung', href: '/time', icon: ClockIcon, permission: 'time.view' },
-      { name: 'Wiederkehrend', href: '/recurring-tasks', icon: ArrowPathIcon, permission: 'recurring.view' },
-    ],
-  },
-
-  // Entwicklung & Tools
-  {
-    id: 'entwicklung',
-    name: 'Entwicklung & Tools',
-    icon: CommandLineIcon,
-    children: [
-      { name: 'Verbindungen', href: '/connections', icon: ServerIcon, permission: 'connections.view' },
-      { name: 'Server', href: '/server', icon: CommandLineIcon, feature: 'server', permission: 'server.view' },
-      { name: 'DB Browser', href: '/database-browser', icon: CircleStackIcon, permission: 'connections.view' },
-      { name: 'Log Viewer', href: '/logs', icon: QueueListIcon, permission: 'server.view' },
-      { name: 'Script Vault', href: '/scripts', icon: CodeBracketIcon, feature: 'server', permission: 'server.view' },
-      { name: 'Git Repos', href: '/git', icon: CodeBracketIcon, feature: 'git', permission: 'git.view' },
-      { name: 'Webhooks', href: '/webhooks', icon: BellIcon, permission: 'webhooks.view' },
-      { name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
-      { name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl', permission: 'ssl.view' },
-      { name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
-      { name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
-    ],
-  },
-
-  // Docker
-  {
-    id: 'docker',
-    name: 'Docker',
-    icon: CubeIcon,
-    feature: 'docker',
-    permission: 'docker.view',
-    children: [
-      { name: 'Container Manager', href: '/docker', icon: ServerIcon, permission: 'docker.view' },
-      { name: 'Docker Hosts', href: '/docker/hosts', icon: ServerIcon, permission: 'docker.hosts' },
-      { name: 'Dockerfile Generator', href: '/docker/dockerfile', icon: DocumentTextIcon, permission: 'docker.view' },
-      { name: 'Compose Builder', href: '/docker/compose', icon: ViewColumnsIcon, permission: 'docker.view' },
-      { name: 'Command Builder', href: '/docker/command', icon: CommandLineIcon, permission: 'docker.view' },
-      { name: '.dockerignore', href: '/docker/ignore', icon: ShieldCheckIcon, permission: 'docker.view' },
-    ],
-  },
-
-  // Support
-  {
-    id: 'support',
-    name: 'Support',
-    icon: TicketIcon,
-    feature: 'tickets',
-    permission: 'tickets.view',
-    children: [
-      { name: 'Tickets', href: '/tickets', icon: TicketIcon, permission: 'tickets.view' },
-      { name: 'Kategorien', href: '/tickets/categories', icon: TagIcon, permission: 'tickets.manage' },
-    ],
-  },
-
-  // Business
-  {
-    id: 'business',
-    name: 'Business',
-    icon: CurrencyDollarIcon,
-    children: [
-      { name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, feature: 'invoices', permission: 'invoices.view' },
-      { name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon },
-    ],
-  },
-
-  // Discord Manager
-  { id: 'discord', name: 'Discord Manager', href: '/discord', icon: ChatBubbleLeftRightIcon, feature: 'discord', permission: 'discord.view' },
-
-  // Administration
-  {
-    id: 'administration',
-    name: 'Administration',
-    icon: Cog6ToothIcon,
-    children: [
-      { name: 'Passwörter', href: '/passwords', icon: KeyIcon, permission: 'passwords.view' },
-      { name: 'Backups', href: '/backups', icon: ArchiveBoxIcon, permission: 'backups.view' },
-      { name: 'Einstellungen', href: '/settings', icon: Cog6ToothIcon, permission: 'settings.view' },
-      { name: 'Benutzer', href: '/users', icon: UsersIcon, permission: 'users.view' },
-      { name: 'Rollen', href: '/roles', icon: ShieldCheckIcon, permission: 'users.write' },
-      { name: 'System', href: '/system', icon: ShieldCheckIcon, permission: 'system.admin' },
-    ],
-  },
-
-  // Wiki / Knowledge Base (am Ende)
-  { id: 'wiki', name: 'Wiki', href: '/wiki', icon: BookOpenIcon, permission: 'wiki.view' },
-]
-
-// Filter navigation based on user permissions and features
-function filterItem(item) {
-  // Check feature flag first (Instance-Level)
-  if (item.feature && !featureStore.isEnabled(item.feature)) {
-    return false
-  }
-
-  // Check explicit permission requirement
-  if (item.permission && !authStore.hasPermission(item.permission)) {
-    return false
-  }
-
-  // Check explicit role requirements (legacy support)
-  if (item.roles && !item.roles.some(role => authStore.hasRole(role))) {
-    return false
-  }
-
-  return true
-}
-
-const navigationGroups = computed(() => {
-  return allNavigationGroups
-    .map(group => {
-      // Check group-level feature flag first
-      if (group.feature && !featureStore.isEnabled(group.feature)) {
-        return null
-      }
-      // Check group-level permission
-      if (group.permission && !authStore.hasPermission(group.permission)) {
-        return null
-      }
-      if (group.children) {
-        const filteredChildren = group.children.filter(filterItem)
-        // Hide group if no children are visible
-        if (filteredChildren.length === 0) return null
-        return { ...group, children: filteredChildren }
-      }
-      return filterItem(group) ? group : null
-    })
-    .filter(Boolean)
-})
-
-// Check if any child in group is active
-function isGroupActive(group) {
-  if (!group.children) return false
-  return group.children.some(child => isActive(child.href))
-}
-
-const sidebarClass = computed(() => {
-  // On mobile, use full width sidebar that slides in/out
-  if (props.isMobile) {
-    return {
-      'w-64': true,
-      '-translate-x-full': !props.mobileOpen,
-      'translate-x-0': props.mobileOpen,
-    }
-  }
-  // On desktop, use collapsible sidebar
-  return {
-    'w-64': !uiStore.sidebarCollapsed,
-    'w-20': uiStore.sidebarCollapsed,
-  }
-})
-
-// Collect all navigation hrefs for sibling detection
-const allNavigationHrefs = computed(() => {
-  const hrefs = new Set()
-  allNavigationGroups.forEach(group => {
-    if (group.href) {
-      hrefs.add(group.href)
-    }
-    if (group.children) {
-      group.children.forEach(child => {
-        hrefs.add(child.href)
-      })
-    }
-  })
-  return hrefs
-})
-
-function isActive(href) {
-  if (href === '/') {
-    return route.path === '/'
-  }
-  // Exact match always returns true
-  if (route.path === href) {
-    return true
-  }
-
-  // If the current route is a known navigation item (sibling),
-  // only exact match should be active
-  // e.g., when on /docker/hosts, /docker should NOT be active
-  if (allNavigationHrefs.value.has(route.path)) {
-    return false
-  }
-
-  // For deeper paths not in navigation (like /docker/containers/123),
-  // check if href is a parent
-  const hrefSegments = href.split('/').filter(Boolean)
-  const pathSegments = route.path.split('/').filter(Boolean)
-
-  // If the href has the same number of segments or more, require exact match
-  if (pathSegments.length <= hrefSegments.length) {
-    return false
-  }
-
-  // Check if all href segments match the beginning of the path
-  return hrefSegments.every((segment, index) => pathSegments[index] === segment)
-}
-
-function navigateTo(href) {
-  router.push(href)
-  // Close mobile sidebar after navigation
-  if (props.isMobile) {
-    emit('close')
-  }
-}
 </script>
 
 <template>
+  <!-- Mobile overlay -->
+  <Transition name="fade">
+    <div
+      v-if="isMobile && mobileOpen"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+      @click="$emit('close')"
+    />
+  </Transition>
+
+  <!-- ICON RAIL -->
   <aside
-    class="fixed left-0 top-0 h-screen bg-dark-800/95 border-r border-dark-700/60 transition-all duration-300 z-40 flex flex-col"
-    :class="sidebarClass"
+    class="fixed left-0 top-0 h-screen z-40 flex transition-transform duration-300"
+    :class="[
+      isMobile && !mobileOpen ? '-translate-x-full' : 'translate-x-0',
+    ]"
   >
-    <div class="flex flex-col h-full overflow-hidden">
+    <!-- Rail bar -->
+    <div class="w-rail bg-dark-950/80 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col items-center">
       <!-- Logo -->
-      <div class="h-16 flex items-center border-b border-dark-700/80 px-4 gap-3 shrink-0">
+      <div class="h-16 flex items-center justify-center shrink-0">
         <img
           src="/logo.png"
           alt="KyuubiSoft"
-          class="w-8 h-8 shrink-0"
+          class="w-9 h-9 drop-shadow-lg hover:scale-110 transition-transform duration-200 cursor-pointer"
+          @click="navigateTo('/')"
         />
-        <h1
-          v-if="isMobile || !uiStore.sidebarCollapsed"
-          class="text-base font-bold text-gradient tracking-tight"
-        >
-          KyuubiSoft
-        </h1>
       </div>
 
-      <!-- Project Selector -->
-      <div class="px-2.5 py-2.5 border-b border-dark-700/60 shrink-0">
-        <div v-if="isMobile || !uiStore.sidebarCollapsed" class="relative">
-          <button
-            @click="showProjectDropdown = !showProjectDropdown"
-            class="w-full flex items-center justify-between px-2.5 py-2 bg-dark-700/50 hover:bg-dark-700 border border-dark-600/50 rounded-lg transition-all duration-150"
-          >
-            <div class="flex items-center gap-2 min-w-0">
-              <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
-                :style="projectStore.selectedProject ? { backgroundColor: projectStore.selectedProject.color } : {}"
-                :class="!projectStore.selectedProject ? 'bg-gray-500' : ''"
-              ></span>
-              <span class="text-sm text-gray-300 truncate font-medium">
-                {{ projectStore.selectedProject?.name || 'Alle Projekte' }}
-              </span>
-            </div>
-            <ChevronUpDownIcon class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-          </button>
+      <!-- Project indicator -->
+      <div class="px-2 pb-2 w-full shrink-0">
+        <button
+          @click="showProjectDropdown = !showProjectDropdown"
+          class="w-full flex items-center justify-center p-2 rounded-xl
+                 bg-white/[0.03] border border-white/[0.06]
+                 hover:bg-white/[0.06] hover:border-white/[0.10]
+                 transition-all duration-200 relative"
+          :title="projectStore.selectedProject?.name || 'Alle Projekte'"
+        >
+          <FolderIcon class="w-4 h-4 text-gray-400" />
+          <span
+            v-if="projectStore.selectedProject"
+            class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-dark-950"
+            :style="{ backgroundColor: projectStore.selectedProject.color }"
+          />
+        </button>
 
-          <!-- Dropdown -->
+        <!-- Project dropdown -->
+        <Transition name="fade">
           <div
             v-if="showProjectDropdown"
-            class="absolute left-0 right-0 mt-1.5 py-1 bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto animate-scale-in"
+            class="absolute left-rail ml-2 top-16 z-50
+                   bg-dark-900/95 backdrop-blur-2xl border border-white/[0.08]
+                   rounded-xl shadow-float py-1.5 min-w-52 animate-scale-in"
           >
-            <!-- All Projects Option -->
+            <div class="dropdown-header">Projekte</div>
             <button
               @click="clearProjectSelection"
-              class="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-dark-700/60 transition-colors"
-              :class="!projectStore.selectedProjectId ? 'bg-dark-700/60 text-white' : 'text-gray-400'"
+              class="dropdown-item"
+              :class="!projectStore.selectedProjectId ? 'dropdown-item-active' : ''"
             >
-              <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-              <span class="text-sm">Alle Projekte</span>
+              <span class="w-2 h-2 rounded-full bg-gray-500" />
+              <span>Alle Projekte</span>
             </button>
-
-            <div class="h-px bg-dark-700/60 my-1 mx-2"></div>
-
-            <!-- Project List -->
+            <div class="dropdown-divider" />
             <button
               v-for="project in projectStore.activeProjects"
               :key="project.id"
               @click="selectProject(project.id)"
-              class="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-dark-700/60 transition-colors"
-              :class="projectStore.selectedProjectId === project.id ? 'bg-dark-700/60 text-white' : 'text-gray-400'"
+              class="dropdown-item"
+              :class="projectStore.selectedProjectId === project.id ? 'dropdown-item-active' : ''"
             >
               <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
+                class="w-2 h-2 rounded-full shrink-0"
                 :style="{ backgroundColor: project.color }"
-              ></span>
-              <span class="text-sm truncate">{{ project.name }}</span>
+              />
+              <span class="truncate">{{ project.name }}</span>
             </button>
-
             <div v-if="projectStore.activeProjects.length === 0" class="px-3 py-2 text-xs text-gray-500">
-              Keine Projekte vorhanden
+              Keine Projekte
             </div>
           </div>
+        </Transition>
+      </div>
 
-          <!-- Backdrop -->
-          <div
-            v-if="showProjectDropdown"
-            class="fixed inset-0 z-40"
-            @click="showProjectDropdown = false"
-          ></div>
-        </div>
+      <!-- Divider -->
+      <div class="w-8 h-px bg-white/[0.06] mb-2" />
 
-        <!-- Collapsed: Icon with color indicator (desktop only) -->
-        <div v-else-if="!isMobile" class="flex justify-center">
+      <!-- Navigation groups -->
+      <nav class="flex-1 w-full px-2 py-1 overflow-y-auto scrollbar-hide space-y-1">
+        <div
+          v-for="group in filteredGroups"
+          :key="group.id"
+          class="relative group/rail"
+        >
           <button
-            @click="showProjectDropdown = !showProjectDropdown"
-            class="p-2 bg-dark-700/50 hover:bg-dark-700 border border-dark-600/50 rounded-lg transition-all duration-150 relative"
-            :title="projectStore.selectedProject?.name || 'Alle Projekte'"
+            @click="handleRailClick(group)"
+            @mouseenter="handleRailHover(group)"
+            @mouseleave="handleRailLeave"
+            class="nav-rail-item w-full"
+            :class="{
+              'nav-rail-item-active': isGroupActive(group),
+              'bg-white/[0.06] text-gray-300': activeGroupId === group.id && !isGroupActive(group),
+            }"
+            :title="group.name"
           >
-            <FolderIcon class="w-4 h-4 text-gray-400" />
+            <!-- Active indicator -->
             <span
-              v-if="projectStore.selectedProject"
-              class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-dark-800"
-              :style="{ backgroundColor: projectStore.selectedProject.color }"
-            ></span>
+              v-if="isGroupActive(group)"
+              class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary-500 rounded-r-full shadow-glow-sm"
+            />
+            <component
+              :is="group.icon"
+              class="w-5 h-5"
+            />
           </button>
-        </div>
-      </div>
 
-      <!-- Favorites Section -->
-      <div v-if="favoritesStore.favorites.length > 0" class="px-2.5 py-2 border-b border-dark-700/60 shrink-0">
-        <button
-          v-if="isMobile || !uiStore.sidebarCollapsed"
-          @click="showFavorites = !showFavorites"
-          class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-gray-500 hover:text-gray-300 transition-colors"
-        >
-          <div class="flex items-center gap-2">
-            <StarIcon class="w-3.5 h-3.5 text-yellow-500/80" />
-            <span class="text-[10px] font-semibold uppercase tracking-wider">Favoriten</span>
-          </div>
-          <ChevronDownIcon
-            class="w-3 h-3 transition-transform duration-200"
-            :class="{ 'rotate-180': showFavorites }"
-          />
-        </button>
-        <div
-          v-else-if="!isMobile"
-          class="flex justify-center py-1"
-          title="Favoriten"
-        >
-          <StarIcon class="w-4 h-4 text-yellow-500/80" />
-        </div>
-
-        <!-- Favorites list -->
-        <div
-          v-if="showFavorites && (isMobile || !uiStore.sidebarCollapsed)"
-          class="space-y-0.5 mt-1"
-        >
-          <button
-            v-for="fav in favoritesStore.favorites"
-            :key="fav.id"
-            @click="navigateToFavorite(fav)"
-            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-500 hover:bg-dark-700/60 hover:text-gray-200 transition-colors truncate"
+          <!-- Tooltip (desktop only, when no flyout) -->
+          <div
+            v-if="!isMobile && !group.children"
+            class="absolute left-full ml-3 top-1/2 -translate-y-1/2
+                   opacity-0 group-hover/rail:opacity-100
+                   transition-opacity duration-150 pointer-events-none z-50"
           >
-            <component :is="getFavoriteIcon(fav.item_type)" class="flex-shrink-0" style="width: 0.875rem; height: 0.875rem;" />
-            <span class="text-xs truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
-          </button>
-        </div>
-
-        <!-- Collapsed favorites flyout -->
-        <div
-          v-if="!isMobile && uiStore.sidebarCollapsed"
-          class="group relative"
-        >
-          <div class="absolute left-full ml-2.5 top-0 hidden group-hover:block z-50">
-            <div class="bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 min-w-52 animate-scale-in">
-              <div class="px-3 py-1.5 text-[10px] text-gray-500 font-semibold uppercase tracking-widest border-b border-dark-700/60 mb-1 flex items-center gap-2">
-                <StarIcon class="w-3 h-3 text-yellow-500/80" />
-                Favoriten
-              </div>
-              <button
-                v-for="fav in favoritesStore.favorites"
-                :key="fav.id"
-                @click="navigateToFavorite(fav)"
-                class="w-full flex items-center gap-2.5 px-3 py-1.5 text-gray-400 hover:bg-dark-700/60 hover:text-white transition-colors"
-              >
-                <component :is="getFavoriteIcon(fav.item_type)" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
-                <span class="text-sm truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
-              </button>
-            </div>
+            <div class="tooltip">{{ group.name }}</div>
           </div>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="flex-1 py-3 px-2.5 overflow-y-auto">
-        <div class="space-y-0.5">
-          <template v-for="group in navigationGroups" :key="group.id">
-            <!-- Standalone item (no children) -->
-            <div
-              v-if="!group.children"
-              class="group/nav relative"
-            >
-              <button
-                @click="navigateTo(group.href)"
-                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 relative"
-                :class="[
-                  isActive(group.href)
-                    ? 'bg-primary-500/10 text-primary-300'
-                    : 'text-gray-400 hover:bg-dark-700/60 hover:text-gray-200'
-                ]"
-              >
-                <!-- Active indicator bar -->
-                <span
-                  v-if="isActive(group.href)"
-                  class="nav-active-bar"
-                />
-                <component
-                  :is="group.icon"
-                  class="w-4.5 h-4.5 flex-shrink-0 transition-colors duration-150"
-                  :class="isActive(group.href) ? 'text-primary-400' : ''"
-                  style="width: 1.125rem; height: 1.125rem;"
-                />
-                <span v-if="isMobile || !uiStore.sidebarCollapsed" class="text-sm flex-1 text-left font-medium">
-                  {{ group.name }}
-                </span>
-                <!-- Pin button (visible on hover) -->
-                <button
-                  v-if="isMobile || !uiStore.sidebarCollapsed"
-                  @click="toggleQuickAccess(group, $event)"
-                  class="opacity-0 group-hover/nav:opacity-100 transition-opacity p-1 rounded-md hover:bg-dark-600"
-                  :class="isPinned(group) ? 'text-primary-400 !opacity-100' : 'text-gray-500'"
-                  :title="isPinned(group) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
-                >
-                  <MapPinIcon class="w-3.5 h-3.5" />
-                </button>
-              </button>
-            </div>
-
-            <!-- Group with children -->
-            <div v-else class="space-y-0.5">
-              <!-- Group header -->
-              <button
-                @click="(isMobile || !uiStore.sidebarCollapsed) ? toggleGroup(group.id) : null"
-                class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all duration-150"
-                :class="[
-                  isGroupActive(group)
-                    ? 'text-primary-400'
-                    : 'text-gray-500 hover:bg-dark-700/60 hover:text-gray-300'
-                ]"
-              >
-                <div class="flex items-center gap-2.5">
-                  <component :is="group.icon" class="flex-shrink-0" style="width: 1.125rem; height: 1.125rem;" />
-                  <span v-if="isMobile || !uiStore.sidebarCollapsed" class="text-sm font-medium">
-                    {{ group.name }}
-                  </span>
-                </div>
-                <ChevronDownIcon
-                  v-if="isMobile || !uiStore.sidebarCollapsed"
-                  class="w-3.5 h-3.5 transition-transform duration-200"
-                  :class="{ 'rotate-180': isGroupExpanded(group.id) }"
-                />
-              </button>
-
-              <!-- Children (expanded view) -->
-              <div
-                v-if="(isMobile || !uiStore.sidebarCollapsed) && isGroupExpanded(group.id)"
-                class="ml-3 pl-3 border-l border-dark-700/60 space-y-0.5 pb-1"
-              >
-                <div
-                  v-for="child in group.children"
-                  :key="child.name"
-                  class="group/child relative"
-                >
-                  <button
-                    @click="navigateTo(child.href)"
-                    class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all duration-150 relative"
-                    :class="[
-                      isActive(child.href)
-                        ? 'bg-primary-500/10 text-primary-300'
-                        : 'text-gray-500 hover:bg-dark-700/60 hover:text-gray-200'
-                    ]"
-                  >
-                    <!-- Active indicator bar -->
-                    <span
-                      v-if="isActive(child.href)"
-                      class="nav-active-bar"
-                    />
-                    <component :is="child.icon" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
-                    <span class="text-sm flex-1 text-left">{{ child.name }}</span>
-                    <!-- Pin button (visible on hover) -->
-                    <button
-                      @click="toggleQuickAccess(child, $event)"
-                      class="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded-md hover:bg-dark-600"
-                      :class="isPinned(child) ? 'text-primary-400 !opacity-100' : 'text-gray-500'"
-                      :title="isPinned(child) ? 'Aus Quick Access entfernen' : 'Zu Quick Access hinzufügen'"
-                    >
-                      <MapPinIcon class="w-3 h-3" />
-                    </button>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Collapsed view: Show flyout on hover (desktop only) -->
-              <div
-                v-if="!isMobile && uiStore.sidebarCollapsed"
-                class="group relative"
-              >
-                <div
-                  class="absolute left-full ml-2.5 top-0 hidden group-hover:block z-50"
-                >
-                  <div class="bg-dark-800 border border-dark-700/80 rounded-xl shadow-2xl py-1.5 min-w-52 animate-scale-in">
-                    <div class="px-3 py-1.5 text-[10px] text-gray-500 font-semibold uppercase tracking-widest border-b border-dark-700/60 mb-1">
-                      {{ group.name }}
-                    </div>
-                    <button
-                      v-for="child in group.children"
-                      :key="child.name"
-                      @click="navigateTo(child.href)"
-                      class="w-full flex items-center gap-2.5 px-3 py-1.5 transition-colors duration-100 relative"
-                      :class="[
-                        isActive(child.href)
-                          ? 'bg-primary-500/10 text-primary-300'
-                          : 'text-gray-400 hover:bg-dark-700/60 hover:text-white'
-                      ]"
-                    >
-                      <span v-if="isActive(child.href)" class="nav-active-bar" />
-                      <component :is="child.icon" class="flex-shrink-0" style="width: 1rem; height: 1rem;" />
-                      <span class="text-sm">{{ child.name }}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
         </div>
       </nav>
 
-      <!-- Theme toggle -->
-      <div class="px-4 py-2 border-t border-dark-700">
+      <!-- Bottom section -->
+      <div class="px-2 py-3 shrink-0 space-y-1 w-full">
+        <!-- Search shortcut -->
         <button
-          @click="uiStore.toggleDarkMode()"
-          :title="uiStore.isDarkMode ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'"
-          class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+          class="nav-rail-item w-full"
+          title="Suche (Ctrl+K)"
+          @click="uiStore.showCommandPalette = true"
         >
-          <SunIcon v-if="uiStore.isDarkMode" class="w-5 h-5 flex-shrink-0" />
-          <MoonIcon v-else class="w-5 h-5 flex-shrink-0" />
-          <span
-            v-if="isMobile || !uiStore.sidebarCollapsed"
-            class="text-sm"
-          >
-            {{ uiStore.isDarkMode ? 'Light Mode' : 'Dark Mode' }}
-          </span>
+          <MagnifyingGlassIcon class="w-5 h-5" />
         </button>
-      </div>
 
-      <!-- User section -->
-      <div class="px-3 py-3 border-t border-dark-700/60 shrink-0">
-        <div
-          v-if="isMobile || !uiStore.sidebarCollapsed"
-          class="flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg hover:bg-dark-700/40 transition-colors group"
-        >
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shrink-0 shadow-sm">
-            <span class="text-xs font-bold text-white">
-              {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
-            </span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-200 truncate leading-tight">
-              {{ authStore.user?.username || 'User' }}
-            </p>
-            <p class="text-[11px] text-gray-500 truncate leading-tight">
-              {{ authStore.user?.email }}
-            </p>
-          </div>
-        </div>
-        <div
-          v-else-if="!isMobile"
-          class="flex justify-center"
-        >
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center shadow-sm">
+        <!-- User avatar -->
+        <div class="flex justify-center pt-1">
+          <div class="avatar cursor-pointer hover:shadow-glow-sm transition-shadow" @click="navigateTo('/settings')">
             <span class="text-xs font-bold text-white">
               {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
             </span>
           </div>
         </div>
       </div>
-
-      <!-- Collapse button (desktop only) -->
-      <button
-        v-if="!isMobile"
-        @click="uiStore.toggleSidebarCollapse"
-        class="absolute -right-3 top-[72px] w-6 h-6 bg-dark-800 border border-dark-600/80 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-200 hover:bg-dark-700 transition-all duration-150 shadow-sm"
-      >
-        <ChevronLeftIcon
-          v-if="!uiStore.sidebarCollapsed"
-          class="w-3.5 h-3.5"
-        />
-        <ChevronRightIcon
-          v-else
-          class="w-3.5 h-3.5"
-        />
-      </button>
-
-      <!-- Close button (mobile only) -->
-      <button
-        v-if="isMobile"
-        @click="$emit('close')"
-        class="absolute top-4 right-4 w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
-      >
-        <XMarkIcon class="w-5 h-5" />
-      </button>
     </div>
+
+    <!-- FLYOUT PANEL -->
+    <Transition name="slide">
+      <div
+        v-if="showFlyout"
+        class="w-flyout bg-dark-950/90 backdrop-blur-2xl border-r border-white/[0.06] shadow-float flex flex-col"
+        @mouseenter="handleFlyoutEnter"
+        @mouseleave="handleFlyoutLeave"
+      >
+        <!-- Flyout header -->
+        <div class="h-16 flex items-center px-4 border-b border-white/[0.06] shrink-0">
+          <h2 class="text-sm font-semibold text-gray-200">{{ activeGroupName }}</h2>
+        </div>
+
+        <!-- Flyout items -->
+        <nav class="flex-1 overflow-y-auto py-2 px-2">
+          <button
+            v-for="item in activeGroupChildren"
+            :key="item.id"
+            @click="navigateTo(item.href)"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 relative group/item"
+            :class="[
+              isActive(item.href)
+                ? 'bg-primary-500/10 text-primary-300'
+                : 'text-gray-400 hover:bg-white/[0.06] hover:text-gray-200'
+            ]"
+          >
+            <span
+              v-if="isActive(item.href)"
+              class="nav-active-bar"
+            />
+            <component
+              :is="item.icon"
+              class="w-4 h-4 shrink-0"
+              :class="isActive(item.href) ? 'text-primary-400' : ''"
+            />
+            <span class="flex-1 text-left truncate">{{ item.name }}</span>
+            <!-- Pin indicator -->
+            <MapPinIcon
+              v-if="quickAccessStore.isPinned(item.id)"
+              class="w-3 h-3 text-primary-400 opacity-50"
+            />
+          </button>
+        </nav>
+
+        <!-- Favorites section (in flyout) -->
+        <div
+          v-if="favoritesStore.favorites.length > 0"
+          class="border-t border-white/[0.06] px-2 py-2 shrink-0"
+        >
+          <div class="flex items-center gap-2 px-3 py-1.5 mb-1">
+            <StarIcon class="w-3.5 h-3.5 text-yellow-500/80" />
+            <span class="text-2xs font-semibold uppercase tracking-wider text-gray-500">Favoriten</span>
+          </div>
+          <button
+            v-for="fav in favoritesStore.favorites.slice(0, 5)"
+            :key="fav.id"
+            @click="navigateToFavorite(fav)"
+            class="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-gray-500
+                   hover:bg-white/[0.04] hover:text-gray-300 transition-colors truncate"
+          >
+            <StarIcon class="w-3 h-3 shrink-0 text-yellow-500/60" />
+            <span class="truncate">{{ fav.item?.title || fav.item?.name || 'Unbenannt' }}</span>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </aside>
+
+  <!-- Mobile close button -->
+  <button
+    v-if="isMobile && mobileOpen"
+    @click="$emit('close')"
+    class="fixed top-4 z-50 btn-icon-glass"
+    :style="{ left: showFlyout ? 'calc(var(--rail-width, 4.5rem) + 15rem + 0.5rem)' : 'calc(var(--rail-width, 4.5rem) + 0.5rem)' }"
+  >
+    <XMarkIcon class="w-5 h-5" />
+  </button>
+
+  <!-- Backdrop for project dropdown -->
+  <div
+    v-if="showProjectDropdown"
+    class="fixed inset-0 z-40"
+    @click="showProjectDropdown = false"
+  />
 </template>

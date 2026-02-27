@@ -54,14 +54,14 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <h2 class="text-2xl font-bold text-white mb-2">Anmelden</h2>
-    <p class="text-gray-400 mb-6">Melde dich an, um fortzufahren</p>
+    <h2 class="text-2xl font-bold text-white mb-1.5">Anmelden</h2>
+    <p class="text-sm text-gray-500 mb-6">Melde dich an, um fortzufahren</p>
 
     <form @submit.prevent="handleSubmit" class="space-y-5">
       <!-- General error -->
       <div
         v-if="errors.general"
-        class="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm"
+        class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm"
       >
         {{ errors.general }}
       </div>
@@ -69,7 +69,7 @@ async function handleSubmit() {
       <!-- 2FA Notice -->
       <div
         v-if="requires2FA"
-        class="bg-primary-500/10 border border-primary-500/50 text-primary-400 px-4 py-3 rounded-lg text-sm"
+        class="bg-primary-500/10 border border-primary-500/30 text-primary-400 px-4 py-3 rounded-xl text-sm"
       >
         Bitte gib deinen 2FA-Code ein.
       </div>

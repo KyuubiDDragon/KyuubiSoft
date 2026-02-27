@@ -55,6 +55,8 @@ const collapsed = computed(() => !props.isMobile && uiStore.sidebarCollapsed)
 // Section expanded/collapsed state
 const expandedSections = ref<Record<string, boolean>>({})
 
+// Track sections manually collapsed by the user (prevents auto-expand override)
+const manuallyCollapsed = new Set<string>()
 // Load section state from localStorage
 const storedSections = localStorage.getItem('sidebarSections')
 if (storedSections) {
@@ -80,15 +82,17 @@ onMounted(async () => {
 
 // Watch route changes
 watch(() => route.path, () => {
+  manuallyCollapsed.clear()
   autoExpandActiveSection()
-  // Close popover on navigation
   popoverGroup.value = null
 })
 
 function autoExpandActiveSection() {
   for (const group of filteredGroups.value) {
     if (group.children?.some(child => isActive(child.href))) {
-      expandedSections.value[group.id] = true
+      if (!manuallyCollapsed.has(group.id)) {
+        expandedSections.value[group.id] = true
+      }
     }
   }
 }
@@ -171,7 +175,13 @@ function isGroupActive(group: NavGroup): boolean {
 
 // Section toggle
 function toggleSection(groupId: string) {
-  expandedSections.value[groupId] = !expandedSections.value[groupId]
+  const wasExpanded = expandedSections.value[groupId]
+  expandedSections.value[groupId] = !wasExpanded
+  if (wasExpanded) {
+    manuallyCollapsed.add(groupId)
+  } else {
+    manuallyCollapsed.delete(groupId)
+  }
 }
 
 function isSectionExpanded(groupId: string): boolean {

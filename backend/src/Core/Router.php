@@ -82,6 +82,7 @@ use App\Modules\Contacts\Controllers\ContactController;
 use App\Modules\Email\Controllers\EmailController;
 use App\Modules\Audit\Controllers\AuditController;
 use App\Modules\NotificationRules\Controllers\NotificationRuleController;
+use App\Modules\StatusPage\Controllers\StatusPageController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -1390,7 +1391,21 @@ class Router
                 $protected->get('/audit/{id}', [AuditController::class, 'show'])
                     ->add(new PermissionMiddleware('system.admin'));
 
+                // Status Page (admin)
+                $protected->get('/status-page/config', [StatusPageController::class, 'getConfig']);
+                $protected->put('/status-page/config', [StatusPageController::class, 'updateConfig']);
+                $protected->get('/status-page/monitors', [StatusPageController::class, 'getMonitors']);
+                $protected->post('/status-page/monitors', [StatusPageController::class, 'addMonitor']);
+                $protected->delete('/status-page/monitors/{id}', [StatusPageController::class, 'removeMonitor']);
+                $protected->get('/status-page/incidents', [StatusPageController::class, 'getIncidents']);
+                $protected->post('/status-page/incidents', [StatusPageController::class, 'createIncident']);
+                $protected->put('/status-page/incidents/{id}', [StatusPageController::class, 'updateIncident']);
+                $protected->post('/status-page/incidents/{id}/updates', [StatusPageController::class, 'addIncidentUpdate']);
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
+
+            // Status Page (public, no auth required)
+            $group->get('/status-page/public', [StatusPageController::class, 'publicIndex']);
 
             // Discord signed media (no auth required - protected by HMAC signature)
             $group->get('/discord/media/{id}/signed', [DiscordController::class, 'serveSignedMedia']);

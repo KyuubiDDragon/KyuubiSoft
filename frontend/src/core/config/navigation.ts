@@ -271,6 +271,7 @@ export const navigationGroups: NavGroup[] = [
     icon: CurrencyDollarIcon,
     children: [
       { id: 'invoices', name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, feature: 'invoices', permission: 'invoices.view' },
+      { id: 'contracts', name: 'Vertraege', href: '/contracts', icon: DocumentTextIcon, feature: 'contracts', permission: 'contracts.view' },
       { id: 'expenses', name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon },
     ],
   },

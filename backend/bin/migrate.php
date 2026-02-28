@@ -79,7 +79,9 @@ foreach ($migrationFiles as $file) {
 
     try {
         $pdo->exec($sql);
-        $pdo->prepare("INSERT INTO migrations (migration) VALUES (?)")->execute([$filename]);
+        // Consume any buffered result sets from multi-statement SQL
+        while ($pdo->nextRowset()) {}
+        $pdo->prepare("INSERT IGNORE INTO migrations (migration) VALUES (?)")->execute([$filename]);
         echo "  ✓ Success\n";
         $newMigrations++;
     } catch (PDOException $e) {

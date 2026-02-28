@@ -11,11 +11,19 @@ const props = defineProps({
 const emit = defineEmits(['close', 'download'])
 
 const { generateHtml } = useContractHtml()
+const iframeRef = ref(null)
 
 const previewHtml = computed(() => {
   if (!props.contract) return ''
   return generateHtml(props.contract)
 })
+
+function resizeIframe() {
+  const iframe = iframeRef.value
+  if (iframe?.contentDocument?.body) {
+    iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'
+  }
+}
 </script>
 
 <template>
@@ -51,11 +59,14 @@ const previewHtml = computed(() => {
 
           <!-- Preview -->
           <div class="flex-1 overflow-y-auto bg-gray-200 p-6">
-            <div class="mx-auto bg-white shadow-lg" style="width:210mm; min-height:297mm; max-width:100%;">
+            <div class="mx-auto bg-white shadow-lg" style="width:210mm; max-width:100%;">
               <iframe
+                ref="iframeRef"
                 :srcdoc="previewHtml"
                 class="w-full border-0"
-                style="min-height:297mm;"
+                scrolling="no"
+                style="overflow:hidden;"
+                @load="resizeIframe"
                 sandbox="allow-same-origin"
               ></iframe>
             </div>

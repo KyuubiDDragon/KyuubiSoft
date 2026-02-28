@@ -21,7 +21,7 @@ const props = defineProps({
   clients: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['close', 'status-change', 'sign', 'download-pdf', 'preview', 'delete', 'duplicate', 'link-invoice', 'unlink-invoice', 'reload'])
+const emit = defineEmits(['close', 'status-change', 'sign', 'download-pdf', 'preview', 'delete', 'duplicate', 'link-invoice', 'unlink-invoice', 'reload', 'share'])
 
 const { statusOptions, contractTypeLabels, formatCurrency, formatDate, getStatusInfo, getHistory } = useContracts()
 
@@ -91,7 +91,7 @@ async function handleUnlinkInvoice(invoiceId) {
   >
     <div
       v-if="show && contract"
-      class="fixed inset-y-0 right-0 w-full max-w-lg bg-[#0f1117]/95 backdrop-blur-2xl border-l border-white/[0.06] z-40 overflow-y-auto shadow-2xl"
+      class="fixed top-14 bottom-0 right-0 w-full max-w-2xl bg-[#0f1117]/95 backdrop-blur-2xl border-l border-white/[0.06] z-40 overflow-y-auto shadow-2xl"
     >
       <!-- Header -->
       <div class="sticky top-0 bg-[#0f1117]/90 backdrop-blur-xl z-10 px-6 py-4 border-b border-white/[0.06]">
@@ -128,12 +128,15 @@ async function handleUnlinkInvoice(invoiceId) {
         </div>
 
         <!-- Quick Actions -->
-        <div class="flex gap-1.5 mt-3">
+        <div class="flex flex-wrap gap-1.5 mt-3">
           <button @click="$emit('preview', contract)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/[0.04]">
             <EyeIcon class="w-3.5 h-3.5" /> Vorschau
           </button>
           <button @click="$emit('download-pdf', contract)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/[0.04]">
             <ArrowDownTrayIcon class="w-3.5 h-3.5" /> PDF
+          </button>
+          <button @click="$emit('share', contract)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-primary-400 hover:text-primary-300 hover:bg-primary-500/10">
+            <LinkIcon class="w-3.5 h-3.5" /> Teilen
           </button>
           <button v-if="!contract.party_a_signed_at" @click="$emit('sign', contract.id, 'a')" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10">
             <PencilSquareIcon class="w-3.5 h-3.5" /> Unterschreiben (Sie)

@@ -18,6 +18,7 @@ import ContractDetailPanel from '../components/ContractDetailPanel.vue'
 import ContractWizard from '../components/ContractWizard.vue'
 import ContractSignatureModal from '../components/ContractSignatureModal.vue'
 import ContractPdfPreview from '../components/ContractPdfPreview.vue'
+import ContractShareModal from '../components/ContractShareModal.vue'
 
 const uiStore = useUiStore()
 const { downloadPdf } = useContractHtml()
@@ -41,6 +42,8 @@ const signatureContractId = ref(null)
 const signatureParty = ref('a')
 const showPdfPreview = ref(false)
 const previewContract = ref(null)
+const showShareModal = ref(false)
+const shareContract = ref(null)
 const clients = ref([])
 const senderSettings = ref({})
 
@@ -148,6 +151,11 @@ async function handleSignatureSave(signatureData) {
 function openPdfPreview(contract) {
   previewContract.value = contract
   showPdfPreview.value = true
+}
+
+function openShare(contract) {
+  shareContract.value = contract
+  showShareModal.value = true
 }
 
 const typeColors = {
@@ -315,6 +323,7 @@ const typeColors = {
       @link-invoice="linkInvoice"
       @unlink-invoice="unlinkInvoice"
       @reload="async (c) => { const res = await api.get(`/api/v1/contracts/${c.id}`); selectedContract = res.data.data; await loadData() }"
+      @share="openShare"
     />
 
     <!-- Signature Modal -->
@@ -330,6 +339,14 @@ const typeColors = {
       :contract="previewContract"
       @close="showPdfPreview = false"
       @download="handleDownloadPdf"
+    />
+
+    <!-- Share Modal -->
+    <ContractShareModal
+      :show="showShareModal"
+      :contract="shareContract"
+      @close="showShareModal = false"
+      @updated="loadData"
     />
   </div>
 </template>

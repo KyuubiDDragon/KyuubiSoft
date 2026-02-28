@@ -86,6 +86,7 @@ export const useDeploymentStore = defineStore('deployments', () => {
   const stats = ref<DeploymentStats | null>(null)
   const loading = ref<boolean>(false)
   const deploying = ref<boolean>(false)
+  const availableConnections = ref<Array<{ id: string; name: string; host: string; type: string }>>([])
 
   // Actions
   async function fetchPipelines(): Promise<void> {
@@ -271,6 +272,18 @@ export const useDeploymentStore = defineStore('deployments', () => {
     }
   }
 
+  async function fetchConnections(): Promise<void> {
+    try {
+      const response = await api.get('/api/v1/connections')
+      const all = response.data.data?.items || response.data.data || []
+      availableConnections.value = all.filter(
+        (c: any) => c.type === 'ssh' || c.type === 'sftp',
+      )
+    } catch {
+      availableConnections.value = []
+    }
+  }
+
   return {
     // State
     pipelines,
@@ -280,6 +293,7 @@ export const useDeploymentStore = defineStore('deployments', () => {
     stats,
     loading,
     deploying,
+    availableConnections,
 
     // Actions
     fetchPipelines,
@@ -293,5 +307,6 @@ export const useDeploymentStore = defineStore('deployments', () => {
     cancelDeployment,
     rollback,
     fetchStats,
+    fetchConnections,
   }
 })

@@ -47,6 +47,7 @@ const pipelineForm = ref({
   repository: '',
   branch: 'main',
   environment: 'production',
+  connection_id: null,
   auto_deploy: false,
   notify_on_success: true,
   notify_on_failure: true,
@@ -60,6 +61,7 @@ function resetPipelineForm() {
     repository: '',
     branch: 'main',
     environment: 'production',
+    connection_id: null,
     auto_deploy: false,
     notify_on_success: true,
     notify_on_failure: true,
@@ -151,6 +153,7 @@ function openEditModal(pipeline) {
     repository: pipeline.repository || '',
     branch: pipeline.branch || 'main',
     environment: pipeline.environment || 'production',
+    connection_id: pipeline.connection_id || null,
     auto_deploy: pipeline.auto_deploy || false,
     notify_on_success: pipeline.notify_on_success !== false,
     notify_on_failure: pipeline.notify_on_failure !== false,
@@ -305,6 +308,7 @@ onMounted(async () => {
   await Promise.all([
     deploymentStore.fetchPipelines(),
     deploymentStore.fetchStats(),
+    deploymentStore.fetchConnections(),
   ])
 })
 </script>
@@ -630,6 +634,24 @@ onMounted(async () => {
                   <option value="development">Development</option>
                 </select>
               </div>
+            </div>
+
+            <!-- Server Connection -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Server-Verbindung</label>
+              <select v-model="pipelineForm.connection_id" class="select w-full">
+                <option :value="null">Lokal ausfuehren (kein SSH)</option>
+                <option
+                  v-for="conn in deploymentStore.availableConnections"
+                  :key="conn.id"
+                  :value="conn.id"
+                >
+                  {{ conn.name }} ({{ conn.host }})
+                </option>
+              </select>
+              <p class="text-xs text-gray-600 mt-1">
+                SSH-Verbindung fuer die Ausfuehrung der Deployment-Schritte.
+              </p>
             </div>
 
             <!-- Steps Builder -->

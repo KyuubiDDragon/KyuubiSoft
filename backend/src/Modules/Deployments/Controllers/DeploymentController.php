@@ -13,9 +13,13 @@ use Slim\Routing\RouteContext;
 
 class DeploymentController
 {
+    private string $encryptionKey;
+
     public function __construct(
         private readonly Connection $db
-    ) {}
+    ) {
+        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+    }
 
     /**
      * List all pipelines for the authenticated user with last deployment info.
@@ -283,8 +287,7 @@ class DeploymentController
     }
 
     /**
-     * Create a new deployment for a pipeline.
-     * In real usage this would trigger actual execution; for now we simulate success.
+     * Create a new deployment for a pipeline and execute steps via SSH or locally.
      */
     public function deploy(Request $request, Response $response): Response
     {
@@ -308,36 +311,72 @@ class DeploymentController
         $deploymentId = Uuid::uuid4()->toString();
         $startedAt = date('Y-m-d H:i:s');
 
-        // Simulate step execution
+        // Load SSH connection if configured
+        $connection = null;
+        if (!empty($pipeline['connection_id'])) {
+            $connection = $this->db->fetchAssociative(
+                'SELECT * FROM connections WHERE id = ?',
+                [$pipeline['connection_id']]
+            );
+            if (!$connection) {
+                return JsonResponse::error('Die konfigurierte Server-Verbindung wurde nicht gefunden', 404);
+            }
+            if (!in_array($connection['type'], ['ssh', 'sftp'], true)) {
+                return JsonResponse::error('Die Verbindung muss vom Typ SSH oder SFTP sein', 422);
+            }
+        }
+
+        // Execute steps
         $stepsLog = [];
         $totalDuration = 0;
+        $allSuccess = true;
+        $errorMessage = null;
+
         foreach ($steps as $step) {
-            $stepDuration = rand(500, 3000);
+            $stepStarted = microtime(true);
+            $stepStartedAt = date('Y-m-d H:i:s');
+
+            $result = $this->executeStep($step['command'], $connection);
+
+            $stepDuration = (int) ((microtime(true) - $stepStarted) * 1000);
             $totalDuration += $stepDuration;
+            $stepFinishedAt = date('Y-m-d H:i:s');
+
+            $stepStatus = $result['success'] ? 'success' : 'failed';
+
             $stepsLog[] = [
                 'name' => $step['name'],
                 'command' => $step['command'],
-                'status' => 'success',
+                'status' => $stepStatus,
                 'duration_ms' => $stepDuration,
-                'output' => 'Schritt erfolgreich ausgefuehrt.',
-                'started_at' => date('Y-m-d H:i:s'),
-                'finished_at' => date('Y-m-d H:i:s'),
+                'output' => $result['output'] ?: 'Keine Ausgabe',
+                'exit_code' => $result['exit_code'],
+                'started_at' => $stepStartedAt,
+                'finished_at' => $stepFinishedAt,
             ];
+
+            if (!$result['success']) {
+                $allSuccess = false;
+                $errorMessage = "Schritt '{$step['name']}' fehlgeschlagen (Exit-Code: {$result['exit_code']})";
+                break;
+            }
         }
 
+        $status = $allSuccess ? 'success' : 'failed';
         $finishedAt = date('Y-m-d H:i:s');
 
         $this->db->insert('deployments', [
             'id' => $deploymentId,
             'pipeline_id' => $pipelineId,
             'user_id' => $userId,
-            'status' => 'success',
+            'status' => $status,
             'commit_hash' => $commitHash ?: null,
             'commit_message' => $commitMessage ?: null,
             'steps_log' => json_encode($stepsLog),
             'started_at' => $startedAt,
             'finished_at' => $finishedAt,
             'duration_ms' => $totalDuration,
+            'error_message' => $errorMessage,
         ]);
 
         // Update pipeline last_deployed_at
@@ -491,32 +530,67 @@ class DeploymentController
         $rollbackId = Uuid::uuid4()->toString();
         $startedAt = date('Y-m-d H:i:s');
 
-        // Simulate rollback step execution
+        // Load SSH connection if configured
+        $pipeline = $this->db->fetchAssociative(
+            'SELECT connection_id FROM deployment_pipelines WHERE id = ?',
+            [$original['pipeline_id']]
+        );
+        $connection = null;
+        if (!empty($pipeline['connection_id'])) {
+            $connection = $this->db->fetchAssociative(
+                'SELECT * FROM connections WHERE id = ?',
+                [$pipeline['connection_id']]
+            );
+        }
+
+        // Execute rollback steps (in reverse order)
         $stepsLog = [];
         $totalDuration = 0;
-        foreach ($steps as $step) {
-            $stepDuration = rand(300, 2000);
+        $allSuccess = true;
+        $errorMessage = null;
+
+        $reversedSteps = array_reverse($steps);
+        foreach ($reversedSteps as $step) {
+            $stepStarted = microtime(true);
+            $stepStartedAt = date('Y-m-d H:i:s');
+
+            $result = $this->executeStep($step['command'], $connection);
+
+            $stepDuration = (int) ((microtime(true) - $stepStarted) * 1000);
             $totalDuration += $stepDuration;
+            $stepFinishedAt = date('Y-m-d H:i:s');
+
+            $stepStatus = $result['success'] ? 'success' : 'failed';
+
             $stepsLog[] = [
                 'name' => 'Rollback: ' . $step['name'],
                 'command' => $step['command'],
-                'status' => 'success',
+                'status' => $stepStatus,
                 'duration_ms' => $stepDuration,
-                'output' => 'Rollback-Schritt erfolgreich ausgefuehrt.',
-                'started_at' => date('Y-m-d H:i:s'),
-                'finished_at' => date('Y-m-d H:i:s'),
+                'output' => $result['output'] ?: 'Keine Ausgabe',
+                'exit_code' => $result['exit_code'],
+                'started_at' => $stepStartedAt,
+                'finished_at' => $stepFinishedAt,
             ];
+
+            if (!$result['success']) {
+                $allSuccess = false;
+                $errorMessage = "Rollback-Schritt '{$step['name']}' fehlgeschlagen (Exit-Code: {$result['exit_code']})";
+                break;
+            }
         }
 
+        $status = $allSuccess ? 'rolled_back' : 'failed';
         $finishedAt = date('Y-m-d H:i:s');
 
         $this->db->insert('deployments', [
             'id' => $rollbackId,
             'pipeline_id' => $original['pipeline_id'],
             'user_id' => $userId,
-            'status' => 'rolled_back',
+            'status' => $status,
             'commit_hash' => $original['commit_hash'],
             'commit_message' => 'Rollback von Deployment ' . substr($id, 0, 8),
+            'error_message' => $errorMessage,
             'steps_log' => json_encode($stepsLog),
             'started_at' => $startedAt,
             'finished_at' => $finishedAt,
@@ -586,5 +660,174 @@ class DeploymentController
             'avg_duration_ms' => $avgDuration,
             'recent_failures' => $recentFailures,
         ]);
+    }
+
+    // ========================================================================
+    // Step Execution (SSH or Local)
+    // ========================================================================
+
+    /**
+     * Execute a single deployment step via SSH (if connection provided) or locally.
+     *
+     * @return array{success: bool, output: string, exit_code: int}
+     */
+    private function executeStep(string $command, ?array $connection): array
+    {
+        if ($connection) {
+            $password = $connection['password_encrypted'] ? $this->decrypt($connection['password_encrypted']) : null;
+            $privateKey = $connection['private_key_encrypted'] ? $this->decrypt($connection['private_key_encrypted']) : null;
+
+            return $this->executeSSHCommand(
+                $connection['host'],
+                (int) ($connection['port'] ?: 22),
+                $connection['username'],
+                $password,
+                $privateKey,
+                $command
+            );
+        }
+
+        // Local execution
+        $output = [];
+        $exitCode = 0;
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        return [
+            'success' => $exitCode === 0,
+            'output' => implode("\n", $output),
+            'exit_code' => $exitCode,
+        ];
+    }
+
+    /**
+     * Execute a command via SSH using php-ssh2 extension or shell fallback.
+     */
+    private function executeSSHCommand(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        if (function_exists('ssh2_connect')) {
+            return $this->executeSSHCommandViaSsh2($host, $port, $username, $password, $privateKey, $command);
+        }
+
+        return $this->executeSSHCommandViaShell($host, $port, $username, $password, $privateKey, $command);
+    }
+
+    private function executeSSHCommandViaSsh2(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        $connection = @ssh2_connect($host, $port);
+        if (!$connection) {
+            return ['success' => false, 'output' => "Verbindung zu {$host}:{$port} fehlgeschlagen", 'exit_code' => -1];
+        }
+
+        $authenticated = false;
+
+        if ($privateKey) {
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+            $authenticated = @ssh2_auth_pubkey_file($connection, $username, $keyFile . '.pub', $keyFile);
+            unlink($keyFile);
+        }
+
+        if (!$authenticated && $password) {
+            $authenticated = @ssh2_auth_password($connection, $username, $password);
+        }
+
+        if (!$authenticated) {
+            return ['success' => false, 'output' => 'SSH-Authentifizierung fehlgeschlagen', 'exit_code' => -1];
+        }
+
+        $stream = ssh2_exec($connection, $command);
+        if (!$stream) {
+            return ['success' => false, 'output' => 'Befehlsausfuehrung fehlgeschlagen', 'exit_code' => -1];
+        }
+
+        stream_set_blocking($stream, true);
+        $output = stream_get_contents($stream);
+
+        $stderr = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
+        stream_set_blocking($stderr, true);
+        $errorOutput = stream_get_contents($stderr);
+
+        fclose($stream);
+        fclose($stderr);
+
+        $fullOutput = $output;
+        if ($errorOutput) {
+            $fullOutput .= "\n" . $errorOutput;
+        }
+
+        return [
+            'success' => true,
+            'output' => $fullOutput,
+            'exit_code' => 0,
+        ];
+    }
+
+    private function executeSSHCommandViaShell(
+        string $host,
+        int $port,
+        string $username,
+        ?string $password,
+        ?string $privateKey,
+        string $command
+    ): array {
+        $sshArgs = [
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            '-o', 'BatchMode=yes',
+            '-o', 'ConnectTimeout=10',
+            '-p', (string) $port,
+        ];
+
+        $keyFile = null;
+        if ($privateKey) {
+            $keyFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
+            file_put_contents($keyFile, $privateKey);
+            chmod($keyFile, 0600);
+            $sshArgs[] = '-i';
+            $sshArgs[] = $keyFile;
+        }
+
+        $sshCommand = 'ssh ' . implode(' ', array_map('escapeshellarg', $sshArgs)) . ' '
+            . escapeshellarg("{$username}@{$host}") . ' '
+            . escapeshellarg($command);
+
+        if ($password && !$privateKey) {
+            $sshCommand = 'sshpass -p ' . escapeshellarg($password) . ' ' . $sshCommand;
+        }
+
+        $output = [];
+        $exitCode = 0;
+        exec($sshCommand . ' 2>&1', $output, $exitCode);
+
+        if ($keyFile) {
+            unlink($keyFile);
+        }
+
+        return [
+            'success' => $exitCode === 0,
+            'output' => implode("\n", $output),
+            'exit_code' => $exitCode,
+        ];
+    }
+
+    private function decrypt(string $data): string
+    {
+        $data = base64_decode($data);
+        $iv = substr($data, 0, 16);
+        $encrypted = substr($data, 16);
+        return openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
     }
 }

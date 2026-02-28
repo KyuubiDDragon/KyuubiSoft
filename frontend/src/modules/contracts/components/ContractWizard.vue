@@ -61,7 +61,7 @@ const form = ref({
 })
 
 const contractTypes = [
-  { value: 'license', label: 'Softwarelizenz', description: 'Lizenzvertrag fuer fertige Software', icon: DocumentTextIcon, color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
+  { value: 'license', label: 'Softwarelizenz', description: 'Lizenzvertrag für fertige Software', icon: DocumentTextIcon, color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
   { value: 'development', label: 'Entwicklung', description: 'Individuelle Softwareentwicklung', icon: CodeBracketIcon, color: 'text-purple-300', bg: 'bg-purple-500/10 border-purple-500/30' },
   { value: 'saas', label: 'SaaS', description: 'Software as a Service', icon: CloudIcon, color: 'text-cyan-300', bg: 'bg-cyan-500/10 border-cyan-500/30' },
   { value: 'maintenance', label: 'Wartung', description: 'Wartung & Support', icon: WrenchScrewdriverIcon, color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/30' },
@@ -74,7 +74,7 @@ const languages = [
 ]
 
 const customerTypes = [
-  { value: 0, label: 'B2B (Geschaeftskunde)' },
+  { value: 0, label: 'B2B (Geschäftskunde)' },
   { value: 1, label: 'B2C (Privatkunde)' },
 ]
 
@@ -82,20 +82,20 @@ const paymentSchedules = [
   { value: 'one-time', label: 'Einmalig' },
   { value: 'monthly', label: 'Monatlich' },
   { value: 'quarterly', label: 'Quartalsweise' },
-  { value: 'yearly', label: 'Jaehrlich' },
+  { value: 'yearly', label: 'Jährlich' },
 ]
 
 const governingLaws = [
   { value: 'DE', label: 'Deutsches Recht' },
-  { value: 'AT', label: 'Oesterreichisches Recht' },
+  { value: 'AT', label: 'Österreichisches Recht' },
   { value: 'CH', label: 'Schweizer Recht' },
-  { value: 'DK', label: 'Daenisches Recht' },
+  { value: 'DK', label: 'Dänisches Recht' },
   { value: 'EU', label: 'EU-Recht' },
 ]
 
 const renewalPeriods = [
   { value: 'monthly', label: 'Monatlich' },
-  { value: 'yearly', label: 'Jaehrlich' },
+  { value: 'yearly', label: 'Jährlich' },
 ]
 
 // Step labels
@@ -458,7 +458,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
               <div v-if="currentStep === 3">
                 <div class="mb-4">
                   <label class="label">Vertragstitel *</label>
-                  <input v-model="form.title" type="text" class="input" placeholder="z.B. Softwarelizenzvertrag fuer XY" required />
+                  <input v-model="form.title" type="text" class="input" placeholder="z.B. Softwarelizenzvertrag für XY" required />
                 </div>
 
                 <!-- License specific -->
@@ -510,7 +510,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.modification_rights" type="checkbox" class="checkbox" />
-                      Aenderungsrechte
+                      Änderungsrechte
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.updates_included" type="checkbox" class="checkbox" />
@@ -539,7 +539,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <textarea v-model="form.variables_data.project_description" class="input" rows="3" placeholder="Beschreiben Sie das Projekt..."></textarea>
                   </div>
                   <div>
-                    <label class="label">Verguetungsmodell</label>
+                    <label class="label">Vergütungsmodell</label>
                     <div class="flex gap-2">
                       <button v-for="pm in [{v:'fixed',l:'Festpreis'},{v:'hourly',l:'Stundensatz'},{v:'milestone',l:'Meilensteine'}]" :key="pm.v"
                         type="button" @click="form.variables_data.pricing_model = pm.v"
@@ -570,7 +570,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <textarea v-model="form.variables_data.acceptance_procedure" class="input" rows="2" placeholder="Beschreibung des Abnahmeverfahrens"></textarea>
                   </div>
                   <div>
-                    <label class="label">Gewaehrleistungsfrist (Monate)</label>
+                    <label class="label">Gewährleistungsfrist (Monate)</label>
                     <input v-model.number="form.variables_data.warranty_months" type="number" min="1" class="input" />
                   </div>
                 </div>
@@ -583,14 +583,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="label">SLA Verfuegbarkeit (%)</label>
+                      <label class="label">SLA Verfügbarkeit (%)</label>
                       <input v-model.number="form.variables_data.sla_uptime" type="number" min="90" max="100" step="0.1" class="input" />
                     </div>
                     <div>
                       <label class="label">Abo-Modell</label>
                       <select v-model="form.variables_data.subscription_model" class="input">
                         <option value="monthly">Monatlich</option>
-                        <option value="yearly">Jaehrlich</option>
+                        <option value="yearly">Jährlich</option>
                       </select>
                     </div>
                   </div>
@@ -711,18 +711,18 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-4">
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.auto_renewal" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
-                    Automatische Verlaengerung
+                    Automatische Verlängerung
                   </label>
                 </div>
                 <div v-if="form.auto_renewal" class="mt-3">
-                  <label class="label">Verlaengerungszeitraum</label>
+                  <label class="label">Verlängerungszeitraum</label>
                   <select v-model="form.renewal_period" class="input">
                     <option v-for="rp in renewalPeriods" :key="rp.value" :value="rp.value">{{ rp.label }}</option>
                   </select>
                 </div>
 
                 <div class="mt-4">
-                  <label class="label">Kuendigungsfrist (Tage)</label>
+                  <label class="label">Kündigungsfrist (Tage)</label>
                   <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
                 </div>
 
@@ -734,7 +734,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <input v-model.number="form.total_value" type="number" min="0" step="0.01" class="input" />
                   </div>
                   <div>
-                    <label class="label">Waehrung</label>
+                    <label class="label">Währung</label>
                     <select v-model="form.currency" class="input">
                       <option value="EUR">EUR</option>
                       <option value="USD">USD</option>
@@ -786,8 +786,8 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div v-if="form.is_b2c" class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
                   <p class="text-sm text-amber-300 font-medium">B2C-Vertrag: Automatische Klauseln</p>
                   <ul class="text-xs text-amber-200/70 mt-1 space-y-0.5">
-                    <li>Widerrufsbelehrung (14 Tage gemaess Fernabsatzgesetz)</li>
-                    <li>Verbraucherschutz-Gewaehrleistung</li>
+                    <li>Widerrufsbelehrung (14 Tage gemäß Fernabsatzgesetz)</li>
+                    <li>Verbraucherschutz-Gewährleistung</li>
                     <li v-if="form.governing_law !== 'DE'">Zwingende Verbraucherschutzvorschriften des Wohnsitzlandes</li>
                   </ul>
                 </div>

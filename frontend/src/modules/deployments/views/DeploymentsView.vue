@@ -72,11 +72,11 @@ function resetPipelineForm() {
 // Status badge helpers
 const statusConfig = {
   pending: { label: 'Ausstehend', class: 'bg-gray-500/15 text-gray-400' },
-  running: { label: 'Laeuft', class: 'bg-amber-500/15 text-amber-400' },
+  running: { label: 'Läuft', class: 'bg-amber-500/15 text-amber-400' },
   success: { label: 'Erfolgreich', class: 'bg-emerald-500/15 text-emerald-400' },
   failed: { label: 'Fehlgeschlagen', class: 'bg-red-500/15 text-red-400' },
   cancelled: { label: 'Abgebrochen', class: 'bg-gray-500/15 text-gray-500' },
-  rolled_back: { label: 'Zurueckgerollt', class: 'bg-purple-500/15 text-purple-400' },
+  rolled_back: { label: 'Zurückgerollt', class: 'bg-purple-500/15 text-purple-400' },
 }
 
 const environmentConfig = {
@@ -319,7 +319,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">Deployments</h1>
-        <p class="text-gray-400 mt-1">Deployment-Pipelines verwalten und ueberwachen</p>
+        <p class="text-gray-400 mt-1">Deployment-Pipelines verwalten und überwachen</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
@@ -473,7 +473,7 @@ onMounted(async () => {
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === pipeline.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich loeschen?</span>
+              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
               <button @click="handleDelete(pipeline.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
                 Ja
               </button>
@@ -487,7 +487,7 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Loeschen
+              Löschen
             </button>
           </div>
 
@@ -650,7 +650,7 @@ onMounted(async () => {
                 </option>
               </select>
               <p class="text-xs text-gray-600 mt-1">
-                SSH-Verbindung fuer die Ausfuehrung der Deployment-Schritte.
+                SSH-Verbindung für die Ausführung der Deployment-Schritte.
               </p>
             </div>
 
@@ -943,7 +943,7 @@ onMounted(async () => {
               </div>
             </div>
             <p class="text-sm text-gray-400 mb-4">
-              Moechten Sie dieses Deployment wirklich zurueckrollen? Es wird ein neues Rollback-Deployment erstellt.
+              Möchten Sie dieses Deployment wirklich zurückrollen? Es wird ein neues Rollback-Deployment erstellt.
             </p>
             <div class="flex items-center justify-end gap-3">
               <button @click="cancelRollback" class="btn-secondary">Abbrechen</button>

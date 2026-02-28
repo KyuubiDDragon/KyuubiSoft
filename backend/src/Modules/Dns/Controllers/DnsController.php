@@ -75,7 +75,7 @@ class DnsController
         // Validate domain name format
         if (!preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/', $name)) {
             return JsonResponse::validationError([
-                'name' => ['Ungueltiger Domain-Name'],
+                'name' => ['Ungültiger Domain-Name'],
             ]);
         }
 
@@ -192,7 +192,7 @@ class DnsController
             }
             if (!preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/', $name)) {
                 return JsonResponse::validationError([
-                    'name' => ['Ungueltiger Domain-Name'],
+                    'name' => ['Ungültiger Domain-Name'],
                 ]);
             }
             // Check uniqueness (excluding current)
@@ -262,7 +262,7 @@ class DnsController
 
         $this->db->delete('dns_domains', ['id' => $id]);
 
-        return JsonResponse::success(null, 'Domain geloescht');
+        return JsonResponse::success(null, 'Domain gelöscht');
     }
 
     /**
@@ -328,7 +328,7 @@ class DnsController
 
         $errors = [];
         if ($type === '' || !in_array($type, $allowedTypes, true)) {
-            $errors['type'] = ['Ungueltiger Record-Typ. Erlaubt: ' . implode(', ', $allowedTypes)];
+            $errors['type'] = ['Ungültiger Record-Typ. Erlaubt: ' . implode(', ', $allowedTypes)];
         }
         if ($value === '') {
             $errors['value'] = ['Wert ist erforderlich'];
@@ -337,7 +337,7 @@ class DnsController
             $errors['ttl'] = ['TTL muss zwischen 60 und 86400 Sekunden liegen'];
         }
         if (in_array($type, ['MX', 'SRV'], true) && $priority === null) {
-            $errors['priority'] = ['Prioritaet ist fuer ' . $type . '-Records erforderlich'];
+            $errors['priority'] = ['Priorität ist für ' . $type . '-Records erforderlich'];
         }
 
         if (!empty($errors)) {
@@ -432,7 +432,7 @@ class DnsController
             $type = strtoupper(trim((string) $body['type']));
             if (!in_array($type, $allowedTypes, true)) {
                 return JsonResponse::validationError([
-                    'type' => ['Ungueltiger Record-Typ. Erlaubt: ' . implode(', ', $allowedTypes)],
+                    'type' => ['Ungültiger Record-Typ. Erlaubt: ' . implode(', ', $allowedTypes)],
                 ]);
             }
             $updates['type'] = $type;
@@ -552,7 +552,7 @@ class DnsController
 
         $this->db->delete('dns_records', ['id' => $recordId]);
 
-        return JsonResponse::success(null, 'DNS-Record geloescht');
+        return JsonResponse::success(null, 'DNS-Record gelöscht');
     }
 
     /**
@@ -770,7 +770,7 @@ class DnsController
         try {
             $valid = $this->cloudflare->validateToken($token);
             if (!$valid) {
-                return JsonResponse::error('Ungueltiger API-Token', 401);
+                return JsonResponse::error('Ungültiger API-Token', 401);
             }
             return JsonResponse::success(['valid' => true], 'Token ist gueltig');
         } catch (\Throwable $e) {
@@ -928,7 +928,7 @@ class DnsController
         return match ($domain['provider']) {
             'cloudflare' => $this->syncCloudflare($domain, $token, $domainId),
             'webtropia'  => $this->syncWebtropia($domain, $token, $domainId),
-            default      => JsonResponse::error('Sync ist fuer diesen Provider nicht verfuegbar', 400),
+            default      => JsonResponse::error('Sync ist für diesen Provider nicht verfügbar', 400),
         };
     }
 
@@ -1097,7 +1097,7 @@ class DnsController
         return match ($domain['provider']) {
             'cloudflare' => $this->pushCloudflare($domain, $token, $domainId),
             'webtropia'  => $this->pushWebtropia($domain, $token, $domainId),
-            default      => JsonResponse::error('Push ist fuer diesen Provider nicht verfuegbar', 400),
+            default      => JsonResponse::error('Push ist für diesen Provider nicht verfügbar', 400),
         };
     }
 
@@ -1280,7 +1280,7 @@ class DnsController
         try {
             $valid = $this->webtropia->validateToken($token, $zone);
             if (!$valid) {
-                return JsonResponse::error('Ungueltiger API-Token oder Domain nicht gefunden', 401);
+                return JsonResponse::error('Ungültiger API-Token oder Domain nicht gefunden', 401);
             }
             return JsonResponse::success(['valid' => true], 'Token ist gueltig');
         } catch (\Throwable $e) {

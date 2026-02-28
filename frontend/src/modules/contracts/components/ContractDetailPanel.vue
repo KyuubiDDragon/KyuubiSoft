@@ -145,7 +145,7 @@ async function handleUnlinkInvoice(invoiceId) {
             <DocumentDuplicateIcon class="w-3.5 h-3.5" /> Duplizieren
           </button>
           <button @click="$emit('delete', contract)" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
-            <TrashIcon class="w-3.5 h-3.5" /> Loeschen
+            <TrashIcon class="w-3.5 h-3.5" /> Löschen
           </button>
         </div>
 
@@ -209,11 +209,11 @@ async function handleUnlinkInvoice(invoiceId) {
               <div class="text-sm text-white">{{ contract.payment_schedule || '-' }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-500 uppercase font-semibold">Auto-Verlaengerung</div>
+              <div class="text-xs text-gray-500 uppercase font-semibold">Auto-Verlängerung</div>
               <div class="text-sm text-white">{{ contract.auto_renewal ? `Ja (${contract.renewal_period})` : 'Nein' }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-500 uppercase font-semibold">Kuendigungsfrist</div>
+              <div class="text-xs text-gray-500 uppercase font-semibold">Kündigungsfrist</div>
               <div class="text-sm text-white">{{ contract.notice_period_days || 30 }} Tage</div>
             </div>
             <div>
@@ -235,7 +235,7 @@ async function handleUnlinkInvoice(invoiceId) {
         <!-- Invoices Tab -->
         <div v-if="activeTab === 'invoices'">
           <div class="flex items-center justify-between mb-4">
-            <div class="text-xs text-gray-500 uppercase font-semibold">Verknuepfte Rechnungen</div>
+            <div class="text-xs text-gray-500 uppercase font-semibold">Verknüpfte Rechnungen</div>
             <button @click="showInvoiceLinker = true" class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-500">
               <LinkIcon class="w-3.5 h-3.5" /> Rechnung verknuepfen
             </button>
@@ -253,7 +253,7 @@ async function handleUnlinkInvoice(invoiceId) {
               </div>
               <div class="flex items-center gap-3">
                 <div class="text-sm font-semibold text-white">{{ formatCurrency(inv.total, inv.currency) }}</div>
-                <button @click="handleUnlinkInvoice(inv.id)" class="p-1 text-gray-500 hover:text-red-400" title="Verknuepfung entfernen">
+                <button @click="handleUnlinkInvoice(inv.id)" class="p-1 text-gray-500 hover:text-red-400" title="Verknüpfung entfernen">
                   <XMarkIcon class="w-4 h-4" />
                 </button>
               </div>

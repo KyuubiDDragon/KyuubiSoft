@@ -80,7 +80,7 @@ class DeploymentController
             $errors['steps'] = ['Mindestens ein Deployment-Schritt ist erforderlich'];
         }
         if (!in_array($environment, ['production', 'staging', 'development'], true)) {
-            $errors['environment'] = ['Ungueltige Umgebung. Erlaubt: production, staging, development'];
+            $errors['environment'] = ['Ungültige Umgebung. Erlaubt: production, staging, development'];
         }
 
         if (!empty($errors)) {
@@ -235,7 +235,7 @@ class DeploymentController
             $env = trim((string) $body['environment']);
             if (!in_array($env, ['production', 'staging', 'development'], true)) {
                 return JsonResponse::validationError([
-                    'environment' => ['Ungueltige Umgebung'],
+                    'environment' => ['Ungültige Umgebung'],
                 ]);
             }
             $updates['environment'] = $env;
@@ -303,7 +303,7 @@ class DeploymentController
 
         $this->db->delete('deployment_pipelines', ['id' => $id]);
 
-        return JsonResponse::success(null, 'Pipeline geloescht');
+        return JsonResponse::success(null, 'Pipeline gelöscht');
     }
 
     /**
@@ -527,7 +527,7 @@ class DeploymentController
         }
 
         if (!in_array($deployment['status'], ['pending', 'running'], true)) {
-            return JsonResponse::error('Nur ausstehende oder laufende Deployments koennen abgebrochen werden', 422);
+            return JsonResponse::error('Nur ausstehende oder laufende Deployments können abgebrochen werden', 422);
         }
 
         $this->db->update('deployments', [
@@ -566,7 +566,7 @@ class DeploymentController
         }
 
         if ($original['status'] !== 'success') {
-            return JsonResponse::error('Nur erfolgreiche Deployments koennen zurueckgerollt werden', 422);
+            return JsonResponse::error('Nur erfolgreiche Deployments können zurückgerollt werden', 422);
         }
 
         $steps = json_decode($original['steps'], true) ?: [];
@@ -793,7 +793,7 @@ class DeploymentController
 
         $stream = ssh2_exec($connection, $command);
         if (!$stream) {
-            return ['success' => false, 'output' => 'Befehlsausfuehrung fehlgeschlagen', 'exit_code' => -1];
+            return ['success' => false, 'output' => 'Befehlsausführung fehlgeschlagen', 'exit_code' => -1];
         }
 
         stream_set_blocking($stream, true);
@@ -921,7 +921,7 @@ class DeploymentController
         $pipelineBranch = $pipeline['branch'] ?? 'main';
         if ($branch !== '' && $branch !== $pipelineBranch) {
             return JsonResponse::success([
-                'message' => "Push fuer Branch '{$branch}' ignoriert (konfiguriert: '{$pipelineBranch}')",
+                'message' => "Push für Branch '{$branch}' ignoriert (konfiguriert: '{$pipelineBranch}')",
                 'skipped' => true,
             ]);
         }

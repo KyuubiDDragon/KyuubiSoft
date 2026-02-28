@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS contract_templates (
     is_default TINYINT(1) DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_contract_templates_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_ct_user_type (user_id, contract_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -62,9 +62,9 @@ CREATE TABLE IF NOT EXISTS contracts (
     notes TEXT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL,
-    FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE SET NULL,
+    CONSTRAINT fk_contracts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_contracts_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL,
+    CONSTRAINT fk_contracts_template FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE SET NULL,
     UNIQUE KEY uk_contract_number (user_id, contract_number),
     INDEX idx_contracts_user (user_id),
     INDEX idx_contracts_client (client_id),
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS contract_invoices (
     contract_id VARCHAR(36) NOT NULL,
     invoice_id VARCHAR(36) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ci_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ci_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
     UNIQUE KEY uk_contract_invoice (contract_id, invoice_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -91,6 +91,6 @@ CREATE TABLE IF NOT EXISTS contract_history (
     details TEXT NULL,
     performed_by VARCHAR(36) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ch_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
     INDEX idx_ch_contract (contract_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Email\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Services\MailService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -14,7 +15,8 @@ use Slim\Routing\RouteContext;
 class EmailController
 {
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly MailService $mailService
     ) {}
 
     /**
@@ -224,7 +226,7 @@ class EmailController
     }
 
     /**
-     * Test IMAP/SMTP connection (simulated)
+     * Test IMAP/SMTP connection
      */
     public function testConnection(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
@@ -232,7 +234,10 @@ class EmailController
         $id = $this->getRouteArg($request, 'id');
 
         $account = $this->db->fetchAssociative(
-            'SELECT id, imap_host, imap_port, smtp_host, smtp_port FROM email_accounts WHERE id = ? AND user_id = ?',
+            'SELECT id, imap_host, imap_port, imap_encryption,
+                    smtp_host, smtp_port, smtp_encryption,
+                    username, password_encrypted
+             FROM email_accounts WHERE id = ? AND user_id = ?',
             [$id, $userId]
         );
 
@@ -240,16 +245,27 @@ class EmailController
             return JsonResponse::error('Konto nicht gefunden', 404);
         }
 
-        // Simulate connection test success
+        $password = $this->decryptPassword($account['password_encrypted']);
+
+        $imapResult = $this->mailService->testImapConnection(
+            $account['imap_host'],
+            (int) $account['imap_port'],
+            $account['imap_encryption'],
+            $account['username'],
+            $password
+        );
+
+        $smtpResult = $this->mailService->testSmtpConnection(
+            $account['smtp_host'],
+            (int) $account['smtp_port'],
+            $account['smtp_encryption'],
+            $account['username'],
+            $password
+        );
+
         return JsonResponse::success([
-            'imap' => [
-                'status' => 'success',
-                'message' => 'IMAP-Verbindung erfolgreich',
-            ],
-            'smtp' => [
-                'status' => 'success',
-                'message' => 'SMTP-Verbindung erfolgreich',
-            ],
+            'imap' => $imapResult,
+            'smtp' => $smtpResult,
         ]);
     }
 
@@ -367,7 +383,7 @@ class EmailController
     }
 
     /**
-     * Send (compose) a message - simulated, stores as sent
+     * Send (compose) a message via SMTP
      */
     public function sendMessage(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
@@ -382,9 +398,11 @@ class EmailController
             return JsonResponse::error('Empfänger ist erforderlich', 400);
         }
 
-        // Verify account ownership
+        // Verify account ownership and get SMTP settings
         $account = $this->db->fetchAssociative(
-            'SELECT id, email, name FROM email_accounts WHERE id = ? AND user_id = ?',
+            'SELECT id, email, name, smtp_host, smtp_port, smtp_encryption,
+                    username, password_encrypted
+             FROM email_accounts WHERE id = ? AND user_id = ?',
             [$data['account_id'], $userId]
         );
 
@@ -399,12 +417,39 @@ class EmailController
         $toAddresses = is_array($data['to']) ? $data['to'] : [['email' => $data['to']]];
         $ccAddresses = isset($data['cc']) ? (is_array($data['cc']) ? $data['cc'] : [['email' => $data['cc']]]) : [];
 
+        $isDraft = (bool) ($data['is_draft'] ?? false);
+
+        // Actually send via SMTP if not a draft
+        if (!$isDraft) {
+            try {
+                $password = $this->decryptPassword($account['password_encrypted']);
+                $this->mailService->send(
+                    [
+                        'host' => $account['smtp_host'],
+                        'port' => $account['smtp_port'],
+                        'encryption' => $account['smtp_encryption'],
+                        'username' => $account['username'],
+                        'password' => $password,
+                    ],
+                    $account['email'],
+                    $account['name'],
+                    $toAddresses,
+                    $ccAddresses,
+                    $data['subject'] ?? '',
+                    $data['body'] ?? '',
+                    strip_tags($data['body'] ?? '')
+                );
+            } catch (\RuntimeException $e) {
+                return JsonResponse::error($e->getMessage(), 500);
+            }
+        }
+
         $this->db->insert('email_messages', [
             'id' => $id,
             'account_id' => $data['account_id'],
             'user_id' => $userId,
             'message_id' => '<' . Uuid::uuid4()->toString() . '@kyuubisoft>',
-            'folder' => $data['is_draft'] ?? false ? 'Entwürfe' : 'Gesendet',
+            'folder' => $isDraft ? 'Entwürfe' : 'Gesendet',
             'from_address' => $account['email'],
             'from_name' => $account['name'],
             'to_addresses' => json_encode($toAddresses),
@@ -414,7 +459,7 @@ class EmailController
             'body_html' => $data['body'] ?? '',
             'is_read' => true,
             'is_starred' => false,
-            'is_draft' => $data['is_draft'] ?? false,
+            'is_draft' => $isDraft,
             'has_attachments' => false,
             'received_at' => $now,
             'created_at' => $now,

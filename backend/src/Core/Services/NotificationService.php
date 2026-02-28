@@ -34,7 +34,8 @@ class NotificationService
 
     public function __construct(
         private readonly Connection $db,
-        private readonly ?LoggerInterface $logger = null
+        private readonly ?LoggerInterface $logger = null,
+        private readonly ?MailService $mailService = null
     ) {}
 
     /**
@@ -176,9 +177,8 @@ class NotificationService
      */
     private function sendEmailNotification(string $userId, string $title, ?string $message, ?string $link): string
     {
-        // Get user's email
         $user = $this->db->fetchAssociative(
-            'SELECT email FROM users WHERE id = ?',
+            'SELECT email, username FROM users WHERE id = ?',
             [$userId]
         );
 
@@ -186,15 +186,32 @@ class NotificationService
             return 'skipped';
         }
 
-        // TODO: Implement actual email sending via mail service
-        // For now, log and return sent
-        $this->logger?->info('Email notification would be sent', [
-            'to' => $user['email'],
-            'title' => $title,
-            'message' => $message,
-        ]);
+        if (!$this->mailService) {
+            $this->logger?->warning('Email notification skipped - MailService not available');
+            return 'skipped';
+        }
 
-        return 'sent';
+        $bodyHtml = '<h2>' . htmlspecialchars($title) . '</h2>';
+        if ($message) {
+            $bodyHtml .= '<p>' . nl2br(htmlspecialchars($message)) . '</p>';
+        }
+        if ($link) {
+            $appUrl = rtrim($_ENV['APP_URL'] ?? 'http://localhost', '/');
+            $fullLink = str_starts_with($link, 'http') ? $link : $appUrl . $link;
+            $bodyHtml .= '<p><a href="' . htmlspecialchars($fullLink) . '">Details anzeigen</a></p>';
+        }
+
+        try {
+            $this->mailService->sendSystemMail(
+                $user['email'],
+                $title . ' - KyuubiSoft',
+                $bodyHtml
+            );
+            return 'sent';
+        } catch (\Exception $e) {
+            $this->logger?->error('Email notification failed', ['error' => $e->getMessage()]);
+            return 'failed';
+        }
     }
 
     /**

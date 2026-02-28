@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Deployments\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Services\NotificationService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,7 +17,8 @@ class DeploymentController
     private string $encryptionKey;
 
     public function __construct(
-        private readonly Connection $db
+        private readonly Connection $db,
+        private readonly NotificationService $notificationService
     ) {
         $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
     }
@@ -95,6 +97,7 @@ class DeploymentController
         }
 
         $id = Uuid::uuid4()->toString();
+        $webhookToken = $autoDeploy ? bin2hex(random_bytes(32)) : null;
 
         $this->db->insert('deployment_pipelines', [
             'id' => $id,
@@ -107,6 +110,7 @@ class DeploymentController
             'steps' => json_encode($steps),
             'environment' => $environment,
             'auto_deploy' => $autoDeploy ? 1 : 0,
+            'webhook_token' => $webhookToken,
             'notify_on_success' => $notifyOnSuccess ? 1 : 0,
             'notify_on_failure' => $notifyOnFailure ? 1 : 0,
         ]);
@@ -145,6 +149,12 @@ class DeploymentController
         $pipeline['notify_on_success'] = (bool) $pipeline['notify_on_success'];
         $pipeline['notify_on_failure'] = (bool) $pipeline['notify_on_failure'];
         $pipeline['steps'] = json_decode($pipeline['steps'], true) ?: [];
+
+        // Include webhook URL when auto_deploy is enabled
+        if ($pipeline['auto_deploy'] && !empty($pipeline['webhook_token'])) {
+            $appUrl = rtrim($_ENV['APP_URL'] ?? 'http://localhost', '/');
+            $pipeline['webhook_url'] = $appUrl . '/api/v1/webhooks/deploy/' . $pipeline['webhook_token'];
+        }
 
         // Fetch recent deployments
         $deployments = $this->db->fetchAllAssociative(
@@ -236,7 +246,17 @@ class DeploymentController
         }
 
         if (isset($body['auto_deploy'])) {
-            $updates['auto_deploy'] = ((bool) $body['auto_deploy']) ? 1 : 0;
+            $autoDeploy = (bool) $body['auto_deploy'];
+            $updates['auto_deploy'] = $autoDeploy ? 1 : 0;
+            if ($autoDeploy) {
+                $existingToken = $this->db->fetchOne(
+                    'SELECT webhook_token FROM deployment_pipelines WHERE id = ?',
+                    [$id]
+                );
+                if (!$existingToken) {
+                    $updates['webhook_token'] = bin2hex(random_bytes(32));
+                }
+            }
         }
 
         if (isset($body['notify_on_success'])) {
@@ -383,6 +403,29 @@ class DeploymentController
         $this->db->update('deployment_pipelines', [
             'last_deployed_at' => $finishedAt,
         ], ['id' => $pipelineId]);
+
+        // Send notifications based on pipeline settings
+        if ($status === 'success' && $pipeline['notify_on_success']) {
+            $this->notificationService->notify(
+                $userId,
+                'deployment',
+                "Deployment erfolgreich: {$pipeline['name']}",
+                "Branch: {$pipeline['branch']}, Umgebung: {$pipeline['environment']}, Dauer: {$totalDuration}ms",
+                ['pipeline_id' => $pipelineId, 'deployment_id' => $deploymentId, 'status' => 'success'],
+                "/deployments/{$deploymentId}",
+                'normal'
+            );
+        } elseif ($status === 'failed' && $pipeline['notify_on_failure']) {
+            $this->notificationService->notify(
+                $userId,
+                'deployment',
+                "Deployment fehlgeschlagen: {$pipeline['name']}",
+                $errorMessage,
+                ['pipeline_id' => $pipelineId, 'deployment_id' => $deploymentId, 'status' => 'failed'],
+                "/deployments/{$deploymentId}",
+                'high'
+            );
+        }
 
         $deployment = $this->db->fetchAssociative(
             'SELECT * FROM deployments WHERE id = ?',
@@ -829,5 +872,155 @@ class DeploymentController
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);
         return openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+    }
+
+    /**
+     * Webhook endpoint for auto-deploy triggered by Git push events.
+     * Accepts GitHub, GitLab, and Gitea webhook payloads.
+     */
+    public function webhookDeploy(Request $request, Response $response): Response
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+
+        $pipeline = $this->db->fetchAssociative(
+            'SELECT * FROM deployment_pipelines WHERE webhook_token = ? AND auto_deploy = 1',
+            [$token]
+        );
+
+        if (!$pipeline) {
+            return JsonResponse::error('Pipeline nicht gefunden oder Auto-Deploy nicht aktiviert', 404);
+        }
+
+        $body = (array) $request->getParsedBody();
+
+        // Extract commit info from payload (GitHub / GitLab / Gitea compatible)
+        $commitHash = '';
+        $commitMessage = '';
+        $branch = '';
+
+        if (isset($body['head_commit'])) {
+            // GitHub format
+            $commitHash = $body['head_commit']['id'] ?? '';
+            $commitMessage = $body['head_commit']['message'] ?? '';
+            $branch = str_replace('refs/heads/', '', $body['ref'] ?? '');
+        } elseif (isset($body['checkout_sha'])) {
+            // GitLab format
+            $commitHash = $body['checkout_sha'] ?? '';
+            $commits = $body['commits'] ?? [];
+            $commitMessage = !empty($commits) ? ($commits[0]['message'] ?? '') : '';
+            $branch = str_replace('refs/heads/', '', $body['ref'] ?? '');
+        } elseif (isset($body['after'])) {
+            // Gitea format
+            $commitHash = $body['after'] ?? '';
+            $commits = $body['commits'] ?? [];
+            $commitMessage = !empty($commits) ? ($commits[0]['message'] ?? '') : '';
+            $branch = str_replace('refs/heads/', '', $body['ref'] ?? '');
+        }
+
+        // Check if push is for the configured branch
+        $pipelineBranch = $pipeline['branch'] ?? 'main';
+        if ($branch !== '' && $branch !== $pipelineBranch) {
+            return JsonResponse::success([
+                'message' => "Push fuer Branch '{$branch}' ignoriert (konfiguriert: '{$pipelineBranch}')",
+                'skipped' => true,
+            ]);
+        }
+
+        // Execute deployment
+        $steps = json_decode($pipeline['steps'], true) ?: [];
+        $deploymentId = Uuid::uuid4()->toString();
+        $startedAt = date('Y-m-d H:i:s');
+
+        $connection = null;
+        if (!empty($pipeline['connection_id'])) {
+            $connection = $this->db->fetchAssociative(
+                'SELECT * FROM connections WHERE id = ?',
+                [$pipeline['connection_id']]
+            );
+        }
+
+        $stepsLog = [];
+        $totalDuration = 0;
+        $allSuccess = true;
+        $errorMessage = null;
+
+        foreach ($steps as $step) {
+            $stepStarted = microtime(true);
+            $stepStartedAt = date('Y-m-d H:i:s');
+
+            $result = $this->executeStep($step['command'], $connection);
+
+            $stepDuration = (int) ((microtime(true) - $stepStarted) * 1000);
+            $totalDuration += $stepDuration;
+            $stepFinishedAt = date('Y-m-d H:i:s');
+
+            $stepsLog[] = [
+                'name' => $step['name'],
+                'command' => $step['command'],
+                'status' => $result['success'] ? 'success' : 'failed',
+                'duration_ms' => $stepDuration,
+                'output' => $result['output'] ?: 'Keine Ausgabe',
+                'exit_code' => $result['exit_code'],
+                'started_at' => $stepStartedAt,
+                'finished_at' => $stepFinishedAt,
+            ];
+
+            if (!$result['success']) {
+                $allSuccess = false;
+                $errorMessage = "Schritt '{$step['name']}' fehlgeschlagen (Exit-Code: {$result['exit_code']})";
+                break;
+            }
+        }
+
+        $status = $allSuccess ? 'success' : 'failed';
+        $finishedAt = date('Y-m-d H:i:s');
+
+        $this->db->insert('deployments', [
+            'id' => $deploymentId,
+            'pipeline_id' => $pipeline['id'],
+            'user_id' => $pipeline['user_id'],
+            'status' => $status,
+            'commit_hash' => $commitHash ?: null,
+            'commit_message' => $commitMessage ? 'Auto-deploy: ' . $commitMessage : 'Auto-deploy via Webhook',
+            'steps_log' => json_encode($stepsLog),
+            'started_at' => $startedAt,
+            'finished_at' => $finishedAt,
+            'duration_ms' => $totalDuration,
+            'error_message' => $errorMessage,
+        ]);
+
+        $this->db->update('deployment_pipelines', [
+            'last_deployed_at' => $finishedAt,
+        ], ['id' => $pipeline['id']]);
+
+        // Send notifications
+        $shouldNotify = ($allSuccess && $pipeline['notify_on_success'])
+                     || (!$allSuccess && $pipeline['notify_on_failure']);
+
+        if ($shouldNotify) {
+            $pipelineName = $pipeline['name'];
+            $notifTitle = $allSuccess
+                ? "Auto-Deploy erfolgreich: {$pipelineName}"
+                : "Auto-Deploy fehlgeschlagen: {$pipelineName}";
+            $notifMessage = $allSuccess
+                ? "Auto-Deployment der Pipeline '{$pipelineName}' erfolgreich abgeschlossen."
+                : "Auto-Deployment der Pipeline '{$pipelineName}' fehlgeschlagen: {$errorMessage}";
+
+            $this->notificationService->notify(
+                $pipeline['user_id'],
+                $allSuccess ? 'deployment_success' : 'deployment_failure',
+                $notifTitle,
+                $notifMessage,
+                ['pipeline_id' => $pipeline['id'], 'deployment_id' => $deploymentId, 'status' => $status],
+                "/deployments/{$deploymentId}",
+                $allSuccess ? 'normal' : 'high'
+            );
+        }
+
+        return JsonResponse::created([
+            'deployment_id' => $deploymentId,
+            'status' => $status,
+            'message' => $allSuccess ? 'Auto-Deploy erfolgreich' : 'Auto-Deploy fehlgeschlagen',
+        ]);
     }
 }

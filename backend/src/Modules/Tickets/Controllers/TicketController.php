@@ -6,6 +6,7 @@ namespace App\Modules\Tickets\Controllers;
 
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Security\RbacManager;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Tickets\Repositories\TicketRepository;
 use App\Modules\Webhooks\Services\WebhookService;
@@ -18,7 +19,8 @@ class TicketController
     public function __construct(
         private readonly TicketRepository $repository,
         private readonly ProjectAccessService $projectAccess,
-        private readonly WebhookService $webhookService
+        private readonly WebhookService $webhookService,
+        private readonly RbacManager $rbacManager
     ) {}
 
     private function getRouteArg(ServerRequestInterface $request, string $name): ?string
@@ -587,9 +589,8 @@ class TicketController
 
     private function canViewAllTickets(ServerRequestInterface $request): bool
     {
-        // TODO: Check actual permissions from RBAC
-        // For now, assume all authenticated users can view all
-        return true;
+        $userId = $request->getAttribute('user_id');
+        return $this->rbacManager->hasPermission($userId, 'tickets.manage');
     }
 
     private function canAccessTicket(ServerRequestInterface $request, array $ticket): bool
@@ -606,7 +607,7 @@ class TicketController
             return true;
         }
 
-        // Staff can access all
+        // Staff with tickets.manage can access all
         return $this->canViewAllTickets($request);
     }
 
@@ -619,32 +620,31 @@ class TicketController
             return true;
         }
 
-        // Staff can edit
-        return $this->canViewAllTickets($request);
+        // Staff with tickets.manage can edit
+        return $this->rbacManager->hasPermission($userId, 'tickets.manage');
     }
 
     private function canChangeStatus(ServerRequestInterface $request, array $ticket): bool
     {
-        // For now, anyone who can access can change status
         return $this->canAccessTicket($request, $ticket);
     }
 
     private function canAssignTicket(ServerRequestInterface $request): bool
     {
-        // TODO: Check actual permissions
-        return true;
+        $userId = $request->getAttribute('user_id');
+        return $this->rbacManager->hasPermission($userId, 'tickets.manage');
     }
 
     private function canDeleteTicket(ServerRequestInterface $request): bool
     {
-        // TODO: Check actual permissions
-        return true;
+        $userId = $request->getAttribute('user_id');
+        return $this->rbacManager->hasPermission($userId, 'tickets.manage');
     }
 
     private function canViewInternalComments(ServerRequestInterface $request): bool
     {
-        // TODO: Check if user is staff
-        return true;
+        $userId = $request->getAttribute('user_id');
+        return $this->rbacManager->hasPermission($userId, 'tickets.manage');
     }
 
     /**

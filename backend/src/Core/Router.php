@@ -1500,6 +1500,9 @@ class Router
             // Discord signed media (no auth required - protected by HMAC signature)
             $group->get('/discord/media/{id}/signed', [DiscordController::class, 'serveSignedMedia']);
 
+            // Deployment Webhook (no auth required - protected by token)
+            $group->post('/webhooks/deploy/{token}', [DeploymentController::class, 'webhookDeploy']);
+
             // Public Ticket Routes (no auth required)
             $group->get('/public/ticket-categories', [TicketController::class, 'getCategories']);
             $group->post('/tickets/public', [TicketController::class, 'createPublic']);

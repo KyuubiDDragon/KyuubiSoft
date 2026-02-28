@@ -8,6 +8,7 @@ use App\Core\Exceptions\AuthException;
 use App\Core\Security\JwtManager;
 use App\Core\Security\PasswordHasher;
 use App\Core\Security\RbacManager;
+use App\Core\Services\MailService;
 use App\Modules\Auth\DTOs\LoginRequest;
 use App\Modules\Auth\DTOs\RegisterRequest;
 use App\Modules\Auth\Repositories\UserRepository;
@@ -24,7 +25,8 @@ class AuthService
         private readonly RefreshTokenRepository $refreshTokenRepository,
         private readonly JwtManager $jwtManager,
         private readonly PasswordHasher $passwordHasher,
-        private readonly RbacManager $rbacManager
+        private readonly RbacManager $rbacManager,
+        private readonly MailService $mailService
     ) {
         $this->google2fa = new Google2FA();
     }
@@ -230,9 +232,26 @@ class AuthService
 
         $this->userRepository->storePasswordResetToken($user['id'], $token, $expiresAt);
 
-        // TODO: Send email with reset link
-        // For now, just log it
-        error_log("Password reset token for {$email}: {$token}");
+        // Send password reset email
+        $appUrl = rtrim($_ENV['APP_URL'] ?? 'https://app.kyuubisoft.de', '/');
+        $resetLink = $appUrl . '/reset-password?token=' . $token;
+        $username = $user['username'] ?? explode('@', $email)[0];
+
+        try {
+            $this->mailService->sendSystemMail(
+                $email,
+                'Passwort zurücksetzen - KyuubiSoft',
+                "<h2>Passwort zurücksetzen</h2>
+                 <p>Hallo {$username},</p>
+                 <p>Du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt.</p>
+                 <p>Klicke auf den folgenden Link, um dein Passwort zurückzusetzen:</p>
+                 <p><a href=\"{$resetLink}\">{$resetLink}</a></p>
+                 <p>Dieser Link ist 1 Stunde gültig.</p>
+                 <p>Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren.</p>"
+            );
+        } catch (\Exception $e) {
+            error_log("Failed to send password reset email to {$email}: " . $e->getMessage());
+        }
     }
 
     public function resetPassword(string $token, string $password): void

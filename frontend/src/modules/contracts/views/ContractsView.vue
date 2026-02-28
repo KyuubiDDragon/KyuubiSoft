@@ -160,9 +160,9 @@ const typeColors = {
 </script>
 
 <template>
-  <div class="p-6 max-w-[1400px] mx-auto">
+  <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-white">Verträge</h1>
         <p class="text-sm text-gray-400 mt-0.5">Verträge erstellen, verwalten und unterschreiben</p>
@@ -177,27 +177,27 @@ const typeColors = {
     </div>
 
     <!-- Stats Cards -->
-    <div v-if="stats" class="grid grid-cols-4 gap-4 mb-6">
-      <div class="card p-4">
+    <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Gesamt</div>
         <div class="text-2xl font-bold text-white mt-1">{{ stats.total_contracts || 0 }}</div>
       </div>
-      <div class="card p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Aktiv</div>
         <div class="text-2xl font-bold text-green-400 mt-1">{{ stats.active || 0 }}</div>
       </div>
-      <div class="card p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Entwürfe</div>
         <div class="text-2xl font-bold text-gray-300 mt-1">{{ stats.draft || 0 }}</div>
       </div>
-      <div class="card p-4">
+      <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
         <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Aktiver Vertragswert</div>
         <div class="text-2xl font-bold text-primary-400 mt-1">{{ formatCurrency(stats.total_active_value) }}</div>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="flex items-center gap-3 mb-4">
+    <div class="flex items-center gap-3">
       <div class="relative flex-1 max-w-xs">
         <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input
@@ -218,7 +218,7 @@ const typeColors = {
     </div>
 
     <!-- Contracts Table -->
-    <div class="card overflow-hidden">
+    <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
       <div v-if="isLoading" class="p-12 text-center text-gray-500">Lade Verträge...</div>
       <div v-else-if="filteredContracts.length === 0" class="p-12 text-center text-gray-500">
         <p class="text-lg font-medium">Keine Verträge gefunden</p>

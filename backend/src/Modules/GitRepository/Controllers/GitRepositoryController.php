@@ -368,6 +368,67 @@ class GitRepositoryController
     }
 
     /**
+     * Sync ALL active repositories for the current user
+     */
+    public function syncAll(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+
+        $repositories = $this->db->fetchAllAssociative(
+            'SELECT * FROM git_repositories WHERE user_id = ? AND is_active = 1',
+            [$userId]
+        );
+
+        $results = ['synced' => 0, 'failed' => 0, 'total' => count($repositories), 'errors' => []];
+
+        foreach ($repositories as $repository) {
+            try {
+                $repoInfo = $this->gitProvider->fetchRepositoryInfo($repository);
+                if ($repoInfo) {
+                    $this->db->update('git_repositories', [
+                        'stars_count' => (int) ($repoInfo['stars_count'] ?? 0),
+                        'forks_count' => (int) ($repoInfo['forks_count'] ?? 0),
+                        'open_issues_count' => (int) ($repoInfo['open_issues_count'] ?? 0),
+                        'watchers_count' => (int) ($repoInfo['watchers_count'] ?? 0),
+                        'default_branch' => $repoInfo['default_branch'] ?? 'main',
+                        'is_private' => !empty($repoInfo['is_private']) ? 1 : 0,
+                        'last_sync_at' => date('Y-m-d H:i:s'),
+                        'sync_error' => null,
+                    ], ['id' => $repository['id']]);
+                }
+
+                $prs = $this->gitProvider->fetchPullRequests($repository, 'all');
+                $this->syncPullRequests($repository['id'], $prs);
+
+                $issues = $this->gitProvider->fetchIssues($repository, 'all');
+                $this->syncIssues($repository['id'], $issues);
+
+                $commits = $this->gitProvider->fetchCommits($repository, 50);
+                $this->syncCommits($repository['id'], $commits);
+
+                $releases = $this->gitProvider->fetchReleases($repository, 20);
+                $this->syncReleases($repository['id'], $releases);
+
+                $openPrCount = $this->db->fetchOne(
+                    "SELECT COUNT(*) FROM git_pull_requests WHERE repository_id = ? AND state = 'open'",
+                    [$repository['id']]
+                );
+                $this->db->update('git_repositories', ['open_prs_count' => $openPrCount], ['id' => $repository['id']]);
+
+                $results['synced']++;
+            } catch (\Exception $e) {
+                $this->db->update('git_repositories', [
+                    'sync_error' => $e->getMessage(),
+                ], ['id' => $repository['id']]);
+                $results['failed']++;
+                $results['errors'][] = ['name' => $repository['name'], 'error' => $e->getMessage()];
+            }
+        }
+
+        return JsonResponse::success($results, "{$results['synced']}/{$results['total']} Repositories synchronisiert");
+    }
+
+    /**
      * Get repository statistics
      */
     public function stats(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

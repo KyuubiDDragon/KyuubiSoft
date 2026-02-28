@@ -31,5 +31,10 @@ rm -f /var/www/html/storage/cache/container/CompiledContainer.php
 echo "Running database migrations..."
 php /var/www/html/bin/migrate.php || echo "Migration failed (non-fatal, continuing...)"
 
+# Start background cron jobs
+echo "Starting background schedulers..."
+(while true; do php /var/www/html/bin/git-sync.php >> /var/www/html/storage/logs/git-sync.log 2>&1; sleep 3600; done) &
+(while true; do php /var/www/html/bin/uptime-check.php >> /var/www/html/storage/logs/uptime-check.log 2>&1; sleep 60; done) &
+
 # Execute the main command
 exec "$@"

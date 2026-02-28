@@ -99,6 +99,7 @@ const KnowledgeBaseAdmin = () => import('@/modules/knowledge-base/views/Knowledg
 const PublicKnowledgeBase = () => import('@/modules/knowledge-base/views/PublicKnowledgeBase.vue')
 const EnvironmentsView = () => import('@/modules/environments/views/EnvironmentsView.vue')
 const DeploymentsView = () => import('@/modules/deployments/views/DeploymentsView.vue')
+const ContractPublicView = () => import('@/modules/contracts/views/ContractPublicView.vue')
 
 const routes: RouteRecordRaw[] = [
   // Auth routes
@@ -589,6 +590,14 @@ const routes: RouteRecordRaw[] = [
     name: 'public-checklist',
     component: PublicChecklistView,
     meta: { layout: 'public' },
+  },
+
+  // Public contract view (accessible to everyone)
+  {
+    path: '/contract/:token',
+    name: 'public-contract',
+    component: ContractPublicView,
+    meta: { layout: 'none', guest: true },
   },
 
   // Short link redirect - loads component that fetches target URL from API

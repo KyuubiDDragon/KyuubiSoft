@@ -646,6 +646,209 @@ class ContractController
         return JsonResponse::success(['items' => $invoices]);
     }
 
+    // ============ SHARING ============
+
+    public function enableShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+        $data = $request->getParsedBody();
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT * FROM contracts WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+        if (!$contract) {
+            throw new NotFoundException('Contract not found');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $password = !empty($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null;
+        $expiresAt = !empty($data['expires_at']) ? $data['expires_at'] : null;
+
+        $this->db->update('contracts', [
+            'share_token' => $token,
+            'share_password' => $password,
+            'share_expires_at' => $expiresAt,
+            'share_view_count' => 0,
+        ], ['id' => $id]);
+
+        $this->addHistory($id, 'shared', 'Share-Link erstellt', $userId);
+
+        return JsonResponse::success([
+            'token' => $token,
+            'has_password' => !empty($password),
+            'expires_at' => $expiresAt,
+        ], 'Share-Link erstellt');
+    }
+
+    public function disableShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT * FROM contracts WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+        if (!$contract) {
+            throw new NotFoundException('Contract not found');
+        }
+
+        $this->db->update('contracts', [
+            'share_token' => null,
+            'share_password' => null,
+            'share_expires_at' => null,
+            'share_view_count' => 0,
+        ], ['id' => $id]);
+
+        $this->addHistory($id, 'share_disabled', 'Share-Link deaktiviert', $userId);
+
+        return JsonResponse::success(null, 'Share-Link deaktiviert');
+    }
+
+    public function getShareInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT share_token, share_password, share_expires_at, share_view_count FROM contracts WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+        if (!$contract) {
+            throw new NotFoundException('Contract not found');
+        }
+
+        return JsonResponse::success([
+            'active' => !empty($contract['share_token']),
+            'token' => $contract['share_token'],
+            'has_password' => !empty($contract['share_password']),
+            'expires_at' => $contract['share_expires_at'],
+            'view_count' => (int) $contract['share_view_count'],
+        ]);
+    }
+
+    public function showPublic(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $routeContext = RouteContext::fromRequest($request);
+        $token = $routeContext->getRoute()->getArgument('token');
+        $data = array_merge($request->getQueryParams(), (array) ($request->getParsedBody() ?? []));
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT * FROM contracts WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$contract) {
+            throw new NotFoundException('Vertrag nicht gefunden');
+        }
+
+        if ($contract['share_expires_at'] && $contract['share_expires_at'] < date('Y-m-d H:i:s')) {
+            return JsonResponse::error('Dieser Link ist abgelaufen', 403);
+        }
+
+        if ($contract['share_password']) {
+            $pw = $data['password'] ?? '';
+            if (empty($pw)) {
+                return JsonResponse::success(['requires_password' => true], 'Passwort erforderlich');
+            }
+            if (!password_verify($pw, $contract['share_password'])) {
+                return JsonResponse::error('Falsches Passwort', 401);
+            }
+        }
+
+        $this->db->executeStatement(
+            'UPDATE contracts SET share_view_count = share_view_count + 1 WHERE id = ?',
+            [$contract['id']]
+        );
+
+        // Return sanitized contract data (no internal fields like share_token/password)
+        return JsonResponse::success([
+            'id' => $contract['id'],
+            'contract_number' => $contract['contract_number'],
+            'title' => $contract['title'],
+            'contract_type' => $contract['contract_type'],
+            'language' => $contract['language'],
+            'content_html' => $contract['content_html'] ?? null,
+            'clauses_html' => $contract['clauses_html'] ?? null,
+            'status' => $contract['status'],
+            'party_a_name' => $contract['party_a_name'],
+            'party_a_company' => $contract['party_a_company'] ?? null,
+            'party_a_address' => $contract['party_a_address'] ?? null,
+            'party_a_email' => $contract['party_a_email'] ?? null,
+            'party_b_name' => $contract['party_b_name'],
+            'party_b_company' => $contract['party_b_company'] ?? null,
+            'party_b_address' => $contract['party_b_address'] ?? null,
+            'party_b_email' => $contract['party_b_email'] ?? null,
+            'start_date' => $contract['start_date'],
+            'end_date' => $contract['end_date'],
+            'total_value' => $contract['total_value'],
+            'currency' => $contract['currency'],
+            'payment_schedule' => $contract['payment_schedule'] ?? null,
+            'notice_period_days' => $contract['notice_period_days'] ?? null,
+            'notes' => $contract['notes'] ?? null,
+            'party_a_signed_at' => $contract['party_a_signed_at'],
+            'party_b_signed_at' => $contract['party_b_signed_at'],
+        ]);
+    }
+
+    public function signPublic(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $routeContext = RouteContext::fromRequest($request);
+        $token = $routeContext->getRoute()->getArgument('token');
+        $data = $request->getParsedBody();
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT * FROM contracts WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$contract) {
+            throw new NotFoundException('Vertrag nicht gefunden');
+        }
+
+        if ($contract['share_expires_at'] && $contract['share_expires_at'] < date('Y-m-d H:i:s')) {
+            return JsonResponse::error('Dieser Link ist abgelaufen', 403);
+        }
+
+        // Verify password if set
+        if ($contract['share_password']) {
+            $pw = $data['password'] ?? '';
+            if (!password_verify($pw, $contract['share_password'])) {
+                return JsonResponse::error('Falsches Passwort', 401);
+            }
+        }
+
+        if (empty($data['signature_data'])) {
+            throw new ValidationException('Unterschrift ist erforderlich');
+        }
+
+        if ($contract['party_b_signed_at']) {
+            return JsonResponse::error('Vertrag wurde bereits unterschrieben', 400);
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        $this->db->update('contracts', [
+            'party_b_signed_at' => $now,
+            'party_b_signature_data' => $data['signature_data'],
+        ], ['id' => $contract['id']]);
+
+        $this->addHistory($contract['id'], 'signed', 'Auftraggeber hat online unterschrieben (via Share-Link)', $contract['user_id']);
+
+        // Check if both parties have signed
+        if ($contract['party_a_signed_at']) {
+            $this->db->update('contracts', ['status' => 'signed'], ['id' => $contract['id']]);
+            $this->addHistory($contract['id'], 'status_changed', 'Status geändert: Unterschrieben (beide Parteien)', $contract['user_id']);
+        }
+
+        return JsonResponse::success(null, 'Vertrag erfolgreich unterschrieben');
+    }
+
     // ============ HELPERS ============
 
     private function addHistory(string $contractId, string $action, string $details, string $performedBy): void

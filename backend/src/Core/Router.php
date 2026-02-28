@@ -610,6 +610,12 @@ class Router
                     ->add(new FeatureMiddleware('contracts', null, 'edit'));
                 $protected->get('/contracts/{id}/invoices', [ContractController::class, 'getLinkedInvoices'])
                     ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->post('/contracts/{id}/share', [ContractController::class, 'enableShare'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->delete('/contracts/{id}/share', [ContractController::class, 'disableShare'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->get('/contracts/{id}/share', [ContractController::class, 'getShareInfo'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
 
                 // Contract Templates
                 $protected->get('/contract-templates', [ContractTemplateController::class, 'index'])
@@ -1594,6 +1600,11 @@ class Router
             $group->get('/s/{code}', [LinkController::class, 'redirect']);
             $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
             $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
+
+            // Public Contract View + Signing (no auth required)
+            $group->get('/contracts/public/{token}', [ContractController::class, 'showPublic']);
+            $group->post('/contracts/public/{token}', [ContractController::class, 'showPublic']);
+            $group->post('/contracts/public/{token}/sign', [ContractController::class, 'signPublic']);
 
             // Public Gallery Routes (no auth required)
             $group->get('/gallery/{slug}', [PublicGalleryController::class, 'viewPublic']);

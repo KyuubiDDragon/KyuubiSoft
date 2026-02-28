@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Automation\Services;
 
+use App\Core\Services\MailService;
 use App\Modules\Notifications\Services\PushNotificationService;
 use Doctrine\DBAL\Connection;
 use Ramsey\Uuid\Uuid;
@@ -49,7 +50,8 @@ class WorkflowService
 
     public function __construct(
         private readonly Connection $db,
-        private readonly ?PushNotificationService $pushService = null
+        private readonly ?PushNotificationService $pushService = null,
+        private readonly ?MailService $mailService = null
     ) {}
 
     // ==================== Workflow CRUD ====================
@@ -431,8 +433,17 @@ class WorkflowService
             case 'send_notification':
                 return $this->actionSendNotification($config, $context);
 
+            case 'send_email':
+                return $this->actionSendEmail($config, $context);
+
             case 'create_task':
                 return $this->actionCreateTask($config, $context);
+
+            case 'create_document':
+                return $this->actionCreateDocument($config, $context);
+
+            case 'create_calendar_event':
+                return $this->actionCreateCalendarEvent($config, $context);
 
             case 'http_request':
                 return $this->actionHttpRequest($config);
@@ -497,6 +508,81 @@ class WorkflowService
         ]);
 
         return ['task_id' => $id];
+    }
+
+    /**
+     * Send email action
+     */
+    private function actionSendEmail(array $config, array $context): array
+    {
+        if (!$this->mailService) {
+            return ['skipped' => true, 'reason' => 'mail_service_unavailable'];
+        }
+
+        $to = $config['to'] ?? ($context['user_email'] ?? null);
+        if (!$to) {
+            return ['skipped' => true, 'reason' => 'no_recipient'];
+        }
+
+        $this->mailService->sendSystemMail(
+            $to,
+            $config['subject'] ?? 'Automation',
+            $config['body'] ?? ''
+        );
+
+        return ['sent' => true, 'to' => $to];
+    }
+
+    /**
+     * Create document action
+     */
+    private function actionCreateDocument(array $config, array $context): array
+    {
+        $userId = $context['user_id'] ?? null;
+        if (!$userId) {
+            return ['skipped' => true, 'reason' => 'missing_user'];
+        }
+
+        $id = Uuid::uuid4()->toString();
+        $this->db->insert('documents', [
+            'id' => $id,
+            'user_id' => $userId,
+            'folder_id' => $config['folder_id'] ?? null,
+            'title' => $config['title'] ?? 'Neues Dokument',
+            'content' => $config['content'] ?? '',
+            'format' => 'markdown',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return ['document_id' => $id];
+    }
+
+    /**
+     * Create calendar event action
+     */
+    private function actionCreateCalendarEvent(array $config, array $context): array
+    {
+        $userId = $context['user_id'] ?? null;
+        if (!$userId) {
+            return ['skipped' => true, 'reason' => 'missing_user'];
+        }
+
+        $id = Uuid::uuid4()->toString();
+        $this->db->insert('calendar_events', [
+            'id' => $id,
+            'user_id' => $userId,
+            'title' => $config['title'] ?? 'Neuer Termin',
+            'description' => $config['description'] ?? null,
+            'start_date' => $config['start'] ?? date('Y-m-d H:i:s'),
+            'end_date' => $config['end'] ?? null,
+            'all_day' => 0,
+            'color' => 'primary',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return ['event_id' => $id];
     }
 
     /**

@@ -252,7 +252,17 @@ function removeMilestone(index) {
 }
 
 function handleSubmit() {
-  emit('save', { ...form.value })
+  // Merge form-level fields into variables_data so backend template resolver can use them
+  const merged = {
+    ...form.value,
+    variables_data: {
+      ...form.value.variables_data,
+      is_b2c: form.value.is_b2c,
+      governing_law: form.value.governing_law,
+      payment_schedule: form.value.payment_schedule,
+    },
+  }
+  emit('save', merged)
 }
 
 const isLicense = computed(() => form.value.contract_type === 'license')

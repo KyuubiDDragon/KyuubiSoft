@@ -124,18 +124,68 @@ class ContractController
             }
         }
 
+        // Resolve template if content_html not provided
+        $contentHtml = $data['content_html'] ?? '';
+        $language = $data['language'] ?? 'de';
+        $variablesData = $data['variables_data'] ?? [];
+        $templateId = $data['template_id'] ?? null;
+
+        if (empty($contentHtml)) {
+            // Load default template for this contract type + language
+            $template = null;
+            if ($templateId) {
+                $template = $this->db->fetchAssociative(
+                    'SELECT * FROM contract_templates WHERE id = ? AND (user_id = ? OR user_id = ?)',
+                    [$templateId, $userId, 'system']
+                );
+            }
+            if (!$template) {
+                $template = $this->db->fetchAssociative(
+                    'SELECT * FROM contract_templates WHERE contract_type = ? AND language = ? AND is_default = 1 AND (user_id = ? OR user_id = ?)',
+                    [$type, $language, $userId, 'system']
+                );
+            }
+            if ($template) {
+                $templateId = $template['id'];
+                // Build template context from contract fields + variables_data
+                $partyACompany = $data['party_a_company'] ?? $settings['invoice_company'] ?? '';
+                $partyAAddress = $data['party_a_address'] ?? $settings['invoice_address'] ?? '';
+                $partyAEmail = $data['party_a_email'] ?? $settings['invoice_email'] ?? $user['email'] ?? '';
+
+                $context = array_merge(
+                    $variablesData,
+                    $this->buildTemplateLabels($variablesData, $language),
+                    [
+                        'start_date' => $data['start_date'] ?? date('Y-m-d'),
+                        'end_date' => $data['end_date'] ?? null,
+                        'notice_period_days' => $data['notice_period_days'] ?? 30,
+                        'total_value' => number_format((float) ($data['total_value'] ?? 0), 2, ',', '.'),
+                        'currency' => $data['currency'] ?? 'EUR',
+                        'auto_renewal' => !empty($data['auto_renewal']),
+                        'governing_law' => $data['governing_law'] ?? 'DE',
+                        'jurisdiction' => $data['jurisdiction'] ?? '',
+                        'is_b2c' => !empty($data['is_b2c']),
+                        'party_a_company' => $partyACompany,
+                        'party_a_address' => $partyAAddress,
+                        'party_a_email' => $partyAEmail,
+                    ]
+                );
+                $contentHtml = $this->resolveTemplate($template['content_html'], $context);
+            }
+        }
+
         $this->db->insert('contracts', array_merge([
             'id' => $id,
             'user_id' => $userId,
             'client_id' => $data['client_id'] ?? null,
-            'template_id' => $data['template_id'] ?? null,
+            'template_id' => $templateId,
             'contract_number' => $contractNumber,
             'title' => $data['title'],
             'contract_type' => $type,
-            'language' => $data['language'] ?? 'de',
+            'language' => $language,
             'status' => 'draft',
-            'content_html' => $data['content_html'] ?? '',
-            'variables_data' => isset($data['variables_data']) ? json_encode($data['variables_data']) : null,
+            'content_html' => $contentHtml,
+            'variables_data' => !empty($variablesData) ? json_encode($variablesData) : null,
             // Party A (sender)
             'party_a_name' => $data['party_a_name'] ?? $settings['invoice_sender_name'] ?? $user['name'],
             'party_a_company' => $data['party_a_company'] ?? $settings['invoice_company'] ?? null,
@@ -603,5 +653,131 @@ class ContractController
             'details' => $details,
             'performed_by' => $performedBy,
         ]);
+    }
+
+    /**
+     * Resolve Mustache-style template placeholders.
+     * Supports: {{variable}}, {{#flag}}...{{/flag}}, {{^flag}}...{{/flag}}
+     */
+    private function resolveTemplate(string $html, array $context): string
+    {
+        // First resolve conditional sections {{#flag}}...{{/flag}} and {{^flag}}...{{/flag}}
+        // Process nested sections by iterating until no more changes
+        $maxIterations = 10;
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $previous = $html;
+
+            // Positive sections: {{#flag}}content{{/flag}} — show if truthy
+            $html = preg_replace_callback(
+                '/\{\{#(\w+)\}\}(.*?)\{\{\/\1\}\}/s',
+                function ($matches) use ($context) {
+                    $key = $matches[1];
+                    $content = $matches[2];
+                    $value = $context[$key] ?? null;
+                    if ($value && $value !== '0' && $value !== 0) {
+                        return $content;
+                    }
+                    return '';
+                },
+                $html
+            );
+
+            // Negative sections: {{^flag}}content{{/flag}} — show if falsy
+            $html = preg_replace_callback(
+                '/\{\{\^(\w+)\}\}(.*?)\{\{\/\1\}\}/s',
+                function ($matches) use ($context) {
+                    $key = $matches[1];
+                    $content = $matches[2];
+                    $value = $context[$key] ?? null;
+                    if (!$value || $value === '0' || $value === 0) {
+                        return $content;
+                    }
+                    return '';
+                },
+                $html
+            );
+
+            if ($html === $previous) {
+                break;
+            }
+        }
+
+        // Then resolve simple variables {{variable}}
+        $html = preg_replace_callback(
+            '/\{\{(\w+)\}\}/',
+            function ($matches) use ($context) {
+                $key = $matches[1];
+                $value = $context[$key] ?? '';
+                return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+            },
+            $html
+        );
+
+        return $html;
+    }
+
+    /**
+     * Build human-readable labels from raw variable values based on language.
+     */
+    private function buildTemplateLabels(array $vars, string $lang): array
+    {
+        $isDe = $lang === 'de';
+        $labels = [];
+
+        // License type
+        $licenseTypes = $isDe
+            ? ['simple' => 'einfache (nicht-ausschliessliche)', 'exclusive' => 'ausschliessliche']
+            : ['simple' => 'non-exclusive', 'exclusive' => 'exclusive'];
+        $labels['license_type_label'] = $licenseTypes[$vars['license_type'] ?? ''] ?? ($vars['license_type'] ?? '');
+
+        // Territory
+        $territories = $isDe
+            ? ['worldwide' => 'weltweit', 'eu' => 'Europaeische Union', 'dach' => 'DACH-Region (DE/AT/CH)', 'de' => 'Deutschland', 'custom' => 'wie vereinbart']
+            : ['worldwide' => 'worldwide', 'eu' => 'European Union', 'dach' => 'DACH Region (DE/AT/CH)', 'de' => 'Germany', 'custom' => 'as agreed'];
+        $labels['territory_label'] = $territories[$vars['territory'] ?? ''] ?? ($vars['territory'] ?? '');
+
+        // Support level
+        $supportLevels = $isDe
+            ? ['basic' => 'Basis (E-Mail)', 'standard' => 'Standard (E-Mail + Telefon)', 'premium' => 'Premium (24/7)', 'none' => 'Kein Support']
+            : ['basic' => 'Basic (Email)', 'standard' => 'Standard (Email + Phone)', 'premium' => 'Premium (24/7)', 'none' => 'No Support'];
+        $labels['support_level_label'] = $supportLevels[$vars['support_level'] ?? ''] ?? ($vars['support_level'] ?? '');
+
+        // Payment schedule
+        $schedules = $isDe
+            ? ['once' => 'einmalig', 'monthly' => 'monatlich', 'quarterly' => 'quartalsweise', 'yearly' => 'jaehrlich', 'milestone' => 'nach Meilensteinen']
+            : ['once' => 'one-time', 'monthly' => 'monthly', 'quarterly' => 'quarterly', 'yearly' => 'annually', 'milestone' => 'per milestone'];
+        $labels['payment_schedule_label'] = $schedules[$vars['payment_schedule'] ?? ''] ?? ($vars['payment_schedule'] ?? '');
+
+        // Governing law
+        $laws = $isDe
+            ? ['DE' => 'Bundesrepublik Deutschland', 'AT' => 'Republik Oesterreich', 'CH' => 'Schweizerische Eidgenossenschaft', 'DK' => 'Koenigreich Daenemark']
+            : ['DE' => 'Federal Republic of Germany', 'AT' => 'Republic of Austria', 'CH' => 'Swiss Confederation', 'DK' => 'Kingdom of Denmark'];
+        $labels['governing_law_label'] = $laws[$vars['governing_law'] ?? ''] ?? ($vars['governing_law'] ?? '');
+
+        // Subscription model (SaaS)
+        $subModels = $isDe
+            ? ['monthly' => 'Monat', 'quarterly' => 'Quartal', 'yearly' => 'Jahr']
+            : ['monthly' => 'month', 'quarterly' => 'quarter', 'yearly' => 'year'];
+        $labels['subscription_model_label'] = $subModels[$vars['subscription_model'] ?? ''] ?? ($vars['subscription_model'] ?? '');
+
+        // Response time (Maintenance)
+        $responseTimes = $isDe
+            ? ['4h' => '4 Stunden', '8h' => '8 Stunden', '24h' => '24 Stunden', '48h' => '48 Stunden']
+            : ['4h' => '4 hours', '8h' => '8 hours', '24h' => '24 hours', '48h' => '48 hours'];
+        $labels['response_time_label'] = $responseTimes[$vars['response_time'] ?? ''] ?? ($vars['response_time'] ?? '');
+
+        // NDA type
+        $ndaTypes = $isDe
+            ? ['unilateral' => 'Einseitig', 'mutual' => 'Gegenseitig']
+            : ['unilateral' => 'Unilateral', 'mutual' => 'Mutual'];
+        $labels['nda_type_label'] = $ndaTypes[$vars['nda_type'] ?? ''] ?? ($vars['nda_type'] ?? '');
+
+        // Data location (SaaS)
+        $dataLocations = $isDe
+            ? ['eu' => 'Europaeische Union', 'de' => 'Deutschland', 'us' => 'Vereinigte Staaten', 'custom' => 'wie vereinbart']
+            : ['eu' => 'European Union', 'de' => 'Germany', 'us' => 'United States', 'custom' => 'as agreed'];
+        $labels['data_location_label'] = $dataLocations[$vars['data_location'] ?? ''] ?? ($vars['data_location'] ?? '');
+
+        return $labels;
     }
 }

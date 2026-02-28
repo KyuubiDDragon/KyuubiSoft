@@ -378,6 +378,40 @@ export const useDnsStore = defineStore('dns', () => {
     }
   }
 
+  // ==================== Webtropia Actions ====================
+
+  async function verifyWebtropiaToken(apiToken: string, zone: string): Promise<boolean> {
+    try {
+      await api.post('/api/v1/dns/webtropia/verify', { api_token: apiToken, zone })
+      uiStore.showSuccess('Webtropia-Token ist gueltig')
+      return true
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Token-Validierung fehlgeschlagen'
+      uiStore.showError(msg)
+      return false
+    }
+  }
+
+  async function importWebtropiaZone(apiToken: string, zoneName: string): Promise<DnsDomain | null> {
+    try {
+      const response = await api.post('/api/v1/dns/webtropia/import', {
+        api_token: apiToken,
+        zone_name: zoneName,
+      })
+      const result = response.data.data
+      if (result?.domain) {
+        domains.value.push(result.domain)
+        uiStore.showSuccess(`${result.imported_count} Records von Webtropia importiert`)
+        return result.domain
+      }
+      return null
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Webtropia-Import fehlgeschlagen'
+      uiStore.showError(msg)
+      return null
+    }
+  }
+
   async function syncProvider(domainId: string): Promise<{ added: number; updated: number } | null> {
     try {
       const response = await api.post(`/api/v1/dns/domains/${domainId}/sync-provider`)
@@ -437,6 +471,12 @@ export const useDnsStore = defineStore('dns', () => {
     verifyCloudflareToken,
     listCloudflareZones,
     importCloudflareZone,
+
+    // Webtropia
+    verifyWebtropiaToken,
+    importWebtropiaZone,
+
+    // Provider Sync
     syncProvider,
     pushProvider,
   }

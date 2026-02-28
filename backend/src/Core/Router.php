@@ -1444,6 +1444,10 @@ class Router
                 $protected->post('/dns/domains/{id}/sync-provider', [DnsController::class, 'syncProvider']);
                 $protected->post('/dns/domains/{id}/push-provider', [DnsController::class, 'pushProvider']);
 
+                // DNS Webtropia Integration
+                $protected->post('/dns/webtropia/verify', [DnsController::class, 'verifyWebtropiaToken']);
+                $protected->post('/dns/webtropia/import', [DnsController::class, 'importWebtropiaZone']);
+
                 // Deployments
                 $protected->get('/deployments/stats', [DeploymentController::class, 'getStats']);
                 $protected->get('/deployments/pipelines', [DeploymentController::class, 'listPipelines']);

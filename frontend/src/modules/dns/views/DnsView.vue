@@ -43,6 +43,13 @@ const cfZonesLoading = ref(false)
 const cfImporting = ref(false)
 const cfSyncing = ref(null)
 
+// Webtropia import
+const showWebtropiaModal = ref(false)
+const wtToken = ref('')
+const wtZoneName = ref('')
+const wtVerifying = ref(false)
+const wtImporting = ref(false)
+
 // Propagation checker
 const showPropagation = ref(false)
 const propagationRecord = ref(null)
@@ -139,7 +146,7 @@ async function saveDomain() {
   }
 
   // Include provider_config for providers that need API tokens
-  if (domainForm.value.provider === 'cloudflare' && domainForm.value.api_token) {
+  if (['cloudflare', 'webtropia'].includes(domainForm.value.provider) && domainForm.value.api_token) {
     payload.provider_config = { api_token: domainForm.value.api_token }
   }
 
@@ -316,6 +323,40 @@ async function importCfZone(zone) {
   }
 }
 
+// Webtropia import
+function openWebtropiaModal() {
+  wtToken.value = ''
+  wtZoneName.value = ''
+  wtVerifying.value = false
+  wtImporting.value = false
+  showWebtropiaModal.value = true
+}
+
+function closeWebtropiaModal() {
+  showWebtropiaModal.value = false
+  wtToken.value = ''
+  wtZoneName.value = ''
+}
+
+async function verifyAndImportWebtropia() {
+  if (!wtToken.value.trim() || !wtZoneName.value.trim()) return
+
+  wtVerifying.value = true
+  try {
+    const valid = await dnsStore.verifyWebtropiaToken(wtToken.value.trim(), wtZoneName.value.trim())
+    if (!valid) return
+
+    wtImporting.value = true
+    const result = await dnsStore.importWebtropiaZone(wtToken.value.trim(), wtZoneName.value.trim())
+    if (result) {
+      closeWebtropiaModal()
+    }
+  } finally {
+    wtVerifying.value = false
+    wtImporting.value = false
+  }
+}
+
 async function handleSyncProvider(domainId) {
   cfSyncing.value = domainId
   try {
@@ -367,6 +408,10 @@ onMounted(async () => {
         <button @click="openCloudflareModal" class="btn-secondary">
           <CloudIcon class="w-5 h-5 mr-2" />
           Von Cloudflare importieren
+        </button>
+        <button @click="openWebtropiaModal" class="btn-secondary">
+          <GlobeAltIcon class="w-5 h-5 mr-2" />
+          Von Webtropia importieren
         </button>
         <button @click="openCreateDomainModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
@@ -434,7 +479,7 @@ onMounted(async () => {
               <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
               Import
             </button>
-            <template v-if="domain.provider === 'cloudflare' && domain.external_zone_id">
+            <template v-if="['cloudflare', 'webtropia'].includes(domain.provider) && domain.external_zone_id">
               <button
                 @click="handleSyncProvider(domain.id)"
                 :disabled="cfSyncing === domain.id"
@@ -611,16 +656,18 @@ onMounted(async () => {
               </select>
             </div>
 
-            <div v-if="domainForm.provider === 'cloudflare'">
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Cloudflare API Token</label>
+            <div v-if="['cloudflare', 'webtropia'].includes(domainForm.provider)">
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                {{ domainForm.provider === 'cloudflare' ? 'Cloudflare' : 'Webtropia' }} API Token
+              </label>
               <input
                 v-model="domainForm.api_token"
                 type="password"
                 class="input w-full"
-                placeholder="Cloudflare API Token..."
+                :placeholder="domainForm.provider === 'cloudflare' ? 'Cloudflare API Token...' : 'Webtropia/myLoc API Token...'"
               />
               <p class="text-xs text-gray-500 mt-1">
-                Wird fuer Sync mit Cloudflare benoetigt.
+                {{ domainForm.provider === 'cloudflare' ? 'Wird fuer Sync mit Cloudflare benoetigt.' : 'OAuth-Token aus dem myLoc ZKM-Panel. Wird fuer Sync benoetigt.' }}
               </p>
             </div>
 
@@ -915,6 +962,71 @@ www 3600 IN CNAME beispiel.de.
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
             <button @click="closeCloudflareModal" class="btn-secondary">Schliessen</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Webtropia Import Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showWebtropiaModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="closeWebtropiaModal"></div>
+        <div class="relative card-glass w-full max-w-lg flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
+            <h3 class="text-lg font-semibold text-white">
+              <GlobeAltIcon class="w-5 h-5 inline-block mr-2 text-blue-400" />
+              Von Webtropia importieren
+            </h3>
+            <button @click="closeWebtropiaModal" class="btn-icon-sm">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="p-5 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">Webtropia API Token</label>
+              <input
+                v-model="wtToken"
+                type="password"
+                class="input w-full"
+                placeholder="Webtropia/myLoc API Token eingeben..."
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                OAuth-Token aus dem myLoc ZKM-Panel
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">Domain-Name (Zone)</label>
+              <input
+                v-model="wtZoneName"
+                type="text"
+                class="input w-full"
+                placeholder="beispiel.de"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Der exakte Domain-Name, wie er bei Webtropia konfiguriert ist
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
+            <button @click="closeWebtropiaModal" class="btn-secondary">Abbrechen</button>
+            <button
+              @click="verifyAndImportWebtropia"
+              :disabled="!wtToken.trim() || !wtZoneName.trim() || wtVerifying || wtImporting"
+              class="btn-primary"
+            >
+              <ArrowPathIcon v-if="wtVerifying || wtImporting" class="w-4 h-4 mr-1 animate-spin" />
+              <ArrowDownTrayIcon v-else class="w-4 h-4 mr-1" />
+              {{ wtVerifying ? 'Pruefen...' : wtImporting ? 'Importieren...' : 'Importieren' }}
+            </button>
           </div>
         </div>
       </div>

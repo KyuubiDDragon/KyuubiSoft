@@ -220,13 +220,48 @@ export function useContractHtml(): UseContractHtmlReturn {
   async function downloadPdf(contract: Contract): Promise<void> {
     const logoDataUrl = await loadLogoDataUrl(null)
     const html = generateHtml(contract, logoDataUrl)
+
+    // Create temp DOM container — passing full HTML string to html2pdf strips
+    // <html>/<head>/<style>/<body> tags via innerHTML, losing all CSS styles.
+    const container = document.createElement('div')
+    container.style.position = 'absolute'
+    container.style.left = '-9999px'
+    container.style.top = '0'
+    container.style.width = '794px'
+
+    // Extract <style> and <body> content separately
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/)
+    const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/)
+
+    if (styleMatch) {
+      const style = document.createElement('style')
+      style.textContent = styleMatch[1]
+      container.appendChild(style)
+    }
+
+    const content = document.createElement('div')
+    content.style.fontFamily = "'Helvetica Neue', Arial, sans-serif"
+    content.style.fontSize = '13px'
+    content.style.color = '#111827'
+    content.style.lineHeight = '1.6'
+    content.style.padding = '48px'
+    content.style.background = '#fff'
+    content.innerHTML = bodyMatch ? bodyMatch[1] : ''
+    container.appendChild(content)
+
+    document.body.appendChild(container)
+
     const { default: html2pdf } = await import('html2pdf.js')
-    await html2pdf().set({
-      margin: 0,
-      filename: `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }).from(html as unknown as HTMLElement).save()
+    try {
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      }).from(container).save()
+    } finally {
+      document.body.removeChild(container)
+    }
   }
 
   return {

@@ -23,7 +23,7 @@ class ChatService
              FROM chat_rooms cr
              INNER JOIN chat_participants cp ON cp.room_id = cr.id
              WHERE cp.user_id = ?
-             ORDER BY cr.last_message_at DESC NULLS LAST",
+             ORDER BY cr.last_message_at DESC",
             [$userId]
         );
 

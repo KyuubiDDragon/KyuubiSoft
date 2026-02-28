@@ -189,7 +189,7 @@ export function useContracts(): UseContractsReturn {
     { value: 'active', label: 'Aktiv', color: 'bg-green-500', textColor: 'text-green-300', icon: '✅' },
     { value: 'expired', label: 'Abgelaufen', color: 'bg-amber-500', textColor: 'text-amber-300', icon: '⏰' },
     { value: 'cancelled', label: 'Storniert', color: 'bg-gray-600', textColor: 'text-gray-400', icon: '🚫' },
-    { value: 'terminated', label: 'Gekuendigt', color: 'bg-red-500', textColor: 'text-red-300', icon: '❌' },
+    { value: 'terminated', label: 'Gekündigt', color: 'bg-red-500', textColor: 'text-red-300', icon: '❌' },
   ]
 
   const contractTypeLabels: Record<ContractType, string> = {
@@ -230,7 +230,7 @@ export function useContracts(): UseContractsReturn {
       contracts.value = contractsRes.data.data?.items || []
       stats.value = statsRes.data.data
     } catch {
-      uiStore.showError('Fehler beim Laden der Vertraege')
+      uiStore.showError('Fehler beim Laden der Verträge')
     } finally {
       isLoading.value = false
     }
@@ -269,14 +269,14 @@ export function useContracts(): UseContractsReturn {
   }
 
   async function deleteContract(contract: Contract): Promise<boolean> {
-    if (!await confirm({ message: `Vertrag ${contract.contract_number} wirklich loeschen?`, type: 'danger', confirmText: 'Loeschen' })) return false
+    if (!await confirm({ message: `Vertrag ${contract.contract_number} wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return false
     try {
       await api.delete(`/api/v1/contracts/${contract.id}`)
       contracts.value = contracts.value.filter((c: Contract) => c.id !== contract.id)
       uiStore.showSuccess('Vertrag geloescht')
       return true
     } catch {
-      uiStore.showError('Fehler beim Loeschen')
+      uiStore.showError('Fehler beim Löschen')
       return false
     }
   }

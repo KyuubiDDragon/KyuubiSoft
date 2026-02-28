@@ -164,8 +164,8 @@ const typeColors = {
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-white">Vertraege</h1>
-        <p class="text-sm text-gray-400 mt-0.5">Vertraege erstellen, verwalten und unterschreiben</p>
+        <h1 class="text-2xl font-bold text-white">Verträge</h1>
+        <p class="text-sm text-gray-400 mt-0.5">Verträge erstellen, verwalten und unterschreiben</p>
       </div>
       <button
         @click="showWizard = true"
@@ -187,7 +187,7 @@ const typeColors = {
         <div class="text-2xl font-bold text-green-400 mt-1">{{ stats.active || 0 }}</div>
       </div>
       <div class="card p-4">
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Entwuerfe</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Entwürfe</div>
         <div class="text-2xl font-bold text-gray-300 mt-1">{{ stats.draft || 0 }}</div>
       </div>
       <div class="card p-4">
@@ -219,9 +219,9 @@ const typeColors = {
 
     <!-- Contracts Table -->
     <div class="card overflow-hidden">
-      <div v-if="isLoading" class="p-12 text-center text-gray-500">Lade Vertraege...</div>
+      <div v-if="isLoading" class="p-12 text-center text-gray-500">Lade Verträge...</div>
       <div v-else-if="filteredContracts.length === 0" class="p-12 text-center text-gray-500">
-        <p class="text-lg font-medium">Keine Vertraege gefunden</p>
+        <p class="text-lg font-medium">Keine Verträge gefunden</p>
         <p class="text-sm mt-1">Erstellen Sie Ihren ersten Vertrag mit dem Button oben.</p>
       </div>
       <table v-else class="w-full">
@@ -280,7 +280,7 @@ const typeColors = {
                 <button @click="handleDuplicate(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="Duplizieren">
                   <DocumentDuplicateIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" title="Loeschen">
+                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" title="Löschen">
                   <TrashIcon class="w-4 h-4" />
                 </button>
               </div>

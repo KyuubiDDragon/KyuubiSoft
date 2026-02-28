@@ -8,62 +8,62 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 ('tpl-license-de', NULL, 'Softwarelizenzvertrag', 'license', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
-<p>Der Auftragnehmer raeumt dem Auftraggeber eine {{license_type_label}} Lizenz zur Nutzung der Software <strong>{{software_name}}</strong> (Version {{software_version}}) ein.</p>
+<p>Der Auftragnehmer räumt dem Auftraggeber eine {{license_type_label}} Lizenz zur Nutzung der Software <strong>{{software_name}}</strong> (Version {{software_version}}) ein.</p>
 <p>Die Lizenz umfasst die Nutzung durch maximal <strong>{{max_users}}</strong> Nutzer im Gebiet <strong>{{territory_label}}</strong>.</p>
 </div>
 
 <h2>§ 2 Nutzungsrechte und Urheberrecht</h2>
 <div class="clause">
-<p>Der Auftraggeber erhaelt das Recht, die Software fuer eigene geschaeftliche Zwecke zu nutzen. Eine Unterlizenzierung oder Weitergabe an Dritte ist ohne schriftliche Zustimmung des Auftragnehmers nicht gestattet.</p>
-<p><strong>Zweckuebertragungsregel (§ 31 Abs. 5 UrhG):</strong> Die Einraeumung von Nutzungsrechten erstreckt sich nur auf die in diesem Vertrag ausdruecklich genannten Nutzungsarten. Nicht ausdruecklich eingeraeumte Rechte verbleiben beim Auftragnehmer.</p>
-<p>{{#source_code_access}}Der Auftraggeber erhaelt Zugang zum Quellcode der Software. Die Nutzung des Quellcodes ist auf die in diesem Vertrag genannten Zwecke beschraenkt.{{/source_code_access}}{{^source_code_access}}Der Quellcode wird nicht uebergeben.{{/source_code_access}}</p>
-<p>{{#modification_rights}}Der Auftraggeber ist berechtigt, die Software fuer eigene Zwecke anzupassen. Weitergehende Bearbeitungsrechte bestehen nicht.{{/modification_rights}}{{^modification_rights}}Aenderungen an der Software sind nicht gestattet.{{/modification_rights}}</p>
-<p>Dem Auftraggeber ist es untersagt, die Software zu dekompilieren, zurueckzuentwickeln (Reverse Engineering) oder auf sonstige Weise den Quellcode zu ermitteln, es sei denn, dies ist nach § 69e UrhG zwingend erlaubt. Die Herstellung von Sicherungskopien gemaess § 69d Abs. 2 UrhG bleibt unberuehrt.</p>
+<p>Der Auftraggeber erhält das Recht, die Software für eigene geschäftliche Zwecke zu nutzen. Eine Unterlizenzierung oder Weitergabe an Dritte ist ohne schriftliche Zustimmung des Auftragnehmers nicht gestattet.</p>
+<p><strong>Zweckübertragungsregel (§ 31 Abs. 5 UrhG):</strong> Die Einräumung von Nutzungsrechten erstreckt sich nur auf die in diesem Vertrag ausdrücklich genannten Nutzungsarten. Nicht ausdrücklich eingeräumte Rechte verbleiben beim Auftragnehmer.</p>
+<p>{{#source_code_access}}Der Auftraggeber erhält Zugang zum Quellcode der Software. Die Nutzung des Quellcodes ist auf die in diesem Vertrag genannten Zwecke beschränkt.{{/source_code_access}}{{^source_code_access}}Der Quellcode wird nicht übergeben.{{/source_code_access}}</p>
+<p>{{#modification_rights}}Der Auftraggeber ist berechtigt, die Software für eigene Zwecke anzupassen. Weitergehende Bearbeitungsrechte bestehen nicht.{{/modification_rights}}{{^modification_rights}}Änderungen an der Software sind nicht gestattet.{{/modification_rights}}</p>
+<p>Dem Auftraggeber ist es untersagt, die Software zu dekompilieren, zurückzuentwickeln (Reverse Engineering) oder auf sonstige Weise den Quellcode zu ermitteln, es sei denn, dies ist nach § 69e UrhG zwingend erlaubt. Die Herstellung von Sicherungskopien gemäß § 69d Abs. 2 UrhG bleibt unberührt.</p>
 </div>
 
 <h2>§ 3 Updates und Support</h2>
 <div class="clause">
-<p>{{#updates_included}}Updates sind fuer einen Zeitraum von {{updates_duration_months}} Monaten ab Vertragsschluss im Lizenzpreis enthalten. Dies umfasst Fehlerbehebungen und funktionale Verbesserungen.{{/updates_included}}{{^updates_included}}Updates sind nicht im Lizenzpreis enthalten und koennen separat erworben werden.{{/updates_included}}</p>
+<p>{{#updates_included}}Updates sind für einen Zeitraum von {{updates_duration_months}} Monaten ab Vertragsschluss im Lizenzpreis enthalten. Dies umfasst Fehlerbehebungen und funktionale Verbesserungen.{{/updates_included}}{{^updates_included}}Updates sind nicht im Lizenzpreis enthalten und können separat erworben werden.{{/updates_included}}</p>
 <p>Support-Level: <strong>{{support_level_label}}</strong></p>
 </div>
 
-<h2>§ 4 Verguetung</h2>
+<h2>§ 4 Vergütung</h2>
 <div class="clause">
-<p>Die Lizenzgebuehr betraegt <strong>{{total_value}} {{currency}}</strong> und ist {{payment_schedule_label}} zu entrichten.</p>
+<p>Die Lizenzgebühr beträgt <strong>{{total_value}} {{currency}}</strong> und ist {{payment_schedule_label}} zu entrichten.</p>
 </div>
 
-<h2>§ 5 Gewaehrleistung</h2>
+<h2>§ 5 Gewährleistung</h2>
 <div class="clause">
-<p>Der Auftragnehmer gewaehrleistet, dass die Software im Wesentlichen der Dokumentation entspricht.</p>
-<p>{{#is_b2c}}Die Gewaehrleistungsfrist betraegt 24 Monate ab Lieferung (§ 438 BGB).{{/is_b2c}}{{^is_b2c}}Die Gewaehrleistungsfrist betraegt 12 Monate ab Lieferung.{{/is_b2c}}</p>
-<p>Die Gewaehrleistung umfasst die Nachbesserung oder Ersatzlieferung nach Wahl des Auftragnehmers. Schlaegt die Nachbesserung nach zwei Versuchen fehl, kann der Auftraggeber Minderung oder Ruecktritt verlangen.</p>
+<p>Der Auftragnehmer gewährleistet, dass die Software im Wesentlichen der Dokumentation entspricht.</p>
+<p>{{#is_b2c}}Die Gewährleistungsfrist beträgt 24 Monate ab Lieferung (§ 438 BGB).{{/is_b2c}}{{^is_b2c}}Die Gewährleistungsfrist beträgt 12 Monate ab Lieferung.{{/is_b2c}}</p>
+<p>Die Gewährleistung umfasst die Nachbesserung oder Ersatzlieferung nach Wahl des Auftragnehmers. Schlägt die Nachbesserung nach zwei Versuchen fehl, kann der Auftraggeber Minderung oder Rücktritt verlangen.</p>
 </div>
 
 <h2>§ 6 Haftung</h2>
 <div class="clause">
-<p>Die Haftung des Auftragnehmers ist auf Vorsatz und grobe Fahrlaessigkeit beschraenkt. Bei leichter Fahrlaessigkeit haftet der Auftragnehmer nur bei Verletzung wesentlicher Vertragspflichten (Kardinalpflichten), begrenzt auf den vorhersehbaren, vertragstypischen Schaden. Die Haftung ist in jedem Fall auf die Hoehe der Lizenzgebuehr beschraenkt.</p>
-<p>Die vorstehenden Haftungsbeschraenkungen gelten nicht fuer Schaeden an Leben, Koerper oder Gesundheit, fuer Ansprueche aus dem Produkthaftungsgesetz sowie fuer arglistig verschwiegene Maengel.</p>
+<p>Die Haftung des Auftragnehmers ist auf Vorsatz und grobe Fahrlässigkeit beschränkt. Bei leichter Fahrlässigkeit haftet der Auftragnehmer nur bei Verletzung wesentlicher Vertragspflichten (Kardinalpflichten), begrenzt auf den vorhersehbaren, vertragstypischen Schaden. Die Haftung ist in jedem Fall auf die Höhe der Lizenzgebühr beschränkt.</p>
+<p>Die vorstehenden Haftungsbeschränkungen gelten nicht für Schäden an Leben, Körper oder Gesundheit, für Ansprüche aus dem Produkthaftungsgesetz sowie für arglistig verschwiegene Mängel.</p>
 </div>
 
-<h2>§ 7 Laufzeit und Kuendigung</h2>
+<h2>§ 7 Laufzeit und Kündigung</h2>
 <div class="clause">
-<p>Der Vertrag beginnt am {{start_date}} {{#end_date}}und endet am {{end_date}}{{/end_date}}{{^end_date}}und laeuft auf unbestimmte Zeit{{/end_date}}.</p>
-<p>Die Kuendigungsfrist betraegt {{notice_period_days}} Tage zum Ende der jeweiligen Vertragslaufzeit.</p>
-<p>Das Recht zur ausserordentlichen Kuendigung aus wichtigem Grund bleibt unberuehrt.</p>
+<p>Der Vertrag beginnt am {{start_date}} {{#end_date}}und endet am {{end_date}}{{/end_date}}{{^end_date}}und läuft auf unbestimmte Zeit{{/end_date}}.</p>
+<p>Die Kündigungsfrist beträgt {{notice_period_days}} Tage zum Ende der jeweiligen Vertragslaufzeit.</p>
+<p>Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.</p>
 </div>
 
 {{#is_b2c}}<h2>§ 8 Widerrufsbelehrung (Verbraucher)</h2>
 <div class="clause">
 <p><strong>Widerrufsrecht</strong></p>
-<p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gruenden diesen Vertrag zu widerrufen. Die Widerrufsfrist betraegt vierzehn Tage ab dem Tag des Vertragsschlusses. Um Ihr Widerrufsrecht auszuueben, muessen Sie uns ({{party_a_company}}, {{party_a_address}}, E-Mail: {{party_a_email}}) mittels einer eindeutigen Erklaerung (z.B. ein mit der Post versandter Brief oder E-Mail) ueber Ihren Entschluss, diesen Vertrag zu widerrufen, informieren.</p>
-<p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung ueber die Ausuebung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+<p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses. Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ({{party_a_company}}, {{party_a_address}}, E-Mail: {{party_a_email}}) mittels einer eindeutigen Erklärung (z.B. ein mit der Post versandter Brief oder E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren.</p>
+<p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
 <p><strong>Folgen des Widerrufs</strong></p>
-<p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzueglich und spaetestens binnen vierzehn Tagen ab dem Tag zurueckzuzahlen, an dem die Mitteilung ueber Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Fuer diese Rueckzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der urspruenglichen Transaktion eingesetzt haben.</p>
-<p><strong>Besonderer Hinweis bei digitalen Inhalten (§ 356 Abs. 5 BGB):</strong> Sie stimmen ausdruecklich zu, dass wir mit der Ausfuehrung des Vertrages vor Ablauf der Widerrufsfrist beginnen. Sie haben Kenntnis davon, dass Sie mit Beginn der Ausfuehrung des Vertrages Ihr Widerrufsrecht verlieren.</p>
+<p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben.</p>
+<p><strong>Besonderer Hinweis bei digitalen Inhalten (§ 356 Abs. 5 BGB):</strong> Sie stimmen ausdrücklich zu, dass wir mit der Ausführung des Vertrages vor Ablauf der Widerrufsfrist beginnen. Sie haben Kenntnis davon, dass Sie mit Beginn der Ausführung des Vertrages Ihr Widerrufsrecht verlieren.</p>
 <p><strong>Muster-Widerrufsformular</strong></p>
-<p><em>(Wenn Sie den Vertrag widerrufen wollen, fuellen Sie bitte dieses Formular aus und senden Sie es zurueck.)</em></p>
+<p><em>(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</em></p>
 <p>An: {{party_a_company}}, {{party_a_address}}, {{party_a_email}}<br/>
-Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) geschlossenen Vertrag ueber die Erbringung der folgenden Dienstleistung / den Kauf der folgenden Ware (*)<br/>
+Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) geschlossenen Vertrag über die Erbringung der folgenden Dienstleistung / den Kauf der folgenden Ware (*)<br/>
 Bestellt am (*) / erhalten am (*): _______________<br/>
 Name des/der Verbraucher(s): _______________<br/>
 Anschrift des/der Verbraucher(s): _______________<br/>
@@ -74,10 +74,10 @@ Datum: _______________<br/>
 
 <h2>§ {{#is_b2c}}9{{/is_b2c}}{{^is_b2c}}8{{/is_b2c}} Schlussbestimmungen</h2>
 <div class="clause">
-<p>Es gilt das Recht der {{governing_law_label}}. Das Uebereinkommen der Vereinten Nationen ueber Vertraege ueber den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
-<p>{{^is_b2c}}Gerichtsstand ist {{jurisdiction}}.{{/is_b2c}}{{#is_b2c}}Fuer Verbraucher gilt der gesetzliche Gerichtsstand.{{/is_b2c}}</p>
-<p>Aenderungen und Ergaenzungen dieses Vertrages beduerfen der Schriftform. Dies gilt auch fuer die Aenderung dieser Schriftformklausel.</p>
-<p>Sollte eine Bestimmung dieses Vertrages unwirksam oder undurchfuehrbar sein, so wird die Wirksamkeit der uebrigen Bestimmungen hiervon nicht beruehrt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung moeglichst nahekommt.</p>
+<p>Es gilt das Recht der {{governing_law_label}}. Das Übereinkommen der Vereinten Nationen über Verträge über den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
+<p>{{^is_b2c}}Gerichtsstand ist {{jurisdiction}}.{{/is_b2c}}{{#is_b2c}}Für Verbraucher gilt der gesetzliche Gerichtsstand.{{/is_b2c}}</p>
+<p>Änderungen und Ergänzungen dieses Vertrages bedürfen der Schriftform. Dies gilt auch für die Änderung dieser Schriftformklausel.</p>
+<p>Sollte eine Bestimmung dieses Vertrages unwirksam oder undurchführbar sein, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung möglichst nahekommt.</p>
 </div>
 ', NULL, 1);
 
@@ -164,62 +164,62 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 ('tpl-dev-de', NULL, 'Softwareentwicklungsvertrag', 'development', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
-<p>Der Auftragnehmer verpflichtet sich zur Entwicklung folgender Software gemaess den in diesem Vertrag und dem Pflichtenheft festgelegten Spezifikationen:</p>
+<p>Der Auftragnehmer verpflichtet sich zur Entwicklung folgender Software gemäß den in diesem Vertrag und dem Pflichtenheft festgelegten Spezifikationen:</p>
 <p><strong>{{project_description}}</strong></p>
 </div>
 
 <h2>§ 2 Leistungsumfang und Meilensteine</h2>
 <div class="clause">
-<p>Die Entwicklung erfolgt in den vereinbarten Meilensteinen. Der Auftragnehmer schuldet ein funktionsfaehiges Werk gemaess den vereinbarten Spezifikationen (Werkvertrag gemaess §§ 631 ff. BGB).</p>
+<p>Die Entwicklung erfolgt in den vereinbarten Meilensteinen. Der Auftragnehmer schuldet ein funktionsfähiges Werk gemäß den vereinbarten Spezifikationen (Werkvertrag gemäß §§ 631 ff. BGB).</p>
 </div>
 
 <h2>§ 3 Mitwirkungspflichten des Auftraggebers</h2>
 <div class="clause">
-<p>Der Auftraggeber ist verpflichtet, den Auftragnehmer bei der Vertragsdurchfuehrung in angemessenem Umfang zu unterstuetzen. Zu den Mitwirkungspflichten gehoeren insbesondere:</p>
+<p>Der Auftraggeber ist verpflichtet, den Auftragnehmer bei der Vertragsdurchführung in angemessenem Umfang zu unterstützen. Zu den Mitwirkungspflichten gehören insbesondere:</p>
 <ul>
-<li>Rechtzeitige Bereitstellung aller fuer die Entwicklung erforderlichen Informationen, Daten und Unterlagen</li>
+<li>Rechtzeitige Bereitstellung aller für die Entwicklung erforderlichen Informationen, Daten und Unterlagen</li>
 <li>Benennung eines fachlich qualifizierten Ansprechpartners mit Entscheidungsbefugnis</li>
-<li>Bereitstellung erforderlicher Testumgebungen und Zugaenge</li>
-<li>Rechtzeitige Rueckmeldung zu vorgelegten Zwischenergebnissen (innerhalb von 5 Werktagen)</li>
-<li>Mitwirkung bei der Abnahme gemaess § 5 dieses Vertrages</li>
+<li>Bereitstellung erforderlicher Testumgebungen und Zugänge</li>
+<li>Rechtzeitige Rückmeldung zu vorgelegten Zwischenergebnissen (innerhalb von 5 Werktagen)</li>
+<li>Mitwirkung bei der Abnahme gemäß § 5 dieses Vertrages</li>
 </ul>
-<p>Kommt der Auftraggeber seinen Mitwirkungspflichten nicht nach und entstehen hierdurch Verzoegerungen, verlaengern sich die vereinbarten Fristen entsprechend. Mehrkosten, die durch mangelnde Mitwirkung entstehen, traegt der Auftraggeber.</p>
+<p>Kommt der Auftraggeber seinen Mitwirkungspflichten nicht nach und entstehen hierdurch Verzögerungen, verlängern sich die vereinbarten Fristen entsprechend. Mehrkosten, die durch mangelnde Mitwirkung entstehen, trägt der Auftraggeber.</p>
 </div>
 
-<h2>§ 4 Aenderungsverfahren (Change Requests)</h2>
+<h2>§ 4 Änderungsverfahren (Change Requests)</h2>
 <div class="clause">
-<p>Aenderungswuensche, die ueber den vereinbarten Leistungsumfang hinausgehen, sind vom Auftraggeber schriftlich als Change Request einzureichen. Der Auftragnehmer wird innerhalb von 5 Werktagen eine Aufwandsschaetzung mit Kosten- und Zeitangabe vorlegen.</p>
-<p>Change Requests werden erst nach schriftlicher Freigabe durch den Auftraggeber umgesetzt. Bis zur Freigabe wird die Entwicklung gemaess dem urspruenglichen Leistungsumfang fortgesetzt.</p>
+<p>Änderungswünsche, die über den vereinbarten Leistungsumfang hinausgehen, sind vom Auftraggeber schriftlich als Change Request einzureichen. Der Auftragnehmer wird innerhalb von 5 Werktagen eine Aufwandsschätzung mit Kosten- und Zeitangabe vorlegen.</p>
+<p>Change Requests werden erst nach schriftlicher Freigabe durch den Auftraggeber umgesetzt. Bis zur Freigabe wird die Entwicklung gemäß dem ursprünglichen Leistungsumfang fortgesetzt.</p>
 </div>
 
 <h2>§ 5 Abnahme</h2>
 <div class="clause">
 <p>{{acceptance_procedure}}</p>
-<p>Der Auftraggeber hat die Software innerhalb von 14 Tagen nach Uebergabe zu pruefen und abzunehmen oder Maengel schriftlich zu ruegen. Die Abnahme gilt als erfolgt, wenn der Auftraggeber die Software ohne wesentliche Beanstandungen produktiv einsetzt oder sich nicht innerhalb der Prueffrist schriftlich aeussert.</p>
-<p>Unwesentliche Maengel berechtigen nicht zur Abnahmeverweigerung.</p>
+<p>Der Auftraggeber hat die Software innerhalb von 14 Tagen nach Übergabe zu prüfen und abzunehmen oder Mängel schriftlich zu rügen. Die Abnahme gilt als erfolgt, wenn der Auftraggeber die Software ohne wesentliche Beanstandungen produktiv einsetzt oder sich nicht innerhalb der Prügefrist schriftlich äußert.</p>
+<p>Unwesentliche Mängel berechtigen nicht zur Abnahmeverweigerung.</p>
 </div>
 
-<h2>§ 6 Verguetung</h2>
+<h2>§ 6 Vergütung</h2>
 <div class="clause">
-<p>Die Verguetung betraegt <strong>{{total_value}} {{currency}}</strong> und wird {{payment_schedule_label}} abgerechnet.</p>
+<p>Die Vergütung beträgt <strong>{{total_value}} {{currency}}</strong> und wird {{payment_schedule_label}} abgerechnet.</p>
 </div>
 
 <h2>§ 7 Urheberrecht und Nutzungsrechte</h2>
 <div class="clause">
 <p>Das Urheberrecht an der Software verbleibt beim Auftragnehmer.</p>
-<p><strong>Zweckuebertragungsregel (§ 31 Abs. 5 UrhG):</strong> Der Auftraggeber erhaelt ein einfaches, nicht uebertragbares Nutzungsrecht fuer eigene geschaeftliche Zwecke. Nicht ausdruecklich eingeraeumte Nutzungsrechte verbleiben beim Auftragnehmer.</p>
-<p>Der Quellcode wird nach vollstaendiger Bezahlung an den Auftraggeber uebergeben.</p>
+<p><strong>Zweckübertragungsregel (§ 31 Abs. 5 UrhG):</strong> Der Auftraggeber erhält ein einfaches, nicht übertragbares Nutzungsrecht für eigene geschäftliche Zwecke. Nicht ausdrücklich eingeräumte Nutzungsrechte verbleiben beim Auftragnehmer.</p>
+<p>Der Quellcode wird nach vollständiger Bezahlung an den Auftraggeber übergeben.</p>
 </div>
 
 <h2>§ 8 Open-Source-Compliance</h2>
 <div class="clause">
-<p>Der Auftragnehmer wird den Auftraggeber ueber die Verwendung von Open-Source-Komponenten in der Software informieren. Eine Liste der verwendeten Open-Source-Bibliotheken mit den jeweiligen Lizenzbedingungen (z.B. MIT, Apache 2.0, GPL, LGPL) wird als Anlage beigefuegt.</p>
-<p>Der Auftragnehmer gewaehrleistet, dass die Verwendung von Open-Source-Komponenten nicht zu Lizenzpflichten fuer die uebrige Software fuehrt (insbesondere kein Copyleft-Effekt), es sei denn, dies wurde ausdruecklich vereinbart.</p>
+<p>Der Auftragnehmer wird den Auftraggeber über die Verwendung von Open-Source-Komponenten in der Software informieren. Eine Liste der verwendeten Open-Source-Bibliotheken mit den jeweiligen Lizenzbedingungen (z.B. MIT, Apache 2.0, GPL, LGPL) wird als Anlage beigefügt.</p>
+<p>Der Auftragnehmer gewährleistet, dass die Verwendung von Open-Source-Komponenten nicht zu Lizenzpflichten für die uebrige Software führt (insbesondere kein Copyleft-Effekt), es sei denn, dies wurde ausdrücklich vereinbart.</p>
 </div>
 
-<h2>§ 9 Gewaehrleistung</h2>
+<h2>§ 9 Gewährleistung</h2>
 <div class="clause">
-<p>Die Gewaehrleistungsfrist betraegt {{warranty_months}} Monate ab Abnahme. Der Auftragnehmer ist zur Nachbesserung verpflichtet. Bei Fehlschlagen der Nachbesserung (nach zwei Versuchen) kann der Auftraggeber Minderung oder Ruecktritt verlangen.</p>
+<p>Die Gewährleistungsfrist beträgt {{warranty_months}} Monate ab Abnahme. Der Auftragnehmer ist zur Nachbesserung verpflichtet. Bei Fehlschlagen der Nachbesserung (nach zwei Versuchen) kann der Auftraggeber Minderung oder Rücktritt verlangen.</p>
 </div>
 
 <h2>§ 10 Geheimhaltung</h2>
@@ -229,14 +229,14 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 <h2>§ 11 Haftung</h2>
 <div class="clause">
-<p>Die Haftung des Auftragnehmers ist auf die Hoehe der vereinbarten Verguetung beschraenkt. Dies gilt nicht fuer Vorsatz und grobe Fahrlaessigkeit sowie fuer Schaeden an Leben, Koerper oder Gesundheit.</p>
+<p>Die Haftung des Auftragnehmers ist auf die Höhe der vereinbarten Vergütung beschränkt. Dies gilt nicht für Vorsatz und grobe Fahrlässigkeit sowie für Schäden an Leben, Körper oder Gesundheit.</p>
 </div>
 
 <h2>§ 12 Schlussbestimmungen</h2>
 <div class="clause">
-<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Das Uebereinkommen der Vereinten Nationen ueber Vertraege ueber den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
-<p>Aenderungen beduerfen der Schriftform. Dies gilt auch fuer die Aenderung dieser Schriftformklausel.</p>
-<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der uebrigen Bestimmungen hiervon nicht beruehrt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck moeglichst nahekommt.</p>
+<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Das Übereinkommen der Vereinten Nationen über Verträge über den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
+<p>Änderungen bedürfen der Schriftform. Dies gilt auch für die Änderung dieser Schriftformklausel.</p>
+<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck möglichst nahekommt.</p>
 </div>
 ', NULL, 1);
 
@@ -326,13 +326,13 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 ('tpl-saas-de', NULL, 'SaaS-Vertrag', 'saas', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
-<p>Der Anbieter stellt dem Kunden folgenden Cloud-basierten Softwaredienst (SaaS) zur Verfuegung:</p>
+<p>Der Anbieter stellt dem Kunden folgenden Cloud-basierten Softwaredienst (SaaS) zur Verfügung:</p>
 <p><strong>{{service_description}}</strong></p>
 </div>
 
 <h2>§ 2 Leistungsumfang</h2>
 <div class="clause">
-<p>Der Dienst umfasst die Bereitstellung der Software ueber das Internet mit folgenden Parametern:</p>
+<p>Der Dienst umfasst die Bereitstellung der Software über das Internet mit folgenden Parametern:</p>
 <ul>
 <li>Maximale Nutzeranzahl: {{max_users}} (0 = unbegrenzt)</li>
 <li>Speicherplatz: {{storage_gb}} GB</li>
@@ -340,65 +340,65 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 </ul>
 </div>
 
-<h2>§ 3 Verfuegbarkeit (SLA)</h2>
+<h2>§ 3 Verfügbarkeit (SLA)</h2>
 <div class="clause">
-<p>Der Anbieter garantiert eine Verfuegbarkeit von <strong>{{sla_uptime}}%</strong> im Monatsmittel, gemessen ausserhalb geplanter Wartungsfenster. Geplante Wartungsarbeiten werden mindestens 48 Stunden im Voraus angekuendigt.</p>
+<p>Der Anbieter garantiert eine Verfügbarkeit von <strong>{{sla_uptime}}%</strong> im Monatsmittel, gemessen ausserhalb geplanter Wartungsfenster. Geplante Wartungsarbeiten werden mindestens 48 Stunden im Voraus angekündigt.</p>
 </div>
 
 <h2>§ 4 Datenschutz und Auftragsverarbeitung</h2>
 <div class="clause">
-<p>Die Verarbeitung personenbezogener Daten erfolgt gemaess DSGVO. Ein separater Auftragsverarbeitungsvertrag (AVV) gemaess Art. 28 DSGVO ist Bestandteil dieses Vertrages und enthaelt mindestens folgende Regelungen:</p>
+<p>Die Verarbeitung personenbezogener Daten erfolgt gemäß DSGVO. Ein separater Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO ist Bestandteil dieses Vertrages und enthält mindestens folgende Regelungen:</p>
 <ul>
 <li><strong>Weisungsbindung:</strong> Der Anbieter verarbeitet personenbezogene Daten ausschliesslich auf dokumentierte Weisung des Kunden (Art. 28 Abs. 3 lit. a DSGVO)</li>
 <li><strong>Vertraulichkeit:</strong> Zur Verarbeitung befugte Personen sind zur Vertraulichkeit verpflichtet (Art. 28 Abs. 3 lit. b DSGVO)</li>
-<li><strong>Technische und organisatorische Massnahmen (TOM):</strong> Der Anbieter trifft angemessene TOM gemaess Art. 32 DSGVO, insbesondere Verschluesselung, Zugangskontrollen, Backup-Verfahren und regelmaessige Sicherheitspruefungen</li>
-<li><strong>Subunternehmer:</strong> Die Beauftragung von Subunternehmern bedarf der vorherigen schriftlichen Zustimmung des Kunden. Der Anbieter fuehrt eine aktuelle Liste der eingesetzten Subunternehmer (Art. 28 Abs. 2 DSGVO)</li>
-<li><strong>Kontrollrechte:</strong> Der Kunde hat das Recht, die Einhaltung der technischen und organisatorischen Massnahmen zu ueberpruefen (Art. 28 Abs. 3 lit. h DSGVO)</li>
-<li><strong>Loeschpflichten:</strong> Nach Vertragsende werden personenbezogene Daten gemaess Art. 28 Abs. 3 lit. g DSGVO geloescht oder zurueckgegeben</li>
+<li><strong>Technische und organisatorische Maßnahmen (TOM):</strong> Der Anbieter trifft angemessene TOM gemäß Art. 32 DSGVO, insbesondere Verschlüsselung, Zugangskontrollen, Backup-Verfahren und regelmäßige Sicherheitsprüfungen</li>
+<li><strong>Subunternehmer:</strong> Die Beauftragung von Subunternehmern bedarf der vorherigen schriftlichen Zustimmung des Kunden. Der Anbieter führt eine aktuelle Liste der eingesetzten Subunternehmer (Art. 28 Abs. 2 DSGVO)</li>
+<li><strong>Kontrollrechte:</strong> Der Kunde hat das Recht, die Einhaltung der technischen und organisatorischen Maßnahmen zu überprüfen (Art. 28 Abs. 3 lit. h DSGVO)</li>
+<li><strong>Löschpflichten:</strong> Nach Vertragsende werden personenbezogene Daten gemäß Art. 28 Abs. 3 lit. g DSGVO gelöscht oder zurückgegeben</li>
 </ul>
 <p>Daten werden ausschliesslich in {{data_location_label}} gespeichert.</p>
 </div>
 
-<h2>§ 5 Verguetung</h2>
+<h2>§ 5 Vergütung</h2>
 <div class="clause">
-<p>Die Nutzungsgebuehr betraegt <strong>{{price_per_period}} {{currency}}</strong> pro {{subscription_model_label}} und ist im Voraus faellig.</p>
+<p>Die Nutzungsgebühr beträgt <strong>{{price_per_period}} {{currency}}</strong> pro {{subscription_model_label}} und ist im Voraus fällig.</p>
 </div>
 
-<h2>§ 6 Laufzeit und Kuendigung</h2>
+<h2>§ 6 Laufzeit und Kündigung</h2>
 <div class="clause">
-<p>Der Vertrag beginnt am {{start_date}} und laeuft {{subscription_model_label}}. Die Kuendigungsfrist betraegt {{notice_period_days}} Tage zum Ende der jeweiligen Abrechnungsperiode.</p>
-<p>{{#auto_renewal}}Der Vertrag verlaengert sich automatisch um jeweils einen weiteren Abrechnungszeitraum.{{/auto_renewal}}</p>
-<p>Das Recht zur ausserordentlichen Kuendigung aus wichtigem Grund bleibt unberuehrt.</p>
+<p>Der Vertrag beginnt am {{start_date}} und läuft {{subscription_model_label}}. Die Kündigungsfrist beträgt {{notice_period_days}} Tage zum Ende der jeweiligen Abrechnungsperiode.</p>
+<p>{{#auto_renewal}}Der Vertrag verlängert sich automatisch um jeweils einen weiteren Abrechnungszeitraum.{{/auto_renewal}}</p>
+<p>Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.</p>
 </div>
 
 <h2>§ 7 Datenexport und Vertragsende</h2>
 <div class="clause">
-<p>Bei Vertragsende stellt der Anbieter dem Kunden seine Daten in einem gaengigen, maschinenlesbaren Format (CSV, JSON oder XML) fuer den Export zur Verfuegung. Der Exportzeitraum betraegt 30 Tage nach Vertragsende. Nach Ablauf dieses Zeitraums werden die Daten unwiderruflich geloescht.</p>
+<p>Bei Vertragsende stellt der Anbieter dem Kunden seine Daten in einem gängigen, maschinenlesbaren Format (CSV, JSON oder XML) für den Export zur Verfügung. Der Exportzeitraum beträgt 30 Tage nach Vertragsende. Nach Ablauf dieses Zeitraums werden die Daten unwiderruflich gelöscht.</p>
 </div>
 
 <h2>§ 8 Haftung</h2>
 <div class="clause">
-<p>Die Haftung des Anbieters ist auf die in den letzten 12 Monaten gezahlten Nutzungsgebuehren beschraenkt. Dies gilt nicht fuer Vorsatz und grobe Fahrlaessigkeit sowie fuer Schaeden an Leben, Koerper oder Gesundheit.</p>
+<p>Die Haftung des Anbieters ist auf die in den letzten 12 Monaten gezahlten Nutzungsgebühren beschränkt. Dies gilt nicht für Vorsatz und grobe Fahrlässigkeit sowie für Schäden an Leben, Körper oder Gesundheit.</p>
 </div>
 
-<h2>§ 9 Hoehere Gewalt (Force Majeure)</h2>
+<h2>§ 9 Höhere Gewalt (Force Majeure)</h2>
 <div class="clause">
-<p>Keine Partei haftet fuer die Nichterfuellung oder verzoegerte Erfuellung ihrer Pflichten, soweit dies auf Umstaende zurueckzufuehren ist, die ausserhalb ihrer zumutbaren Kontrolle liegen (hoehere Gewalt). Dazu zaehlen insbesondere Naturkatastrophen, Krieg, Terrorismus, Pandemien, Streiks, behoerdliche Anordnungen sowie Ausfall wesentlicher Infrastruktur (Strom, Internet, Rechenzentren).</p>
-<p>Die betroffene Partei hat die andere Partei unverzueglich ueber den Eintritt und die voraussichtliche Dauer der hoeheren Gewalt zu informieren. Dauert der Zustand der hoeheren Gewalt laenger als 30 Tage an, ist jede Partei berechtigt, den Vertrag ausserordentlich zu kuendigen.</p>
+<p>Keine Partei haftet für die Nichterfüllung oder verzögerte Erfüllung ihrer Pflichten, soweit dies auf Umstände zurückzuführen ist, die ausserhalb ihrer zumutbaren Kontrolle liegen (höhere Gewalt). Dazu zählen insbesondere Naturkatastrophen, Krieg, Terrorismus, Pandemien, Streiks, behördliche Anordnungen sowie Ausfall wesentlicher Infrastruktur (Strom, Internet, Rechenzentren).</p>
+<p>Die betroffene Partei hat die andere Partei unverzüglich über den Eintritt und die voraussichtliche Dauer der höheren Gewalt zu informieren. Dauert der Zustand der höheren Gewalt länger als 30 Tage an, ist jede Partei berechtigt, den Vertrag ausserordentlich zu kündigen.</p>
 </div>
 
 {{#is_b2c}}<h2>§ 10 Widerrufsbelehrung (Verbraucher)</h2>
 <div class="clause">
 <p><strong>Widerrufsrecht</strong></p>
-<p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gruenden diesen Vertrag zu widerrufen. Die Widerrufsfrist betraegt vierzehn Tage ab dem Tag des Vertragsschlusses. Um Ihr Widerrufsrecht auszuueben, muessen Sie uns ({{party_a_company}}, {{party_a_address}}, E-Mail: {{party_a_email}}) mittels einer eindeutigen Erklaerung (z.B. ein mit der Post versandter Brief oder E-Mail) ueber Ihren Entschluss, diesen Vertrag zu widerrufen, informieren.</p>
-<p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung ueber die Ausuebung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+<p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses. Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ({{party_a_company}}, {{party_a_address}}, E-Mail: {{party_a_email}}) mittels einer eindeutigen Erklärung (z.B. ein mit der Post versandter Brief oder E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren.</p>
+<p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
 <p><strong>Folgen des Widerrufs</strong></p>
-<p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzueglich und spaetestens binnen vierzehn Tagen ab dem Tag zurueckzuzahlen, an dem die Mitteilung ueber Ihren Widerruf dieses Vertrags bei uns eingegangen ist.</p>
-<p><strong>Besonderer Hinweis bei digitalen Inhalten (§ 356 Abs. 5 BGB):</strong> Sie stimmen ausdruecklich zu, dass wir mit der Ausfuehrung des Vertrages vor Ablauf der Widerrufsfrist beginnen. Sie haben Kenntnis davon, dass Sie mit Beginn der Ausfuehrung des Vertrages Ihr Widerrufsrecht verlieren.</p>
+<p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist.</p>
+<p><strong>Besonderer Hinweis bei digitalen Inhalten (§ 356 Abs. 5 BGB):</strong> Sie stimmen ausdrücklich zu, dass wir mit der Ausführung des Vertrages vor Ablauf der Widerrufsfrist beginnen. Sie haben Kenntnis davon, dass Sie mit Beginn der Ausführung des Vertrages Ihr Widerrufsrecht verlieren.</p>
 <p><strong>Muster-Widerrufsformular</strong></p>
-<p><em>(Wenn Sie den Vertrag widerrufen wollen, fuellen Sie bitte dieses Formular aus und senden Sie es zurueck.)</em></p>
+<p><em>(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</em></p>
 <p>An: {{party_a_company}}, {{party_a_address}}, {{party_a_email}}<br/>
-Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) geschlossenen Vertrag ueber die Erbringung der folgenden Dienstleistung (*)<br/>
+Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) geschlossenen Vertrag über die Erbringung der folgenden Dienstleistung (*)<br/>
 Bestellt am (*): _______________<br/>
 Name des/der Verbraucher(s): _______________<br/>
 Anschrift des/der Verbraucher(s): _______________<br/>
@@ -409,9 +409,9 @@ Datum: _______________<br/>
 
 <h2>§ {{#is_b2c}}11{{/is_b2c}}{{^is_b2c}}10{{/is_b2c}} Schlussbestimmungen</h2>
 <div class="clause">
-<p>Es gilt das Recht der {{governing_law_label}}. Das Uebereinkommen der Vereinten Nationen ueber Vertraege ueber den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
-<p>{{^is_b2c}}Gerichtsstand ist {{jurisdiction}}.{{/is_b2c}}{{#is_b2c}}Fuer Verbraucher gilt der gesetzliche Gerichtsstand.{{/is_b2c}}</p>
-<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der uebrigen Bestimmungen hiervon nicht beruehrt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck moeglichst nahekommt.</p>
+<p>Es gilt das Recht der {{governing_law_label}}. Das Übereinkommen der Vereinten Nationen über Verträge über den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
+<p>{{^is_b2c}}Gerichtsstand ist {{jurisdiction}}.{{/is_b2c}}{{#is_b2c}}Für Verbraucher gilt der gesetzliche Gerichtsstand.{{/is_b2c}}</p>
+<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck möglichst nahekommt.</p>
 </div>
 ', NULL, 1);
 
@@ -514,7 +514,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 ('tpl-maint-de', NULL, 'Wartungsvertrag', 'maintenance', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
-<p>Der Auftragnehmer uebernimmt die Wartung und den Support fuer folgende Software:</p>
+<p>Der Auftragnehmer übernimmt die Wartung und den Support für folgende Software:</p>
 <p><strong>{{maintained_software}}</strong></p>
 </div>
 
@@ -528,45 +528,45 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 <li>{{#included_minor_updates}}Minor Updates (Funktionserweiterungen){{/included_minor_updates}}</li>
 <li>{{#included_major_updates}}Major Updates (neue Hauptversionen){{/included_major_updates}}</li>
 </ul>
-{{#remote_access_required}}<p>Fuer die Wartung ist ein Remote-Zugang zum System des Auftraggebers erforderlich.</p>{{/remote_access_required}}
+{{#remote_access_required}}<p>Für die Wartung ist ein Remote-Zugang zum System des Auftraggebers erforderlich.</p>{{/remote_access_required}}
 </div>
 
 <h2>§ 3 Reaktionszeiten</h2>
 <div class="clause">
-<p>Der Auftragnehmer reagiert innerhalb der vereinbarten Reaktionszeit von <strong>{{response_time_label}}</strong> auf Supportanfragen waehrend der Geschaeftszeiten (Mo-Fr 9:00-17:00 Uhr).</p>
+<p>Der Auftragnehmer reagiert innerhalb der vereinbarten Reaktionszeit von <strong>{{response_time_label}}</strong> auf Supportanfragen während der Geschäftszeiten (Mo-Fr 9:00-17:00 Uhr).</p>
 </div>
 
 <h2>§ 4 Eskalationsverfahren</h2>
 <div class="clause">
-<p>Bei Stoerungen, die nicht innerhalb der vereinbarten Reaktionszeit behoben werden koennen, gilt folgendes Eskalationsverfahren:</p>
+<p>Bei Störungen, die nicht innerhalb der vereinbarten Reaktionszeit behoben werden können, gilt folgendes Eskalationsverfahren:</p>
 <ul>
-<li><strong>Stufe 1 — Technischer Support:</strong> Erstbearbeitung durch den zustaendigen Support-Mitarbeiter innerhalb der vereinbarten Reaktionszeit</li>
-<li><strong>Stufe 2 — Projektleitung:</strong> Eskalation an die Projektleitung, wenn nach dem Doppelten der Reaktionszeit keine Loesung vorliegt. Bereitstellung eines Workarounds oder Zeitplans fuer die Behebung</li>
-<li><strong>Stufe 3 — Geschaeftsfuehrung:</strong> Eskalation an die Geschaeftsfuehrung beider Parteien, wenn nach 48 Stunden keine Loesung oder akzeptabler Workaround vorliegt</li>
+<li><strong>Stufe 1 — Technischer Support:</strong> Erstbearbeitung durch den zuständigen Support-Mitarbeiter innerhalb der vereinbarten Reaktionszeit</li>
+<li><strong>Stufe 2 — Projektleitung:</strong> Eskalation an die Projektleitung, wenn nach dem Doppelten der Reaktionszeit keine Lösung vorliegt. Bereitstellung eines Workarounds oder Zeitplans für die Behebung</li>
+<li><strong>Stufe 3 — Geschäftsführung:</strong> Eskalation an die Geschäftsführung beider Parteien, wenn nach 48 Stunden keine Lösung oder akzeptabler Workaround vorliegt</li>
 </ul>
 </div>
 
-<h2>§ 5 Verguetung</h2>
+<h2>§ 5 Vergütung</h2>
 <div class="clause">
-<p>Die Wartungsgebuehr betraegt <strong>{{total_value}} {{currency}}</strong> und wird {{payment_schedule_label}} abgerechnet. Leistungen ueber das vereinbarte Kontingent hinaus werden nach Aufwand abgerechnet.</p>
+<p>Die Wartungsgebühr beträgt <strong>{{total_value}} {{currency}}</strong> und wird {{payment_schedule_label}} abgerechnet. Leistungen über das vereinbarte Kontingent hinaus werden nach Aufwand abgerechnet.</p>
 </div>
 
-<h2>§ 6 Laufzeit und Kuendigung</h2>
+<h2>§ 6 Laufzeit und Kündigung</h2>
 <div class="clause">
-<p>Der Vertrag beginnt am {{start_date}} und laeuft auf unbestimmte Zeit. Die Kuendigungsfrist betraegt {{notice_period_days}} Tage zum Monatsende.</p>
-<p>Das Recht zur ausserordentlichen Kuendigung aus wichtigem Grund bleibt unberuehrt.</p>
+<p>Der Vertrag beginnt am {{start_date}} und läuft auf unbestimmte Zeit. Die Kündigungsfrist beträgt {{notice_period_days}} Tage zum Monatsende.</p>
+<p>Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.</p>
 </div>
 
 <h2>§ 7 Haftung</h2>
 <div class="clause">
-<p>Die Haftung ist auf die jaehrliche Wartungsgebuehr beschraenkt. Ausgenommen sind Schaeden durch Vorsatz oder grobe Fahrlaessigkeit sowie Schaeden an Leben, Koerper oder Gesundheit.</p>
+<p>Die Haftung ist auf die jährliche Wartungsgebühr beschränkt. Ausgenommen sind Schäden durch Vorsatz oder grobe Fahrlässigkeit sowie Schäden an Leben, Körper oder Gesundheit.</p>
 </div>
 
 <h2>§ 8 Schlussbestimmungen</h2>
 <div class="clause">
-<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Das Uebereinkommen der Vereinten Nationen ueber Vertraege ueber den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
-<p>Aenderungen beduerfen der Schriftform.</p>
-<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der uebrigen Bestimmungen hiervon nicht beruehrt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck moeglichst nahekommt.</p>
+<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Das Übereinkommen der Vereinten Nationen über Verträge über den internationalen Warenkauf (CISG) findet keine Anwendung.</p>
+<p>Änderungen bedürfen der Schriftform.</p>
+<p>Sollte eine Bestimmung dieses Vertrages unwirksam sein, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt. Die Parteien verpflichten sich, die unwirksame Bestimmung durch eine wirksame zu ersetzen, die dem wirtschaftlichen Zweck möglichst nahekommt.</p>
 </div>
 ', NULL, 1);
 
@@ -636,64 +636,64 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 ('tpl-nda-de', NULL, 'Geheimhaltungsvereinbarung (NDA)', 'nda', 'de', '
 <h2>§ 1 Gegenstand</h2>
 <div class="clause">
-<p>Die Parteien beabsichtigen, im Rahmen ihrer geschaeftlichen Zusammenarbeit vertrauliche Informationen auszutauschen. Diese Vereinbarung regelt den Umgang mit diesen Informationen.</p>
+<p>Die Parteien beabsichtigen, im Rahmen ihrer geschäftlichen Zusammenarbeit vertrauliche Informationen auszutauschen. Diese Vereinbarung regelt den Umgang mit diesen Informationen.</p>
 <p>Art der Vereinbarung: <strong>{{nda_type_label}}</strong></p>
 </div>
 
 <h2>§ 2 Definition vertraulicher Informationen</h2>
 <div class="clause">
-<p>Vertrauliche Informationen im Sinne dieser Vereinbarung sind saemtliche Informationen, die als vertraulich gekennzeichnet sind oder deren Vertraulichkeit sich aus der Natur der Information ergibt. Dies umfasst insbesondere:</p>
+<p>Vertrauliche Informationen im Sinne dieser Vereinbarung sind sämtliche Informationen, die als vertraulich gekennzeichnet sind oder deren Vertraulichkeit sich aus der Natur der Information ergibt. Dies umfasst insbesondere:</p>
 <p>{{confidential_info_description}}</p>
-<p>Darueber hinaus: Geschaeftsgeheimnisse im Sinne des Gesetzes zum Schutz von Geschaeftsgeheimnissen (GeschGehG), technische Daten, Quellcode, Kundendaten, Geschaeftsplaene, Finanzdaten und Know-how.</p>
-<p>Die Parteien erkennen an, dass die vertraulichen Informationen Geschaeftsgeheimnisse im Sinne von § 2 GeschGehG darstellen koennen und unter den Schutz des GeschGehG (Umsetzung der EU-Richtlinie 2016/943 ueber den Schutz von Geschaeftsgeheimnissen) fallen.</p>
+<p>Darüber hinaus: Geschäftsgeheimnisse im Sinne des Gesetzes zum Schutz von Geschäftsgeheimnissen (GeschGehG), technische Daten, Quellcode, Kundendaten, Geschäftspläne, Finanzdaten und Know-how.</p>
+<p>Die Parteien erkennen an, dass die vertraulichen Informationen Geschäftsgeheimnisse im Sinne von § 2 GeschGehG darstellen können und unter den Schutz des GeschGehG (Umsetzung der EU-Richtlinie 2016/943 über den Schutz von Geschäftsgeheimnissen) fallen.</p>
 </div>
 
 <h2>§ 3 Pflichten</h2>
 <div class="clause">
 <p>Die empfangende Partei verpflichtet sich:</p>
 <ul>
-<li>Vertrauliche Informationen nur fuer den vereinbarten Zweck zu verwenden</li>
+<li>Vertrauliche Informationen nur für den vereinbarten Zweck zu verwenden</li>
 <li>Vertrauliche Informationen nicht an Dritte weiterzugeben</li>
 <li>Angemessene Geheimhaltungsmassnahmen im Sinne von § 2 Abs. 1 lit. b GeschGehG zu treffen</li>
-<li>Den Zugang auf Mitarbeiter zu beschraenken, die die Informationen benoetigen und die einer gleichwertigen Vertraulichkeitspflicht unterliegen</li>
+<li>Den Zugang auf Mitarbeiter zu beschränken, die die Informationen benötigen und die einer gleichwertigen Vertraulichkeitspflicht unterliegen</li>
 </ul>
 </div>
 
 <h2>§ 4 Ausnahmen</h2>
 <div class="clause">
-<p>Die Geheimhaltungspflicht gilt nicht fuer Informationen, die:</p>
+<p>Die Geheimhaltungspflicht gilt nicht für Informationen, die:</p>
 <ul>
-<li>Zum Zeitpunkt der Offenlegung bereits oeffentlich bekannt waren</li>
-<li>Von der empfangenden Partei nachweislich unabhaengig entwickelt wurden</li>
-<li>Von einem Dritten rechtmaessig und ohne Vertraulichkeitspflicht erhalten wurden</li>
-<li>Aufgrund gesetzlicher Verpflichtung oder behoerdlicher Anordnung offengelegt werden muessen — in diesem Fall ist die offenlegende Partei verpflichtet, die andere Partei unverzueglich vorab zu informieren, soweit gesetzlich zulaessig</li>
+<li>Zum Zeitpunkt der Offenlegung bereits öffentlich bekannt waren</li>
+<li>Von der empfangenden Partei nachweislich unabhängig entwickelt wurden</li>
+<li>Von einem Dritten rechtmäßig und ohne Vertraulichkeitspflicht erhalten wurden</li>
+<li>Aufgrund gesetzlicher Verpflichtung oder behördlicher Anordnung offengelegt werden müssen — in diesem Fall ist die offenlegende Partei verpflichtet, die andere Partei unverzüglich vorab zu informieren, soweit gesetzlich zulässig</li>
 </ul>
 </div>
 
 <h2>§ 5 Laufzeit</h2>
 <div class="clause">
-<p>Diese Vereinbarung gilt fuer einen Zeitraum von <strong>{{duration_years}} Jahren</strong> ab Unterzeichnung. Die Geheimhaltungspflicht besteht auch nach Ablauf der Vereinbarung fuer alle waehrend der Laufzeit erhaltenen Informationen fort.</p>
+<p>Diese Vereinbarung gilt für einen Zeitraum von <strong>{{duration_years}} Jahren</strong> ab Unterzeichnung. Die Geheimhaltungspflicht besteht auch nach Ablauf der Vereinbarung für alle während der Laufzeit erhaltenen Informationen fort.</p>
 </div>
 
-<h2>§ 6 Rueckgabe und Vernichtung</h2>
+<h2>§ 6 Rückgabe und Vernichtung</h2>
 <div class="clause">
-<p>Auf Verlangen oder bei Beendigung der Vereinbarung sind saemtliche vertrauliche Informationen einschliesslich aller Kopien zurueckzugeben oder nachweislich zu vernichten. Die empfangende Partei hat die Vernichtung schriftlich zu bestaetigen.</p>
+<p>Auf Verlangen oder bei Beendigung der Vereinbarung sind sämtliche vertrauliche Informationen einschließlich aller Kopien zurückzugeben oder nachweislich zu vernichten. Die empfangende Partei hat die Vernichtung schriftlich zu bestätigen.</p>
 </div>
 
 <h2>§ 7 Unterlassungsanspruch</h2>
 <div class="clause">
-<p>Bei drohendem oder tatsaechlichem Verstoss gegen diese Vereinbarung ist die geschaedigte Partei berechtigt, Unterlassung zu verlangen. Die Parteien erkennen an, dass ein Verstoss gegen diese Vereinbarung einen nicht wiedergutzumachenden Schaden verursachen kann, der durch Geldersatz allein nicht ausreichend kompensiert werden kann. Die geschaedigte Partei ist daher berechtigt, einstweiligen Rechtsschutz (einstweilige Verfuegung) zu beantragen, und zwar zusaetzlich zu allen anderen Rechtsbehelfen.</p>
+<p>Bei drohendem oder tatsächlichem Verstoß gegen diese Vereinbarung ist die geschädigte Partei berechtigt, Unterlassung zu verlangen. Die Parteien erkennen an, dass ein Verstoß gegen diese Vereinbarung einen nicht wiedergutzumachenden Schaden verursachen kann, der durch Geldersatz allein nicht ausreichend kompensiert werden kann. Die geschädigte Partei ist daher berechtigt, einstweiligen Rechtsschutz (einstweilige Verfügung) zu beantragen, und zwar zusätzlich zu allen anderen Rechtsbehelfen.</p>
 </div>
 
 {{#penalty_amount}}<h2>§ 8 Vertragsstrafe</h2>
 <div class="clause">
-<p>Bei Verstoss gegen diese Vereinbarung ist eine Vertragsstrafe in Hoehe von <strong>{{penalty_amount}} {{currency}}</strong> je Verstoss faellig. Die Geltendmachung weitergehender Schadensersatzansprueche bleibt unberuehrt. Auf die Vertragsstrafe wird ein etwaiger Schadensersatzanspruch angerechnet.</p>
+<p>Bei Verstoß gegen diese Vereinbarung ist eine Vertragsstrafe in Höhe von <strong>{{penalty_amount}} {{currency}}</strong> je Verstoß fällig. Die Geltendmachung weitergehender Schadenersatzansprüche bleibt unberührt. Auf die Vertragsstrafe wird ein etwaiger Schadensersatzanspruch angerechnet.</p>
 </div>{{/penalty_amount}}
 
 <h2>§ {{#penalty_amount}}9{{/penalty_amount}}{{^penalty_amount}}8{{/penalty_amount}} Schlussbestimmungen</h2>
 <div class="clause">
-<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Aenderungen beduerfen der Schriftform.</p>
-<p>Sollte eine Bestimmung dieser Vereinbarung unwirksam sein, so wird die Wirksamkeit der uebrigen Bestimmungen hiervon nicht beruehrt.</p>
+<p>Es gilt das Recht der {{governing_law_label}}. Gerichtsstand ist {{jurisdiction}}. Änderungen bedürfen der Schriftform.</p>
+<p>Sollte eine Bestimmung dieser Vereinbarung unwirksam sein, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt.</p>
 </div>
 ', NULL, 1);
 

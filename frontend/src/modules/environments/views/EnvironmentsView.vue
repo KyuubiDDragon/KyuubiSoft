@@ -99,7 +99,7 @@ function getActionLabel(action) {
     created: 'Erstellt',
     updated: 'Aktualisiert',
     variables_updated: 'Variablen aktualisiert',
-    variable_deleted: 'Variable geloescht',
+    variable_deleted: 'Variable gelöscht',
     duplicated: 'Dupliziert',
     imported: 'Importiert',
   }
@@ -109,7 +109,7 @@ function getActionLabel(action) {
 // Select environment
 async function selectEnvironment(envId) {
   if (hasUnsavedChanges.value) {
-    if (!confirm('Ungespeicherte Aenderungen verwerfen?')) return
+    if (!confirm('Ungespeicherte Änderungen verwerfen?')) return
   }
   selectedEnvId.value = envId
   envStore.currentEnvironment =
@@ -399,7 +399,7 @@ onMounted(async () => {
       <div v-if="!selectedEnvironment" class="flex-1 flex items-center justify-center">
         <div class="text-center">
           <KeyIcon class="w-16 h-16 text-gray-700 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-400 mb-2">Keine Umgebung ausgewaehlt</h3>
+          <h3 class="text-lg font-medium text-gray-400 mb-2">Keine Umgebung ausgewählt</h3>
           <p class="text-gray-600 text-sm">Waehlen Sie eine Umgebung aus der Liste oder erstellen Sie eine neue.</p>
         </div>
       </div>
@@ -434,7 +434,7 @@ onMounted(async () => {
                 Import
               </button>
               <template v-if="deleteConfirmId === selectedEnvId">
-                <span class="text-xs text-red-400 ml-2">Wirklich loeschen?</span>
+                <span class="text-xs text-red-400 ml-2">Wirklich löschen?</span>
                 <button @click="handleDeleteEnv" class="btn-secondary text-xs text-red-400 border-red-500/30 hover:bg-red-500/10">Ja</button>
                 <button @click="deleteConfirmId = null" class="btn-secondary text-xs">Nein</button>
               </template>
@@ -473,7 +473,7 @@ onMounted(async () => {
         <div v-if="activeTab === 'variables'" class="flex-1 flex flex-col min-h-0">
           <!-- Save bar -->
           <div v-if="hasUnsavedChanges" class="card-glass p-3 mb-4 flex items-center justify-between border border-yellow-500/20">
-            <span class="text-sm text-yellow-400">Ungespeicherte Aenderungen vorhanden</span>
+            <span class="text-sm text-yellow-400">Ungespeicherte Änderungen vorhanden</span>
             <div class="flex gap-2">
               <button @click="syncEditingVariables" class="btn-secondary text-xs">Verwerfen</button>
               <button @click="saveVariables" class="btn-primary text-xs">
@@ -488,7 +488,7 @@ onMounted(async () => {
             <table class="table-glass w-full">
               <thead>
                 <tr>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[35%]">Schluessel</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[35%]">Schlüssel</th>
                   <th class="text-left text-xs text-gray-500 font-medium p-3 w-[45%]">Wert</th>
                   <th class="text-center text-xs text-gray-500 font-medium p-3 w-[10%]">Secret</th>
                   <th class="text-right text-xs text-gray-500 font-medium p-3 w-[10%]">Aktionen</th>
@@ -555,14 +555,14 @@ onMounted(async () => {
             <div v-if="editingVariables.length === 0" class="text-center py-12">
               <KeyIcon class="w-10 h-10 text-gray-700 mx-auto mb-3" />
               <p class="text-sm text-gray-500">Keine Variablen vorhanden.</p>
-              <p class="text-xs text-gray-600 mt-1">Fuegen Sie die erste Variable hinzu.</p>
+              <p class="text-xs text-gray-600 mt-1">Fügen Sie die erste Variable hinzu.</p>
             </div>
 
             <!-- Add variable button -->
             <div class="p-3 border-t border-white/[0.04]">
               <button @click="addVariable" class="btn-secondary text-xs w-full justify-center">
                 <PlusIcon class="w-4 h-4 mr-1" />
-                Variable hinzufuegen
+                Variable hinzufügen
               </button>
             </div>
           </div>
@@ -725,7 +725,7 @@ SECRET_KEY=abc123"
                 type="checkbox"
                 class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-600 focus:ring-primary-500"
               />
-              <span class="text-sm text-gray-400">Bestehende Variablen ueberschreiben</span>
+              <span class="text-sm text-gray-400">Bestehende Variablen überschreiben</span>
             </label>
           </div>
           <div class="modal-footer flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">

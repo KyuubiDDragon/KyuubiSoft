@@ -356,16 +356,16 @@ class ContractController
             'active' => 'Aktiv',
             'expired' => 'Abgelaufen',
             'cancelled' => 'Storniert',
-            'terminated' => 'Gekuendigt',
+            'terminated' => 'Gekündigt',
         ];
-        $this->addHistory($id, 'status_changed', 'Status geaendert: ' . ($statusLabels[$newStatus] ?? $newStatus), $userId);
+        $this->addHistory($id, 'status_changed', 'Status geändert: ' . ($statusLabels[$newStatus] ?? $newStatus), $userId);
 
         $this->webhookService->trigger($userId, 'contract.status_changed', [
             'id' => $id,
             'contract_number' => $contract['contract_number'],
             'old_status' => $contract['status'],
             'new_status' => $newStatus,
-            'message' => 'Vertragsstatus geaendert: ' . $contract['contract_number'] . ' → ' . ($statusLabels[$newStatus] ?? $newStatus),
+            'message' => 'Vertragsstatus geändert: ' . $contract['contract_number'] . ' → ' . ($statusLabels[$newStatus] ?? $newStatus),
         ]);
 
         return JsonResponse::success(null, 'Status updated');
@@ -416,7 +416,7 @@ class ContractController
         $updated = $this->db->fetchAssociative('SELECT * FROM contracts WHERE id = ?', [$id]);
         if ($updated['party_a_signed_at'] && $updated['party_b_signed_at']) {
             $this->db->update('contracts', ['status' => 'signed'], ['id' => $id]);
-            $this->addHistory($id, 'status_changed', 'Status geaendert: Unterschrieben (beide Parteien)', $userId);
+            $this->addHistory($id, 'status_changed', 'Status geändert: Unterschrieben (beide Parteien)', $userId);
         }
 
         return JsonResponse::success(null, 'Contract signed');
@@ -611,7 +611,7 @@ class ContractController
             'invoice_id' => $invoiceId,
         ]);
 
-        $this->addHistory($contractId, 'invoice_unlinked', 'Rechnungsverknuepfung entfernt', $userId);
+        $this->addHistory($contractId, 'invoice_unlinked', 'Rechnungsverknüpfung entfernt', $userId);
 
         return JsonResponse::success(null, 'Invoice unlinked');
     }
@@ -726,13 +726,13 @@ class ContractController
 
         // License type
         $licenseTypes = $isDe
-            ? ['simple' => 'einfache (nicht-ausschliessliche)', 'exclusive' => 'ausschliessliche']
+            ? ['simple' => 'einfache (nicht-ausschließliche)', 'exclusive' => 'ausschließliche']
             : ['simple' => 'non-exclusive', 'exclusive' => 'exclusive'];
         $labels['license_type_label'] = $licenseTypes[$vars['license_type'] ?? ''] ?? ($vars['license_type'] ?? '');
 
         // Territory
         $territories = $isDe
-            ? ['worldwide' => 'weltweit', 'eu' => 'Europaeische Union', 'dach' => 'DACH-Region (DE/AT/CH)', 'de' => 'Deutschland', 'custom' => 'wie vereinbart']
+            ? ['worldwide' => 'weltweit', 'eu' => 'Europäische Union', 'dach' => 'DACH-Region (DE/AT/CH)', 'de' => 'Deutschland', 'custom' => 'wie vereinbart']
             : ['worldwide' => 'worldwide', 'eu' => 'European Union', 'dach' => 'DACH Region (DE/AT/CH)', 'de' => 'Germany', 'custom' => 'as agreed'];
         $labels['territory_label'] = $territories[$vars['territory'] ?? ''] ?? ($vars['territory'] ?? '');
 
@@ -750,7 +750,7 @@ class ContractController
 
         // Governing law
         $laws = $isDe
-            ? ['DE' => 'Bundesrepublik Deutschland', 'AT' => 'Republik Oesterreich', 'CH' => 'Schweizerische Eidgenossenschaft', 'DK' => 'Koenigreich Daenemark']
+            ? ['DE' => 'Bundesrepublik Deutschland', 'AT' => 'Republik Österreich', 'CH' => 'Schweizerische Eidgenossenschaft', 'DK' => 'Königreich Dänemark']
             : ['DE' => 'Federal Republic of Germany', 'AT' => 'Republic of Austria', 'CH' => 'Swiss Confederation', 'DK' => 'Kingdom of Denmark'];
         $labels['governing_law_label'] = $laws[$vars['governing_law'] ?? ''] ?? ($vars['governing_law'] ?? '');
 
@@ -774,7 +774,7 @@ class ContractController
 
         // Data location (SaaS)
         $dataLocations = $isDe
-            ? ['eu' => 'Europaeische Union', 'de' => 'Deutschland', 'us' => 'Vereinigte Staaten', 'custom' => 'wie vereinbart']
+            ? ['eu' => 'Europäische Union', 'de' => 'Deutschland', 'us' => 'Vereinigte Staaten', 'custom' => 'wie vereinbart']
             : ['eu' => 'European Union', 'de' => 'Germany', 'us' => 'United States', 'custom' => 'as agreed'];
         $labels['data_location_label'] = $dataLocations[$vars['data_location'] ?? ''] ?? ($vars['data_location'] ?? '');
 

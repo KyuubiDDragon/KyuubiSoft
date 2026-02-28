@@ -415,7 +415,7 @@ onMounted(async () => {
         </button>
         <button @click="openCreateDomainModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Domain hinzufuegen
+          Domain hinzufügen
         </button>
       </div>
     </div>
@@ -432,10 +432,10 @@ onMounted(async () => {
     >
       <GlobeAltIcon class="w-12 h-12 text-gray-600 mx-auto mb-4" />
       <h3 class="text-lg font-medium text-gray-300 mb-2">Keine Domains vorhanden.</h3>
-      <p class="text-gray-500 mb-6">Fuegen Sie Ihre erste Domain hinzu, um DNS-Records zu verwalten.</p>
+      <p class="text-gray-500 mb-6">Fügen Sie Ihre erste Domain hinzu, um DNS-Records zu verwalten.</p>
       <button @click="openCreateDomainModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Domain hinzufuegen
+        Domain hinzufügen
       </button>
     </div>
 
@@ -469,7 +469,7 @@ onMounted(async () => {
             </button>
             <button @click="openCreateRecordModal(domain.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PlusIcon class="w-4 h-4 mr-1" />
-              Record hinzufuegen
+              Record hinzufügen
             </button>
             <button @click="openExportModal(domain.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
@@ -505,7 +505,7 @@ onMounted(async () => {
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === domain.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich loeschen?</span>
+              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
               <button @click="handleDeleteDomain(domain.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
                 Ja
               </button>
@@ -519,7 +519,7 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Loeschen
+              Löschen
             </button>
           </div>
         </div>
@@ -538,7 +538,7 @@ onMounted(async () => {
           >
             Keine DNS-Records vorhanden.
             <button @click="openCreateRecordModal(domain.id)" class="text-primary-400 hover:text-primary-300 ml-1">
-              Jetzt hinzufuegen
+              Jetzt hinzufügen
             </button>
           </div>
 
@@ -551,7 +551,7 @@ onMounted(async () => {
                   <th class="text-left text-xs text-gray-500 font-medium p-3">Name</th>
                   <th class="text-left text-xs text-gray-500 font-medium p-3">Wert</th>
                   <th class="text-left text-xs text-gray-500 font-medium p-3">TTL</th>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3">Prioritaet</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3">Priorität</th>
                   <th class="text-right text-xs text-gray-500 font-medium p-3">Aktionen</th>
                 </tr>
               </thead>
@@ -575,7 +575,7 @@ onMounted(async () => {
                       <button
                         @click="openPropagationChecker(record, domain.name)"
                         class="btn-ghost text-xs text-cyan-400/60 hover:text-cyan-400"
-                        title="Propagation pruefen"
+                        title="Propagation prüfen"
                       >
                         <SignalIcon class="w-4 h-4" />
                       </button>
@@ -605,7 +605,7 @@ onMounted(async () => {
                         v-else
                         @click="confirmDeleteRecord(record.id)"
                         class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
-                        title="Loeschen"
+                        title="Löschen"
                       >
                         <TrashIcon class="w-4 h-4" />
                       </button>
@@ -630,7 +630,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ editingDomain ? 'Domain bearbeiten' : 'Domain hinzufuegen' }}
+              {{ editingDomain ? 'Domain bearbeiten' : 'Domain hinzufügen' }}
             </h3>
             <button @click="closeDomainModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -667,7 +667,7 @@ onMounted(async () => {
                 :placeholder="domainForm.provider === 'cloudflare' ? 'Cloudflare API Token...' : 'Webtropia/myLoc API Token...'"
               />
               <p class="text-xs text-gray-500 mt-1">
-                {{ domainForm.provider === 'cloudflare' ? 'Wird fuer Sync mit Cloudflare benoetigt.' : 'OAuth-Token aus dem myLoc ZKM-Panel. Wird fuer Sync benoetigt.' }}
+                {{ domainForm.provider === 'cloudflare' ? 'Wird für Sync mit Cloudflare benötigt.' : 'OAuth-Token aus dem myLoc ZKM-Panel. Wird für Sync benötigt.' }}
               </p>
             </div>
 
@@ -704,7 +704,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ editingRecord ? 'DNS-Record bearbeiten' : 'DNS-Record hinzufuegen' }}
+              {{ editingRecord ? 'DNS-Record bearbeiten' : 'DNS-Record hinzufügen' }}
             </h3>
             <button @click="closeRecordModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -728,7 +728,7 @@ onMounted(async () => {
                 class="input w-full"
                 placeholder="@ oder Subdomain"
               />
-              <p class="text-xs text-gray-500 mt-1">@ fuer die Root-Domain, oder z.B. www, mail, etc.</p>
+              <p class="text-xs text-gray-500 mt-1">@ für die Root-Domain, oder z.B. www, mail, etc.</p>
             </div>
 
             <div>
@@ -763,7 +763,7 @@ onMounted(async () => {
               </div>
 
               <div v-if="needsPriority">
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">Prioritaet</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">Priorität</label>
                 <input
                   v-model.number="recordForm.priority"
                   type="number"
@@ -852,13 +852,13 @@ onMounted(async () => {
           <!-- Body -->
           <div class="p-5 space-y-4">
             <p class="text-sm text-gray-400">
-              Fuegen Sie den Inhalt einer BIND Zone-Datei ein. Unterstuetzte Record-Typen: A, AAAA, CNAME, MX, TXT, NS, SRV, CAA.
+              Fügen Sie den Inhalt einer BIND Zone-Datei ein. Unterstützte Record-Typen: A, AAAA, CNAME, MX, TXT, NS, SRV, CAA.
             </p>
             <textarea
               v-model="importContent"
               class="input w-full font-mono text-xs"
               rows="12"
-              placeholder="; Zone-Datei hier einfuegen...
+              placeholder="; Zone-Datei hier einfügen...
 @ 3600 IN A 192.168.1.1
 www 3600 IN CNAME beispiel.de.
 @ 3600 IN MX 10 mail.beispiel.de."
@@ -924,7 +924,7 @@ www 3600 IN CNAME beispiel.de.
 
             <!-- Zones List -->
             <div v-if="cfZones.length > 0" class="space-y-2">
-              <h4 class="text-sm font-medium text-gray-300">Verfuegbare Zonen ({{ cfZones.length }})</h4>
+              <h4 class="text-sm font-medium text-gray-300">Verfügbare Zonen ({{ cfZones.length }})</h4>
               <div class="max-h-[40vh] overflow-y-auto space-y-1">
                 <div
                   v-for="zone in cfZones"
@@ -955,7 +955,7 @@ www 3600 IN CNAME beispiel.de.
 
             <!-- No zones -->
             <div v-else-if="!cfZonesLoading && cfToken.trim() && cfZones.length === 0" class="text-sm text-gray-500 text-center py-4">
-              Keine Zonen gefunden. Bitte Token pruefen.
+              Keine Zonen gefunden. Bitte Token prüfen.
             </div>
           </div>
 

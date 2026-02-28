@@ -127,7 +127,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">Cron Jobs</h1>
-        <p class="text-gray-400 mt-1">Geplante Aufgaben verwalten und ueberwachen</p>
+        <p class="text-gray-400 mt-1">Geplante Aufgaben verwalten und überwachen</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
@@ -228,7 +228,7 @@ onMounted(async () => {
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === job.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich loeschen?</span>
+              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
               <button @click="handleDelete(job.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
                 Ja
               </button>
@@ -242,14 +242,14 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Loeschen
+              Löschen
             </button>
           </div>
 
           <!-- History panel (expandable) -->
           <div v-if="expandedHistory === job.id" class="mt-3 pt-3 border-t border-white/[0.06]">
             <div v-if="cronStore.history.length === 0" class="text-center text-gray-500 text-sm py-4">
-              Keine Ausfuehrungshistorie vorhanden.
+              Keine Ausführungshistorie vorhanden.
             </div>
             <div v-else class="overflow-x-auto">
               <table class="table-glass w-full">
@@ -322,7 +322,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-3xl max-h-[80vh] flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Ausfuehrungsausgabe</h3>
+            <h3 class="text-lg font-semibold text-white">Ausführungsausgabe</h3>
             <button @click="closeOutputModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>

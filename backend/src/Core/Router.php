@@ -88,6 +88,8 @@ use App\Modules\Dns\Controllers\DnsController;
 use App\Modules\Deployments\Controllers\DeploymentController;
 use App\Modules\KnowledgeBase\Controllers\KnowledgeBaseController;
 use App\Modules\Environments\Controllers\EnvironmentController;
+use App\Modules\Contracts\Controllers\ContractController;
+use App\Modules\Contracts\Controllers\ContractTemplateController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -580,6 +582,48 @@ class Router
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/service-catalog/{id}', [ServiceCatalogController::class, 'delete'])
                     ->add(new FeatureMiddleware('invoices', null, 'delete'));
+
+                // Contracts - protected by feature flags
+                $protected->get('/contracts', [ContractController::class, 'index'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->post('/contracts', [ContractController::class, 'create'])
+                    ->add(new FeatureMiddleware('contracts', null, 'create'));
+                $protected->get('/contracts/stats', [ContractController::class, 'getStats'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->get('/contracts/{id}', [ContractController::class, 'show'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->put('/contracts/{id}', [ContractController::class, 'update'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->delete('/contracts/{id}', [ContractController::class, 'delete'])
+                    ->add(new FeatureMiddleware('contracts', null, 'delete'));
+                $protected->put('/contracts/{id}/status', [ContractController::class, 'updateStatus'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->post('/contracts/{id}/sign', [ContractController::class, 'sign'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->post('/contracts/{id}/duplicate', [ContractController::class, 'duplicate'])
+                    ->add(new FeatureMiddleware('contracts', null, 'create'));
+                $protected->get('/contracts/{id}/history', [ContractController::class, 'getHistory'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->post('/contracts/{id}/invoices', [ContractController::class, 'linkInvoice'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->delete('/contracts/{id}/invoices/{invoiceId}', [ContractController::class, 'unlinkInvoice'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->get('/contracts/{id}/invoices', [ContractController::class, 'getLinkedInvoices'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+
+                // Contract Templates
+                $protected->get('/contract-templates', [ContractTemplateController::class, 'index'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->post('/contract-templates', [ContractTemplateController::class, 'create'])
+                    ->add(new FeatureMiddleware('contracts', null, 'create'));
+                $protected->get('/contract-templates/defaults', [ContractTemplateController::class, 'getDefaults'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->get('/contract-templates/{id}', [ContractTemplateController::class, 'show'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->put('/contract-templates/{id}', [ContractTemplateController::class, 'update'])
+                    ->add(new FeatureMiddleware('contracts', null, 'edit'));
+                $protected->delete('/contract-templates/{id}', [ContractTemplateController::class, 'delete'])
+                    ->add(new FeatureMiddleware('contracts', null, 'delete'));
 
                 // API Tester - Collections - protected by feature flags
                 $protected->get('/api-tester/collections', [ApiTesterController::class, 'getCollections'])

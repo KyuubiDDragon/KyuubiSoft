@@ -39,6 +39,7 @@ const HabitTrackerView = () => import('@/modules/habit-tracker/views/HabitTracke
 const ExpenseTrackerView = () => import('@/modules/finance/views/ExpenseTrackerView.vue')
 const UptimeView = () => import('@/modules/uptime/views/UptimeView.vue')
 const InvoicesView = () => import('@/modules/invoices/views/InvoicesView.vue')
+const ContractsView = () => import('@/modules/contracts/views/ContractsView.vue')
 const ApiTesterView = () => import('@/modules/api-tester/views/ApiTesterView.vue')
 const YouTubeDownloaderView = () => import('@/modules/youtube-downloader/views/YouTubeDownloaderView.vue')
 const ToolboxView = () => import('@/modules/toolbox/views/ToolboxView.vue')
@@ -215,6 +216,12 @@ const routes: RouteRecordRaw[] = [
     path: '/invoices',
     name: 'invoices',
     component: InvoicesView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/contracts',
+    name: 'contracts',
+    component: ContractsView,
     meta: { requiresAuth: true },
   },
   {

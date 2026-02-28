@@ -165,6 +165,7 @@ class ContractController
                         'governing_law' => $data['governing_law'] ?? 'DE',
                         'jurisdiction' => $data['jurisdiction'] ?? '',
                         'is_b2c' => !empty($data['is_b2c']),
+                        'include_nda_clause' => !empty($data['include_nda_clause']),
                         'party_a_company' => $partyACompany,
                         'party_a_address' => $partyAAddress,
                         'party_a_email' => $partyAEmail,

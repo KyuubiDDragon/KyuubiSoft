@@ -10,8 +10,8 @@ import {
   CloudIcon,
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
-  InformationCircleIcon,
 } from '@heroicons/vue/24/outline'
+import FieldTooltip from '@/components/FieldTooltip.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -327,10 +327,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div>
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     Vertragstyp
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 normal-case tracking-normal font-normal">Wähle den passenden Vertragstyp. Jeder Typ enthält vorgefertigte Klauseln für den jeweiligen Anwendungsfall.</span>
-                    </span>
+                    <FieldTooltip>Wähle den passenden Vertragstyp. Jeder Typ enthält vorgefertigte Klauseln für den jeweiligen Anwendungsfall.</FieldTooltip>
                   </label>
                   <div class="grid grid-cols-5 gap-2">
                     <button
@@ -353,10 +350,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-5">
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Sprache
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 normal-case tracking-normal font-normal">Die Sprache bestimmt, in welcher Sprache der Vertragstext generiert wird.</span>
-                    </span>
+                    <FieldTooltip>Die Sprache bestimmt, in welcher Sprache der Vertragstext generiert wird.</FieldTooltip>
                   </label>
                   <div class="flex gap-2">
                     <button
@@ -376,10 +370,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-5">
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Kundentyp
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 normal-case tracking-normal font-normal">B2B = Geschäftskunde, B2C = Privatkunde. Bei B2C werden automatisch Verbraucherschutzklauseln und Widerrufsbelehrung eingefügt.</span>
-                    </span>
+                    <FieldTooltip>B2B = Geschäftskunde, B2C = Privatkunde. Bei B2C werden automatisch Verbraucherschutzklauseln und Widerrufsbelehrung eingefügt.</FieldTooltip>
                   </label>
                   <div class="flex gap-2">
                     <button
@@ -403,10 +394,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mb-6">
                   <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-1.5">
                     Auftragnehmer (Sie)
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 font-normal">Deine Daten als Vertragspartei A. Wird aus deinen Einstellungen vorausgefüllt.</span>
-                    </span>
+                    <FieldTooltip>Deine Daten als Vertragspartei A. Wird aus deinen Einstellungen vorausgefüllt.</FieldTooltip>
                   </h3>
                   <div class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
@@ -431,10 +419,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                       <div>
                         <label class="label flex items-center gap-1.5">
                           USt-IdNr.
-                          <span class="relative group/tip">
-                            <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                            <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Umsatzsteuer-Identifikationsnummer, z.B. DE123456789. Wichtig für B2B-Verträge innerhalb der EU.</span>
-                          </span>
+                          <FieldTooltip>Umsatzsteuer-Identifikationsnummer, z.B. DE123456789. Wichtig für B2B-Verträge innerhalb der EU.</FieldTooltip>
                         </label>
                         <input v-model="form.party_a_vat_id" type="text" class="input" placeholder="DE123456789" />
                       </div>
@@ -448,10 +433,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-6">
                   <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-1.5">
                     Auftraggeber (Kunde)
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 font-normal">Daten deines Kunden / Vertragspartners. Wähle einen bestehenden Kunden oder gib die Daten manuell ein.</span>
-                    </span>
+                    <FieldTooltip>Daten deines Kunden / Vertragspartners. Wähle einen bestehenden Kunden oder gib die Daten manuell ein.</FieldTooltip>
                   </h3>
                   <div class="mb-3">
                     <label class="label">Aus Kundenstamm wählen</label>
@@ -485,10 +467,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                       <div>
                         <label class="label flex items-center gap-1.5">
                           USt-IdNr.
-                          <span class="relative group/tip">
-                            <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                            <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Umsatzsteuer-Identifikationsnummer deines Kunden. Wichtig für B2B-Verträge innerhalb der EU.</span>
-                          </span>
+                          <FieldTooltip>Umsatzsteuer-Identifikationsnummer deines Kunden. Wichtig für B2B-Verträge innerhalb der EU.</FieldTooltip>
                         </label>
                         <input v-model="form.party_b_vat_id" type="text" class="input" />
                       </div>
@@ -519,10 +498,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Lizenztyp
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Einfach = Mehrfachvergabe möglich. Exklusiv = Nur dieser Lizenznehmer darf die Software nutzen.</span>
-                      </span>
+                      <FieldTooltip>Einfach = Mehrfachvergabe möglich. Exklusiv = Nur dieser Lizenznehmer darf die Software nutzen.</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button type="button" @click="form.variables_data.license_type = 'simple'"
@@ -541,20 +517,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Max. Nutzer
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Maximale Anzahl gleichzeitiger Nutzer, die die Software verwenden dürfen.</span>
-                        </span>
+                        <FieldTooltip>Maximale Anzahl gleichzeitiger Nutzer, die die Software verwenden dürfen.</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.max_users" type="number" min="1" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Gebietsrechte
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48">Räumlicher Geltungsbereich der Lizenz.</span>
-                        </span>
+                        <FieldTooltip>Räumlicher Geltungsbereich der Lizenz.</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.territory" class="input">
                         <option value="worldwide">Weltweit</option>
@@ -568,18 +538,12 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.source_code_access" type="checkbox" class="checkbox" />
                       Quellcode-Zugang
-                      <span class="relative group/tip" @click.prevent>
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Ob der Lizenznehmer Zugriff auf den Quellcode erhält.</span>
-                      </span>
+                      <FieldTooltip>Ob der Lizenznehmer Zugriff auf den Quellcode erhält.</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.modification_rights" type="checkbox" class="checkbox" />
                       Änderungsrechte
-                      <span class="relative group/tip" @click.prevent>
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Ob der Lizenznehmer den Quellcode verändern darf.</span>
-                      </span>
+                      <FieldTooltip>Ob der Lizenznehmer den Quellcode verändern darf.</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.updates_included" type="checkbox" class="checkbox" />
@@ -593,10 +557,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Support-Level
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64">Kein Support = ohne. Basic = E-Mail. Premium = E-Mail + Telefon. Enterprise = 24/7 mit SLA.</span>
-                      </span>
+                      <FieldTooltip>Kein Support = ohne. Basic = E-Mail. Premium = E-Mail + Telefon. Enterprise = 24/7 mit SLA.</FieldTooltip>
                     </label>
                     <select v-model="form.variables_data.support_level" class="input">
                       <option value="none">Kein Support</option>
@@ -612,20 +573,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Projektbeschreibung
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Detaillierte Beschreibung des zu entwickelnden Projekts und der Anforderungen.</span>
-                      </span>
+                      <FieldTooltip>Detaillierte Beschreibung des zu entwickelnden Projekts und der Anforderungen.</FieldTooltip>
                     </label>
                     <textarea v-model="form.variables_data.project_description" class="input" rows="3" placeholder="Beschreiben Sie das Projekt..."></textarea>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Vergütungsmodell
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64">Festpreis = Gesamtbetrag fix. Stundenbasis = Abrechnung nach Aufwand. Meilensteine = Zahlung nach Abschluss einzelner Phasen.</span>
-                      </span>
+                      <FieldTooltip>Festpreis = Gesamtbetrag fix. Stundenbasis = Abrechnung nach Aufwand. Meilensteine = Zahlung nach Abschluss einzelner Phasen.</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button v-for="pm in [{v:'fixed',l:'Festpreis'},{v:'hourly',l:'Stundensatz'},{v:'milestone',l:'Meilensteine'}]" :key="pm.v"
@@ -639,10 +594,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div v-if="form.variables_data.pricing_model === 'hourly'">
                     <label class="label flex items-center gap-1.5">
                       Stundensatz (EUR)
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Netto-Stundensatz in EUR für die Softwareentwicklung.</span>
-                      </span>
+                      <FieldTooltip>Netto-Stundensatz in EUR für die Softwareentwicklung.</FieldTooltip>
                     </label>
                     <input v-model.number="form.variables_data.hourly_rate" type="number" min="0" step="0.01" class="input" />
                   </div>
@@ -650,10 +602,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div v-if="form.variables_data.pricing_model === 'milestone'">
                     <label class="label flex items-center gap-1.5 mb-2">
                       Meilensteine
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Definiere Projektphasen mit Datum und Teilbetrag. Jeder Meilenstein wird separat abgerechnet.</span>
-                      </span>
+                      <FieldTooltip>Definiere Projektphasen mit Datum und Teilbetrag. Jeder Meilenstein wird separat abgerechnet.</FieldTooltip>
                     </label>
                     <div v-for="(ms, idx) in form.variables_data.milestones" :key="idx" class="flex gap-2 mb-2">
                       <input v-model="ms.name" type="text" class="input flex-1" placeholder="Meilenstein" />
@@ -667,20 +616,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Abnahmeverfahren
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Beschreibe, wie die Abnahme der Software erfolgt (z.B. Testphase, Abnahmeprotokoll).</span>
-                      </span>
+                      <FieldTooltip>Beschreibe, wie die Abnahme der Software erfolgt (z.B. Testphase, Abnahmeprotokoll).</FieldTooltip>
                     </label>
                     <textarea v-model="form.variables_data.acceptance_procedure" class="input" rows="2" placeholder="Beschreibung des Abnahmeverfahrens"></textarea>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Gewährleistungsfrist (Monate)
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Zeitraum nach Abnahme, in dem Mängel kostenlos behoben werden. Standard: 12 Monate.</span>
-                      </span>
+                      <FieldTooltip>Zeitraum nach Abnahme, in dem Mängel kostenlos behoben werden. Standard: 12 Monate.</FieldTooltip>
                     </label>
                     <input v-model.number="form.variables_data.warranty_months" type="number" min="1" class="input" />
                   </div>
@@ -691,10 +634,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Service-Beschreibung
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Beschreibung des SaaS-Dienstes und der enthaltenen Funktionen.</span>
-                      </span>
+                      <FieldTooltip>Beschreibung des SaaS-Dienstes und der enthaltenen Funktionen.</FieldTooltip>
                     </label>
                     <textarea v-model="form.variables_data.service_description" class="input" rows="3" placeholder="Beschreibung des SaaS-Dienstes..."></textarea>
                   </div>
@@ -702,20 +642,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         SLA Verfügbarkeit (%)
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Garantierte Verfügbarkeit in Prozent pro Jahr. 99,9% = max. 8,76h Ausfall/Jahr.</span>
-                        </span>
+                        <FieldTooltip>Garantierte Verfügbarkeit in Prozent pro Jahr. 99,9% = max. 8,76h Ausfall/Jahr.</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.sla_uptime" type="number" min="90" max="100" step="0.1" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Abo-Modell
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48">Abrechnungszyklus für den SaaS-Dienst.</span>
-                        </span>
+                        <FieldTooltip>Abrechnungszyklus für den SaaS-Dienst.</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.subscription_model" class="input">
                         <option value="monthly">Monatlich</option>
@@ -741,10 +675,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Datenstandort
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Wo die Kundendaten gespeichert werden. Wichtig für DSGVO-Konformität.</span>
-                        </span>
+                        <FieldTooltip>Wo die Kundendaten gespeichert werden. Wichtig für DSGVO-Konformität.</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.data_location" class="input">
                         <option value="DE">Deutschland</option>
@@ -760,10 +691,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Zu wartende Software
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Name und Version der Software, für die der Wartungsvertrag gilt.</span>
-                      </span>
+                      <FieldTooltip>Name und Version der Software, für die der Wartungsvertrag gilt.</FieldTooltip>
                     </label>
                     <input v-model="form.variables_data.maintained_software" type="text" class="input" placeholder="Name der Software" />
                   </div>
@@ -771,20 +699,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Support-Stunden / Monat
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Enthaltenes monatliches Kontingent an Support-Stunden.</span>
-                        </span>
+                        <FieldTooltip>Enthaltenes monatliches Kontingent an Support-Stunden.</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.support_hours_monthly" type="number" min="0" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Reaktionszeit
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Maximale Zeit bis zur ersten Reaktion auf eine Supportanfrage.</span>
-                        </span>
+                        <FieldTooltip>Maximale Zeit bis zur ersten Reaktion auf eine Supportanfrage.</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.response_time" class="input">
                         <option value="4h">4 Stunden</option>
@@ -819,10 +741,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       NDA-Typ
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64">Gegenseitig = beide Parteien. Einseitig = nur eine Partei offenbart vertrauliche Informationen.</span>
-                      </span>
+                      <FieldTooltip>Gegenseitig = beide Parteien. Einseitig = nur eine Partei offenbart vertrauliche Informationen.</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button type="button" @click="form.variables_data.nda_type = 'unilateral'"
@@ -840,10 +759,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Vertrauliche Informationen
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Beschreibe, welche Informationen als vertraulich gelten sollen.</span>
-                      </span>
+                      <FieldTooltip>Beschreibe, welche Informationen als vertraulich gelten sollen.</FieldTooltip>
                     </label>
                     <textarea v-model="form.variables_data.confidential_info_description" class="input" rows="3" placeholder="Beschreibung der vertraulichen Informationen..."></textarea>
                   </div>
@@ -851,20 +767,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Geltungsdauer (Jahre)
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Wie lange die Geheimhaltungspflicht gilt. Üblich: 2-5 Jahre.</span>
-                        </span>
+                        <FieldTooltip>Wie lange die Geheimhaltungspflicht gilt. Üblich: 2-5 Jahre.</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.duration_years" type="number" min="1" max="10" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Vertragsstrafe (EUR, optional)
-                        <span class="relative group/tip">
-                          <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                          <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Optionale Konventionalstrafe bei Verstoß gegen die Geheimhaltung.</span>
-                        </span>
+                        <FieldTooltip>Optionale Konventionalstrafe bei Verstoß gegen die Geheimhaltung.</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.penalty_amount" type="number" min="0" step="100" class="input" />
                     </div>
@@ -878,20 +788,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Vertragsbeginn *
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48">Ab wann der Vertrag wirksam wird.</span>
-                      </span>
+                      <FieldTooltip>Ab wann der Vertrag wirksam wird.</FieldTooltip>
                     </label>
                     <input v-model="form.start_date" type="date" class="input" required />
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Vertragsende
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Leer lassen für unbefristete Verträge. Ansonsten festes Enddatum.</span>
-                      </span>
+                      <FieldTooltip>Leer lassen für unbefristete Verträge. Ansonsten festes Enddatum.</FieldTooltip>
                     </label>
                     <input v-model="form.end_date" type="date" class="input" />
                   </div>
@@ -901,10 +805,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.auto_renewal" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
                     Automatische Verlängerung
-                    <span class="relative group/tip" @click.prevent>
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Vertrag verlängert sich automatisch, wenn nicht rechtzeitig gekündigt wird.</span>
-                    </span>
+                    <FieldTooltip>Vertrag verlängert sich automatisch, wenn nicht rechtzeitig gekündigt wird.</FieldTooltip>
                   </label>
                 </div>
                 <div v-if="form.auto_renewal" class="mt-3">
@@ -917,10 +818,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Kündigungsfrist (Tage)
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Anzahl Tage vor Vertragsende, bis wann gekündigt werden muss.</span>
-                    </span>
+                    <FieldTooltip>Anzahl Tage vor Vertragsende, bis wann gekündigt werden muss.</FieldTooltip>
                   </label>
                   <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
                 </div>
@@ -931,20 +829,14 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Vertragswert (gesamt)
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48">Gesamtwert des Vertrags (netto).</span>
-                      </span>
+                      <FieldTooltip>Gesamtwert des Vertrags (netto).</FieldTooltip>
                     </label>
                     <input v-model.number="form.total_value" type="number" min="0" step="0.01" class="input" />
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Währung
-                      <span class="relative group/tip">
-                        <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                        <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Vertragswährung für die Rechnungsstellung.</span>
-                      </span>
+                      <FieldTooltip>Vertragswährung für die Rechnungsstellung.</FieldTooltip>
                     </label>
                     <select v-model="form.currency" class="input">
                       <option value="EUR">EUR</option>
@@ -959,10 +851,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Zahlungsplan
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64">Einmalig = eine Zahlung. Monatlich/Quartalsweise/Jährlich = wiederkehrende Zahlungen.</span>
-                    </span>
+                    <FieldTooltip>Einmalig = eine Zahlung. Monatlich/Quartalsweise/Jährlich = wiederkehrende Zahlungen.</FieldTooltip>
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <button
@@ -984,10 +873,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div>
                   <label class="label flex items-center gap-1.5">
                     Anwendbares Recht
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52">Nach welchem Landesrecht der Vertrag ausgelegt wird.</span>
-                    </span>
+                    <FieldTooltip>Nach welchem Landesrecht der Vertrag ausgelegt wird.</FieldTooltip>
                   </label>
                   <select v-model="form.governing_law" class="input">
                     <option v-for="gl in governingLaws" :key="gl.value" :value="gl.value">{{ gl.label }}</option>
@@ -997,10 +883,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Gerichtsstand
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60">Welches Gericht bei Streitigkeiten zuständig ist. Nur bei B2B frei wählbar.</span>
-                    </span>
+                    <FieldTooltip>Welches Gericht bei Streitigkeiten zuständig ist. Nur bei B2B frei wählbar.</FieldTooltip>
                   </label>
                   <input v-model="form.jurisdiction" type="text" class="input" placeholder="z.B. Hamburg, Deutschland" />
                 </div>
@@ -1009,10 +892,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.include_nda_clause" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
                     Geheimhaltungsklausel einbinden
-                    <span class="relative group/tip" @click.prevent>
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Fügt eine zusätzliche NDA-Klausel in den Vertrag ein.</span>
-                    </span>
+                    <FieldTooltip>Fügt eine zusätzliche NDA-Klausel in den Vertrag ein.</FieldTooltip>
                   </label>
                 </div>
 
@@ -1028,10 +908,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Anmerkungen (optional)
-                    <span class="relative group/tip">
-                      <InformationCircleIcon class="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help" />
-                      <span class="tooltip hidden group-hover/tip:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56">Interne Notizen zum Vertrag. Erscheinen nicht im generierten Vertragstext.</span>
-                    </span>
+                    <FieldTooltip>Interne Notizen zum Vertrag. Erscheinen nicht im generierten Vertragstext.</FieldTooltip>
                   </label>
                   <textarea v-model="form.notes" class="input" rows="3" placeholder="Interne Notizen zum Vertrag"></textarea>
                 </div>

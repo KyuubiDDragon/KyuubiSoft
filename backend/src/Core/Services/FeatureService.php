@@ -208,6 +208,18 @@ class FeatureService
                 'manage' => ['full'],
             ],
         ],
+        'contracts' => [
+            'modes' => ['disabled', 'full'],
+            'default' => 'full',
+            'env' => 'FEATURE_CONTRACTS',
+            'description' => 'Contract management',
+            'subFeatures' => [
+                'view' => ['full'],
+                'create' => ['full'],
+                'edit' => ['full'],
+                'delete' => ['full'],
+            ],
+        ],
     ];
 
     private array $featureCache = [];

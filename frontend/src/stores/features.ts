@@ -254,6 +254,8 @@ export const useFeatureStore = defineStore('features', () => {
         galleries: 'full',
         notes: 'full',
         discord: 'full',
+        connections: 'full',
+        contracts: 'full',
       }
       isLoaded.value = true
     } finally {

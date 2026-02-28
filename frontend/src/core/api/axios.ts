@@ -78,7 +78,7 @@ api.interceptors.response.use(
     const originalRequest = error.config as RetryableRequestConfig | undefined
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPagePaths: string[] = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/']
+    const publicPagePaths: string[] = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/', '/contract/', '/status', '/kb']
     const isPublicPage: boolean = publicPagePaths.some((path: string) => window.location.pathname.includes(path))
 
     // Check if the original request was to a public API endpoint

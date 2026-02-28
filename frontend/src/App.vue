@@ -26,6 +26,9 @@ const layout = computed(() => {
   if (route.meta.layout === 'public') {
     return PublicLayout
   }
+  if (route.meta.layout === 'none') {
+    return PublicLayout
+  }
 
   // Fallback: check URL path directly (for initial load before route resolves)
   const path = window.location.pathname
@@ -41,7 +44,7 @@ const layout = computed(() => {
 
 // Check if current path is a public page (doesn't need auth)
 function isPublicPage() {
-  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup', '/share/']
+  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup', '/share/', '/contract/', '/status', '/kb']
   return publicPaths.some(path => window.location.pathname.includes(path))
 }
 

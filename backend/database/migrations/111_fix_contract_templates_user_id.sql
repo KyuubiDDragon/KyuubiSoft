@@ -16,7 +16,7 @@ SET @old_fk = (
 
 SET @drop_sql = IF(@old_fk IS NOT NULL,
     CONCAT('ALTER TABLE contract_templates DROP FOREIGN KEY ', @old_fk),
-    'SELECT 1'
+    'DO 0'
 );
 PREPARE drop_stmt FROM @drop_sql;
 EXECUTE drop_stmt;
@@ -39,7 +39,7 @@ SET @fk_exists = (
 
 SET @add_sql = IF(@fk_exists = 0,
     'ALTER TABLE contract_templates ADD CONSTRAINT fk_ct_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL',
-    'SELECT 1'
+    'DO 0'
 );
 PREPARE add_stmt FROM @add_sql;
 EXECUTE add_stmt;

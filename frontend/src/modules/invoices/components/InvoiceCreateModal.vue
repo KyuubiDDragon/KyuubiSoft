@@ -21,6 +21,7 @@ const emit = defineEmits(['close', 'save'])
 const form = ref({
   client_id: null,
   document_type: 'invoice',
+  language: 'de',
   issue_date: '',
   due_date: '',
   service_date: '',
@@ -30,6 +31,11 @@ const form = ref({
   mahnung_level: 0,
   mahnung_fee: 0,
 })
+
+const languages = [
+  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'English' },
+]
 
 const documentTypes = [
   { value: 'invoice', label: 'Rechnung', description: 'Standard Rechnung', color: 'text-white', bg: 'bg-white/[0.08] border-white/[0.08]' },
@@ -51,6 +57,7 @@ function initForm() {
     form.value = {
       client_id: props.editingInvoice.client_id,
       document_type: props.editingInvoice.document_type ?? 'invoice',
+      language: props.editingInvoice.language ?? 'de',
       issue_date: props.editingInvoice.issue_date,
       due_date: props.editingInvoice.due_date ?? '',
       service_date: props.editingInvoice.service_date ?? '',
@@ -66,6 +73,7 @@ function initForm() {
     form.value = {
       client_id: null,
       document_type: 'invoice',
+      language: 'de',
       issue_date: today,
       due_date: dueDate,
       service_date: today,
@@ -144,6 +152,25 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       : 'bg-white/[0.04] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/[0.08]'"
                   >
                     <span class="text-xs font-semibold leading-tight">{{ dt.label }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Language -->
+              <div>
+                <label class="label">Sprache / Language</label>
+                <div class="flex gap-2">
+                  <button
+                    v-for="l in languages"
+                    :key="l.value"
+                    type="button"
+                    @click="form.language = l.value"
+                    class="px-4 py-2 rounded-lg border text-sm font-medium transition-all"
+                    :class="form.language === l.value
+                      ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 ring-1 ring-indigo-500/40'
+                      : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-gray-300'"
+                  >
+                    {{ l.label }}
                   </button>
                 </div>
               </div>

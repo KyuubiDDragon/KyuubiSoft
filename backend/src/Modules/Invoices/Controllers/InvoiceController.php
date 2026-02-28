@@ -275,6 +275,7 @@ class InvoiceController
             'service_date' => $data['service_date'] ?? null,
             'tax_rate' => $data['tax_rate'] ?? $defaultTaxRate,
             'currency' => $data['currency'] ?? 'EUR',
+            'language' => $data['language'] ?? 'de',
             'notes' => $data['notes'] ?? null,
             'terms' => $terms,
             'payment_terms' => $data['payment_terms'] ?? ($settings['invoice_default_payment_terms'] ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'),
@@ -353,7 +354,7 @@ class InvoiceController
         $params = [];
 
         $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
-                   'service_date', 'paid_date', 'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'notes', 'terms', 'payment_terms',
                    'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {
@@ -677,7 +678,7 @@ class InvoiceController
                 'client_name', 'client_company', 'client_address', 'client_email', 'client_vat_id',
                 'sender_name', 'sender_company', 'sender_address', 'sender_email', 'sender_phone',
                 'sender_vat_id', 'sender_steuernummer', 'sender_logo_file_id', 'sender_bank_details',
-                'tax_rate', 'currency', 'notes', 'terms', 'payment_terms',
+                'tax_rate', 'currency', 'language', 'notes', 'terms', 'payment_terms',
                 'mahnung_level', 'mahnung_fee',
             ])),
             [

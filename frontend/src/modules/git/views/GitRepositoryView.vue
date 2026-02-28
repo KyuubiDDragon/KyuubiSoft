@@ -187,6 +187,26 @@ const syncRepository = async (id) => {
   }
 }
 
+const syncingAll = ref(false)
+const syncAllRepositories = async () => {
+  try {
+    syncingAll.value = true
+    const response = await api.post('/api/v1/git/repositories/sync-all')
+    const result = response.data.data
+    toast.success(`${result.synced}/${result.total} Repositories synchronisiert`)
+    if (result.failed > 0) {
+      toast.warning(`${result.failed} fehlgeschlagen`)
+    }
+    await loadRepositories()
+    await loadStats()
+  } catch (error) {
+    toast.error('Synchronisierung fehlgeschlagen')
+    console.error('Failed to sync all repositories:', error)
+  } finally {
+    syncingAll.value = false
+  }
+}
+
 const saveFolder = async () => {
   try {
     await api.post('/api/v1/git/folders', folderForm.value)
@@ -347,6 +367,10 @@ onMounted(() => {
         <p class="text-gray-400">Verwalte und überwache deine Git Repositories</p>
       </div>
       <div class="flex gap-2">
+        <button @click="syncAllRepositories" :disabled="syncingAll" class="btn-secondary">
+          <ArrowPathIcon class="w-5 h-5 mr-2" :class="{ 'animate-spin': syncingAll }" />
+          Alle synchronisieren
+        </button>
         <button @click="showFolderModal = true" class="btn-secondary">
           <FolderPlusIcon class="w-5 h-5 mr-2" />
           Ordner

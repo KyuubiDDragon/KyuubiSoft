@@ -1259,6 +1259,8 @@ class Router
                     ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->post('/git/repositories/{id}/sync', [GitRepositoryController::class, 'sync'])
                     ->add(new FeatureMiddleware('git', null, 'sync'));
+                $protected->post('/git/repositories/sync-all', [GitRepositoryController::class, 'syncAll'])
+                    ->add(new FeatureMiddleware('git', null, 'sync'));
                 $protected->post('/git/repositories/discover', [GitRepositoryController::class, 'discover'])
                     ->add(new FeatureMiddleware('git', null, 'manage'));
                 $protected->post('/git/repositories/import-bulk', [GitRepositoryController::class, 'importBulk'])

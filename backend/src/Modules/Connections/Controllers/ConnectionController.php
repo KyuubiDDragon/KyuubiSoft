@@ -431,7 +431,11 @@ class ConnectionController
         $data = base64_decode($data);
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);
-        return openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+        $result = openssl_decrypt($encrypted, 'AES-256-CBC', $this->encryptionKey, 0, $iv);
+        if ($result === false) {
+            throw new \RuntimeException('Decryption failed: invalid data or wrong APP_KEY');
+        }
+        return $result;
     }
 
     // ========================================================================

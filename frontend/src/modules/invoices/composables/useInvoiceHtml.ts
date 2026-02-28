@@ -17,6 +17,7 @@ export interface InvoiceHtmlItem {
 export interface InvoiceHtmlData {
   invoice_number?: string
   document_type?: string
+  language?: string
   issue_date?: string
   due_date?: string
   service_date?: string
@@ -65,18 +66,97 @@ export interface UseInvoiceHtmlReturn {
   loadLogoDataUrl: (logoFileId: string | null | undefined) => Promise<string>
 }
 
+// ─── Translations ───────────────────────────────────────────────────────────
+
+interface InvoiceTranslations {
+  docTitles: Record<string, string>
+  mahnungLabels: string[]
+  tableHeaders: { description: string; quantity: string; unitPrice: string; amount: string }
+  from: string
+  recipientLabels: Record<string, string>
+  issueDateLabels: Record<string, string>
+  dueDateLabels: Record<string, string>
+  serviceDate: string
+  vatId: string
+  taxNumber: string
+  netAmount: string
+  vat: string
+  totalLabel: string
+  creditNoteTotal: string
+  notes: string
+  payment: string
+  noItems: string
+  kleinunternehmerNotice: string
+  proformaNotice: string
+  reminderNotice: string
+  reminderFee: string
+}
+
+const translations: Record<string, InvoiceTranslations> = {
+  de: {
+    docTitles: { invoice: 'Rechnung', proforma: 'Proforma-Rechnung', quote: 'Angebot', credit_note: 'Gutschrift', reminder: '' },
+    mahnungLabels: ['Zahlungserinnerung', '1. Mahnung', '2. Mahnung', '3. Mahnung (Letzte Frist)'],
+    tableHeaders: { description: 'Beschreibung', quantity: 'Menge', unitPrice: 'Einzelpreis', amount: 'Betrag' },
+    from: 'Von',
+    recipientLabels: { invoice: 'Rechnungsempf\u00E4nger', quote: 'Angeboten f\u00FCr', credit_note: 'Gutschrift f\u00FCr', reminder: 'Empf\u00E4nger', proforma: 'Empf\u00E4nger' },
+    issueDateLabels: { invoice: 'Rechnungsdatum', quote: 'Angebotsdatum', proforma: 'Ausstellungsdatum', reminder: 'Mahndatum', credit_note: 'Gutschriftdatum' },
+    dueDateLabels: { invoice: 'F\u00E4llig bis', quote: 'Angebot g\u00FCltig bis', reminder: 'Neue Zahlungsfrist bis', proforma: 'F\u00E4llig bis', credit_note: 'F\u00E4llig bis' },
+    serviceDate: 'Leistungsdatum',
+    vatId: 'USt-IdNr.',
+    taxNumber: 'Steuernummer',
+    netAmount: 'Nettobetrag',
+    vat: 'MwSt.',
+    totalLabel: 'Gesamtbetrag',
+    creditNoteTotal: 'Gutschriftbetrag',
+    notes: 'Anmerkungen',
+    payment: 'Zahlung',
+    noItems: 'Keine Positionen',
+    kleinunternehmerNotice: 'Gem\u00E4\u00DF \u00A7 19 UStG wird keine Umsatzsteuer berechnet.',
+    proformaNotice: 'Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.',
+    reminderNotice: 'Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.',
+    reminderFee: 'Mahngeb\u00FChr',
+  },
+  en: {
+    docTitles: { invoice: 'Invoice', proforma: 'Proforma Invoice', quote: 'Quote', credit_note: 'Credit Note', reminder: '' },
+    mahnungLabels: ['Payment Reminder', '1st Reminder', '2nd Reminder', '3rd Reminder (Final Notice)'],
+    tableHeaders: { description: 'Description', quantity: 'Quantity', unitPrice: 'Unit Price', amount: 'Amount' },
+    from: 'From',
+    recipientLabels: { invoice: 'Bill To', quote: 'Quoted To', credit_note: 'Credit To', reminder: 'Recipient', proforma: 'Recipient' },
+    issueDateLabels: { invoice: 'Invoice Date', quote: 'Quote Date', proforma: 'Issue Date', reminder: 'Reminder Date', credit_note: 'Credit Note Date' },
+    dueDateLabels: { invoice: 'Due Date', quote: 'Valid Until', reminder: 'New Payment Deadline', proforma: 'Due Date', credit_note: 'Due Date' },
+    serviceDate: 'Service Date',
+    vatId: 'VAT ID',
+    taxNumber: 'Tax Number',
+    netAmount: 'Net Amount',
+    vat: 'VAT',
+    totalLabel: 'Total',
+    creditNoteTotal: 'Credit Note Total',
+    notes: 'Notes',
+    payment: 'Payment',
+    noItems: 'No items',
+    kleinunternehmerNotice: 'No VAT charged pursuant to \u00A7 19 UStG (German small business regulation).',
+    proformaNotice: 'This document is a proforma invoice and does not constitute a tax document under \u00A7 14 UStG. No payment obligation arises.',
+    reminderNotice: 'We kindly remind you of the outstanding invoice payment.',
+    reminderFee: 'Reminder fee',
+  },
+}
+
+// ─── Composable ─────────────────────────────────────────────────────────────
+
 export function useInvoiceHtml(): UseInvoiceHtmlReturn {
   function escapeHtml(str: string | undefined | null): string {
     return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 
-  function formatCurrency(amount: number | undefined): string {
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount || 0)
+  function formatCurrency(amount: number | undefined, lang: string): string {
+    const locale = lang === 'en' ? 'en-GB' : 'de-DE'
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(amount || 0)
   }
 
-  function formatDate(dateStr: string | undefined): string {
+  function formatDate(dateStr: string | undefined, lang: string): string {
     if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('de-DE')
+    const locale = lang === 'en' ? 'en-GB' : 'de-DE'
+    return new Date(dateStr).toLocaleDateString(locale)
   }
 
   async function loadLogoDataUrl(logoFileId: string | null | undefined): Promise<string> {
@@ -94,6 +174,8 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
   }
 
   function generateHtml(inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, logoDataUrl: string = ''): string {
+    const lang = inv.language || 'de'
+    const t = translations[lang] || translations.de
     const docType = inv.document_type || 'invoice'
     const isKleinunternehmer = parseFloat(String(inv.tax_rate)) === 0
     const isCreditNote = docType === 'credit_note'
@@ -101,45 +183,34 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const isProforma = docType === 'proforma'
     const isReminder = docType === 'reminder'
 
-    const mahnung_labels: string[] = ['Zahlungserinnerung', '1. Mahnung', '2. Mahnung', '3. Mahnung (Letzte Frist)']
-    const mahnungLabel = mahnung_labels[inv.mahnung_level ?? 0] ?? 'Zahlungserinnerung'
-
-    const docTitles: Record<string, string> = {
-      invoice: 'Rechnung',
-      proforma: 'Proforma-Rechnung',
-      quote: 'Angebot',
-      credit_note: 'Gutschrift',
-      reminder: mahnungLabel,
-    }
-    const docTitle = docTitles[docType] ?? 'Rechnung'
+    const mahnungLabel = t.mahnungLabels[inv.mahnung_level ?? 0] ?? t.mahnungLabels[0]
+    const docTitle = isReminder ? mahnungLabel : (t.docTitles[docType] ?? t.docTitles.invoice)
 
     const steuernummer = senderSettings?.invoice_steuernummer || ''
 
     const signedAmount = (amount: number | undefined): string =>
-      isCreditNote ? formatCurrency(-(Math.abs(amount ?? 0))) : formatCurrency(amount ?? 0)
+      isCreditNote ? formatCurrency(-(Math.abs(amount ?? 0)), lang) : formatCurrency(amount ?? 0, lang)
 
     const itemsHtml = (inv.items || []).map((item: InvoiceHtmlItem) => `
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(String(item.quantity ?? 0)).toLocaleString('de-DE')} ${escapeHtml(item.unit ?? '')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(String(item.quantity ?? 0)).toLocaleString(lang === 'en' ? 'en-GB' : 'de-DE')} ${escapeHtml(item.unit ?? '')}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${signedAmount(item.unit_price)}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;font-weight:500;">${signedAmount(item.total)}</td>
       </tr>`).join('')
 
-    const totalLabel = isCreditNote ? 'Gutschriftbetrag' : 'Gesamtbetrag'
+    const totalLabel = isCreditNote ? t.creditNoteTotal : t.totalLabel
     let totalsHtml: string
-    if (isProforma || isQuote) {
-      totalsHtml = `<tr><td colspan="3" style="padding:10px 14px;text-align:right;font-weight:600;color:#374151;">${totalLabel} (netto)</td><td style="padding:10px 14px;text-align:right;font-weight:700;font-size:15px;">${signedAmount(inv.subtotal)}</td></tr>`
-    } else if (isKleinunternehmer) {
-      totalsHtml = `<tr><td colspan="3" style="padding:10px 14px;text-align:right;font-weight:600;color:#374151;">${totalLabel} (netto)</td><td style="padding:10px 14px;text-align:right;font-weight:700;font-size:15px;">${signedAmount(inv.subtotal)}</td></tr>`
+    if (isProforma || isQuote || isKleinunternehmer) {
+      totalsHtml = `<tr><td colspan="3" style="padding:10px 14px;text-align:right;font-weight:600;color:#374151;">${totalLabel} (${lang === 'en' ? 'net' : 'netto'})</td><td style="padding:10px 14px;text-align:right;font-weight:700;font-size:15px;">${signedAmount(inv.subtotal)}</td></tr>`
     } else {
       totalsHtml = `
         <tr style="background:#f9fafb;">
-          <td colspan="3" style="padding:8px 14px;text-align:right;color:#6b7280;">Nettobetrag</td>
+          <td colspan="3" style="padding:8px 14px;text-align:right;color:#6b7280;">${t.netAmount}</td>
           <td style="padding:8px 14px;text-align:right;color:#374151;">${signedAmount(inv.subtotal)}</td>
         </tr>
         <tr style="background:#f9fafb;">
-          <td colspan="3" style="padding:8px 14px;text-align:right;color:#6b7280;">MwSt. ${escapeHtml(String(inv.tax_rate))}%</td>
+          <td colspan="3" style="padding:8px 14px;text-align:right;color:#6b7280;">${t.vat} ${escapeHtml(String(inv.tax_rate))}%</td>
           <td style="padding:8px 14px;text-align:right;color:#374151;">${signedAmount(inv.tax_amount)}</td>
         </tr>
         <tr>
@@ -150,23 +221,24 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
 
     const senderTaxLine = (!isProforma && !isQuote)
       ? (isKleinunternehmer && steuernummer
-          ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;">Steuernummer: ${escapeHtml(steuernummer)}</div>`
-          : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;">USt-IdNr.: ${escapeHtml(inv.sender_vat_id)}</div>` : ''))
+          ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;">${t.taxNumber}: ${escapeHtml(steuernummer)}</div>`
+          : (inv.sender_vat_id ? `<div style="color:#6b7280;font-size:11px;margin-top:3px;">${t.vatId}: ${escapeHtml(inv.sender_vat_id)}</div>` : ''))
       : ''
 
-    const dueDateLabel = isQuote ? 'Angebot g\u00FCltig bis' : (isReminder ? 'Neue Zahlungsfrist bis' : 'F\u00E4llig bis')
-    const issueDateLabel = isQuote ? 'Angebotsdatum' : (isProforma ? 'Ausstellungsdatum' : (isReminder ? 'Mahndatum' : 'Rechnungsdatum'))
+    const dueDateLabel = t.dueDateLabels[docType] ?? t.dueDateLabels.invoice
+    const issueDateLabel = t.issueDateLabels[docType] ?? t.issueDateLabels.invoice
+    const recipientLabel = t.recipientLabels[docType] ?? t.recipientLabels.invoice
 
     const proformaNotice = isProforma
       ? `<div style="margin-top:20px;padding:14px 16px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:4px;font-size:12px;color:#1e40af;">
-          Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.
+          ${t.proformaNotice}
          </div>` : ''
 
     const mahnungNotice = isReminder
       ? `<div style="margin-top:20px;padding:14px 16px;background:#fff7ed;border-left:4px solid #f97316;border-radius:4px;font-size:12px;color:#9a3412;">
           <strong style="display:block;margin-bottom:6px;">${mahnungLabel}</strong>
-          Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.
-          ${(inv.mahnung_fee ?? 0) > 0 ? `<br>Mahngeb\u00FChr: ${formatCurrency(inv.mahnung_fee)}` : ''}
+          ${t.reminderNotice}
+          ${(inv.mahnung_fee ?? 0) > 0 ? `<br>${t.reminderFee}: ${formatCurrency(inv.mahnung_fee, lang)}` : ''}
          </div>` : ''
 
     const paymentTerms = inv.payment_terms || senderSettings?.default_payment_terms || ''
@@ -174,10 +246,10 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
 
     const kleinunternehmerNotice = (isKleinunternehmer && !isProforma && !isQuote)
       ? `<div style="margin-top:16px;font-size:11px;color:#6b7280;line-height:1.5;">
-          Gem\u00E4\u00DF \u00A7 19 UStG wird keine Umsatzsteuer berechnet.
+          ${t.kleinunternehmerNotice}
          </div>` : ''
 
-    return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+    return `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
     <style>
       * { box-sizing: border-box; }
       body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #111827; margin: 0; padding: 48px; line-height: 1.5; background: #fff; }
@@ -200,16 +272,16 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
       </div>
       <div style="text-align:right;min-width:160px;">
         <div class="label">${issueDateLabel}</div>
-        <div style="font-weight:600;">${formatDate(inv.issue_date)}</div>
-        ${!isProforma && inv.service_date ? `<div class="label" style="margin-top:10px;">Leistungsdatum</div><div style="font-weight:600;">${formatDate(inv.service_date)}</div>` : ''}
-        ${inv.due_date ? `<div class="label" style="margin-top:10px;">${escapeHtml(dueDateLabel)}</div><div style="font-weight:600;">${formatDate(inv.due_date)}</div>` : ''}
+        <div style="font-weight:600;">${formatDate(inv.issue_date, lang)}</div>
+        ${!isProforma && inv.service_date ? `<div class="label" style="margin-top:10px;">${t.serviceDate}</div><div style="font-weight:600;">${formatDate(inv.service_date, lang)}</div>` : ''}
+        ${inv.due_date ? `<div class="label" style="margin-top:10px;">${escapeHtml(dueDateLabel)}</div><div style="font-weight:600;">${formatDate(inv.due_date, lang)}</div>` : ''}
       </div>
     </div>
 
     <!-- Sender / Recipient -->
     <div style="display:flex;gap:60px;margin-bottom:36px;">
       <div style="flex:1;min-width:0;">
-        <div class="label">Von</div>
+        <div class="label">${t.from}</div>
         <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.sender_name ?? '')}</div>
         ${inv.sender_company ? `<div style="color:#374151;">${escapeHtml(inv.sender_company)}</div>` : ''}
         ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.sender_address)}</div>` : ''}
@@ -218,28 +290,28 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
         ${inv.sender_phone ? `<div style="color:#6b7280;font-size:12px;">${escapeHtml(inv.sender_phone)}</div>` : ''}
       </div>
       <div style="flex:1;min-width:0;">
-        <div class="label">${isQuote ? 'Angeboten f\u00FCr' : (isCreditNote ? 'Gutschrift f\u00FCr' : (isReminder ? 'Empf\u00E4nger' : 'Rechnungsempf\u00E4nger'))}</div>
+        <div class="label">${recipientLabel}</div>
         <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.client_name ?? '')}</div>
         ${inv.client_company ? `<div style="color:#374151;">${escapeHtml(inv.client_company)}</div>` : ''}
         ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.client_address)}</div>` : ''}
         ${inv.client_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${escapeHtml(inv.client_email)}</div>` : ''}
-        ${inv.client_vat_id ? `<div style="color:#9ca3af;font-size:11px;">USt-IdNr.: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
+        ${inv.client_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${t.vatId}: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
       </div>
     </div>
 
     <!-- Line items -->
     <table>
       <thead><tr>
-        <th style="width:50%;">Beschreibung</th>
-        <th style="text-align:right;width:15%;">Menge</th>
-        <th style="text-align:right;width:17%;">Einzelpreis</th>
-        <th style="text-align:right;width:18%;">Betrag</th>
+        <th style="width:50%;">${t.tableHeaders.description}</th>
+        <th style="text-align:right;width:15%;">${t.tableHeaders.quantity}</th>
+        <th style="text-align:right;width:17%;">${t.tableHeaders.unitPrice}</th>
+        <th style="text-align:right;width:18%;">${t.tableHeaders.amount}</th>
       </tr></thead>
-      <tbody>${itemsHtml || '<tr><td colspan="4" style="padding:16px;text-align:center;color:#9ca3af;">Keine Positionen</td></tr>'}</tbody>
+      <tbody>${itemsHtml || `<tr><td colspan="4" style="padding:16px;text-align:center;color:#9ca3af;">${t.noItems}</td></tr>`}</tbody>
       <tfoot>${totalsHtml}</tfoot>
     </table>
 
-    ${inv.notes ? `<div style="margin-top:28px;"><div class="label">Anmerkungen</div><div style="color:#4b5563;margin-top:4px;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
+    ${inv.notes ? `<div style="margin-top:28px;"><div class="label">${t.notes}</div><div style="color:#4b5563;margin-top:4px;">${escapeHtml(inv.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
     ${(!isProforma && inv.terms) ? `<div style="margin-top:20px;padding:14px 16px;background:#f9fafb;border-left:4px solid #d1d5db;border-radius:4px;font-size:12px;color:#4b5563;">${escapeHtml(inv.terms).replace(/\n/g, '<br>')}</div>` : ''}
     ${proformaNotice}
     ${mahnungNotice}
@@ -247,7 +319,7 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
 
     ${showPaymentBox ? `
     <div style="margin-top:28px;padding:16px 20px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-      <div class="label" style="margin-bottom:8px;">Zahlung</div>
+      <div class="label" style="margin-bottom:8px;">${t.payment}</div>
       ${paymentTerms ? `<div style="font-weight:600;color:#111827;margin-bottom:6px;">${escapeHtml(paymentTerms)}</div>` : ''}
       ${inv.sender_bank_details ? `<div style="white-space:pre-line;color:#6b7280;font-size:12px;">${escapeHtml(inv.sender_bank_details)}</div>` : ''}
     </div>` : ''}

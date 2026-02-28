@@ -135,14 +135,14 @@ class ContractController
             $template = null;
             if ($templateId) {
                 $template = $this->db->fetchAssociative(
-                    'SELECT * FROM contract_templates WHERE id = ? AND (user_id = ? OR user_id = ?)',
-                    [$templateId, $userId, 'system']
+                    'SELECT * FROM contract_templates WHERE id = ? AND (user_id = ? OR user_id IS NULL)',
+                    [$templateId, $userId]
                 );
             }
             if (!$template) {
                 $template = $this->db->fetchAssociative(
-                    'SELECT * FROM contract_templates WHERE contract_type = ? AND language = ? AND is_default = 1 AND (user_id = ? OR user_id = ?)',
-                    [$type, $language, $userId, 'system']
+                    'SELECT * FROM contract_templates WHERE contract_type = ? AND language = ? AND is_default = 1 AND (user_id = ? OR user_id IS NULL)',
+                    [$type, $language, $userId]
                 );
             }
             if ($template) {

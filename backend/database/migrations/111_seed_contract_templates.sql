@@ -5,7 +5,7 @@
 
 -- 1. Softwarelizenzvertrag (DE)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-license-de', 'system', 'Softwarelizenzvertrag', 'license', 'de', '
+('tpl-license-de', NULL, 'Softwarelizenzvertrag', 'license', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
 <p>Der Auftragnehmer raeumt dem Auftraggeber eine {{license_type_label}} Lizenz zur Nutzung der Software <strong>{{software_name}}</strong> (Version {{software_version}}) ein.</p>
@@ -83,7 +83,7 @@ Datum: _______________<br/>
 
 -- 2. Software License Agreement (EN)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-license-en', 'system', 'Software License Agreement', 'license', 'en', '
+('tpl-license-en', NULL, 'Software License Agreement', 'license', 'en', '
 <h2>1. Subject Matter</h2>
 <div class="clause">
 <p>The Licensor grants the Licensee a {{license_type_label}} license to use the software <strong>{{software_name}}</strong> (Version {{software_version}}).</p>
@@ -161,7 +161,7 @@ Date: _______________<br/>
 
 -- 3. Softwareentwicklungsvertrag (DE)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-dev-de', 'system', 'Softwareentwicklungsvertrag', 'development', 'de', '
+('tpl-dev-de', NULL, 'Softwareentwicklungsvertrag', 'development', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
 <p>Der Auftragnehmer verpflichtet sich zur Entwicklung folgender Software gemaess den in diesem Vertrag und dem Pflichtenheft festgelegten Spezifikationen:</p>
@@ -242,7 +242,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 -- 4. Software Development Agreement (EN)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-dev-en', 'system', 'Software Development Agreement', 'development', 'en', '
+('tpl-dev-en', NULL, 'Software Development Agreement', 'development', 'en', '
 <h2>1. Subject Matter</h2>
 <div class="clause">
 <p>The Developer agrees to develop the following software in accordance with the specifications set forth in this agreement:</p>
@@ -323,7 +323,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 -- 5. SaaS-Vertrag (DE)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-saas-de', 'system', 'SaaS-Vertrag', 'saas', 'de', '
+('tpl-saas-de', NULL, 'SaaS-Vertrag', 'saas', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
 <p>Der Anbieter stellt dem Kunden folgenden Cloud-basierten Softwaredienst (SaaS) zur Verfuegung:</p>
@@ -417,7 +417,7 @@ Datum: _______________<br/>
 
 -- 6. SaaS Agreement (EN)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-saas-en', 'system', 'SaaS Agreement', 'saas', 'en', '
+('tpl-saas-en', NULL, 'SaaS Agreement', 'saas', 'en', '
 <h2>1. Subject Matter</h2>
 <div class="clause">
 <p>The Provider makes the following cloud-based software service (SaaS) available to the Customer:</p>
@@ -511,7 +511,7 @@ Date: _______________<br/>
 
 -- 7. Wartungsvertrag (DE)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-maint-de', 'system', 'Wartungsvertrag', 'maintenance', 'de', '
+('tpl-maint-de', NULL, 'Wartungsvertrag', 'maintenance', 'de', '
 <h2>§ 1 Vertragsgegenstand</h2>
 <div class="clause">
 <p>Der Auftragnehmer uebernimmt die Wartung und den Support fuer folgende Software:</p>
@@ -572,7 +572,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 -- 8. Maintenance Agreement (EN)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-maint-en', 'system', 'Maintenance and Support Agreement', 'maintenance', 'en', '
+('tpl-maint-en', NULL, 'Maintenance and Support Agreement', 'maintenance', 'en', '
 <h2>1. Subject Matter</h2>
 <div class="clause">
 <p>The Provider assumes maintenance and support for the following software:</p>
@@ -633,7 +633,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 -- 9. Geheimhaltungsvereinbarung / NDA (DE)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-nda-de', 'system', 'Geheimhaltungsvereinbarung (NDA)', 'nda', 'de', '
+('tpl-nda-de', NULL, 'Geheimhaltungsvereinbarung (NDA)', 'nda', 'de', '
 <h2>§ 1 Gegenstand</h2>
 <div class="clause">
 <p>Die Parteien beabsichtigen, im Rahmen ihrer geschaeftlichen Zusammenarbeit vertrauliche Informationen auszutauschen. Diese Vereinbarung regelt den Umgang mit diesen Informationen.</p>
@@ -699,7 +699,7 @@ INSERT INTO contract_templates (id, user_id, name, contract_type, language, cont
 
 -- 10. Non-Disclosure Agreement (EN)
 INSERT INTO contract_templates (id, user_id, name, contract_type, language, content_html, variables, is_default) VALUES
-('tpl-nda-en', 'system', 'Non-Disclosure Agreement (NDA)', 'nda', 'en', '
+('tpl-nda-en', NULL, 'Non-Disclosure Agreement (NDA)', 'nda', 'en', '
 <h2>1. Purpose</h2>
 <div class="clause">
 <p>The Parties intend to exchange confidential information in the course of their business relationship. This agreement governs the handling of such information.</p>

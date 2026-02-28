@@ -157,7 +157,7 @@ class ContractController
                     $this->buildTemplateLabels($variablesData, $language),
                     [
                         'start_date' => $data['start_date'] ?? date('Y-m-d'),
-                        'end_date' => $data['end_date'] ?? null,
+                        'end_date' => !empty($data['end_date']) ? $data['end_date'] : null,
                         'notice_period_days' => $data['notice_period_days'] ?? 30,
                         'total_value' => number_format((float) ($data['total_value'] ?? 0), 2, ',', '.'),
                         'currency' => $data['currency'] ?? 'EUR',
@@ -200,7 +200,7 @@ class ContractController
             'party_b_vat_id' => $data['party_b_vat_id'] ?? $clientData['party_b_vat_id'] ?? null,
             // Terms
             'start_date' => $data['start_date'] ?? date('Y-m-d'),
-            'end_date' => $data['end_date'] ?? null,
+            'end_date' => !empty($data['end_date']) ? $data['end_date'] : null,
             'auto_renewal' => (int) ($data['auto_renewal'] ?? 0),
             'renewal_period' => $data['renewal_period'] ?? null,
             'notice_period_days' => (int) ($data['notice_period_days'] ?? 30),
@@ -292,8 +292,12 @@ class ContractController
 
         foreach ($fields as $field) {
             if (isset($data[$field])) {
+                $value = $data[$field];
+                if (in_array($field, ['end_date', 'start_date']) && $value === '') {
+                    $value = null;
+                }
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                $params[] = $value;
             }
         }
 

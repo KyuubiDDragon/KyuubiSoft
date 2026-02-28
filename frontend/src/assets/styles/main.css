@@ -126,7 +126,8 @@
 
   /* Native select dropdown dark styling */
   select,
-  select option {
+  select option,
+  select optgroup {
     background-color: rgb(var(--dark-900));
     color: rgb(var(--dark-100));
   }

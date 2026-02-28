@@ -11,6 +11,7 @@ use App\Core\Services\CacheService;
 use App\Core\Services\FeatureService;
 use App\Core\Services\ICalService;
 use App\Core\Services\LoggerService;
+use App\Core\Services\MailService;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Auth\Controllers\AuthController;
 use App\Modules\Setup\Controllers\SetupController;
@@ -111,6 +112,13 @@ return [
         );
     },
 
+    // Mail Service
+    MailService::class => function (ContainerInterface $c): MailService {
+        return new MailService(
+            $c->get(LoggerInterface::class)
+        );
+    },
+
     // Repositories
     UserRepository::class => function (ContainerInterface $c): UserRepository {
         return new UserRepository($c->get(DBALConnection::class));
@@ -127,7 +135,8 @@ return [
             $c->get(RefreshTokenRepository::class),
             $c->get(JwtManager::class),
             $c->get(PasswordHasher::class),
-            $c->get(RbacManager::class)
+            $c->get(RbacManager::class),
+            $c->get(MailService::class)
         );
     },
 
@@ -332,7 +341,8 @@ return [
     \App\Core\Services\NotificationService::class => function (ContainerInterface $c): \App\Core\Services\NotificationService {
         return new \App\Core\Services\NotificationService(
             $c->get(DBALConnection::class),
-            $c->get(LoggerInterface::class)
+            $c->get(LoggerInterface::class),
+            $c->get(MailService::class)
         );
     },
 
@@ -573,7 +583,8 @@ return [
     // Email Controller
     \App\Modules\Email\Controllers\EmailController::class => function (ContainerInterface $c): \App\Modules\Email\Controllers\EmailController {
         return new \App\Modules\Email\Controllers\EmailController(
-            $c->get(DBALConnection::class)
+            $c->get(DBALConnection::class),
+            $c->get(MailService::class)
         );
     },
 ];

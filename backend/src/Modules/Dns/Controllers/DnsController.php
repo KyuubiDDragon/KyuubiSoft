@@ -6,6 +6,7 @@ namespace App\Modules\Dns\Controllers;
 
 use App\Core\Http\JsonResponse;
 use App\Modules\Dns\Services\CloudflareService;
+use App\Modules\Dns\Services\WebtropiaService;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -15,11 +16,13 @@ use Slim\Routing\RouteContext;
 class DnsController
 {
     private CloudflareService $cloudflare;
+    private WebtropiaService $webtropia;
 
     public function __construct(
         private readonly Connection $db
     ) {
         $this->cloudflare = new CloudflareService();
+        $this->webtropia = new WebtropiaService();
     }
 
     /**
@@ -96,6 +99,7 @@ class DnsController
             'name' => $name,
             'provider' => $provider,
             'provider_config' => $providerConfig !== null ? json_encode($providerConfig) : null,
+            'external_zone_id' => ($provider === 'webtropia' && $providerConfig !== null) ? $name : null,
             'notes' => $notes ?: null,
         ]);
 
@@ -897,7 +901,7 @@ class DnsController
     }
 
     /**
-     * Sync (pull) records from Cloudflare into the local database.
+     * Sync (pull) records from provider into the local database.
      * POST /dns/domains/{id}/sync-provider
      */
     public function syncProvider(Request $request, Response $response): Response
@@ -914,16 +918,25 @@ class DnsController
             return JsonResponse::error('Domain nicht gefunden', 404);
         }
 
-        if ($domain['provider'] !== 'cloudflare') {
-            return JsonResponse::error('Sync ist nur fuer Cloudflare-Domains verfuegbar', 400);
-        }
-
         $config = $domain['provider_config'] ? json_decode($domain['provider_config'], true) : [];
         $token  = $config['api_token'] ?? '';
-        $zoneId = $domain['external_zone_id'] ?? '';
 
-        if ($token === '' || $zoneId === '') {
-            return JsonResponse::error('Cloudflare-Konfiguration unvollstaendig (Token oder Zone-ID fehlt)', 400);
+        if ($token === '') {
+            return JsonResponse::error('API-Token fehlt in der Provider-Konfiguration', 400);
+        }
+
+        return match ($domain['provider']) {
+            'cloudflare' => $this->syncCloudflare($domain, $token, $domainId),
+            'webtropia'  => $this->syncWebtropia($domain, $token, $domainId),
+            default      => JsonResponse::error('Sync ist fuer diesen Provider nicht verfuegbar', 400),
+        };
+    }
+
+    private function syncCloudflare(array $domain, string $token, string $domainId): Response
+    {
+        $zoneId = $domain['external_zone_id'] ?? '';
+        if ($zoneId === '') {
+            return JsonResponse::error('Cloudflare Zone-ID fehlt', 400);
         }
 
         try {
@@ -944,7 +957,6 @@ class DnsController
                     $recordName = substr($recordName, 0, -(strlen($domain['name']) + 1));
                 }
 
-                // Check if record exists by external_id
                 $existing = $this->db->fetchAssociative(
                     'SELECT id FROM dns_records WHERE domain_id = ? AND external_id = ?',
                     [$domainId, $cfRecord['id']]
@@ -981,8 +993,84 @@ class DnsController
         }
     }
 
+    private function syncWebtropia(array $domain, string $token, string $domainId): Response
+    {
+        $zoneName = $domain['external_zone_id'] ?? $domain['name'];
+
+        try {
+            $wtRecords = $this->webtropia->listRecords($token, $zoneName);
+            $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA'];
+            $added = 0;
+            $updated = 0;
+
+            foreach ($wtRecords as $wtRecord) {
+                $type = strtoupper($wtRecord['type'] ?? '');
+                if (!in_array($type, $allowedTypes, true)) {
+                    continue;
+                }
+
+                $recordName = $this->fromWebtropiaFqdn($wtRecord['name'] ?? '', $domain['name']);
+                $externalId = $this->webtropiaRecordKey($wtRecord);
+
+                // Parse MX priority from content
+                $priority = null;
+                $value = $wtRecord['content'] ?? '';
+                if ($type === 'MX' && preg_match('/^(\d+)\s+(.+)$/', $value, $matches)) {
+                    $priority = (int) $matches[1];
+                    $value = rtrim($matches[2], '.');
+                }
+
+                // Try to find by external_id (composite key)
+                $existing = $this->db->fetchAssociative(
+                    'SELECT id FROM dns_records WHERE domain_id = ? AND external_id = ?',
+                    [$domainId, $externalId]
+                );
+
+                $data = [
+                    'type'     => $type,
+                    'name'     => $recordName,
+                    'value'    => $value,
+                    'ttl'      => (int) ($wtRecord['ttl'] ?? 3600),
+                    'priority' => $priority,
+                ];
+
+                if ($existing) {
+                    $this->db->update('dns_records', $data, ['id' => $existing['id']]);
+                    $updated++;
+                } else {
+                    // Fallback: match by type+name+value
+                    $matchByContent = $this->db->fetchAssociative(
+                        'SELECT id FROM dns_records WHERE domain_id = ? AND type = ? AND name = ? AND value = ?',
+                        [$domainId, $type, $recordName, $value]
+                    );
+
+                    if ($matchByContent) {
+                        $data['external_id'] = $externalId;
+                        $this->db->update('dns_records', $data, ['id' => $matchByContent['id']]);
+                        $updated++;
+                    } else {
+                        $data['id'] = Uuid::uuid4()->toString();
+                        $data['domain_id'] = $domainId;
+                        $data['external_id'] = $externalId;
+                        $this->db->insert('dns_records', $data);
+                        $added++;
+                    }
+                }
+            }
+
+            return JsonResponse::success([
+                'added'   => $added,
+                'updated' => $updated,
+                'total'   => $added + $updated,
+            ], "Sync abgeschlossen: {$added} neu, {$updated} aktualisiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Sync fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
     /**
-     * Push local records to Cloudflare.
+     * Push local records to provider.
      * POST /dns/domains/{id}/push-provider
      */
     public function pushProvider(Request $request, Response $response): Response
@@ -999,16 +1087,25 @@ class DnsController
             return JsonResponse::error('Domain nicht gefunden', 404);
         }
 
-        if ($domain['provider'] !== 'cloudflare') {
-            return JsonResponse::error('Push ist nur fuer Cloudflare-Domains verfuegbar', 400);
-        }
-
         $config = $domain['provider_config'] ? json_decode($domain['provider_config'], true) : [];
         $token  = $config['api_token'] ?? '';
-        $zoneId = $domain['external_zone_id'] ?? '';
 
-        if ($token === '' || $zoneId === '') {
-            return JsonResponse::error('Cloudflare-Konfiguration unvollstaendig', 400);
+        if ($token === '') {
+            return JsonResponse::error('API-Token fehlt in der Provider-Konfiguration', 400);
+        }
+
+        return match ($domain['provider']) {
+            'cloudflare' => $this->pushCloudflare($domain, $token, $domainId),
+            'webtropia'  => $this->pushWebtropia($domain, $token, $domainId),
+            default      => JsonResponse::error('Push ist fuer diesen Provider nicht verfuegbar', 400),
+        };
+    }
+
+    private function pushCloudflare(array $domain, string $token, string $domainId): Response
+    {
+        $zoneId = $domain['external_zone_id'] ?? '';
+        if ($zoneId === '') {
+            return JsonResponse::error('Cloudflare Zone-ID fehlt', 400);
         }
 
         try {
@@ -1038,7 +1135,6 @@ class DnsController
                 }
 
                 if (!empty($record['external_id'])) {
-                    // Update existing Cloudflare record
                     $result = $this->cloudflare->updateRecord($token, $zoneId, $record['external_id'], $cfData);
                     if ($result) {
                         $updatedCount++;
@@ -1046,10 +1142,8 @@ class DnsController
                         $errors[] = "Record {$record['name']} ({$record['type']}) konnte nicht aktualisiert werden";
                     }
                 } else {
-                    // Create new record on Cloudflare
                     $result = $this->cloudflare->createRecord($token, $zoneId, $cfData);
                     if ($result) {
-                        // Save the Cloudflare record ID locally
                         $this->db->update('dns_records', [
                             'external_id' => $result['id'],
                         ], ['id' => $record['id']]);
@@ -1068,6 +1162,231 @@ class DnsController
 
         } catch (\Throwable $e) {
             return JsonResponse::error('Push fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function pushWebtropia(array $domain, string $token, string $domainId): Response
+    {
+        $zoneName = $domain['external_zone_id'] ?? $domain['name'];
+
+        try {
+            $localRecords = $this->db->fetchAllAssociative(
+                'SELECT * FROM dns_records WHERE domain_id = ?',
+                [$domainId]
+            );
+
+            // Fetch current remote records for comparison
+            $remoteRecords = $this->webtropia->listRecords($token, $zoneName);
+            $remoteByKey = [];
+            foreach ($remoteRecords as $rr) {
+                $key = $this->webtropiaRecordKey($rr);
+                $remoteByKey[$key] = $rr;
+            }
+
+            $created = 0;
+            $updatedCount = 0;
+            $errors = [];
+
+            foreach ($localRecords as $record) {
+                $fqdn = $this->toWebtropiaFqdn($record['name'], $domain['name']);
+
+                // Build content for Webtropia (MX needs priority prepended)
+                $content = $record['value'];
+                if ($record['type'] === 'MX' && $record['priority'] !== null) {
+                    $content = $record['priority'] . ' ' . $record['value'];
+                    if (!str_ends_with($content, '.')) {
+                        $content .= '.';
+                    }
+                }
+
+                $newRecordData = [
+                    'type'    => $record['type'],
+                    'name'    => $fqdn,
+                    'content' => $content,
+                    'ttl'     => (int) $record['ttl'],
+                ];
+
+                $newExternalId = $this->webtropiaRecordKey($newRecordData);
+
+                if (!empty($record['external_id']) && isset($remoteByKey[$record['external_id']])) {
+                    // Record exists remotely — check if update needed
+                    $oldRemote = $remoteByKey[$record['external_id']];
+                    $oldFqdn = $oldRemote['name'] ?? '';
+                    $oldContent = $oldRemote['content'] ?? '';
+                    $oldTtl = (int) ($oldRemote['ttl'] ?? 3600);
+
+                    if ($fqdn !== $oldFqdn || $content !== $oldContent || (int) $record['ttl'] !== $oldTtl) {
+                        $oldRecordData = [
+                            'type'    => $oldRemote['type'],
+                            'name'    => $oldRemote['name'],
+                            'content' => $oldRemote['content'],
+                            'ttl'     => (int) $oldRemote['ttl'],
+                        ];
+
+                        $result = $this->webtropia->updateRecord($token, $zoneName, $oldRecordData, $newRecordData);
+                        if ($result) {
+                            $this->db->update('dns_records', [
+                                'external_id' => $newExternalId,
+                            ], ['id' => $record['id']]);
+                            $updatedCount++;
+                        } else {
+                            $errors[] = "Record {$record['name']} ({$record['type']}) konnte nicht aktualisiert werden";
+                        }
+                    }
+                } else {
+                    // Create new record on Webtropia
+                    $result = $this->webtropia->createRecord($token, $zoneName, $newRecordData);
+                    if ($result) {
+                        $this->db->update('dns_records', [
+                            'external_id' => $newExternalId,
+                        ], ['id' => $record['id']]);
+                        $created++;
+                    } else {
+                        $errors[] = "Record {$record['name']} ({$record['type']}) konnte nicht erstellt werden";
+                    }
+                }
+            }
+
+            return JsonResponse::success([
+                'created' => $created,
+                'updated' => $updatedCount,
+                'errors'  => $errors,
+            ], "Push abgeschlossen: {$created} erstellt, {$updatedCount} aktualisiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Push fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // ==================== Webtropia Integration ====================
+
+    /**
+     * Verify a Webtropia API token by attempting to fetch a zone.
+     * POST /dns/webtropia/verify
+     */
+    public function verifyWebtropiaToken(Request $request, Response $response): Response
+    {
+        $body = (array) $request->getParsedBody();
+        $token = trim((string) ($body['api_token'] ?? ''));
+        $zone  = trim((string) ($body['zone'] ?? ''));
+
+        if ($token === '') {
+            return JsonResponse::validationError(['api_token' => ['API-Token ist erforderlich']]);
+        }
+        if ($zone === '') {
+            return JsonResponse::validationError(['zone' => ['Domain-Name ist erforderlich']]);
+        }
+
+        try {
+            $valid = $this->webtropia->validateToken($token, $zone);
+            if (!$valid) {
+                return JsonResponse::error('Ungueltiger API-Token oder Domain nicht gefunden', 401);
+            }
+            return JsonResponse::success(['valid' => true], 'Token ist gueltig');
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Token-Validierung fehlgeschlagen: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Import a Webtropia zone as a new domain with all its records.
+     * POST /dns/webtropia/import
+     */
+    public function importWebtropiaZone(Request $request, Response $response): Response
+    {
+        $userId = $request->getAttribute('user_id');
+        $body = (array) $request->getParsedBody();
+
+        $token    = trim((string) ($body['api_token'] ?? ''));
+        $zoneName = trim((string) ($body['zone_name'] ?? ''));
+
+        if ($token === '' || $zoneName === '') {
+            return JsonResponse::validationError([
+                'api_token' => $token === '' ? ['API-Token ist erforderlich'] : [],
+                'zone_name' => $zoneName === '' ? ['Domain-Name ist erforderlich'] : [],
+            ]);
+        }
+
+        // Check if domain already exists
+        $existing = $this->db->fetchAssociative(
+            'SELECT id FROM dns_domains WHERE user_id = ? AND name = ?',
+            [$userId, $zoneName]
+        );
+
+        if ($existing) {
+            return JsonResponse::validationError([
+                'zone_name' => ['Diese Domain existiert bereits. Nutze Sync um Records zu aktualisieren.'],
+            ]);
+        }
+
+        try {
+            $wtRecords = $this->webtropia->listRecords($token, $zoneName);
+
+            $domainId = Uuid::uuid4()->toString();
+            $this->db->insert('dns_domains', [
+                'id'               => $domainId,
+                'user_id'          => $userId,
+                'name'             => $zoneName,
+                'provider'         => 'webtropia',
+                'provider_config'  => json_encode(['api_token' => $token]),
+                'external_zone_id' => $zoneName,
+            ]);
+
+            $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA'];
+            $importedCount = 0;
+
+            foreach ($wtRecords as $wtRecord) {
+                $type = strtoupper($wtRecord['type'] ?? '');
+                if (!in_array($type, $allowedTypes, true)) {
+                    continue;
+                }
+
+                $recordName = $this->fromWebtropiaFqdn($wtRecord['name'] ?? '', $zoneName);
+                $externalId = $this->webtropiaRecordKey($wtRecord);
+
+                // Parse MX priority from content
+                $priority = null;
+                $value = $wtRecord['content'] ?? '';
+                if ($type === 'MX' && preg_match('/^(\d+)\s+(.+)$/', $value, $matches)) {
+                    $priority = (int) $matches[1];
+                    $value = rtrim($matches[2], '.');
+                }
+
+                $this->db->insert('dns_records', [
+                    'id'          => Uuid::uuid4()->toString(),
+                    'domain_id'   => $domainId,
+                    'external_id' => $externalId,
+                    'type'        => $type,
+                    'name'        => $recordName,
+                    'value'       => $value,
+                    'ttl'         => (int) ($wtRecord['ttl'] ?? 3600),
+                    'priority'    => $priority,
+                ]);
+
+                $importedCount++;
+            }
+
+            $domain = $this->db->fetchAssociative(
+                'SELECT d.*, COUNT(r.id) as record_count
+                 FROM dns_domains d
+                 LEFT JOIN dns_records r ON d.id = r.domain_id
+                 WHERE d.id = ?
+                 GROUP BY d.id',
+                [$domainId]
+            );
+
+            $domain['record_count'] = (int) $domain['record_count'];
+            if ($domain['provider_config'] !== null) {
+                $domain['provider_config'] = json_decode($domain['provider_config'], true);
+            }
+
+            return JsonResponse::created([
+                'domain'         => $domain,
+                'imported_count' => $importedCount,
+            ], "{$importedCount} Records von Webtropia importiert");
+
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Import fehlgeschlagen: ' . $e->getMessage(), 500);
         }
     }
 
@@ -1261,5 +1580,48 @@ class DnsController
     private function isDnsType(string $str): bool
     {
         return in_array(strtoupper($str), ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA', 'SOA', 'PTR'], true);
+    }
+
+    // ==================== Webtropia Helpers ====================
+
+    /**
+     * Convert a local record name to Webtropia FQDN with trailing dot.
+     * "@" -> "example.com.", "www" -> "www.example.com.", "*" -> "*.example.com."
+     */
+    private function toWebtropiaFqdn(string $name, string $domainName): string
+    {
+        if ($name === '@' || $name === '') {
+            return $domainName . '.';
+        }
+        return $name . '.' . $domainName . '.';
+    }
+
+    /**
+     * Convert a Webtropia FQDN (with trailing dot) to local relative name.
+     * "example.com." -> "@", "www.example.com." -> "www", "*.example.com." -> "*"
+     */
+    private function fromWebtropiaFqdn(string $fqdn, string $domainName): string
+    {
+        $fqdn = rtrim($fqdn, '.');
+        if (strtolower($fqdn) === strtolower($domainName)) {
+            return '@';
+        }
+        $suffix = '.' . strtolower($domainName);
+        if (str_ends_with(strtolower($fqdn), $suffix)) {
+            return substr($fqdn, 0, -(strlen($domainName) + 1));
+        }
+        return $fqdn;
+    }
+
+    /**
+     * Generate a deterministic composite key for a Webtropia record (used as external_id).
+     * Uses MD5 hash to keep it within VARCHAR(100).
+     */
+    private function webtropiaRecordKey(array $record): string
+    {
+        $type    = strtoupper($record['type'] ?? '');
+        $name    = rtrim($record['name'] ?? '', '.');
+        $content = $record['content'] ?? '';
+        return 'wt:' . md5("{$type}|{$name}|{$content}");
     }
 }

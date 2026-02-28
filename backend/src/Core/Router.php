@@ -1444,6 +1444,10 @@ class Router
                 $protected->post('/dns/domains/{id}/sync-provider', [DnsController::class, 'syncProvider']);
                 $protected->post('/dns/domains/{id}/push-provider', [DnsController::class, 'pushProvider']);
 
+                // DNS Webtropia Integration
+                $protected->post('/dns/webtropia/verify', [DnsController::class, 'verifyWebtropiaToken']);
+                $protected->post('/dns/webtropia/import', [DnsController::class, 'importWebtropiaZone']);
+
                 // Deployments
                 $protected->get('/deployments/stats', [DeploymentController::class, 'getStats']);
                 $protected->get('/deployments/pipelines', [DeploymentController::class, 'listPipelines']);
@@ -1495,6 +1499,9 @@ class Router
 
             // Discord signed media (no auth required - protected by HMAC signature)
             $group->get('/discord/media/{id}/signed', [DiscordController::class, 'serveSignedMedia']);
+
+            // Deployment Webhook (no auth required - protected by token)
+            $group->post('/webhooks/deploy/{token}', [DeploymentController::class, 'webhookDeploy']);
 
             // Public Ticket Routes (no auth required)
             $group->get('/public/ticket-categories', [TicketController::class, 'getCategories']);

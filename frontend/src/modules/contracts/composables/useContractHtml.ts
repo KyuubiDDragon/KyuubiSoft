@@ -42,6 +42,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software-as-a-Service-Vertrag',
       maintenance: 'Wartungs- und Supportvertrag',
       nda: 'Geheimhaltungsvereinbarung',
+      custom: 'Individualvertrag',
     },
     en: {
       license: 'Software License Agreement',
@@ -49,6 +50,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software as a Service Agreement',
       maintenance: 'Maintenance and Support Agreement',
       nda: 'Non-Disclosure Agreement',
+      custom: 'Custom Contract',
     },
   }
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import {
   XMarkIcon,
   ChevronLeftIcon,
@@ -10,8 +10,11 @@ import {
   CloudIcon,
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
+  PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
 import FieldTooltip from '@/components/FieldTooltip.vue'
+import TipTapEditor from '@/components/TipTapEditor.vue'
+import api from '@/core/api/axios'
 
 const props = defineProps({
   show: Boolean,
@@ -59,6 +62,10 @@ const form = ref({
   governing_law: 'DE',
   jurisdiction: '',
   include_nda_clause: 1,
+  // Custom contract
+  content_html: '',
+  save_as_template: false,
+  template_name: '',
 })
 
 const contractTypes = [
@@ -67,7 +74,32 @@ const contractTypes = [
   { value: 'saas', label: 'SaaS', description: 'Software as a Service', icon: CloudIcon, color: 'text-cyan-300', bg: 'bg-cyan-500/10 border-cyan-500/30' },
   { value: 'maintenance', label: 'Wartung', description: 'Wartung & Support', icon: WrenchScrewdriverIcon, color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/30' },
   { value: 'nda', label: 'NDA', description: 'Geheimhaltungsvereinbarung', icon: ShieldCheckIcon, color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+  { value: 'custom', label: 'Individuell', description: 'Eigener Vertragstext', icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
 ]
+
+// Custom templates
+const customTemplates = ref([])
+const selectedTemplateId = ref(null)
+
+async function loadCustomTemplates() {
+  try {
+    const res = await api.get('/api/v1/contract-templates?contract_type=custom')
+    customTemplates.value = res.data?.data?.items || []
+  } catch { /* ignore */ }
+}
+
+function selectCustomTemplate(templateId) {
+  selectedTemplateId.value = templateId
+  if (templateId) {
+    const tpl = customTemplates.value.find(t => t.id === templateId)
+    if (tpl) {
+      form.value.content_html = tpl.content_html || ''
+      if (!form.value.title) form.value.title = tpl.name || ''
+    }
+  } else {
+    form.value.content_html = ''
+  }
+}
 
 const languages = [
   { value: 'de', label: 'Deutsch' },
@@ -134,7 +166,11 @@ function initForm() {
     governing_law: 'DE',
     jurisdiction: '',
     include_nda_clause: 1,
+    content_html: '',
+    save_as_template: false,
+    template_name: '',
   }
+  selectedTemplateId.value = null
 }
 
 function getDefaultVariables(type) {
@@ -200,9 +236,15 @@ watch(() => props.show, (val) => {
 watch(() => form.value.contract_type, (newType) => {
   form.value.variables_data = getDefaultVariables(newType)
   // Auto-set title
-  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: 'SaaS-Vertrag', maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung' }
+  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: 'SaaS-Vertrag', maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung', custom: 'Individualvertrag' }
   if (!form.value.title || Object.values(typeLabels).includes(form.value.title)) {
     form.value.title = typeLabels[newType] || ''
+  }
+  // Load custom templates when custom type is selected
+  if (newType === 'custom') {
+    loadCustomTemplates()
+    form.value.content_html = ''
+    selectedTemplateId.value = null
   }
 })
 
@@ -263,6 +305,10 @@ function handleSubmit() {
       payment_schedule: form.value.payment_schedule,
     },
   }
+  // For custom contracts, include content_html directly
+  if (form.value.contract_type === 'custom') {
+    merged.content_html = form.value.content_html
+  }
   emit('save', merged)
 }
 
@@ -271,6 +317,7 @@ const isDevelopment = computed(() => form.value.contract_type === 'development')
 const isSaas = computed(() => form.value.contract_type === 'saas')
 const isMaintenance = computed(() => form.value.contract_type === 'maintenance')
 const isNda = computed(() => form.value.contract_type === 'nda')
+const isCustom = computed(() => form.value.contract_type === 'custom')
 </script>
 
 <template>
@@ -329,7 +376,7 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     Vertragstyp
                     <FieldTooltip>Wähle den passenden Vertragstyp. Jeder Typ enthält vorgefertigte Klauseln für den jeweiligen Anwendungsfall.</FieldTooltip>
                   </label>
-                  <div class="grid grid-cols-5 gap-2">
+                  <div class="grid grid-cols-3 gap-2">
                     <button
                       v-for="ct in contractTypes"
                       :key="ct.value"
@@ -343,6 +390,22 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                       <component :is="ct.icon" class="w-5 h-5" />
                       <span class="text-[11px] font-semibold leading-tight">{{ ct.label }}</span>
                     </button>
+                  </div>
+
+                  <!-- Custom template picker -->
+                  <div v-if="isCustom && customTemplates.length > 0" class="mt-4">
+                    <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      Vorlage verwenden (optional)
+                      <FieldTooltip>Wähle eine gespeicherte Vorlage als Basis oder starte mit leerem Text.</FieldTooltip>
+                    </label>
+                    <select
+                      :value="selectedTemplateId"
+                      @change="selectCustomTemplate($event.target.value || null)"
+                      class="input"
+                    >
+                      <option value="">Leer starten</option>
+                      <option v-for="tpl in customTemplates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
+                    </select>
                   </div>
                 </div>
 
@@ -481,6 +544,15 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                 <div class="mb-4">
                   <label class="label">Vertragstitel *</label>
                   <input v-model="form.title" type="text" class="input" placeholder="z.B. Softwarelizenzvertrag für XY" required />
+                </div>
+
+                <!-- Custom contract editor -->
+                <div v-if="isCustom">
+                  <label class="label flex items-center gap-1.5 mb-2">
+                    Vertragstext
+                    <FieldTooltip>Gib hier deinen individuellen Vertragstext ein. Du kannst Formatierungen, Listen und Überschriften verwenden.</FieldTooltip>
+                  </label>
+                  <TipTapEditor v-model="form.content_html" placeholder="Vertragstext eingeben..." min-height="300px" />
                 </div>
 
                 <!-- License specific -->
@@ -911,6 +983,19 @@ const isNda = computed(() => form.value.contract_type === 'nda')
                     <FieldTooltip>Interne Notizen zum Vertrag. Erscheinen nicht im generierten Vertragstext.</FieldTooltip>
                   </label>
                   <textarea v-model="form.notes" class="input" rows="3" placeholder="Interne Notizen zum Vertrag"></textarea>
+                </div>
+
+                <!-- Save as Template (custom contracts only) -->
+                <div v-if="isCustom" class="mt-5 pt-5 border-t border-white/[0.06]">
+                  <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input v-model="form.save_as_template" type="checkbox" class="checkbox" />
+                    Als Vorlage speichern
+                    <FieldTooltip>Speichert den Vertragstext als wiederverwendbare Vorlage. Beim nächsten Individualvertrag kannst du diese Vorlage auswählen.</FieldTooltip>
+                  </label>
+                  <div v-if="form.save_as_template" class="mt-3">
+                    <label class="label">Vorlagenname *</label>
+                    <input v-model="form.template_name" type="text" class="input" placeholder="z.B. Freelancer-Vertrag" />
+                  </div>
                 </div>
               </div>
             </div>

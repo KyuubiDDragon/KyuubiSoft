@@ -79,6 +79,7 @@ class ContractController
             'saas'        => 'SAS',
             'maintenance' => 'WAR',
             'nda'         => 'NDA',
+            'custom'      => 'VTR',
         ];
         $prefix = $prefixMap[$type] ?? 'VTR';
         $year = date('Y');
@@ -502,6 +503,7 @@ class ContractController
             'saas'        => 'SAS',
             'maintenance' => 'WAR',
             'nda'         => 'NDA',
+            'custom'      => 'VTR',
         ];
         $prefix = $prefixMap[$type] ?? 'VTR';
         $year = date('Y');

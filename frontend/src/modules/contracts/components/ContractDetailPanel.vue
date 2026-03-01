@@ -48,6 +48,7 @@ const typeColors = {
   saas: 'bg-cyan-500/20 text-cyan-300',
   maintenance: 'bg-amber-500/20 text-amber-300',
   nda: 'bg-emerald-500/20 text-emerald-300',
+  custom: 'bg-rose-500/20 text-rose-300',
 }
 
 const statusActions = computed(() => {

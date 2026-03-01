@@ -221,19 +221,21 @@ export function useContractHtml(): UseContractHtmlReturn {
     const logoDataUrl = await loadLogoDataUrl(null)
     const html = generateHtml(contract, logoDataUrl)
 
-    // Create temp DOM container — passing full HTML string to html2pdf strips
-    // <html>/<head>/<style>/<body> tags via innerHTML, losing all CSS styles.
-    const container = document.createElement('div')
-    container.style.position = 'fixed'
-    container.style.left = '0'
-    container.style.top = '0'
-    container.style.width = '794px'
-    container.style.zIndex = '-9999'
-    container.style.pointerEvents = 'none'
-
-    // Extract <style> and <body> content separately
+    // Extract <style> and <body> content from the full HTML document.
+    // We can't pass the full HTML to html2pdf because innerHTML strips
+    // <html>/<head>/<style>/<body> tags.
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/)
     const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/)
+
+    // Outer wrapper hides the render container visually (zero-size overflow hidden).
+    // html2canvas still renders the inner container correctly because .from()
+    // targets the container element directly, not the wrapper.
+    const wrapper = document.createElement('div')
+    wrapper.style.cssText = 'position:fixed;left:0;top:0;overflow:hidden;height:0;width:0;pointer-events:none;'
+
+    // Inner container has the actual A4-width layout for html2canvas to capture.
+    const container = document.createElement('div')
+    container.style.cssText = "width:794px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#111827;line-height:1.6;padding:48px;background:#fff;"
 
     if (styleMatch) {
       const style = document.createElement('style')
@@ -242,27 +244,26 @@ export function useContractHtml(): UseContractHtmlReturn {
     }
 
     const content = document.createElement('div')
-    content.style.fontFamily = "'Helvetica Neue', Arial, sans-serif"
-    content.style.fontSize = '13px'
-    content.style.color = '#111827'
-    content.style.lineHeight = '1.6'
-    content.style.padding = '48px'
-    content.style.background = '#fff'
     content.innerHTML = bodyMatch ? bodyMatch[1] : ''
     container.appendChild(content)
 
-    document.body.appendChild(container)
+    wrapper.appendChild(container)
+    document.body.appendChild(wrapper)
+
+    // Wait two animation frames to ensure the browser has laid out the element
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
     const { default: html2pdf } = await import('html2pdf.js')
     try {
       await html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-        html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+        html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }).from(container).save()
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+      } as any).from(container).save()
     } finally {
-      document.body.removeChild(container)
+      document.body.removeChild(wrapper)
     }
   }
 

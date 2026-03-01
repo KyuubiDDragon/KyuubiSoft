@@ -263,6 +263,49 @@ class ContractController
         return JsonResponse::success($contract);
     }
 
+    public function generatePdf(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $contract = $this->db->fetchAssociative(
+            'SELECT id, contract_number, party_b_company, party_b_name FROM contracts WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+
+        if (!$contract) {
+            throw new NotFoundException('Contract not found');
+        }
+
+        $data = $request->getParsedBody();
+        $html = $data['html'] ?? '';
+
+        if (empty($html)) {
+            throw new ValidationException('HTML content is required');
+        }
+
+        $dompdf = new \Dompdf\Dompdf([
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Helvetica',
+        ]);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+
+        $partyName = $contract['party_b_company'] ?? $contract['party_b_name'] ?? 'contract';
+        $filename = $contract['contract_number'] . '_' .
+            preg_replace('/[^a-zA-Z0-9]/', '_', $partyName) . '.pdf';
+
+        $response = $response
+            ->withHeader('Content-Type', 'application/pdf')
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->getBody()->write($dompdf->output());
+
+        return $response;
+    }
+
     public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');

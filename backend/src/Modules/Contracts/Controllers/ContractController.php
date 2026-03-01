@@ -285,9 +285,18 @@ class ContractController
             throw new ValidationException('HTML content is required');
         }
 
+        $fontCacheDir = dirname(__DIR__, 4) . '/storage/cache/dompdf';
+        if (!is_dir($fontCacheDir)) {
+            mkdir($fontCacheDir, 0775, true);
+        }
+
         $dompdf = new \Dompdf\Dompdf([
-            'isRemoteEnabled' => true,
+            'isRemoteEnabled' => false,
             'defaultFont' => 'Helvetica',
+            'fontDir' => $fontCacheDir,
+            'fontCache' => $fontCacheDir,
+            'tempDir' => sys_get_temp_dir(),
+            'chroot' => dirname(__DIR__, 4),
         ]);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->loadHtml($html);

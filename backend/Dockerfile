@@ -72,7 +72,7 @@ COPY . .
 RUN composer dump-autoload --optimize
 
 # Create storage directories
-RUN mkdir -p storage/logs storage/cache storage/uploads \
+RUN mkdir -p storage/logs storage/cache storage/cache/dompdf storage/uploads \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage
 

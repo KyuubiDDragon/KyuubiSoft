@@ -20,7 +20,9 @@ fi
 # Create storage directories with proper permissions
 STORAGE_PATH="${STORAGE_PATH:-/var/www/storage}"
 mkdir -p "$STORAGE_PATH/discord/media"
+mkdir -p /var/www/html/storage/cache/dompdf
 chown -R www-data:www-data "$STORAGE_PATH"
+chown www-data:www-data /var/www/html/storage/cache/dompdf
 chmod -R 775 "$STORAGE_PATH"
 echo "Storage directory configured: $STORAGE_PATH"
 

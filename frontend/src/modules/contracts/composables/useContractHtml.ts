@@ -261,7 +261,7 @@ export function useContractHtml(): UseContractHtmlReturn {
         html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, width: 794, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-      }).from(container).save()
+      } as any).from(container).save()
     } finally {
       document.body.removeChild(wrapper)
     }

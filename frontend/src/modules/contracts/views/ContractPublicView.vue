@@ -325,7 +325,7 @@ const contractTypeLabels = {
           <!-- Contract Content (all §-paragraphs) -->
           <div v-if="contract.content_html" class="p-8 border-b border-gray-100 dark:border-dark-700">
             <div class="text-xs text-gray-400 uppercase font-semibold mb-3">Vertragsklauseln</div>
-            <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 dark:prose-invert" v-html="contract.content_html"></div>
+            <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 dark:prose-invert contract-content-wrapper" v-html="contract.content_html"></div>
           </div>
 
           <!-- Notes -->
@@ -420,3 +420,40 @@ const contractTypeLabels = {
     </div>
   </div>
 </template>
+
+<style>
+/* Contract content styles for v-html rendered template content */
+.contract-content-wrapper h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.9;
+}
+.contract-content-wrapper h2:first-child {
+  margin-top: 0;
+}
+.contract-content-wrapper .clause {
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+}
+.contract-content-wrapper .clause p {
+  margin-bottom: 0.5rem;
+}
+.contract-content-wrapper ol,
+.contract-content-wrapper ul {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.contract-content-wrapper ol {
+  list-style-type: decimal;
+}
+.contract-content-wrapper ul {
+  list-style-type: disc;
+}
+.contract-content-wrapper li {
+  margin-bottom: 0.25rem;
+}
+</style>

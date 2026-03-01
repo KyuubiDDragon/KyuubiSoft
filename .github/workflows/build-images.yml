@@ -179,4 +179,13 @@ jobs:
       - name: Trigger Portainer Webhook
         if: ${{ vars.PORTAINER_WEBHOOK_URL != '' }}
         run: |
-          curl -X POST "${{ vars.PORTAINER_WEBHOOK_URL }}" || true
+          for i in 1 2 3; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 -X POST "${{ vars.PORTAINER_WEBHOOK_URL }}" 2>/dev/null)
+            if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
+              echo "Webhook triggered successfully (HTTP $HTTP_CODE)"
+              exit 0
+            fi
+            echo "Attempt $i failed (HTTP $HTTP_CODE), retrying in 10s..."
+            sleep 10
+          done
+          echo "Webhook failed after 3 attempts (last HTTP $HTTP_CODE) - continuing anyway"

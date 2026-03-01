@@ -42,6 +42,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software-as-a-Service-Vertrag',
       maintenance: 'Wartungs- und Supportvertrag',
       nda: 'Geheimhaltungsvereinbarung',
+      custom: 'Individualvertrag',
     },
     en: {
       license: 'Software License Agreement',
@@ -49,6 +50,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software as a Service Agreement',
       maintenance: 'Maintenance and Support Agreement',
       nda: 'Non-Disclosure Agreement',
+      custom: 'Custom Contract',
     },
   }
 
@@ -131,7 +133,6 @@ export function useContractHtml(): UseContractHtmlReturn {
       .label { color: #9ca3af; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; font-weight: 600; }
       .clause { margin-bottom: 16px; line-height: 1.7; page-break-inside: avoid; }
       .clause p { margin: 0 0 8px; }
-      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; margin: 12px 0; page-break-inside: avoid; }
       .info-item .label { margin-bottom: 2px; }
       .info-item .value { font-weight: 600; color: #111827; }
       .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
@@ -140,52 +141,64 @@ export function useContractHtml(): UseContractHtmlReturn {
     </head><body>
 
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;">
-      <div>
-        ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:64px;max-width:200px;object-fit:contain;margin-bottom:12px;display:block;" />` : ''}
-        <h1>${escapeHtml(typeLabel)}</h1>
-        <div style="color:#6b7280;font-size:13px;margin-top:2px;">${l.contractNumber}: ${escapeHtml(contract.contract_number)}</div>
-        ${contract.title ? `<div style="font-size:14px;font-weight:600;margin-top:4px;">${escapeHtml(contract.title)}</div>` : ''}
-      </div>
-      <div style="text-align:right;min-width:160px;">
-        <div class="label">${l.date}</div>
-        <div style="font-weight:600;">${formatDate(contract.created_at)}</div>
-      </div>
-    </div>
+    <table style="width:100%;margin-bottom:36px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="vertical-align:top;">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:64px;max-width:200px;object-fit:contain;margin-bottom:12px;display:block;" />` : ''}
+          <h1>${escapeHtml(typeLabel)}</h1>
+          <div style="color:#6b7280;font-size:13px;margin-top:2px;">${l.contractNumber}: ${escapeHtml(contract.contract_number)}</div>
+          ${contract.title ? `<div style="font-size:14px;font-weight:600;margin-top:4px;">${escapeHtml(contract.title)}</div>` : ''}
+        </td>
+        <td style="text-align:right;vertical-align:top;width:160px;">
+          <div class="label">${l.date}</div>
+          <div style="font-weight:600;">${formatDate(contract.created_at)}</div>
+        </td>
+      </tr>
+    </table>
 
     <!-- Parties -->
-    <div style="display:flex;gap:60px;margin-bottom:32px;">
-      <div style="flex:1;min-width:0;">
-        <div class="label">${l.partyA}</div>
-        <div style="font-weight:700;font-size:14px;">${escapeHtml(contract.party_a_name ?? '')}</div>
-        ${contract.party_a_company ? `<div style="color:#374151;">${escapeHtml(contract.party_a_company)}</div>` : ''}
-        ${contract.party_a_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(contract.party_a_address)}</div>` : ''}
-        ${contract.party_a_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${l.email}: ${escapeHtml(contract.party_a_email)}</div>` : ''}
-        ${contract.party_a_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${l.vatId}: ${escapeHtml(contract.party_a_vat_id)}</div>` : ''}
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div class="label">${l.partyB}</div>
-        <div style="font-weight:700;font-size:14px;">${escapeHtml(contract.party_b_name ?? '')}</div>
-        ${contract.party_b_company ? `<div style="color:#374151;">${escapeHtml(contract.party_b_company)}</div>` : ''}
-        ${contract.party_b_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(contract.party_b_address)}</div>` : ''}
-        ${contract.party_b_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${l.email}: ${escapeHtml(contract.party_b_email)}</div>` : ''}
-        ${contract.party_b_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${l.vatId}: ${escapeHtml(contract.party_b_vat_id)}</div>` : ''}
-      </div>
-    </div>
+    <table style="width:100%;margin-bottom:32px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label">${l.partyA}</div>
+          <div style="font-weight:700;font-size:14px;">${escapeHtml(contract.party_a_name ?? '')}</div>
+          ${contract.party_a_company ? `<div style="color:#374151;">${escapeHtml(contract.party_a_company)}</div>` : ''}
+          ${contract.party_a_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(contract.party_a_address)}</div>` : ''}
+          ${contract.party_a_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${l.email}: ${escapeHtml(contract.party_a_email)}</div>` : ''}
+          ${contract.party_a_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${l.vatId}: ${escapeHtml(contract.party_a_vat_id)}</div>` : ''}
+        </td>
+        <td style="width:10%;"></td>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label">${l.partyB}</div>
+          <div style="font-weight:700;font-size:14px;">${escapeHtml(contract.party_b_name ?? '')}</div>
+          ${contract.party_b_company ? `<div style="color:#374151;">${escapeHtml(contract.party_b_company)}</div>` : ''}
+          ${contract.party_b_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(contract.party_b_address)}</div>` : ''}
+          ${contract.party_b_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${l.email}: ${escapeHtml(contract.party_b_email)}</div>` : ''}
+          ${contract.party_b_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${l.vatId}: ${escapeHtml(contract.party_b_vat_id)}</div>` : ''}
+        </td>
+      </tr>
+    </table>
 
     <hr class="divider" />
 
     <!-- Contract Terms Summary -->
-    <div class="info-grid">
-      <div class="info-item"><div class="label">${l.startDate}</div><div class="value">${formatDate(contract.start_date)}</div></div>
-      <div class="info-item"><div class="label">${l.endDate}</div><div class="value">${contract.end_date ? formatDate(contract.end_date) : (isDe ? 'Unbefristet' : 'Indefinite')}</div></div>
-      <div class="info-item"><div class="label">${l.totalValue}</div><div class="value">${formatCurrency(contract.total_value, contract.currency || 'EUR')}</div></div>
-      <div class="info-item"><div class="label">${l.paymentSchedule}</div><div class="value">${escapeHtml(paymentLabel)}</div></div>
-      <div class="info-item"><div class="label">${l.autoRenewal}</div><div class="value">${contract.auto_renewal ? `${l.yes} (${renewalLabel})` : l.no}</div></div>
-      <div class="info-item"><div class="label">${l.noticePeriod}</div><div class="value">${contract.notice_period_days || 30} ${l.days}</div></div>
-      <div class="info-item"><div class="label">${l.governingLaw}</div><div class="value">${escapeHtml(lawLabel)}</div></div>
-      ${contract.jurisdiction ? `<div class="info-item"><div class="label">${l.jurisdiction}</div><div class="value">${escapeHtml(contract.jurisdiction)}</div></div>` : ''}
-    </div>
+    ${(() => {
+      const items = [
+        `<div class="info-item"><div class="label">${l.startDate}</div><div class="value">${formatDate(contract.start_date)}</div></div>`,
+        `<div class="info-item"><div class="label">${l.endDate}</div><div class="value">${contract.end_date ? formatDate(contract.end_date) : (isDe ? 'Unbefristet' : 'Indefinite')}</div></div>`,
+        `<div class="info-item"><div class="label">${l.totalValue}</div><div class="value">${formatCurrency(contract.total_value, contract.currency || 'EUR')}</div></div>`,
+        `<div class="info-item"><div class="label">${l.paymentSchedule}</div><div class="value">${escapeHtml(paymentLabel)}</div></div>`,
+        `<div class="info-item"><div class="label">${l.autoRenewal}</div><div class="value">${contract.auto_renewal ? `${l.yes} (${renewalLabel})` : l.no}</div></div>`,
+        `<div class="info-item"><div class="label">${l.noticePeriod}</div><div class="value">${contract.notice_period_days || 30} ${l.days}</div></div>`,
+        `<div class="info-item"><div class="label">${l.governingLaw}</div><div class="value">${escapeHtml(lawLabel)}</div></div>`,
+      ]
+      if (contract.jurisdiction) items.push(`<div class="info-item"><div class="label">${l.jurisdiction}</div><div class="value">${escapeHtml(contract.jurisdiction)}</div></div>`)
+      const rows = []
+      for (let i = 0; i < items.length; i += 2) {
+        rows.push(`<tr><td style="width:48%;padding:6px 16px 6px 0;vertical-align:top;">${items[i]}</td><td style="width:48%;padding:6px 0 6px 16px;vertical-align:top;">${items[i + 1] || ''}</td></tr>`)
+      }
+      return `<table style="width:100%;margin:12px 0;page-break-inside:avoid;" cellpadding="0" cellspacing="0">${rows.join('')}</table>`
+    })()}
 
     <hr class="divider" />
 
@@ -197,22 +210,25 @@ export function useContractHtml(): UseContractHtmlReturn {
     ${contract.notes ? `<div style="margin-top:28px;"><div class="label">${l.notes}</div><div style="color:#4b5563;margin-top:4px;">${escapeHtml(contract.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
 
     <!-- Signature Block -->
-    <div style="margin-top:60px;display:flex;gap:60px;page-break-inside:avoid;">
-      <div style="flex:1;">
-        <div class="label" style="margin-bottom:8px;">${l.signaturePartyA}</div>
-        ${signatureA}
-        <div style="margin-top:16px;color:#6b7280;font-size:11px;">${l.datePlace}</div>
-        <div style="border-bottom:1px solid #d1d5db;width:200px;margin-top:20px;"></div>
-        <div style="font-size:12px;margin-top:4px;">${escapeHtml(contract.party_a_name ?? '')}</div>
-      </div>
-      <div style="flex:1;">
-        <div class="label" style="margin-bottom:8px;">${l.signaturePartyB}</div>
-        ${signatureB}
-        <div style="margin-top:16px;color:#6b7280;font-size:11px;">${l.datePlace}</div>
-        <div style="border-bottom:1px solid #d1d5db;width:200px;margin-top:20px;"></div>
-        <div style="font-size:12px;margin-top:4px;">${escapeHtml(contract.party_b_name ?? '')}</div>
-      </div>
-    </div>
+    <table style="width:100%;margin-top:60px;page-break-inside:avoid;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label" style="margin-bottom:8px;">${l.signaturePartyA}</div>
+          ${signatureA}
+          <div style="margin-top:16px;color:#6b7280;font-size:11px;">${l.datePlace}</div>
+          <div style="border-bottom:1px solid #d1d5db;width:200px;margin-top:20px;"></div>
+          <div style="font-size:12px;margin-top:4px;">${escapeHtml(contract.party_a_name ?? '')}</div>
+        </td>
+        <td style="width:10%;"></td>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label" style="margin-bottom:8px;">${l.signaturePartyB}</div>
+          ${signatureB}
+          <div style="margin-top:16px;color:#6b7280;font-size:11px;">${l.datePlace}</div>
+          <div style="border-bottom:1px solid #d1d5db;width:200px;margin-top:20px;"></div>
+          <div style="font-size:12px;margin-top:4px;">${escapeHtml(contract.party_b_name ?? '')}</div>
+        </td>
+      </tr>
+    </table>
 
     </body></html>`
   }

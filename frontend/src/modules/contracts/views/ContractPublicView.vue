@@ -205,6 +205,7 @@ const contractTypeLabels = {
     saas: 'SaaS-Vertrag',
     maintenance: 'Wartungsvertrag',
     nda: 'Geheimhaltungsvereinbarung',
+    custom: 'Individualvertrag',
   },
   en: {
     license: 'Software License Agreement',
@@ -212,6 +213,7 @@ const contractTypeLabels = {
     saas: 'SaaS Agreement',
     maintenance: 'Maintenance Agreement',
     nda: 'Non-Disclosure Agreement',
+    custom: 'Custom Contract',
   },
 }
 

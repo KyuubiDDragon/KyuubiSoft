@@ -98,6 +98,17 @@ async function handleWizardSave(formData) {
   const result = await saveContract(formData)
   if (result) {
     showWizard.value = false
+    // Save as custom template if requested
+    if (formData.save_as_template && formData.template_name) {
+      try {
+        await api.post('/api/v1/contract-templates', {
+          name: formData.template_name,
+          contract_type: 'custom',
+          language: formData.language || 'de',
+          content_html: formData.content_html || '',
+        })
+      } catch { /* ignore template save failure */ }
+    }
     openContractDetail(result)
   }
 }
@@ -164,6 +175,7 @@ const typeColors = {
   saas: 'bg-cyan-500/20 text-cyan-300',
   maintenance: 'bg-amber-500/20 text-amber-300',
   nda: 'bg-emerald-500/20 text-emerald-300',
+  custom: 'bg-rose-500/20 text-rose-300',
 }
 </script>
 

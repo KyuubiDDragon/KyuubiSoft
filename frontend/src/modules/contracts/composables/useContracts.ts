@@ -4,7 +4,7 @@ import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
-export type ContractType = 'license' | 'development' | 'saas' | 'maintenance' | 'nda'
+export type ContractType = 'license' | 'development' | 'saas' | 'maintenance' | 'nda' | 'custom'
 export type ContractStatus = 'draft' | 'sent' | 'signed' | 'active' | 'expired' | 'cancelled' | 'terminated'
 export type ContractLanguage = 'de' | 'en'
 
@@ -198,6 +198,7 @@ export function useContracts(): UseContractsReturn {
     saas: 'SaaS',
     maintenance: 'Wartung',
     nda: 'NDA',
+    custom: 'Individuell',
   }
 
   const filteredContracts = computed<Contract[]>(() => {

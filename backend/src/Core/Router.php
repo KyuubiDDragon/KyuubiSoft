@@ -616,6 +616,8 @@ class Router
                     ->add(new FeatureMiddleware('contracts', null, 'edit'));
                 $protected->get('/contracts/{id}/share', [ContractController::class, 'getShareInfo'])
                     ->add(new FeatureMiddleware('contracts', null, 'view'));
+                $protected->post('/contracts/{id}/pdf', [ContractController::class, 'generatePdf'])
+                    ->add(new FeatureMiddleware('contracts', null, 'view'));
 
                 // Contract Templates
                 $protected->get('/contract-templates', [ContractTemplateController::class, 'index'])

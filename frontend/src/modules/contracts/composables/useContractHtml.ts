@@ -127,11 +127,11 @@ export function useContractHtml(): UseContractHtmlReturn {
       * { box-sizing: border-box; }
       body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #111827; margin: 0; padding: 48px; line-height: 1.6; background: #fff; }
       h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.5px; }
-      h2 { font-size: 15px; font-weight: 700; margin: 24px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #111827; }
+      h2 { font-size: 15px; font-weight: 700; margin: 24px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #111827; page-break-after: avoid; }
       .label { color: #9ca3af; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; font-weight: 600; }
-      .clause { margin-bottom: 16px; line-height: 1.7; }
+      .clause { margin-bottom: 16px; line-height: 1.7; page-break-inside: avoid; }
       .clause p { margin: 0 0 8px; }
-      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; margin: 12px 0; }
+      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; margin: 12px 0; page-break-inside: avoid; }
       .info-item .label { margin-bottom: 2px; }
       .info-item .value { font-weight: 600; color: #111827; }
       .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
@@ -197,7 +197,7 @@ export function useContractHtml(): UseContractHtmlReturn {
     ${contract.notes ? `<div style="margin-top:28px;"><div class="label">${l.notes}</div><div style="color:#4b5563;margin-top:4px;">${escapeHtml(contract.notes).replace(/\n/g, '<br>')}</div></div>` : ''}
 
     <!-- Signature Block -->
-    <div style="margin-top:60px;display:flex;gap:60px;">
+    <div style="margin-top:60px;display:flex;gap:60px;page-break-inside:avoid;">
       <div style="flex:1;">
         <div class="label" style="margin-bottom:8px;">${l.signaturePartyA}</div>
         ${signatureA}
@@ -221,50 +221,19 @@ export function useContractHtml(): UseContractHtmlReturn {
     const logoDataUrl = await loadLogoDataUrl(null)
     const html = generateHtml(contract, logoDataUrl)
 
-    // Extract <style> and <body> content from the full HTML document.
-    // We can't pass the full HTML to html2pdf because innerHTML strips
-    // <html>/<head>/<style>/<body> tags.
-    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/)
-    const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/)
+    const res = await api.post(`/api/v1/contracts/${contract.id}/pdf`, { html }, {
+      responseType: 'blob',
+    })
 
-    // Outer wrapper hides the render container visually (zero-size overflow hidden).
-    // html2canvas still renders the inner container correctly because .from()
-    // targets the container element directly, not the wrapper.
-    const wrapper = document.createElement('div')
-    wrapper.style.cssText = 'position:fixed;left:0;top:0;overflow:hidden;height:0;width:0;pointer-events:none;'
-
-    // Inner container has the actual A4-width layout for html2canvas to capture.
-    const container = document.createElement('div')
-    container.style.cssText = "width:794px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#111827;line-height:1.6;padding:48px;background:#fff;"
-
-    if (styleMatch) {
-      const style = document.createElement('style')
-      style.textContent = styleMatch[1]
-      container.appendChild(style)
-    }
-
-    const content = document.createElement('div')
-    content.innerHTML = bodyMatch ? bodyMatch[1] : ''
-    container.appendChild(content)
-
-    wrapper.appendChild(container)
-    document.body.appendChild(wrapper)
-
-    // Wait two animation frames to ensure the browser has laid out the element
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-
-    const { default: html2pdf } = await import('html2pdf.js')
-    try {
-      await html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-        html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, width: 794, windowWidth: 794 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-      } as any).from(container).save()
-    } finally {
-      document.body.removeChild(wrapper)
-    }
+    const blob = new Blob([res.data], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   return {

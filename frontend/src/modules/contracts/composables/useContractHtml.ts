@@ -224,10 +224,12 @@ export function useContractHtml(): UseContractHtmlReturn {
     // Create temp DOM container — passing full HTML string to html2pdf strips
     // <html>/<head>/<style>/<body> tags via innerHTML, losing all CSS styles.
     const container = document.createElement('div')
-    container.style.position = 'absolute'
-    container.style.left = '-9999px'
+    container.style.position = 'fixed'
+    container.style.left = '0'
     container.style.top = '0'
     container.style.width = '794px'
+    container.style.zIndex = '-9999'
+    container.style.pointerEvents = 'none'
 
     // Extract <style> and <body> content separately
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/)
@@ -256,7 +258,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       await html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: `${contract.contract_number}_${(contract.party_b_company || contract.party_b_name || 'contract').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       }).from(container).save()
     } finally {

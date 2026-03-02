@@ -257,10 +257,30 @@ class InvoiceController
             ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
             : null;
 
+        // Reverse Charge: detect intra-community B2B service (client has EU VAT-ID, not DE)
+        $clientVatId = $clientData['client_vat_id'] ?? $data['client_vat_id'] ?? null;
+        $isReverseCharge = false;
+        $reverseChargeNotice = null;
+        if ($clientVatId) {
+            $vatPrefix = strtoupper(substr(trim($clientVatId), 0, 2));
+            $euCountries = ['AT','BE','BG','CY','CZ','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
+            if (in_array($vatPrefix, $euCountries)) {
+                $isReverseCharge = true;
+                $defaultTaxRate = 0.00; // No VAT for intra-EU B2B reverse charge
+                $lang = $data['language'] ?? 'de';
+                $reverseChargeNotice = $lang === 'de'
+                    ? "Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge) gemäß Art. 44, 196 EU-MwSt-Richtlinie."
+                    : "Reverse charge – VAT to be accounted for by the recipient in accordance with Art. 44 and Art. 196 EU VAT Directive.";
+            }
+        }
+
         $existingTerms = $data['terms'] ?? null;
-        $terms = $kleinunternehmerNotice
-            ? ($existingTerms ? $existingTerms . "\n\n" . $kleinunternehmerNotice : $kleinunternehmerNotice)
-            : $existingTerms;
+        $notices = array_filter([$kleinunternehmerNotice, $reverseChargeNotice]);
+        $terms = $existingTerms;
+        if (!empty($notices)) {
+            $noticeBlock = implode("\n", $notices);
+            $terms = $existingTerms ? $existingTerms . "\n\n" . $noticeBlock : $noticeBlock;
+        }
 
         $this->db->insert('invoices', array_merge([
             'id' => $id,

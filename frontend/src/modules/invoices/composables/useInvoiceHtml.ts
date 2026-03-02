@@ -189,6 +189,11 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const isProforma = docType === 'proforma'
     const isReminder = docType === 'reminder'
 
+    // Detect Reverse Charge: client has EU VAT-ID (not DE)
+    const clientVatId = (inv.client_vat_id || '').trim().toUpperCase()
+    const euCountries = ['AT','BE','BG','CY','CZ','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK']
+    const isReverseCharge = clientVatId.length >= 2 && euCountries.includes(clientVatId.substring(0, 2))
+
     const mahnungLabel = t.mahnungLabels[inv.mahnung_level ?? 0] ?? t.mahnungLabels[0]
     const docTitle = isReminder ? mahnungLabel : (t.docTitles[docType] ?? t.docTitles.invoice)
 

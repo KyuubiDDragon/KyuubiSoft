@@ -42,6 +42,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software-as-a-Service-Vertrag',
       maintenance: 'Wartungs- und Supportvertrag',
       nda: 'Geheimhaltungsvereinbarung',
+      source_code_purchase: 'Source-Code-Kaufvertrag',
       custom: 'Individualvertrag',
     },
     en: {
@@ -50,6 +51,7 @@ export function useContractHtml(): UseContractHtmlReturn {
       saas: 'Software as a Service Agreement',
       maintenance: 'Maintenance and Support Agreement',
       nda: 'Non-Disclosure Agreement',
+      source_code_purchase: 'Source Code Purchase Agreement',
       custom: 'Custom Contract',
     },
   }

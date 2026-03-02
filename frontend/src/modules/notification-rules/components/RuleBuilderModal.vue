@@ -204,7 +204,7 @@ async function handleSave() {
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="modal-overlay" @click.self="emit('close')">
+    <div v-if="show" class="modal-overlay">
       <div class="modal modal-lg">
         <!-- Header -->
         <div class="modal-header">

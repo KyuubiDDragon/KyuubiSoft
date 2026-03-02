@@ -142,7 +142,6 @@ async function copyLink() {
       <div
         v-if="show && contract"
         class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-        @click.self="$emit('close')"
       >
         <div class="modal w-full max-w-lg">
           <!-- Header -->

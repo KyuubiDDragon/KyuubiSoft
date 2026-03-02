@@ -69,7 +69,7 @@ const close = () => {
     <Transition name="fade">
       <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="close" />
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" />
 
         <!-- Modal -->
         <div class="relative modal w-full max-w-md mx-4 overflow-hidden">

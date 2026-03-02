@@ -69,9 +69,9 @@ function initForm() {
       payment_terms: props.editingInvoice.payment_terms ?? '',
       mahnung_level: props.editingInvoice.mahnung_level ?? 0,
       mahnung_fee: props.editingInvoice.mahnung_fee ?? 0,
-      show_kleinunternehmer: props.editingInvoice.show_kleinunternehmer ?? null,
-      show_reverse_charge: props.editingInvoice.show_reverse_charge ?? null,
-      show_license_notice: props.editingInvoice.show_license_notice ?? 0,
+      show_kleinunternehmer: props.editingInvoice.show_kleinunternehmer == null ? null : Number(props.editingInvoice.show_kleinunternehmer),
+      show_reverse_charge: props.editingInvoice.show_reverse_charge == null ? null : Number(props.editingInvoice.show_reverse_charge),
+      show_license_notice: Number(props.editingInvoice.show_license_notice) || 0,
     }
   } else {
     const today = new Date().toISOString().split('T')[0]

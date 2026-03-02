@@ -36,11 +36,12 @@ async function refreshPreview() {
       logoDataUrl.value = await loadLogoDataUrl(currentLogoId)
     }
     htmlContent.value = generateHtml(props.invoice, props.senderSettings, logoDataUrl.value)
-    // If invoice has saved custom HTML, use it; otherwise only reset if no manual edits
+    // If invoice has saved custom HTML, use it; otherwise regenerate fresh
     if (props.invoice.custom_html) {
       editedHtml.value = props.invoice.custom_html
-    } else if (!hasEdits.value) {
+    } else {
       editedHtml.value = htmlContent.value
+      editMode.value = false
     }
   } finally {
     isLoading.value = false
@@ -68,10 +69,11 @@ async function saveCustomHtml() {
 
 async function resetEdits() {
   editedHtml.value = htmlContent.value
+  editMode.value = false
   // Clear saved custom HTML
   if (props.invoice.id) {
     try {
-      await api.put(`/api/v1/invoices/${props.invoice.id}`, { custom_html: '' })
+      await api.put(`/api/v1/invoices/${props.invoice.id}`, { custom_html: null })
     } catch { /* non-critical */ }
   }
 }

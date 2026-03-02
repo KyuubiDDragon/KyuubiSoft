@@ -380,13 +380,13 @@ class InvoiceController
                    'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
                 $params[] = $data[$field];
             }
         }
 
-        $taxRateChanged = isset($data['tax_rate']);
+        $taxRateChanged = array_key_exists('tax_rate', $data);
 
         if (!empty($updates)) {
             $params[] = $id;
@@ -692,17 +692,21 @@ class InvoiceController
         }
 
         $updates[] = 'sender_name = ?';
-        $params[] = $settings['invoice_sender_name'] ?? ($user['display_name'] ?? $user['username']);
+        $params[] = $settings['invoice_sender_name'] ?? $user['name'];
         $updates[] = 'sender_company = ?';
-        $params[] = $settings['invoice_company_name'] ?? null;
+        $params[] = $settings['invoice_company'] ?? null;
         $updates[] = 'sender_address = ?';
-        $params[] = $settings['invoice_sender_address'] ?? null;
+        $params[] = $settings['invoice_address'] ?? null;
         $updates[] = 'sender_email = ?';
-        $params[] = $settings['invoice_sender_email'] ?? $user['email'];
+        $params[] = $settings['invoice_email'] ?? $user['email'];
         $updates[] = 'sender_phone = ?';
-        $params[] = $settings['invoice_sender_phone'] ?? null;
+        $params[] = $settings['invoice_phone'] ?? null;
         $updates[] = 'sender_vat_id = ?';
         $params[] = $settings['invoice_vat_id'] ?? null;
+        $updates[] = 'sender_steuernummer = ?';
+        $params[] = $settings['invoice_steuernummer'] ?? null;
+        $updates[] = 'sender_logo_file_id = ?';
+        $params[] = $settings['invoice_logo_file_id'] ?? null;
         $updates[] = 'sender_bank_details = ?';
         $params[] = $settings['invoice_bank_details'] ?? null;
 

@@ -87,6 +87,7 @@ interface InvoiceTranslations {
   payment: string
   noItems: string
   kleinunternehmerNotice: string
+  reverseChargeNotice: string
   proformaNotice: string
   reminderNotice: string
   reminderFee: string
@@ -112,6 +113,7 @@ const translations: Record<string, InvoiceTranslations> = {
     payment: 'Zahlung',
     noItems: 'Keine Positionen',
     kleinunternehmerNotice: 'Gem\u00E4\u00DF \u00A7 19 UStG wird keine Umsatzsteuer berechnet.',
+    reverseChargeNotice: 'Steuerschuldnerschaft des Leistungsempf\u00E4ngers (Reverse Charge) gem\u00E4\u00DF Art. 44, 196 EU-MwSt-Richtlinie.',
     proformaNotice: 'Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.',
     reminderNotice: 'Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.',
     reminderFee: 'Mahngeb\u00FChr',
@@ -135,6 +137,7 @@ const translations: Record<string, InvoiceTranslations> = {
     payment: 'Payment',
     noItems: 'No items',
     kleinunternehmerNotice: 'No VAT charged pursuant to \u00A7 19 UStG (German small business regulation).',
+    reverseChargeNotice: 'Reverse charge \u2013 VAT to be accounted for by the recipient in accordance with Art. 44 and Art. 196 EU VAT Directive.',
     proformaNotice: 'This document is a proforma invoice and does not constitute a tax document under \u00A7 14 UStG. No payment obligation arises.',
     reminderNotice: 'We kindly remind you of the outstanding invoice payment.',
     reminderFee: 'Reminder fee',
@@ -182,6 +185,11 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const isQuote = docType === 'quote'
     const isProforma = docType === 'proforma'
     const isReminder = docType === 'reminder'
+
+    // Detect Reverse Charge: client has EU VAT-ID (not DE)
+    const clientVatId = (inv.client_vat_id || '').trim().toUpperCase()
+    const euCountries = ['AT','BE','BG','CY','CZ','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK']
+    const isReverseCharge = clientVatId.length >= 2 && euCountries.includes(clientVatId.substring(0, 2))
 
     const mahnungLabel = t.mahnungLabels[inv.mahnung_level ?? 0] ?? t.mahnungLabels[0]
     const docTitle = isReminder ? mahnungLabel : (t.docTitles[docType] ?? t.docTitles.invoice)
@@ -247,6 +255,11 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const kleinunternehmerNotice = (isKleinunternehmer && !isProforma && !isQuote)
       ? `<div style="margin-top:16px;font-size:11px;color:#6b7280;line-height:1.5;">
           ${t.kleinunternehmerNotice}
+         </div>` : ''
+
+    const reverseChargeNotice = (isReverseCharge && !isProforma && !isQuote)
+      ? `<div style="margin-top:12px;padding:10px 14px;background:#fefce8;border-left:4px solid #eab308;border-radius:4px;font-size:11px;color:#854d0e;line-height:1.5;">
+          ${t.reverseChargeNotice}
          </div>` : ''
 
     return `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
@@ -316,6 +329,7 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     ${proformaNotice}
     ${mahnungNotice}
     ${kleinunternehmerNotice}
+    ${reverseChargeNotice}
 
     ${showPaymentBox ? `
     <div style="margin-top:28px;padding:16px 20px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">

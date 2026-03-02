@@ -572,6 +572,10 @@ class Router
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->put('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->put('/invoices/{id}/items-reorder', [InvoiceController::class, 'reorderItems'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
+                $protected->post('/invoices/{id}/regenerate', [InvoiceController::class, 'regenerate'])
+                    ->add(new FeatureMiddleware('invoices', null, 'edit'));
                 $protected->delete('/invoices/{id}/items/{itemId}', [InvoiceController::class, 'deleteItem'])
                     ->add(new FeatureMiddleware('invoices', null, 'edit'));
 

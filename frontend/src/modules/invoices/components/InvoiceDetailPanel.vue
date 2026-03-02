@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import {
   XMarkIcon,
   ArrowDownTrayIcon,
+  ArrowPathIcon,
   DocumentDuplicateIcon,
   PencilIcon,
   TrashIcon,
@@ -31,6 +32,7 @@ const emit = defineEmits([
   'delete',
   'status-change',
   'items-changed',
+  'regenerate',
 ])
 
 const activeTab = ref('overview')
@@ -96,8 +98,8 @@ function handleKeydown(e) {
   if (e.key === 'Escape') emit('close')
 }
 
-watch(() => props.invoice, (val) => {
-  if (val) activeTab.value = 'overview'
+watch(() => props.invoice?.id, () => {
+  activeTab.value = 'overview'
 })
 </script>
 
@@ -200,6 +202,13 @@ watch(() => props.invoice, (val) => {
                     title="Als PDF herunterladen"
                   >
                     <ArrowDownTrayIcon class="w-5 h-5" />
+                  </button>
+                  <button
+                    @click="$emit('regenerate', invoice)"
+                    class="p-2 rounded-lg text-gray-400 hover:text-emerald-400 hover:bg-white/[0.04] transition-colors"
+                    title="Daten neu laden (Kunde, Absender)"
+                  >
+                    <ArrowPathIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('duplicate', invoice)"

@@ -263,21 +263,32 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const paymentTerms = inv.payment_terms || senderSettings?.default_payment_terms || ''
     const showPaymentBox = !isProforma && !isQuote && (paymentTerms || inv.sender_bank_details)
 
-    const kleinunternehmerNotice = (isKleinunternehmer && !isProforma && !isQuote)
+    // Notice flags: null = auto-detect, 1 = force show, 0 = force hide
+    const showKleinunternehmerFlag = inv.show_kleinunternehmer as number | null | undefined
+    const showReverseChargeFlag = inv.show_reverse_charge as number | null | undefined
+    const showLicenseFlag = inv.show_license_notice as number | null | undefined
+
+    // Kleinunternehmer: auto = show when tax_rate is 0
+    const shouldShowKleinunternehmer = showKleinunternehmerFlag === 1
+      || (showKleinunternehmerFlag == null && isKleinunternehmer)
+    const kleinunternehmerNotice = (shouldShowKleinunternehmer && !isProforma && !isQuote)
       ? `<div style="margin-top:16px;font-size:11px;color:#6b7280;line-height:1.5;">
           ${t.kleinunternehmerNotice}
          </div>` : ''
 
-    // Reverse-Charge: client has a non-DE VAT ID → intra-EU B2B
+    // Reverse-Charge: auto = show when client has non-DE EU VAT ID
     const clientVat = (inv.client_vat_id ?? '').trim().toUpperCase()
     const isIntraEu = clientVat.length > 0 && !clientVat.startsWith('DE')
-    const reverseChargeNotice = (isIntraEu && !isProforma && !isQuote)
+    const shouldShowReverseCharge = showReverseChargeFlag === 1
+      || (showReverseChargeFlag == null && isIntraEu)
+    const reverseChargeNotice = (shouldShowReverseCharge && !isProforma && !isQuote)
       ? `<div style="margin-top:12px;font-size:11px;color:#6b7280;line-height:1.5;">
           ${t.reverseChargeNotice}
          </div>` : ''
 
-    // License limitation notice
-    const licenseNotice = (!isProforma && !isQuote && !isReminder && !isCreditNote)
+    // License notice: only shown when explicitly enabled (default off)
+    const shouldShowLicense = showLicenseFlag === 1
+    const licenseNotice = (shouldShowLicense && !isProforma && !isQuote && !isReminder && !isCreditNote)
       ? `<div style="margin-top:8px;font-size:11px;color:#6b7280;line-height:1.5;">
           ${t.licenseNotice}
          </div>` : ''

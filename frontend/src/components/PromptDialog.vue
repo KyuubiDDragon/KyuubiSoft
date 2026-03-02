@@ -48,7 +48,6 @@ function onInputKeydown(e) {
         <!-- Backdrop -->
         <div
           class="absolute inset-0 bg-black/60 backdrop-blur-md"
-          @click="handleCancel"
         />
 
         <!-- Dialog -->

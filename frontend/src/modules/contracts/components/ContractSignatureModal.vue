@@ -99,7 +99,6 @@ function saveSignature() {
       <div
         v-if="show"
         class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-        @click.self="$emit('close')"
       >
         <div class="modal w-full max-w-lg">
           <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">

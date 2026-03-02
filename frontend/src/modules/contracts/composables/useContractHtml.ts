@@ -3,7 +3,7 @@ import type { Contract } from './useContracts'
 
 export interface UseContractHtmlReturn {
   generateHtml: (contract: Contract, logoDataUrl?: string) => string
-  downloadPdf: (contract: Contract) => Promise<void>
+  downloadPdf: (contract: Contract, editedHtml?: string) => Promise<void>
   loadLogoDataUrl: (logoFileId: string | null | undefined) => Promise<string>
 }
 
@@ -235,9 +235,12 @@ export function useContractHtml(): UseContractHtmlReturn {
     </body></html>`
   }
 
-  async function downloadPdf(contract: Contract): Promise<void> {
-    const logoDataUrl = await loadLogoDataUrl(null)
-    const html = generateHtml(contract, logoDataUrl)
+  async function downloadPdf(contract: Contract, editedHtml?: string): Promise<void> {
+    let html = editedHtml || ''
+    if (!html) {
+      const logoDataUrl = await loadLogoDataUrl(null)
+      html = generateHtml(contract, logoDataUrl)
+    }
 
     const res = await api.post(`/api/v1/contracts/${contract.id}/pdf`, { html }, {
       responseType: 'blob',

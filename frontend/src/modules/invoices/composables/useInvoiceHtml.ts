@@ -62,7 +62,7 @@ export interface InvoiceSenderHtmlSettings {
  */
 export interface UseInvoiceHtmlReturn {
   generateHtml: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, logoDataUrl?: string) => string
-  downloadPdf: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings) => Promise<void>
+  downloadPdf: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, editedHtml?: string) => Promise<void>
   loadLogoDataUrl: (logoFileId: string | null | undefined) => Promise<string>
 }
 
@@ -88,6 +88,7 @@ interface InvoiceTranslations {
   noItems: string
   kleinunternehmerNotice: string
   reverseChargeNotice: string
+  licenseNotice: string
   proformaNotice: string
   reminderNotice: string
   reminderFee: string
@@ -113,7 +114,8 @@ const translations: Record<string, InvoiceTranslations> = {
     payment: 'Zahlung',
     noItems: 'Keine Positionen',
     kleinunternehmerNotice: 'Gem\u00E4\u00DF \u00A7 19 UStG wird keine Umsatzsteuer berechnet.',
-    reverseChargeNotice: 'Steuerschuldnerschaft des Leistungsempf\u00E4ngers (Reverse Charge) gem\u00E4\u00DF Art. 44, 196 EU-MwSt-Richtlinie.',
+    reverseChargeNotice: 'Reverse Charge \u2013 Die Steuerschuldnerschaft geht auf den Leistungsempf\u00E4nger \u00FCber gem\u00E4\u00DF Art. 44 und Art. 196 der EU-Mehrwertsteuerrichtlinie.',
+    licenseNotice: 'Non-exclusive, non-transferable Lizenz. Die Nutzung ist beschr\u00E4nkt auf den Server des Kunden. Weitervertrieb oder Weiterverkauf ist nicht gestattet.',
     proformaNotice: 'Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.',
     reminderNotice: 'Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.',
     reminderFee: 'Mahngeb\u00FChr',
@@ -137,7 +139,8 @@ const translations: Record<string, InvoiceTranslations> = {
     payment: 'Payment',
     noItems: 'No items',
     kleinunternehmerNotice: 'No VAT charged pursuant to \u00A7 19 UStG (German small business regulation).',
-    reverseChargeNotice: 'Reverse charge \u2013 VAT to be accounted for by the recipient in accordance with Art. 44 and Art. 196 EU VAT Directive.',
+    reverseChargeNotice: 'Reverse charge \u2013 VAT to be accounted for by the recipient in accordance with Art. 44 and Art. 196 of the EU VAT Directive.',
+    licenseNotice: 'Non-exclusive, non-transferable license. License is limited to use on the customer\u2019s server. Redistribution or resale is not permitted.',
     proformaNotice: 'This document is a proforma invoice and does not constitute a tax document under \u00A7 14 UStG. No payment obligation arises.',
     reminderNotice: 'We kindly remind you of the outstanding invoice payment.',
     reminderFee: 'Reminder fee',
@@ -257,9 +260,18 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
           ${t.kleinunternehmerNotice}
          </div>` : ''
 
-    const reverseChargeNotice = (isReverseCharge && !isProforma && !isQuote)
-      ? `<div style="margin-top:12px;padding:10px 14px;background:#fefce8;border-left:4px solid #eab308;border-radius:4px;font-size:11px;color:#854d0e;line-height:1.5;">
+    // Reverse-Charge: client has a non-DE VAT ID → intra-EU B2B
+    const clientVat = (inv.client_vat_id ?? '').trim().toUpperCase()
+    const isIntraEu = clientVat.length > 0 && !clientVat.startsWith('DE')
+    const reverseChargeNotice = (isIntraEu && !isProforma && !isQuote)
+      ? `<div style="margin-top:12px;font-size:11px;color:#6b7280;line-height:1.5;">
           ${t.reverseChargeNotice}
+         </div>` : ''
+
+    // License limitation notice
+    const licenseNotice = (!isProforma && !isQuote && !isReminder && !isCreditNote)
+      ? `<div style="margin-top:8px;font-size:11px;color:#6b7280;line-height:1.5;">
+          ${t.licenseNotice}
          </div>` : ''
 
     return `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8">
@@ -268,52 +280,58 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
       body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #111827; margin: 0; padding: 48px; line-height: 1.5; background: #fff; }
       h1 { font-size: 26px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.5px; }
       .label { color: #9ca3af; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; font-weight: 600; }
-      table { width: 100%; border-collapse: collapse; margin-top: 28px; }
-      thead th { background: #f3f4f6; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; }
-      thead th:not(:first-child) { text-align: right; }
+      table { width: 100%; border-collapse: collapse; }
+      .items-table { margin-top: 28px; }
+      .items-table thead th { background: #f3f4f6; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; }
+      .items-table thead th:not(:first-child) { text-align: right; }
       .divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
       @media print { body { padding: 20mm; } }
     </style>
     </head><body>
 
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;">
-      <div>
-        ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:64px;max-width:200px;object-fit:contain;margin-bottom:12px;display:block;" />` : ''}
-        <h1>${docTitle}</h1>
-        <div style="color:#6b7280;font-size:13px;margin-top:2px;">${escapeHtml(inv.invoice_number)}</div>
-      </div>
-      <div style="text-align:right;min-width:160px;">
-        <div class="label">${issueDateLabel}</div>
-        <div style="font-weight:600;">${formatDate(inv.issue_date, lang)}</div>
-        ${!isProforma && inv.service_date ? `<div class="label" style="margin-top:10px;">${t.serviceDate}</div><div style="font-weight:600;">${formatDate(inv.service_date, lang)}</div>` : ''}
-        ${inv.due_date ? `<div class="label" style="margin-top:10px;">${escapeHtml(dueDateLabel)}</div><div style="font-weight:600;">${formatDate(inv.due_date, lang)}</div>` : ''}
-      </div>
-    </div>
+    <table style="width:100%;margin-bottom:40px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="vertical-align:top;">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:64px;max-width:200px;object-fit:contain;margin-bottom:12px;display:block;" />` : ''}
+          <h1>${docTitle}</h1>
+          <div style="color:#6b7280;font-size:13px;margin-top:2px;">${escapeHtml(inv.invoice_number)}</div>
+        </td>
+        <td style="text-align:right;vertical-align:top;width:160px;">
+          <div class="label">${issueDateLabel}</div>
+          <div style="font-weight:600;">${formatDate(inv.issue_date, lang)}</div>
+          ${!isProforma && inv.service_date ? `<div class="label" style="margin-top:10px;">${t.serviceDate}</div><div style="font-weight:600;">${formatDate(inv.service_date, lang)}</div>` : ''}
+          ${inv.due_date ? `<div class="label" style="margin-top:10px;">${escapeHtml(dueDateLabel)}</div><div style="font-weight:600;">${formatDate(inv.due_date, lang)}</div>` : ''}
+        </td>
+      </tr>
+    </table>
 
     <!-- Sender / Recipient -->
-    <div style="display:flex;gap:60px;margin-bottom:36px;">
-      <div style="flex:1;min-width:0;">
-        <div class="label">${t.from}</div>
-        <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.sender_name ?? '')}</div>
-        ${inv.sender_company ? `<div style="color:#374151;">${escapeHtml(inv.sender_company)}</div>` : ''}
-        ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.sender_address)}</div>` : ''}
-        ${senderTaxLine}
-        ${inv.sender_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${escapeHtml(inv.sender_email)}</div>` : ''}
-        ${inv.sender_phone ? `<div style="color:#6b7280;font-size:12px;">${escapeHtml(inv.sender_phone)}</div>` : ''}
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div class="label">${recipientLabel}</div>
-        <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.client_name ?? '')}</div>
-        ${inv.client_company ? `<div style="color:#374151;">${escapeHtml(inv.client_company)}</div>` : ''}
-        ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.client_address)}</div>` : ''}
-        ${inv.client_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${escapeHtml(inv.client_email)}</div>` : ''}
-        ${inv.client_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${t.vatId}: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
-      </div>
-    </div>
+    <table style="width:100%;margin-bottom:36px;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label">${t.from}</div>
+          <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.sender_name ?? '')}</div>
+          ${inv.sender_company ? `<div style="color:#374151;">${escapeHtml(inv.sender_company)}</div>` : ''}
+          ${inv.sender_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.sender_address)}</div>` : ''}
+          ${senderTaxLine}
+          ${inv.sender_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${escapeHtml(inv.sender_email)}</div>` : ''}
+          ${inv.sender_phone ? `<div style="color:#6b7280;font-size:12px;">${escapeHtml(inv.sender_phone)}</div>` : ''}
+        </td>
+        <td style="width:10%;"></td>
+        <td style="width:45%;vertical-align:top;">
+          <div class="label">${recipientLabel}</div>
+          <div style="font-weight:700;font-size:14px;">${escapeHtml(inv.client_name ?? '')}</div>
+          ${inv.client_company ? `<div style="color:#374151;">${escapeHtml(inv.client_company)}</div>` : ''}
+          ${inv.client_address ? `<div style="white-space:pre-line;color:#4b5563;margin-top:4px;">${escapeHtml(inv.client_address)}</div>` : ''}
+          ${inv.client_email ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">${escapeHtml(inv.client_email)}</div>` : ''}
+          ${inv.client_vat_id ? `<div style="color:#9ca3af;font-size:11px;">${t.vatId}: ${escapeHtml(inv.client_vat_id)}</div>` : ''}
+        </td>
+      </tr>
+    </table>
 
     <!-- Line items -->
-    <table>
+    <table class="items-table">
       <thead><tr>
         <th style="width:50%;">${t.tableHeaders.description}</th>
         <th style="text-align:right;width:15%;">${t.tableHeaders.quantity}</th>
@@ -330,6 +348,7 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     ${mahnungNotice}
     ${kleinunternehmerNotice}
     ${reverseChargeNotice}
+    ${licenseNotice}
 
     ${showPaymentBox ? `
     <div style="margin-top:28px;padding:16px 20px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
@@ -341,16 +360,26 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     </body></html>`
   }
 
-  async function downloadPdf(inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings): Promise<void> {
-    const logoDataUrl = await loadLogoDataUrl(inv.sender_logo_file_id || senderSettings?.logo_file_id)
-    const html = generateHtml(inv, senderSettings, logoDataUrl)
-    const { default: html2pdf } = await import('html2pdf.js')
-    await html2pdf().set({
-      margin: 0,
-      filename: `${inv.invoice_number}.pdf`,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }).from(html as unknown as HTMLElement).save()
+  async function downloadPdf(inv: InvoiceHtmlData & { id?: string }, senderSettings: InvoiceSenderHtmlSettings, editedHtml?: string): Promise<void> {
+    let html = editedHtml || ''
+    if (!html) {
+      const logoDataUrl = await loadLogoDataUrl(inv.sender_logo_file_id || senderSettings?.logo_file_id)
+      html = generateHtml(inv, senderSettings, logoDataUrl)
+    }
+
+    const res = await api.post(`/api/v1/invoices/${inv.id}/pdf`, { html }, {
+      responseType: 'blob',
+    })
+
+    const blob = new Blob([res.data], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${inv.invoice_number}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   return {

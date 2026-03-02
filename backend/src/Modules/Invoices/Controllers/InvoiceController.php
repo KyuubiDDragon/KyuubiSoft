@@ -548,6 +548,60 @@ class InvoiceController
         return JsonResponse::success(null, 'Item deleted');
     }
 
+    // ============ PDF GENERATION ============
+
+    public function generatePdf(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $invoice = $this->db->fetchAssociative(
+            'SELECT id, invoice_number, client_company, client_name FROM invoices WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+
+        if (!$invoice) {
+            throw new NotFoundException('Invoice not found');
+        }
+
+        $data = $request->getParsedBody();
+        $html = $data['html'] ?? '';
+
+        if (empty($html)) {
+            throw new ValidationException('HTML content is required');
+        }
+
+        $fontCacheDir = dirname(__DIR__, 4) . '/storage/cache/dompdf';
+        if (!is_dir($fontCacheDir)) {
+            mkdir($fontCacheDir, 0775, true);
+        }
+
+        $dompdf = new \Dompdf\Dompdf([
+            'isRemoteEnabled' => false,
+            'defaultFont' => 'Helvetica',
+            'fontDir' => $fontCacheDir,
+            'fontCache' => $fontCacheDir,
+            'tempDir' => sys_get_temp_dir(),
+            'chroot' => dirname(__DIR__, 4),
+        ]);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+
+        $clientName = $invoice['client_company'] ?? $invoice['client_name'] ?? 'invoice';
+        $filename = $invoice['invoice_number'] . '_' .
+            preg_replace('/[^a-zA-Z0-9]/', '_', $clientName) . '.pdf';
+
+        $response = $response
+            ->withHeader('Content-Type', 'application/pdf')
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->getBody()->write($dompdf->output());
+
+        return $response;
+    }
+
     // ============ SPECIAL ACTIONS ============
 
     public function createFromTimeEntries(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

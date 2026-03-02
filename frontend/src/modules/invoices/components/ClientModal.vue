@@ -72,7 +72,6 @@ function handleSubmit() {
       <div
         v-if="show"
         class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-        @click.self="$emit('close')"
       >
         <Transition
           enter-active-class="transition ease-out duration-200"

@@ -362,7 +362,8 @@ class InvoiceController
         $params = [];
 
         $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
-                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'custom_html',
+                   'show_kleinunternehmer', 'show_reverse_charge', 'show_license_notice',
                    'notes', 'terms', 'payment_terms',
                    'mahnung_level', 'mahnung_fee'];
 
@@ -696,6 +697,10 @@ class InvoiceController
         $params[] = $settings['invoice_logo_file_id'] ?? null;
         $updates[] = 'sender_bank_details = ?';
         $params[] = $settings['invoice_bank_details'] ?? null;
+
+        // Clear custom HTML so it regenerates fresh
+        $updates[] = 'custom_html = ?';
+        $params[] = null;
 
         if (!empty($updates)) {
             $params[] = $id;

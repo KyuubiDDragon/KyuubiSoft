@@ -30,6 +30,9 @@ const form = ref({
   payment_terms: '',
   mahnung_level: 0,
   mahnung_fee: 0,
+  show_kleinunternehmer: null,
+  show_reverse_charge: null,
+  show_license_notice: 0,
 })
 
 const languages = [
@@ -66,6 +69,9 @@ function initForm() {
       payment_terms: props.editingInvoice.payment_terms ?? '',
       mahnung_level: props.editingInvoice.mahnung_level ?? 0,
       mahnung_fee: props.editingInvoice.mahnung_fee ?? 0,
+      show_kleinunternehmer: props.editingInvoice.show_kleinunternehmer ?? null,
+      show_reverse_charge: props.editingInvoice.show_reverse_charge ?? null,
+      show_license_notice: props.editingInvoice.show_license_notice ?? 0,
     }
   } else {
     const today = new Date().toISOString().split('T')[0]
@@ -82,6 +88,9 @@ function initForm() {
       payment_terms: props.defaultPaymentTerms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
       mahnung_level: 0,
       mahnung_fee: 0,
+      show_kleinunternehmer: null,
+      show_reverse_charge: null,
+      show_license_notice: 0,
     }
   }
 }
@@ -247,6 +256,51 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
               <div v-if="!isQuoteOrProforma">
                 <label class="label">Zahlungsbedingungen</label>
                 <input v-model="form.payment_terms" type="text" class="input" placeholder="Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum." />
+              </div>
+
+              <!-- Legal Notices -->
+              <div v-if="!isQuoteOrProforma">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Rechtshinweise auf der Rechnung</label>
+                <div class="space-y-2">
+                  <label class="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:border-white/[0.08] transition-colors">
+                    <input
+                      type="checkbox"
+                      :checked="form.show_kleinunternehmer === null ? form.tax_rate === 0 : !!form.show_kleinunternehmer"
+                      @change="form.show_kleinunternehmer = $event.target.checked ? 1 : 0"
+                      class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
+                    />
+                    <div>
+                      <span class="text-sm text-gray-200">Kleinunternehmer-Hinweis (§ 19 UStG)</span>
+                      <p class="text-xs text-gray-500 mt-0.5">Keine Umsatzsteuer berechnet</p>
+                    </div>
+                    <span v-if="form.show_kleinunternehmer === null" class="ml-auto text-xs text-gray-600">Auto</span>
+                  </label>
+                  <label class="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:border-white/[0.08] transition-colors">
+                    <input
+                      type="checkbox"
+                      :checked="form.show_reverse_charge === null ? false : !!form.show_reverse_charge"
+                      @change="form.show_reverse_charge = $event.target.checked ? 1 : 0"
+                      class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
+                    />
+                    <div>
+                      <span class="text-sm text-gray-200">Reverse-Charge-Hinweis</span>
+                      <p class="text-xs text-gray-500 mt-0.5">Steuerschuldnerschaft des Leistungsempfängers (EU B2B)</p>
+                    </div>
+                    <span v-if="form.show_reverse_charge === null" class="ml-auto text-xs text-gray-600">Auto</span>
+                  </label>
+                  <label class="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:border-white/[0.08] transition-colors">
+                    <input
+                      type="checkbox"
+                      :checked="!!form.show_license_notice"
+                      @change="form.show_license_notice = $event.target.checked ? 1 : 0"
+                      class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
+                    />
+                    <div>
+                      <span class="text-sm text-gray-200">Lizenz-Hinweis</span>
+                      <p class="text-xs text-gray-500 mt-0.5">Non-exclusive, non-transferable Lizenz</p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <!-- Notes -->

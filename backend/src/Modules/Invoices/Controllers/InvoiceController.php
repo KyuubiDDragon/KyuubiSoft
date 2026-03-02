@@ -374,7 +374,9 @@ class InvoiceController
         $params = [];
 
         $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
-                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'custom_html', 'notes', 'terms', 'payment_terms',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'custom_html',
+                   'show_kleinunternehmer', 'show_reverse_charge', 'show_license_notice',
+                   'notes', 'terms', 'payment_terms',
                    'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {

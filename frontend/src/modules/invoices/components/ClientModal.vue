@@ -23,7 +23,7 @@ const form = ref({
   address_line2: '',
   city: '',
   postal_code: '',
-  country: 'Deutschland',
+  country: '',
   vat_id: '',
   default_hourly_rate: null,
   color: '#6366f1',
@@ -42,7 +42,7 @@ function initForm() {
       address_line2: '',
       city: '',
       postal_code: '',
-      country: 'Deutschland',
+      country: '',
       vat_id: '',
       default_hourly_rate: null,
       color: '#6366f1',
@@ -134,15 +134,19 @@ function handleSubmit() {
                 <input v-model="form.address_line2" type="text" class="input" placeholder="Adresszusatz (optional)" />
               </div>
 
-              <!-- PLZ + Stadt -->
+              <!-- PLZ + Stadt + Land -->
               <div class="grid grid-cols-3 gap-3">
                 <div>
                   <label class="label">PLZ</label>
                   <input v-model="form.postal_code" type="text" class="input" placeholder="12345" />
                 </div>
-                <div class="col-span-2">
+                <div>
                   <label class="label">Stadt</label>
                   <input v-model="form.city" type="text" class="input" placeholder="Berlin" />
+                </div>
+                <div>
+                  <label class="label">Land</label>
+                  <input v-model="form.country" type="text" class="input" placeholder="Deutschland" />
                 </div>
               </div>
 

@@ -92,6 +92,7 @@ interface InvoiceTranslations {
   proformaNotice: string
   reminderNotice: string
   reminderFee: string
+  units: Record<string, string>
 }
 
 const translations: Record<string, InvoiceTranslations> = {
@@ -119,6 +120,7 @@ const translations: Record<string, InvoiceTranslations> = {
     proformaNotice: 'Dieses Dokument ist eine Proforma-Rechnung und kein steuerliches Dokument im Sinne des \u00A7 14 UStG. Es entsteht keine Zahlungsverpflichtung.',
     reminderNotice: 'Wir erlauben uns, Sie an die Begleichung der ausstehenden Rechnung zu erinnern.',
     reminderFee: 'Mahngeb\u00FChr',
+    units: { 'Stunde': 'Stunde', 'Stück': 'Stück', 'Pauschal': 'Pauschal', 'Tag': 'Tag', 'Monat': 'Monat', 'km': 'km' },
   },
   en: {
     docTitles: { invoice: 'Invoice', proforma: 'Proforma Invoice', quote: 'Quote', credit_note: 'Credit Note', reminder: '' },
@@ -144,6 +146,7 @@ const translations: Record<string, InvoiceTranslations> = {
     proformaNotice: 'This document is a proforma invoice and does not constitute a tax document under \u00A7 14 UStG. No payment obligation arises.',
     reminderNotice: 'We kindly remind you of the outstanding invoice payment.',
     reminderFee: 'Reminder fee',
+    units: { 'Stunde': 'hour', 'Stück': 'piece', 'Pauschal': 'flat rate', 'Tag': 'day', 'Monat': 'month', 'km': 'km' },
   },
 }
 
@@ -202,10 +205,15 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     const signedAmount = (amount: number | undefined): string =>
       isCreditNote ? formatCurrency(-(Math.abs(amount ?? 0)), lang) : formatCurrency(amount ?? 0, lang)
 
+    const translateUnit = (unit: string | undefined): string => {
+      if (!unit) return ''
+      return t.units[unit] ?? unit
+    }
+
     const itemsHtml = (inv.items || []).map((item: InvoiceHtmlItem) => `
       <tr>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(item.description ?? '').replace(/\n/g, '<br>')}</td>
-        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(String(item.quantity ?? 0)).toLocaleString(lang === 'en' ? 'en-GB' : 'de-DE')} ${escapeHtml(item.unit ?? '')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${parseFloat(String(item.quantity ?? 0)).toLocaleString(lang === 'en' ? 'en-GB' : 'de-DE')} ${escapeHtml(translateUnit(item.unit))}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">${signedAmount(item.unit_price)}</td>
         <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;font-weight:500;">${signedAmount(item.total)}</td>
       </tr>`).join('')

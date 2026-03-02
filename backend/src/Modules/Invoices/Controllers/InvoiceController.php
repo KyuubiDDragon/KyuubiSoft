@@ -380,13 +380,13 @@ class InvoiceController
                    'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
                 $params[] = $data[$field];
             }
         }
 
-        $taxRateChanged = isset($data['tax_rate']);
+        $taxRateChanged = array_key_exists('tax_rate', $data);
 
         if (!empty($updates)) {
             $params[] = $id;

@@ -79,6 +79,7 @@ class ContractController
             'saas'        => 'SAS',
             'maintenance' => 'WAR',
             'nda'         => 'NDA',
+            'source_code_purchase' => 'SCP',
             'custom'      => 'VTR',
         ];
         $prefix = $prefixMap[$type] ?? 'VTR';
@@ -503,6 +504,7 @@ class ContractController
             'saas'        => 'SAS',
             'maintenance' => 'WAR',
             'nda'         => 'NDA',
+            'source_code_purchase' => 'SCP',
             'custom'      => 'VTR',
         ];
         $prefix = $prefixMap[$type] ?? 'VTR';
@@ -1039,6 +1041,46 @@ class ContractController
             ? ['eu' => 'Europäische Union', 'de' => 'Deutschland', 'us' => 'Vereinigte Staaten', 'custom' => 'wie vereinbart']
             : ['eu' => 'European Union', 'de' => 'Germany', 'us' => 'United States', 'custom' => 'as agreed'];
         $labels['data_location_label'] = $dataLocations[$vars['data_location'] ?? ''] ?? ($vars['data_location'] ?? '');
+
+        // Installation type (License)
+        $installTypes = $isDe
+            ? ['on_premise' => 'On-Premise (lokale Installation)', 'cloud' => 'Cloud-gehostet', 'hybrid' => 'Hybrid (On-Premise + Cloud)']
+            : ['on_premise' => 'On-Premise (local installation)', 'cloud' => 'Cloud-hosted', 'hybrid' => 'Hybrid (On-Premise + Cloud)'];
+        $labels['installation_type_label'] = $installTypes[$vars['installation_type'] ?? ''] ?? ($vars['installation_type'] ?? '');
+
+        // License model (License)
+        $licenseModels = $isDe
+            ? ['perpetual' => 'Dauerhafte Lizenz (Perpetual)', 'subscription' => 'Abonnement (Subscription)', 'named_user' => 'Named-User-Lizenz', 'concurrent' => 'Concurrent-User-Lizenz', 'site' => 'Standortlizenz (Site License)']
+            : ['perpetual' => 'Perpetual License', 'subscription' => 'Subscription License', 'named_user' => 'Named User License', 'concurrent' => 'Concurrent User License', 'site' => 'Site License'];
+        $labels['license_model_label'] = $licenseModels[$vars['license_model'] ?? ''] ?? ($vars['license_model'] ?? '');
+
+        // Cancellation type (Step 4)
+        $cancellationTypes = $isDe
+            ? ['ordinary' => 'Ordentliche Kündigung', 'extraordinary' => 'Außerordentliche Kündigung', 'both' => 'Ordentliche und außerordentliche Kündigung']
+            : ['ordinary' => 'Ordinary termination', 'extraordinary' => 'Extraordinary termination', 'both' => 'Ordinary and extraordinary termination'];
+        $labels['cancellation_type_label'] = $cancellationTypes[$vars['cancellation_type'] ?? ''] ?? ($vars['cancellation_type'] ?? '');
+
+        // IP transfer type (Source Code Purchase)
+        $ipTransferTypes = $isDe
+            ? ['full' => 'Vollständige Übertragung aller Rechte', 'exclusive' => 'Exklusive Nutzungsrechte', 'limited' => 'Eingeschränkte Nutzungsrechte']
+            : ['full' => 'Full transfer of all rights', 'exclusive' => 'Exclusive usage rights', 'limited' => 'Limited usage rights'];
+        $labels['ip_transfer_type_label'] = $ipTransferTypes[$vars['ip_transfer_type'] ?? ''] ?? ($vars['ip_transfer_type'] ?? '');
+
+        // Delivery type (Source Code Purchase)
+        $deliveryTypes = $isDe
+            ? ['repository' => 'Repository-Zugang', 'download' => 'Download / Dateiübertragung', 'media' => 'Physischer Datenträger']
+            : ['repository' => 'Repository access', 'download' => 'Download / file transfer', 'media' => 'Physical media'];
+        $labels['delivery_type_label'] = $deliveryTypes[$vars['delivery_type'] ?? ''] ?? ($vars['delivery_type'] ?? '');
+
+        // Repository platform (Source Code Purchase)
+        $repoPlatforms = ['github' => 'GitHub', 'gitlab' => 'GitLab', 'bitbucket' => 'Bitbucket', 'self_hosted' => 'Self-hosted'];
+        $labels['repository_platform_label'] = $repoPlatforms[$vars['repository_platform'] ?? ''] ?? ($vars['repository_platform'] ?? '');
+
+        // Repository access type (Source Code Purchase)
+        $repoAccessTypes = $isDe
+            ? ['transfer' => 'Repository-Transfer (Eigentümerwechsel)', 'fork' => 'Fork / Kopie', 'archive' => 'Archiv-Download']
+            : ['transfer' => 'Repository transfer (ownership change)', 'fork' => 'Fork / copy', 'archive' => 'Archive download'];
+        $labels['repository_access_type_label'] = $repoAccessTypes[$vars['repository_access_type'] ?? ''] ?? ($vars['repository_access_type'] ?? '');
 
         return $labels;
     }

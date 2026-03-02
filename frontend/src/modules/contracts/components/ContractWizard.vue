@@ -11,6 +11,7 @@ import {
   WrenchScrewdriverIcon,
   ShieldCheckIcon,
   PencilSquareIcon,
+  CommandLineIcon,
 } from '@heroicons/vue/24/outline'
 import FieldTooltip from '@/components/FieldTooltip.vue'
 import TipTapEditor from '@/components/TipTapEditor.vue'
@@ -55,13 +56,22 @@ const form = ref({
   auto_renewal: 0,
   renewal_period: 'yearly',
   notice_period_days: 30,
+  min_term_months: 0,
+  cancellation_type: 'both',
   total_value: 0,
   currency: 'EUR',
   payment_schedule: 'one-time',
+  payment_due_days: 14,
+  early_payment_discount: 0,
   // Step 5
   governing_law: 'DE',
   jurisdiction: '',
   include_nda_clause: 1,
+  exclude_cisg: true,
+  as_is_clause: false,
+  warranty_duration_months: 12,
+  liability_cap_factor: 1,
+  customer_country: 'DE',
   // Custom contract
   content_html: '',
   save_as_template: false,
@@ -74,6 +84,7 @@ const contractTypes = [
   { value: 'saas', label: 'SaaS', description: 'Software as a Service', icon: CloudIcon, color: 'text-cyan-300', bg: 'bg-cyan-500/10 border-cyan-500/30' },
   { value: 'maintenance', label: 'Wartung', description: 'Wartung & Support', icon: WrenchScrewdriverIcon, color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/30' },
   { value: 'nda', label: 'NDA', description: 'Geheimhaltungsvereinbarung', icon: ShieldCheckIcon, color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+  { value: 'source_code_purchase', label: 'Source-Code-Kauf', description: 'Kauf von Quellcode / IP', icon: CommandLineIcon, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/30' },
   { value: 'custom', label: 'Individuell', description: 'Eigener Vertragstext', icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
 ]
 
@@ -180,6 +191,8 @@ function getDefaultVariables(type) {
         software_name: '',
         software_version: '',
         license_type: 'simple',
+        license_model: 'perpetual',
+        installation_type: 'on_premise',
         max_users: 1,
         territory: 'worldwide',
         source_code_access: false,
@@ -187,6 +200,12 @@ function getDefaultVariables(type) {
         updates_included: true,
         updates_duration_months: 12,
         support_level: 'basic',
+        backup_copies: true,
+        affiliate_use: false,
+        api_access: false,
+        data_processing: false,
+        audit_rights: true,
+        open_source_included: false,
       }
     case 'development':
       return {
@@ -196,16 +215,21 @@ function getDefaultVariables(type) {
         hourly_rate: 0,
         acceptance_procedure: '',
         warranty_months: 12,
+        documentation_required: true,
+        deployment_support: false,
       }
     case 'saas':
       return {
         service_description: '',
         sla_uptime: 99.5,
+        sla_credit: true,
         subscription_model: 'monthly',
         price_per_period: 0,
         max_users: 0,
         storage_gb: 0,
         data_location: 'DE',
+        support_included: true,
+        support_level: 'basic',
       }
     case 'maintenance':
       return {
@@ -216,6 +240,7 @@ function getDefaultVariables(type) {
         included_minor_updates: true,
         included_major_updates: false,
         remote_access_required: false,
+        emergency_support: false,
       }
     case 'nda':
       return {
@@ -223,6 +248,20 @@ function getDefaultVariables(type) {
         confidential_info_description: '',
         duration_years: 3,
         penalty_amount: 0,
+      }
+    case 'source_code_purchase':
+      return {
+        software_name: '',
+        software_version: '',
+        source_code_scope: '',
+        delivery_type: 'repository',
+        repository_platform: 'github',
+        repository_access_type: 'transfer',
+        includes_documentation: true,
+        includes_deployment_support: false,
+        ip_transfer_type: 'exclusive',
+        open_source_included: false,
+        warranty_months: 6,
       }
     default:
       return {}
@@ -236,7 +275,7 @@ watch(() => props.show, (val) => {
 watch(() => form.value.contract_type, (newType) => {
   form.value.variables_data = getDefaultVariables(newType)
   // Auto-set title
-  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: 'SaaS-Vertrag', maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung', custom: 'Individualvertrag' }
+  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: 'SaaS-Vertrag', maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung', source_code_purchase: 'Source-Code-Kaufvertrag', custom: 'Individualvertrag' }
   if (!form.value.title || Object.values(typeLabels).includes(form.value.title)) {
     form.value.title = typeLabels[newType] || ''
   }
@@ -303,6 +342,15 @@ function handleSubmit() {
       is_b2c: form.value.is_b2c,
       governing_law: form.value.governing_law,
       payment_schedule: form.value.payment_schedule,
+      cancellation_type: form.value.cancellation_type,
+      min_term_months: form.value.min_term_months,
+      payment_due_days: form.value.payment_due_days,
+      early_payment_discount: form.value.early_payment_discount,
+      exclude_cisg: form.value.exclude_cisg,
+      as_is_clause: form.value.as_is_clause && !form.value.is_b2c,
+      warranty_duration_months: form.value.warranty_duration_months,
+      liability_cap_factor: form.value.liability_cap_factor,
+      customer_country: form.value.customer_country,
     },
   }
   // For custom contracts, include content_html directly
@@ -317,6 +365,7 @@ const isDevelopment = computed(() => form.value.contract_type === 'development')
 const isSaas = computed(() => form.value.contract_type === 'saas')
 const isMaintenance = computed(() => form.value.contract_type === 'maintenance')
 const isNda = computed(() => form.value.contract_type === 'nda')
+const isSourceCodePurchase = computed(() => form.value.contract_type === 'source_code_purchase')
 const isCustom = computed(() => form.value.contract_type === 'custom')
 </script>
 
@@ -333,7 +382,6 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
       <div
         v-if="show"
         class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-        @click.self="$emit('close')"
       >
         <Transition
           enter-active-class="transition ease-out duration-200"
@@ -376,7 +424,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     Vertragstyp
                     <FieldTooltip>Wähle den passenden Vertragstyp. Jeder Typ enthält vorgefertigte Klauseln für den jeweiligen Anwendungsfall.</FieldTooltip>
                   </label>
-                  <div class="grid grid-cols-3 gap-2">
+                  <div class="grid grid-cols-4 gap-2">
                     <button
                       v-for="ct in contractTypes"
                       :key="ct.value"
@@ -607,6 +655,35 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="label flex items-center gap-1.5">
+                        Installationstyp
+                        <FieldTooltip>Wo die Software betrieben wird. Beeinflusst Vertragsklauseln zu Datenspeicherung und Zugriff.</FieldTooltip>
+                      </label>
+                      <div class="flex gap-2">
+                        <button v-for="it in [{v:'on_premise',l:'On-Premise'},{v:'cloud',l:'Cloud'},{v:'hybrid',l:'Hybrid'}]" :key="it.v"
+                          type="button" @click="form.variables_data.installation_type = it.v"
+                          class="flex-1 py-2 rounded-lg text-xs font-medium transition-colors border"
+                          :class="form.variables_data.installation_type === it.v ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
+                          {{ it.l }}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label flex items-center gap-1.5">
+                        Lizenzmodell
+                        <FieldTooltip>Perpetual = dauerhaft. Abo = zeitlich begrenzt. Named-User = pro Benutzer. Concurrent = gleichzeitige Nutzer. Standort = Standortlizenz.</FieldTooltip>
+                      </label>
+                      <select v-model="form.variables_data.license_model" class="input">
+                        <option value="perpetual">Dauerhaft (Perpetual)</option>
+                        <option value="subscription">Abo (Subscription)</option>
+                        <option value="named_user">Named-User</option>
+                        <option value="concurrent">Concurrent</option>
+                        <option value="site">Standortlizenz (Site)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.source_code_access" type="checkbox" class="checkbox" />
                       Quellcode-Zugang
@@ -620,6 +697,36 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.updates_included" type="checkbox" class="checkbox" />
                       Updates inklusive
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.backup_copies" type="checkbox" class="checkbox" />
+                      Sicherungskopien erlaubt
+                      <FieldTooltip>Ob der Lizenznehmer Sicherungskopien der Software erstellen darf (§ 69d Abs. 2 UrhG).</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.affiliate_use" type="checkbox" class="checkbox" />
+                      Tochterunternehmen
+                      <FieldTooltip>Nutzung durch verbundene Unternehmen i.S.d. § 15 AktG erlaubt.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.api_access" type="checkbox" class="checkbox" />
+                      API-Zugang
+                      <FieldTooltip>Ob der Lizenznehmer die Software-API für Integrationen nutzen darf.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.data_processing" type="checkbox" class="checkbox" />
+                      Personenbez. Daten
+                      <FieldTooltip>Aktiviert DSGVO-Klausel im Vertrag wenn die Software personenbezogene Daten verarbeitet.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.audit_rights" type="checkbox" class="checkbox" />
+                      Audit-Recht
+                      <FieldTooltip>Lizenzgeber darf einmal jährlich die vertragsgemäße Nutzung prüfen.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.open_source_included" type="checkbox" class="checkbox" />
+                      Open-Source-Komponenten
+                      <FieldTooltip>Fügt OSS-Compliance-Klausel ein. Aktivieren wenn die Software Open-Source-Bibliotheken enthält.</FieldTooltip>
                     </label>
                   </div>
                   <div v-if="form.variables_data.updates_included">
@@ -638,6 +745,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       <option value="enterprise">Enterprise</option>
                     </select>
                   </div>
+                  <p v-if="form.variables_data.data_processing" class="text-xs text-amber-400">Hinweis: DSGVO-Datenschutzklausel wird automatisch in den Vertrag eingefügt.</p>
                 </div>
 
                 <!-- Development specific -->
@@ -699,6 +807,18 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     </label>
                     <input v-model.number="form.variables_data.warranty_months" type="number" min="1" class="input" />
                   </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.documentation_required" type="checkbox" class="checkbox" />
+                      Technische Dokumentation
+                      <FieldTooltip>Lieferung von API-Docs, Installationsanleitung und Architektur-Übersicht als Pflicht.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.deployment_support" type="checkbox" class="checkbox" />
+                      Deployment-Unterstützung
+                      <FieldTooltip>Go-Live-Begleitung und Deployment-Support nach Abnahme.</FieldTooltip>
+                    </label>
+                  </div>
                 </div>
 
                 <!-- SaaS specific -->
@@ -756,6 +876,28 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       </select>
                     </div>
                   </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.sla_credit" type="checkbox" class="checkbox" />
+                      SLA-Gutschriften
+                      <FieldTooltip>Bei Unterschreitung der SLA-Verfügbarkeit erhält der Kunde anteilige Gutschriften.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.support_included" type="checkbox" class="checkbox" />
+                      Support inklusive
+                    </label>
+                  </div>
+                  <div v-if="form.variables_data.support_included">
+                    <label class="label flex items-center gap-1.5">
+                      Support-Level
+                      <FieldTooltip>Kein Support = ohne. Basic = E-Mail. Premium = E-Mail + Telefon. Enterprise = 24/7 mit SLA.</FieldTooltip>
+                    </label>
+                    <select v-model="form.variables_data.support_level" class="input">
+                      <option value="basic">Basic</option>
+                      <option value="premium">Premium</option>
+                      <option value="enterprise">Enterprise</option>
+                    </select>
+                  </div>
                 </div>
 
                 <!-- Maintenance specific -->
@@ -805,6 +947,11 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       <input v-model="form.variables_data.remote_access_required" type="checkbox" class="checkbox" />
                       Remote-Zugang erforderlich
                     </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.emergency_support" type="checkbox" class="checkbox" />
+                      24/7 Notfall-Support
+                      <FieldTooltip>Rund-um-die-Uhr-Support für kritische Systemausfälle (Totalausfall, Datenverlust).</FieldTooltip>
+                    </label>
                   </div>
                 </div>
 
@@ -852,6 +999,110 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     </div>
                   </div>
                 </div>
+
+                <!-- Source Code Purchase specific -->
+                <div v-if="isSourceCodePurchase" class="space-y-3">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="label">Software-Name</label>
+                      <input v-model="form.variables_data.software_name" type="text" class="input" placeholder="z.B. Jasper CRM" />
+                    </div>
+                    <div>
+                      <label class="label">Version</label>
+                      <input v-model="form.variables_data.software_version" type="text" class="input" placeholder="z.B. 2.1.0" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Umfang des Quellcodes
+                      <FieldTooltip>Beschreibe, welcher Quellcode und welche Komponenten Gegenstand des Kaufs sind.</FieldTooltip>
+                    </label>
+                    <textarea v-model="form.variables_data.source_code_scope" class="input" rows="3" placeholder="z.B. Gesamte Codebasis inkl. Frontend, Backend, Datenbank-Migrationen..."></textarea>
+                  </div>
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      IP-Übertragung
+                      <FieldTooltip>Exklusiv = alle Rechte gehen vollständig auf den Käufer über. Nicht-exklusiv = Verkäufer behält Nutzungsrechte.</FieldTooltip>
+                    </label>
+                    <div class="flex gap-2">
+                      <button type="button" @click="form.variables_data.ip_transfer_type = 'exclusive'"
+                        class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                        :class="form.variables_data.ip_transfer_type === 'exclusive' ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
+                        Exklusiv (vollständige Übertragung)
+                      </button>
+                      <button type="button" @click="form.variables_data.ip_transfer_type = 'non_exclusive'"
+                        class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                        :class="form.variables_data.ip_transfer_type === 'non_exclusive' ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
+                        Nicht-exklusiv
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="label flex items-center gap-1.5">
+                        Lieferung
+                        <FieldTooltip>Wie der Quellcode übergeben wird.</FieldTooltip>
+                      </label>
+                      <select v-model="form.variables_data.delivery_type" class="input">
+                        <option value="repository">Repository-Zugang</option>
+                        <option value="zip">ZIP-Archiv</option>
+                        <option value="both">Repository + ZIP</option>
+                      </select>
+                    </div>
+                    <div v-if="form.variables_data.delivery_type !== 'zip'">
+                      <label class="label flex items-center gap-1.5">
+                        Plattform
+                        <FieldTooltip>Auf welcher Plattform das Repository gehostet ist.</FieldTooltip>
+                      </label>
+                      <select v-model="form.variables_data.repository_platform" class="input">
+                        <option value="github">GitHub</option>
+                        <option value="gitlab">GitLab</option>
+                        <option value="bitbucket">Bitbucket</option>
+                        <option value="self_hosted">Self-Hosted</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div v-if="form.variables_data.delivery_type !== 'zip'">
+                    <label class="label flex items-center gap-1.5">
+                      Repository-Zugang nach Kauf
+                      <FieldTooltip>Transfer = Repository wird auf Käufer übertragen. Goodwill = Zugang bleibt bestehen als Kulanz. Vertraglich = Zugang ist vertraglich garantiert.</FieldTooltip>
+                    </label>
+                    <div class="flex gap-2">
+                      <button v-for="rt in [{v:'transfer',l:'Transfer'},{v:'goodwill',l:'Kulanz'},{v:'contractual',l:'Vertraglich'}]" :key="rt.v"
+                        type="button" @click="form.variables_data.repository_access_type = rt.v"
+                        class="flex-1 py-2 rounded-lg text-xs font-medium transition-colors border"
+                        :class="form.variables_data.repository_access_type === rt.v ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
+                        {{ rt.l }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="label flex items-center gap-1.5">
+                        Gewährleistung (Monate)
+                        <FieldTooltip>Zeitraum, in dem der Verkäufer für Mängel im Quellcode haftet. Standard bei Kauf: 6 Monate.</FieldTooltip>
+                      </label>
+                      <input v-model.number="form.variables_data.warranty_months" type="number" min="0" class="input" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.includes_documentation" type="checkbox" class="checkbox" />
+                      Technische Dokumentation
+                      <FieldTooltip>API-Docs, Architektur-Übersicht, Setup-Anleitung werden mitgeliefert.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.includes_deployment_support" type="checkbox" class="checkbox" />
+                      Deployment-Support
+                      <FieldTooltip>Unterstützung beim Aufsetzen und Inbetriebnahme nach Übergabe.</FieldTooltip>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                      <input v-model="form.variables_data.open_source_included" type="checkbox" class="checkbox" />
+                      Open-Source-Komponenten
+                      <FieldTooltip>Enthält der Code Open-Source-Bibliotheken? Fügt OSS-Compliance-Klausel ein.</FieldTooltip>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <!-- Step 4: Duration & Payment -->
@@ -887,12 +1138,36 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   </select>
                 </div>
 
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Kündigungsfrist (Tage)
+                      <FieldTooltip>Anzahl Tage vor Vertragsende, bis wann gekündigt werden muss.</FieldTooltip>
+                    </label>
+                    <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
+                  </div>
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Mindestlaufzeit (Monate)
+                      <FieldTooltip>Mindestvertragslaufzeit, bevor eine ordentliche Kündigung möglich ist. 0 = keine Mindestlaufzeit.</FieldTooltip>
+                    </label>
+                    <input v-model.number="form.min_term_months" type="number" min="0" class="input" />
+                  </div>
+                </div>
+
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
-                    Kündigungsfrist (Tage)
-                    <FieldTooltip>Anzahl Tage vor Vertragsende, bis wann gekündigt werden muss.</FieldTooltip>
+                    Kündigungsart
+                    <FieldTooltip>Ordentlich = fristgerecht zum Periodenende. Außerordentlich = nur aus wichtigem Grund (§ 314 BGB). Beides = beide Optionen im Vertrag.</FieldTooltip>
                   </label>
-                  <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
+                  <div class="flex gap-2">
+                    <button v-for="ct in [{v:'ordinary',l:'Ordentlich'},{v:'extraordinary',l:'Außerordentlich'},{v:'both',l:'Beides'}]" :key="ct.v"
+                      type="button" @click="form.cancellation_type = ct.v"
+                      class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                      :class="form.cancellation_type === ct.v ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
+                      {{ ct.l }}
+                    </button>
+                  </div>
                 </div>
 
                 <hr class="border-white/[0.06] my-5" />
@@ -938,6 +1213,23 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     >{{ ps.label }}</button>
                   </div>
                 </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Zahlungsziel (Tage)
+                      <FieldTooltip>Innerhalb welcher Frist die Rechnung nach Zugang zu zahlen ist.</FieldTooltip>
+                    </label>
+                    <input v-model.number="form.payment_due_days" type="number" min="0" class="input" />
+                  </div>
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Skonto (%, optional)
+                      <FieldTooltip>Prozentsatz Skonto bei Zahlung innerhalb von 10 Tagen. 0 = kein Skonto.</FieldTooltip>
+                    </label>
+                    <input v-model.number="form.early_payment_discount" type="number" min="0" max="10" step="0.5" class="input" placeholder="0" />
+                  </div>
+                </div>
               </div>
 
               <!-- Step 5: Legal -->
@@ -960,12 +1252,69 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <input v-model="form.jurisdiction" type="text" class="input" placeholder="z.B. Hamburg, Deutschland" />
                 </div>
 
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Kundenland
+                      <FieldTooltip>Land des Kunden. Relevant für USt-IdNr., Reverse-Charge und anwendbares Recht.</FieldTooltip>
+                    </label>
+                    <select v-model="form.customer_country" class="input">
+                      <option value="DE">Deutschland</option>
+                      <option value="AT">Österreich</option>
+                      <option value="CH">Schweiz</option>
+                      <option value="DK">Dänemark</option>
+                      <option value="NL">Niederlande</option>
+                      <option value="FR">Frankreich</option>
+                      <option value="US">USA</option>
+                      <option value="GB">Vereinigtes Königreich</option>
+                      <option value="OTHER">Sonstiges</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Gewährleistungsdauer (Monate)
+                      <FieldTooltip>Allgemeine Gewährleistungsfrist. Bei B2C wird automatisch auf 24 Monate erhöht.</FieldTooltip>
+                    </label>
+                    <input v-model.number="form.warranty_duration_months" type="number" min="0" class="input" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                  <div>
+                    <label class="label flex items-center gap-1.5">
+                      Haftungsdeckel
+                      <FieldTooltip>Faktor × Vertragswert als maximale Haftung. z.B. 1 = Haftung max. Vertragswert. 2 = doppelter Vertragswert. Mindestens 5.000 EUR.</FieldTooltip>
+                    </label>
+                    <select v-model.number="form.liability_cap_factor" class="input">
+                      <option :value="0.5">0,5× Vertragswert</option>
+                      <option :value="1">1× Vertragswert</option>
+                      <option :value="2">2× Vertragswert</option>
+                      <option :value="5">5× Vertragswert</option>
+                      <option :value="0">Unbegrenzt</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div class="mt-4 space-y-3">
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.include_nda_clause" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
                     Geheimhaltungsklausel einbinden
                     <FieldTooltip>Fügt eine zusätzliche NDA-Klausel in den Vertrag ein.</FieldTooltip>
                   </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input v-model="form.exclude_cisg" type="checkbox" class="checkbox" />
+                    CISG ausschließen
+                    <FieldTooltip>Schließt das UN-Kaufrecht (CISG) aus. Standard bei Software-Verträgen, da CISG für Warenhandel konzipiert ist.</FieldTooltip>
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input v-model="form.as_is_clause" type="checkbox" class="checkbox" />
+                    As-Is-Klausel (Gewährleistungsausschluss)
+                    <FieldTooltip>Software wird "wie besehen" verkauft. NUR bei B2B möglich. Bei B2C nicht wirksam.</FieldTooltip>
+                  </label>
+                </div>
+
+                <div v-if="form.as_is_clause && form.is_b2c" class="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+                  <p class="text-xs text-red-300">Hinweis: As-Is-Klausel ist bei B2C-Verträgen nicht wirksam und wird im generierten Vertrag ignoriert.</p>
                 </div>
 
                 <div v-if="form.is_b2c" class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">

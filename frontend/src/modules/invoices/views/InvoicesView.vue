@@ -160,6 +160,19 @@ async function handleDownloadPdf(invoice, editedHtml) {
   }
 }
 
+async function handleRegenerate(invoice) {
+  try {
+    const res = await api.post(`/api/v1/invoices/${invoice.id}/regenerate`)
+    if (res.data.data) {
+      selectedInvoice.value = res.data.data
+    }
+    await loadData()
+    uiStore.showSuccess('Rechnungsdaten wurden neu geladen')
+  } catch {
+    uiStore.showError('Fehler beim Regenerieren')
+  }
+}
+
 // --- Client Actions ---
 function openCreateClient() {
   editingClient.value = null
@@ -598,6 +611,7 @@ async function createFromTimeEntries() {
       @delete="handleDeleteInvoice"
       @status-change="handleStatusChange"
       @items-changed="refreshSelectedInvoice"
+      @regenerate="handleRegenerate"
     />
 
     <!-- Invoice Create / Edit Modal -->

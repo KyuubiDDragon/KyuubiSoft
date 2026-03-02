@@ -194,15 +194,11 @@ function selectCatalogItem(item) {
 }
 
 async function onDragEnd() {
-  // Update sort_order after drag
+  // Batch-update sort_order after drag
   try {
-    await Promise.all(
-      items.value.map((item, idx) =>
-        api.put(`/api/v1/invoices/${props.invoice.id}/items/${item.id}`, {
-          sort_order: idx,
-        })
-      )
-    )
+    await api.put(`/api/v1/invoices/${props.invoice.id}/items-reorder`, {
+      item_ids: items.value.map(item => item.id),
+    })
     emit('items-changed')
   } catch {
     // non-critical

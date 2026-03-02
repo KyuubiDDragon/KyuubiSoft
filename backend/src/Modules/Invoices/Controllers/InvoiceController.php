@@ -505,6 +505,10 @@ class InvoiceController
             $updates[] = 'unit_price = ?';
             $params[] = (float) $data['unit_price'];
         }
+        if (isset($data['sort_order'])) {
+            $updates[] = 'sort_order = ?';
+            $params[] = (int) $data['sort_order'];
+        }
 
         // Recalculate item total
         if (isset($data['quantity']) || isset($data['unit_price'])) {
@@ -526,6 +530,33 @@ class InvoiceController
         $this->recalculateInvoice($invoiceId);
 
         return JsonResponse::success(null, 'Item updated');
+    }
+
+    public function reorderItems(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $invoiceId = $routeContext->getRoute()->getArgument('id');
+        $data = $request->getParsedBody();
+
+        $invoice = $this->db->fetchAssociative(
+            'SELECT * FROM invoices WHERE id = ? AND user_id = ?',
+            [$invoiceId, $userId]
+        );
+
+        if (!$invoice) {
+            throw new NotFoundException('Invoice not found');
+        }
+
+        $itemIds = $data['item_ids'] ?? [];
+        foreach ($itemIds as $index => $itemId) {
+            $this->db->executeStatement(
+                'UPDATE invoice_items SET sort_order = ? WHERE id = ? AND invoice_id = ?',
+                [$index, $itemId, $invoiceId]
+            );
+        }
+
+        return JsonResponse::success(null, 'Items reordered');
     }
 
     public function deleteItem(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -605,6 +636,102 @@ class InvoiceController
     }
 
     // ============ SPECIAL ACTIONS ============
+
+    public function regenerate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $routeContext = RouteContext::fromRequest($request);
+        $id = $routeContext->getRoute()->getArgument('id');
+
+        $invoice = $this->db->fetchAssociative(
+            'SELECT * FROM invoices WHERE id = ? AND user_id = ?',
+            [$id, $userId]
+        );
+
+        if (!$invoice) {
+            throw new NotFoundException('Invoice not found');
+        }
+
+        $updates = [];
+        $params = [];
+
+        // Re-fetch client data if client_id is set
+        if (!empty($invoice['client_id'])) {
+            $client = $this->db->fetchAssociative(
+                'SELECT * FROM clients WHERE id = ? AND user_id = ?',
+                [$invoice['client_id'], $userId]
+            );
+            if ($client) {
+                $updates[] = 'client_name = ?';
+                $params[] = $client['name'];
+                $updates[] = 'client_company = ?';
+                $params[] = $client['company'];
+                $updates[] = 'client_address = ?';
+                $params[] = implode("\n", array_filter([
+                    $client['address_line1'],
+                    $client['address_line2'],
+                    $client['postal_code'] . ' ' . $client['city'],
+                    $client['country'],
+                ]));
+                $updates[] = 'client_email = ?';
+                $params[] = $client['email'];
+                $updates[] = 'client_vat_id = ?';
+                $params[] = $client['vat_id'];
+            }
+        }
+
+        // Re-fetch sender data from user settings
+        $user = $this->db->fetchAssociative('SELECT * FROM users WHERE id = ?', [$userId]);
+        $settingsRows = $this->db->fetchAllAssociative(
+            'SELECT `key`, `value` FROM user_settings WHERE user_id = ?',
+            [$userId]
+        );
+        $settings = [];
+        foreach ($settingsRows as $row) {
+            $settings[$row['key']] = json_decode($row['value'], true);
+        }
+
+        $updates[] = 'sender_name = ?';
+        $params[] = $settings['invoice_sender_name'] ?? ($user['display_name'] ?? $user['username']);
+        $updates[] = 'sender_company = ?';
+        $params[] = $settings['invoice_company_name'] ?? null;
+        $updates[] = 'sender_address = ?';
+        $params[] = $settings['invoice_sender_address'] ?? null;
+        $updates[] = 'sender_email = ?';
+        $params[] = $settings['invoice_sender_email'] ?? $user['email'];
+        $updates[] = 'sender_phone = ?';
+        $params[] = $settings['invoice_sender_phone'] ?? null;
+        $updates[] = 'sender_vat_id = ?';
+        $params[] = $settings['invoice_vat_id'] ?? null;
+        $updates[] = 'sender_bank_details = ?';
+        $params[] = $settings['invoice_bank_details'] ?? null;
+
+        // Clear custom HTML so it regenerates fresh
+        $updates[] = 'custom_html = ?';
+        $params[] = null;
+
+        if (!empty($updates)) {
+            $params[] = $id;
+            $this->db->executeStatement(
+                'UPDATE invoices SET ' . implode(', ', $updates) . ' WHERE id = ?',
+                $params
+            );
+        }
+
+        // Return fresh invoice data
+        $invoice = $this->db->fetchAssociative(
+            'SELECT i.*, c.name as client_name FROM invoices i
+             LEFT JOIN clients c ON i.client_id = c.id
+             WHERE i.id = ? AND i.user_id = ?',
+            [$id, $userId]
+        );
+        $invoice['items'] = $this->db->fetchAllAssociative(
+            'SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order',
+            [$id]
+        );
+
+        return JsonResponse::success($invoice, 'Invoice regenerated');
+    }
 
     public function createFromTimeEntries(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

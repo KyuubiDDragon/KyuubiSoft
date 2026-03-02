@@ -6,12 +6,12 @@ import { useContractHtml } from '../composables/useContractHtml'
 const props = defineProps({
   show: Boolean,
   contract: { type: Object, default: null },
+  inline: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['close', 'download'])
 
 const { generateHtml } = useContractHtml()
-const iframeRef = ref(null)
 const editMode = ref(false)
 const editedHtml = ref('')
 
@@ -20,18 +20,11 @@ const previewHtml = computed(() => {
   return generateHtml(props.contract)
 })
 
-const hasEdits = computed(() => editMode.value && editedHtml.value !== previewHtml.value)
+const hasEdits = computed(() => editedHtml.value !== '' && editedHtml.value !== previewHtml.value)
 const displayHtml = computed(() => hasEdits.value ? editedHtml.value : previewHtml.value)
 
-function resizeIframe() {
-  const iframe = iframeRef.value
-  if (iframe?.contentDocument?.body) {
-    iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'
-  }
-}
-
 function toggleEditMode() {
-  if (!editMode.value) {
+  if (!editMode.value && !hasEdits.value) {
     editedHtml.value = previewHtml.value
   }
   editMode.value = !editMode.value
@@ -45,15 +38,92 @@ function handleDownload() {
   emit('download', props.contract, hasEdits.value ? editedHtml.value : null)
 }
 
-// Reset edit mode when contract changes
-watch(() => props.contract, () => {
+// Reset edit mode when a different contract is opened
+watch(() => props.contract?.id, () => {
   editMode.value = false
   editedHtml.value = ''
 })
 </script>
 
 <template>
-  <Teleport to="body">
+  <!-- Inline mode (embedded in detail panel) -->
+  <div v-if="inline && contract" class="flex flex-col h-full min-h-[600px]">
+    <!-- Preview toolbar -->
+    <div class="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] flex-none">
+      <div class="flex items-center gap-2">
+        <p class="text-sm text-gray-400">
+          A4-Vorschau · Aktualisiert sich automatisch
+          <span v-if="hasEdits" class="ml-2 text-amber-400 font-medium">· Manuell bearbeitet</span>
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          @click="toggleEditMode"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors"
+          :class="editMode
+            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+            : 'text-gray-400 hover:text-white hover:bg-white/[0.04] border border-transparent'"
+        >
+          <CodeBracketIcon v-if="!editMode" class="w-4 h-4" />
+          <EyeIcon v-else class="w-4 h-4" />
+          {{ editMode ? 'Vorschau' : 'HTML bearbeiten' }}
+        </button>
+        <button
+          v-if="hasEdits"
+          @click="resetEdits"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+        >
+          <ArrowPathIcon class="w-3.5 h-3.5" />
+          Zurücksetzen
+        </button>
+        <button
+          @click="handleDownload"
+          class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-sm transition-colors font-medium"
+        >
+          <ArrowDownTrayIcon class="w-4 h-4" />
+          PDF herunterladen
+        </button>
+      </div>
+    </div>
+
+    <!-- Content area -->
+    <div v-if="editMode" class="flex-1 overflow-hidden flex">
+      <div class="flex-1 flex flex-col min-w-0">
+        <div class="px-4 py-2 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
+          <span class="text-xs text-gray-500 font-mono">HTML-Quelltext</span>
+          <span v-if="hasEdits" class="text-xs text-amber-400">Geändert</span>
+        </div>
+        <textarea
+          v-model="editedHtml"
+          class="flex-1 w-full bg-[#0d0e12] text-gray-300 font-mono text-xs leading-relaxed p-4 resize-none focus:outline-none border-none"
+          spellcheck="false"
+          wrap="off"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- A4 Preview area -->
+    <div v-if="!editMode" class="flex-1 overflow-auto bg-white/[0.02] p-6">
+      <div class="max-w-[794px] mx-auto">
+        <div class="relative shadow-float rounded-sm overflow-hidden" style="aspect-ratio: 210 / 297;">
+          <iframe
+            v-if="displayHtml"
+            :srcdoc="displayHtml"
+            class="w-full h-full border-0 bg-white"
+            sandbox="allow-same-origin"
+            title="Vertragsvorschau"
+          ></iframe>
+          <div v-else class="w-full h-full bg-white flex items-center justify-center">
+            <div class="w-8 h-8 border-4 border-gray-200 border-t-primary-400 rounded-full animate-spin"></div>
+          </div>
+        </div>
+        <p class="text-center text-xs text-gray-600 mt-3">Dies ist eine Vorschau. Das endgültige PDF kann leicht abweichen.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standalone modal mode -->
+  <Teleport v-else to="body">
     <Transition
       enter-active-class="transition ease-out duration-200"
       enter-from-class="opacity-0"
@@ -108,27 +178,36 @@ watch(() => props.contract, () => {
 
           <!-- Content -->
           <div v-if="editMode" class="flex-1 overflow-hidden flex">
-            <!-- HTML Editor -->
-            <textarea
-              v-model="editedHtml"
-              class="flex-1 w-full bg-[#0d0e12] text-gray-300 font-mono text-xs leading-relaxed p-4 resize-none focus:outline-none border-none"
-              spellcheck="false"
-              wrap="off"
-            ></textarea>
+            <div class="flex-1 flex flex-col min-w-0">
+              <div class="px-4 py-2 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
+                <span class="text-xs text-gray-500 font-mono">HTML-Quelltext</span>
+                <span v-if="hasEdits" class="text-xs text-amber-400">Geändert</span>
+              </div>
+              <textarea
+                v-model="editedHtml"
+                class="flex-1 w-full bg-[#0d0e12] text-gray-300 font-mono text-xs leading-relaxed p-4 resize-none focus:outline-none border-none"
+                spellcheck="false"
+                wrap="off"
+              ></textarea>
+            </div>
           </div>
 
           <!-- Preview -->
-          <div v-else class="flex-1 overflow-y-auto bg-gray-200 p-6">
-            <div class="mx-auto bg-white shadow-lg" style="width:210mm; max-width:100%;">
-              <iframe
-                ref="iframeRef"
-                :srcdoc="displayHtml"
-                class="w-full border-0"
-                scrolling="no"
-                style="overflow:hidden;"
-                @load="resizeIframe"
-                sandbox="allow-same-origin"
-              ></iframe>
+          <div v-else class="flex-1 overflow-y-auto bg-white/[0.02] p-6">
+            <div class="max-w-[794px] mx-auto">
+              <div class="relative shadow-float rounded-sm overflow-hidden" style="aspect-ratio: 210 / 297;">
+                <iframe
+                  v-if="displayHtml"
+                  :srcdoc="displayHtml"
+                  class="w-full h-full border-0 bg-white"
+                  sandbox="allow-same-origin"
+                  title="Vertragsvorschau"
+                ></iframe>
+                <div v-else class="w-full h-full bg-white flex items-center justify-center">
+                  <div class="w-8 h-8 border-4 border-gray-200 border-t-primary-400 rounded-full animate-spin"></div>
+                </div>
+              </div>
+              <p class="text-center text-xs text-gray-600 mt-3">Dies ist eine Vorschau. Das endgültige PDF kann leicht abweichen.</p>
             </div>
           </div>
         </div>

@@ -19,8 +19,8 @@ const logoDataUrl = ref('')
 const logoFileId = ref(null)
 const editMode = ref(false)
 
-// Track whether user has made manual edits
-const hasEdits = computed(() => editMode.value && editedHtml.value !== htmlContent.value)
+// Track whether user has made manual edits (persists across edit/preview toggle)
+const hasEdits = computed(() => editedHtml.value !== '' && editedHtml.value !== htmlContent.value)
 
 // What to show in the iframe - edited version if user changed it, otherwise original
 const displayHtml = computed(() => hasEdits.value ? editedHtml.value : htmlContent.value)
@@ -44,7 +44,7 @@ async function refreshPreview() {
 }
 
 function toggleEditMode() {
-  if (!editMode.value) {
+  if (!editMode.value && !hasEdits.value) {
     editedHtml.value = htmlContent.value
   }
   editMode.value = !editMode.value

@@ -250,37 +250,25 @@ class InvoiceController
             }
         }
 
-        // Kleinunternehmer mode: default to 0% tax, add §19 UStG legal notice
+        // Kleinunternehmer mode: default to 0% tax
         $isKleinunternehmer = (bool) ($settings['kleinunternehmer_mode'] ?? false);
         $defaultTaxRate = $isKleinunternehmer ? 0.00 : 19.00;
-        $kleinunternehmerNotice = $isKleinunternehmer
-            ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
-            : null;
 
         // Reverse Charge: detect intra-community B2B service (client has EU VAT-ID, not DE)
         $clientVatId = $clientData['client_vat_id'] ?? $data['client_vat_id'] ?? null;
         $isReverseCharge = false;
-        $reverseChargeNotice = null;
         if ($clientVatId) {
             $vatPrefix = strtoupper(substr(trim($clientVatId), 0, 2));
             $euCountries = ['AT','BE','BG','CY','CZ','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
             if (in_array($vatPrefix, $euCountries)) {
                 $isReverseCharge = true;
                 $defaultTaxRate = 0.00; // No VAT for intra-EU B2B reverse charge
-                $lang = $data['language'] ?? 'de';
-                $reverseChargeNotice = $lang === 'de'
-                    ? "Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge) gemäß Art. 44, 196 EU-MwSt-Richtlinie."
-                    : "Reverse charge – VAT to be accounted for by the recipient in accordance with Art. 44 and Art. 196 EU VAT Directive.";
             }
         }
 
-        $existingTerms = $data['terms'] ?? null;
-        $notices = array_filter([$kleinunternehmerNotice, $reverseChargeNotice]);
-        $terms = $existingTerms;
-        if (!empty($notices)) {
-            $noticeBlock = implode("\n", $notices);
-            $terms = $existingTerms ? $existingTerms . "\n\n" . $noticeBlock : $noticeBlock;
-        }
+        // Notice flags are rendered by the frontend based on language
+        // NULL = auto-detect, so frontend handles display based on invoice data
+        $terms = $data['terms'] ?? null;
 
         $this->db->insert('invoices', array_merge([
             'id' => $id,
@@ -310,6 +298,9 @@ class InvoiceController
             'sender_bank_details' => $settings['invoice_bank_details'] ?? null,
             'mahnung_level' => $data['mahnung_level'] ?? 0,
             'mahnung_fee' => (float) ($data['mahnung_fee'] ?? 0.00),
+            'show_kleinunternehmer' => array_key_exists('show_kleinunternehmer', $data) ? $data['show_kleinunternehmer'] : null,
+            'show_reverse_charge' => array_key_exists('show_reverse_charge', $data) ? $data['show_reverse_charge'] : null,
+            'show_license_notice' => $data['show_license_notice'] ?? 0,
         ], $clientData));
 
         $invoice = $this->db->fetchAssociative('SELECT * FROM invoices WHERE id = ?', [$id]);

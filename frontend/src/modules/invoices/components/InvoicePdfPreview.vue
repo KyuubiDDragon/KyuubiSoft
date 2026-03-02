@@ -1,7 +1,8 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import api from '@/core/api/axios'
 import { useInvoiceHtml } from '../composables/useInvoiceHtml'
-import { ArrowDownTrayIcon, ArrowPathIcon, CodeBracketIcon, EyeIcon } from '@heroicons/vue/24/outline'
+import { ArrowDownTrayIcon, ArrowPathIcon, CodeBracketIcon, EyeIcon, CheckIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
   invoice: { type: Object, required: true },
@@ -15,6 +16,7 @@ const { generateHtml, loadLogoDataUrl } = useInvoiceHtml()
 const htmlContent = ref('')
 const editedHtml = ref('')
 const isLoading = ref(false)
+const isSaving = ref(false)
 const logoDataUrl = ref('')
 const logoFileId = ref(null)
 const editMode = ref(false)
@@ -34,8 +36,10 @@ async function refreshPreview() {
       logoDataUrl.value = await loadLogoDataUrl(currentLogoId)
     }
     htmlContent.value = generateHtml(props.invoice, props.senderSettings, logoDataUrl.value)
-    // Only reset edited HTML if user hasn't manually edited
-    if (!hasEdits.value) {
+    // If invoice has saved custom HTML, use it; otherwise only reset if no manual edits
+    if (props.invoice.custom_html) {
+      editedHtml.value = props.invoice.custom_html
+    } else if (!hasEdits.value) {
       editedHtml.value = htmlContent.value
     }
   } finally {
@@ -45,16 +49,38 @@ async function refreshPreview() {
 
 function toggleEditMode() {
   if (!editMode.value && !hasEdits.value) {
-    editedHtml.value = htmlContent.value
+    editedHtml.value = props.invoice.custom_html || htmlContent.value
   }
   editMode.value = !editMode.value
 }
 
-function resetEdits() {
+async function saveCustomHtml() {
+  if (!hasEdits.value || !props.invoice.id) return
+  isSaving.value = true
+  try {
+    await api.put(`/api/v1/invoices/${props.invoice.id}`, {
+      custom_html: editedHtml.value,
+    })
+  } catch { /* non-critical */ } finally {
+    isSaving.value = false
+  }
+}
+
+async function resetEdits() {
   editedHtml.value = htmlContent.value
+  // Clear saved custom HTML
+  if (props.invoice.id) {
+    try {
+      await api.put(`/api/v1/invoices/${props.invoice.id}`, { custom_html: '' })
+    } catch { /* non-critical */ }
+  }
 }
 
 function handleDownload() {
+  // Auto-save before downloading if there are edits
+  if (hasEdits.value) {
+    saveCustomHtml()
+  }
   emit('download', hasEdits.value ? editedHtml.value : null)
 }
 
@@ -88,6 +114,17 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
           <CodeBracketIcon v-if="!editMode" class="w-4 h-4" />
           <EyeIcon v-else class="w-4 h-4" />
           {{ editMode ? 'Vorschau' : 'HTML bearbeiten' }}
+        </button>
+        <!-- Save -->
+        <button
+          v-if="hasEdits"
+          @click="saveCustomHtml"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="isSaving ? 'text-gray-500' : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10'"
+          :disabled="isSaving"
+        >
+          <CheckIcon class="w-3.5 h-3.5" />
+          {{ isSaving ? 'Speichern...' : 'Speichern' }}
         </button>
         <!-- Reset -->
         <button

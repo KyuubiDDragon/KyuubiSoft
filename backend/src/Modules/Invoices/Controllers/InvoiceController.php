@@ -62,7 +62,7 @@ class InvoiceController
             'address_line2' => $data['address_line2'] ?? null,
             'city' => $data['city'] ?? null,
             'postal_code' => $data['postal_code'] ?? null,
-            'country' => $data['country'] ?? 'Deutschland',
+            'country' => $data['country'] ?? null,
             'vat_id' => $data['vat_id'] ?? null,
             'notes' => $data['notes'] ?? null,
             'default_hourly_rate' => $data['default_hourly_rate'] ?? null,
@@ -374,7 +374,7 @@ class InvoiceController
         $params = [];
 
         $fields = ['client_id', 'project_id', 'document_type', 'status', 'issue_date', 'due_date',
-                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'notes', 'terms', 'payment_terms',
+                   'service_date', 'paid_date', 'tax_rate', 'currency', 'language', 'custom_html', 'notes', 'terms', 'payment_terms',
                    'mahnung_level', 'mahnung_fee'];
 
         foreach ($fields as $field) {

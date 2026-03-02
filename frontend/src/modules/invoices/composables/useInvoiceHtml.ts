@@ -146,7 +146,7 @@ const translations: Record<string, InvoiceTranslations> = {
     proformaNotice: 'This document is a proforma invoice and does not constitute a tax document under \u00A7 14 UStG. No payment obligation arises.',
     reminderNotice: 'We kindly remind you of the outstanding invoice payment.',
     reminderFee: 'Reminder fee',
-    units: { 'Stunde': 'hour', 'Stück': 'piece', 'Pauschal': 'flat rate', 'Tag': 'day', 'Monat': 'month', 'km': 'km' },
+    units: { 'Stunde': 'hour', 'Stück': 'unit', 'Pauschal': 'flat rate', 'Tag': 'day', 'Monat': 'month', 'km': 'km' },
   },
 }
 

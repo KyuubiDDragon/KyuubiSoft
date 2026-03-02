@@ -62,7 +62,7 @@ export interface InvoiceSenderHtmlSettings {
  */
 export interface UseInvoiceHtmlReturn {
   generateHtml: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, logoDataUrl?: string) => string
-  downloadPdf: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings) => Promise<void>
+  downloadPdf: (inv: InvoiceHtmlData, senderSettings: InvoiceSenderHtmlSettings, editedHtml?: string) => Promise<void>
   loadLogoDataUrl: (logoFileId: string | null | undefined) => Promise<string>
 }
 
@@ -355,9 +355,12 @@ export function useInvoiceHtml(): UseInvoiceHtmlReturn {
     </body></html>`
   }
 
-  async function downloadPdf(inv: InvoiceHtmlData & { id?: string }, senderSettings: InvoiceSenderHtmlSettings): Promise<void> {
-    const logoDataUrl = await loadLogoDataUrl(inv.sender_logo_file_id || senderSettings?.logo_file_id)
-    const html = generateHtml(inv, senderSettings, logoDataUrl)
+  async function downloadPdf(inv: InvoiceHtmlData & { id?: string }, senderSettings: InvoiceSenderHtmlSettings, editedHtml?: string): Promise<void> {
+    let html = editedHtml || ''
+    if (!html) {
+      const logoDataUrl = await loadLogoDataUrl(inv.sender_logo_file_id || senderSettings?.logo_file_id)
+      html = generateHtml(inv, senderSettings, logoDataUrl)
+    }
 
     const res = await api.post(`/api/v1/invoices/${inv.id}/pdf`, { html }, {
       responseType: 'blob',

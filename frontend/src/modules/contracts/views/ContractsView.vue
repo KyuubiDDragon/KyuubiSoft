@@ -132,10 +132,10 @@ async function handleDelete(contract) {
   }
 }
 
-async function handleDownloadPdf(contract) {
+async function handleDownloadPdf(contract, editedHtml) {
   try {
     const res = await api.get(`/api/v1/contracts/${contract.id}`)
-    await downloadPdf(res.data.data)
+    await downloadPdf(res.data.data, editedHtml || undefined)
   } catch {
     uiStore.showError('Fehler beim PDF-Download')
   }

@@ -394,7 +394,7 @@ watch(() => props.invoice, (val) => {
                 <InvoicePdfPreview
                   :invoice="invoice"
                   :sender-settings="senderSettings"
-                  @download="$emit('download-pdf', invoice)"
+                  @download="(editedHtml) => $emit('download-pdf', invoice, editedHtml)"
                 />
               </div>
 

@@ -134,7 +134,7 @@ async function handleStatusChange(invoice, status) {
   }
 }
 
-async function handleDownloadPdf(invoice) {
+async function handleDownloadPdf(invoice, editedHtml) {
   pdfGenerating.value = invoice.id
   const missing = []
   if (!invoice.sender_name && !invoice.sender_company) missing.push('Absender-Name')
@@ -152,7 +152,7 @@ async function handleDownloadPdf(invoice) {
       const res = await api.get(`/api/v1/invoices/${invoice.id}`)
       fullInvoice = res.data.data
     }
-    await downloadPdf(fullInvoice, invoiceSenderSettings.value)
+    await downloadPdf(fullInvoice, invoiceSenderSettings.value, editedHtml || undefined)
   } catch {
     uiStore.showError('PDF konnte nicht erstellt werden')
   } finally {

@@ -126,6 +126,13 @@ const loadingShares = ref(false)
 const newShareEmail = ref('')
 const newSharePermission = ref('view')
 
+// Public share state
+const publicShareInfo = ref(null)
+const loadingPublicShare = ref(false)
+const publicShareForm = ref({ username: '', password: '' })
+const publicShareUrl = ref('')
+const publicShareCopied = ref(false)
+
 // Colors for boards
 const boardColors = [
   '#6366f1', '#8B5CF6', '#EC4899', '#EF4444', '#F97316',
@@ -572,7 +579,7 @@ async function openShareModal() {
   showShareModal.value = true
   newShareEmail.value = ''
   newSharePermission.value = 'view'
-  await fetchBoardShares()
+  await Promise.all([fetchBoardShares(), fetchPublicShareInfo()])
 }
 
 async function addBoardShare() {
@@ -616,6 +623,73 @@ async function updateSharePermission(userId, permission) {
     await fetchBoardShares()
   } catch (error) {
     uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
+// ==================
+// Public Share Functions
+// ==================
+
+async function fetchPublicShareInfo() {
+  if (!selectedBoard.value) return
+  loadingPublicShare.value = true
+  try {
+    const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`)
+    publicShareInfo.value = response.data.data
+    publicShareUrl.value = publicShareInfo.value.url || ''
+  } catch (error) {
+    publicShareInfo.value = null
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function enablePublicShare() {
+  if (!publicShareForm.value.username.trim() || !publicShareForm.value.password.trim()) {
+    uiStore.showError('Benutzername und Passwort sind erforderlich')
+    return
+  }
+
+  loadingPublicShare.value = true
+  try {
+    const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, {
+      username: publicShareForm.value.username.trim(),
+      password: publicShareForm.value.password.trim(),
+    })
+    publicShareInfo.value = response.data.data
+    publicShareUrl.value = response.data.data.url
+    uiStore.showSuccess('Öffentlicher Link erstellt')
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Erstellen')
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function disablePublicShare() {
+  if (!await confirm({ message: 'Öffentlichen Zugang wirklich deaktivieren?', type: 'danger', confirmText: 'Deaktivieren' })) return
+
+  loadingPublicShare.value = true
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`)
+    publicShareInfo.value = { active: false }
+    publicShareUrl.value = ''
+    publicShareForm.value = { username: '', password: '' }
+    uiStore.showSuccess('Öffentlicher Zugang deaktiviert')
+  } catch (error) {
+    uiStore.showError('Fehler beim Deaktivieren')
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function copyPublicLink() {
+  try {
+    await navigator.clipboard.writeText(publicShareUrl.value)
+    publicShareCopied.value = true
+    setTimeout(() => { publicShareCopied.value = false }, 2000)
+  } catch (error) {
+    uiStore.showError('Fehler beim Kopieren')
   }
 }
 
@@ -2356,6 +2430,95 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Public Share Section -->
+            <div class="border-t border-dark-700 pt-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Öffentlicher Link (mit Login)</h3>
+
+              <div v-if="loadingPublicShare" class="flex items-center justify-center py-4">
+                <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+
+              <!-- Active public share -->
+              <template v-else-if="publicShareInfo?.active">
+                <div class="bg-dark-700 rounded-lg p-4 space-y-3">
+                  <div class="flex items-center gap-2 text-sm">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span class="text-green-400 font-medium">Aktiv</span>
+                    <span class="text-gray-500 ml-auto">{{ publicShareInfo.view_count || 0 }} Aufrufe</span>
+                  </div>
+
+                  <!-- Link -->
+                  <div class="flex gap-2">
+                    <input
+                      :value="publicShareUrl"
+                      readonly
+                      class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none"
+                    />
+                    <button
+                      @click="copyPublicLink"
+                      class="px-3 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors"
+                      :title="publicShareCopied ? 'Kopiert!' : 'Link kopieren'"
+                    >
+                      <svg v-if="!publicShareCopied" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <svg v-else class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Credentials info -->
+                  <div class="text-xs text-gray-500 space-y-1">
+                    <p>Benutzername: <span class="text-gray-300">{{ publicShareInfo.username }}</span></p>
+                    <p>Passwort: <span class="text-gray-400">***</span></p>
+                  </div>
+
+                  <!-- Disable button -->
+                  <button
+                    @click="disablePublicShare"
+                    class="text-sm text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Link deaktivieren
+                  </button>
+                </div>
+              </template>
+
+              <!-- Create public share form -->
+              <template v-else>
+                <div class="bg-dark-700 rounded-lg p-4 space-y-3">
+                  <p class="text-xs text-gray-500 mb-2">
+                    Erstelle einen öffentlichen Link mit eigenem Benutzername und Passwort. Externe Personen können das Board ansehen, ohne einen Account zu haben.
+                  </p>
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">Benutzername</label>
+                    <input
+                      v-model="publicShareForm.username"
+                      type="text"
+                      placeholder="z.B. kunde-xyz"
+                      class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">Passwort</label>
+                    <input
+                      v-model="publicShareForm.password"
+                      type="text"
+                      placeholder="Passwort für den Zugriff"
+                      class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
+                  <button
+                    @click="enablePublicShare"
+                    :disabled="!publicShareForm.username || !publicShareForm.password"
+                    class="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Link erstellen
+                  </button>
+                </div>
+              </template>
             </div>
           </div>
         </div>

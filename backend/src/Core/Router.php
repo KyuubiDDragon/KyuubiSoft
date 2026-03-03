@@ -358,10 +358,14 @@ class Router
                 $protected->put('/kanban/boards/{id}', [KanbanController::class, 'update']);
                 $protected->delete('/kanban/boards/{id}', [KanbanController::class, 'delete']);
                 $protected->get('/kanban/boards/{id}/users', [KanbanController::class, 'getBoardUsers']);
-                // Kanban Board Shares
+                // Kanban Board Shares (user-to-user)
                 $protected->get('/kanban/boards/{id}/shares', [KanbanController::class, 'getShares']);
                 $protected->post('/kanban/boards/{id}/shares', [KanbanController::class, 'addShare']);
                 $protected->delete('/kanban/boards/{id}/shares/{userId}', [KanbanController::class, 'removeShare']);
+                // Kanban Public Share (link with username/password)
+                $protected->get('/kanban/boards/{id}/public', [KanbanController::class, 'getPublicShareInfo']);
+                $protected->post('/kanban/boards/{id}/public', [KanbanController::class, 'enablePublicShare']);
+                $protected->delete('/kanban/boards/{id}/public', [KanbanController::class, 'disablePublicShare']);
                 // Kanban Columns
                 $protected->put('/kanban/boards/{id}/columns/reorder', [KanbanController::class, 'reorderColumns']);
                 $protected->post('/kanban/boards/{id}/columns', [KanbanController::class, 'createColumn']);
@@ -1614,6 +1618,10 @@ class Router
             $group->get('/s/{code}', [LinkController::class, 'redirect']);
             $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
             $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
+
+            // Public Kanban Board View (no auth required, username+password protected)
+            $group->get('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
+            $group->post('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
 
             // Public Contract View + Signing (no auth required)
             $group->get('/contracts/public/{token}', [ContractController::class, 'showPublic']);

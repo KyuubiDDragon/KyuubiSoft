@@ -61,6 +61,7 @@ const TicketCategoriesView = () => import('@/modules/tickets/views/TicketCategor
 const PublicTicketView = () => import('@/modules/tickets/views/PublicTicketView.vue')
 const PublicDocumentView = () => import('@/modules/documents/views/PublicDocumentView.vue')
 const PublicNotePage = () => import('@/modules/notes/views/PublicNotePage.vue')
+const PublicKanbanView = () => import('@/modules/kanban/views/PublicKanbanView.vue')
 const SSHTerminalView = () => import('@/modules/connections/views/SSHTerminalView.vue')
 const NewsView = () => import('@/modules/news/views/NewsView.vue')
 const StorageView = () => import('@/modules/storage/views/StorageView.vue')
@@ -573,6 +574,12 @@ const routes: RouteRecordRaw[] = [
     path: '/public/note/:token',
     name: 'public-note',
     component: PublicNotePage,
+    meta: { layout: 'public' },
+  },
+  {
+    path: '/public/kanban/:token',
+    name: 'public-kanban',
+    component: PublicKanbanView,
     meta: { layout: 'public' },
   },
 

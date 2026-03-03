@@ -760,6 +760,201 @@ class KanbanController
         return JsonResponse::success(null, 'Share removed successfully');
     }
 
+    // ==================
+    // Public Board Sharing
+    // ==================
+
+    public function enablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        if (empty($data['username']) || empty($data['password'])) {
+            throw new ValidationException('Username and password are required');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        $expiresAt = !empty($data['expires_at']) ? $data['expires_at'] : null;
+
+        $this->db->update('kanban_boards', [
+            'share_token' => $token,
+            'share_username' => $data['username'],
+            'share_password' => $hashedPassword,
+            'share_expires_at' => $expiresAt,
+            'share_view_count' => 0,
+        ], ['id' => $boardId]);
+
+        $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost';
+
+        return JsonResponse::success([
+            'token' => $token,
+            'url' => "{$baseUrl}/public/kanban/{$token}",
+            'username' => $data['username'],
+            'has_password' => true,
+            'expires_at' => $expiresAt,
+        ], 'Public share link created');
+    }
+
+    public function disablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        $this->db->update('kanban_boards', [
+            'share_token' => null,
+            'share_username' => null,
+            'share_password' => null,
+            'share_expires_at' => null,
+            'share_view_count' => 0,
+        ], ['id' => $boardId]);
+
+        return JsonResponse::success(null, 'Public share disabled');
+    }
+
+    public function getPublicShareInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $board = $this->db->fetchAssociative(
+            'SELECT share_token, share_username, share_password, share_expires_at, share_view_count FROM kanban_boards WHERE id = ? AND user_id = ?',
+            [$boardId, $userId]
+        );
+        if (!$board) {
+            throw new NotFoundException('Board not found');
+        }
+
+        $result = [
+            'active' => !empty($board['share_token']),
+            'token' => $board['share_token'],
+            'username' => $board['share_username'],
+            'has_password' => !empty($board['share_password']),
+            'expires_at' => $board['share_expires_at'],
+            'view_count' => (int) $board['share_view_count'],
+        ];
+
+        if (!empty($board['share_token'])) {
+            $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost';
+            $result['url'] = "{$baseUrl}/public/kanban/{$board['share_token']}";
+        }
+
+        return JsonResponse::success($result);
+    }
+
+    /**
+     * Public board access - no auth required, username+password verification
+     */
+    public function showPublic(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = array_merge($request->getQueryParams(), (array) ($request->getParsedBody() ?? []));
+
+        $board = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_boards WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$board) {
+            throw new NotFoundException('Board not found');
+        }
+
+        // Check expiration
+        if ($board['share_expires_at'] && $board['share_expires_at'] < date('Y-m-d H:i:s')) {
+            return JsonResponse::error('Dieser Link ist abgelaufen', 403);
+        }
+
+        // Verify credentials
+        $username = $data['username'] ?? '';
+        $password = $data['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            return JsonResponse::success([
+                'requires_auth' => true,
+                'board_title' => $board['title'],
+            ], 'Anmeldung erforderlich');
+        }
+
+        if ($username !== $board['share_username'] || !password_verify($password, $board['share_password'])) {
+            return JsonResponse::error('Ungültiger Benutzername oder Passwort', 401);
+        }
+
+        // Track view count
+        $this->db->executeStatement(
+            'UPDATE kanban_boards SET share_view_count = share_view_count + 1 WHERE id = ?',
+            [$board['id']]
+        );
+
+        // Get columns with cards
+        $columns = $this->db->fetchAllAssociative(
+            'SELECT id, board_id, title, color, position, wip_limit FROM kanban_columns WHERE board_id = ? ORDER BY position',
+            [$board['id']]
+        );
+
+        foreach ($columns as &$column) {
+            $column['cards'] = $this->db->fetchAllAssociative(
+                'SELECT kc.id, kc.column_id, kc.title, kc.description, kc.color, kc.position,
+                        kc.priority, kc.due_date, kc.labels, kc.attachments,
+                        u.username as assignee_name
+                 FROM kanban_cards kc
+                 LEFT JOIN users u ON u.id = kc.assigned_to
+                 WHERE kc.column_id = ?
+                 ORDER BY kc.position',
+                [$column['id']]
+            );
+            foreach ($column['cards'] as &$card) {
+                $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+                $card['attachments'] = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+            }
+        }
+
+        // Get tags
+        $tags = $this->db->fetchAllAssociative(
+            'SELECT * FROM kanban_tags WHERE board_id = ? ORDER BY name',
+            [$board['id']]
+        );
+
+        // Get card tags
+        $cardTags = $this->db->fetchAllAssociative(
+            'SELECT kct.card_id, kt.id, kt.name, kt.color
+             FROM kanban_card_tags kct
+             JOIN kanban_tags kt ON kt.id = kct.tag_id
+             WHERE kt.board_id = ?',
+            [$board['id']]
+        );
+
+        $cardTagMap = [];
+        foreach ($cardTags as $ct) {
+            $cardTagMap[$ct['card_id']][] = ['id' => $ct['id'], 'name' => $ct['name'], 'color' => $ct['color']];
+        }
+
+        foreach ($columns as &$column) {
+            foreach ($column['cards'] as &$card) {
+                $card['tags'] = $cardTagMap[$card['id']] ?? [];
+            }
+        }
+
+        return JsonResponse::success([
+            'id' => $board['id'],
+            'title' => $board['title'],
+            'description' => $board['description'],
+            'color' => $board['color'],
+            'columns' => $columns,
+            'tags' => $tags,
+        ]);
+    }
+
     // Card Attachments
     public function uploadAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

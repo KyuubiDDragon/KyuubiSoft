@@ -652,6 +652,515 @@ class KanbanController
         return JsonResponse::success(['users' => $users]);
     }
 
+    // ==================
+    // Board Sharing
+    // ==================
+
+    public function getShares(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can view shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $shares = $this->db->fetchAllAssociative(
+            'SELECT kbs.*, u.username, u.email
+             FROM kanban_board_shares kbs
+             JOIN users u ON kbs.user_id = u.id
+             WHERE kbs.board_id = ?',
+            [$boardId]
+        );
+
+        return JsonResponse::success($shares);
+    }
+
+    public function addShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Only owner can add shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        if (empty($data['user_id']) && empty($data['email'])) {
+            throw new ValidationException('User ID or email is required');
+        }
+
+        // Find user by email if not provided by ID
+        $shareUserId = $data['user_id'] ?? null;
+        if (!$shareUserId && !empty($data['email'])) {
+            $user = $this->db->fetchAssociative('SELECT id FROM users WHERE email = ?', [$data['email']]);
+            if (!$user) {
+                throw new NotFoundException('User not found with this email');
+            }
+            $shareUserId = $user['id'];
+        }
+
+        // Can't share with yourself
+        if ($shareUserId === $userId) {
+            throw new ValidationException('Cannot share with yourself');
+        }
+
+        // Check if already shared
+        $existing = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_board_shares WHERE board_id = ? AND user_id = ?',
+            [$boardId, $shareUserId]
+        );
+
+        $permission = $data['permission'] ?? 'view';
+        if (!in_array($permission, ['view', 'edit'])) {
+            $permission = 'view';
+        }
+
+        if ($existing) {
+            // Update permission
+            $this->db->update('kanban_board_shares', ['permission' => $permission], [
+                'board_id' => $boardId,
+                'user_id' => $shareUserId,
+            ]);
+        } else {
+            // Create new share
+            $this->db->insert('kanban_board_shares', [
+                'board_id' => $boardId,
+                'user_id' => $shareUserId,
+                'permission' => $permission,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return JsonResponse::success(null, 'Board shared successfully');
+    }
+
+    public function removeShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $shareUserId = $route->getArgument('userId');
+
+        // Only owner can remove shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $this->db->delete('kanban_board_shares', [
+            'board_id' => $boardId,
+            'user_id' => $shareUserId,
+        ]);
+
+        return JsonResponse::success(null, 'Share removed successfully');
+    }
+
+    // ==================
+    // Public Board Sharing
+    // ==================
+
+    public function enablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $canEdit = !empty($data['can_edit']);
+        $expiresAt = !empty($data['expires_at']) ? $data['expires_at'] : null;
+
+        // Username/password are optional - without them it's a public read-only link
+        $shareUsername = !empty($data['username']) ? $data['username'] : null;
+        $hashedPassword = !empty($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null;
+
+        $this->db->update('kanban_boards', [
+            'share_token' => $token,
+            'share_username' => $shareUsername,
+            'share_password' => $hashedPassword,
+            'share_expires_at' => $expiresAt,
+            'share_view_count' => 0,
+            'share_can_edit' => $canEdit ? 1 : 0,
+        ], ['id' => $boardId]);
+
+        $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost';
+
+        return JsonResponse::success([
+            'token' => $token,
+            'url' => "{$baseUrl}/public/kanban/{$token}",
+            'username' => $shareUsername,
+            'has_password' => !empty($hashedPassword),
+            'requires_auth' => !empty($shareUsername),
+            'can_edit' => $canEdit,
+            'expires_at' => $expiresAt,
+        ], 'Public share link created');
+    }
+
+    public function disablePublicShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage public sharing');
+        }
+
+        $this->db->update('kanban_boards', [
+            'share_token' => null,
+            'share_username' => null,
+            'share_password' => null,
+            'share_expires_at' => null,
+            'share_view_count' => 0,
+            'share_can_edit' => 0,
+        ], ['id' => $boardId]);
+
+        return JsonResponse::success(null, 'Public share disabled');
+    }
+
+    public function getPublicShareInfo(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        $board = $this->db->fetchAssociative(
+            'SELECT share_token, share_username, share_password, share_expires_at, share_view_count, share_can_edit FROM kanban_boards WHERE id = ? AND user_id = ?',
+            [$boardId, $userId]
+        );
+        if (!$board) {
+            throw new NotFoundException('Board not found');
+        }
+
+        $result = [
+            'active' => !empty($board['share_token']),
+            'token' => $board['share_token'],
+            'username' => $board['share_username'],
+            'has_password' => !empty($board['share_password']),
+            'requires_auth' => !empty($board['share_username']),
+            'can_edit' => (bool) ($board['share_can_edit'] ?? false),
+            'expires_at' => $board['share_expires_at'],
+            'view_count' => (int) $board['share_view_count'],
+        ];
+
+        if (!empty($board['share_token'])) {
+            $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost';
+            $result['url'] = "{$baseUrl}/public/kanban/{$board['share_token']}";
+        }
+
+        return JsonResponse::success($result);
+    }
+
+    /**
+     * Verify public share access. Returns board row or null.
+     */
+    private function verifyPublicAccess(ServerRequestInterface $request, bool $requireEdit = false): ?array
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = array_merge($request->getQueryParams(), (array) ($request->getParsedBody() ?? []));
+
+        $board = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_boards WHERE share_token = ?',
+            [$token]
+        );
+        if (!$board) {
+            return null;
+        }
+        if ($board['share_expires_at'] && $board['share_expires_at'] < date('Y-m-d H:i:s')) {
+            return null;
+        }
+        if (!empty($board['share_username'])) {
+            $username = $data['username'] ?? '';
+            $password = $data['password'] ?? '';
+            if (empty($username) || empty($password)) {
+                return null;
+            }
+            if ($username !== $board['share_username'] || !password_verify($password, $board['share_password'])) {
+                return null;
+            }
+        }
+        if ($requireEdit && empty($board['share_can_edit'])) {
+            return null;
+        }
+        return $board;
+    }
+
+    /**
+     * Public board view - supports both open and auth-protected shares
+     */
+    public function showPublic(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
+        $data = array_merge($request->getQueryParams(), (array) ($request->getParsedBody() ?? []));
+
+        $board = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_boards WHERE share_token = ?',
+            [$token]
+        );
+
+        if (!$board) {
+            throw new NotFoundException('Board not found');
+        }
+
+        // Check expiration
+        if ($board['share_expires_at'] && $board['share_expires_at'] < date('Y-m-d H:i:s')) {
+            return JsonResponse::error('Dieser Link ist abgelaufen', 403);
+        }
+
+        // If credentials are required, verify them
+        if (!empty($board['share_username'])) {
+            $username = $data['username'] ?? '';
+            $password = $data['password'] ?? '';
+
+            if (empty($username) || empty($password)) {
+                return JsonResponse::success([
+                    'requires_auth' => true,
+                    'board_title' => $board['title'],
+                ], 'Anmeldung erforderlich');
+            }
+
+            if ($username !== $board['share_username'] || !password_verify($password, $board['share_password'])) {
+                return JsonResponse::error('Ungültiger Benutzername oder Passwort', 401);
+            }
+        }
+
+        // Track view count
+        $this->db->executeStatement(
+            'UPDATE kanban_boards SET share_view_count = share_view_count + 1 WHERE id = ?',
+            [$board['id']]
+        );
+
+        // Get columns with cards
+        $columns = $this->db->fetchAllAssociative(
+            'SELECT id, board_id, title, color, position, wip_limit FROM kanban_columns WHERE board_id = ? ORDER BY position',
+            [$board['id']]
+        );
+
+        foreach ($columns as &$column) {
+            $column['cards'] = $this->db->fetchAllAssociative(
+                'SELECT kc.id, kc.column_id, kc.title, kc.description, kc.color, kc.position,
+                        kc.priority, kc.due_date, kc.labels, kc.attachments,
+                        u.username as assignee_name
+                 FROM kanban_cards kc
+                 LEFT JOIN users u ON u.id = kc.assigned_to
+                 WHERE kc.column_id = ?
+                 ORDER BY kc.position',
+                [$column['id']]
+            );
+            foreach ($column['cards'] as &$card) {
+                $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+                $card['attachments'] = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+            }
+        }
+
+        // Get tags
+        $tags = $this->db->fetchAllAssociative(
+            'SELECT * FROM kanban_tags WHERE board_id = ? ORDER BY name',
+            [$board['id']]
+        );
+
+        // Get card tags
+        $cardTags = $this->db->fetchAllAssociative(
+            'SELECT kct.card_id, kt.id, kt.name, kt.color
+             FROM kanban_card_tags kct
+             JOIN kanban_tags kt ON kt.id = kct.tag_id
+             WHERE kt.board_id = ?',
+            [$board['id']]
+        );
+
+        $cardTagMap = [];
+        foreach ($cardTags as $ct) {
+            $cardTagMap[$ct['card_id']][] = ['id' => $ct['id'], 'name' => $ct['name'], 'color' => $ct['color']];
+        }
+
+        foreach ($columns as &$column) {
+            foreach ($column['cards'] as &$card) {
+                $card['tags'] = $cardTagMap[$card['id']] ?? [];
+            }
+        }
+
+        return JsonResponse::success([
+            'id' => $board['id'],
+            'title' => $board['title'],
+            'description' => $board['description'],
+            'color' => $board['color'],
+            'can_edit' => (bool) ($board['share_can_edit'] ?? false),
+            'columns' => $columns,
+            'tags' => $tags,
+        ]);
+    }
+
+    /**
+     * Public card creation
+     */
+    public function publicCreateCard(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $board = $this->verifyPublicAccess($request, true);
+        if (!$board) {
+            return JsonResponse::error('Zugriff verweigert', 403);
+        }
+
+        $data = $request->getParsedBody() ?? [];
+        $columnId = RouteContext::fromRequest($request)->getRoute()->getArgument('columnId');
+
+        if (empty($data['title'])) {
+            throw new ValidationException('Title is required');
+        }
+
+        $column = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_columns WHERE id = ? AND board_id = ?',
+            [$columnId, $board['id']]
+        );
+        if (!$column) {
+            throw new NotFoundException('Column not found');
+        }
+
+        $maxPosition = $this->db->fetchOne(
+            'SELECT COALESCE(MAX(position), -1) FROM kanban_cards WHERE column_id = ?',
+            [$columnId]
+        );
+
+        $cardId = Uuid::uuid4()->toString();
+        $this->db->insert('kanban_cards', [
+            'id' => $cardId,
+            'column_id' => $columnId,
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'priority' => $data['priority'] ?? 'medium',
+            'due_date' => $data['due_date'] ?? null,
+            'color' => $data['color'] ?? null,
+            'position' => $maxPosition + 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $card = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
+        $card['labels'] = $card['labels'] ? json_decode($card['labels'], true) : [];
+        $card['attachments'] = $card['attachments'] ? json_decode($card['attachments'], true) : [];
+        $card['tags'] = [];
+
+        return JsonResponse::created($card, 'Card created');
+    }
+
+    /**
+     * Public card update
+     */
+    public function publicUpdateCard(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $board = $this->verifyPublicAccess($request, true);
+        if (!$board) {
+            return JsonResponse::error('Zugriff verweigert', 403);
+        }
+
+        $cardId = RouteContext::fromRequest($request)->getRoute()->getArgument('cardId');
+        $data = $request->getParsedBody() ?? [];
+
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $board['id']]
+        );
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        $updates = ['updated_at' => date('Y-m-d H:i:s')];
+        foreach (['title', 'description', 'priority', 'due_date', 'color'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[$field] = $data[$field];
+            }
+        }
+
+        $this->db->update('kanban_cards', $updates, ['id' => $cardId]);
+
+        $updated = $this->db->fetchAssociative('SELECT * FROM kanban_cards WHERE id = ?', [$cardId]);
+        $updated['labels'] = $updated['labels'] ? json_decode($updated['labels'], true) : [];
+        $updated['attachments'] = $updated['attachments'] ? json_decode($updated['attachments'], true) : [];
+
+        return JsonResponse::success($updated, 'Card updated');
+    }
+
+    /**
+     * Public card move between columns
+     */
+    public function publicMoveCard(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $board = $this->verifyPublicAccess($request, true);
+        if (!$board) {
+            return JsonResponse::error('Zugriff verweigert', 403);
+        }
+
+        $cardId = RouteContext::fromRequest($request)->getRoute()->getArgument('cardId');
+        $data = $request->getParsedBody() ?? [];
+
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $board['id']]
+        );
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        $updates = ['updated_at' => date('Y-m-d H:i:s')];
+
+        if (!empty($data['column_id'])) {
+            $targetColumn = $this->db->fetchAssociative(
+                'SELECT * FROM kanban_columns WHERE id = ? AND board_id = ?',
+                [$data['column_id'], $board['id']]
+            );
+            if (!$targetColumn) {
+                throw new NotFoundException('Target column not found');
+            }
+            $updates['column_id'] = $data['column_id'];
+        }
+
+        if (isset($data['position'])) {
+            $updates['position'] = (int) $data['position'];
+        }
+
+        $this->db->update('kanban_cards', $updates, ['id' => $cardId]);
+
+        return JsonResponse::success(null, 'Card moved');
+    }
+
+    /**
+     * Public card delete
+     */
+    public function publicDeleteCard(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $board = $this->verifyPublicAccess($request, true);
+        if (!$board) {
+            return JsonResponse::error('Zugriff verweigert', 403);
+        }
+
+        $cardId = RouteContext::fromRequest($request)->getRoute()->getArgument('cardId');
+
+        $card = $this->db->fetchAssociative(
+            'SELECT kc.* FROM kanban_cards kc
+             JOIN kanban_columns col ON kc.column_id = col.id
+             WHERE kc.id = ? AND col.board_id = ?',
+            [$cardId, $board['id']]
+        );
+        if (!$card) {
+            throw new NotFoundException('Card not found');
+        }
+
+        $this->db->delete('kanban_cards', ['id' => $cardId]);
+
+        return JsonResponse::success(null, 'Card deleted');
+    }
+
     // Card Attachments
     public function uploadAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

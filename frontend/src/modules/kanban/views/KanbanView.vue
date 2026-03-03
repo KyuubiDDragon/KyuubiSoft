@@ -28,6 +28,8 @@ import {
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
+  ShareIcon,
+  UserPlusIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import { useAuthStore } from '@/stores/auth'
@@ -116,6 +118,20 @@ const editCommentContent = ref('')
 // Activities state
 const activities = ref([])
 const showActivities = ref(false)
+
+// Share state
+const showShareModal = ref(false)
+const boardShares = ref([])
+const loadingShares = ref(false)
+const newShareEmail = ref('')
+const newSharePermission = ref('view')
+
+// Public share state
+const publicShareInfo = ref(null)
+const loadingPublicShare = ref(false)
+const publicShareForm = ref({ username: '', password: '', can_edit: false, mode: 'readonly' })
+const publicShareUrl = ref('')
+const publicShareCopied = ref(false)
 
 // Colors for boards
 const boardColors = [
@@ -539,6 +555,149 @@ function openAttachmentPreview(attachment) {
 // Close attachment preview
 function closeAttachmentPreview() {
   attachmentPreview.value = null
+}
+
+// ==================
+// Board Share Functions
+// ==================
+
+async function fetchBoardShares() {
+  if (!selectedBoard.value) return
+  loadingShares.value = true
+  try {
+    const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`)
+    boardShares.value = response.data.data || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Freigaben')
+    boardShares.value = []
+  } finally {
+    loadingShares.value = false
+  }
+}
+
+async function openShareModal() {
+  showShareModal.value = true
+  newShareEmail.value = ''
+  newSharePermission.value = 'view'
+  await Promise.all([fetchBoardShares(), fetchPublicShareInfo()])
+}
+
+async function addBoardShare() {
+  if (!newShareEmail.value.trim()) {
+    uiStore.showError('E-Mail ist erforderlich')
+    return
+  }
+
+  try {
+    await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`, {
+      email: newShareEmail.value.trim(),
+      permission: newSharePermission.value
+    })
+    uiStore.showSuccess('Benutzer hinzugefügt')
+    newShareEmail.value = ''
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+  }
+}
+
+async function removeBoardShare(userId) {
+  if (!await confirm({ message: 'Zugriff wirklich entfernen?', type: 'danger', confirmText: 'Entfernen' })) return
+
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares/${userId}`)
+    uiStore.showSuccess('Zugriff entfernt')
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+async function updateSharePermission(userId, permission) {
+  try {
+    await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`, {
+      user_id: userId,
+      permission
+    })
+    uiStore.showSuccess('Berechtigung aktualisiert')
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
+}
+
+// ==================
+// Public Share Functions
+// ==================
+
+async function fetchPublicShareInfo() {
+  if (!selectedBoard.value) return
+  loadingPublicShare.value = true
+  try {
+    const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`)
+    publicShareInfo.value = response.data.data
+    publicShareUrl.value = publicShareInfo.value.url || ''
+  } catch (error) {
+    publicShareInfo.value = null
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function enablePublicShare() {
+  const isProtected = publicShareForm.value.mode === 'protected'
+
+  if (isProtected && (!publicShareForm.value.username.trim() || !publicShareForm.value.password.trim())) {
+    uiStore.showError('Benutzername und Passwort sind erforderlich')
+    return
+  }
+
+  loadingPublicShare.value = true
+  try {
+    const payload = {
+      can_edit: publicShareForm.value.can_edit,
+    }
+    if (isProtected) {
+      payload.username = publicShareForm.value.username.trim()
+      payload.password = publicShareForm.value.password.trim()
+    }
+
+    const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, payload)
+    publicShareInfo.value = response.data.data
+    publicShareUrl.value = response.data.data.url
+    uiStore.showSuccess('Öffentlicher Link erstellt')
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Erstellen')
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function disablePublicShare() {
+  if (!await confirm({ message: 'Öffentlichen Zugang wirklich deaktivieren?', type: 'danger', confirmText: 'Deaktivieren' })) return
+
+  loadingPublicShare.value = true
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`)
+    publicShareInfo.value = { active: false }
+    publicShareUrl.value = ''
+    publicShareForm.value = { username: '', password: '', can_edit: false, mode: 'readonly' }
+    uiStore.showSuccess('Öffentlicher Zugang deaktiviert')
+  } catch (error) {
+    uiStore.showError('Fehler beim Deaktivieren')
+  } finally {
+    loadingPublicShare.value = false
+  }
+}
+
+async function copyPublicLink() {
+  try {
+    await navigator.clipboard.writeText(publicShareUrl.value)
+    publicShareCopied.value = true
+    setTimeout(() => { publicShareCopied.value = false }, 2000)
+  } catch (error) {
+    uiStore.showError('Fehler beim Kopieren')
+  }
 }
 
 // Format file size
@@ -1021,6 +1180,15 @@ onMounted(async () => {
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button
+          v-if="selectedBoard && selectedBoard.user_id === authStore.user?.id"
+          @click="openShareModal()"
+          class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
+          title="Board teilen"
+        >
+          <ShareIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">Teilen</span>
+        </button>
         <button
           v-if="selectedBoard"
           @click="openTagModal()"
@@ -2171,6 +2339,245 @@ onMounted(async () => {
                   Verknüpft
                 </span>
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Share Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showShareModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Board teilen</h2>
+              <p class="text-sm text-gray-500 mt-0.5 truncate max-w-[300px]">{{ selectedBoard?.title }}</p>
+            </div>
+            <button @click="showShareModal = false" class="p-1 text-gray-400 hover:text-white rounded">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4 overflow-y-auto flex-1">
+            <!-- Add member form -->
+            <div class="bg-dark-700 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Benutzer hinzufügen</h3>
+              <div class="flex gap-2">
+                <input
+                  v-model="newShareEmail"
+                  type="email"
+                  placeholder="E-Mail Adresse"
+                  class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  @keyup.enter="addBoardShare"
+                />
+                <select
+                  v-model="newSharePermission"
+                  class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                >
+                  <option value="view">Lesen</option>
+                  <option value="edit">Bearbeiten</option>
+                </select>
+                <button
+                  @click="addBoardShare"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+                >
+                  <UserPlusIcon class="w-5 h-5" />
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">
+                Benutzer mit Lesezugriff können das Board ansehen. Mit Bearbeitungszugriff können sie Karten erstellen und ändern.
+              </p>
+            </div>
+
+            <!-- Members list -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Geteilte Benutzer</h3>
+              <div v-if="loadingShares" class="flex items-center justify-center py-8">
+                <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div v-else-if="boardShares.length === 0" class="text-center py-8 text-gray-500">
+                Noch nicht geteilt
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="share in boardShares"
+                  :key="share.user_id"
+                  class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
+                      <span class="text-xs font-semibold text-white">
+                        {{ share.username?.[0]?.toUpperCase() || 'U' }}
+                      </span>
+                    </div>
+                    <div>
+                      <p class="text-white text-sm">{{ share.username }}</p>
+                      <p class="text-xs text-gray-500">{{ share.email }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select
+                      :value="share.permission"
+                      @change="updateSharePermission(share.user_id, $event.target.value)"
+                      class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
+                    >
+                      <option value="view">Lesen</option>
+                      <option value="edit">Bearbeiten</option>
+                    </select>
+                    <button
+                      @click="removeBoardShare(share.user_id)"
+                      class="p-1.5 text-gray-400 hover:text-red-400 rounded transition-colors"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Public Share Section -->
+            <div class="border-t border-dark-700 pt-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Öffentlicher Link</h3>
+
+              <div v-if="loadingPublicShare" class="flex items-center justify-center py-4">
+                <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+
+              <!-- Active public share -->
+              <template v-else-if="publicShareInfo?.active">
+                <div class="bg-dark-700 rounded-lg p-4 space-y-3">
+                  <div class="flex items-center gap-2 text-sm flex-wrap">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span class="text-green-400 font-medium">Aktiv</span>
+                    <span v-if="publicShareInfo.can_edit" class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Bearbeitbar</span>
+                    <span v-else class="px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">Nur Lesen</span>
+                    <span v-if="!publicShareInfo.requires_auth" class="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">Ohne Login</span>
+                    <span class="text-gray-500 ml-auto">{{ publicShareInfo.view_count || 0 }} Aufrufe</span>
+                  </div>
+
+                  <!-- Link -->
+                  <div class="flex gap-2">
+                    <input
+                      :value="publicShareUrl"
+                      readonly
+                      class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none"
+                    />
+                    <button
+                      @click="copyPublicLink"
+                      class="px-3 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors"
+                      :title="publicShareCopied ? 'Kopiert!' : 'Link kopieren'"
+                    >
+                      <svg v-if="!publicShareCopied" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <svg v-else class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Credentials info (only if auth required) -->
+                  <div v-if="publicShareInfo.requires_auth" class="text-xs text-gray-500 space-y-1">
+                    <p>Benutzername: <span class="text-gray-300">{{ publicShareInfo.username }}</span></p>
+                    <p>Passwort: <span class="text-gray-400">***</span></p>
+                  </div>
+
+                  <!-- Disable button -->
+                  <button
+                    @click="disablePublicShare"
+                    class="text-sm text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Link deaktivieren
+                  </button>
+                </div>
+              </template>
+
+              <!-- Create public share form -->
+              <template v-else>
+                <div class="bg-dark-700 rounded-lg p-4 space-y-3">
+                  <!-- Mode selection -->
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-2">Zugriffsmodus</label>
+                    <div class="flex gap-2">
+                      <button
+                        @click="publicShareForm.mode = 'readonly'"
+                        class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        :class="publicShareForm.mode === 'readonly'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-600 text-gray-400 hover:text-white'"
+                      >
+                        Nur Lesen
+                      </button>
+                      <button
+                        @click="publicShareForm.mode = 'protected'"
+                        class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        :class="publicShareForm.mode === 'protected'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-600 text-gray-400 hover:text-white'"
+                      >
+                        Mit Login
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <p class="text-xs text-gray-500">
+                    <template v-if="publicShareForm.mode === 'readonly'">
+                      Jeder mit dem Link kann das Board ansehen. Kein Login erforderlich.
+                    </template>
+                    <template v-else>
+                      Zugriff nur mit Benutzername und Passwort. Kann optional auch bearbeiten.
+                    </template>
+                  </p>
+
+                  <!-- Username/Password (only for protected mode) -->
+                  <template v-if="publicShareForm.mode === 'protected'">
+                    <div>
+                      <label class="block text-xs text-gray-400 mb-1">Benutzername</label>
+                      <input
+                        v-model="publicShareForm.username"
+                        type="text"
+                        placeholder="z.B. kunde-xyz"
+                        class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-400 mb-1">Passwort</label>
+                      <input
+                        v-model="publicShareForm.password"
+                        type="text"
+                        placeholder="Passwort für den Zugriff"
+                        class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+
+                    <!-- Can edit toggle -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span class="text-sm text-gray-300">Bearbeitung erlauben</span>
+                        <p class="text-xs text-gray-500">Karten erstellen, bearbeiten und verschieben</p>
+                      </div>
+                      <input
+                        v-model="publicShareForm.can_edit"
+                        type="checkbox"
+                        class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+                      />
+                    </label>
+                  </template>
+
+                  <button
+                    @click="enablePublicShare"
+                    :disabled="publicShareForm.mode === 'protected' && (!publicShareForm.username || !publicShareForm.password)"
+                    class="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Link erstellen
+                  </button>
+                </div>
+              </template>
             </div>
           </div>
         </div>

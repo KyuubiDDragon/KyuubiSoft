@@ -141,6 +141,9 @@ class Router
             // Public note access (no auth required)
             $group->get('/public/notes/{token}', [PublicNoteController::class, 'show']);
 
+            // Public Kanban attachment serving (filename is UUID, not guessable)
+            $group->get('/kanban/attachments/{filename}', [KanbanController::class, 'serveAttachment']);
+
             // Protected routes
             $group->group('', function (RouteCollectorProxy $protected) {
                 // Auth (protected)
@@ -355,6 +358,14 @@ class Router
                 $protected->put('/kanban/boards/{id}', [KanbanController::class, 'update']);
                 $protected->delete('/kanban/boards/{id}', [KanbanController::class, 'delete']);
                 $protected->get('/kanban/boards/{id}/users', [KanbanController::class, 'getBoardUsers']);
+                // Kanban Board Shares (user-to-user)
+                $protected->get('/kanban/boards/{id}/shares', [KanbanController::class, 'getShares']);
+                $protected->post('/kanban/boards/{id}/shares', [KanbanController::class, 'addShare']);
+                $protected->delete('/kanban/boards/{id}/shares/{userId}', [KanbanController::class, 'removeShare']);
+                // Kanban Public Share (link with username/password)
+                $protected->get('/kanban/boards/{id}/public', [KanbanController::class, 'getPublicShareInfo']);
+                $protected->post('/kanban/boards/{id}/public', [KanbanController::class, 'enablePublicShare']);
+                $protected->delete('/kanban/boards/{id}/public', [KanbanController::class, 'disablePublicShare']);
                 // Kanban Columns
                 $protected->put('/kanban/boards/{id}/columns/reorder', [KanbanController::class, 'reorderColumns']);
                 $protected->post('/kanban/boards/{id}/columns', [KanbanController::class, 'createColumn']);
@@ -368,7 +379,6 @@ class Router
                 // Kanban Card Attachments
                 $protected->post('/kanban/boards/{id}/cards/{cardId}/attachments', [KanbanController::class, 'uploadAttachment']);
                 $protected->delete('/kanban/boards/{id}/cards/{cardId}/attachments/{attachmentId}', [KanbanController::class, 'deleteAttachment']);
-                $protected->get('/kanban/attachments/{filename}', [KanbanController::class, 'serveAttachment']);
                 // Kanban Tags
                 $protected->get('/kanban/boards/{id}/tags', [KanbanController::class, 'getTags']);
                 $protected->post('/kanban/boards/{id}/tags', [KanbanController::class, 'createTag']);
@@ -1608,6 +1618,14 @@ class Router
             $group->get('/s/{code}', [LinkController::class, 'redirect']);
             $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
             $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
+
+            // Public Kanban Board (no auth required, optionally username+password protected)
+            $group->get('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
+            $group->post('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
+            $group->post('/kanban/public/{token}/columns/{columnId}/cards', [KanbanController::class, 'publicCreateCard']);
+            $group->put('/kanban/public/{token}/cards/{cardId}', [KanbanController::class, 'publicUpdateCard']);
+            $group->put('/kanban/public/{token}/cards/{cardId}/move', [KanbanController::class, 'publicMoveCard']);
+            $group->delete('/kanban/public/{token}/cards/{cardId}', [KanbanController::class, 'publicDeleteCard']);
 
             // Public Contract View + Signing (no auth required)
             $group->get('/contracts/public/{token}', [ContractController::class, 'showPublic']);

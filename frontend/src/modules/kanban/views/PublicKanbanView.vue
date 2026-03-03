@@ -302,7 +302,7 @@ function closeLightbox() {
 
 // ===== Helpers =====
 function getAttachmentUrl(filename) {
-  return `/api/v1/kanban/attachments/${filename}`
+  return `/api/v1/kanban/attachments/${filename}?share_token=${token.value}`
 }
 
 function getPriorityColor(priority) {

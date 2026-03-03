@@ -326,7 +326,7 @@ const routes: RouteRecordRaw[] = [
     path: '/settings',
     name: 'settings',
     component: SettingsView,
-    meta: { requiresAuth: true, permission: 'settings.view' },
+    meta: { requiresAuth: true },
   },
   {
     path: '/passwords',

@@ -421,6 +421,13 @@ class RbacManager
         }
 
         $this->clearRolesCache();
+
+        // Clear permission cache for all users who have this role
+        $affectedUsers = $this->getUsersWithRole($roleId);
+        foreach ($affectedUsers as $user) {
+            $this->clearUserCache($user['id']);
+        }
+
         return true;
     }
 

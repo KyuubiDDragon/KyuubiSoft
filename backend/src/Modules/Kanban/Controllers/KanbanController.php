@@ -8,6 +8,7 @@ use App\Core\Exceptions\ForbiddenException;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Security\JwtManager;
 use App\Core\Services\ProjectAccessService;
 use App\Modules\Webhooks\Services\WebhookService;
 use Doctrine\DBAL\Connection;
@@ -21,7 +22,8 @@ class KanbanController
     public function __construct(
         private readonly Connection $db,
         private readonly ProjectAccessService $projectAccess,
-        private readonly WebhookService $webhookService
+        private readonly WebhookService $webhookService,
+        private readonly JwtManager $jwtManager
     ) {}
 
     // Board methods
@@ -1299,6 +1301,47 @@ class KanbanController
 
     public function serveAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        // Verify access: require either valid JWT auth or valid share_token
+        $authenticated = false;
+
+        // Check JWT from Authorization header or cookie
+        $token = null;
+        $authHeader = $request->getHeaderLine('Authorization');
+        if (preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
+            $token = $matches[1];
+        }
+        if (!$token) {
+            $cookies = $request->getCookieParams();
+            $token = $cookies['access_token'] ?? null;
+        }
+        if ($token) {
+            try {
+                $this->jwtManager->validateAccessToken($token);
+                $authenticated = true;
+            } catch (\Exception $e) {
+                // Invalid token, continue to check share_token
+            }
+        }
+
+        // Check share_token query parameter
+        if (!$authenticated) {
+            $queryParams = $request->getQueryParams();
+            $shareToken = $queryParams['share_token'] ?? null;
+            if ($shareToken) {
+                $board = $this->db->fetchAssociative(
+                    'SELECT id FROM kanban_boards WHERE share_token = ? AND (share_expires_at IS NULL OR share_expires_at > NOW())',
+                    [$shareToken]
+                );
+                if ($board) {
+                    $authenticated = true;
+                }
+            }
+        }
+
+        if (!$authenticated) {
+            throw new ForbiddenException('Access denied');
+        }
+
         $route = RouteContext::fromRequest($request)->getRoute();
         $filename = $route->getArgument('filename');
 

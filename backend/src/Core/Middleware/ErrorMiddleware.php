@@ -13,6 +13,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use Slim\Exception\HttpMethodNotAllowedException;
+use Slim\Exception\HttpNotFoundException;
 use Slim\Psr7\Response;
 use Throwable;
 
@@ -46,6 +48,16 @@ class ErrorMiddleware implements MiddlewareInterface
             return $this->jsonResponse(404, [
                 'error' => 'Not found',
                 'message' => $e->getMessage(),
+            ]);
+        } catch (HttpMethodNotAllowedException $e) {
+            return $this->jsonResponse(405, [
+                'error' => 'Method not allowed',
+                'message' => 'The requested HTTP method is not allowed for this endpoint',
+            ]);
+        } catch (HttpNotFoundException $e) {
+            return $this->jsonResponse(404, [
+                'error' => 'Not found',
+                'message' => 'The requested endpoint does not exist',
             ]);
         } catch (Throwable $e) {
             $this->logger?->error('Unhandled exception', [

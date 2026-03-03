@@ -35,7 +35,6 @@ class SetupController
 
         return JsonResponse::success([
             'setup_required' => $userCount == 0,
-            'user_count' => (int) $userCount,
         ]);
     }
 

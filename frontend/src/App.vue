@@ -35,7 +35,7 @@ const layout = computed(() => {
   if (path.includes('/login') || path.includes('/register')) {
     return AuthLayout
   }
-  if (path.includes('/doc/') || path.includes('/support') || path.includes('/ticket/public/') || path.includes('/checklist/') || path.includes('/d/')) {
+  if (path.includes('/doc/') || path.includes('/support') || path.includes('/ticket/public/') || path.includes('/checklist/') || path.includes('/d/') || path.includes('/public/')) {
     return PublicLayout
   }
 
@@ -44,7 +44,7 @@ const layout = computed(() => {
 
 // Check if current path is a public page (doesn't need auth)
 function isPublicPage() {
-  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup', '/share/', '/contract/', '/status', '/kb']
+  const publicPaths = ['/doc/', '/support', '/ticket/public/', '/login', '/register', '/checklist/', '/d/', '/setup', '/share/', '/contract/', '/status', '/kb', '/public/']
   return publicPaths.some(path => window.location.pathname.includes(path))
 }
 
@@ -59,7 +59,7 @@ onMounted(async () => {
   await authStore.initialize()
 
   // If not authenticated and on a protected route, redirect to login
-  if (!authStore.isAuthenticated && route.meta.requiresAuth !== false) {
+  if (!authStore.isAuthenticated && route.meta.requiresAuth === true) {
     await router.replace({ name: 'login', query: { redirect: route.fullPath } })
   }
 

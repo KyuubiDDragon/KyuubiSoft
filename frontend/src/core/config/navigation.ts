@@ -175,7 +175,7 @@ export const navigationGroups: NavGroup[] = [
       { id: 'notes', name: 'Notes', href: '/notes', icon: PencilSquareIcon, feature: 'notes', permission: 'notes.view' },
       { id: 'snippets', name: 'Snippets', href: '/snippets', icon: CodeBracketIcon, permission: 'snippets.view' },
       { id: 'bookmarks', name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon, permission: 'bookmarks.view' },
-      { id: 'habit-tracker', name: 'Habit Tracker', href: '/habit-tracker', icon: FireIcon },
+      { id: 'habit-tracker', name: 'Habit Tracker', href: '/habit-tracker', icon: FireIcon, permission: 'habits.view' },
     ],
   },
 
@@ -224,7 +224,7 @@ export const navigationGroups: NavGroup[] = [
       { id: 'uptime', name: 'Uptime Monitor', href: '/uptime', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
       { id: 'status-page', name: 'Status Page', href: '/status-page', icon: SignalIcon, feature: 'uptime', permission: 'uptime.view' },
       { id: 'ssl', name: 'SSL Zertifikate', href: '/ssl', icon: LockClosedIcon, feature: 'ssl', permission: 'ssl.view' },
-      { id: 'toolbox', name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools' },
+      { id: 'toolbox', name: 'Toolbox', href: '/toolbox', icon: WrenchScrewdriverIcon, feature: 'tools', permission: 'tools.ping' },
       { id: 'workflows', name: 'Workflows', href: '/workflows', icon: BoltIcon, permission: 'automation.view' },
       { id: 'cron', name: 'Cron Jobs', href: '/cron', icon: ClockIcon, feature: 'server', permission: 'server.view' },
       { id: 'dns', name: 'DNS Manager', href: '/dns', icon: GlobeAltIcon, permission: 'server.view' },
@@ -272,7 +272,7 @@ export const navigationGroups: NavGroup[] = [
     children: [
       { id: 'invoices', name: 'Rechnungen', href: '/invoices', icon: CurrencyDollarIcon, feature: 'invoices', permission: 'invoices.view' },
       { id: 'contracts', name: 'Verträge', href: '/contracts', icon: DocumentTextIcon, feature: 'contracts', permission: 'contracts.view' },
-      { id: 'expenses', name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon },
+      { id: 'expenses', name: 'Ausgaben', href: '/expenses', icon: BanknotesIcon, permission: 'finance.view' },
     ],
   },
 
@@ -282,10 +282,10 @@ export const navigationGroups: NavGroup[] = [
     name: 'Kommunikation',
     icon: ChatBubbleLeftRightIcon,
     children: [
-      { id: 'contacts', name: 'Kontakte', href: '/contacts', icon: UsersIcon },
-      { id: 'inbox', name: 'Inbox', href: '/inbox', icon: InboxArrowDownIcon },
-      { id: 'email', name: 'E-Mail', href: '/email', icon: EnvelopeIcon },
-      { id: 'chat', name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
+      { id: 'contacts', name: 'Kontakte', href: '/contacts', icon: UsersIcon, permission: 'contacts.view' },
+      { id: 'inbox', name: 'Inbox', href: '/inbox', icon: InboxArrowDownIcon, permission: 'inbox.view' },
+      { id: 'email', name: 'E-Mail', href: '/email', icon: EnvelopeIcon, permission: 'email.view' },
+      { id: 'chat', name: 'Team Chat', href: '/chat', icon: ChatBubbleLeftRightIcon, permission: 'chat.view' },
       { id: 'discord', name: 'Discord', href: '/discord', icon: ChatBubbleLeftRightIcon, feature: 'discord', permission: 'discord.view' },
     ],
   },

@@ -73,7 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (isInitialized.value) return
 
     // Check if we're on a public page - don't try to authenticate
-    const publicPaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/share/', '/setup']
+    const publicPaths = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/share/', '/setup', '/public/']
     const isPublicPage = publicPaths.some(path => window.location.pathname.includes(path))
 
     // On public pages, just mark as initialized without trying to authenticate

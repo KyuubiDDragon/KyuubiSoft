@@ -200,13 +200,13 @@ const routes: RouteRecordRaw[] = [
     path: '/habit-tracker',
     name: 'habit-tracker',
     component: HabitTrackerView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'habits.view' },
   },
   {
     path: '/expenses',
     name: 'expense-tracker',
     component: ExpenseTrackerView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'finance.view' },
   },
   {
     path: '/uptime',
@@ -326,7 +326,7 @@ const routes: RouteRecordRaw[] = [
     path: '/settings',
     name: 'settings',
     component: SettingsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'settings.view' },
   },
   {
     path: '/passwords',
@@ -344,25 +344,25 @@ const routes: RouteRecordRaw[] = [
     path: '/inbox',
     name: 'inbox',
     component: InboxView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'inbox.view' },
   },
   {
     path: '/chat',
     name: 'chat',
     component: ChatView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'chat.view' },
   },
   {
     path: '/discord',
     name: 'discord',
     component: DiscordManagerView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'discord.view' },
   },
   {
     path: '/email',
     name: 'email',
     component: EmailView,
-    meta: { requiresAuth: true, title: 'E-Mail' },
+    meta: { requiresAuth: true, permission: 'email.view', title: 'E-Mail' },
   },
   {
     path: '/wiki',
@@ -428,13 +428,13 @@ const routes: RouteRecordRaw[] = [
     path: '/contacts',
     name: 'contacts',
     component: ContactsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'contacts.view' },
   },
   {
     path: '/contacts/:id',
     name: 'contact-detail',
     component: ContactDetailView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'contacts.view' },
   },
 
   // Admin routes (role-protected)
@@ -472,25 +472,25 @@ const routes: RouteRecordRaw[] = [
     path: '/cron',
     name: 'cron',
     component: CronView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'server.view' },
   },
   {
     path: '/dns',
     name: 'dns-manager',
     component: DnsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'server.view' },
   },
   {
     path: '/deployments',
     name: 'deployments',
     component: DeploymentsView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'server.view' },
   },
   {
     path: '/notification-rules',
     name: 'notification-rules',
     component: NotificationRulesView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, permission: 'settings.view' },
   },
 
   // Status Page routes

@@ -652,6 +652,114 @@ class KanbanController
         return JsonResponse::success(['users' => $users]);
     }
 
+    // ==================
+    // Board Sharing
+    // ==================
+
+    public function getShares(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+
+        // Only owner can view shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $shares = $this->db->fetchAllAssociative(
+            'SELECT kbs.*, u.username, u.email
+             FROM kanban_board_shares kbs
+             JOIN users u ON kbs.user_id = u.id
+             WHERE kbs.board_id = ?',
+            [$boardId]
+        );
+
+        return JsonResponse::success($shares);
+    }
+
+    public function addShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $boardId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
+        $data = $request->getParsedBody() ?? [];
+
+        // Only owner can add shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        if (empty($data['user_id']) && empty($data['email'])) {
+            throw new ValidationException('User ID or email is required');
+        }
+
+        // Find user by email if not provided by ID
+        $shareUserId = $data['user_id'] ?? null;
+        if (!$shareUserId && !empty($data['email'])) {
+            $user = $this->db->fetchAssociative('SELECT id FROM users WHERE email = ?', [$data['email']]);
+            if (!$user) {
+                throw new NotFoundException('User not found with this email');
+            }
+            $shareUserId = $user['id'];
+        }
+
+        // Can't share with yourself
+        if ($shareUserId === $userId) {
+            throw new ValidationException('Cannot share with yourself');
+        }
+
+        // Check if already shared
+        $existing = $this->db->fetchAssociative(
+            'SELECT * FROM kanban_board_shares WHERE board_id = ? AND user_id = ?',
+            [$boardId, $shareUserId]
+        );
+
+        $permission = $data['permission'] ?? 'view';
+        if (!in_array($permission, ['view', 'edit'])) {
+            $permission = 'view';
+        }
+
+        if ($existing) {
+            // Update permission
+            $this->db->update('kanban_board_shares', ['permission' => $permission], [
+                'board_id' => $boardId,
+                'user_id' => $shareUserId,
+            ]);
+        } else {
+            // Create new share
+            $this->db->insert('kanban_board_shares', [
+                'board_id' => $boardId,
+                'user_id' => $shareUserId,
+                'permission' => $permission,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return JsonResponse::success(null, 'Board shared successfully');
+    }
+
+    public function removeShare(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $boardId = $route->getArgument('id');
+        $shareUserId = $route->getArgument('userId');
+
+        // Only owner can remove shares
+        $board = $this->db->fetchAssociative('SELECT * FROM kanban_boards WHERE id = ?', [$boardId]);
+        if (!$board || $board['user_id'] !== $userId) {
+            throw new ForbiddenException('Only the owner can manage shares');
+        }
+
+        $this->db->delete('kanban_board_shares', [
+            'board_id' => $boardId,
+            'user_id' => $shareUserId,
+        ]);
+
+        return JsonResponse::success(null, 'Share removed successfully');
+    }
+
     // Card Attachments
     public function uploadAttachment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

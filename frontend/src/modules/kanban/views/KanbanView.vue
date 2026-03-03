@@ -28,6 +28,8 @@ import {
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
+  ShareIcon,
+  UserPlusIcon,
 } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import { useAuthStore } from '@/stores/auth'
@@ -116,6 +118,13 @@ const editCommentContent = ref('')
 // Activities state
 const activities = ref([])
 const showActivities = ref(false)
+
+// Share state
+const showShareModal = ref(false)
+const boardShares = ref([])
+const loadingShares = ref(false)
+const newShareEmail = ref('')
+const newSharePermission = ref('view')
 
 // Colors for boards
 const boardColors = [
@@ -539,6 +548,75 @@ function openAttachmentPreview(attachment) {
 // Close attachment preview
 function closeAttachmentPreview() {
   attachmentPreview.value = null
+}
+
+// ==================
+// Board Share Functions
+// ==================
+
+async function fetchBoardShares() {
+  if (!selectedBoard.value) return
+  loadingShares.value = true
+  try {
+    const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`)
+    boardShares.value = response.data.data || []
+  } catch (error) {
+    uiStore.showError('Fehler beim Laden der Freigaben')
+    boardShares.value = []
+  } finally {
+    loadingShares.value = false
+  }
+}
+
+async function openShareModal() {
+  showShareModal.value = true
+  newShareEmail.value = ''
+  newSharePermission.value = 'view'
+  await fetchBoardShares()
+}
+
+async function addBoardShare() {
+  if (!newShareEmail.value.trim()) {
+    uiStore.showError('E-Mail ist erforderlich')
+    return
+  }
+
+  try {
+    await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`, {
+      email: newShareEmail.value.trim(),
+      permission: newSharePermission.value
+    })
+    uiStore.showSuccess('Benutzer hinzugefügt')
+    newShareEmail.value = ''
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+  }
+}
+
+async function removeBoardShare(userId) {
+  if (!await confirm({ message: 'Zugriff wirklich entfernen?', type: 'danger', confirmText: 'Entfernen' })) return
+
+  try {
+    await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares/${userId}`)
+    uiStore.showSuccess('Zugriff entfernt')
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Entfernen')
+  }
+}
+
+async function updateSharePermission(userId, permission) {
+  try {
+    await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`, {
+      user_id: userId,
+      permission
+    })
+    uiStore.showSuccess('Berechtigung aktualisiert')
+    await fetchBoardShares()
+  } catch (error) {
+    uiStore.showError('Fehler beim Aktualisieren')
+  }
 }
 
 // Format file size
@@ -1021,6 +1099,15 @@ onMounted(async () => {
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button
+          v-if="selectedBoard && selectedBoard.user_id === authStore.user?.id"
+          @click="openShareModal()"
+          class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
+          title="Board teilen"
+        >
+          <ShareIcon class="w-5 h-5" />
+          <span class="hidden sm:inline">Teilen</span>
+        </button>
         <button
           v-if="selectedBoard"
           @click="openTagModal()"
@@ -2171,6 +2258,104 @@ onMounted(async () => {
                   Verknüpft
                 </span>
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Share Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showShareModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-dark-700">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Board teilen</h2>
+              <p class="text-sm text-gray-500 mt-0.5 truncate max-w-[300px]">{{ selectedBoard?.title }}</p>
+            </div>
+            <button @click="showShareModal = false" class="p-1 text-gray-400 hover:text-white rounded">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4 overflow-y-auto flex-1">
+            <!-- Add member form -->
+            <div class="bg-dark-700 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Benutzer hinzufügen</h3>
+              <div class="flex gap-2">
+                <input
+                  v-model="newShareEmail"
+                  type="email"
+                  placeholder="E-Mail Adresse"
+                  class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                  @keyup.enter="addBoardShare"
+                />
+                <select
+                  v-model="newSharePermission"
+                  class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+                >
+                  <option value="view">Lesen</option>
+                  <option value="edit">Bearbeiten</option>
+                </select>
+                <button
+                  @click="addBoardShare"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+                >
+                  <UserPlusIcon class="w-5 h-5" />
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">
+                Benutzer mit Lesezugriff können das Board ansehen. Mit Bearbeitungszugriff können sie Karten erstellen und ändern.
+              </p>
+            </div>
+
+            <!-- Members list -->
+            <div>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Geteilte Benutzer</h3>
+              <div v-if="loadingShares" class="flex items-center justify-center py-8">
+                <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div v-else-if="boardShares.length === 0" class="text-center py-8 text-gray-500">
+                Noch nicht geteilt
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="share in boardShares"
+                  :key="share.user_id"
+                  class="flex items-center justify-between p-3 bg-dark-700 rounded-lg"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
+                      <span class="text-xs font-semibold text-white">
+                        {{ share.username?.[0]?.toUpperCase() || 'U' }}
+                      </span>
+                    </div>
+                    <div>
+                      <p class="text-white text-sm">{{ share.username }}</p>
+                      <p class="text-xs text-gray-500">{{ share.email }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select
+                      :value="share.permission"
+                      @change="updateSharePermission(share.user_id, $event.target.value)"
+                      class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
+                    >
+                      <option value="view">Lesen</option>
+                      <option value="edit">Bearbeiten</option>
+                    </select>
+                    <button
+                      @click="removeBoardShare(share.user_id)"
+                      class="p-1.5 text-gray-400 hover:text-red-400 rounded transition-colors"
+                    >
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

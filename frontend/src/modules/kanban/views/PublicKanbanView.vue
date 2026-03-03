@@ -36,6 +36,10 @@ const newCardDescription = ref('')
 const newCardPriority = ref('medium')
 const savingCard = ref(false)
 
+// Card detail (read-only view)
+const viewingCard = ref(null)
+const lightboxImage = ref(null)
+
 // Card editing
 const editingCard = ref(null)
 const editForm = ref({ title: '', description: '', priority: 'medium', due_date: '' })
@@ -277,6 +281,23 @@ async function onDrop(event, targetColumnId) {
 function onDragEnd() {
   dragCard.value = null
   dragOverColumn.value = null
+}
+
+// ===== Card Detail =====
+function openCard(card) {
+  viewingCard.value = card
+}
+
+function closeCard() {
+  viewingCard.value = null
+}
+
+function openLightbox(url) {
+  lightboxImage.value = url
+}
+
+function closeLightbox() {
+  lightboxImage.value = null
 }
 
 // ===== Helpers =====
@@ -532,7 +553,7 @@ function formatDate(dateStr) {
             <div
               v-for="card in column.cards"
               :key="card.id"
-              class="bg-white/[0.04] rounded-lg p-3 group"
+              class="bg-white/[0.04] rounded-lg p-3 group cursor-pointer hover:bg-white/[0.07] transition-colors"
               :class="[
                 card.color ? 'border-l-4' : '',
                 canEdit ? 'cursor-grab active:cursor-grabbing' : '',
@@ -541,6 +562,7 @@ function formatDate(dateStr) {
               :draggable="canEdit"
               @dragstart="canEdit ? onDragStart($event, card, column.id) : null"
               @dragend="onDragEnd"
+              @click="openCard(card)"
             >
               <!-- Labels -->
               <div v-if="card.labels?.length" class="flex flex-wrap gap-1 mb-2">
@@ -601,7 +623,8 @@ function formatDate(dateStr) {
                   v-for="(att, i) in card.attachments.slice(0, 3)"
                   :key="att.id"
                   :src="getAttachmentUrl(att.filename)"
-                  class="w-12 h-12 rounded object-cover"
+                  class="w-12 h-12 rounded object-cover hover:opacity-80 transition-opacity"
+                  @click.stop="openLightbox(getAttachmentUrl(att.filename))"
                 />
                 <span
                   v-if="card.attachments.length > 3"
@@ -643,6 +666,115 @@ function formatDate(dateStr) {
       <!-- Footer -->
       <div class="mt-4 text-center text-sm text-gray-600">Erstellt mit KyuubiSoft</div>
     </div>
+
+    <!-- Card Detail Modal (read-only) -->
+    <Teleport to="body">
+      <div
+        v-if="viewingCard"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        @mousedown.self="closeCard"
+      >
+        <div class="fixed inset-0 bg-black/60"></div>
+        <div class="relative bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <!-- Header -->
+          <div class="sticky top-0 bg-dark-800 border-b border-dark-700 p-4 flex items-start justify-between gap-3 z-10">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-lg font-semibold text-white">{{ viewingCard.title }}</h3>
+              <div class="flex items-center gap-2 mt-1 flex-wrap">
+                <span
+                  v-if="viewingCard.priority"
+                  class="text-xs px-2 py-0.5 rounded text-white"
+                  :class="getPriorityColor(viewingCard.priority)"
+                >
+                  {{ getPriorityLabel(viewingCard.priority) }}
+                </span>
+                <span v-if="viewingCard.due_date" class="text-xs text-gray-400">
+                  Fällig: {{ formatDate(viewingCard.due_date) }}
+                </span>
+                <span v-if="viewingCard.assignee_name" class="text-xs text-gray-400">
+                  {{ viewingCard.assignee_name }}
+                </span>
+              </div>
+            </div>
+            <button @click="closeCard" class="p-1 text-gray-400 hover:text-white rounded shrink-0">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <!-- Labels -->
+            <div v-if="viewingCard.labels?.length" class="flex flex-wrap gap-1.5">
+              <span
+                v-for="label in viewingCard.labels"
+                :key="label"
+                class="w-10 h-2 rounded-full"
+                :class="getLabelColorClass(label)"
+              ></span>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="viewingCard.tags?.length" class="flex flex-wrap gap-1.5">
+              <span
+                v-for="tag in viewingCard.tags"
+                :key="tag.id"
+                class="px-2.5 py-1 rounded-full text-xs font-medium"
+                :style="{
+                  backgroundColor: tag.color + '20',
+                  color: tag.color,
+                  border: '1px solid ' + tag.color + '40',
+                }"
+              >
+                {{ tag.name }}
+              </span>
+            </div>
+
+            <!-- Description -->
+            <div v-if="viewingCard.description">
+              <h4 class="text-sm font-medium text-gray-400 mb-1">Beschreibung</h4>
+              <p class="text-gray-300 text-sm whitespace-pre-wrap">{{ viewingCard.description }}</p>
+            </div>
+
+            <!-- Attachments -->
+            <div v-if="viewingCard.attachments?.length">
+              <h4 class="text-sm font-medium text-gray-400 mb-2">
+                Anhänge ({{ viewingCard.attachments.length }})
+              </h4>
+              <div class="grid grid-cols-2 gap-2">
+                <img
+                  v-for="att in viewingCard.attachments"
+                  :key="att.id"
+                  :src="getAttachmentUrl(att.filename)"
+                  class="w-full h-40 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border border-white/[0.06]"
+                  @click.stop="openLightbox(getAttachmentUrl(att.filename))"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Image Lightbox -->
+    <Teleport to="body">
+      <div
+        v-if="lightboxImage"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 cursor-pointer"
+        @click="closeLightbox"
+      >
+        <div class="fixed inset-0 bg-black/80"></div>
+        <img
+          :src="lightboxImage"
+          class="relative max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          @click.stop
+        />
+        <button
+          @click="closeLightbox"
+          class="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10"
+        >
+          <XMarkIcon class="w-6 h-6" />
+        </button>
+      </div>
+    </Teleport>
 
     <!-- Edit Card Modal -->
     <Teleport to="body">

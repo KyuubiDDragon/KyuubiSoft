@@ -129,7 +129,7 @@ const newSharePermission = ref('view')
 // Public share state
 const publicShareInfo = ref(null)
 const loadingPublicShare = ref(false)
-const publicShareForm = ref({ username: '', password: '' })
+const publicShareForm = ref({ username: '', password: '', can_edit: false, mode: 'readonly' })
 const publicShareUrl = ref('')
 const publicShareCopied = ref(false)
 
@@ -645,17 +645,24 @@ async function fetchPublicShareInfo() {
 }
 
 async function enablePublicShare() {
-  if (!publicShareForm.value.username.trim() || !publicShareForm.value.password.trim()) {
+  const isProtected = publicShareForm.value.mode === 'protected'
+
+  if (isProtected && (!publicShareForm.value.username.trim() || !publicShareForm.value.password.trim())) {
     uiStore.showError('Benutzername und Passwort sind erforderlich')
     return
   }
 
   loadingPublicShare.value = true
   try {
-    const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, {
-      username: publicShareForm.value.username.trim(),
-      password: publicShareForm.value.password.trim(),
-    })
+    const payload = {
+      can_edit: publicShareForm.value.can_edit,
+    }
+    if (isProtected) {
+      payload.username = publicShareForm.value.username.trim()
+      payload.password = publicShareForm.value.password.trim()
+    }
+
+    const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, payload)
     publicShareInfo.value = response.data.data
     publicShareUrl.value = response.data.data.url
     uiStore.showSuccess('Öffentlicher Link erstellt')
@@ -674,7 +681,7 @@ async function disablePublicShare() {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`)
     publicShareInfo.value = { active: false }
     publicShareUrl.value = ''
-    publicShareForm.value = { username: '', password: '' }
+    publicShareForm.value = { username: '', password: '', can_edit: false, mode: 'readonly' }
     uiStore.showSuccess('Öffentlicher Zugang deaktiviert')
   } catch (error) {
     uiStore.showError('Fehler beim Deaktivieren')
@@ -2434,7 +2441,7 @@ onMounted(async () => {
 
             <!-- Public Share Section -->
             <div class="border-t border-dark-700 pt-4">
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Öffentlicher Link (mit Login)</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">Öffentlicher Link</h3>
 
               <div v-if="loadingPublicShare" class="flex items-center justify-center py-4">
                 <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
@@ -2443,9 +2450,12 @@ onMounted(async () => {
               <!-- Active public share -->
               <template v-else-if="publicShareInfo?.active">
                 <div class="bg-dark-700 rounded-lg p-4 space-y-3">
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex items-center gap-2 text-sm flex-wrap">
                     <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                     <span class="text-green-400 font-medium">Aktiv</span>
+                    <span v-if="publicShareInfo.can_edit" class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Bearbeitbar</span>
+                    <span v-else class="px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">Nur Lesen</span>
+                    <span v-if="!publicShareInfo.requires_auth" class="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">Ohne Login</span>
                     <span class="text-gray-500 ml-auto">{{ publicShareInfo.view_count || 0 }} Aufrufe</span>
                   </div>
 
@@ -2470,8 +2480,8 @@ onMounted(async () => {
                     </button>
                   </div>
 
-                  <!-- Credentials info -->
-                  <div class="text-xs text-gray-500 space-y-1">
+                  <!-- Credentials info (only if auth required) -->
+                  <div v-if="publicShareInfo.requires_auth" class="text-xs text-gray-500 space-y-1">
                     <p>Benutzername: <span class="text-gray-300">{{ publicShareInfo.username }}</span></p>
                     <p>Passwort: <span class="text-gray-400">***</span></p>
                   </div>
@@ -2489,30 +2499,79 @@ onMounted(async () => {
               <!-- Create public share form -->
               <template v-else>
                 <div class="bg-dark-700 rounded-lg p-4 space-y-3">
-                  <p class="text-xs text-gray-500 mb-2">
-                    Erstelle einen öffentlichen Link mit eigenem Benutzername und Passwort. Externe Personen können das Board ansehen, ohne einen Account zu haben.
+                  <!-- Mode selection -->
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-2">Zugriffsmodus</label>
+                    <div class="flex gap-2">
+                      <button
+                        @click="publicShareForm.mode = 'readonly'"
+                        class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        :class="publicShareForm.mode === 'readonly'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-600 text-gray-400 hover:text-white'"
+                      >
+                        Nur Lesen
+                      </button>
+                      <button
+                        @click="publicShareForm.mode = 'protected'"
+                        class="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                        :class="publicShareForm.mode === 'protected'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-600 text-gray-400 hover:text-white'"
+                      >
+                        Mit Login
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <p class="text-xs text-gray-500">
+                    <template v-if="publicShareForm.mode === 'readonly'">
+                      Jeder mit dem Link kann das Board ansehen. Kein Login erforderlich.
+                    </template>
+                    <template v-else>
+                      Zugriff nur mit Benutzername und Passwort. Kann optional auch bearbeiten.
+                    </template>
                   </p>
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Benutzername</label>
-                    <input
-                      v-model="publicShareForm.username"
-                      type="text"
-                      placeholder="z.B. kunde-xyz"
-                      class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Passwort</label>
-                    <input
-                      v-model="publicShareForm.password"
-                      type="text"
-                      placeholder="Passwort für den Zugriff"
-                      class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                    />
-                  </div>
+
+                  <!-- Username/Password (only for protected mode) -->
+                  <template v-if="publicShareForm.mode === 'protected'">
+                    <div>
+                      <label class="block text-xs text-gray-400 mb-1">Benutzername</label>
+                      <input
+                        v-model="publicShareForm.username"
+                        type="text"
+                        placeholder="z.B. kunde-xyz"
+                        class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-400 mb-1">Passwort</label>
+                      <input
+                        v-model="publicShareForm.password"
+                        type="text"
+                        placeholder="Passwort für den Zugriff"
+                        class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                      />
+                    </div>
+
+                    <!-- Can edit toggle -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span class="text-sm text-gray-300">Bearbeitung erlauben</span>
+                        <p class="text-xs text-gray-500">Karten erstellen, bearbeiten und verschieben</p>
+                      </div>
+                      <input
+                        v-model="publicShareForm.can_edit"
+                        type="checkbox"
+                        class="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+                      />
+                    </label>
+                  </template>
+
                   <button
                     @click="enablePublicShare"
-                    :disabled="!publicShareForm.username || !publicShareForm.password"
+                    :disabled="publicShareForm.mode === 'protected' && (!publicShareForm.username || !publicShareForm.password)"
                     class="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Link erstellen

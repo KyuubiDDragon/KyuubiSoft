@@ -1619,9 +1619,13 @@ class Router
             $group->post('/s/{code}', [LinkController::class, 'redirect']); // For password-protected links
             $group->get('/s/{code}/info', [LinkController::class, 'getLinkInfo']);
 
-            // Public Kanban Board View (no auth required, username+password protected)
+            // Public Kanban Board (no auth required, optionally username+password protected)
             $group->get('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
             $group->post('/kanban/public/{token}', [KanbanController::class, 'showPublic']);
+            $group->post('/kanban/public/{token}/columns/{columnId}/cards', [KanbanController::class, 'publicCreateCard']);
+            $group->put('/kanban/public/{token}/cards/{cardId}', [KanbanController::class, 'publicUpdateCard']);
+            $group->put('/kanban/public/{token}/cards/{cardId}/move', [KanbanController::class, 'publicMoveCard']);
+            $group->delete('/kanban/public/{token}/cards/{cardId}', [KanbanController::class, 'publicDeleteCard']);
 
             // Public Contract View + Signing (no auth required)
             $group->get('/contracts/public/{token}', [ContractController::class, 'showPublic']);

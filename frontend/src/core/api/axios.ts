@@ -42,7 +42,7 @@ const processQueue = (error: unknown, token: string | null = null): void => {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     // Don't send auth header for public API routes
-    const publicApiPaths: string[] = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/s/']
+    const publicApiPaths: string[] = ['/documents/public/', '/tickets/public/', '/checklists/public/', '/storage/public/', '/s/', '/kanban/public/']
     const isPublicApi: boolean = publicApiPaths.some((path: string) => config.url?.includes(path))
 
     if (!isPublicApi) {
@@ -78,7 +78,7 @@ api.interceptors.response.use(
     const originalRequest = error.config as RetryableRequestConfig | undefined
 
     // Check if we're on a public page that doesn't require authentication
-    const publicPagePaths: string[] = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/', '/contract/', '/status', '/kb']
+    const publicPagePaths: string[] = ['/doc/', '/ticket/public/', '/support', '/checklist/', '/d/', '/login', '/setup', '/share/', '/s/', '/contract/', '/status', '/kb', '/public/']
     const isPublicPage: boolean = publicPagePaths.some((path: string) => window.location.pathname.includes(path))
 
     // Check if the original request was to a public API endpoint

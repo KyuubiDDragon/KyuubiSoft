@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch, nextTick } from 'vue'
+import { ref, reactive, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -56,17 +56,21 @@ const isEnabling2FA = ref(false)
 const isDisabling2FA = ref(false)
 const disableCode = ref('')
 
-const tabs = [
+const allTabs = [
   { id: 'profile', name: 'Profil', icon: UserIcon },
   { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
   { id: 'notifications', name: 'Benachrichtigungen', icon: BellIcon },
-  { id: 'api-keys', name: 'API-Keys', icon: KeyIcon },
-  { id: 'ai', name: 'AI Assistent', icon: SparklesIcon },
+  { id: 'api-keys', name: 'API-Keys', icon: KeyIcon, permission: 'apikeys.view' },
+  { id: 'ai', name: 'AI Assistent', icon: SparklesIcon, permission: 'ai.view' },
   { id: 'tags', name: 'Tags', icon: TagIcon },
-  { id: 'invoices', name: 'Rechnungen', icon: CurrencyDollarIcon },
-  { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon },
+  { id: 'invoices', name: 'Rechnungen', icon: CurrencyDollarIcon, permission: 'invoices.view' },
+  { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon, permission: 'settings.edit' },
   { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
 ]
+
+const tabs = computed(() =>
+  allTabs.filter(tab => !tab.permission || authStore.hasPermission(tab.permission))
+)
 
 // Export/Import state
 const exportTypes = ref([])

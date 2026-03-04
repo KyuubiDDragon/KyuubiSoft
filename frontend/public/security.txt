@@ -1,0 +1,7 @@
+# KyuubiSoft Security Policy
+# See https://securitytxt.org/ and RFC 9116
+
+Contact: mailto:security@kyuubisoft.com
+Preferred-Languages: de, en
+Canonical: https://dev.kyuubisoft.com/.well-known/security.txt
+Expires: 2027-01-08T16:49:45Z

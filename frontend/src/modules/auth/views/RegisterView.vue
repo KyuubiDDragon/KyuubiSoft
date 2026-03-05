@@ -1,10 +1,12 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon, ClockIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -55,17 +57,17 @@ async function handleSubmit() {
 
   // Validate
   if (!form.email) {
-    errors.value.email = 'E-Mail ist erforderlich'
+    errors.value.email = t('auth.emailRequired')
     return
   }
 
   if (!isPasswordStrong()) {
-    errors.value.password = 'Passwort erfüllt nicht alle Anforderungen'
+    errors.value.password = t('auth.passwordRequirementsNotMet')
     return
   }
 
   if (form.password !== form.passwordConfirmation) {
-    errors.value.passwordConfirmation = 'Passwörter stimmen nicht überein'
+    errors.value.passwordConfirmation = t('auth.passwordsDoNotMatch')
     return
   }
 
@@ -81,13 +83,13 @@ async function handleSubmit() {
 
     if (result.pendingApproval) {
       pendingApproval.value = true
-      uiStore.showSuccess('Registrierung erfolgreich!')
+      uiStore.showSuccess(t('auth.registrationSuccess'))
     } else {
-      uiStore.showSuccess('Registrierung erfolgreich!')
+      uiStore.showSuccess(t('auth.registrationSuccess'))
       router.push('/')
     }
   } catch (error) {
-    const message = error.response?.data?.error || 'Registrierung fehlgeschlagen'
+    const message = error.response?.data?.error || t('auth.registrationFailed')
     errors.value.general = message
     uiStore.showError(message)
   } finally {

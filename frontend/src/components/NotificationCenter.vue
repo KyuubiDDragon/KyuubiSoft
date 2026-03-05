@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import {
   BellIcon,
@@ -14,6 +15,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const isOpen = ref(false)
 const notifications = ref([])
@@ -150,10 +152,10 @@ function formatTime(dateStr) {
   const now = new Date()
   const diff = now - date
 
-  if (diff < 60000) return 'Gerade eben'
-  if (diff < 3600000) return `vor ${Math.floor(diff / 60000)} Min.`
-  if (diff < 86400000) return `vor ${Math.floor(diff / 3600000)} Std.`
-  if (diff < 604800000) return `vor ${Math.floor(diff / 86400000)} Tagen`
+  if (diff < 60000) return t('notifications.justNow')
+  if (diff < 3600000) return t('notifications.minutesAgo', { count: Math.floor(diff / 60000) })
+  if (diff < 86400000) return t('notifications.hoursAgo', { count: Math.floor(diff / 3600000) })
+  if (diff < 604800000) return t('notifications.daysAgo', { count: Math.floor(diff / 86400000) })
 
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
 }
@@ -165,14 +167,14 @@ function formatTime(dateStr) {
     <button
       @click="toggleOpen"
       class="btn-icon-sm relative"
-      title="Benachrichtigungen"
+      :title="$t('notifications.title')"
     >
       <BellIcon class="w-4 h-4" />
       <span
         v-if="unreadCount > 0"
         class="notification-dot-pulse"
       >
-        <span class="sr-only">{{ unreadCount }} neue Benachrichtigungen</span>
+        <span class="sr-only">{{ unreadCount }} {{ $t('notifications.newNotifications') }}</span>
       </span>
     </button>
 
@@ -193,12 +195,12 @@ function formatTime(dateStr) {
         <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
           <div class="flex items-center gap-2">
             <BellIcon class="w-5 h-5 text-primary-400" />
-            <h3 class="font-semibold text-white">Benachrichtigungen</h3>
+            <h3 class="font-semibold text-white">{{ $t('notifications.title') }}</h3>
             <span
               v-if="unreadCount > 0"
               class="badge-primary"
             >
-              {{ unreadCount }} neu
+              {{ unreadCount }} {{ $t('notifications.new') }}
             </span>
           </div>
           <div class="flex items-center gap-1">
@@ -206,7 +208,7 @@ function formatTime(dateStr) {
               v-if="notifications.some(n => !n.is_read)"
               @click="markAllAsRead"
               class="p-1.5 text-gray-400 hover:text-green-400 rounded transition-colors"
-              title="Alle als gelesen markieren"
+              :title="$t('notifications.markAllRead')"
             >
               <CheckIcon class="w-4 h-4" />
             </button>
@@ -214,7 +216,7 @@ function formatTime(dateStr) {
               v-if="notifications.length > 0"
               @click="clearAll"
               class="p-1.5 text-gray-400 hover:text-red-400 rounded transition-colors"
-              title="Alle löschen"
+              :title="$t('notifications.clearAll')"
             >
               <TrashIcon class="w-4 h-4" />
             </button>

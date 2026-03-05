@@ -5,6 +5,7 @@ import { useNotesStore } from '../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useI18n } from 'vue-i18n'
 import NotesSidebar from '../components/sidebar/NotesSidebar.vue'
 import NoteEditor from '../components/editor/NoteEditor.vue'
 import NoteHeader from '../components/editor/NoteHeader.vue'
@@ -39,6 +40,7 @@ const notesStore = useNotesStore()
 const uiStore = useUiStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 // State
 const showQuickSwitcher = ref(false)
@@ -71,7 +73,7 @@ onMounted(async () => {
       await loadNote(route.params.id)
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Notizen')
+    uiStore.showError(t('notes.errors.loadNotes'))
   }
 
   // Keyboard shortcuts
@@ -138,7 +140,7 @@ async function loadNote(noteId) {
     hasUnsavedChanges.value = false
     lastSaved.value = new Date()
   } catch (error) {
-    uiStore.showError('Notiz konnte nicht geladen werden')
+    uiStore.showError(t('notes.errors.loadNote'))
     router.push('/notes')
   }
 }
@@ -147,14 +149,14 @@ async function loadNote(noteId) {
 async function createNewNote(parentId = null) {
   try {
     const note = await notesStore.createNote({
-      title: 'Neue Notiz',
+      title: t('notes.newNote'),
       content: '',
       parent_id: parentId
     })
     router.push(`/notes/${note.id}`)
-    uiStore.showSuccess('Notiz erstellt')
+    uiStore.showSuccess(t('notes.noteCreated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen der Notiz')
+    uiStore.showError(t('notes.errors.createNote'))
   }
 }
 
@@ -185,7 +187,7 @@ async function saveNote() {
     hasUnsavedChanges.value = false
     lastSaved.value = new Date()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('notes.errors.save'))
   }
 }
 
@@ -212,7 +214,7 @@ async function handleTitleChange(newTitle) {
   try {
     await notesStore.updateNote(currentNote.value.id, { title: newTitle })
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren des Titels')
+    uiStore.showError(t('notes.errors.updateTitle'))
   }
 }
 
@@ -223,7 +225,7 @@ async function handleIconChange(newIcon) {
   try {
     await notesStore.updateNote(currentNote.value.id, { icon: newIcon })
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren des Icons')
+    uiStore.showError(t('notes.errors.updateIcon'))
   }
 }
 
@@ -231,14 +233,14 @@ async function handleIconChange(newIcon) {
 async function deleteCurrentNote() {
   if (!currentNote.value) return
 
-  if (!await confirm({ message: 'Notiz in den Papierkorb verschieben?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notes.confirmMoveToTrash'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await notesStore.deleteNote(currentNote.value.id)
     router.push('/notes')
-    uiStore.showSuccess('Notiz in Papierkorb verschoben')
+    uiStore.showSuccess(t('notes.movedToTrash'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notes.errors.delete'))
   }
 }
 
@@ -253,12 +255,12 @@ async function archiveCurrentNote() {
 
     if (isArchived) {
       router.push('/notes')
-      uiStore.showSuccess('Notiz archiviert')
+      uiStore.showSuccess(t('notes.noteArchived'))
     } else {
-      uiStore.showSuccess('Notiz wiederhergestellt')
+      uiStore.showSuccess(t('notes.noteRestored'))
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Archivieren')
+    uiStore.showError(t('notes.errors.archive'))
   }
 }
 
@@ -269,7 +271,7 @@ async function toggleFavorite() {
   try {
     await notesStore.toggleFavorite(currentNote.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('notes.errors.update'))
   }
 }
 
@@ -280,7 +282,7 @@ async function togglePin() {
   try {
     await notesStore.togglePin(currentNote.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('notes.errors.update'))
   }
 }
 
@@ -292,9 +294,9 @@ async function duplicateNote() {
     const note = await notesStore.duplicateNote(currentNote.value.id)
     router.push(`/notes/${note.id}`)
     showNoteMenu.value = false
-    uiStore.showSuccess('Notiz dupliziert')
+    uiStore.showSuccess(t('notes.noteDuplicated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Duplizieren')
+    uiStore.showError(t('notes.errors.duplicate'))
   }
 }
 
@@ -318,7 +320,7 @@ async function handleWikiLinkNavigation(href) {
     }
   } catch (error) {
     // Note doesn't exist - could offer to create it
-    if (await confirm({ message: `Notiz "${href}" existiert nicht. Neu erstellen?`, type: 'info', confirmText: 'Erstellen' })) {
+    if (await confirm({ message: t('notes.noteNotExistCreate', { name: href }), type: 'info', confirmText: t('common.create') })) {
       const newNote = await notesStore.createNote({
         title: href.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
         content: ''

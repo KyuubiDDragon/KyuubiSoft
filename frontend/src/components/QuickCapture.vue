@@ -26,12 +26,16 @@ const tagInput = ref('')
 const reminderAt = ref(null)
 const saving = ref(false)
 
-const priorities = [
-  { value: 'low', label: 'Niedrig', color: 'text-gray-400' },
-  { value: 'normal', label: 'Normal', color: 'text-blue-400' },
-  { value: 'high', label: 'Hoch', color: 'text-orange-400' },
-  { value: 'urgent', label: 'Dringend', color: 'text-red-400' },
-]
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+const priorities = computed(() => [
+  { value: 'low', label: t('quickCapture.priorityLow'), color: 'text-gray-400' },
+  { value: 'normal', label: t('quickCapture.priorityNormal'), color: 'text-blue-400' },
+  { value: 'high', label: t('quickCapture.priorityHigh'), color: 'text-orange-400' },
+  { value: 'urgent', label: t('quickCapture.priorityUrgent'), color: 'text-red-400' },
+])
 
 const inboxCount = computed(() => inboxStore.stats.inbox || 0)
 const urgentCount = computed(() => inboxStore.stats.urgent || 0)
@@ -99,7 +103,7 @@ function handleKeyDown(event) {
     v-if="!isOpen"
     @click="toggleOpen"
     class="fixed bottom-6 right-24 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
-    title="Quick Capture"
+    :title="$t('quickCapture.title')"
   >
     <InboxArrowDownIcon class="w-6 h-6" />
     <span
@@ -129,14 +133,14 @@ function handleKeyDown(event) {
       <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
           <InboxArrowDownIcon class="w-5 h-5 text-indigo-400" />
-          <h3 class="font-semibold text-white">Quick Capture</h3>
-          <span class="text-xs text-gray-500">({{ inboxCount }} im Inbox)</span>
+          <h3 class="font-semibold text-white">{{ $t('quickCapture.title') }}</h3>
+          <span class="text-xs text-gray-500">({{ inboxCount }} {{ $t('quickCapture.inInbox') }})</span>
         </div>
         <div class="flex items-center gap-1">
           <router-link
             to="/inbox"
             class="p-1 text-gray-400 hover:text-white rounded transition-colors"
-            title="Inbox anzeigen"
+            :title="$t('quickCapture.showInbox')"
           >
             <ArrowRightIcon class="w-4 h-4" />
           </router-link>
@@ -163,7 +167,7 @@ function handleKeyDown(event) {
           <textarea
             v-model="content"
             @keydown="handleKeyDown"
-            placeholder="Was hast du im Kopf? Schnell erfassen, spater sortieren..."
+            :placeholder="$t('quickCapture.placeholder')"
             rows="3"
             class="textarea text-sm w-full resize-none"
           ></textarea>
@@ -171,7 +175,7 @@ function handleKeyDown(event) {
 
         <!-- Priority Selection -->
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">Prioritat:</span>
+          <span class="text-xs text-gray-500">{{ $t('quickCapture.priority') }}:</span>
           <div class="flex gap-1">
             <button
               v-for="p in priorities"
@@ -192,7 +196,7 @@ function handleKeyDown(event) {
           @click="showAdvanced = !showAdvanced"
           class="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1"
         >
-          <span>Erweiterte Optionen</span>
+          <span>{{ $t('quickCapture.advancedOptions') }}</span>
           <ChevronDownIcon
             class="w-3 h-3 transition-transform"
             :class="{ 'rotate-180': showAdvanced }"
@@ -203,10 +207,10 @@ function handleKeyDown(event) {
         <div v-if="showAdvanced" class="space-y-3 pt-2 border-t border-white/[0.06]">
           <!-- Note -->
           <div>
-            <label class="text-xs text-gray-500 mb-1 block">Notiz</label>
+            <label class="text-xs text-gray-500 mb-1 block">{{ $t('quickCapture.note') }}</label>
             <textarea
               v-model="note"
-              placeholder="Zusatzliche Details..."
+              :placeholder="$t('quickCapture.notePlaceholder')"
               rows="2"
               class="textarea text-sm w-full resize-none"
             ></textarea>
@@ -234,7 +238,7 @@ function handleKeyDown(event) {
               v-model="tagInput"
               @keyup.enter="addTag"
               type="text"
-              placeholder="Tag hinzufugen..."
+              :placeholder="$t('quickCapture.addTag')"
               class="input text-sm w-full"
             />
           </div>
@@ -243,7 +247,7 @@ function handleKeyDown(event) {
           <div>
             <label class="text-xs text-gray-500 mb-1 flex items-center gap-1">
               <BellIcon class="w-3 h-3" />
-              Erinnerung
+              {{ $t('quickCapture.reminder') }}
             </label>
             <input
               v-model="reminderAt"
@@ -255,16 +259,16 @@ function handleKeyDown(event) {
 
         <!-- Actions -->
         <div class="flex items-center justify-between pt-2">
-          <span class="text-xs text-gray-500">Cmd/Ctrl + Enter zum Speichern</span>
+          <span class="text-xs text-gray-500">{{ $t('quickCapture.saveShortcut') }}</span>
           <button
             @click="capture"
             :disabled="!content.trim() || saving"
             class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors"
           >
-            <span v-if="saving">Speichern...</span>
+            <span v-if="saving">{{ $t('common.saving') }}</span>
             <template v-else>
               <PlusIcon class="w-4 h-4" />
-              <span>Erfassen</span>
+              <span>{{ $t('common.capture') }}</span>
             </template>
           </button>
         </div>

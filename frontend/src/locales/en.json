@@ -8,6 +8,7 @@
     "add": "Add",
     "search": "Search",
     "filter": "Filter",
+    "filterPlaceholder": "Filter...",
     "reset": "Reset",
     "close": "Close",
     "confirm": "Confirm",
@@ -15,7 +16,9 @@
     "next": "Next",
     "previous": "Previous",
     "loading": "Loading...",
+    "saving": "Saving...",
     "noData": "No data available",
+    "noResults": "No results",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -46,7 +49,11 @@
     "import": "Import",
     "download": "Download",
     "upload": "Upload",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "unnamed": "Unnamed",
+    "capture": "Capture",
+    "searchOrNavigate": "Search or navigate...",
+    "unexpectedError": "An unexpected error occurred."
   },
   "auth": {
     "login": "Login",
@@ -83,6 +90,71 @@
     "settings": "Settings",
     "users": "Users",
     "system": "System"
+  },
+  "header": {
+    "inbox": "Inbox",
+    "teamChat": "Team Chat",
+    "widgets": "Widgets",
+    "quickNotes": "Quick Notes",
+    "quickCapture": "Quick Capture",
+    "aiAssistant": "AI Assistant",
+    "quickAccessCount": "Quick Access Count",
+    "language": "Language"
+  },
+  "sidebar": {
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "allProjects": "All Projects",
+    "noProjects": "No projects",
+    "favorites": "Favorites",
+    "searchShortcut": "Search (Ctrl+K)"
+  },
+  "favorites": {
+    "addedToFavorites": "Added to favorites",
+    "removedFromFavorites": "Removed from favorites",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "favorite": "Favorite",
+    "addFavorite": "Add favorite",
+    "errorUpdating": "Error updating favorites"
+  },
+  "quickCapture": {
+    "title": "Quick Capture",
+    "showInbox": "Show inbox",
+    "inInbox": "in Inbox",
+    "placeholder": "What's on your mind? Capture quickly, sort later...",
+    "priority": "Priority",
+    "priorityLow": "Low",
+    "priorityNormal": "Normal",
+    "priorityHigh": "High",
+    "priorityUrgent": "Urgent",
+    "advancedOptions": "Advanced options",
+    "note": "Note",
+    "notePlaceholder": "Additional details...",
+    "addTag": "Add tag...",
+    "reminder": "Reminder",
+    "saveShortcut": "Cmd/Ctrl + Enter to save"
+  },
+  "quickNotes": {
+    "title": "Quick Notes",
+    "newNote": "New note...",
+    "noNotes": "No notes available"
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "newConversation": "New conversation",
+    "history": "History",
+    "notConfigured": "AI Assistant not configured",
+    "configureApiKey": "Please add your API key in the settings to use the AI assistant.",
+    "goToSettings": "Go to settings",
+    "recentConversations": "Recent conversations",
+    "conversation": "Conversation",
+    "noConversations": "No conversations",
+    "howCanIHelp": "How can I help you?",
+    "askQuestion": "Ask me a question...",
+    "writeMessage": "Write a message...",
+    "deleteConversation": "Do you really want to delete this conversation?",
+    "errorSending": "Message could not be sent"
   },
   "dashboard": {
     "title": "Dashboard",

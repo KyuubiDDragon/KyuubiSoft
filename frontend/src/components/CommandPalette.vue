@@ -154,7 +154,7 @@ onUnmounted(() => {
               v-model="query"
               type="text"
               class="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-sm"
-              placeholder="Suchen oder navigieren..."
+              :placeholder="$t('common.searchOrNavigate')"
             />
             <kbd class="kbd">ESC</kbd>
           </div>
@@ -163,7 +163,7 @@ onUnmounted(() => {
           <div class="max-h-80 overflow-y-auto py-2">
             <template v-if="flatItems.length === 0">
               <div class="empty-state py-8">
-                <p class="text-sm text-gray-500">Keine Ergebnisse</p>
+                <p class="text-sm text-gray-500">{{ $t('common.noResults') }}</p>
               </div>
             </template>
 

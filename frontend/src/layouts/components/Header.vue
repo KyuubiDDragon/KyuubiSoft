@@ -108,7 +108,7 @@ function goToSettings() {
         <button
           @click="showQuickAccessOverflow = !showQuickAccessOverflow"
           class="btn-icon-sm"
-          title="Weitere"
+          :title="$t('common.more')"
         >
           <EllipsisHorizontalIcon class="w-4 h-4" />
         </button>
@@ -141,7 +141,7 @@ function goToSettings() {
       <button
         @click="router.push('/inbox')"
         class="btn-icon-sm"
-        title="Inbox"
+        :title="$t('header.inbox')"
       >
         <InboxArrowDownIcon class="w-4 h-4" />
       </button>
@@ -150,7 +150,7 @@ function goToSettings() {
       <button
         @click="router.push('/chat')"
         class="btn-icon-sm"
-        title="Team Chat"
+        :title="$t('header.teamChat')"
       >
         <ChatBubbleLeftRightIcon class="w-4 h-4" />
       </button>
@@ -166,7 +166,7 @@ function goToSettings() {
         <button
           @click="showWidgetsMenu = !showWidgetsMenu"
           class="btn-icon-sm"
-          title="Widgets"
+          :title="$t('header.widgets')"
         >
           <Squares2X2Icon class="w-4 h-4" />
         </button>
@@ -176,7 +176,7 @@ function goToSettings() {
             v-if="showWidgetsMenu"
             class="dropdown right-0 mt-2"
           >
-            <div class="dropdown-header">Widgets</div>
+            <div class="dropdown-header">{{ $t('header.widgets') }}</div>
 
             <button
               @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
@@ -184,7 +184,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <PencilSquareIcon class="w-4 h-4 shrink-0" />
-                <span>Quick Notes</span>
+                <span>{{ $t('header.quickNotes') }}</span>
               </div>
               <div v-if="uiStore.showQuickNotes" class="status-online" />
             </button>
@@ -195,7 +195,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <InboxArrowDownIcon class="w-4 h-4 shrink-0" />
-                <span>Quick Capture</span>
+                <span>{{ $t('header.quickCapture') }}</span>
               </div>
               <div v-if="uiStore.showQuickCapture" class="status-online" />
             </button>
@@ -206,7 +206,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <SparklesIcon class="w-4 h-4 shrink-0" />
-                <span>AI Assistent</span>
+                <span>{{ $t('header.aiAssistant') }}</span>
               </div>
               <div v-if="uiStore.showAIAssistant" class="status-online" />
             </button>
@@ -215,7 +215,7 @@ function goToSettings() {
             <template v-if="quickAccessStore.items.length > 0">
               <div class="dropdown-divider" />
               <div class="px-3 py-2">
-                <p class="text-2xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Access Anzahl</p>
+                <p class="text-2xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{{ $t('header.quickAccessCount') }}</p>
                 <div class="flex items-center gap-2.5">
                   <input
                     type="range"
@@ -238,7 +238,7 @@ function goToSettings() {
         <button
           @click="showLanguageMenu = !showLanguageMenu"
           class="btn-icon-sm"
-          title="Sprache / Language"
+          :title="$t('header.language')"
         >
           <LanguageIcon class="w-4 h-4" />
         </button>
@@ -248,7 +248,7 @@ function goToSettings() {
             v-if="showLanguageMenu"
             class="dropdown right-0 mt-2"
           >
-            <div class="dropdown-header">Sprache</div>
+            <div class="dropdown-header">{{ $t('header.language') }}</div>
             <button
               v-for="loc in localeStore.getAvailableLocales()"
               :key="loc.code"
@@ -291,14 +291,14 @@ function goToSettings() {
             <div class="py-1">
               <button @click="goToSettings" class="dropdown-item">
                 <Cog6ToothIcon class="w-4 h-4 shrink-0" />
-                Einstellungen
+                {{ $t('common.settings') }}
               </button>
             </div>
 
             <div class="border-t border-white/[0.06] py-1">
               <button @click="logout" class="dropdown-item-danger">
                 <ArrowRightOnRectangleIcon class="w-4 h-4 shrink-0" />
-                Abmelden
+                {{ $t('auth.logout') }}
               </button>
             </div>
           </div>

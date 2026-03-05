@@ -8,6 +8,7 @@
     "add": "Hinzufügen",
     "search": "Suchen",
     "filter": "Filtern",
+    "filterPlaceholder": "Filter...",
     "reset": "Zurücksetzen",
     "close": "Schließen",
     "confirm": "Bestätigen",
@@ -15,7 +16,9 @@
     "next": "Weiter",
     "previous": "Vorherige",
     "loading": "Laden...",
+    "saving": "Speichern...",
     "noData": "Keine Daten vorhanden",
+    "noResults": "Keine Ergebnisse",
     "error": "Fehler",
     "success": "Erfolgreich",
     "warning": "Warnung",
@@ -36,7 +39,7 @@
     "status": "Status",
     "actions": "Aktionen",
     "settings": "Einstellungen",
-    "more": "Mehr",
+    "more": "Weitere",
     "less": "Weniger",
     "show": "Anzeigen",
     "hide": "Ausblenden",
@@ -46,7 +49,11 @@
     "import": "Importieren",
     "download": "Herunterladen",
     "upload": "Hochladen",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "unnamed": "Unbenannt",
+    "capture": "Erfassen",
+    "searchOrNavigate": "Suchen oder navigieren...",
+    "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten."
   },
   "auth": {
     "login": "Anmelden",
@@ -83,6 +90,71 @@
     "settings": "Einstellungen",
     "users": "Benutzer",
     "system": "System"
+  },
+  "header": {
+    "inbox": "Inbox",
+    "teamChat": "Team Chat",
+    "widgets": "Widgets",
+    "quickNotes": "Quick Notes",
+    "quickCapture": "Quick Capture",
+    "aiAssistant": "AI Assistent",
+    "quickAccessCount": "Quick Access Anzahl",
+    "language": "Sprache"
+  },
+  "sidebar": {
+    "collapseSidebar": "Sidebar einklappen",
+    "expandSidebar": "Sidebar ausklappen",
+    "allProjects": "Alle Projekte",
+    "noProjects": "Keine Projekte",
+    "favorites": "Favoriten",
+    "searchShortcut": "Suche (Ctrl+K)"
+  },
+  "favorites": {
+    "addedToFavorites": "Zu Favoriten hinzugefügt",
+    "removedFromFavorites": "Von Favoriten entfernt",
+    "addToFavorites": "Zu Favoriten hinzufügen",
+    "removeFromFavorites": "Von Favoriten entfernen",
+    "favorite": "Favorit",
+    "addFavorite": "Favorisieren",
+    "errorUpdating": "Fehler beim Aktualisieren der Favoriten"
+  },
+  "quickCapture": {
+    "title": "Quick Capture",
+    "showInbox": "Inbox anzeigen",
+    "inInbox": "im Inbox",
+    "placeholder": "Was hast du im Kopf? Schnell erfassen, später sortieren...",
+    "priority": "Priorität",
+    "priorityLow": "Niedrig",
+    "priorityNormal": "Normal",
+    "priorityHigh": "Hoch",
+    "priorityUrgent": "Dringend",
+    "advancedOptions": "Erweiterte Optionen",
+    "note": "Notiz",
+    "notePlaceholder": "Zusätzliche Details...",
+    "addTag": "Tag hinzufügen...",
+    "reminder": "Erinnerung",
+    "saveShortcut": "Cmd/Ctrl + Enter zum Speichern"
+  },
+  "quickNotes": {
+    "title": "Quick Notes",
+    "newNote": "Neue Notiz...",
+    "noNotes": "Keine Notizen vorhanden"
+  },
+  "ai": {
+    "title": "AI Assistent",
+    "newConversation": "Neue Unterhaltung",
+    "history": "Verlauf",
+    "notConfigured": "AI Assistent nicht konfiguriert",
+    "configureApiKey": "Bitte hinterlege deinen API-Key in den Einstellungen um den AI-Assistenten zu nutzen.",
+    "goToSettings": "Zu den Einstellungen",
+    "recentConversations": "Letzte Unterhaltungen",
+    "conversation": "Unterhaltung",
+    "noConversations": "Keine Unterhaltungen",
+    "howCanIHelp": "Wie kann ich dir helfen?",
+    "askQuestion": "Stelle mir eine Frage...",
+    "writeMessage": "Schreibe eine Nachricht...",
+    "deleteConversation": "Möchtest du diese Unterhaltung wirklich löschen?",
+    "errorSending": "Nachricht konnte nicht gesendet werden"
   },
   "dashboard": {
     "title": "Dashboard",

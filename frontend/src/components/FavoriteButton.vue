@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useUiStore } from '@/stores/ui'
 import { StarIcon } from '@heroicons/vue/24/outline'
@@ -24,6 +25,7 @@ const props = defineProps({
   },
 })
 
+const { t } = useI18n()
 const favoritesStore = useFavoritesStore()
 const uiStore = useUiStore()
 
@@ -53,9 +55,9 @@ const buttonClasses = computed(() => {
 async function toggleFavorite() {
   try {
     await favoritesStore.toggle(props.itemType, props.itemId)
-    uiStore.showSuccess(isFavorite.value ? 'Zu Favoriten hinzugefügt' : 'Von Favoriten entfernt')
+    uiStore.showSuccess(isFavorite.value ? t('favorites.addedToFavorites') : t('favorites.removedFromFavorites'))
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren der Favoriten')
+    uiStore.showError(t('favorites.errorUpdating'))
   }
 }
 </script>
@@ -64,12 +66,12 @@ async function toggleFavorite() {
   <button
     @click.stop="toggleFavorite"
     :class="buttonClasses"
-    :title="isFavorite ? 'Von Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+    :title="isFavorite ? $t('favorites.removeFromFavorites') : $t('favorites.addToFavorites')"
   >
     <StarIconSolid v-if="isFavorite" :class="sizeClasses" />
     <StarIcon v-else :class="sizeClasses" />
     <span v-if="showLabel" class="text-sm">
-      {{ isFavorite ? 'Favorit' : 'Favorisieren' }}
+      {{ isFavorite ? $t('favorites.favorite') : $t('favorites.addFavorite') }}
     </span>
   </button>
 </template>

@@ -72,7 +72,7 @@ onMounted(async () => {
   <div v-if="!isAppReady" class="min-h-screen bg-dark-900 flex items-center justify-center">
     <div class="flex flex-col items-center gap-4">
       <div class="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-      <p class="text-gray-400">Laden...</p>
+      <p class="text-gray-400">{{ $t('common.loading') }}</p>
     </div>
   </div>
 

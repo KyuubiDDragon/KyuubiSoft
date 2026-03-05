@@ -89,7 +89,7 @@ function closeMobileSidebar() {
       >
         <div class="flex flex-col items-center gap-4">
           <div class="w-12 h-12 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-          <p class="text-sm text-gray-400 font-medium">Laden...</p>
+          <p class="text-sm text-gray-400 font-medium">{{ $t('common.loading') }}</p>
         </div>
       </div>
     </Transition>

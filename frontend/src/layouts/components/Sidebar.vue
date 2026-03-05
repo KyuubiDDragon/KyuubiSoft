@@ -286,7 +286,7 @@ function closePopover() {
         v-if="!collapsed && !isMobile"
         @click="uiStore.toggleSidebarCollapse()"
         class="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
-        title="Sidebar einklappen"
+        :title="$t('sidebar.collapseSidebar')"
       >
         <ChevronDoubleLeftIcon class="w-4 h-4" />
       </button>
@@ -294,7 +294,7 @@ function closePopover() {
         v-if="collapsed && !isMobile"
         @click="uiStore.toggleSidebarCollapse()"
         class="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
-        title="Sidebar ausklappen"
+        :title="$t('sidebar.expandSidebar')"
       >
         <ChevronDoubleRightIcon class="w-4 h-4" />
       </button>
@@ -308,12 +308,12 @@ function closePopover() {
                bg-white/[0.04] border border-white/[0.08]
                hover:bg-white/[0.07] hover:border-white/[0.12]"
         :class="collapsed ? 'p-2 justify-center' : 'px-3 py-2 gap-2.5'"
-        :title="projectStore.selectedProject?.name || 'Alle Projekte'"
+        :title="projectStore.selectedProject?.name || $t('sidebar.allProjects')"
       >
         <FolderIcon class="w-4 h-4 text-gray-400 shrink-0" />
         <template v-if="!collapsed">
           <span class="flex-1 text-left text-sm text-gray-300 truncate">
-            {{ projectStore.selectedProject?.name || 'Alle Projekte' }}
+            {{ projectStore.selectedProject?.name || $t('sidebar.allProjects') }}
           </span>
           <ChevronDownIcon class="w-3.5 h-3.5 text-gray-500 shrink-0" />
         </template>
@@ -335,7 +335,7 @@ function closePopover() {
                bg-white/[0.03] border border-white/[0.06]
                hover:bg-white/[0.06] hover:border-white/[0.10]
                transition-all duration-200"
-        title="Suche (Ctrl+K)"
+        :title="$t('sidebar.searchShortcut')"
       >
         <MagnifyingGlassIcon class="w-4 h-4 text-gray-500" />
       </button>
@@ -347,7 +347,7 @@ function closePopover() {
           ref="treeFilterInput"
           v-model="treeFilter"
           type="text"
-          placeholder="Filter..."
+          :placeholder="$t('common.filterPlaceholder')"
           class="w-full pl-8 pr-8 py-1.5 rounded-lg text-xs text-gray-200
                  bg-white/[0.04] border border-white/[0.08]
                  placeholder-gray-600
@@ -407,7 +407,7 @@ function closePopover() {
           <div class="h-px bg-white/[0.06] my-2" />
           <button
             class="sidebar-item-collapsed w-full"
-            title="Favoriten"
+            :title="$t('sidebar.favorites')"
             @click="navigateTo('/settings')"
           >
             <StarIcon class="w-5 h-5 text-yellow-500/60" />
@@ -518,7 +518,7 @@ function closePopover() {
                   :class="{ 'tree-arrow-expanded': isSectionExpanded('_favorites') }"
                 />
                 <StarIcon class="tree-icon text-yellow-500/80" />
-                <span class="tree-label text-gray-500">Favoriten</span>
+                <span class="tree-label text-gray-500">{{ $t('sidebar.favorites') }}</span>
               </button>
 
               <Transition name="tree-expand">
@@ -535,7 +535,7 @@ function closePopover() {
                       <span class="tree-indent" />
                       <StarIcon class="tree-icon tree-icon-sm text-yellow-500/60" />
                       <span class="tree-label truncate">
-                        {{ (fav as any).item?.title || (fav as any).item?.name || 'Unbenannt' }}
+                        {{ (fav as any).item?.title || (fav as any).item?.name || $t('common.unnamed') }}
                       </span>
                     </button>
                   </div>
@@ -547,7 +547,7 @@ function closePopover() {
 
         <!-- Empty state when filter matches nothing -->
         <div v-if="filteredTreeGroups.length === 0 && treeFilter.trim()" class="px-3 py-6 text-center">
-          <p class="text-xs text-gray-500">Keine Ergebnisse</p>
+          <p class="text-xs text-gray-500">{{ $t('common.noResults') }}</p>
         </div>
       </template>
     </nav>
@@ -567,7 +567,7 @@ function closePopover() {
         <button
           @click="navigateTo('/settings')"
           class="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all shrink-0"
-          title="Einstellungen"
+          :title="$t('common.settings')"
         >
           <Cog6ToothIcon class="w-4 h-4" />
         </button>
@@ -607,14 +607,14 @@ function closePopover() {
           left: collapsed ? '4.5rem' : '1rem',
         }"
       >
-        <div class="dropdown-header">Projekte</div>
+        <div class="dropdown-header">{{ $t('navigation.projects') }}</div>
         <button
           @click="clearProjectSelection"
           class="dropdown-item"
           :class="!projectStore.selectedProjectId ? 'dropdown-item-active' : ''"
         >
           <span class="w-2 h-2 rounded-full bg-gray-500" />
-          <span>Alle Projekte</span>
+          <span>{{ $t('sidebar.allProjects') }}</span>
         </button>
         <div class="dropdown-divider" />
         <button
@@ -631,7 +631,7 @@ function closePopover() {
           <span class="truncate">{{ project.name }}</span>
         </button>
         <div v-if="projectStore.activeProjects.length === 0" class="px-3 py-2 text-xs text-gray-500">
-          Keine Projekte
+          {{ $t('sidebar.noProjects') }}
         </div>
       </div>
     </Transition>

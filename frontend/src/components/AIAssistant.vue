@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAIStore } from '@/stores/ai'
 import { useProjectStore } from '@/stores/project'
 import { useRouter } from 'vue-router'
@@ -23,6 +24,7 @@ const projectStore = useProjectStore()
 const router = useRouter()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 const isOpen = ref(false)
 const isMinimized = ref(false)
@@ -74,7 +76,7 @@ async function sendMessage() {
   } catch (error) {
     messages.value.push({
       role: 'system',
-      content: `Fehler: ${error.message || 'Nachricht konnte nicht gesendet werden'}`
+      content: `${t('common.error')}: ${error.message || t('ai.errorSending')}`
     })
     scrollToBottom()
   }
@@ -104,7 +106,7 @@ async function loadConversation(conv) {
 }
 
 async function deleteConversation(conv) {
-  if (!await confirm({ message: 'Möchtest du diese Unterhaltung wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('ai.deleteConversation'), type: 'danger', confirmText: t('common.delete') })) return
 
   await aiStore.deleteConversation(conv.id)
   if (conversationId.value === conv.id) {
@@ -138,7 +140,7 @@ function formatTime(dateStr) {
     v-if="!isOpen"
     @click="toggleOpen"
     class="fixed bottom-6 right-44 w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
-    title="AI Assistent"
+    :title="$t('ai.title')"
   >
     <SparklesIcon class="w-6 h-6" />
   </button>
@@ -162,7 +164,7 @@ function formatTime(dateStr) {
         <div class="flex items-center gap-2">
           <SparklesIcon class="w-5 h-5 text-purple-400" />
           <div>
-            <h3 class="font-semibold text-white text-sm">AI Assistent</h3>
+            <h3 class="font-semibold text-white text-sm">{{ $t('ai.title') }}</h3>
             <p v-if="projectStore.selectedProject" class="text-xs text-purple-300">
               {{ projectStore.selectedProject.name }}
             </p>
@@ -174,21 +176,21 @@ function formatTime(dateStr) {
           <button
             @click="startNewConversation"
             class="p-1.5 text-gray-400 hover:text-white rounded transition-colors"
-            title="Neue Unterhaltung"
+            :title="$t('ai.newConversation')"
           >
             <PlusIcon class="w-4 h-4" />
           </button>
           <button
             @click="showHistory = !showHistory"
             class="p-1.5 text-gray-400 hover:text-white rounded transition-colors"
-            title="Verlauf"
+            :title="$t('ai.history')"
           >
             <ChatBubbleLeftRightIcon class="w-4 h-4" />
           </button>
           <button
             @click="goToSettings"
             class="p-1.5 text-gray-400 hover:text-white rounded transition-colors"
-            title="Einstellungen"
+            :title="$t('common.settings')"
           >
             <Cog6ToothIcon class="w-4 h-4" />
           </button>
@@ -215,15 +217,15 @@ function formatTime(dateStr) {
           <div class="flex items-start gap-3">
             <ExclamationTriangleIcon class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p class="text-sm text-yellow-200">AI Assistent nicht konfiguriert</p>
+              <p class="text-sm text-yellow-200">{{ $t('ai.notConfigured') }}</p>
               <p class="text-xs text-yellow-300/70 mt-1">
-                Bitte hinterlege deinen API-Key in den Einstellungen um den AI-Assistenten zu nutzen.
+                {{ $t('ai.configureApiKey') }}
               </p>
               <button
                 @click="goToSettings"
                 class="mt-2 text-xs text-yellow-400 hover:text-yellow-300 underline"
               >
-                Zu den Einstellungen
+                {{ $t('ai.goToSettings') }}
               </button>
             </div>
           </div>
@@ -235,7 +237,7 @@ function formatTime(dateStr) {
           class="border-b border-white/[0.06] max-h-48 overflow-y-auto"
         >
           <div class="p-2 bg-white/[0.02]">
-            <p class="text-xs text-gray-500 px-2 py-1">Letzte Unterhaltungen</p>
+            <p class="text-xs text-gray-500 px-2 py-1">{{ $t('ai.recentConversations') }}</p>
             <div
               v-for="conv in aiStore.conversations"
               :key="conv.id"
@@ -243,7 +245,7 @@ function formatTime(dateStr) {
               @click="loadConversation(conv)"
             >
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-300 truncate">{{ conv.title || 'Unterhaltung' }}</p>
+                <p class="text-sm text-gray-300 truncate">{{ conv.title || $t('ai.conversation') }}</p>
                 <p class="text-xs text-gray-500">{{ formatTime(conv.updated_at) }}</p>
               </div>
               <button
@@ -254,7 +256,7 @@ function formatTime(dateStr) {
               </button>
             </div>
             <p v-if="aiStore.conversations.length === 0" class="text-xs text-gray-500 text-center py-4">
-              Keine Unterhaltungen
+              {{ $t('ai.noConversations') }}
             </p>
           </div>
         </div>
@@ -267,8 +269,8 @@ function formatTime(dateStr) {
           <!-- Empty State -->
           <div v-if="messages.length === 0" class="text-center py-8">
             <SparklesIcon class="w-12 h-12 text-purple-500/30 mx-auto mb-3" />
-            <p class="text-gray-400 text-sm">Wie kann ich dir helfen?</p>
-            <p class="text-gray-500 text-xs mt-1">Stelle mir eine Frage...</p>
+            <p class="text-gray-400 text-sm">{{ $t('ai.howCanIHelp') }}</p>
+            <p class="text-gray-500 text-xs mt-1">{{ $t('ai.askQuestion') }}</p>
           </div>
 
           <!-- Messages -->
@@ -309,7 +311,7 @@ function formatTime(dateStr) {
               v-model="message"
               @keyup.enter="sendMessage"
               type="text"
-              placeholder="Schreibe eine Nachricht..."
+              :placeholder="$t('ai.writeMessage')"
               :disabled="!isConfigured || aiStore.chatLoading"
               class="flex-1 px-3 py-2 input text-sm focus:border-purple-500 disabled:opacity-50"
             />

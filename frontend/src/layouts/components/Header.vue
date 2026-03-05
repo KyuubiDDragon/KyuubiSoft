@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useQuickAccessStore } from '@/stores/quickAccess'
+import { useLocaleStore } from '@/stores/locale'
 import { getIconComponent } from '@/core/config/navigation'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import NotificationCenter from '@/components/NotificationCenter.vue'
@@ -19,6 +20,7 @@ import {
   CheckIcon,
   EllipsisHorizontalIcon,
   ChatBubbleLeftRightIcon,
+  LanguageIcon,
 } from '@heroicons/vue/24/outline'
 
 defineProps<{
@@ -31,10 +33,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const quickAccessStore = useQuickAccessStore()
+const localeStore = useLocaleStore()
 
 const showUserMenu = ref(false)
 const showWidgetsMenu = ref(false)
 const showQuickAccessOverflow = ref(false)
+const showLanguageMenu = ref(false)
 
 onMounted(() => {
   if (!quickAccessStore.isInitialized) {
@@ -229,6 +233,38 @@ function goToSettings() {
         </Transition>
       </div>
 
+      <!-- Language switcher -->
+      <div class="relative">
+        <button
+          @click="showLanguageMenu = !showLanguageMenu"
+          class="btn-icon-sm"
+          title="Sprache / Language"
+        >
+          <LanguageIcon class="w-4 h-4" />
+        </button>
+
+        <Transition name="fade">
+          <div
+            v-if="showLanguageMenu"
+            class="dropdown right-0 mt-2"
+          >
+            <div class="dropdown-header">Sprache</div>
+            <button
+              v-for="loc in localeStore.getAvailableLocales()"
+              :key="loc.code"
+              @click="localeStore.setLocale(loc.code); showLanguageMenu = false"
+              class="dropdown-item justify-between"
+            >
+              <div class="flex items-center gap-2.5">
+                <span class="text-sm">{{ loc.flag }}</span>
+                <span>{{ loc.name }}</span>
+              </div>
+              <CheckIcon v-if="localeStore.currentLocale === loc.code" class="w-4 h-4 text-primary-400" />
+            </button>
+          </div>
+        </Transition>
+      </div>
+
       <!-- User menu -->
       <div class="relative ml-0.5">
         <button
@@ -275,4 +311,5 @@ function goToSettings() {
   <div v-if="showUserMenu" @click="closeUserMenu" class="fixed inset-0 z-10" />
   <div v-if="showWidgetsMenu" @click="showWidgetsMenu = false" class="fixed inset-0 z-10" />
   <div v-if="showQuickAccessOverflow" @click="showQuickAccessOverflow = false" class="fixed inset-0 z-10" />
+  <div v-if="showLanguageMenu" @click="showLanguageMenu = false" class="fixed inset-0 z-10" />
 </template>

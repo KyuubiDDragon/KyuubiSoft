@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -25,6 +26,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -64,7 +66,7 @@ const statusOptions = [
   { value: 'open', label: 'Offen', color: 'bg-blue-500', textColor: 'text-blue-400' },
   { value: 'in_progress', label: 'In Bearbeitung', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
   { value: 'waiting', label: 'Warten', color: 'bg-purple-500', textColor: 'text-purple-400' },
-  { value: 'resolved', label: 'Gelöst', color: 'bg-green-500', textColor: 'text-green-400' },
+  { value: 'resolved', label: t('tickets.geloest'), color: 'bg-green-500', textColor: 'text-green-400' },
   { value: 'closed', label: 'Geschlossen', color: 'bg-gray-500', textColor: 'text-gray-400' },
 ]
 
@@ -125,9 +127,9 @@ async function addComment() {
     comments.value.push(response.data.data.comment)
     newComment.value = ''
     isInternalComment.value = false
-    uiStore.showSuccess('Kommentar hinzugefügt')
+    uiStore.showSuccess(t('tickets.kommentarHinzugefuegt'))
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen des Kommentars')
+    uiStore.showError(t('tickets.fehlerBeimHinzufuegenDesKommentars'))
   } finally {
     submittingComment.value = false
   }
@@ -135,14 +137,14 @@ async function addComment() {
 
 // Delete comment
 async function deleteComment(commentId) {
-  if (!await confirm({ message: 'Kommentar wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('tickets.kommentarWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}/comments/${commentId}`)
     comments.value = comments.value.filter(c => c.id !== commentId)
-    uiStore.showSuccess('Kommentar gelöscht')
+    uiStore.showSuccess(t('tickets.kommentarGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -170,7 +172,7 @@ async function saveEdit() {
     showEditModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -191,7 +193,7 @@ async function updateStatus() {
     showStatusModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Aktualisieren')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -205,20 +207,20 @@ async function assignTicket(userId) {
     showAssignModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError('Fehler bei der Zuweisung')
+    uiStore.showError(t('tickets.fehlerBeiDerZuweisung'))
   }
 }
 
 // Delete ticket
 async function deleteTicket() {
-  if (!await confirm({ message: 'Ticket wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('tickets.ticketsticketwirklichloeschendieseaktionkannnicht'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}`)
-    uiStore.showSuccess('Ticket gelöscht')
+    uiStore.showSuccess(t('tickets.ticketGeloescht'))
     router.push('/tickets')
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -350,7 +352,7 @@ onMounted(() => {
         <div class="lg:col-span-2 space-y-6">
           <!-- Description -->
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
-            <h3 class="text-sm font-medium text-gray-400 mb-3">Beschreibung</h3>
+            <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('common.description') }}</h3>
             <div class="text-white whitespace-pre-wrap">{{ ticket.description }}</div>
           </div>
 
@@ -388,7 +390,7 @@ onMounted(() => {
                     @click="deleteComment(comment.id)"
                     class="mt-2 text-xs text-gray-500 hover:text-red-400 transition-colors"
                   >
-                    Löschen
+                    {{ $t('common.delete') }}
                   </button>
                 </div>
               </div>
@@ -413,7 +415,7 @@ onMounted(() => {
                     type="checkbox"
                     class="w-4 h-4 rounded bg-dark-700 border-dark-600 text-primary-600 focus:ring-primary-500"
                   />
-                  Interner Kommentar (nur für Team sichtbar)
+                  {{ $t('tickets.internerKommentarNurFuerTeamSichtbar') }}
                 </label>
                 <div v-else></div>
                 <button
@@ -421,7 +423,7 @@ onMounted(() => {
                   :disabled="!newComment.trim() || submittingComment"
                   class="btn-primary"
                 >
-                  {{ submittingComment ? 'Wird gesendet...' : 'Kommentar senden' }}
+                  {{ submittingComment ? $t('tickets.wirdGesendet') : 'Kommentar senden' }}
                 </button>
               </div>
             </div>
@@ -446,7 +448,7 @@ onMounted(() => {
                 <div>
                   <div class="flex items-center gap-2 text-sm">
                     <span class="text-white font-medium">{{ history.changed_by_name || 'System' }}</span>
-                    <span class="text-gray-500">hat den Status geändert</span>
+                    <span class="text-gray-500">{{ $t('tickets.hatDenStatusGeaendert') }}</span>
                     <span v-if="history.old_status" class="text-gray-400">
                       von <span :class="getStatusInfo(history.old_status).textColor">{{ getStatusInfo(history.old_status).label }}</span>
                     </span>
@@ -459,7 +461,7 @@ onMounted(() => {
               </div>
 
               <div v-if="statusHistory.length === 0" class="text-center py-4 text-gray-500 text-sm">
-                Keine Statusänderungen
+                {{ $t('tickets.keineStatusaenderungen') }}
               </div>
             </div>
           </div>
@@ -470,7 +472,7 @@ onMounted(() => {
           <!-- Meta Info -->
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 space-y-4">
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Erstellt von</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.erstelltVon') }}</h4>
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-white text-sm">
                   {{ ticket.creator_name?.[0]?.toUpperCase() || ticket.guest_name?.[0]?.toUpperCase() || '?' }}
@@ -490,11 +492,11 @@ onMounted(() => {
                 </div>
                 <span class="text-white text-sm">{{ ticket.assignee_name }}</span>
               </div>
-              <div v-else class="text-gray-500 text-sm">Nicht zugewiesen</div>
+              <div v-else class="text-gray-500 text-sm">{{ $t('tickets.nichtZugewiesen') }}</div>
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Kategorie</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('snippetsModule.kategorie') }}</h4>
               <div v-if="ticket.category_name" class="flex items-center gap-2">
                 <div
                   class="w-3 h-3 rounded-full"
@@ -502,26 +504,26 @@ onMounted(() => {
                 ></div>
                 <span class="text-white text-sm">{{ ticket.category_name }}</span>
               </div>
-              <div v-else class="text-gray-500 text-sm">Keine Kategorie</div>
+              <div v-else class="text-gray-500 text-sm">{{ $t('tickets.ticketskeinekategorie') }}</div>
             </div>
 
             <div v-if="ticket.project_name">
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Projekt</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.projekt') }}</h4>
               <div class="text-white text-sm">{{ ticket.project_name }}</div>
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Erstellt am</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.erstelltAm') }}</h4>
               <div class="text-white text-sm">{{ formatDate(ticket.created_at) }}</div>
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Zuletzt aktualisiert</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.zuletztAktualisiert') }}</h4>
               <div class="text-white text-sm">{{ formatDate(ticket.updated_at) }}</div>
             </div>
 
             <div v-if="ticket.resolved_at">
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Gelöst am</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.geloestAm') }}</h4>
               <div class="text-green-400 text-sm">{{ formatDate(ticket.resolved_at) }}</div>
             </div>
 

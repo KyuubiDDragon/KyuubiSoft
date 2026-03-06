@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotesStore } from '../../stores/notesStore'
 import {
   MagnifyingGlassIcon,
@@ -10,6 +11,7 @@ import {
 const emit = defineEmits(['close', 'select'])
 
 const notesStore = useNotesStore()
+const { t } = useI18n()
 
 const searchQuery = ref('')
 const selectedIndex = ref(0)
@@ -79,10 +81,10 @@ function formatDate(dateStr) {
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
 
-  if (minutes < 60) return `vor ${minutes} Min`
-  if (hours < 24) return `vor ${hours} Std`
-  if (days < 7) return `vor ${days} Tagen`
-  return date.toLocaleDateString('de-DE')
+  if (minutes < 60) return t('notes.time.minutesAgo', { count: minutes })
+  if (hours < 24) return t('notes.time.hoursAgo', { count: hours })
+  if (days < 7) return t('notes.time.daysAgo', { count: days })
+  return date.toLocaleDateString()
 }
 </script>
 
@@ -103,7 +105,7 @@ function formatDate(dateStr) {
           ref="searchInput"
           v-model="searchQuery"
           type="text"
-          placeholder="Notiz suchen..."
+          :placeholder="$t('notesModule.searchNotePlaceholder')"
           class="flex-1 bg-transparent text-white placeholder-gray-500 focus:outline-none"
           @keydown="handleKeydown"
         />
@@ -114,21 +116,21 @@ function formatDate(dateStr) {
       <div class="max-h-96 overflow-y-auto">
         <!-- Loading -->
         <div v-if="isSearching" class="p-4 text-center text-gray-500">
-          Suchen...
+          {{ $t('notesModule.searching') }}
         </div>
 
         <!-- Empty state -->
         <div v-else-if="searchResults.length === 0" class="p-8 text-center text-gray-500">
           <DocumentTextIcon class="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p v-if="searchQuery">Keine Ergebnisse für "{{ searchQuery }}"</p>
-          <p v-else>Noch keine kürzlich geöffneten Notizen</p>
+          <p v-if="searchQuery">{{ $t('notes.sidebar.noResultsFor', { query: searchQuery }) }}</p>
+          <p v-else>{{ $t('notesModule.noRecentNotes') }}</p>
         </div>
 
         <!-- Results list -->
         <div v-else>
           <div v-if="!searchQuery" class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
             <ClockIcon class="h-4 w-4 inline mr-1" />
-            Kürzlich
+            {{ $t('notesModule.sidebar.recent') }}
           </div>
 
           <button
@@ -161,8 +163,8 @@ function formatDate(dateStr) {
       <!-- Footer -->
       <div class="flex items-center justify-between px-4 py-2 border-t border-dark-600 text-xs text-gray-500">
         <div class="flex items-center gap-4">
-          <span><kbd class="rounded bg-dark-600 px-1">↑↓</kbd> navigieren</span>
-          <span><kbd class="rounded bg-dark-600 px-1">↵</kbd> öffnen</span>
+          <span><kbd class="rounded bg-dark-600 px-1">↑↓</kbd> {{ $t('notesModule.editor.navigate') }}</span>
+          <span><kbd class="rounded bg-dark-600 px-1">↵</kbd> {{ $t('notesModule.editor.open') }}</span>
         </div>
       </div>
     </div>

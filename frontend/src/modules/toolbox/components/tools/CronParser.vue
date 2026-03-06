@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const cronExpression = ref('0 9 * * 1-5')
 const error = ref('')
 
@@ -15,20 +16,20 @@ const fields = [
 const presets = [
   { name: 'Jede Minute', cron: '* * * * *' },
   { name: 'Jede Stunde', cron: '0 * * * *' },
-  { name: 'Täglich um Mitternacht', cron: '0 0 * * *' },
-  { name: 'Täglich um 9:00', cron: '0 9 * * *' },
+  { name: t('toolbox.taeglichUmMitternacht'), cron: '0 0 * * *' },
+  { name: t('toolbox.taeglichUm900'), cron: '0 9 * * *' },
   { name: 'Wochentags um 9:00', cron: '0 9 * * 1-5' },
   { name: 'Montags um 9:00', cron: '0 9 * * 1' },
-  { name: 'Monatlich am 1.', cron: '0 0 1 * *' },
-  { name: 'Jährlich am 1.1.', cron: '0 0 1 1 *' },
-  { name: 'Alle 5 Minuten', cron: '*/5 * * * *' },
-  { name: 'Alle 15 Minuten', cron: '*/15 * * * *' },
-  { name: 'Alle 30 Minuten', cron: '*/30 * * * *' },
-  { name: 'Alle 6 Stunden', cron: '0 */6 * * *' },
+  { name: t('toolbox.monatlichAm1'), cron: '0 0 1 * *' },
+  { name: t('toolbox.jaehrlichAm11'), cron: '0 0 1 1 *' },
+  { name: t('server.alle5Minuten'), cron: '*/5 * * * *' },
+  { name: t('server.alle15Minuten'), cron: '*/15 * * * *' },
+  { name: t('server.alle30Minuten'), cron: '*/30 * * * *' },
+  { name: t('backupsModule.alle6Stunden'), cron: '0 */6 * * *' },
 ]
 
 const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
-const months = ['', 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+const months = ['', 'Januar', 'Februar', t('toolbox.maerz'), 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 
 const parsedCron = computed(() => {
   error.value = ''
@@ -209,7 +210,7 @@ function usePreset(cron) {
 
     <!-- Presets -->
     <div>
-      <label class="text-sm text-gray-400 mb-2 block">Häufige Ausdrücke</label>
+      <label class="text-sm text-gray-400 mb-2 block">{{ $t('toolbox.haeufigeAusdruecke') }}</label>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="preset in presets"
@@ -236,7 +237,7 @@ function usePreset(cron) {
 
     <!-- Next Executions -->
     <div v-if="nextExecutions.length > 0">
-      <label class="text-sm text-gray-400 mb-2 block">Nächste Ausführungen</label>
+      <label class="text-sm text-gray-400 mb-2 block">{{ $t('toolbox.naechsteAusfuehrungen') }}</label>
       <div class="space-y-1">
         <div
           v-for="(exec, i) in nextExecutions"
@@ -253,7 +254,7 @@ function usePreset(cron) {
       <p class="font-medium">Syntax:</p>
       <ul class="list-disc list-inside space-y-0.5">
         <li><code>*</code> - Jeder Wert</li>
-        <li><code>*/n</code> - Alle n Einheiten</li>
+        <li><code>*/n</code> {{ $t('toolbox.alleNEinheiten') }}</li>
         <li><code>n-m</code> - Bereich von n bis m</li>
         <li><code>n,m</code> - Spezifische Werte</li>
       </ul>

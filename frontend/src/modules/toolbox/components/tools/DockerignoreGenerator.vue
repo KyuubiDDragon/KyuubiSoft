@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ClipboardIcon, ArrowDownTrayIcon, CheckIcon } from '@heroicons/vue/24/outline'
 
 // Templates
@@ -137,14 +138,14 @@ const templates = {
 
 // Categories
 const categories = [
-  { id: 'vcs', name: 'Version Control' },
+  { id: 'vcs', name: t('toolbox.versionControl') },
   { id: 'lang', name: 'Sprachen' },
   { id: 'ide', name: 'IDEs & Editoren' },
   { id: 'os', name: 'Betriebssysteme' },
   { id: 'docker', name: 'Docker' },
   { id: 'cicd', name: 'CI/CD' },
   { id: 'security', name: 'Sicherheit' },
-  { id: 'docs', name: 'Dokumentation' },
+  { id: 'docs', name: t('toolbox.dokumentation') },
   { id: 'tests', name: 'Tests' },
   { id: 'temp', name: 'Temp & Logs' },
 ]
@@ -316,7 +317,7 @@ function downloadFile() {
         <div class="flex gap-2">
           <button @click="copyToClipboard" class="btn-sm btn-secondary">
             <component :is="copied ? CheckIcon : ClipboardIcon" class="w-3 h-3" />
-            {{ copied ? 'Kopiert!' : 'Kopieren' }}
+            {{ copied ? 'Kopiert!' : $t('common.copy') }}
           </button>
           <button @click="downloadFile" class="btn-sm btn-primary">
             <ArrowDownTrayIcon class="w-3 h-3" />
@@ -324,7 +325,7 @@ function downloadFile() {
           </button>
         </div>
       </div>
-      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-64">{{ dockerignoreContent || '# Wähle Templates aus...' }}</pre>
+      <pre class="bg-white/[0.02] p-4 rounded-lg text-sm text-gray-300 font-mono overflow-auto max-h-64">{{ dockerignoreContent || $t('toolbox.waehleTemplatesAus') }}</pre>
     </div>
   </div>
 </template>

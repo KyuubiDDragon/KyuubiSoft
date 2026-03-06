@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -37,6 +38,7 @@ import { ViewColumnsIcon as ViewColumnsIconSolid } from '@heroicons/vue/24/solid
 
 const route = useRoute()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
 const toast = useToast()
@@ -141,10 +143,10 @@ const boardColors = [
 
 // Priority options
 const priorities = [
-  { value: 'low', label: 'Niedrig', color: 'bg-gray-500' },
-  { value: 'medium', label: 'Mittel', color: 'bg-blue-500' },
-  { value: 'high', label: 'Hoch', color: 'bg-orange-500' },
-  { value: 'urgent', label: 'Dringend', color: 'bg-red-500' },
+  { value: 'low', label: t('kanban.low'), color: 'bg-gray-500' },
+  { value: 'medium', label: t('kanban.medium'), color: 'bg-blue-500' },
+  { value: 'high', label: t('kanban.high'), color: 'bg-orange-500' },
+  { value: 'urgent', label: t('kanban.urgent'), color: 'bg-red-500' },
 ]
 
 // Label colors
@@ -168,7 +170,7 @@ async function fetchBoards() {
     const response = await api.get('/api/v1/kanban/boards', { params })
     boards.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Boards')
+    uiStore.showError(t('kanbanModule.fehlerBeimLadenDerBoards'))
   } finally {
     loading.value = false
   }
@@ -182,7 +184,7 @@ async function fetchBoard(boardId) {
     // Also fetch board users
     await fetchBoardUsers(boardId)
   } catch (error) {
-    uiStore.showError('Fehler beim Laden des Boards')
+    uiStore.showError(t('kanbanModule.fehlerBeimLadenDesBoards'))
     selectedBoard.value = null
   }
 }
@@ -215,14 +217,14 @@ function openBoardModal(board = null) {
 // Save board
 async function saveBoard() {
   if (!boardForm.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('kanban.titleRequired'))
     return
   }
 
   try {
     if (editingBoard.value) {
       await api.put(`/api/v1/kanban/boards/${editingBoard.value.id}`, boardForm.value)
-      uiStore.showSuccess('Board aktualisiert')
+      uiStore.showSuccess(t('kanban.boardUpdated'))
       if (selectedBoard.value?.id === editingBoard.value.id) {
         await fetchBoard(selectedBoard.value.id)
       }
@@ -235,30 +237,30 @@ async function saveBoard() {
         await projectStore.linkToSelectedProject('kanban_board', newBoard.id)
       }
 
-      uiStore.showSuccess('Board erstellt')
+      uiStore.showSuccess(t('kanban.boardCreated'))
       // Select the new board
       await fetchBoard(newBoard.id)
     }
     await fetchBoards()
     showBoardModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete board
 async function deleteBoard(board) {
-  if (!await confirm({ message: `Board "${board.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `${t('kanban.confirmDeleteBoard')} \"${board.title}\"?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${board.id}`)
-    uiStore.showSuccess('Board gelöscht')
+    uiStore.showSuccess(t('kanbanModule.boardGeloescht'))
     if (selectedBoard.value?.id === board.id) {
       selectedBoard.value = null
     }
     await fetchBoards()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -291,7 +293,7 @@ function openColumnModal(column = null) {
 // Save column
 async function saveColumn() {
   if (!columnForm.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('kanban.titleRequired'))
     return
   }
 
@@ -301,28 +303,28 @@ async function saveColumn() {
         `/api/v1/kanban/boards/${selectedBoard.value.id}/columns/${editingColumn.value.id}`,
         columnForm.value
       )
-      uiStore.showSuccess('Spalte aktualisiert')
+      uiStore.showSuccess(t('kanban.columnUpdated'))
     } else {
       await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns`, columnForm.value)
-      uiStore.showSuccess('Spalte erstellt')
+      uiStore.showSuccess(t('kanban.columnCreated'))
     }
     await fetchBoard(selectedBoard.value.id)
     showColumnModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete column
 async function deleteColumn(column) {
-  if (!await confirm({ message: `Spalte "${column.title}" wirklich löschen? Alle Karten werden ebenfalls gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `${t('kanban.confirmDeleteColumn')} \"${column.title}\"?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/${column.id}`)
-    uiStore.showSuccess('Spalte gelöscht')
+    uiStore.showSuccess(t('kanbanModule.spalteGeloescht'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -376,7 +378,7 @@ function openCardModal(columnId, card = null) {
 // Save card
 async function saveCard() {
   if (!cardForm.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('kanban.titleRequired'))
     return
   }
 
@@ -386,31 +388,31 @@ async function saveCard() {
         `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}`,
         cardForm.value
       )
-      uiStore.showSuccess('Karte aktualisiert')
+      uiStore.showSuccess(t('kanban.cardUpdated'))
     } else {
       await api.post(
         `/api/v1/kanban/boards/${selectedBoard.value.id}/columns/${targetColumnId.value}/cards`,
         cardForm.value
       )
-      uiStore.showSuccess('Karte erstellt')
+      uiStore.showSuccess(t('kanban.cardCreated'))
     }
     await fetchBoard(selectedBoard.value.id)
     showCardModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete card
 async function deleteCard(card) {
-  if (!await confirm({ message: `Karte "${card.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `${t('kanban.confirmDeleteCard')} \"${card.title}\"?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${card.id}`)
-    uiStore.showSuccess('Karte gelöscht')
+    uiStore.showSuccess(t('kanbanModule.karteGeloescht'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -427,7 +429,7 @@ async function onCardDragEnd(columnId, evt) {
       position: newIndex,
     })
   } catch (error) {
-    uiStore.showError('Fehler beim Verschieben')
+    uiStore.showError(t('bookmarksModule.fehlerBeimVerschieben'))
     await fetchBoard(selectedBoard.value.id)
   }
 }
@@ -455,7 +457,7 @@ async function onColumnDragEnd() {
     }
   } catch (error) {
     console.error('Reorder error:', error)
-    uiStore.showError('Fehler beim Sortieren')
+    uiStore.showError(t('tickets.fehlerBeimSortieren'))
     await fetchBoard(selectedBoard.value.id)
   }
 }
@@ -477,21 +479,21 @@ async function uploadAttachment(event) {
 
   // Only allow when editing existing card
   if (!editingCard.value) {
-    uiStore.showError('Bitte erst die Karte speichern, dann Bilder hinzufügen')
+    uiStore.showError(t('kanbanModule.kanbanmodulebitteerstdiekartespeicherndannbilder'))
     event.target.value = ''
     return
   }
 
   // Validate file type
   if (!file.type.startsWith('image/')) {
-    uiStore.showError('Nur Bilder erlaubt (JPEG, PNG, GIF, WebP)')
+    uiStore.showError(t('kanban.onlyImagesAllowed'))
     event.target.value = ''
     return
   }
 
   // Validate file size (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    uiStore.showError('Datei zu groß (max 5MB)')
+    uiStore.showError(t('kanbanModule.dateiZuGrossMax5mb'))
     event.target.value = ''
     return
   }
@@ -514,9 +516,9 @@ async function uploadAttachment(event) {
 
     // Add to local attachments
     cardForm.value.attachments.push(response.data.data)
-    uiStore.showSuccess('Bild hochgeladen')
+    uiStore.showSuccess(t('kanban.imageUploaded'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hochladen')
+    uiStore.showError(error.response?.data?.message || t('checklistsModule.fehlerBeimHochladen'))
   } finally {
     isUploadingAttachment.value = false
     event.target.value = ''
@@ -527,7 +529,7 @@ async function uploadAttachment(event) {
 async function deleteAttachment(attachmentId) {
   if (!editingCard.value) return
 
-  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklistsModule.bildWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(
@@ -536,9 +538,9 @@ async function deleteAttachment(attachmentId) {
 
     // Remove from local attachments
     cardForm.value.attachments = cardForm.value.attachments.filter(a => a.id !== attachmentId)
-    uiStore.showSuccess('Bild gelöscht')
+    uiStore.showSuccess(t('checklistsModule.bildGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -568,7 +570,7 @@ async function fetchBoardShares() {
     const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`)
     boardShares.value = response.data.data || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Freigaben')
+    uiStore.showError(t('storage.storagefehlerbeimladenderfreigaben'))
     boardShares.value = []
   } finally {
     loadingShares.value = false
@@ -584,7 +586,7 @@ async function openShareModal() {
 
 async function addBoardShare() {
   if (!newShareEmail.value.trim()) {
-    uiStore.showError('E-Mail ist erforderlich')
+    uiStore.showError(t('kanban.emailRequired'))
     return
   }
 
@@ -593,23 +595,23 @@ async function addBoardShare() {
       email: newShareEmail.value.trim(),
       permission: newSharePermission.value
     })
-    uiStore.showSuccess('Benutzer hinzugefügt')
+    uiStore.showSuccess(t('kanbanModule.benutzerHinzugefuegt'))
     newShareEmail.value = ''
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
 async function removeBoardShare(userId) {
-  if (!await confirm({ message: 'Zugriff wirklich entfernen?', type: 'danger', confirmText: 'Entfernen' })) return
+  if (!await confirm({ message: t('kanbanModule.zugriffWirklichEntfernen'), type: 'danger', confirmText: t('calendarModule.entfernen') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares/${userId}`)
-    uiStore.showSuccess('Zugriff entfernt')
+    uiStore.showSuccess(t('kanbanModule.zugriffEntfernt'))
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('server.serverfehlerbeimentfernen'))
   }
 }
 
@@ -619,10 +621,10 @@ async function updateSharePermission(userId, permission) {
       user_id: userId,
       permission
     })
-    uiStore.showSuccess('Berechtigung aktualisiert')
+    uiStore.showSuccess(t('projectsModule.berechtigungAktualisiert'))
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -648,7 +650,7 @@ async function enablePublicShare() {
   const isProtected = publicShareForm.value.mode === 'protected'
 
   if (isProtected && (!publicShareForm.value.username.trim() || !publicShareForm.value.password.trim())) {
-    uiStore.showError('Benutzername und Passwort sind erforderlich')
+    uiStore.showError(t('kanbanModule.kanbanmodulebenutzernameundpasswortsinderforderlich'))
     return
   }
 
@@ -665,16 +667,16 @@ async function enablePublicShare() {
     const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, payload)
     publicShareInfo.value = response.data.data
     publicShareUrl.value = response.data.data.url
-    uiStore.showSuccess('Öffentlicher Link erstellt')
+    uiStore.showSuccess(t('kanbanModule.oeffentlicherLinkErstellt'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Erstellen')
+    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
   } finally {
     loadingPublicShare.value = false
   }
 }
 
 async function disablePublicShare() {
-  if (!await confirm({ message: 'Öffentlichen Zugang wirklich deaktivieren?', type: 'danger', confirmText: 'Deaktivieren' })) return
+  if (!await confirm({ message: t('kanbanModule.oeffentlichenZugangWirklichDeaktivieren'), type: 'danger', confirmText: t('kanbanModule.deaktivieren') })) return
 
   loadingPublicShare.value = true
   try {
@@ -682,9 +684,9 @@ async function disablePublicShare() {
     publicShareInfo.value = { active: false }
     publicShareUrl.value = ''
     publicShareForm.value = { username: '', password: '', can_edit: false, mode: 'readonly' }
-    uiStore.showSuccess('Öffentlicher Zugang deaktiviert')
+    uiStore.showSuccess(t('kanbanModule.oeffentlicherZugangDeaktiviert'))
   } catch (error) {
-    uiStore.showError('Fehler beim Deaktivieren')
+    uiStore.showError(t('contractsModule.fehlerBeimDeaktivieren'))
   } finally {
     loadingPublicShare.value = false
   }
@@ -696,7 +698,7 @@ async function copyPublicLink() {
     publicShareCopied.value = true
     setTimeout(() => { publicShareCopied.value = false }, 2000)
   } catch (error) {
-    uiStore.showError('Fehler beim Kopieren')
+    uiStore.showError(t('passwordsModule.passwordsmodulefehlerbeimkopieren'))
   }
 }
 
@@ -723,7 +725,7 @@ function openTagModal(tag = null) {
 
 async function saveTag() {
   if (!tagForm.value.name.trim()) {
-    uiStore.showError('Tag-Name ist erforderlich')
+    uiStore.showError(t('kanban.tagNameRequired'))
     return
   }
 
@@ -733,31 +735,31 @@ async function saveTag() {
         `/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${editingTag.value.id}`,
         tagForm.value
       )
-      uiStore.showSuccess('Tag aktualisiert')
+      uiStore.showSuccess(t('system.tagAktualisiert'))
     } else {
       const response = await api.post(
         `/api/v1/kanban/boards/${selectedBoard.value.id}/tags`,
         tagForm.value
       )
       selectedBoard.value.tags.push(response.data.data)
-      uiStore.showSuccess('Tag erstellt')
+      uiStore.showSuccess(t('bookmarksModule.tagErstellt'))
     }
     await fetchBoard(selectedBoard.value.id)
     showTagModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen? Er wird von allen Karten entfernt.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `${t('kanban.confirmDeleteTag')} \"${tag.name}\"?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${tag.id}`)
-    uiStore.showSuccess('Tag gelöscht')
+    uiStore.showSuccess(t('bookmarksModule.tagGeloescht'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -795,7 +797,7 @@ async function toggleCardTag(tagId) {
       }
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -804,15 +806,15 @@ async function toggleCardTag(tagId) {
 // ==================
 
 const linkTypes = [
-  { id: 'document', name: 'Dokument', icon: DocumentIcon },
-  { id: 'list', name: 'Liste', icon: ListBulletIcon },
-  { id: 'snippet', name: 'Snippet', icon: CodeBracketIcon },
+  { id: 'document', name: t('inboxModule.dokument'), icon: DocumentIcon },
+  { id: 'list', name: t('kanban.list'), icon: ListBulletIcon },
+  { id: 'snippet', name: t('projectsModule.snippet'), icon: CodeBracketIcon },
   { id: 'bookmark', name: 'Bookmark', icon: BookmarkIcon },
 ]
 
 function openLinkModal() {
   if (!editingCard.value) {
-    uiStore.showError('Bitte erst die Karte speichern')
+    uiStore.showError(t('kanbanModule.kanbanmodulebitteerstdiekartespeichern'))
     return
   }
   showLinkModal.value = true
@@ -832,7 +834,7 @@ async function fetchLinkableItems() {
   } catch (error) {
     console.error('Error fetching linkable items:', error)
     linkableItems.value = []
-    uiStore.showError('Fehler beim Laden der Elemente')
+    uiStore.showError(t('kanbanModule.fehlerBeimLadenDerElemente'))
   } finally {
     isLoadingLinkables.value = false
   }
@@ -843,7 +845,7 @@ async function addLink(item) {
 
   // Check if already linked
   if (cardForm.value.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType.value)) {
-    uiStore.showError('Bereits verlinkt')
+    uiStore.showError(t('kanban.alreadyLinked'))
     return
   }
 
@@ -854,9 +856,9 @@ async function addLink(item) {
     )
     if (!cardForm.value.links) cardForm.value.links = []
     cardForm.value.links.push(response.data.data)
-    uiStore.showSuccess('Verlinkt')
+    uiStore.showSuccess(t('kanban.linked'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Verlinken')
+    uiStore.showError(error.response?.data?.message || t('kanbanModule.fehlerBeimVerlinken'))
   }
 }
 
@@ -868,9 +870,9 @@ async function removeLink(linkId) {
       `/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${editingCard.value.id}/links/${linkId}`
     )
     cardForm.value.links = cardForm.value.links.filter(l => l.id !== linkId)
-    uiStore.showSuccess('Link entfernt')
+    uiStore.showSuccess(t('kanban.linkRemoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('server.serverfehlerbeimentfernen'))
   }
 }
 
@@ -935,18 +937,18 @@ async function createChecklist() {
     checklists.value.push(response.data.data)
     newChecklistTitle.value = ''
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen der Checkliste')
+    uiStore.showError(t('kanbanModule.kanbanmodulefehlerbeimerstellendercheckliste'))
   }
 }
 
 async function deleteChecklist(checklistId) {
-  if (!await confirm({ message: 'Checkliste wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('kanbanModule.checklisteWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/checklists/${checklistId}`)
     checklists.value = checklists.value.filter(c => c.id !== checklistId)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -965,7 +967,7 @@ async function addChecklistItem(checklistId) {
     }
     newItemContents.value[checklistId] = ''
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen')
+    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
@@ -983,7 +985,7 @@ async function toggleChecklistItem(itemId) {
       }
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -994,7 +996,7 @@ async function deleteChecklistItem(itemId) {
       checklist.items = checklist.items.filter(i => i.id !== itemId)
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -1032,7 +1034,7 @@ async function addCommentAction() {
     comments.value.unshift(response.data.data)
     newComment.value = ''
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen')
+    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
@@ -1056,18 +1058,18 @@ async function saveEditComment(commentId) {
     editingComment.value = null
     editCommentContent.value = ''
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteCommentAction(commentId) {
-  if (!await confirm({ message: 'Kommentar wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('tickets.kommentarWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/comments/${commentId}`)
     comments.value = comments.value.filter(c => c.id !== commentId)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -1079,10 +1081,10 @@ function formatCommentDate(dateStr) {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return 'gerade eben'
-  if (diffMins < 60) return `vor ${diffMins} Min.`
-  if (diffHours < 24) return `vor ${diffHours} Std.`
-  if (diffDays < 7) return `vor ${diffDays} Tagen`
+  if (diffMins < 1) return t('kanban.justNow')
+  if (diffMins < 60) return `${diffMins} ${t('kanban.minutesAgo')}`
+  if (diffHours < 24) return `${diffHours} ${t('kanban.hoursAgo')}`
+  if (diffDays < 7) return `${diffDays} ${t('kanban.daysAgo')}`
   return date.toLocaleDateString('de-DE')
 }
 
@@ -1104,19 +1106,19 @@ async function fetchActivities() {
 
 function getActivityLabel(activity) {
   const labels = {
-    'card_created': 'hat die Karte erstellt',
-    'card_moved': `hat die Karte verschoben von "${activity.details?.from_column}" nach "${activity.details?.to_column}"`,
-    'card_updated': `hat ${activity.details?.field === 'title' ? 'den Titel' : 'die Beschreibung'} geändert`,
-    'assignee_added': `hat ${activity.details?.assignee_name} zugewiesen`,
-    'assignee_removed': `hat ${activity.details?.assignee_name} entfernt`,
-    'flag_changed': `hat die Priorität geändert von "${activity.details?.old_flag}" auf "${activity.details?.new_flag}"`,
-    'tag_added': `hat Tag "${activity.details?.tag_name}" hinzugefügt`,
-    'tag_removed': `hat Tag "${activity.details?.tag_name}" entfernt`,
-    'checklist_item_completed': `hat "${activity.details?.item_text}" abgehakt`,
-    'checklist_item_uncompleted': `hat "${activity.details?.item_text}" wieder geöffnet`,
-    'comment_added': 'hat einen Kommentar hinzugefügt',
-    'due_date_set': `hat Fälligkeitsdatum auf ${activity.details?.due_date} gesetzt`,
-    'due_date_removed': 'hat das Fälligkeitsdatum entfernt',
+    'card_created': t('kanban.actCardCreated'),
+    'card_moved': `${t('kanban.actCardMoved')} "${activity.details?.from_column}" → "${activity.details?.to_column}"`,
+    'card_updated': `hat ${activity.details?.field === 'title' ? 'den Titel' : t('kanbanModule.dieBeschreibung')} geändert`,
+    'assignee_added': `${t('kanban.actAssigneeAdded')} ${activity.details?.assignee_name}`,
+    'assignee_removed': `${t('kanban.actAssigneeRemoved')} ${activity.details?.assignee_name}`,
+    'flag_changed': `${t('kanban.actPriorityChanged')} "${activity.details?.old_flag}" → "${activity.details?.new_flag}"`,
+    'tag_added': `${t('kanban.actTagAdded')} "${activity.details?.tag_name}"`,
+    'tag_removed': `${t('kanban.actTagRemoved')} "${activity.details?.tag_name}"`,
+    'checklist_item_completed': `${t('kanban.actChecked')} "${activity.details?.item_text}"`,
+    'checklist_item_uncompleted': `${t('kanban.actUnchecked')} "${activity.details?.item_text}"`,
+    'comment_added': t('kanbanModule.hatEinenKommentarHinzugefuegt'),
+    'due_date_set': `${t('kanban.actDueDateSet')} ${activity.details?.due_date}`,
+    'due_date_removed': t('kanbanModule.hatDasFaelligkeitsdatumEntfernt'),
   }
   return labels[activity.action] || activity.action
 }
@@ -1172,7 +1174,7 @@ onMounted(async () => {
         </button>
         <div>
           <h1 class="text-2xl font-bold text-white">
-            {{ selectedBoard ? selectedBoard.title : 'Kanban Boards' }}
+            {{ selectedBoard ? selectedBoard.title : $t('kanban.title') }}
           </h1>
           <p v-if="selectedBoard?.description" class="text-gray-400 text-sm mt-1">
             {{ selectedBoard.description }}
@@ -1184,16 +1186,16 @@ onMounted(async () => {
           v-if="selectedBoard && selectedBoard.user_id === authStore.user?.id"
           @click="openShareModal()"
           class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
-          title="Board teilen"
+          :title="$t('kanban.shareBoard')"
         >
           <ShareIcon class="w-5 h-5" />
-          <span class="hidden sm:inline">Teilen</span>
+          <span class="hidden sm:inline">{{ $t('kanban.share') }}</span>
         </button>
         <button
           v-if="selectedBoard"
           @click="openTagModal()"
           class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
-          title="Tags verwalten"
+          :title="$t('kanban.manageTags')"
         >
           <TagIcon class="w-5 h-5" />
           <span class="hidden sm:inline">Tags</span>
@@ -1204,7 +1206,7 @@ onMounted(async () => {
           class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
-          <span>Spalte</span>
+          <span>{{ $t('kanban.column') }}</span>
         </button>
         <button
           v-if="selectedBoard"
@@ -1212,7 +1214,7 @@ onMounted(async () => {
           class="px-4 py-2 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
         >
           <PencilIcon class="w-5 h-5" />
-          <span>Bearbeiten</span>
+          <span>{{ $t('common.edit') }}</span>
         </button>
         <button
           v-if="!selectedBoard"
@@ -1220,7 +1222,7 @@ onMounted(async () => {
           class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
-          <span>Neues Board</span>
+          <span>{{ $t('kanban.newBoard') }}</span>
         </button>
       </div>
     </div>
@@ -1265,8 +1267,8 @@ onMounted(async () => {
           {{ board.description }}
         </p>
         <div class="flex items-center gap-4 text-sm text-gray-500">
-          <span>{{ board.column_count || 0 }} Spalten</span>
-          <span>{{ board.card_count || 0 }} Karten</span>
+          <span>{{ board.column_count || 0 }} {{ $t('kanban.columns') }}</span>
+          <span>{{ board.card_count || 0 }} {{ $t('kanban.cards') }}</span>
         </div>
       </div>
 
@@ -1277,8 +1279,8 @@ onMounted(async () => {
         class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 cursor-pointer hover:border-white/[0.08] transition-colors flex flex-col items-center justify-center text-center col-span-full"
       >
         <ViewColumnsIcon class="w-12 h-12 text-gray-500 mb-3" />
-        <p class="text-gray-400">Kein Board vorhanden</p>
-        <p class="text-primary-500 mt-1">Klicken um ein Board zu erstellen</p>
+        <p class="text-gray-400">{{ $t('kanbanModule.keinBoardVorhanden') }}</p>
+        <p class="text-primary-500 mt-1">{{ $t('kanban.clickToCreate') }}</p>
       </div>
     </div>
 
@@ -1306,7 +1308,7 @@ onMounted(async () => {
                   <CheckCircleIconSolid
                     v-if="column.is_completed == 1 || column.is_completed === true"
                     class="w-4 h-4 text-green-500"
-                    title="Abgeschlossen-Spalte"
+                    :title="$t('kanban.completedColumn')"
                   />
                   <span class="text-xs text-gray-500 bg-white/[0.04] px-2 py-0.5 rounded-full">
                     {{ column.cards?.length || 0 }}
@@ -1469,7 +1471,7 @@ onMounted(async () => {
                 class="w-full p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 <PlusIcon class="w-4 h-4" />
-                <span>Karte hinzufügen</span>
+                <span>{{ $t('kanban.addCard') }}</span>
               </button>
             </div>
           </div>
@@ -1483,7 +1485,7 @@ onMounted(async () => {
       >
         <div class="text-center">
           <PlusIcon class="w-8 h-8 text-gray-500 mx-auto mb-2" />
-          <p class="text-gray-400">Spalte hinzufügen</p>
+          <p class="text-gray-400">{{ $t('kanban.addColumn') }}</p>
         </div>
       </div>
     </div>
@@ -1498,7 +1500,7 @@ onMounted(async () => {
         <div class="modal w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingBoard ? 'Board bearbeiten' : 'Neues Board' }}
+              {{ editingBoard ? $t('kanban.editBoard') : $t('kanban.newBoard') }}
             </h2>
             <button
               @click="showBoardModal = false"
@@ -1510,7 +1512,7 @@ onMounted(async () => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('kanban.titleLabel') }} *</label>
               <input
                 v-model="boardForm.title"
                 type="text"
@@ -1520,7 +1522,7 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
               <textarea
                 v-model="boardForm.description"
                 rows="3"
@@ -1530,7 +1532,7 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Farbe</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('common.color') }}</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="color in boardColors"
@@ -1549,13 +1551,13 @@ onMounted(async () => {
               @click="showBoardModal = false"
               class="btn-secondary"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveBoard"
               class="btn-primary"
             >
-              {{ editingBoard ? 'Speichern' : 'Erstellen' }}
+              {{ editingBoard ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -1572,7 +1574,7 @@ onMounted(async () => {
         <div class="modal w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingColumn ? 'Spalte bearbeiten' : 'Neue Spalte' }}
+              {{ editingColumn ? $t('kanban.editColumn') : $t('kanban.newColumn') }}
             </h2>
             <button
               @click="showColumnModal = false"
@@ -1584,7 +1586,7 @@ onMounted(async () => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('kanban.titleLabel') }} *</label>
               <input
                 v-model="columnForm.title"
                 type="text"
@@ -1594,7 +1596,7 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Farbe</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('common.color') }}</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="color in boardColors"
@@ -1608,7 +1610,7 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">WIP Limit (optional)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('kanban.wipLimit') }}</label>
               <input
                 v-model.number="columnForm.wip_limit"
                 type="number"
@@ -1626,8 +1628,8 @@ onMounted(async () => {
                 class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-green-500 focus:ring-green-500 focus:ring-offset-0"
               />
               <label for="is_completed" class="flex-1">
-                <span class="block text-sm font-medium text-gray-300">Als "Abgeschlossen" markieren</span>
-                <span class="text-xs text-gray-500">Karten in dieser Spalte gelten als erledigt und werden nicht mehr als offene Aufgaben angezeigt</span>
+                <span class="block text-sm font-medium text-gray-300">{{ $t('kanban.markCompleted') }}</span>
+                <span class="text-xs text-gray-500">{{ $t('kanban.completedDescription') }}</span>
               </label>
             </div>
           </div>
@@ -1637,13 +1639,13 @@ onMounted(async () => {
               @click="showColumnModal = false"
               class="btn-secondary"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveColumn"
               class="btn-primary"
             >
-              {{ editingColumn ? 'Speichern' : 'Erstellen' }}
+              {{ editingColumn ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -1660,7 +1662,7 @@ onMounted(async () => {
         <div class="modal w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingCard ? 'Karte bearbeiten' : 'Neue Karte' }}
+              {{ editingCard ? $t('kanban.editCard') : $t('kanban.newCard') }}
             </h2>
             <button
               @click="showCardModal = false"
@@ -1674,7 +1676,7 @@ onMounted(async () => {
             <!-- Left Column: Main Content -->
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('kanban.titleLabel') }} *</label>
                 <input
                   v-model="cardForm.title"
                   type="text"
@@ -1684,7 +1686,7 @@ onMounted(async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
                 <textarea
                   v-model="cardForm.description"
                   rows="3"
@@ -1697,7 +1699,7 @@ onMounted(async () => {
               <div v-if="editingCard">
                 <label class="block text-sm font-medium text-gray-300 mb-2">
                   <ClipboardDocumentListIcon class="w-4 h-4 inline mr-1" />
-                  Checklisten
+                  {{ $t('kanban.checklists') }}
                 </label>
 
                 <div class="space-y-3 mb-3">
@@ -1761,7 +1763,7 @@ onMounted(async () => {
                         v-model="newItemContents[checklist.id]"
                         type="text"
                         class="flex-1 bg-white/[0.08] border border-white/[0.08] rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                        placeholder="Neuer Eintrag..."
+                        :placeholder="$t('kanban.newEntry')"
                         @keydown.enter="addChecklistItem(checklist.id)"
                       />
                       <button
@@ -1779,7 +1781,7 @@ onMounted(async () => {
                     v-model="newChecklistTitle"
                     type="text"
                     class="flex-1 input text-sm"
-                    placeholder="Neue Checkliste..."
+                    :placeholder="$t('kanban.newChecklist')"
                     @keydown.enter="createChecklist"
                   />
                   <button
@@ -1796,7 +1798,7 @@ onMounted(async () => {
                 <div>
                   <label class="block text-sm font-medium text-gray-300 mb-1">
                     <FlagIcon class="w-4 h-4 inline mr-1" />
-                    Priorität
+                    {{ $t('kanban.priority') }}
                   </label>
                   <select
                     v-model="cardForm.priority"
@@ -1811,7 +1813,7 @@ onMounted(async () => {
                 <div>
                   <label class="block text-sm font-medium text-gray-300 mb-1">
                     <CalendarIcon class="w-4 h-4 inline mr-1" />
-                    Fälligkeitsdatum
+                    {{ $t('kanban.dueDate') }}
                   </label>
                   <input
                     v-model="cardForm.due_date"
@@ -1824,13 +1826,13 @@ onMounted(async () => {
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">
                   <UserCircleIcon class="w-4 h-4 inline mr-1" />
-                  Zugewiesen an
+                  {{ $t('kanban.assignedTo') }}
                 </label>
                 <select
                   v-model="cardForm.assigned_to"
                   class="select"
                 >
-                  <option :value="null">Niemand</option>
+                  <option :value="null">{{ $t('kanban.nobody') }}</option>
                   <option v-for="user in boardUsers" :key="user.id" :value="user.id">
                     {{ user.username }} ({{ user.email }})
                   </option>
@@ -1857,7 +1859,7 @@ onMounted(async () => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Kartenfarbe</label>
+                <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('kanban.cardColor') }}</label>
                 <div class="flex flex-wrap gap-2">
                   <button
                     @click="cardForm.color = null"
@@ -1881,7 +1883,7 @@ onMounted(async () => {
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">
                   <PhotoIcon class="w-4 h-4 inline mr-1" />
-                  Bilder / Screenshots
+                  {{ $t('kanban.images') }}
                 </label>
 
                 <div v-if="cardForm.attachments.length" class="grid grid-cols-4 gap-2 mb-3">
@@ -1921,14 +1923,14 @@ onMounted(async () => {
                   />
                   <div v-if="!isUploadingAttachment" class="text-gray-400 text-sm">
                     <PhotoIcon class="w-6 h-6 mx-auto mb-1" />
-                    <p>Bild hochladen</p>
+                    <p>{{ $t('kanban.uploadImage') }}</p>
                   </div>
                   <div v-else class="text-primary-400">
                     <div class="w-5 h-5 border-2 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
                   </div>
                 </div>
                 <p v-else class="text-xs text-gray-500 italic">
-                  Bitte erst die Karte speichern, um Bilder hinzuzufügen.
+                  $t('kanban.saveCardFirst')
                 </p>
               </div>
 
@@ -1958,7 +1960,7 @@ onMounted(async () => {
               <div v-if="editingCard">
                 <label class="block text-sm font-medium text-gray-300 mb-2">
                   <LinkIcon class="w-4 h-4 inline mr-1" />
-                  Verknüpfte Elemente
+                  {{ $t('kanban.linkedElements') }}
                 </label>
 
                 <div v-if="cardForm.links?.length" class="space-y-2 mb-3">
@@ -1989,7 +1991,7 @@ onMounted(async () => {
                   class="w-full p-2 border-2 border-dashed border-white/[0.06] rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-400 transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <LinkIcon class="w-4 h-4" />
-                  Element verknüpfen
+                  {{ $t('kanban.linkElement') }}
                 </button>
               </div>
             </div>
@@ -2006,7 +2008,7 @@ onMounted(async () => {
                   ]"
                 >
                   <ChatBubbleLeftIcon class="w-4 h-4 inline mr-1" />
-                  Kommentare ({{ comments.length }})
+                  {{ $t('kanban.comments') }} ({{ comments.length }})
                 </button>
                 <button
                   @click="showActivities = true; fetchActivities()"
@@ -2016,7 +2018,7 @@ onMounted(async () => {
                   ]"
                 >
                   <ClockIcon class="w-4 h-4 inline mr-1" />
-                  Aktivitäten
+                  {{ $t('kanban.activities') }}
                 </button>
               </div>
 
@@ -2032,14 +2034,14 @@ onMounted(async () => {
                       v-model="newComment"
                       rows="2"
                       class="textarea text-sm"
-                      placeholder="Kommentar schreiben..."
+                      :placeholder="$t('kanban.writeComment')"
                     ></textarea>
                     <button
                       v-if="newComment.trim()"
                       @click="addCommentAction"
                       class="mt-2 px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-500"
                     >
-                      Senden
+                      {{ $t('kanban.send') }}
                     </button>
                   </div>
                 </div>
@@ -2065,13 +2067,13 @@ onMounted(async () => {
                             @click="startEditComment(comment)"
                             class="text-xs text-gray-400 hover:text-white"
                           >
-                            Bearbeiten
+                            {{ $t('common.edit') }}
                           </button>
                           <button
                             @click="deleteCommentAction(comment.id)"
                             class="text-xs text-gray-400 hover:text-red-400"
                           >
-                            Löschen
+                            {{ $t('common.delete') }}
                           </button>
                         </div>
                       </template>
@@ -2092,7 +2094,7 @@ onMounted(async () => {
                             @click="editingComment = null"
                             class="px-2 py-1 text-gray-400 hover:text-white text-xs"
                           >
-                            Abbrechen
+                            {{ $t('common.cancel') }}
                           </button>
                         </div>
                       </div>
@@ -2101,7 +2103,7 @@ onMounted(async () => {
                   </div>
 
                   <p v-if="comments.length === 0" class="text-gray-500 text-sm text-center py-8">
-                    Noch keine Kommentare
+                    {{ $t('kanban.noComments') }}
                   </p>
                 </div>
               </div>
@@ -2127,7 +2129,7 @@ onMounted(async () => {
                   </div>
 
                   <p v-if="activities.length === 0" class="text-gray-500 text-sm text-center py-8">
-                    Noch keine Aktivitäten
+                    {{ $t('kanban.noActivities') }}
                   </p>
                 </div>
               </div>
@@ -2139,13 +2141,13 @@ onMounted(async () => {
               @click="showCardModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveCard"
               class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
             >
-              {{ editingCard ? 'Speichern' : 'Erstellen' }}
+              {{ editingCard ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -2189,7 +2191,7 @@ onMounted(async () => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingTag ? 'Tag bearbeiten' : 'Tags verwalten' }}
+              {{ editingTag ? $t('kanban.editTag') : $t('kanban.manageTags') }}
             </h2>
             <button @click="showTagModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -2200,7 +2202,7 @@ onMounted(async () => {
             <!-- Create/Edit Tag Form -->
             <div class="space-y-3">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Tag-Name</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('kanban.tagName') }}</label>
                 <input
                   v-model="tagForm.name"
                   type="text"
@@ -2209,7 +2211,7 @@ onMounted(async () => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Farbe</label>
+                <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('common.color') }}</label>
                 <div class="flex flex-wrap gap-2">
                   <button
                     v-for="color in boardColors"
@@ -2225,13 +2227,13 @@ onMounted(async () => {
                 @click="saveTag"
                 class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
               >
-                {{ editingTag ? 'Speichern' : 'Tag erstellen' }}
+                {{ editingTag ? $t('common.save') : $t('kanban.createTag') }}
               </button>
             </div>
 
             <!-- Existing Tags -->
             <div v-if="selectedBoard?.tags?.length && !editingTag">
-              <h3 class="text-sm font-medium text-gray-400 mb-2">Bestehende Tags</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-2">{{ $t('kanban.existingTags') }}</h3>
               <div class="space-y-2">
                 <div
                   v-for="tag in selectedBoard.tags"
@@ -2261,7 +2263,7 @@ onMounted(async () => {
             </div>
 
             <div v-if="!selectedBoard?.tags?.length && !editingTag" class="text-center py-4 text-gray-500">
-              Keine Tags vorhanden
+              {{ $t('kanban.noTags') }}
             </div>
           </div>
         </div>
@@ -2277,7 +2279,7 @@ onMounted(async () => {
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
-            <h2 class="text-lg font-semibold text-white">Element verknüpfen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('kanban.linkElement') }}</h2>
             <button @click="showLinkModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -2304,7 +2306,7 @@ onMounted(async () => {
               type="text"
               @input="onLinkSearchInput"
               class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-              placeholder="Suchen..."
+              :placeholder="$t('kanban.search')"
             />
 
             <!-- Results -->
@@ -2314,7 +2316,7 @@ onMounted(async () => {
               </div>
 
               <div v-else-if="linkableItems.length === 0" class="text-center py-8 text-gray-500">
-                Keine {{ getLinkTypeName(linkType) }}e gefunden
+                {{ $t('kanban.noItemsFound') }}
               </div>
 
               <button
@@ -2336,7 +2338,7 @@ onMounted(async () => {
                   v-if="cardForm.links?.some(l => l.linkable_id === item.id && l.linkable_type === linkType)"
                   class="text-xs text-green-400"
                 >
-                  Verknüpft
+                  {{ $t('kanban.linked') }}
                 </span>
               </button>
             </div>
@@ -2354,7 +2356,7 @@ onMounted(async () => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <div>
-              <h2 class="text-lg font-semibold text-white">Board teilen</h2>
+              <h2 class="text-lg font-semibold text-white">{{ $t('kanban.shareBoard') }}</h2>
               <p class="text-sm text-gray-500 mt-0.5 truncate max-w-[300px]">{{ selectedBoard?.title }}</p>
             </div>
             <button @click="showShareModal = false" class="p-1 text-gray-400 hover:text-white rounded">
@@ -2365,12 +2367,12 @@ onMounted(async () => {
           <div class="p-4 space-y-4 overflow-y-auto flex-1">
             <!-- Add member form -->
             <div class="bg-dark-700 rounded-lg p-4">
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Benutzer hinzufügen</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('kanban.addUser') }}</h3>
               <div class="flex gap-2">
                 <input
                   v-model="newShareEmail"
                   type="email"
-                  placeholder="E-Mail Adresse"
+                  :placeholder="$t('kanban.emailAddress')"
                   class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                   @keyup.enter="addBoardShare"
                 />
@@ -2378,8 +2380,8 @@ onMounted(async () => {
                   v-model="newSharePermission"
                   class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option value="view">Lesen</option>
-                  <option value="edit">Bearbeiten</option>
+                  <option value="view">{{ $t('kanban.read') }}</option>
+                  <option value="edit">{{ $t('kanban.editPermission') }}</option>
                 </select>
                 <button
                   @click="addBoardShare"
@@ -2389,18 +2391,18 @@ onMounted(async () => {
                 </button>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                Benutzer mit Lesezugriff können das Board ansehen. Mit Bearbeitungszugriff können sie Karten erstellen und ändern.
+                {{ $t('kanban.shareDescription') }}
               </p>
             </div>
 
             <!-- Members list -->
             <div>
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Geteilte Benutzer</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('kanban.sharedUsers') }}</h3>
               <div v-if="loadingShares" class="flex items-center justify-center py-8">
                 <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
               <div v-else-if="boardShares.length === 0" class="text-center py-8 text-gray-500">
-                Noch nicht geteilt
+                {{ $t('kanban.notSharedYet') }}
               </div>
               <div v-else class="space-y-2">
                 <div
@@ -2425,8 +2427,8 @@ onMounted(async () => {
                       @change="updateSharePermission(share.user_id, $event.target.value)"
                       class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
                     >
-                      <option value="view">Lesen</option>
-                      <option value="edit">Bearbeiten</option>
+                      <option value="view">{{ $t('kanban.read') }}</option>
+                      <option value="edit">{{ $t('kanban.editPermission') }}</option>
                     </select>
                     <button
                       @click="removeBoardShare(share.user_id)"
@@ -2441,7 +2443,7 @@ onMounted(async () => {
 
             <!-- Public Share Section -->
             <div class="border-t border-dark-700 pt-4">
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Öffentlicher Link</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('kanban.publicLink') }}</h3>
 
               <div v-if="loadingPublicShare" class="flex items-center justify-center py-4">
                 <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
@@ -2452,11 +2454,11 @@ onMounted(async () => {
                 <div class="bg-dark-700 rounded-lg p-4 space-y-3">
                   <div class="flex items-center gap-2 text-sm flex-wrap">
                     <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span class="text-green-400 font-medium">Aktiv</span>
-                    <span v-if="publicShareInfo.can_edit" class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Bearbeitbar</span>
-                    <span v-else class="px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">Nur Lesen</span>
-                    <span v-if="!publicShareInfo.requires_auth" class="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">Ohne Login</span>
-                    <span class="text-gray-500 ml-auto">{{ publicShareInfo.view_count || 0 }} Aufrufe</span>
+                    <span class="text-green-400 font-medium">{{ $t('kanban.active') }}</span>
+                    <span v-if="publicShareInfo.can_edit" class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">{{ $t('kanban.editable') }}</span>
+                    <span v-else class="px-1.5 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">{{ $t('kanban.readOnly') }}</span>
+                    <span v-if="!publicShareInfo.requires_auth" class="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">{{ $t('kanban.noLogin') }}</span>
+                    <span class="text-gray-500 ml-auto">{{ publicShareInfo.view_count || 0 }} {{ $t('kanban.views') }}</span>
                   </div>
 
                   <!-- Link -->
@@ -2482,8 +2484,8 @@ onMounted(async () => {
 
                   <!-- Credentials info (only if auth required) -->
                   <div v-if="publicShareInfo.requires_auth" class="text-xs text-gray-500 space-y-1">
-                    <p>Benutzername: <span class="text-gray-300">{{ publicShareInfo.username }}</span></p>
-                    <p>Passwort: <span class="text-gray-400">***</span></p>
+                    <p>{{ $t('kanban.username') }}: <span class="text-gray-300">{{ publicShareInfo.username }}</span></p>
+                    <p>{{ $t('kanban.password') }}: <span class="text-gray-400">***</span></p>
                   </div>
 
                   <!-- Disable button -->
@@ -2491,7 +2493,7 @@ onMounted(async () => {
                     @click="disablePublicShare"
                     class="text-sm text-red-400 hover:text-red-300 transition-colors"
                   >
-                    Link deaktivieren
+                    {{ $t('kanban.disableLink') }}
                   </button>
                 </div>
               </template>
@@ -2501,7 +2503,7 @@ onMounted(async () => {
                 <div class="bg-dark-700 rounded-lg p-4 space-y-3">
                   <!-- Mode selection -->
                   <div>
-                    <label class="block text-xs text-gray-400 mb-2">Zugriffsmodus</label>
+                    <label class="block text-xs text-gray-400 mb-2">{{ $t('kanban.accessMode') }}</label>
                     <div class="flex gap-2">
                       <button
                         @click="publicShareForm.mode = 'readonly'"
@@ -2510,7 +2512,7 @@ onMounted(async () => {
                           ? 'bg-primary-600 text-white'
                           : 'bg-dark-600 text-gray-400 hover:text-white'"
                       >
-                        Nur Lesen
+                        {{ $t('kanban.readOnly') }}
                       </button>
                       <button
                         @click="publicShareForm.mode = 'protected'"
@@ -2519,7 +2521,7 @@ onMounted(async () => {
                           ? 'bg-primary-600 text-white'
                           : 'bg-dark-600 text-gray-400 hover:text-white'"
                       >
-                        Mit Login
+                        {{ $t('kanban.withLogin') }}
                       </button>
                     </div>
                   </div>
@@ -2527,17 +2529,17 @@ onMounted(async () => {
                   <!-- Description -->
                   <p class="text-xs text-gray-500">
                     <template v-if="publicShareForm.mode === 'readonly'">
-                      Jeder mit dem Link kann das Board ansehen. Kein Login erforderlich.
+                      {{ $t('kanban.readOnlyDesc') }}
                     </template>
                     <template v-else>
-                      Zugriff nur mit Benutzername und Passwort. Kann optional auch bearbeiten.
+                      {{ $t('kanban.protectedDesc') }}
                     </template>
                   </p>
 
                   <!-- Username/Password (only for protected mode) -->
                   <template v-if="publicShareForm.mode === 'protected'">
                     <div>
-                      <label class="block text-xs text-gray-400 mb-1">Benutzername</label>
+                      <label class="block text-xs text-gray-400 mb-1">{{ $t('kanban.username') }}</label>
                       <input
                         v-model="publicShareForm.username"
                         type="text"
@@ -2546,11 +2548,11 @@ onMounted(async () => {
                       />
                     </div>
                     <div>
-                      <label class="block text-xs text-gray-400 mb-1">Passwort</label>
+                      <label class="block text-xs text-gray-400 mb-1">{{ $t('kanban.password') }}</label>
                       <input
                         v-model="publicShareForm.password"
                         type="text"
-                        placeholder="Passwort für den Zugriff"
+                        placeholder=$t('kanbanModule.passwortFuerDenZugriff')
                         class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                       />
                     </div>
@@ -2558,8 +2560,8 @@ onMounted(async () => {
                     <!-- Can edit toggle -->
                     <label class="flex items-center justify-between cursor-pointer">
                       <div>
-                        <span class="text-sm text-gray-300">Bearbeitung erlauben</span>
-                        <p class="text-xs text-gray-500">Karten erstellen, bearbeiten und verschieben</p>
+                        <span class="text-sm text-gray-300">{{ $t('kanban.allowEditing') }}</span>
+                        <p class="text-xs text-gray-500">{{ $t('kanban.editingDescription') }}</p>
                       </div>
                       <input
                         v-model="publicShareForm.can_edit"
@@ -2574,7 +2576,7 @@ onMounted(async () => {
                     :disabled="publicShareForm.mode === 'protected' && (!publicShareForm.username || !publicShareForm.password)"
                     class="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Link erstellen
+                    {{ $t('kanban.createLink') }}
                   </button>
                 </div>
               </template>

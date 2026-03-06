@@ -62,7 +62,7 @@ function removeIcon() {
         class="absolute bottom-2 right-2 rounded bg-dark-800/80 px-2 py-1 text-xs text-gray-300 hover:bg-dark-700"
       >
         <PhotoIcon class="inline h-4 w-4 mr-1" />
-        Cover ändern
+        {{ $t('notesModule.editor.changeCover') }}
       </button>
     </div>
 
@@ -85,7 +85,7 @@ function removeIcon() {
             v-if="showIconPicker"
             class="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg bg-dark-700 p-3 shadow-lg border border-dark-600"
           >
-            <div class="mb-2 text-xs font-semibold text-gray-400">Emoji auswählen</div>
+            <div class="mb-2 text-xs font-semibold text-gray-400">{{ $t('notesModule.editor.selectEmoji') }}</div>
             <div class="grid grid-cols-8 gap-1">
               <button
                 v-for="emoji in quickEmojis"
@@ -101,7 +101,7 @@ function removeIcon() {
               @click="removeIcon"
               class="mt-2 w-full rounded bg-dark-600 py-1 text-xs text-gray-400 hover:bg-dark-500"
             >
-              Icon entfernen
+              {{ $t('notesModule.editor.removeIcon') }}
             </button>
           </div>
         </div>
@@ -112,7 +112,7 @@ function removeIcon() {
             v-model="editableTitle"
             type="text"
             class="w-full bg-transparent text-3xl font-bold text-white placeholder-gray-600 focus:outline-none"
-            placeholder="Unbenannt"
+            :placeholder="$t('notesModule.untitled')"
             @blur="handleTitleBlur"
             @keydown="handleTitleKeydown"
           />
@@ -125,7 +125,7 @@ function removeIcon() {
         class="mt-2 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-400"
       >
         <PhotoIcon class="h-4 w-4" />
-        Cover hinzufügen
+        {{ $t('notesModule.editor.addCover') }}
       </button>
     </div>
 

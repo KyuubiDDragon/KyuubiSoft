@@ -399,7 +399,7 @@ function removeEnvVar(index) {
       <div class="flex items-center justify-between mb-2">
         <label class="text-xs text-gray-400">Umgebungsvariablen</label>
         <button @click="addEnvVar" class="text-xs text-primary-400 hover:text-primary-300">
-          + Hinzufügen
+          {{ $t('toolbox.hinzufuegen') }}
         </button>
       </div>
       <div class="space-y-2">
@@ -415,7 +415,7 @@ function removeEnvVar(index) {
 
     <!-- Custom Instructions -->
     <div>
-      <label class="block text-xs text-gray-400 mb-1">Zusätzliche Instruktionen</label>
+      <label class="block text-xs text-gray-400 mb-1">{{ $t('toolbox.zusaetzlicheInstruktionen') }}</label>
       <textarea
         v-model="config.customInstructions"
         class="input w-full h-16 font-mono text-sm"
@@ -430,7 +430,7 @@ function removeEnvVar(index) {
         <div class="flex gap-2">
           <button @click="copyToClipboard" class="btn-sm btn-secondary">
             <component :is="copied ? CheckIcon : ClipboardIcon" class="w-3 h-3" />
-            {{ copied ? 'Kopiert!' : 'Kopieren' }}
+            {{ copied ? 'Kopiert!' : $t('common.copy') }}
           </button>
           <button @click="downloadDockerfile" class="btn-sm btn-primary">
             <ArrowDownTrayIcon class="w-3 h-3" />

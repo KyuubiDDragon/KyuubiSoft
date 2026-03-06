@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   LinkIcon,
   EyeIcon,
@@ -20,6 +21,7 @@ import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -44,7 +46,7 @@ async function loadShares() {
     shares.value = response.data.data.items || []
     summary.value = response.data.data.summary || {}
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Freigaben')
+    uiStore.showError(t('storage.storagefehlerbeimladenderfreigaben'))
   } finally {
     isLoading.value = false
   }
@@ -61,23 +63,23 @@ async function toggleShareActive(share) {
       shares.value[index].is_active = response.data.data.is_active
       shares.value[index].status = response.data.data.is_active ? 'active' : 'inactive'
     }
-    uiStore.showSuccess(response.data.data.is_active ? 'Freigabe aktiviert' : 'Freigabe deaktiviert')
+    uiStore.showSuccess(response.data.data.is_active ? t('storage.freigabeAktiviert') : t('storage.freigabeDeaktiviert'))
     loadShares() // Reload to update summary
   } catch (error) {
-    uiStore.showError('Fehler beim Ändern des Status')
+    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
   }
 }
 
 async function deleteShare(share) {
-  if (!await confirm({ message: `Freigabe für "${share.file.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Freigabe für "${share.file.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/storage/${share.file_id}/share`)
     shares.value = shares.value.filter(s => s.id !== share.id)
-    uiStore.showSuccess('Freigabe gelöscht')
+    uiStore.showSuccess(t('storage.freigabeGeloescht'))
     loadShares() // Reload to update summary
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -169,21 +171,21 @@ onMounted(() => {
       <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <LinkIcon class="w-5 h-5 text-primary-400" />
-          <span class="text-gray-400 text-sm">Gesamt</span>
+          <span class="text-gray-400 text-sm">{{ $t('contractsModule.gesamt') }}</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.total }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <CheckCircleIcon class="w-5 h-5 text-green-400" />
-          <span class="text-gray-400 text-sm">Aktiv</span>
+          <span class="text-gray-400 text-sm">{{ $t('common.active') }}</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.active }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <EyeIcon class="w-5 h-5 text-blue-400" />
-          <span class="text-gray-400 text-sm">Aufrufe</span>
+          <span class="text-gray-400 text-sm">{{ $t('galleriesModule.aufrufe') }}</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ summary.total_views }}</p>
       </div>
@@ -207,7 +209,7 @@ onMounted(() => {
       <!-- Empty State -->
       <div v-else-if="filteredShares.length === 0" class="p-12 text-center">
         <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <p class="text-lg text-white font-medium">Keine Freigaben vorhanden</p>
+        <p class="text-lg text-white font-medium">{{ $t('storage.storagekeinefreigabenvorhanden') }}</p>
         <p class="text-gray-400">Erstelle Freigaben im Cloud Storage</p>
       </div>
 
@@ -216,12 +218,12 @@ onMounted(() => {
         <table class="w-full">
           <thead class="bg-white/[0.03]">
             <tr>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Datei</th>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Status</th>
-              <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">Aufrufe</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('storage.datei') }}</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('common.status') }}</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('galleriesModule.aufrufe') }}</th>
               <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">Downloads</th>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Erstellt</th>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">Läuft ab</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('inboxModule.erstellt') }}</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('toolbox.laeuftAb') }}</th>
               <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Aktionen</th>
             </tr>
           </thead>
@@ -251,7 +253,7 @@ onMounted(() => {
                     <component :is="getStatusIcon(share.status)" class="w-3.5 h-3.5" />
                     {{ getStatusLabel(share.status) }}
                   </span>
-                  <LockClosedIcon v-if="share.has_password" class="w-4 h-4 text-gray-500" title="Passwortgeschützt" />
+                  <LockClosedIcon v-if="share.has_password" class="w-4 h-4 text-gray-500" :title="$t('links.passwortgeschuetzt')" />
                 </div>
               </td>
 
@@ -310,7 +312,7 @@ onMounted(() => {
                   <button
                     @click="deleteShare(share)"
                     class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
-                    title="Löschen"
+                    :title="$t('common.delete')"
                   >
                     <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
                   </button>

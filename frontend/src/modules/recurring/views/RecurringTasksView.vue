@@ -6,8 +6,8 @@ import RecurringTasksManager from '@/components/RecurringTasksManager.vue'
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-bold text-white">Wiederkehrende Aufgaben</h1>
-      <p class="text-gray-400 mt-1">Verwalte automatisch wiederkehrende Aufgaben und Erinnerungen</p>
+      <h1 class="text-2xl font-bold text-white">{{ $t('navigation.recurringTasks') }}</h1>
+      <p class="text-gray-400 mt-1">{{ $t('recurringTasks.recurringtasksverwalteautomatischwiederkehrendeaufgabenunderinnerungen') }}</p>
     </div>
 
     <!-- Manager Component -->

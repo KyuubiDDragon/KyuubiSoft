@@ -7,7 +7,7 @@ defineProps({ widget: Object, data: Array })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/lists" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+      <router-link to="/lists" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.all') }}</router-link>
     </div>
     <div class="space-y-2">
       <div
@@ -28,7 +28,7 @@ defineProps({ widget: Object, data: Array })
           {{ formatDate(task.due_date) }}
         </span>
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine offenen Aufgaben</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noOpenTasks') }}</p>
     </div>
   </div>
 </template>

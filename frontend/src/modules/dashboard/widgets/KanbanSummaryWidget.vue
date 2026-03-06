@@ -7,11 +7,11 @@ defineProps({ widget: Object, data: Object })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/kanban" class="text-sm text-primary-400 hover:text-primary-300">Boards</router-link>
+      <router-link to="/kanban" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('widgets.boards') }}</router-link>
     </div>
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <p class="text-sm text-gray-400 mb-2">Boards</p>
+        <p class="text-sm text-gray-400 mb-2">{{ $t('widgets.boards') }}</p>
         <div class="space-y-1">
           <router-link
             v-for="board in (data?.boards || []).slice(0, 3)"
@@ -25,13 +25,13 @@ defineProps({ widget: Object, data: Object })
         </div>
       </div>
       <div>
-        <p class="text-sm text-gray-400 mb-2">Bald fällig</p>
+        <p class="text-sm text-gray-400 mb-2">{{ $t('widgets.dueSoon') }}</p>
         <div class="space-y-1">
           <div v-for="card in (data?.due_soon || []).slice(0, 3)" :key="card.id" class="p-2 rounded-lg bg-yellow-500/10">
             <p class="text-sm text-white truncate">{{ card.title }}</p>
             <p class="text-xs text-yellow-400">{{ formatDate(card.due_date) }}</p>
           </div>
-          <p v-if="!data?.due_soon?.length" class="text-xs text-gray-500">Keine fälligen Karten</p>
+          <p v-if="!data?.due_soon?.length" class="text-xs text-gray-500">{{ $t('widgets.noDueCards') }}</p>
         </div>
       </div>
     </div>

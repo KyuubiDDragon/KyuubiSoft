@@ -150,11 +150,11 @@ function regenerate() {
       </div>
 
       <div>
-        <label class="text-sm text-gray-400 mb-1 block">Einheit</label>
+        <label class="text-sm text-gray-400 mb-1 block">{{ $t('settingsModule.einheit') }}</label>
         <select v-model="unit" class="input">
-          <option value="paragraphs">Absätze</option>
-          <option value="sentences">Sätze</option>
-          <option value="words">Wörter</option>
+          <option value="paragraphs">{{ $t('toolbox.absaetze') }}</option>
+          <option value="sentences">{{ $t('toolbox.saetze') }}</option>
+          <option value="words">{{ $t('toolbox.woerter') }}</option>
         </select>
       </div>
 
@@ -210,12 +210,12 @@ function regenerate() {
         <button
           v-for="preset in [
             { amount: 1, unit: 'paragraphs', label: '1 Absatz' },
-            { amount: 3, unit: 'paragraphs', label: '3 Absätze' },
-            { amount: 5, unit: 'paragraphs', label: '5 Absätze' },
-            { amount: 5, unit: 'sentences', label: '5 Sätze' },
-            { amount: 10, unit: 'sentences', label: '10 Sätze' },
-            { amount: 50, unit: 'words', label: '50 Wörter' },
-            { amount: 100, unit: 'words', label: '100 Wörter' },
+            { amount: 3, unit: 'paragraphs', label: $t('toolbox.3Absaetze') },
+            { amount: 5, unit: 'paragraphs', label: $t('toolbox.5Absaetze') },
+            { amount: 5, unit: 'sentences', label: $t('toolbox.5Saetze') },
+            { amount: 10, unit: 'sentences', label: $t('toolbox.10Saetze') },
+            { amount: 50, unit: 'words', label: $t('toolbox.50Woerter') },
+            { amount: 100, unit: 'words', label: $t('toolbox.100Woerter') },
           ]"
           :key="preset.label"
           @click="amount = preset.amount; unit = preset.unit"

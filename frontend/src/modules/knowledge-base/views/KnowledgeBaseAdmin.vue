@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { ref, computed, onMounted, watch } from 'vue'
 import {
   PlusIcon,
@@ -18,6 +19,7 @@ import {
 import { useKnowledgeBaseStore } from '@/modules/knowledge-base/stores/knowledgeBaseStore'
 
 const store = useKnowledgeBaseStore()
+const { t } = useI18n()
 
 // Local state
 const selectedCategoryId = ref(null)
@@ -269,8 +271,8 @@ watch(articlePublishedFilter, () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Wissensbasis</h1>
-        <p class="text-gray-400 mt-1">Kategorien und Artikel verwalten</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('knowledgeBase.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('knowledgeBase.subtitle') }}</p>
       </div>
     </div>
 
@@ -282,7 +284,7 @@ watch(articlePublishedFilter, () => {
         <div class="card-glass p-4">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Kategorien</h2>
-            <button @click="openCreateCategory()" class="btn-icon-sm" title="Kategorie erstellen">
+            <button @click="openCreateCategory()" class="btn-icon-sm" :title="$t('knowledgeBase.knowledgebasekategorieerstellen')">
               <PlusIcon class="w-4 h-4" />
             </button>
           </div>
@@ -297,7 +299,7 @@ watch(articlePublishedFilter, () => {
           >
             <div class="flex items-center gap-2">
               <DocumentTextIcon class="w-4 h-4" />
-              <span>Alle Artikel</span>
+              <span>{{ $t('knowledgeBase.alleArtikel') }}</span>
             </div>
           </button>
 
@@ -328,17 +330,17 @@ watch(articlePublishedFilter, () => {
 
                   <span class="truncate flex-1">{{ cat.name }}</span>
 
-                  <EyeSlashIcon v-if="!cat.is_published" class="w-3.5 h-3.5 text-gray-600" title="Unveröffentlicht" />
+                  <EyeSlashIcon v-if="!cat.is_published" class="w-3.5 h-3.5 text-gray-600" :title="$t('knowledgeBase.unveroeffentlicht')" />
 
                   <!-- Actions -->
                   <div class="hidden group-hover:flex items-center gap-0.5">
-                    <button @click.stop="openCreateCategory(cat.id)" class="p-0.5 rounded hover:bg-white/10" title="Unterkategorie">
+                    <button @click.stop="openCreateCategory(cat.id)" class="p-0.5 rounded hover:bg-white/10" :title="$t('knowledgeBase.subcategory')">
                       <PlusIcon class="w-3.5 h-3.5" />
                     </button>
-                    <button @click.stop="openEditCategory(cat)" class="p-0.5 rounded hover:bg-white/10" title="Bearbeiten">
+                    <button @click.stop="openEditCategory(cat)" class="p-0.5 rounded hover:bg-white/10" :title="$t('common.edit')">
                       <PencilIcon class="w-3.5 h-3.5" />
                     </button>
-                    <button @click.stop="confirmDelete('category', cat.id, cat.name)" class="p-0.5 rounded hover:bg-red-500/20 text-red-400" title="Löschen">
+                    <button @click.stop="confirmDelete('category', cat.id, cat.name)" class="p-0.5 rounded hover:bg-red-500/20 text-red-400" :title="$t('common.delete')">
                       <TrashIcon class="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -389,15 +391,15 @@ watch(articlePublishedFilter, () => {
                 v-model="articleFilter"
                 @keyup.enter="store.pagination.page = 1; loadArticles()"
                 type="text"
-                placeholder="Artikel suchen..."
+                :placeholder="$t('knowledgeBase.searchArticles')"
                 class="input pl-9 w-full"
               />
             </div>
 
             <select v-model="articlePublishedFilter" class="select w-auto min-w-[140px]">
-              <option value="">Alle Status</option>
-              <option value="1">Veröffentlicht</option>
-              <option value="0">Entwurf</option>
+              <option value="">{{ $t('knowledgeBase.allStatus') }}</option>
+              <option value="1">{{ $t('knowledgeBase.published') }}</option>
+              <option value="0">{{ $t('knowledgeBase.draft') }}</option>
             </select>
 
             <button @click="store.pagination.page = 1; loadArticles()" class="btn-secondary">
@@ -456,14 +458,14 @@ watch(articlePublishedFilter, () => {
                 <button
                   @click.stop="openEditArticle(article)"
                   class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"
-                  title="Bearbeiten"
+                  :title="$t('common.edit')"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click.stop="confirmDelete('article', article.id, article.title)"
                   class="p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400"
-                  title="Löschen"
+                  :title="$t('common.delete')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -528,12 +530,12 @@ watch(articlePublishedFilter, () => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Name *</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('common.name') }} *</label>
               <input v-model="categoryForm.name" type="text" class="input w-full" placeholder="Kategorie-Name" />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Slug</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.slug') }}</label>
               <input v-model="categoryForm.slug" type="text" class="input w-full" placeholder="Wird automatisch generiert" />
             </div>
 
@@ -543,9 +545,9 @@ watch(articlePublishedFilter, () => {
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Übergeordnete Kategorie</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.parentCategory') }}</label>
               <select v-model="categoryForm.parent_id" class="select w-full">
-                <option :value="null">Keine (Wurzelebene)</option>
+                <option :value="null">{{ $t('knowledgeBase.noParent') }}</option>
                 <option
                   v-for="cat in flatCategories"
                   :key="cat.id"
@@ -559,18 +561,18 @@ watch(articlePublishedFilter, () => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Icon</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.icon') }}</label>
                 <input v-model="categoryForm.icon" type="text" class="input w-full" placeholder="z.B. folder" />
               </div>
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Sortierung</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.sorting') }}</label>
                 <input v-model.number="categoryForm.sort_order" type="number" class="input w-full" />
               </div>
             </div>
 
             <div class="flex items-center gap-2">
               <input id="cat-published" v-model="categoryForm.is_published" type="checkbox" class="rounded bg-white/5 border-white/10 text-primary-500" />
-              <label for="cat-published" class="text-sm text-gray-300">Veröffentlicht</label>
+              <label for="cat-published" class="text-sm text-gray-300">{{ $t('knowledgeBase.published') }}</label>
             </div>
           </div>
 
@@ -598,12 +600,12 @@ watch(articlePublishedFilter, () => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Titel *</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.articleTitle') }} *</label>
               <input v-model="articleForm.title" type="text" class="input w-full" placeholder="Artikeltitel" />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Slug</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.slug') }}</label>
               <input v-model="articleForm.slug" type="text" class="input w-full" placeholder="Wird automatisch generiert" />
             </div>
 
@@ -611,7 +613,7 @@ watch(articlePublishedFilter, () => {
               <div>
                 <label class="block text-sm text-gray-400 mb-1">Kategorie</label>
                 <select v-model="articleForm.category_id" class="select w-full">
-                  <option :value="null">Keine Kategorie</option>
+                  <option :value="null">{{ $t('knowledgeBase.noCategory') }}</option>
                   <option v-for="cat in flatCategories" :key="cat.id" :value="cat.id">
                     {{ '─'.repeat(cat.depth) }} {{ cat.name }}
                   </option>
@@ -619,17 +621,17 @@ watch(articlePublishedFilter, () => {
               </div>
               <div class="flex items-center pt-6">
                 <input id="art-published" v-model="articleForm.is_published" type="checkbox" class="rounded bg-white/5 border-white/10 text-primary-500" />
-                <label for="art-published" class="text-sm text-gray-300 ml-2">Veröffentlicht</label>
+                <label for="art-published" class="text-sm text-gray-300 ml-2">{{ $t('knowledgeBase.published') }}</label>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Auszug</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.excerpt') }}</label>
               <textarea v-model="articleForm.excerpt" class="input w-full" rows="2" placeholder="Kurze Zusammenfassung..."></textarea>
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Inhalt</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.content') }}</label>
               <textarea
                 v-model="articleForm.content"
                 class="input w-full font-mono text-sm"
@@ -639,7 +641,7 @@ watch(articlePublishedFilter, () => {
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Tags</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('knowledgeBase.tags') }}</label>
               <div class="flex flex-wrap gap-2 mb-2">
                 <span
                   v-for="(tag, idx) in articleForm.tags"
@@ -657,10 +659,10 @@ watch(articlePublishedFilter, () => {
                   v-model="tagInput"
                   type="text"
                   class="input flex-1"
-                  placeholder="Tag hinzufügen..."
+                  :placeholder="$t('knowledgeBase.addTag')"
                   @keyup.enter="addTag"
                 />
-                <button @click="addTag" class="btn-secondary">Hinzufügen</button>
+                <button @click="addTag" class="btn-secondary">{{ $t('common.add') }}</button>
               </div>
             </div>
           </div>

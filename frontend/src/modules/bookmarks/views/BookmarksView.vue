@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -23,6 +24,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -113,7 +115,7 @@ const filteredGroups = computed(() => {
 })
 
 const allGroups = computed(() => {
-  return [{ id: null, name: 'Ohne Gruppe' }, ...groups.value]
+  return [{ id: null, name: t('bookmarks.noGroup') }, ...groups.value]
 })
 
 // API Calls
@@ -138,7 +140,7 @@ async function loadBookmarks() {
       }
     })
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Lesezeichen')
+    uiStore.showError(t('bookmarks.errorLoadingBookmarks'))
   } finally {
     isLoading.value = false
   }
@@ -171,27 +173,27 @@ async function saveBookmark() {
   try {
     if (editingBookmark.value) {
       await api.put(`/api/v1/bookmarks/${editingBookmark.value.id}`, form.value)
-      uiStore.showSuccess('Lesezeichen aktualisiert')
+      uiStore.showSuccess(t('bookmarks.bookmarkUpdated'))
     } else {
       await api.post('/api/v1/bookmarks', form.value)
-      uiStore.showSuccess('Lesezeichen erstellt')
+      uiStore.showSuccess(t('bookmarks.bookmarkCreated'))
     }
     await loadBookmarks()
     showModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('bookmarks.errorSaving'))
   }
 }
 
 async function deleteBookmark(bookmark) {
-  if (!await confirm({ message: `"${bookmark.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `"${bookmark.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/${bookmark.id}`)
     await loadBookmarks()
-    uiStore.showSuccess('Lesezeichen gelöscht')
+    uiStore.showSuccess(t('bookmarks.bookmarkDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarks.errorDeleting'))
   }
 }
 
@@ -202,7 +204,7 @@ async function toggleFavorite(bookmark) {
     })
     bookmark.is_favorite = !bookmark.is_favorite
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('bookmarks.errorUpdating'))
   }
 }
 
@@ -222,9 +224,9 @@ async function moveBookmarkToGroup(bookmark, groupId) {
       group_id: groupId
     })
     await loadBookmarks()
-    uiStore.showSuccess('Lesezeichen verschoben')
+    uiStore.showSuccess(t('bookmarks.bookmarkMoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Verschieben')
+    uiStore.showError(t('bookmarks.errorMoving'))
   }
 }
 
@@ -235,29 +237,29 @@ async function saveGroup() {
   try {
     if (editingGroup.value) {
       await api.put(`/api/v1/bookmarks/groups/${editingGroup.value.id}`, groupForm.value)
-      uiStore.showSuccess('Gruppe aktualisiert')
+      uiStore.showSuccess(t('bookmarks.groupUpdated'))
     } else {
       await api.post('/api/v1/bookmarks/groups', groupForm.value)
-      uiStore.showSuccess('Gruppe erstellt')
+      uiStore.showSuccess(t('bookmarks.groupCreated'))
     }
     await loadBookmarks()
     showGroupModal.value = false
     editingGroup.value = null
     groupForm.value = { name: '', color: '#6366f1' }
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('bookmarks.errorSaving'))
   }
 }
 
 async function deleteGroup(group) {
-  if (!await confirm({ message: `Gruppe "${group.name}" wirklich löschen?\n\nLesezeichen bleiben erhalten`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Gruppe "${group.name}" wirklich löschen?\n\nLesezeichen bleiben erhalten`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/groups/${group.id}`)
     await loadBookmarks()
-    uiStore.showSuccess('Gruppe gelöscht')
+    uiStore.showSuccess(t('bookmarks.groupDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarks.errorDeleting'))
   }
 }
 
@@ -290,22 +292,22 @@ async function saveTag() {
     await api.post('/api/v1/bookmarks/tags', tagForm.value)
     await loadTags()
     tagForm.value = { name: '', color: '#6366f1' }
-    uiStore.showSuccess('Tag erstellt')
+    uiStore.showSuccess(t('bookmarks.tagCreated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('bookmarks.errorCreating'))
   }
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/tags/${tag.id}`)
     await loadTags()
     if (selectedTagId.value === tag.id) selectedTagId.value = ''
-    uiStore.showSuccess('Tag gelöscht')
+    uiStore.showSuccess(t('bookmarks.tagDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarks.errorDeleting'))
   }
 }
 
@@ -362,7 +364,7 @@ function isGroupExpanded(groupId) {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Lesezeichen</h1>
+        <h1 class="text-2xl font-bold text-white">{{ $t('navigation.bookmarks') }}</h1>
         <p class="text-gray-400 mt-1">Speichere und organisiere deine Links</p>
       </div>
       <div class="flex gap-2">
@@ -376,7 +378,7 @@ function isGroupExpanded(groupId) {
         </button>
         <button @click="openCreateModal()" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Neues Lesezeichen
+          {{ $t('bookmarks.newBookmark') }}
         </button>
       </div>
     </div>
@@ -388,12 +390,12 @@ function isGroupExpanded(groupId) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Suchen..."
+          :placeholder="$t('bookmarks.search')"
           class="input pl-10 w-full"
         />
       </div>
       <select v-model="selectedTagId" class="input w-full sm:w-48">
-        <option value="">Alle Tags</option>
+        <option value="">{{ $t('bookmarks.allTags') }}</option>
         <option v-for="tag in tags" :key="tag.id" :value="tag.id">
           {{ tag.name }} ({{ tag.bookmark_count || 0 }})
         </option>
@@ -408,11 +410,11 @@ function isGroupExpanded(groupId) {
     <!-- Empty state -->
     <div v-else-if="filteredGroups.length === 0 && filteredUngrouped.length === 0" class="card p-12 text-center">
       <BookmarkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">Keine Lesezeichen</h3>
-      <p class="text-gray-400 mb-6">Füge dein erstes Lesezeichen hinzu</p>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('bookmarks.noBookmarks') }}</h3>
+      <p class="text-gray-400 mb-6">{{ $t('bookmarks.addFirstBookmark') }}</p>
       <button @click="openCreateModal()" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Lesezeichen hinzufügen
+        {{ $t('bookmarks.addBookmark') }}
       </button>
     </div>
 
@@ -442,7 +444,7 @@ function isGroupExpanded(groupId) {
             <button
               @click.stop="openCreateModal(group.id)"
               class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-              title="Lesezeichen hinzufügen"
+              :title="$t('bookmarks.addBookmark')"
             >
               <PlusIcon class="w-5 h-5" />
             </button>
@@ -462,16 +464,12 @@ function isGroupExpanded(groupId) {
                   @click.stop="editGroup(group)"
                   class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                 >
-                  <PencilIcon class="w-4 h-4" />
-                  Bearbeiten
-                </button>
+                  <PencilIcon class="w-4 h-4" />{{ $t('common.edit') }}</button>
                 <button
                   @click.stop="deleteGroup(group); showGroupMenu = null"
                   class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-white/[0.04] flex items-center gap-2"
                 >
-                  <TrashIcon class="w-4 h-4" />
-                  Löschen
-                </button>
+                  <TrashIcon class="w-4 h-4" />{{ $t('common.delete') }}</button>
               </div>
             </div>
             <ChevronDownIcon
@@ -484,7 +482,7 @@ function isGroupExpanded(groupId) {
         <!-- Group Bookmarks -->
         <div v-show="isGroupExpanded(group.id)" class="p-4">
           <div v-if="group.bookmarks.length === 0" class="text-center py-6 text-gray-500">
-            Keine Lesezeichen in dieser Gruppe
+            {{ $t('bookmarks.noBookmarksInGroup') }}
           </div>
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div
@@ -633,7 +631,7 @@ function isGroupExpanded(groupId) {
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingBookmark ? 'Lesezeichen bearbeiten' : 'Neues Lesezeichen' }}
+              {{ editingBookmark ? $t('bookmarks.editBookmark') : '{{ $t('bookmarks.newBookmark') }}' }}
             </h2>
             <button @click="showModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -648,18 +646,18 @@ function isGroupExpanded(groupId) {
 
             <div>
               <label class="label">Titel</label>
-              <input v-model="form.title" type="text" class="input" placeholder="Optional - wird aus URL extrahiert" />
+              <input v-model="form.title" type="text" class="input" :placeholder="$t('bookmarks.optionalExtractedFromUrl')" />
             </div>
 
             <div>
-              <label class="label">Beschreibung</label>
-              <textarea v-model="form.description" class="input" rows="2" placeholder="Optional"></textarea>
+              <label class="label">{{ $t('common.description') }}</label>
+              <textarea v-model="form.description" class="input" rows="2" :placeholder="$t('bookmarks.optional')"></textarea>
             </div>
 
             <div>
               <label class="label">Gruppe</label>
               <select v-model="form.group_id" class="input">
-                <option :value="null">Keine Gruppe</option>
+                <option :value="null">{{ $t('bookmarks.noGroup') }}</option>
                 <option v-for="group in groups" :key="group.id" :value="group.id">
                   {{ group.name }}
                 </option>
@@ -694,11 +692,9 @@ function isGroupExpanded(groupId) {
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" @click="showModal = false" class="btn-secondary flex-1">
-                Abbrechen
-              </button>
+              <button type="button" @click="showModal = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingBookmark ? 'Speichern' : 'Hinzufügen' }}
+                {{ editingBookmark ? $t('common.save') : $t('common.add') }}
               </button>
             </div>
           </form>
@@ -727,7 +723,7 @@ function isGroupExpanded(groupId) {
                 v-model="tagForm.name"
                 type="text"
                 class="input flex-1"
-                placeholder="Neuer Tag..."
+                :placeholder="$t('bookmarks.newTag')"
                 required
               />
               <button type="submit" class="btn-primary">
@@ -771,7 +767,7 @@ function isGroupExpanded(groupId) {
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingGroup ? 'Gruppe bearbeiten' : 'Neue Gruppe' }}
+              {{ editingGroup ? $t('bookmarks.editGroup') : $t('bookmarks.newGroup') }}
             </h2>
             <button @click="showGroupModal = false; editingGroup = null" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -785,7 +781,7 @@ function isGroupExpanded(groupId) {
                 v-model="groupForm.name"
                 type="text"
                 class="input"
-                placeholder="Gruppenname..."
+                placeholder=$t('bookmarks.groupName')
                 required
               />
             </div>
@@ -806,11 +802,9 @@ function isGroupExpanded(groupId) {
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" @click="showGroupModal = false; editingGroup = null" class="btn-secondary flex-1">
-                Abbrechen
-              </button>
+              <button type="button" @click="showGroupModal = false; editingGroup = null" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingGroup ? 'Speichern' : 'Erstellen' }}
+                {{ editingGroup ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </form>

@@ -166,9 +166,9 @@ function setExample() {
     <!-- Input -->
     <div>
       <div class="flex justify-between items-center mb-1">
-        <label class="block text-xs text-gray-400">Eingabe</label>
+        <label class="block text-xs text-gray-400">{{ $t('toolbox.eingabe') }}</label>
         <button @click="setExample" class="text-xs text-primary-400 hover:text-primary-300">
-          Beispiel einfügen
+          {{ $t('toolbox.beispielEinfuegen') }}
         </button>
       </div>
       <textarea
@@ -203,7 +203,7 @@ function setExample() {
 
     <!-- All conversions -->
     <div v-if="input.trim()" class="space-y-2">
-      <h4 class="text-sm text-gray-400">Alle Formate</h4>
+      <h4 class="text-sm text-gray-400">{{ $t('toolbox.alleFormate') }}</h4>
       <div class="grid gap-2 max-h-80 overflow-y-auto">
         <div
           v-for="conv in allConversions"
@@ -217,7 +217,7 @@ function setExample() {
           <button
             @click="copyResult(conv.result)"
             class="p-1 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            title="Kopieren"
+            :title="$t('common.copy')"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -229,8 +229,8 @@ function setExample() {
 
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
-      <p><strong>Tipp:</strong> Der Text wird automatisch in Wörter aufgeteilt, unabhängig vom Eingabeformat.</p>
-      <p>Unterstützt camelCase, snake_case, kebab-case, Leerzeichen und mehr als Eingabe.</p>
+      <p><strong>Tipp:</strong>{{ $t('toolbox.toolboxdertextwirdautomatischinwoerteraufgeteilt') }}</p>
+      <p>{{ $t('toolbox.unterstuetztCamelcaseSnakecaseKebabcaseLeerzeichenUndMehr') }}</p>
     </div>
   </div>
 </template>

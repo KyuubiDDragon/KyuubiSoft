@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import {
   DocumentIcon,
@@ -77,11 +81,11 @@ async function loadShareInfo() {
     showPasswordField.value = shareInfo.value.has_password
   } catch (err) {
     if (err.response?.status === 403) {
-      error.value = err.response.data.error || 'Freigabe nicht verfügbar'
+      error.value = err.response.data.error || t('storage.storagefreigabenichtverfuegbar')
     } else if (err.response?.status === 404) {
-      error.value = 'Freigabe nicht gefunden'
+      error.value = t('storage.freigabeNichtGefunden')
     } else {
-      error.value = 'Ein Fehler ist aufgetreten'
+      error.value = t('errors.generic')
     }
   } finally {
     isLoading.value = false
@@ -122,13 +126,13 @@ async function downloadFile() {
     shareInfo.value.download_count++
   } catch (err) {
     if (err.response?.status === 401) {
-      downloadError.value = 'Falsches Passwort'
+      downloadError.value = t('checklists.wrongPassword')
     } else if (err.response?.status === 403) {
-      downloadError.value = err.response.data?.error || 'Download nicht möglich'
+      downloadError.value = err.response.data?.error || t('storage.storagedownloadnichtmoeglich')
       // Reload share info to get updated state
       loadShareInfo()
     } else {
-      downloadError.value = 'Download fehlgeschlagen'
+      downloadError.value = t('youtubeDownloader.youtubedownloaderdownloadfehlgeschlagen')
     }
   } finally {
     isDownloading.value = false
@@ -173,7 +177,7 @@ onMounted(() => {
         <div class="w-20 h-20 mx-auto bg-red-500/10 rounded-full flex items-center justify-center mb-4">
           <ExclamationTriangleIcon class="w-10 h-10 text-red-500" />
         </div>
-        <h2 class="text-xl font-semibold text-white mb-2">Nicht verfügbar</h2>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ $t('storage.nichtVerfuegbar') }}</h2>
         <p class="text-gray-400">{{ error }}</p>
       </div>
 
@@ -205,7 +209,7 @@ onMounted(() => {
               <EyeIcon class="w-4 h-4" />
               <span class="text-lg font-semibold text-white">{{ shareInfo.view_count || 0 }}</span>
             </div>
-            <p class="text-xs text-gray-500">Aufrufe</p>
+            <p class="text-xs text-gray-500">{{ $t('galleriesModule.aufrufe') }}</p>
           </div>
           <div class="text-center">
             <div class="flex items-center justify-center gap-1.5 text-gray-400">
@@ -220,7 +224,7 @@ onMounted(() => {
         <div class="p-4 space-y-3">
           <!-- Downloads remaining -->
           <div v-if="shareInfo.max_downloads" class="flex items-center justify-between text-sm px-2">
-            <span class="text-gray-400">Downloads übrig</span>
+            <span class="text-gray-400">{{ $t('storage.downloadsUebrig') }}</span>
             <span
               class="font-medium"
               :class="shareInfo.downloads_remaining <= 0 ? 'text-red-400' : 'text-white'"
@@ -233,7 +237,7 @@ onMounted(() => {
           <div v-if="shareInfo.expires_at" class="flex items-center justify-between text-sm px-2">
             <div class="flex items-center gap-2 text-gray-400">
               <ClockIcon class="w-4 h-4" />
-              <span>Gültig bis</span>
+              <span>{{ $t('ssl.gueltigBis') }}</span>
             </div>
             <span
               class="font-medium"
@@ -247,7 +251,7 @@ onMounted(() => {
         <!-- Download Section -->
         <div class="p-4 pt-0">
           <!-- Password Field -->
-          <div v-if="showPasswordField && canDownload" class="mb-4">
+          <div v-if=$t('storage.showpasswordfieldCandownload') class="mb-4">
             <label class="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
               <LockClosedIcon class="w-4 h-4" />
               Passwort erforderlich
@@ -255,7 +259,7 @@ onMounted(() => {
             <input
               v-model="password"
               type="password"
-              placeholder="Passwort eingeben..."
+              :placeholder="$t('contractsModule.passwortEingeben')"
               class="input w-full px-4 py-3"
               @keyup.enter="downloadFile"
             />
@@ -269,20 +273,20 @@ onMounted(() => {
           <!-- Success Message -->
           <div v-if="downloadSuccess" class="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center gap-2">
             <CheckCircleIcon class="w-5 h-5 text-green-400" />
-            <p class="text-green-400 text-sm">Download gestartet!</p>
+            <p class="text-green-400 text-sm">{{ $t('youtubeDownloader.youtubedownloaderdownloadgestartet') }}</p>
           </div>
 
           <!-- Download Button -->
           <button
             @click="downloadFile"
-            :disabled="!canDownload || isDownloading || (showPasswordField && !password)"
+            :disabled=$t('storage.candownloadIsdownloadingShowpasswordfieldPassword')
             class="w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-purple-600 rounded-xl text-white font-medium transition-all shadow-float shadow-indigo-500/25"
           >
-            <template v-if="isDownloading">
+            <template v-if=$t('storage.isdownloading')>
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Wird heruntergeladen...</span>
+              <span>{{ $t('storage.wirdHeruntergeladen') }}</span>
             </template>
-            <template v-else-if="!canDownload">
+            <template v-else-if=$t('storage.candownload')>
               <ExclamationTriangleIcon class="w-5 h-5" />
               <span>Download-Limit erreicht</span>
             </template>

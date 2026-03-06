@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 
 const domain = ref('')
@@ -27,7 +28,7 @@ async function checkSSL() {
       result.value = response.data.data
     }
   } catch (e) {
-    error.value = e.response?.data?.error || e.message || 'SSL-Prüfung fehlgeschlagen'
+    error.value = e.response?.data?.error || e.message || t('toolbox.sslpruefungFehlgeschlagen')
   }
 
   isLoading.value = false
@@ -46,7 +47,7 @@ function formatDate(dateStr) {
 }
 
 function getExpiryStatus(days) {
-  if (days === null || days === undefined) return { class: 'text-gray-400', text: 'Unbekannt' }
+  if (days === null || days === undefined) return { class: 'text-gray-400', text: t('documentsModule.unbekannt') }
   if (days < 0) return { class: 'text-red-500', text: 'Abgelaufen' }
   if (days < 7) return { class: 'text-red-400', text: `${days} Tage (Kritisch)` }
   if (days < 30) return { class: 'text-yellow-400', text: `${days} Tage (Warnung)` }
@@ -85,7 +86,7 @@ const quickDomains = [
         :disabled="isLoading || !domain.trim()"
         class="btn-primary px-6"
       >
-        {{ isLoading ? 'Prüfe...' : 'Prüfen' }}
+        {{ isLoading ? $t('contractsModule.pruefe') : $t('toolbox.pruefen') }}
       </button>
     </div>
 
@@ -104,7 +105,7 @@ const quickDomains = [
 
     <!-- Loading -->
     <div v-if="isLoading" class="text-center py-8 text-gray-400">
-      Prüfe SSL-Zertifikat...
+      {{ $t('toolbox.pruefeSslzertifikat') }}
     </div>
 
     <!-- Error -->
@@ -125,7 +126,7 @@ const quickDomains = [
         <div>
           <h3 class="text-lg font-medium text-white">{{ result.domain }}:{{ result.port }}</h3>
           <p :class="result.valid ? 'text-green-400' : 'text-red-400'">
-            {{ result.valid ? 'SSL-Zertifikat gültig' : 'SSL-Problem erkannt' }}
+            {{ result.valid ? $t('toolbox.sslzertifikatGueltig') : 'SSL-Problem erkannt' }}
           </p>
         </div>
       </div>
@@ -138,17 +139,17 @@ const quickDomains = [
         </div>
 
         <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-          <span class="text-xs text-gray-500">Aussteller</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.aussteller') }}</span>
           <div class="text-white">{{ result.certificate.issuer }}</div>
         </div>
 
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Gültig ab</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.gueltigAb') }}</span>
           <div class="text-white">{{ formatDate(result.certificate.validFrom) }}</div>
         </div>
 
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Gültig bis</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.gueltigBis') }}</span>
           <div class="text-white">{{ formatDate(result.certificate.validTo) }}</div>
         </div>
 
@@ -189,18 +190,18 @@ const quickDomains = [
       </div>
 
       <div v-if="result.certificate?.isNotYetValid" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
-        Das Zertifikat ist noch nicht gültig!
+        {{ $t('toolbox.dasZertifikatIstNochNichtGueltig') }}
       </div>
 
       <div v-if="result.certificate?.daysUntilExpiry > 0 && result.certificate?.daysUntilExpiry < 30" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
-        Das Zertifikat läuft in weniger als 30 Tagen ab. Erneuerung empfohlen!
+        {{ $t('toolbox.dasZertifikatLaeuftInWenigerAls30') }}
       </div>
     </div>
 
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
       <p class="font-medium">Hinweis:</p>
-      <p>Dieser Check prüft das SSL/TLS-Zertifikat einer Domain auf Gültigkeit und zeigt Details wie Aussteller und Ablaufdatum an.</p>
+      <p>{{ $t('toolbox.dieserCheckPrueftDasSsltlszertifikatEinerDomain') }}</p>
     </div>
   </div>
 </template>

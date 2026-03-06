@@ -194,7 +194,7 @@ const predefinedColors = [
             v-model="searchQuery"
             type="text"
             class="w-full px-3 py-1.5 input text-sm"
-            placeholder="Tag suchen oder erstellen..."
+            :placeholder="$t('tags.searchOrCreate')"
             @keydown.enter="canCreateTag ? createAndSelectTag() : null"
           />
         </div>
@@ -209,9 +209,9 @@ const predefinedColors = [
             :disabled="isCreating"
           >
             <PlusIcon class="w-4 h-4" />
-            <span v-if="isCreating">Erstelle...</span>
+            <span v-if="isCreating">{{ $t('tags.creating') }}</span>
             <span v-else>
-              "{{ searchQuery }}" erstellen
+              {{ $t('tags.createTag', { name: searchQuery }) }}
             </span>
           </button>
 
@@ -236,7 +236,7 @@ const predefinedColors = [
             class="px-3 py-4 text-center text-sm text-gray-500"
           >
             <TagIcon class="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>Keine Tags gefunden</p>
+            <p>{{ $t('tags.noTagsFound') }}</p>
           </div>
         </div>
       </div>

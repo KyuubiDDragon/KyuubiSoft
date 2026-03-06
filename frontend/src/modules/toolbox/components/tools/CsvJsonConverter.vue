@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const mode = ref('csv-to-json')
 const input = ref('')
 const delimiter = ref(',')
@@ -162,7 +163,7 @@ Anna Schmidt,anna@example.com,28,true
 Paul Weber,paul@example.com,45,false`
   } else {
     input.value = `[
-  {"name": "Max Müller", "email": "max@example.com", "age": 32, "active": true},
+  {"name": t('toolbox.maxMueller'), "email": "max@example.com", "age": 32, "active": true},
   {"name": "Anna Schmidt", "email": "anna@example.com", "age": 28, "active": true},
   {"name": "Paul Weber", "email": "paul@example.com", "age": 45, "active": false}
 ]`
@@ -234,9 +235,9 @@ const inputPlaceholder = computed(() => {
         Erste Zeile ist Header
       </label>
       <div v-if="mode === 'csv-to-json'" class="flex items-center gap-2">
-        <label class="text-xs text-gray-400">JSON Einrückung:</label>
+        <label class="text-xs text-gray-400">{{ $t('toolbox.jsonEinrueckung') }}</label>
         <select v-model.number="jsonIndent" class="input py-1 px-2 w-16">
-          <option :value="0">Keine</option>
+          <option :value="0">{{ $t('common.none') }}</option>
           <option :value="2">2</option>
           <option :value="4">4</option>
         </select>
@@ -287,7 +288,7 @@ const inputPlaceholder = computed(() => {
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
       <p><strong>CSV → JSON:</strong> Wandelt CSV in ein Array von Objekten um. Zahlen und Booleans werden automatisch konvertiert.</p>
-      <p><strong>JSON → CSV:</strong> Erwartet ein Array von Objekten. Alle Keys werden als Spalten verwendet.</p>
+      <p><strong>JSON → CSV:</strong>{{ $t('toolbox.toolboxerwarteteinarrayvonobjektenallekeys') }}</p>
     </div>
   </div>
 </template>

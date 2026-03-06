@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTagsStore } from '@/stores/tags'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -15,6 +16,7 @@ import {
   CheckIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const tagsStore = useTagsStore()
 const uiStore = useUiStore()
 const toast = useToast()
@@ -55,20 +57,20 @@ const predefinedColors = [
   '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6'
 ]
 
-const typeLabels = {
-  list: 'Listen',
-  document: 'Dokumente',
-  snippet: 'Snippets',
-  bookmark: 'Lesezeichen',
-  connection: 'Verbindungen',
-  password: 'Passwörter',
-  checklist: 'Checklisten',
-  kanban_board: 'Kanban Boards',
-  kanban_card: 'Kanban Cards',
-  project: 'Projekte',
-  invoice: 'Rechnungen',
-  calendar_event: 'Kalender'
-}
+const typeLabels = computed(() => ({
+  list: t('tags.typeList'),
+  document: t('tags.typeDocument'),
+  snippet: t('tags.typeSnippet'),
+  bookmark: t('tags.typeBookmark'),
+  connection: t('tags.typeConnection'),
+  password: t('tags.typePassword'),
+  checklist: t('tags.typeChecklist'),
+  kanban_board: t('tags.typeKanbanBoard'),
+  kanban_card: t('tags.typeKanbanCard'),
+  project: t('tags.typeProject'),
+  invoice: t('tags.typeInvoice'),
+  calendar_event: t('tags.typeCalendar')
+}))
 
 onMounted(async () => {
   await tagsStore.loadTags()
@@ -76,17 +78,17 @@ onMounted(async () => {
 
 async function createTag() {
   if (!newTag.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('tags.nameRequired'))
     return
   }
 
   try {
     await tagsStore.createTag(newTag.value)
-    uiStore.showSuccess('Tag erstellt')
+    uiStore.showSuccess(t('tags.tagCreated'))
     newTag.value = { name: '', color: '#6366f1', description: '', icon: '' }
     isCreating.value = false
   } catch (e) {
-    uiStore.showError('Tag konnte nicht erstellt werden')
+    uiStore.showError(t('tags.errorCreating'))
   }
 }
 
@@ -102,16 +104,16 @@ function startEdit(tag) {
 
 async function saveEdit() {
   if (!editForm.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('tags.nameRequired'))
     return
   }
 
   try {
     await tagsStore.updateTag(editingTag.value, editForm.value)
-    uiStore.showSuccess('Tag aktualisiert')
+    uiStore.showSuccess(t('tags.tagUpdated'))
     editingTag.value = null
   } catch (e) {
-    uiStore.showError('Tag konnte nicht aktualisiert werden')
+    uiStore.showError(t('tags.errorUpdating'))
   }
 }
 
@@ -120,13 +122,13 @@ function cancelEdit() {
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen? Er wird von ${tag.usage_count || 0} Elementen entfernt.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('tags.confirmDelete', { name: tag.name, count: tag.usage_count || 0 }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await tagsStore.deleteTag(tag.id)
-    uiStore.showSuccess('Tag gelöscht')
+    uiStore.showSuccess(t('tags.tagDeleted'))
   } catch (e) {
-    uiStore.showError('Tag konnte nicht gelöscht werden')
+    uiStore.showError(t('tags.errorDeleting'))
   }
 }
 
@@ -141,11 +143,11 @@ function toggleMergeSelection(tagId) {
 
 async function performMerge() {
   if (selectedForMerge.value.length < 2) {
-    uiStore.showError('Mindestens 2 Tags zum Zusammenführen auswählen')
+    uiStore.showError(t('tags.mergeMinTwo'))
     return
   }
   if (!mergeTarget.value) {
-    uiStore.showError('Ziel-Tag auswählen')
+    uiStore.showError(t('tags.selectTarget'))
     return
   }
 
@@ -153,10 +155,10 @@ async function performMerge() {
 
   try {
     await tagsStore.mergeTags(sourceIds, mergeTarget.value)
-    uiStore.showSuccess('Tags zusammengeführt')
+    uiStore.showSuccess(t('tags.tagsMerged'))
     cancelMerge()
   } catch (e) {
-    uiStore.showError('Zusammenführung fehlgeschlagen')
+    uiStore.showError(t('tags.errorMerging'))
   }
 }
 
@@ -174,10 +176,10 @@ function cancelMerge() {
       <div>
         <h2 class="text-lg font-semibold text-white flex items-center gap-2">
           <TagIcon class="w-5 h-5 text-primary-400" />
-          Globale Tags
+          {{ $t('tags.globalTags') }}
         </h2>
         <p class="text-sm text-gray-400 mt-1">
-          Tags können auf verschiedene Module angewendet werden
+          {{ $t('tags.globalTagsDescription') }}
         </p>
       </div>
       <div class="flex gap-2">
@@ -188,42 +190,41 @@ function cancelMerge() {
           :disabled="tagsStore.tags.length < 2"
         >
           <ArrowsRightLeftIcon class="w-4 h-4" />
-          Zusammenführen
+          {{ $t('tags.merge') }}
         </button>
         <button
           v-if="mergeMode"
           @click="cancelMerge"
           class="btn-secondary text-sm"
         >
-          Abbrechen
+          {{ $t('common.cancel') }}
         </button>
         <button
           @click="isCreating = !isCreating"
           class="btn-primary text-sm"
         >
           <PlusIcon class="w-4 h-4" />
-          Neuer Tag
+          {{ $t('tags.newTag') }}
         </button>
       </div>
     </div>
 
     <!-- Merge Info Banner -->
     <div v-if="mergeMode" class="bg-yellow-500/[0.06] border border-yellow-500/20 rounded-xl p-4">
-      <h3 class="text-yellow-400 font-medium mb-2">Tags zusammenführen</h3>
+      <h3 class="text-yellow-400 font-medium mb-2">{{ $t('tags.mergeTags') }}</h3>
       <p class="text-sm text-gray-400 mb-3">
-        Wähle die Tags aus, die zusammengeführt werden sollen, und bestimme dann den Ziel-Tag.
-        Alle Elemente werden auf den Ziel-Tag übertragen, die anderen Tags werden gelöscht.
+        {{ $t('tags.mergeDescription') }}
       </p>
       <div class="flex items-center gap-4">
         <span class="text-sm text-gray-300">
-          {{ selectedForMerge.length }} ausgewählt
+          {{ selectedForMerge.length }} {{ $t('tags.selected') }}
         </span>
         <select
           v-model="mergeTarget"
           class="input text-sm py-1"
           :disabled="selectedForMerge.length < 2"
         >
-          <option :value="null">Ziel-Tag wählen...</option>
+          <option :value="null">{{ $t('tags.selectTargetTag') }}</option>
           <option
             v-for="tagId in selectedForMerge"
             :key="tagId"
@@ -237,26 +238,26 @@ function cancelMerge() {
           class="btn-primary text-sm"
           :disabled="selectedForMerge.length < 2 || !mergeTarget"
         >
-          Zusammenführen
+          {{ $t('tags.merge') }}
         </button>
       </div>
     </div>
 
     <!-- Create Form -->
     <div v-if="isCreating" class="card p-4">
-      <h3 class="font-medium text-white mb-4">Neuen Tag erstellen</h3>
+      <h3 class="font-medium text-white mb-4">{{ $t('tags.createNewTag') }}</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="label">Name</label>
+          <label class="label">{{ $t('tags.labelName') }}</label>
           <input
             v-model="newTag.name"
             type="text"
             class="input"
-            placeholder="Tag-Name"
+            :placeholder="$t('tags.tagNamePlaceholder')"
           />
         </div>
         <div>
-          <label class="label">Farbe</label>
+          <label class="label">{{ $t('tags.labelColor') }}</label>
           <div class="flex gap-2">
             <button
               v-for="color in predefinedColors"
@@ -269,21 +270,21 @@ function cancelMerge() {
           </div>
         </div>
         <div class="md:col-span-2">
-          <label class="label">Beschreibung (optional)</label>
+          <label class="label">{{ $t('tags.labelDescriptionOptional') }}</label>
           <input
             v-model="newTag.description"
             type="text"
             class="input"
-            placeholder="Beschreibung"
+            :placeholder="$t('tags.descriptionPlaceholder')"
           />
         </div>
       </div>
       <div class="flex justify-end gap-2 mt-4">
         <button @click="isCreating = false" class="btn-secondary">
-          Abbrechen
+          {{ $t('common.cancel') }}
         </button>
         <button @click="createTag" class="btn-primary">
-          Erstellen
+          {{ $t('common.create') }}
         </button>
       </div>
     </div>
@@ -295,7 +296,7 @@ function cancelMerge() {
         v-model="searchQuery"
         type="text"
         class="input pl-10"
-        placeholder="Tags durchsuchen..."
+        :placeholder="$t('tags.searchPlaceholder')"
       />
     </div>
 
@@ -306,10 +307,10 @@ function cancelMerge() {
 
     <div v-else-if="filteredTags.length === 0" class="text-center py-12">
       <TagIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-      <p class="text-gray-400">Keine Tags gefunden</p>
+      <p class="text-gray-400">{{ $t('tags.noTagsFound') }}</p>
       <button @click="isCreating = true" class="mt-4 btn-primary">
         <PlusIcon class="w-4 h-4" />
-        Ersten Tag erstellen
+        {{ $t('tags.createFirst') }}
       </button>
     </div>
 
@@ -342,7 +343,7 @@ function cancelMerge() {
             <div class="flex items-center gap-2">
               <h4 class="font-medium text-white">{{ tag.name }}</h4>
               <span class="text-xs text-gray-500 bg-white/[0.06] px-2 py-0.5 rounded-full">
-                {{ tag.usage_count || 0 }} Verwendungen
+                {{ tag.usage_count || 0 }} {{ $t('tags.usages') }}
               </span>
             </div>
             <p v-if="tag.description" class="text-sm text-gray-400 mt-1">
@@ -381,7 +382,7 @@ function cancelMerge() {
         <div v-else class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="label">Name</label>
+              <label class="label">{{ $t('tags.labelName') }}</label>
               <input
                 v-model="editForm.name"
                 type="text"
@@ -389,7 +390,7 @@ function cancelMerge() {
               />
             </div>
             <div>
-              <label class="label">Farbe</label>
+              <label class="label">{{ $t('tags.labelColor') }}</label>
               <div class="flex gap-2">
                 <button
                   v-for="color in predefinedColors"
@@ -402,7 +403,7 @@ function cancelMerge() {
               </div>
             </div>
             <div class="md:col-span-2">
-              <label class="label">Beschreibung</label>
+              <label class="label">{{ $t('tags.labelDescription') }}</label>
               <input
                 v-model="editForm.description"
                 type="text"
@@ -413,11 +414,11 @@ function cancelMerge() {
           <div class="flex justify-end gap-2">
             <button @click="cancelEdit" class="btn-secondary">
               <XMarkIcon class="w-4 h-4" />
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button @click="saveEdit" class="btn-primary">
               <CheckIcon class="w-4 h-4" />
-              Speichern
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>

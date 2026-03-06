@@ -1,6 +1,10 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, watch } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const activeTab = ref('decode')
 
 // ==================== DECODER ====================
@@ -17,7 +21,7 @@ const decoded = computed(() => {
     const parts = token.value.trim().split('.')
 
     if (parts.length !== 3) {
-      decodeError.value = 'Ungültiges JWT Format (muss 3 Teile haben)'
+      decodeError.value = t('toolbox.ungueltigesJwtFormatMuss3TeileHaben')
       return null
     }
 
@@ -102,12 +106,12 @@ async function hmacSign(data, secret, algorithm) {
   const key = await crypto.subtle.importKey(
     'raw',
     keyData,
-    { name: 'HMAC', hash: hashAlgo },
+    { name: t('toolbox.hmac'), hash: hashAlgo },
     false,
     ['sign']
   )
 
-  const signature = await crypto.subtle.sign('HMAC', key, msgData)
+  const signature = await crypto.subtle.sign(t('toolbox.hmac'), key, msgData)
   const signatureArray = new Uint8Array(signature)
 
   // Convert to base64url
@@ -126,7 +130,7 @@ async function generateJwt() {
     try {
       header = JSON.parse(headerJson.value)
     } catch {
-      throw new Error('Header ist kein gültiges JSON')
+      throw new Error(t('toolbox.headerIstKeinGueltigesJson'))
     }
 
     // Parse and validate payload
@@ -134,7 +138,7 @@ async function generateJwt() {
     try {
       payload = JSON.parse(payloadJson.value)
     } catch {
-      throw new Error('Payload ist kein gültiges JSON')
+      throw new Error(t('toolbox.payloadIstKeinGueltigesJson'))
     }
 
     // Ensure header has alg
@@ -150,7 +154,7 @@ async function generateJwt() {
 
     // Sign
     if (!secret.value) {
-      throw new Error('Secret ist erforderlich für HMAC Algorithmen')
+      throw new Error(t('toolbox.secretIstErforderlichFuerHmacAlgorithmen'))
     }
 
     const signature = await hmacSign(signingInput, secret.value, algorithm.value)
@@ -249,7 +253,7 @@ function setPayloadTemplate(type) {
               Beispiel laden
             </button>
             <button @click="clearToken" class="text-xs text-gray-400 hover:text-white">
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -274,7 +278,7 @@ function setPayloadTemplate(type) {
             class="px-3 py-1 rounded-full text-sm font-medium"
             :class="isExpired ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'"
           >
-            {{ isExpired ? 'Abgelaufen' : 'Gültig' }}
+            {{ isExpired ? 'Abgelaufen' : $t('ssl.gueltig') }}
           </div>
           <div v-if="expirationDate" class="text-sm text-gray-400">
             Ablauf: {{ expirationDate }}
@@ -392,7 +396,7 @@ function setPayloadTemplate(type) {
       <!-- Info -->
       <div class="text-xs text-gray-500 space-y-1">
         <p><strong>Hinweis:</strong> JWTs werden nur mit HMAC-SHA Algorithmen im Browser signiert.</p>
-        <p>Für RS256/ES256 ist ein Backend erforderlich.</p>
+        <p>{{ $t('toolbox.fuerRs256es256IstEinBackendErforderlich') }}</p>
       </div>
     </div>
 

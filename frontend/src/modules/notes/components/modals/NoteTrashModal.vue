@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -18,6 +19,7 @@ const notesStore = useNotesStore()
 const uiStore = useUiStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 const trashedNotes = ref([])
 const isLoading = ref(true)
@@ -29,7 +31,7 @@ onMounted(async () => {
   try {
     trashedNotes.value = await notesStore.fetchTrash()
   } catch (error) {
-    uiStore.showError('Fehler beim Laden des Papierkorbs')
+    uiStore.showError(t('notesModule.errors.loadTrash'))
   } finally {
     isLoading.value = false
   }
@@ -40,41 +42,41 @@ async function restoreNote(note) {
   try {
     await notesStore.restoreNote(note.id)
     trashedNotes.value = trashedNotes.value.filter(n => n.id !== note.id)
-    uiStore.showSuccess('Notiz wiederhergestellt')
+    uiStore.showSuccess(t('notesModule.noteRestored'))
     emit('restore', note.id)
     emit('close')
   } catch (error) {
-    uiStore.showError('Fehler beim Wiederherstellen')
+    uiStore.showError(t('notesModule.errors.restore'))
   } finally {
     isRestoring.value = null
   }
 }
 
 async function permanentDelete(note) {
-  if (!await confirm({ message: `"${note.title}" endgültig löschen? Dies kann nicht rückgängig gemacht werden.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notes.confirmPermanentDelete', { title: note.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   isDeleting.value = true
   try {
     await notesStore.permanentDeleteNote(note.id)
     trashedNotes.value = trashedNotes.value.filter(n => n.id !== note.id)
-    uiStore.showSuccess('Notiz endgültig gelöscht')
+    uiStore.showSuccess(t('notesModule.notePermanentlyDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.errors.delete'))
   } finally {
     isDeleting.value = false
   }
 }
 
 async function emptyTrash() {
-  if (!await confirm({ message: `Papierkorb leeren? ${trashedNotes.value.length} Notizen werden endgültig gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notes.confirmEmptyTrash', { count: trashedNotes.value.length }), type: 'danger', confirmText: t('common.delete') })) return
 
   isEmptyingTrash.value = true
   try {
     await notesStore.emptyTrash()
     trashedNotes.value = []
-    uiStore.showSuccess('Papierkorb geleert')
+    uiStore.showSuccess(t('notesModule.trashEmptied'))
   } catch (error) {
-    uiStore.showError('Fehler beim Leeren des Papierkorbs')
+    uiStore.showError(t('notesModule.errors.emptyTrash'))
   } finally {
     isEmptyingTrash.value = false
   }
@@ -106,7 +108,7 @@ function formatDate(dateStr) {
       <div class="flex items-center justify-between px-6 py-4 border-b border-dark-600">
         <h2 class="text-lg font-semibold text-white flex items-center gap-2">
           <TrashIcon class="h-5 w-5 text-red-400" />
-          Papierkorb
+          {{ $t('notesModule.trash') }}
         </h2>
         <div class="flex items-center gap-2">
           <button
@@ -116,7 +118,7 @@ function formatDate(dateStr) {
             class="flex items-center gap-2 rounded-lg bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30 disabled:opacity-50"
           >
             <TrashIcon class="h-4 w-4" />
-            Leeren
+            {{ $t('notesModule.emptyTrash') }}
           </button>
           <button
             @click="$emit('close')"
@@ -132,14 +134,14 @@ function formatDate(dateStr) {
         <!-- Loading -->
         <div v-if="isLoading" class="p-8 text-center text-gray-500">
           <ArrowPathIcon class="h-8 w-8 mx-auto mb-2 animate-spin" />
-          <p>Laden...</p>
+          <p>{{ $t('common.loading') }}</p>
         </div>
 
         <!-- Empty state -->
         <div v-else-if="trashedNotes.length === 0" class="p-8 text-center text-gray-500">
           <TrashIcon class="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p class="text-lg mb-1">Papierkorb ist leer</p>
-          <p class="text-sm">Gelöschte Notizen erscheinen hier</p>
+          <p class="text-lg mb-1">{{ $t('notesModule.trashEmpty') }}</p>
+          <p class="text-sm">{{ $t('notesModule.deletedNotesAppearHere') }}</p>
         </div>
 
         <!-- Trashed notes list -->
@@ -159,7 +161,7 @@ function formatDate(dateStr) {
             <div class="flex-1 min-w-0">
               <h3 class="font-medium text-white truncate">{{ note.title }}</h3>
               <p class="text-xs text-gray-500">
-                Gelöscht am {{ formatDate(note.deleted_at) }}
+                {{ $t('notesModule.deletedAt') }} {{ formatDate(note.deleted_at) }}
               </p>
             </div>
 
@@ -171,13 +173,13 @@ function formatDate(dateStr) {
                 class="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700 disabled:opacity-50"
               >
                 <ArrowPathIcon :class="['h-4 w-4', isRestoring === note.id ? 'animate-spin' : '']" />
-                Wiederherstellen
+                {{ $t('notesModule.restore') }}
               </button>
               <button
                 @click="permanentDelete(note)"
                 :disabled="isDeleting"
                 class="flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30 disabled:opacity-50"
-                title="Endgültig löschen"
+                :title="$t('notesModule.deletePermanently')"
               >
                 <TrashIcon class="h-4 w-4" />
               </button>
@@ -189,7 +191,7 @@ function formatDate(dateStr) {
       <!-- Footer warning -->
       <div class="px-6 py-3 border-t border-dark-700 bg-dark-850 flex items-center gap-2 text-xs text-gray-500">
         <ExclamationTriangleIcon class="h-4 w-4 text-yellow-500" />
-        <span>Notizen im Papierkorb werden nach 30 Tagen automatisch gelöscht</span>
+        <span>{{ $t('notesModule.trashAutoDeleteWarning') }}</span>
       </div>
     </div>
   </div>

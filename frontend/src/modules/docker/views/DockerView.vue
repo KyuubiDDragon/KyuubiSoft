@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
@@ -41,6 +42,7 @@ import {
 
 const projectStore = useProjectStore()
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -153,7 +155,7 @@ async function loadHosts() {
       currentHostName.value = defaultHost.name
     } else {
       selectedHostId.value = null
-      currentHostName.value = 'Kein Host'
+      currentHostName.value = t('docker.noHost')
     }
   } catch (e) {
     console.error('Failed to load Docker hosts:', e)
@@ -166,7 +168,7 @@ async function selectHost(host) {
     currentHostName.value = host.name
   } else {
     selectedHostId.value = null
-    currentHostName.value = 'Lokal'
+    currentHostName.value = t('docker.local')
   }
   showHostDropdown.value = false
 
@@ -379,7 +381,7 @@ async function openComposeModal(stackName) {
     composeContent.value = data.content || ''
   } catch (e) {
     console.error('Failed to load compose file:', e)
-    error.value = 'Compose-Datei konnte nicht geladen werden'
+    error.value = t('dockerModule.composedateiKonnteNichtGeladenWerden')
   } finally {
     loadingCompose.value = false
   }
@@ -412,7 +414,7 @@ async function saveComposeFile() {
     toast.success('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
   } catch (e) {
     console.error('Failed to save compose file:', e)
-    error.value = 'Compose-Datei konnte nicht gespeichert werden'
+    error.value = t('dockerModule.composedateiKonnteNichtGespeichertWerden')
   } finally {
     savingCompose.value = false
   }
@@ -489,7 +491,7 @@ async function stackUp(stackName) {
 }
 
 async function stackDown(stackName) {
-  if (!await confirm({ message: `Stack "${stackName}" stoppen?`, type: 'danger', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: `Stack "${stackName}" stoppen?`, type: 'danger', confirmText: t('common.confirm') })) return
   try {
     await api.post(`/api/v1/docker/stacks/${stackName}/down`, null, { params: getHostParams() })
     await loadContainers()
@@ -508,7 +510,7 @@ async function stackRestart(stackName) {
 }
 
 async function stackPullAndRedeploy(stackName) {
-  if (!await confirm({ message: `Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`, type: 'danger', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: `Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`, type: 'danger', confirmText: t('common.confirm') })) return
   try {
     loading.value = true
     const response = await api.post(`/api/v1/docker/stacks/${stackName}/pull-redeploy`, null, { params: getHostParams() })
@@ -560,14 +562,14 @@ async function backupStack(stackName, sensitiveToken = null) {
       show2FAModal.value = true
       return
     }
-    error.value = e.response?.data?.message || 'Backup konnte nicht erstellt werden'
+    error.value = e.response?.data?.message || t('dockerModule.backupKonnteNichtErstelltWerden')
   }
 }
 
 // 2FA Verification for sensitive operations
 async function verify2FAAndRetry() {
   if (!twoFactorCode.value || twoFactorCode.value.length < 6) {
-    twoFactorError.value = 'Bitte gib einen gültigen 6-stelligen Code ein'
+    twoFactorError.value = t('settingsModule.bitteGibEinenGueltigen6stelligenCodeEin')
     return
   }
 
@@ -617,13 +619,13 @@ async function viewBackup(backup) {
     selectedBackup.value = response.data.data?.backup || null
     showBackupModal.value = true
   } catch (e) {
-    error.value = 'Backup konnte nicht geladen werden'
+    error.value = t('dockerModule.backupKonnteNichtGeladenWerden')
   }
 }
 
 async function restoreBackup(backup, deploy = false) {
   const action = deploy ? 'wiederherstellen und deployen' : 'nur wiederherstellen'
-  if (!await confirm({ message: `Backup "${backup.file}" ${action}?`, type: 'danger', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: `Backup "${backup.file}" ${action}?`, type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy, ...getHostParams() })
@@ -631,32 +633,32 @@ async function restoreBackup(backup, deploy = false) {
       await loadContainers()
     }
     showBackupModal.value = false
-    toast.success('Backup erfolgreich wiederhergestellt!')
+    toast.success(t('dockerModule.backupErfolgreichWiederhergestellt'))
   } catch (e) {
-    error.value = e.response?.data?.message || 'Backup konnte nicht wiederhergestellt werden'
+    error.value = e.response?.data?.message || t('dockerModule.backupKonnteNichtWiederhergestelltWerden')
   }
 }
 
 async function deleteBackup(backup) {
-  if (!await confirm({ message: `Backup "${backup.file}" wirklich löschen?`, type: 'danger', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: `Backup "${backup.file}" wirklich löschen?`, type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.delete(`/api/v1/docker/backups/${backup.file}`, { params: getHostParams() })
     await loadBackups()
     showBackupModal.value = false
   } catch (e) {
-    error.value = 'Backup konnte nicht gelöscht werden'
+    error.value = t('dockerModule.backupKonnteNichtGeloeschtWerden')
   }
 }
 
 async function removeContainer(container) {
-  if (!await confirm({ message: `Container "${container.name}" wirklich löschen?`, type: 'danger', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: `Container "${container.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.delete(`/api/v1/docker/containers/${container.id}`, { params: { force: 'true', ...getHostParams() } })
     await loadContainers()
   } catch (e) {
-    error.value = 'Container konnte nicht gelöscht werden'
+    error.value = t('dockerModule.containerKonnteNichtGeloeschtWerden')
   }
 }
 
@@ -986,7 +988,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               { id: 'images', label: 'Images', icon: ServerIcon },
               { id: 'networks', label: 'Netzwerke', icon: GlobeAltIcon },
               { id: 'volumes', label: 'Volumes', icon: CircleStackIcon },
-              { id: 'backups', label: 'Backups', icon: ArchiveBoxIcon },
+              { id: 'backups', label: $t('backups.backups'), icon: ArchiveBoxIcon },
             ]"
             :key="tab.id"
             @click="activeTab = tab.id"
@@ -1034,14 +1036,14 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <button
                   @click="backupStack(stack.name)"
                   class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
-                  title="Backup erstellen"
+                  title=$t('backups.createBackup')
                 >
                   <ArchiveBoxIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="openComposeModal(stack.name)"
                   class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
-                  title="Compose-Datei anzeigen"
+                  title=$t('dockerModule.composedateiAnzeigen')
                 >
                   <CodeBracketIcon class="w-4 h-4" />
                 </button>
@@ -1100,14 +1102,14 @@ watch(() => projectStore.selectedProjectId, async () => {
                   <div class="flex items-center gap-4">
                     <div class="text-right hidden sm:block">
                       <p class="text-sm text-gray-300">{{ container.status }}</p>
-                      <p class="text-xs text-gray-500">{{ container.ports || 'Keine Ports' }}</p>
+                      <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.keinePorts') }}</p>
                     </div>
                     <div class="flex items-center gap-2" @click.stop>
                       <button
                         v-if="container.state !== 'running'"
                         @click="startContainer(container)"
                         class="btn-icon text-green-400 hover:bg-green-500/20"
-                        title="Starten"
+                        title=$t('server.starten')
                       >
                         <PlayIcon class="w-4 h-4" />
                       </button>
@@ -1157,14 +1159,14 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <div class="flex items-center gap-4">
                   <div class="text-right hidden sm:block">
                     <p class="text-sm text-gray-300">{{ container.status }}</p>
-                    <p class="text-xs text-gray-500">{{ container.ports || 'Keine Ports' }}</p>
+                    <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.keinePorts') }}</p>
                   </div>
                   <div class="flex items-center gap-2" @click.stop>
                     <button
                       v-if="container.state !== 'running'"
                       @click="startContainer(container)"
                       class="btn-icon text-green-400 hover:bg-green-500/20"
-                      title="Starten"
+                      title=$t('server.starten')
                     >
                       <PlayIcon class="w-4 h-4" />
                     </button>

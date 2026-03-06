@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, watch, nextTick, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -36,6 +37,7 @@ import { useAIStore } from '@/stores/ai'
 import TagManager from '@/components/TagManager.vue'
 import pushNotifications from '@/core/services/pushNotifications'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const exportImportStore = useExportImportStore()
@@ -56,38 +58,38 @@ const isEnabling2FA = ref(false)
 const isDisabling2FA = ref(false)
 const disableCode = ref('')
 
-const allTabs = [
-  { id: 'profile', name: 'Profil', icon: UserIcon },
-  { id: 'security', name: 'Sicherheit', icon: ShieldCheckIcon },
-  { id: 'notifications', name: 'Benachrichtigungen', icon: BellIcon },
-  { id: 'api-keys', name: 'API-Keys', icon: KeyIcon, permission: 'apikeys.view' },
-  { id: 'ai', name: 'AI Assistent', icon: SparklesIcon, permission: 'ai.view' },
-  { id: 'tags', name: 'Tags', icon: TagIcon },
-  { id: 'invoices', name: 'Rechnungen', icon: CurrencyDollarIcon, permission: 'invoices.view' },
-  { id: 'export-import', name: 'Export/Import', icon: ArrowDownTrayIcon, permission: 'settings.edit' },
-  { id: 'appearance', name: 'Darstellung', icon: PaintBrushIcon },
-]
+const allTabs = computed(() => [
+  { id: 'profile', name: t('settings.profile'), icon: UserIcon },
+  { id: 'security', name: t('settings.security'), icon: ShieldCheckIcon },
+  { id: 'notifications', name: t('settings.notifications'), icon: BellIcon },
+  { id: 'api-keys', name: t('settings.apiKeys'), icon: KeyIcon, permission: 'apikeys.view' },
+  { id: 'ai', name: t('settingsModule.aiAssistant'), icon: SparklesIcon, permission: 'ai.view' },
+  { id: 'tags', name: t('settingsModule.tags'), icon: TagIcon },
+  { id: 'invoices', name: t('settingsModule.invoices'), icon: CurrencyDollarIcon, permission: 'invoices.view' },
+  { id: 'export-import', name: t('settings.exportImport'), icon: ArrowDownTrayIcon, permission: 'settings.edit' },
+  { id: 'appearance', name: t('settings.appearance'), icon: PaintBrushIcon },
+])
 
 const tabs = computed(() =>
-  allTabs.filter(tab => !tab.permission || authStore.hasPermission(tab.permission))
+  allTabs.value.filter(tab => !tab.permission || authStore.hasPermission(tab.permission))
 )
 
 // Export/Import state
 const exportTypes = ref([])
-const allExportTypes = [
-  { id: 'lists', name: 'Listen', icon: '📋' },
-  { id: 'documents', name: 'Dokumente', icon: '📄' },
-  { id: 'snippets', name: 'Snippets', icon: '💻' },
-  { id: 'bookmarks', name: 'Lesezeichen', icon: '🔖' },
-  { id: 'connections', name: 'Verbindungen', icon: '🔌' },
-  { id: 'passwords', name: 'Passwörter', icon: '🔐' },
-  { id: 'checklists', name: 'Checklisten', icon: '✅' },
-  { id: 'kanban', name: 'Kanban-Boards', icon: '📊' },
-  { id: 'projects', name: 'Projekte', icon: '📁' },
-  { id: 'invoices', name: 'Rechnungen', icon: '💰' },
-  { id: 'calendar', name: 'Kalender', icon: '📅' },
-  { id: 'time_entries', name: 'Zeiteinträge', icon: '⏱️' },
-]
+const allExportTypes = computed(() => [
+  { id: 'lists', name: t('settingsModule.exportLists'), icon: '📋' },
+  { id: 'documents', name: t('settingsModule.exportDocuments'), icon: '📄' },
+  { id: 'snippets', name: t('settingsModule.settingsexportsnippets'), icon: '💻' },
+  { id: 'bookmarks', name: t('settingsModule.exportBookmarks'), icon: '🔖' },
+  { id: 'connections', name: t('settingsModule.exportConnections'), icon: '🔌' },
+  { id: 'passwords', name: t('settingsModule.exportPasswords'), icon: '🔐' },
+  { id: 'checklists', name: t('settingsModule.exportChecklists'), icon: '✅' },
+  { id: 'kanban', name: t('settingsModule.exportKanban'), icon: '📊' },
+  { id: 'projects', name: t('settingsModule.exportProjects'), icon: '📁' },
+  { id: 'invoices', name: t('settingsModule.invoices'), icon: '💰' },
+  { id: 'calendar', name: t('settingsModule.exportCalendar'), icon: '📅' },
+  { id: 'time_entries', name: t('settingsModule.exportTimeEntries'), icon: '⏱️' },
+])
 const exportFormat = ref('json')
 const importFile = ref(null)
 const importData = ref(null)
@@ -104,7 +106,7 @@ function toggleExportType(typeId) {
 }
 
 function selectAllExportTypes() {
-  exportTypes.value = allExportTypes.map(t => t.id)
+  exportTypes.value = allExportTypes.value.map(tp => tp.id)
 }
 
 function deselectAllExportTypes() {
@@ -113,14 +115,14 @@ function deselectAllExportTypes() {
 
 async function handleExport() {
   if (exportTypes.value.length === 0) {
-    uiStore.showError('Bitte wähle mindestens einen Datentyp')
+    uiStore.showError(t('settingsModule.selectAtLeastOneType'))
     return
   }
   try {
     await exportImportStore.exportData(exportTypes.value, exportFormat.value)
-    uiStore.showSuccess('Export erfolgreich!')
+    uiStore.showSuccess(t('settingsModule.exportSuccess'))
   } catch (error) {
-    uiStore.showError('Export fehlgeschlagen')
+    uiStore.showError(t('settingsModule.exportFailed'))
   }
 }
 
@@ -138,7 +140,7 @@ function handleFileSelect(event) {
         selectedImportTypes.value = validation.types
       }
     } catch (error) {
-      uiStore.showError('Ungültige Datei')
+      uiStore.showError(t('settingsModule.invalidFile'))
       importData.value = null
     }
   }
@@ -147,11 +149,11 @@ function handleFileSelect(event) {
 
 async function handleImport() {
   if (!importData.value) {
-    uiStore.showError('Keine Datei ausgewählt')
+    uiStore.showError(t('settingsModule.noFileSelected'))
     return
   }
   if (selectedImportTypes.value.length === 0) {
-    uiStore.showError('Bitte wähle mindestens einen Datentyp')
+    uiStore.showError(t('settingsModule.selectAtLeastOneType'))
     return
   }
 
@@ -161,12 +163,12 @@ async function handleImport() {
       types: selectedImportTypes.value,
     })
     if (result.success) {
-      uiStore.showSuccess('Import erfolgreich!')
+      uiStore.showSuccess(t('settingsModule.importSuccess'))
     } else {
-      uiStore.showError('Import teilweise fehlgeschlagen')
+      uiStore.showError(t('settingsModule.importPartiallyFailed'))
     }
   } catch (error) {
-    uiStore.showError('Import fehlgeschlagen')
+    uiStore.showError(t('settingsModule.importFailed'))
   }
 }
 
@@ -197,7 +199,7 @@ async function loadApiKeys() {
     apiKeys.value = response.data.data.items || []
     availableScopes.value = response.data.data.available_scopes || {}
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der API-Keys')
+    uiStore.showError(t('settingsModule.apiKeyLoadError'))
   } finally {
     isLoadingApiKeys.value = false
   }
@@ -205,11 +207,11 @@ async function loadApiKeys() {
 
 async function createApiKey() {
   if (!newKeyForm.name) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('settingsModule.nameRequired'))
     return
   }
   if (newKeyForm.scopes.length === 0) {
-    uiStore.showError('Mindestens ein Scope ist erforderlich')
+    uiStore.showError(t('settingsModule.scopeRequired'))
     return
   }
 
@@ -228,9 +230,9 @@ async function createApiKey() {
     newKeyForm.expires_in_days = 0
     // Reload list
     await loadApiKeys()
-    uiStore.showSuccess('API-Key erstellt!')
+    uiStore.showSuccess(t('settingsModule.apiKeyCreated'))
   } catch (error) {
-    const message = error.response?.data?.error || 'Fehler beim Erstellen'
+    const message = error.response?.data?.error || t('settingsModule.createError')
     uiStore.showError(message)
   } finally {
     isCreatingApiKey.value = false
@@ -238,32 +240,32 @@ async function createApiKey() {
 }
 
 async function revokeApiKey(keyId) {
-  if (!await confirm({ message: 'API-Key wirklich widerrufen?', type: 'danger', confirmText: 'Widerrufen' })) return
+  if (!await confirm({ message: t('settingsModule.revokeApiKeyConfirm'), type: 'danger', confirmText: t('settingsModule.revoke') })) return
 
   try {
     await api.post(`/api/v1/settings/api-keys/${keyId}/revoke`)
     await loadApiKeys()
-    uiStore.showSuccess('API-Key widerrufen')
+    uiStore.showSuccess(t('settingsModule.apiKeyRevoked'))
   } catch (error) {
-    uiStore.showError('Fehler beim Widerrufen')
+    uiStore.showError(t('settingsModule.revokeError'))
   }
 }
 
 async function deleteApiKey(keyId) {
-  if (!await confirm({ message: 'API-Key endgültig löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('settingsModule.deleteApiKeyConfirm'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/settings/api-keys/${keyId}`)
     await loadApiKeys()
-    uiStore.showSuccess('API-Key gelöscht')
+    uiStore.showSuccess(t('settingsModule.apiKeyDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('settingsModule.deleteError'))
   }
 }
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text)
-  uiStore.showSuccess('In Zwischenablage kopiert!')
+  uiStore.showSuccess(t('settingsModule.copiedToClipboard'))
 }
 
 function toggleScope(scope) {
@@ -299,7 +301,7 @@ const invoiceSettings = reactive({
   invoice_vat_id: '',
   invoice_bank_details: '',
   invoice_logo_file_id: null,
-  invoice_default_payment_terms: 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
+  invoice_default_payment_terms: t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum'),
   invoice_number_prefix: 'RE',
   kleinunternehmer_mode: false,
   default_hourly_rate: 50,
@@ -333,7 +335,7 @@ async function loadInvoiceSettings() {
     invoiceSettings.invoice_vat_id = s.invoice_vat_id ?? ''
     invoiceSettings.invoice_bank_details = s.invoice_bank_details ?? ''
     invoiceSettings.invoice_logo_file_id = s.invoice_logo_file_id ?? null
-    invoiceSettings.invoice_default_payment_terms = s.invoice_default_payment_terms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.'
+    invoiceSettings.invoice_default_payment_terms = s.invoice_default_payment_terms ?? t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum')
     invoiceSettings.invoice_number_prefix = s.invoice_number_prefix ?? 'RE'
     invoiceSettings.kleinunternehmer_mode = s.kleinunternehmer_mode ?? false
     invoiceSettings.default_hourly_rate = parseFloat(s.default_hourly_rate ?? 50)
@@ -343,7 +345,7 @@ async function loadInvoiceSettings() {
     }
   } catch (e) {
     console.warn('Invoice settings load failed:', e)
-    toast.warning('Rechnungseinstellungen konnten nicht geladen werden')
+    toast.warning(t('settingsModule.invoiceSettingsLoadError'))
   }
 }
 
@@ -394,9 +396,9 @@ async function saveInvoiceSettings() {
       kleinunternehmer_mode: invoiceSettings.kleinunternehmer_mode,
       default_hourly_rate: parseFloat(invoiceSettings.default_hourly_rate) || 50,
     })
-    toast.success('Rechnungseinstellungen gespeichert')
+    toast.success(t('settingsModule.invoiceSettingsSaved'))
   } catch (e) {
-    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Fehler'))
+    toast.error(t('settingsModule.saveFailed') + ': ' + (e?.response?.data?.message ?? e?.message ?? t('common.error')))
   } finally {
     invoiceSettingsSaving.value = false
   }
@@ -414,7 +416,7 @@ const catalogForm = reactive({
   unit: 'Stunde',
   unit_price: 0,
 })
-const catalogUnits = ['Stunde', 'Stück', 'Pauschal', 'Tag', 'Monat', 'km']
+const catalogUnits = ['Stunde', t('invoicesModule.stueck'), 'Pauschal', 'Tag', 'Monat', 'km']
 
 async function loadServiceCatalog() {
   catalogLoading.value = true
@@ -422,7 +424,7 @@ async function loadServiceCatalog() {
     const response = await api.get('/api/v1/service-catalog')
     serviceCatalog.value = response.data.data?.items ?? []
   } catch (e) {
-    toast.warning('Leistungskatalog konnte nicht geladen werden')
+    toast.warning(t('settingsModule.serviceCatalogLoadError'))
   } finally {
     catalogLoading.value = false
   }
@@ -453,7 +455,7 @@ function cancelCatalogForm() {
 
 async function saveCatalogItem() {
   if (!catalogForm.name.trim()) {
-    toast.warning('Name ist erforderlich')
+    toast.warning(t('settingsModule.nameRequired'))
     return
   }
   const payload = {
@@ -465,27 +467,27 @@ async function saveCatalogItem() {
   try {
     if (editingCatalogItem.value) {
       await api.put(`/api/v1/service-catalog/${editingCatalogItem.value.id}`, payload)
-      toast.success('Leistung aktualisiert')
+      toast.success(t('settingsModule.serviceUpdated'))
     } else {
       await api.post('/api/v1/service-catalog', payload)
-      toast.success('Leistung hinzugefügt')
+      toast.success(t('settingsModule.serviceAdded'))
     }
     showCatalogForm.value = false
     editingCatalogItem.value = null
     await loadServiceCatalog()
   } catch (e) {
-    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.error ?? e?.message ?? 'Fehler'))
+    toast.error(t('settingsModule.saveFailed') + ': ' + (e?.response?.data?.error ?? e?.message ?? t('common.error')))
   }
 }
 
 async function deleteCatalogItem(item) {
-  if (!await confirm({ message: `Leistung „${item.name}" löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('settings.deleteServiceConfirm', { name: item.name }), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/service-catalog/${item.id}`)
-    toast.success('Leistung gelöscht')
+    toast.success(t('settingsModule.serviceDeleted'))
     await loadServiceCatalog()
   } catch (e) {
-    toast.error('Löschen fehlgeschlagen')
+    toast.error(t('settingsModule.deleteFailed'))
   }
 }
 
@@ -568,21 +570,21 @@ async function saveAiSettings() {
       tools_enabled: aiForm.tools_enabled,
     })
     aiForm.api_key = '' // Clear after save
-    uiStore.showSuccess('AI-Einstellungen gespeichert!')
+    uiStore.showSuccess(t('settingsModule.aiSettingsSaved'))
   } catch (error) {
-    uiStore.showError(error.message || 'Fehler beim Speichern')
+    uiStore.showError(error.message || t('settingsModule.saveError'))
   } finally {
     isSavingAi.value = false
   }
 }
 
 async function removeAiApiKey() {
-  if (!await confirm({ message: 'API-Key wirklich entfernen?', type: 'danger', confirmText: 'Entfernen' })) return
+  if (!await confirm({ message: t('settingsModule.removeApiKeyConfirm'), type: 'danger', confirmText: t('settingsModule.remove') })) return
   try {
     await aiStore.removeApiKey()
-    uiStore.showSuccess('API-Key entfernt')
+    uiStore.showSuccess(t('settingsModule.apiKeyRemoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('settingsModule.removeError'))
   }
 }
 
@@ -641,9 +643,9 @@ async function saveProfile() {
     if (response.data.data) {
       authStore.user = { ...authStore.user, ...response.data.data }
     }
-    uiStore.showSuccess('Profil gespeichert!')
+    uiStore.showSuccess(t('settingsModule.profileSaved'))
   } catch (error) {
-    const message = error.response?.data?.error || 'Fehler beim Speichern'
+    const message = error.response?.data?.error || t('settingsModule.saveError')
     uiStore.showError(message)
   } finally {
     isSaving.value = false
@@ -654,12 +656,12 @@ async function changePassword() {
   if (isChangingPassword.value) return
 
   if (security.newPassword !== security.confirmPassword) {
-    uiStore.showError('Passwörter stimmen nicht überein')
+    uiStore.showError(t('authModule.passwordsDoNotMatch'))
     return
   }
 
   if (security.newPassword.length < 8) {
-    uiStore.showError('Passwort muss mindestens 8 Zeichen lang sein')
+    uiStore.showError(t('settingsModule.passwordMinLength'))
     return
   }
 
@@ -671,12 +673,12 @@ async function changePassword() {
       new_password: security.newPassword,
       confirm_password: security.confirmPassword
     })
-    uiStore.showSuccess('Passwort geändert!')
+    uiStore.showSuccess(t('settingsModule.passwordChanged'))
     security.currentPassword = ''
     security.newPassword = ''
     security.confirmPassword = ''
   } catch (error) {
-    const message = error.response?.data?.error || 'Fehler beim Ändern des Passworts'
+    const message = error.response?.data?.error || t('settingsModule.passwordChangeError')
     uiStore.showError(message)
   } finally {
     isChangingPassword.value = false
@@ -701,7 +703,7 @@ async function startEnable2FA() {
       })
     }
   } catch (error) {
-    const message = error.response?.data?.error || 'Fehler beim Aktivieren von 2FA'
+    const message = error.response?.data?.error || t('settingsModule.twoFactorEnableError')
     uiStore.showError(message)
     isEnabling2FA.value = false
   }
@@ -709,7 +711,7 @@ async function startEnable2FA() {
 
 async function verify2FA() {
   if (!verificationCode.value || verificationCode.value.length !== 6) {
-    uiStore.showError('Bitte gib einen gültigen 6-stelligen Code ein')
+    uiStore.showError(t('settingsModule.enterValid6DigitCode'))
     return
   }
 
@@ -726,9 +728,9 @@ async function verify2FA() {
     qrCodeDataUrl.value = ''
     verificationCode.value = ''
     isEnabling2FA.value = false
-    uiStore.showSuccess('2FA erfolgreich aktiviert!')
+    uiStore.showSuccess(t('settingsModule.twoFactorEnabled'))
   } catch (error) {
-    const message = error.response?.data?.error || 'Ungültiger Code'
+    const message = error.response?.data?.error || t('settingsModule.invalidCode')
     uiStore.showError(message)
   }
 }
@@ -742,7 +744,7 @@ function cancelEnable2FA() {
 
 async function disable2FA() {
   if (!disableCode.value || disableCode.value.length !== 6) {
-    uiStore.showError('Bitte gib deinen aktuellen 2FA-Code ein')
+    uiStore.showError(t('settingsModule.enterCurrent2FACode'))
     return
   }
 
@@ -753,9 +755,9 @@ async function disable2FA() {
     twoFactorEnabled.value = false
     disableCode.value = ''
     isDisabling2FA.value = false
-    uiStore.showSuccess('2FA deaktiviert')
+    uiStore.showSuccess(t('settingsModule.twoFactorDisabled'))
   } catch (error) {
-    const message = error.response?.data?.error || 'Ungültiger Code'
+    const message = error.response?.data?.error || t('settingsModule.invalidCode')
     uiStore.showError(message)
   }
 }
@@ -786,12 +788,12 @@ async function enablePushNotifications() {
     isSubscribed.value = true
     pushPermission.value = 'granted'
     pushSubscriptions.value = await pushNotifications.getSubscriptions()
-    uiStore.showSuccess('Push-Benachrichtigungen aktiviert!')
+    uiStore.showSuccess(t('settingsModule.pushEnabled'))
   } catch (error) {
     if (error.message?.includes('denied')) {
-      uiStore.showError('Benachrichtigungen wurden im Browser blockiert')
+      uiStore.showError(t('settingsModule.notificationsBlocked'))
     } else {
-      uiStore.showError('Fehler beim Aktivieren der Push-Benachrichtigungen')
+      uiStore.showError(t('settingsModule.pushEnableError'))
     }
   }
 }
@@ -801,18 +803,18 @@ async function disablePushNotifications() {
     await pushNotifications.unsubscribe()
     isSubscribed.value = false
     pushSubscriptions.value = await pushNotifications.getSubscriptions()
-    uiStore.showSuccess('Push-Benachrichtigungen deaktiviert')
+    uiStore.showSuccess(t('settingsModule.pushDisabled'))
   } catch (error) {
-    uiStore.showError('Fehler beim Deaktivieren')
+    uiStore.showError(t('settingsModule.pushDisableError'))
   }
 }
 
 async function savePushPreferences() {
   try {
     await pushNotifications.updatePreferences(pushPreferences)
-    uiStore.showSuccess('Einstellungen gespeichert!')
+    uiStore.showSuccess(t('settingsModule.settingsSaved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('settingsModule.saveError'))
   }
 }
 
@@ -820,9 +822,9 @@ async function sendTestNotification() {
   isSendingTest.value = true
   try {
     await pushNotifications.sendTest()
-    uiStore.showSuccess('Test-Benachrichtigung gesendet!')
+    uiStore.showSuccess(t('settingsModule.testNotificationSent'))
   } catch (error) {
-    uiStore.showError('Fehler beim Senden der Test-Benachrichtigung')
+    uiStore.showError(t('settingsModule.testNotificationError'))
   } finally {
     isSendingTest.value = false
   }
@@ -870,9 +872,9 @@ async function saveAllExternalChannels() {
       saveExternalChannel('gotify', gotifyCfg, gotifyEnabled),
       saveExternalChannel('healthchecks', hcCfg, hcEnabled),
     ])
-    uiStore.showSuccess('Externe Kanäle gespeichert!')
+    uiStore.showSuccess(t('settingsModule.externalChannelsSaved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('settingsModule.saveError'))
   } finally {
     isSavingExternalChannels.value = false
   }
@@ -888,8 +890,8 @@ watch(activeTab, (tab) => {
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-bold text-white">Einstellungen</h1>
-      <p class="text-gray-400 mt-1">Verwalte dein Konto und deine Präferenzen</p>
+      <h1 class="text-2xl font-bold text-white">{{ $t('settings.title') }}</h1>
+      <p class="text-gray-400 mt-1">{{ $t('settingsModule.manageAccountPreferences') }}</p>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
@@ -917,11 +919,11 @@ watch(activeTab, (tab) => {
       <div class="flex-1">
         <!-- Profile -->
         <div v-if="activeTab === 'profile'" class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-6">Profil</h2>
+          <h2 class="text-lg font-semibold text-white mb-6">{{ $t('settings.profile') }}</h2>
 
           <div class="space-y-4">
             <div>
-              <label class="label">Benutzername</label>
+              <label class="label">{{ $t('auth.username') }}</label>
               <input
                 v-model="profile.username"
                 type="text"
@@ -930,14 +932,14 @@ watch(activeTab, (tab) => {
             </div>
 
             <div>
-              <label class="label">E-Mail</label>
+              <label class="label">{{ $t('auth.email') }}</label>
               <input
                 v-model="profile.email"
                 type="email"
                 class="input bg-white/[0.03]"
                 disabled
               />
-              <p class="mt-1 text-xs text-gray-500">E-Mail kann nicht geändert werden</p>
+              <p class="mt-1 text-xs text-gray-500">{{ $t('settingsModule.emailCannotBeChanged') }}</p>
             </div>
 
             <button
@@ -950,9 +952,9 @@ watch(activeTab, (tab) => {
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Speichern...
+                {{ $t('common.saving') }}
               </span>
-              <span v-else>Speichern</span>
+              <span v-else>{{ $t('common.save') }}</span>
             </button>
           </div>
         </div>
@@ -960,11 +962,11 @@ watch(activeTab, (tab) => {
         <!-- Security -->
         <div v-if="activeTab === 'security'" class="space-y-6">
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-6">Passwort ändern</h2>
+            <h2 class="text-lg font-semibold text-white mb-6">{{ $t('settingsModule.changePassword') }}</h2>
 
             <div class="space-y-4">
               <div>
-                <label class="label">Aktuelles Passwort</label>
+                <label class="label">{{ $t('settingsModule.currentPassword') }}</label>
                 <input
                   v-model="security.currentPassword"
                   type="password"
@@ -974,7 +976,7 @@ watch(activeTab, (tab) => {
               </div>
 
               <div>
-                <label class="label">Neues Passwort</label>
+                <label class="label">{{ $t('settingsModule.newPassword') }}</label>
                 <input
                   v-model="security.newPassword"
                   type="password"
@@ -984,7 +986,7 @@ watch(activeTab, (tab) => {
               </div>
 
               <div>
-                <label class="label">Passwort bestätigen</label>
+                <label class="label">{{ $t('auth.confirmPassword') }}</label>
                 <input
                   v-model="security.confirmPassword"
                   type="password"
@@ -1003,9 +1005,9 @@ watch(activeTab, (tab) => {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Ändern...
+                  {{ $t('settingsModule.changing') }}
                 </span>
-                <span v-else>Passwort ändern</span>
+                <span v-else>{{ $t('settingsModule.changePassword') }}</span>
               </button>
             </div>
           </div>
@@ -1014,24 +1016,24 @@ watch(activeTab, (tab) => {
           <div class="card p-6">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h2 class="text-lg font-semibold text-white">Zwei-Faktor-Authentifizierung</h2>
+                <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.twoFactorAuth') }}</h2>
                 <p class="text-gray-400 text-sm mt-1">
-                  Erhöhe die Sicherheit deines Kontos durch 2FA.
+                  {{ $t('settingsModule.twoFactorDescription') }}
                 </p>
               </div>
               <div v-if="twoFactorEnabled" class="flex items-center gap-2 text-green-400">
                 <CheckCircleIcon class="w-5 h-5" />
-                <span class="text-sm font-medium">Aktiv</span>
+                <span class="text-sm font-medium">{{ $t('common.active') }}</span>
               </div>
               <div v-else class="flex items-center gap-2 text-gray-500">
                 <XCircleIcon class="w-5 h-5" />
-                <span class="text-sm">Inaktiv</span>
+                <span class="text-sm">{{ $t('common.inactive') }}</span>
               </div>
             </div>
 
             <!-- 2FA Setup Flow -->
             <div v-if="twoFactorSetup" class="space-y-4 border-t border-white/[0.06] pt-4">
-              <p class="text-gray-300">Scanne den QR-Code mit deiner Authenticator-App:</p>
+              <p class="text-gray-300">{{ $t('settingsModule.scanQrCode') }}</p>
 
               <div class="bg-white p-4 rounded-lg inline-block">
                 <img v-if="qrCodeDataUrl" :src="qrCodeDataUrl" alt="2FA QR Code" class="w-48 h-48" />
@@ -1044,12 +1046,12 @@ watch(activeTab, (tab) => {
               </div>
 
               <div class="bg-white/[0.03] rounded-lg p-4">
-                <p class="text-sm text-gray-400 mb-2">Manueller Schlüssel:</p>
+                <p class="text-sm text-gray-400 mb-2">{{ $t('settingsModule.manualKey') }}</p>
                 <code class="text-primary-400 text-sm break-all">{{ twoFactorSetup.secret }}</code>
               </div>
 
               <div>
-                <label class="label">Bestätigungscode</label>
+                <label class="label">{{ $t('settingsModule.verificationCode') }}</label>
                 <input
                   v-model="verificationCode"
                   type="text"
@@ -1066,17 +1068,17 @@ watch(activeTab, (tab) => {
                   Abbrechen
                 </button>
                 <button @click="verify2FA" class="btn-primary">
-                  Verifizieren & Aktivieren
+                  {{ $t('settingsModule.verifyAndActivate') }}
                 </button>
               </div>
             </div>
 
             <!-- 2FA Disable Flow -->
             <div v-else-if="isDisabling2FA" class="space-y-4 border-t border-white/[0.06] pt-4">
-              <p class="text-gray-300">Gib deinen aktuellen 2FA-Code ein, um 2FA zu deaktivieren:</p>
+              <p class="text-gray-300">{{ $t('settingsModule.enter2FAToDisable') }}</p>
 
               <div>
-                <label class="label">2FA-Code</label>
+                <label class="label">{{ $t('settingsModule.twoFactorCode') }}</label>
                 <input
                   v-model="disableCode"
                   type="text"
@@ -1093,7 +1095,7 @@ watch(activeTab, (tab) => {
                   Abbrechen
                 </button>
                 <button @click="disable2FA" class="btn-primary bg-red-600 hover:bg-red-700">
-                  2FA Deaktivieren
+                  {{ $t('settingsModule.disable2FA') }}
                 </button>
               </div>
             </div>
@@ -1106,8 +1108,8 @@ watch(activeTab, (tab) => {
                 :disabled="isEnabling2FA"
                 class="btn-primary"
               >
-                <span v-if="isEnabling2FA">Laden...</span>
-                <span v-else>2FA aktivieren</span>
+                <span v-if="isEnabling2FA">{{ $t('common.loading') }}</span>
+                <span v-else>{{ $t('settingsModule.enable2FA') }}</span>
               </button>
               <button
                 v-else
@@ -1127,8 +1129,8 @@ watch(activeTab, (tab) => {
             <div class="flex items-center gap-3 mb-6">
               <BellIcon class="w-6 h-6 text-primary-400" />
               <div>
-                <h2 class="text-lg font-semibold text-white">Push-Benachrichtigungen</h2>
-                <p class="text-sm text-gray-400">Erhalte Benachrichtigungen direkt im Browser</p>
+                <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.pushNotifications') }}</h2>
+                <p class="text-sm text-gray-400">{{ $t('settingsModule.receiveBrowserNotifications') }}</p>
               </div>
             </div>
 
@@ -1143,13 +1145,13 @@ watch(activeTab, (tab) => {
             <div v-else>
               <!-- Not Supported Warning -->
               <div v-if="!pushSupported" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
-                <p class="text-yellow-300">Push-Benachrichtigungen werden in diesem Browser nicht unterstützt.</p>
+                <p class="text-yellow-300">{{ $t('settingsModule.pushNotSupported') }}</p>
               </div>
 
               <!-- Permission Denied Warning -->
               <div v-else-if="pushPermission === 'denied'" class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-                <p class="text-red-300">Benachrichtigungen wurden im Browser blockiert.</p>
-                <p class="text-sm text-gray-400 mt-2">Bitte aktiviere Benachrichtigungen in deinen Browser-Einstellungen.</p>
+                <p class="text-red-300">{{ $t('settingsModule.notificationsBlockedInBrowser') }}</p>
+                <p class="text-sm text-gray-400 mt-2">{{ $t('settingsModule.enableInBrowserSettings') }}</p>
               </div>
 
               <!-- Status & Toggle -->
@@ -1159,7 +1161,7 @@ watch(activeTab, (tab) => {
                     <div v-if="isSubscribed" class="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
                     <div v-else class="w-3 h-3 rounded-full bg-gray-500" />
                     <span class="text-white">
-                      {{ isSubscribed ? 'Push-Benachrichtigungen aktiv' : 'Push-Benachrichtigungen inaktiv' }}
+                      {{ isSubscribed ? $t('settingsModule.pushActive') : $t('settingsModule.pushInactive') }}
                     </span>
                   </div>
                   <button
@@ -1186,14 +1188,14 @@ watch(activeTab, (tab) => {
                   class="mt-4 btn-secondary flex items-center gap-2"
                 >
                   <BellIcon class="w-4 h-4" />
-                  <span v-if="isSendingTest">Sende...</span>
-                  <span v-else>Test-Benachrichtigung senden</span>
+                  <span v-if="isSendingTest">{{ $t('settingsModule.sending') }}</span>
+                  <span v-else>{{ $t('settingsModule.sendTestNotification') }}</span>
                 </button>
               </div>
 
               <!-- Active Subscriptions -->
               <div v-if="pushSubscriptions.length > 0" class="mb-6">
-                <h3 class="text-sm font-medium text-gray-400 mb-3">Aktive Geräte ({{ pushSubscriptions.length }})</h3>
+                <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('settings.activeDevices', { count: pushSubscriptions.length }) }}</h3>
                 <div class="space-y-2">
                   <div
                     v-for="sub in pushSubscriptions"
@@ -1201,8 +1203,8 @@ watch(activeTab, (tab) => {
                     class="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg text-sm"
                   >
                     <div>
-                      <p class="text-white">{{ sub.device_name || 'Unbekanntes Gerät' }}</p>
-                      <p class="text-xs text-gray-500">Zuletzt aktiv: {{ sub.last_used_at ? formatDate(sub.last_used_at) : 'Nie' }}</p>
+                      <p class="text-white">{{ sub.device_name || $t('settingsModule.unknownDevice') }}</p>
+                      <p class="text-xs text-gray-500">{{ $t('settingsModule.lastActive') }}: {{ sub.last_used_at ? formatDate(sub.last_used_at) : $t('common.never') }}</p>
                     </div>
                   </div>
                 </div>
@@ -1212,14 +1214,14 @@ watch(activeTab, (tab) => {
 
           <!-- Notification Preferences -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-6">Benachrichtigungs-Einstellungen</h2>
+            <h2 class="text-lg font-semibold text-white mb-6">{{ $t('settingsModule.notificationSettings') }}</h2>
 
             <!-- Global Settings -->
             <div class="space-y-4 mb-6">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-white font-medium">Push-Benachrichtigungen</p>
-                  <p class="text-gray-400 text-sm">Browser-Benachrichtigungen aktivieren</p>
+                  <p class="text-white font-medium">{{ $t('settingsModule.pushNotifications') }}</p>
+                  <p class="text-gray-400 text-sm">{{ $t('settingsModule.enableBrowserNotifications') }}</p>
                 </div>
                 <button
                   @click="pushPreferences.push_enabled = !pushPreferences.push_enabled"
@@ -1235,8 +1237,8 @@ watch(activeTab, (tab) => {
 
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-white font-medium">E-Mail-Benachrichtigungen</p>
-                  <p class="text-gray-400 text-sm">Wichtige Updates per E-Mail erhalten</p>
+                  <p class="text-white font-medium">{{ $t('settingsModule.emailNotifications') }}</p>
+                  <p class="text-gray-400 text-sm">{{ $t('settingsModule.receiveEmailUpdates') }}</p>
                 </div>
                 <button
                   @click="pushPreferences.email_enabled = !pushPreferences.email_enabled"
@@ -1253,11 +1255,11 @@ watch(activeTab, (tab) => {
 
             <!-- Quiet Hours -->
             <div class="border-t border-white/[0.06] pt-4 mb-6">
-              <h3 class="text-sm font-medium text-gray-400 mb-3">Ruhezeiten</h3>
-              <p class="text-xs text-gray-500 mb-3">Keine Benachrichtigungen in diesem Zeitraum</p>
+              <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('settingsModule.quietHours') }}</h3>
+              <p class="text-xs text-gray-500 mb-3">{{ $t('settingsModule.noNotificationsInPeriod') }}</p>
               <div class="flex items-center gap-4">
                 <div>
-                  <label class="label text-xs">Von</label>
+                  <label class="label text-xs">{{ $t('common.from') }}</label>
                   <input
                     v-model="pushPreferences.quiet_hours_start"
                     type="time"
@@ -1265,7 +1267,7 @@ watch(activeTab, (tab) => {
                   />
                 </div>
                 <div>
-                  <label class="label text-xs">Bis</label>
+                  <label class="label text-xs">{{ $t('common.to') }}</label>
                   <input
                     v-model="pushPreferences.quiet_hours_end"
                     type="time"
@@ -1277,7 +1279,7 @@ watch(activeTab, (tab) => {
 
             <!-- Category Settings -->
             <div class="border-t border-white/[0.06] pt-4">
-              <h3 class="text-sm font-medium text-gray-400 mb-3">Benachrichtigungen nach Kategorie</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('settingsModule.notificationsByCategory') }}</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1285,7 +1287,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Aufgaben & Listen</span>
+                  <span class="text-white">{{ $t('settingsModule.tasksAndLists') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1293,7 +1295,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Kalender-Erinnerungen</span>
+                  <span class="text-white">{{ $t('settingsModule.calendarReminders') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1301,7 +1303,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Tickets</span>
+                  <span class="text-white">{{ $t('settingsModule.tickets') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1309,7 +1311,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Uptime-Warnungen</span>
+                  <span class="text-white">{{ $t('settingsModule.uptimeWarnings') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1317,7 +1319,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Chat-Nachrichten</span>
+                  <span class="text-white">{{ $t('settingsModule.chatMessages') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1325,7 +1327,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Inbox</span>
+                  <span class="text-white">{{ $t('settingsModule.inbox') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1333,7 +1335,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Wiederkehrende Aufgaben</span>
+                  <span class="text-white">{{ $t('navigation.recurringTasks') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1341,7 +1343,7 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">Backup-Status</span>
+                  <span class="text-white">{{ $t('settingsModule.backupStatus') }}</span>
                 </label>
                 <label class="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg cursor-pointer hover:bg-white/[0.04]">
                   <input
@@ -1349,26 +1351,26 @@ watch(activeTab, (tab) => {
                     type="checkbox"
                     class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-white">System-Benachrichtigungen</span>
+                  <span class="text-white">{{ $t('settingsModule.systemNotifications') }}</span>
                 </label>
               </div>
             </div>
 
             <button @click="savePushPreferences" class="btn-primary mt-6">
-              Einstellungen speichern
+              {{ $t('settingsModule.saveSettings') }}
             </button>
           </div>
 
           <!-- External Notification Channels -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-6">Externe Benachrichtigungskanäle</h2>
+            <h2 class="text-lg font-semibold text-white mb-6">{{ $t('settingsModule.externalNotificationChannels') }}</h2>
 
             <!-- ntfy.sh -->
             <div class="mb-6 pb-6 border-b border-white/[0.06]">
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-white">ntfy.sh</h3>
-                  <p class="text-sm text-gray-400">Push-Benachrichtigungen via ntfy.sh oder selbst gehostetes ntfy</p>
+                  <p class="text-sm text-gray-400">{{ $t('settingsModule.ntfyDescription') }}</p>
                 </div>
                 <button
                   @click="ntfyConfig.enabled = !ntfyConfig.enabled"
@@ -1381,22 +1383,22 @@ watch(activeTab, (tab) => {
               </div>
               <div v-if="ntfyConfig.enabled" class="space-y-3">
                 <div>
-                  <label class="label">Topic-URL</label>
+                  <label class="label">{{ $t('settingsModule.topicUrl') }}</label>
                   <input v-model="ntfyConfig.url" type="url" class="input" placeholder="https://ntfy.sh/my-topic" />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="label">Access Token (optional)</label>
+                    <label class="label">{{ $t('settingsModule.settingsaccesstokenoptional') }}</label>
                     <input v-model="ntfyConfig.token" type="password" class="input" placeholder="tk_..." />
                   </div>
                   <div>
-                    <label class="label">Standard-Priorität</label>
+                    <label class="label">{{ $t('settingsModule.defaultPriority') }}</label>
                     <select v-model="ntfyConfig.priority" class="input">
                       <option value="min">Min</option>
-                      <option value="low">Niedrig</option>
-                      <option value="default">Standard</option>
-                      <option value="high">Hoch</option>
-                      <option value="urgent">Dringend</option>
+                      <option value="low">{{ $t('settingsModule.priorityLow') }}</option>
+                      <option value="default">{{ $t('settingsModule.defaultPriorityOption') }}</option>
+                      <option value="high">{{ $t('settingsModule.priorityHigh') }}</option>
+                      <option value="urgent">{{ $t('settingsModule.priorityUrgent') }}</option>
                     </select>
                   </div>
                 </div>
@@ -1408,7 +1410,7 @@ watch(activeTab, (tab) => {
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-white">Gotify</h3>
-                  <p class="text-sm text-gray-400">Self-hosted Push-Benachrichtigungen via Gotify-Server</p>
+                  <p class="text-sm text-gray-400">{{ $t('settingsModule.gotifyDescription') }}</p>
                 </div>
                 <button
                   @click="gotifyConfig.enabled = !gotifyConfig.enabled"
@@ -1421,16 +1423,16 @@ watch(activeTab, (tab) => {
               </div>
               <div v-if="gotifyConfig.enabled" class="space-y-3">
                 <div>
-                  <label class="label">Server-URL</label>
+                  <label class="label">{{ $t('settingsModule.serverUrl') }}</label>
                   <input v-model="gotifyConfig.url" type="url" class="input" placeholder="https://gotify.example.com" />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="label">App-Token</label>
+                    <label class="label">{{ $t('settingsModule.appToken') }}</label>
                     <input v-model="gotifyConfig.token" type="password" class="input" placeholder="App-Token" />
                   </div>
                   <div>
-                    <label class="label">Standard-Priorität (1–10)</label>
+                    <label class="label">{{ $t('settingsModule.defaultPriority1to10') }}</label>
                     <input v-model.number="gotifyConfig.priority" type="number" min="1" max="10" class="input" />
                   </div>
                 </div>
@@ -1442,7 +1444,7 @@ watch(activeTab, (tab) => {
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-white">Healthchecks.io</h3>
-                  <p class="text-sm text-gray-400">Cron-Job-Monitoring – automatischer Ping bei geplanten Aufgaben</p>
+                  <p class="text-sm text-gray-400">{{ $t('settingsModule.healthchecksDescription') }}</p>
                 </div>
                 <button
                   @click="healthchecksConfig.enabled = !healthchecksConfig.enabled"
@@ -1455,12 +1457,12 @@ watch(activeTab, (tab) => {
               </div>
               <div v-if="healthchecksConfig.enabled" class="space-y-3">
                 <div>
-                  <label class="label">Check-UUID</label>
+                  <label class="label">{{ $t('settingsModule.checkUuid') }}</label>
                   <input v-model="healthchecksConfig.uuid" type="text" class="input font-mono"
                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
                 </div>
                 <div>
-                  <label class="label">Basis-URL (für self-hosted)</label>
+                  <label class="label">{{ $t('settingsModule.baseUrlSelfHosted') }}</label>
                   <input v-model="healthchecksConfig.base_url" type="url" class="input"
                     placeholder="https://hc-ping.com" />
                 </div>
@@ -1472,8 +1474,8 @@ watch(activeTab, (tab) => {
               :disabled="isSavingExternalChannels"
               class="btn-primary"
             >
-              <span v-if="isSavingExternalChannels">Speichern...</span>
-              <span v-else>Externe Kanäle speichern</span>
+              <span v-if="isSavingExternalChannels">{{ $t('common.saving') }}</span>
+              <span v-else>{{ $t('settingsModule.saveExternalChannels') }}</span>
             </button>
           </div>
         </div>
@@ -1484,8 +1486,8 @@ watch(activeTab, (tab) => {
           <div v-if="showNewApiKey && newApiKeyResult" class="card p-6 border-2 border-green-500/50 bg-green-500/10">
             <div class="flex items-start justify-between mb-4">
               <div>
-                <h3 class="text-lg font-semibold text-green-400">Neuer API-Key erstellt!</h3>
-                <p class="text-sm text-gray-400 mt-1">Kopiere den Key jetzt - er wird nur einmal angezeigt!</p>
+                <h3 class="text-lg font-semibold text-green-400">{{ $t('settingsModule.newApiKeyCreated') }}</h3>
+                <p class="text-sm text-gray-400 mt-1">{{ $t('settingsModule.copyKeyNow') }}</p>
               </div>
               <button @click="showNewApiKey = false; newApiKeyResult = null" class="text-gray-400 hover:text-white">
                 <XCircleIcon class="w-6 h-6" />
@@ -1504,7 +1506,7 @@ watch(activeTab, (tab) => {
 
           <!-- Create New Key -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">Neuen API-Key erstellen</h2>
+            <h2 class="text-lg font-semibold text-white mb-4">{{ $t('settingsModule.createNewApiKey') }}</h2>
 
             <div class="space-y-4">
               <div>
@@ -1518,7 +1520,7 @@ watch(activeTab, (tab) => {
               </div>
 
               <div>
-                <label class="label">Berechtigungen (Scopes)</label>
+                <label class="label">{{ $t('settingsModule.permissions') }}</label>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                   <label
                     v-for="(label, scope) in availableScopes"
@@ -1538,13 +1540,13 @@ watch(activeTab, (tab) => {
               </div>
 
               <div>
-                <label class="label">Gültigkeit (optional)</label>
+                <label class="label">{{ $t('settingsModule.settingsvalidityoptional') }}</label>
                 <select v-model="newKeyForm.expires_in_days" class="input">
-                  <option :value="0">Unbegrenzt</option>
-                  <option :value="7">7 Tage</option>
-                  <option :value="30">30 Tage</option>
-                  <option :value="90">90 Tage</option>
-                  <option :value="365">1 Jahr</option>
+                  <option :value="0">{{ $t('settingsModule.unlimited') }}</option>
+                  <option :value="7">{{ $t('settingsModule.sevenDays') }}</option>
+                  <option :value="30">{{ $t('settingsModule.thirtyDays') }}</option>
+                  <option :value="90">{{ $t('statusPage.90Tage') }}</option>
+                  <option :value="365">{{ $t('settingsModule.oneYear') }}</option>
                 </select>
               </div>
 
@@ -1554,15 +1556,15 @@ watch(activeTab, (tab) => {
                 class="btn-primary flex items-center gap-2"
               >
                 <PlusIcon class="w-5 h-5" />
-                <span v-if="isCreatingApiKey">Erstellen...</span>
-                <span v-else>API-Key erstellen</span>
+                <span v-if="isCreatingApiKey">{{ $t('settingsModule.creating') }}</span>
+                <span v-else>{{ $t('settingsModule.createApiKey') }}</span>
               </button>
             </div>
           </div>
 
           <!-- Existing Keys -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">Vorhandene API-Keys</h2>
+            <h2 class="text-lg font-semibold text-white mb-4">{{ $t('settingsModule.existingApiKeys') }}</h2>
 
             <div v-if="isLoadingApiKeys" class="text-center py-8">
               <svg class="animate-spin h-8 w-8 text-primary-500 mx-auto" viewBox="0 0 24 24">
@@ -1573,7 +1575,7 @@ watch(activeTab, (tab) => {
 
             <div v-else-if="apiKeys.length === 0" class="text-center py-8 text-gray-400">
               <KeyIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Noch keine API-Keys erstellt</p>
+              <p>{{ $t('settingsModule.noApiKeysYet') }}</p>
             </div>
 
             <div v-else class="space-y-4">
@@ -1605,9 +1607,9 @@ watch(activeTab, (tab) => {
                       </span>
                     </div>
                     <div class="text-xs text-gray-500 mt-2 space-x-4">
-                      <span>Erstellt: {{ formatDate(key.created_at) }}</span>
-                      <span v-if="key.last_used_at">Zuletzt: {{ formatDate(key.last_used_at) }}</span>
-                      <span v-if="key.expires_at" class="text-yellow-500">Läuft ab: {{ formatDate(key.expires_at) }}</span>
+                      <span>{{ $t('settingsModule.created') }}: {{ formatDate(key.created_at) }}</span>
+                      <span v-if="key.last_used_at">{{ $t('settingsModule.lastUsed') }}: {{ formatDate(key.last_used_at) }}</span>
+                      <span v-if="key.expires_at" class="text-yellow-500">{{ $t('settingsModule.expiresAt') }}: {{ formatDate(key.expires_at) }}</span>
                     </div>
                   </div>
                   <div class="flex gap-2 shrink-0">
@@ -1615,14 +1617,14 @@ watch(activeTab, (tab) => {
                       v-if="key.is_active"
                       @click="revokeApiKey(key.id)"
                       class="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                      title="Widerrufen"
+                      :title="$t('settingsModule.revoke')"
                     >
                       <EyeSlashIcon class="w-5 h-5" />
                     </button>
                     <button
                       @click="deleteApiKey(key.id)"
                       class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Löschen"
+                      :title="$t('common.delete')"
                     >
                       <TrashIcon class="w-5 h-5" />
                     </button>
@@ -1634,9 +1636,9 @@ watch(activeTab, (tab) => {
 
           <!-- API Documentation -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">API-Verwendung</h2>
+            <h2 class="text-lg font-semibold text-white mb-4">{{ $t('settingsModule.apiUsage') }}</h2>
             <p class="text-gray-400 text-sm mb-4">
-              Füge den API-Key im Header <code class="text-primary-400">X-API-Key</code> hinzu:
+              {{ $t('settingsModule.addApiKeyHeader') }} <code class="text-primary-400">X-API-Key</code>
             </p>
             <div class="bg-white/[0.04] rounded-lg p-4">
               <code class="text-sm text-gray-300">
@@ -1652,8 +1654,8 @@ watch(activeTab, (tab) => {
             <div class="flex items-center gap-3 mb-6">
               <SparklesIcon class="w-6 h-6 text-purple-400" />
               <div>
-                <h2 class="text-lg font-semibold text-white">AI Assistent Konfiguration</h2>
-                <p class="text-sm text-gray-400">Verwende deinen eigenen API-Key um den AI-Assistenten zu nutzen</p>
+                <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.aiAssistantConfig') }}</h2>
+                <p class="text-sm text-gray-400">{{ $t('settingsModule.aiAssistantDescription') }}</p>
               </div>
             </div>
 
@@ -1663,7 +1665,7 @@ watch(activeTab, (tab) => {
                 <CheckCircleIcon v-if="aiStore.isConfigured" class="w-5 h-5 text-green-400" />
                 <XCircleIcon v-else class="w-5 h-5 text-yellow-400" />
                 <span :class="aiStore.isConfigured ? 'text-green-300' : 'text-yellow-300'">
-                  {{ aiStore.isConfigured ? 'AI Assistent ist konfiguriert und bereit' : 'API-Key erforderlich um AI zu nutzen' }}
+                  {{ aiStore.isConfigured ? $t('settingsModule.aiConfigured') : $t('settingsModule.aiKeyRequired') }}
                 </span>
               </div>
             </div>
@@ -1671,7 +1673,7 @@ watch(activeTab, (tab) => {
             <div class="space-y-4">
               <!-- Provider -->
               <div>
-                <label class="label">Provider</label>
+                <label class="label">{{ $t('settingsModule.provider') }}</label>
                 <select v-model="aiForm.provider" class="input">
                   <option v-for="provider in aiStore.providers" :key="provider.value" :value="provider.value">
                     {{ provider.label }}
@@ -1681,7 +1683,7 @@ watch(activeTab, (tab) => {
 
               <!-- API Key -->
               <div>
-                <label class="label">API-Key</label>
+                <label class="label">{{ $t('settings.apiKeys') }}</label>
                 <div class="flex items-center gap-2">
                   <div class="relative flex-1">
                     <input
@@ -1703,24 +1705,24 @@ watch(activeTab, (tab) => {
                     v-if="aiStore.isConfigured"
                     @click="removeAiApiKey"
                     class="btn-secondary text-red-400 hover:text-red-300"
-                    title="API-Key entfernen"
+                    :title="$t('settingsModule.removeApiKey')"
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">
-                  Wird verschlüsselt gespeichert. Niemals mit anderen geteilt.
+                  {{ $t('settingsModule.apiKeyEncryptedNote') }}
                 </p>
               </div>
 
               <!-- Model -->
               <div>
-                <label class="label">Model</label>
+                <label class="label">{{ $t('settingsModule.model') }}</label>
                 <select v-model="aiForm.model" class="input">
                   <option v-for="model in aiStore.providers.find(p => p.value === aiForm.provider)?.models || []" :key="model.id" :value="model.id">
                     {{ model.name }}
                   </option>
-                  <option v-if="aiForm.provider === 'custom'" value="">Benutzerdefiniert</option>
+                  <option v-if="aiForm.provider === 'custom'" value="">{{ $t('common.custom') }}</option>
                 </select>
                 <input
                   v-if="aiForm.provider === 'custom' || aiForm.provider === 'ollama'"
@@ -1734,7 +1736,7 @@ watch(activeTab, (tab) => {
 
               <!-- API Base URL (for Ollama/Custom) -->
               <div v-if="aiForm.provider === 'ollama' || aiForm.provider === 'custom'">
-                <label class="label">API Base URL</label>
+                <label class="label">{{ $t('settingsModule.apiBaseUrl') }}</label>
                 <input
                   v-model="aiForm.api_base_url"
                   type="text"
@@ -1746,7 +1748,7 @@ watch(activeTab, (tab) => {
               <!-- Advanced Settings -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Max Tokens</label>
+                  <label class="label">{{ $t('settingsModule.maxTokens') }}</label>
                   <input
                     v-model.number="aiForm.max_tokens"
                     type="number"
@@ -1756,7 +1758,7 @@ watch(activeTab, (tab) => {
                   />
                 </div>
                 <div>
-                  <label class="label">Temperature</label>
+                  <label class="label">{{ $t('settingsModule.temperature') }}</label>
                   <input
                     v-model.number="aiForm.temperature"
                     type="number"
@@ -1770,7 +1772,7 @@ watch(activeTab, (tab) => {
 
               <!-- Context & Tools Settings -->
               <div class="border-t border-white/[0.06] pt-4 mt-4">
-                <h3 class="text-sm font-semibold text-gray-300 mb-3">Kontext & Tools</h3>
+                <h3 class="text-sm font-semibold text-gray-300 mb-3">{{ $t('settingsModule.contextAndTools') }}</h3>
                 <div class="space-y-3">
                   <label class="flex items-center gap-3 cursor-pointer">
                     <input
@@ -1779,8 +1781,8 @@ watch(activeTab, (tab) => {
                       class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                     />
                     <div>
-                      <span class="text-white">Benutzerkontext einbeziehen</span>
-                      <p class="text-xs text-gray-500">Die AI kennt deine Projekte, Aufgaben, Wiki-Seiten etc.</p>
+                      <span class="text-white">{{ $t('settingsModule.includeUserContext') }}</span>
+                      <p class="text-xs text-gray-500">{{ $t('settingsModule.aiContextDescription') }}</p>
                     </div>
                   </label>
                   <label class="flex items-center gap-3 cursor-pointer">
@@ -1790,8 +1792,8 @@ watch(activeTab, (tab) => {
                       class="w-4 h-4 rounded border-white/[0.08] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                     />
                     <div>
-                      <span class="text-white">System-Tools aktivieren</span>
-                      <p class="text-xs text-gray-500">Docker, Server-Info, Prozesse, etc. (verbraucht mehr Tokens)</p>
+                      <span class="text-white">{{ $t('settingsModule.enableSystemTools') }}</span>
+                      <p class="text-xs text-gray-500">{{ $t('settingsModule.systemToolsDescription') }}</p>
                     </div>
                   </label>
                 </div>
@@ -1802,41 +1804,41 @@ watch(activeTab, (tab) => {
                 :disabled="isSavingAi"
                 class="btn-primary flex items-center gap-2"
               >
-                <span v-if="isSavingAi">Speichern...</span>
-                <span v-else>Einstellungen speichern</span>
+                <span v-if="isSavingAi">{{ $t('common.saving') }}</span>
+                <span v-else>{{ $t('settingsModule.saveSettings') }}</span>
               </button>
             </div>
           </div>
 
           <!-- Usage Stats (if configured) -->
           <div v-if="aiStore.settings && aiStore.settings.total_requests > 0" class="card p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">Nutzungsstatistiken</h3>
+            <h3 class="text-lg font-semibold text-white mb-4">{{ $t('settingsModule.usageStats') }}</h3>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-2xl font-bold text-white">{{ aiStore.settings.total_requests || 0 }}</p>
-                <p class="text-sm text-gray-400">Anfragen</p>
+                <p class="text-sm text-gray-400">{{ $t('settingsModule.requests') }}</p>
               </div>
               <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-2xl font-bold text-white">{{ (aiStore.settings.total_tokens_used || 0).toLocaleString() }}</p>
-                <p class="text-sm text-gray-400">Tokens verwendet</p>
+                <p class="text-sm text-gray-400">{{ $t('settingsModule.tokensUsed') }}</p>
               </div>
               <div class="bg-white/[0.04] rounded-lg p-4">
                 <p class="text-sm font-bold text-white">{{ aiStore.settings.last_used_at ? formatDate(aiStore.settings.last_used_at) : '-' }}</p>
-                <p class="text-sm text-gray-400">Letzte Nutzung</p>
+                <p class="text-sm text-gray-400">{{ $t('settingsModule.lastUsed') }}</p>
               </div>
             </div>
           </div>
 
           <!-- Provider Links -->
           <div class="card p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">API-Key erhalten</h3>
+            <h3 class="text-lg font-semibold text-white mb-4">{{ $t('settingsModule.getApiKey') }}</h3>
             <div class="space-y-2 text-sm">
-              <p class="text-gray-400">Erstelle einen API-Key bei deinem gewünschten Anbieter:</p>
+              <p class="text-gray-400">{{ $t('settingsModule.getApiKeyDescription') }}</p>
               <ul class="space-y-1">
                 <li><a href="https://platform.openai.com/api-keys" target="_blank" class="text-primary-400 hover:text-primary-300">OpenAI Platform</a></li>
                 <li><a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-primary-400 hover:text-primary-300">Anthropic Console</a></li>
                 <li><a href="https://openrouter.ai/keys" target="_blank" class="text-primary-400 hover:text-primary-300">OpenRouter</a></li>
-                <li><span class="text-gray-400">Ollama: Kein API-Key erforderlich (lokal)</span></li>
+                <li><span class="text-gray-400">{{ $t('settingsModule.ollamaNoKeyNeeded') }}</span></li>
               </ul>
             </div>
           </div>
@@ -1853,16 +1855,16 @@ watch(activeTab, (tab) => {
           <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">
               <DocumentArrowDownIcon class="w-6 h-6 text-primary-400" />
-              <h2 class="text-lg font-semibold text-white">Daten exportieren</h2>
+              <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.exportData') }}</h2>
             </div>
 
             <p class="text-gray-400 text-sm mb-4">
-              Exportiere deine Daten als Backup oder um sie in eine andere Instanz zu übertragen.
+              {{ $t('settingsModule.exportDescription') }}
             </p>
 
             <!-- Export Stats -->
             <div v-if="Object.keys(exportImportStore.stats).length > 0" class="mb-6">
-              <h3 class="text-sm font-medium text-gray-400 mb-3">Verfügbare Daten:</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('settingsModule.availableData') }}</h3>
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 <div
                   v-for="type in allExportTypes"
@@ -1878,10 +1880,10 @@ watch(activeTab, (tab) => {
             <!-- Type Selection -->
             <div class="mb-4">
               <div class="flex items-center justify-between mb-3">
-                <label class="label mb-0">Zu exportierende Daten:</label>
+                <label class="label mb-0">{{ $t('settingsModule.dataToExport') }}</label>
                 <div class="flex gap-2">
                   <button @click="selectAllExportTypes" class="text-xs text-primary-400 hover:text-primary-300">
-                    Alle auswählen
+                    {{ $t('settingsModule.selectAll') }}
                   </button>
                   <span class="text-gray-600">|</span>
                   <button @click="deselectAllExportTypes" class="text-xs text-gray-400 hover:text-gray-300">
@@ -1909,7 +1911,7 @@ watch(activeTab, (tab) => {
 
             <!-- Format Selection -->
             <div class="mb-6">
-              <label class="label">Format:</label>
+              <label class="label">{{ $t('settingsModule.format') }}:</label>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1919,7 +1921,7 @@ watch(activeTab, (tab) => {
                     class="text-primary-600 focus:ring-primary-600"
                   />
                   <span class="text-gray-300">JSON</span>
-                  <span class="text-xs text-gray-500">(empfohlen)</span>
+                  <span class="text-xs text-gray-500">({{ $t('settingsModule.recommended') }})</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1939,8 +1941,8 @@ watch(activeTab, (tab) => {
               class="btn-primary flex items-center gap-2"
             >
               <ArrowDownTrayIcon class="w-5 h-5" />
-              <span v-if="exportImportStore.isExporting">Exportiere...</span>
-              <span v-else>Export starten</span>
+              <span v-if="exportImportStore.isExporting">{{ $t('settingsModule.exporting') }}</span>
+              <span v-else>{{ $t('settingsModule.startExport') }}</span>
             </button>
           </div>
 
@@ -1948,16 +1950,16 @@ watch(activeTab, (tab) => {
           <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">
               <DocumentArrowUpIcon class="w-6 h-6 text-green-400" />
-              <h2 class="text-lg font-semibold text-white">Daten importieren</h2>
+              <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.importData') }}</h2>
             </div>
 
             <p class="text-gray-400 text-sm mb-4">
-              Importiere Daten aus einem vorherigen Export.
+              {{ $t('settingsModule.importDescription') }}
             </p>
 
             <!-- File Upload -->
             <div class="mb-6">
-              <label class="label">Datei auswählen:</label>
+              <label class="label">{{ $t('settingsModule.selectFile') }}</label>
               <input
                 type="file"
                 accept=".json"
@@ -1972,9 +1974,9 @@ watch(activeTab, (tab) => {
                 v-if="exportImportStore.importValidation.valid"
                 class="bg-green-500/10 border border-green-500/30 rounded-lg p-4"
               >
-                <h3 class="text-green-400 font-medium mb-2">Datei validiert</h3>
+                <h3 class="text-green-400 font-medium mb-2">{{ $t('settingsModule.fileValidated') }}</h3>
                 <p class="text-sm text-gray-400 mb-3">
-                  Gefundene Daten:
+                  {{ $t('settingsModule.foundData') }}
                 </p>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                   <label
@@ -2004,7 +2006,7 @@ watch(activeTab, (tab) => {
                 v-else
                 class="bg-red-500/10 border border-red-500/30 rounded-lg p-4"
               >
-                <h3 class="text-red-400 font-medium mb-2">Validierung fehlgeschlagen</h3>
+                <h3 class="text-red-400 font-medium mb-2">{{ $t('settingsModule.validationFailed') }}</h3>
                 <ul class="text-sm text-gray-400 list-disc list-inside">
                   <li v-for="error in exportImportStore.importValidation.errors" :key="error">
                     {{ error }}
@@ -2015,7 +2017,7 @@ watch(activeTab, (tab) => {
 
             <!-- Conflict Resolution -->
             <div v-if="exportImportStore.importValidation?.valid" class="mb-6">
-              <label class="label">Bei Konflikten:</label>
+              <label class="label">{{ $t('settingsModule.onConflicts') }}:</label>
               <div class="flex flex-col gap-2">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -2024,8 +2026,8 @@ watch(activeTab, (tab) => {
                     value="skip"
                     class="text-primary-600 focus:ring-primary-600"
                   />
-                  <span class="text-gray-300">Überspringen</span>
-                  <span class="text-xs text-gray-500">(bestehende Daten behalten)</span>
+                  <span class="text-gray-300">{{ $t('settingsModule.skip') }}</span>
+                  <span class="text-xs text-gray-500">({{ $t('settingsModule.keepExisting') }})</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -2034,8 +2036,8 @@ watch(activeTab, (tab) => {
                     value="replace"
                     class="text-primary-600 focus:ring-primary-600"
                   />
-                  <span class="text-gray-300">Ersetzen</span>
-                  <span class="text-xs text-gray-500">(bestehende Daten überschreiben)</span>
+                  <span class="text-gray-300">{{ $t('settingsModule.replace') }}</span>
+                  <span class="text-xs text-gray-500">{{ $t('settingsModule.overwriteExisting') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -2044,8 +2046,8 @@ watch(activeTab, (tab) => {
                     value="rename"
                     class="text-primary-600 focus:ring-primary-600"
                   />
-                  <span class="text-gray-300">Umbenennen</span>
-                  <span class="text-xs text-gray-500">(importierte Daten umbenennen)</span>
+                  <span class="text-gray-300">{{ $t('settingsModule.rename') }}</span>
+                  <span class="text-xs text-gray-500">({{ $t('settingsModule.renameImported') }})</span>
                 </label>
               </div>
             </div>
@@ -2057,7 +2059,7 @@ watch(activeTab, (tab) => {
                 @click="resetImport"
                 class="btn-secondary"
               >
-                Zurücksetzen
+                {{ $t('common.reset') }}
               </button>
               <button
                 @click="handleImport"
@@ -2065,8 +2067,8 @@ watch(activeTab, (tab) => {
                 class="btn-primary flex items-center gap-2"
               >
                 <ArrowUpTrayIcon class="w-5 h-5" />
-                <span v-if="exportImportStore.isImporting">Importiere...</span>
-                <span v-else>Import starten</span>
+                <span v-if="exportImportStore.isImporting">{{ $t('settingsModule.importing') }}</span>
+                <span v-else>{{ $t('settingsModule.startImport') }}</span>
               </button>
             </div>
 
@@ -2077,19 +2079,19 @@ watch(activeTab, (tab) => {
                 class="border rounded-lg p-4"
               >
                 <h3 :class="exportImportStore.importResult.success ? 'text-green-400' : 'text-yellow-400'" class="font-medium mb-3">
-                  Import {{ exportImportStore.importResult.success ? 'abgeschlossen' : 'mit Warnungen' }}
+                  {{ exportImportStore.importResult.success ? $t('settingsModule.importComplete') : $t('settingsModule.importWithWarnings') }}
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div v-for="(count, type) in exportImportStore.importResult.imported" :key="type">
                     <span class="text-gray-400">{{ allExportTypes.find(t => t.id === type)?.name || type }}:</span>
-                    <span class="text-green-400 ml-2">{{ count }} importiert</span>
+                    <span class="text-green-400 ml-2">{{ count }} {{ $t('settingsModule.imported') }}</span>
                     <span v-if="exportImportStore.importResult.skipped[type]" class="text-yellow-400 ml-1">
-                      ({{ exportImportStore.importResult.skipped[type] }} übersprungen)
+                      ({{ exportImportStore.importResult.skipped[type] }} {{ $t('settingsModule.skipped') }})
                     </span>
                   </div>
                 </div>
                 <div v-if="Object.keys(exportImportStore.importResult.errors).length > 0" class="mt-4 pt-4 border-t border-white/[0.06]">
-                  <h4 class="text-red-400 font-medium mb-2">Fehler:</h4>
+                  <h4 class="text-red-400 font-medium mb-2">{{ $t('common.error') }}</h4>
                   <ul class="text-sm text-gray-400 list-disc list-inside">
                     <li v-for="(errors, type) in exportImportStore.importResult.errors" :key="type">
                       {{ type }}: {{ Array.isArray(errors) ? errors.join(', ') : errors }}
@@ -2106,12 +2108,12 @@ watch(activeTab, (tab) => {
 
           <!-- Kleinunternehmer Mode -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-1">Steuerlicher Status</h2>
-            <p class="text-sm text-gray-400 mb-4">Legt fest, ob auf Rechnungen MwSt. ausgewiesen wird.</p>
+            <h2 class="text-lg font-semibold text-white mb-1">{{ $t('settingsModule.taxStatus') }}</h2>
+            <p class="text-sm text-gray-400 mb-4">{{ $t('settingsModule.taxStatusDescription') }}</p>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-white font-medium">Kleinunternehmer (§ 19 UStG)</p>
-                <p class="text-gray-400 text-sm">Keine MwSt. auf Rechnungen · §19-Hinweis wird automatisch hinzugefügt</p>
+                <p class="text-white font-medium">{{ $t('settingsModule.smallBusiness') }}</p>
+                <p class="text-gray-400 text-sm">{{ $t('settingsModule.smallBusinessVatNote') }}</p>
               </div>
               <button
                 @click="invoiceSettings.kleinunternehmer_mode = !invoiceSettings.kleinunternehmer_mode"
@@ -2125,74 +2127,74 @@ watch(activeTab, (tab) => {
               </button>
             </div>
             <div v-if="invoiceSettings.kleinunternehmer_mode" class="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-sm text-amber-300">
-              Grenzen 2025: Vorjahresumsatz ≤ 25.000 € · Laufendes Jahr voraussichtlich ≤ 100.000 €
+              {{ $t('settingsModule.smallBusinessLimits') }}
             </div>
           </div>
 
           <!-- Absenderdaten -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Absenderdaten</h2>
-            <p class="text-sm text-gray-400">Diese Daten erscheinen auf jeder Rechnung als Absender.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.senderData') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.senderDataDescription') }}</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="label">Name *</label>
+                <label class="label">{{ $t('settingsModule.name') }} *</label>
                 <input v-model="invoiceSettings.invoice_sender_name" type="text" class="input" placeholder="Max Mustermann" />
               </div>
               <div>
-                <label class="label">Firma</label>
+                <label class="label">{{ $t('settingsModule.company') }}</label>
                 <input v-model="invoiceSettings.invoice_company" type="text" class="input" placeholder="Mustermann GbR" />
               </div>
               <div>
-                <label class="label">E-Mail</label>
+                <label class="label">{{ $t('auth.email') }}</label>
                 <input v-model="invoiceSettings.invoice_email" type="email" class="input" placeholder="rechnungen@beispiel.de" />
               </div>
               <div>
-                <label class="label">Telefon</label>
+                <label class="label">{{ $t('settingsModule.phone') }}</label>
                 <input v-model="invoiceSettings.invoice_phone" type="text" class="input" placeholder="+49 123 456789" />
               </div>
             </div>
 
             <div>
-              <label class="label">Adresse</label>
-              <textarea v-model="invoiceSettings.invoice_address" class="input" rows="3" placeholder="Musterstraße 1&#10;12345 Musterstadt&#10;Deutschland"></textarea>
+              <label class="label">{{ $t('settingsModule.address') }}</label>
+              <textarea v-model="invoiceSettings.invoice_address" class="input" rows="3" :placeholder="$t('settingsModule.addressPlaceholder')"></textarea>
             </div>
           </div>
 
           <!-- Steuerliche Angaben -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Steuerliche Angaben</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.taxDetails') }}</h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="label">Steuernummer</label>
+                <label class="label">{{ $t('settingsModule.taxNumber') }}</label>
                 <input v-model="invoiceSettings.invoice_steuernummer" type="text" class="input" placeholder="12/345/67890" />
-                <p class="text-xs text-gray-500 mt-1">Pflichtangabe für Kleinunternehmer (§14 UStG)</p>
+                <p class="text-xs text-gray-500 mt-1">{{ $t('settingsModule.taxNumberRequired') }}</p>
               </div>
               <div>
-                <label class="label">USt-IdNr.</label>
+                <label class="label">{{ $t('settingsModule.vatId') }}</label>
                 <input v-model="invoiceSettings.invoice_vat_id" type="text" class="input" placeholder="DE123456789" />
-                <p class="text-xs text-gray-500 mt-1">Nur für Regelbesteuerung (nicht bei §19 UStG)</p>
+                <p class="text-xs text-gray-500 mt-1">{{ $t('settingsModule.vatIdNote') }}</p>
               </div>
             </div>
           </div>
 
           <!-- Bankverbindung -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Bankverbindung</h2>
-            <p class="text-sm text-gray-400">Wird im Zahlungsbereich der Rechnung angezeigt.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.bankDetails') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.bankDetailsDescription') }}</p>
             <div>
-              <label class="label">Bankdaten (IBAN, BIC, Kontoinhaber)</label>
+              <label class="label">{{ $t('settingsModule.bankDataLabel') }}</label>
               <textarea v-model="invoiceSettings.invoice_bank_details" class="input" rows="3" placeholder="Kontoinhaber: Max Mustermann&#10;IBAN: DE89 3704 0044 0532 0130 00&#10;BIC: COBADEFFXXX&#10;Sparkasse Musterstadt"></textarea>
             </div>
           </div>
 
           <!-- Rechnungsnummer-Präfix -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Rechnungsnummer</h2>
-            <p class="text-sm text-gray-400">Präfix für automatisch generierte Rechnungsnummern.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.invoiceNumber') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.invoiceNumberPrefixDescription') }}</p>
             <div>
-              <label class="label">Präfix</label>
+              <label class="label">{{ $t('settingsModule.prefix') }}</label>
               <input v-model="invoiceSettings.invoice_number_prefix" type="text" class="input max-w-xs" placeholder="RE" maxlength="10" />
               <p class="text-xs text-gray-500 mt-1">
                 Format: <span class="font-mono text-gray-400">{{ (invoiceSettings.invoice_number_prefix || 'RE').toUpperCase() }}-{{ new Date().getFullYear() }}-0001</span>
@@ -2202,18 +2204,18 @@ watch(activeTab, (tab) => {
 
           <!-- Zahlungsziel -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Standard-Zahlungsbedingungen</h2>
-            <p class="text-sm text-gray-400">Wird automatisch auf neue Rechnungen angewendet.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.defaultPaymentTerms') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.paymentTermsDescription') }}</p>
             <div>
-              <label class="label">Zahlungsziel</label>
-              <input v-model="invoiceSettings.invoice_default_payment_terms" type="text" class="input" placeholder="Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum." />
+              <label class="label">{{ $t('settingsModule.paymentDeadline') }}</label>
+              <input v-model="invoiceSettings.invoice_default_payment_terms" type="text" class="input" placeholder=$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum') />
             </div>
           </div>
 
           <!-- Logo -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Firmenlogo</h2>
-            <p class="text-sm text-gray-400">Logo wird oben links auf der Rechnung angezeigt. Empfohlen: PNG oder SVG, max. 300×100 px.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.companyLogo') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.logoDescription') }}</p>
 
             <!-- Current logo preview -->
             <div v-if="invoiceLogoPreviewUrl" class="flex items-start gap-4">
@@ -2222,7 +2224,7 @@ watch(activeTab, (tab) => {
               </div>
               <button @click="removeLogo" class="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm mt-2">
                 <TrashIcon class="w-4 h-4" />
-                Logo entfernen
+                {{ $t('settingsModule.removeLogo') }}
               </button>
             </div>
 
@@ -2232,7 +2234,7 @@ watch(activeTab, (tab) => {
                 <div class="flex flex-col items-center gap-2">
                   <PhotoIcon class="w-8 h-8 text-gray-400" />
                   <p class="text-sm text-gray-400">
-                    {{ invoiceLogoFile ? invoiceLogoFile.name : 'Logo auswählen oder hier ablegen' }}
+                    {{ invoiceLogoFile ? invoiceLogoFile.name : $t('settingsModule.selectOrDropLogo') }}
                   </p>
                   <p class="text-xs text-gray-500">PNG, JPG, SVG · Max. 5 MB</p>
                 </div>
@@ -2243,8 +2245,8 @@ watch(activeTab, (tab) => {
 
           <!-- Standard-Stundensatz -->
           <div class="card p-6 space-y-4">
-            <h2 class="text-lg font-semibold text-white">Standard-Stundensatz</h2>
-            <p class="text-sm text-gray-400">Fallback-Stundensatz für „Aus Zeiteinträgen", wenn kein Kundensatz hinterlegt ist.</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.defaultHourlyRate') }}</h2>
+            <p class="text-sm text-gray-400">{{ $t('settingsModule.hourlyRateDescription') }}</p>
             <div class="flex items-center gap-3 max-w-xs">
               <input
                 v-model.number="invoiceSettings.default_hourly_rate"
@@ -2265,8 +2267,8 @@ watch(activeTab, (tab) => {
               :disabled="invoiceSettingsSaving || invoiceLogoUploading"
               class="btn-primary px-6"
             >
-              <span v-if="invoiceSettingsSaving || invoiceLogoUploading">Speichern...</span>
-              <span v-else>Einstellungen speichern</span>
+              <span v-if="invoiceSettingsSaving || invoiceLogoUploading">{{ $t('common.saving') }}</span>
+              <span v-else>{{ $t('settingsModule.saveSettings') }}</span>
             </button>
           </div>
 
@@ -2274,36 +2276,36 @@ watch(activeTab, (tab) => {
           <div class="card p-6 space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <h2 class="text-lg font-semibold text-white">Leistungskatalog</h2>
-                <p class="text-sm text-gray-400 mt-0.5">Vordefinierte Positionen für Rechnungen – auswählbar beim Hinzufügen von Rechnungspositionen.</p>
+                <h2 class="text-lg font-semibold text-white">{{ $t('settingsModule.serviceCatalog') }}</h2>
+                <p class="text-sm text-gray-400 mt-0.5">{{ $t('settingsModule.serviceCatalogDescription') }}</p>
               </div>
               <button @click="openAddCatalogItem" class="btn-primary flex items-center gap-2 text-sm px-3 py-2">
                 <PlusIcon class="w-4 h-4" />
-                Leistung hinzufügen
+                {{ $t('settingsModule.addService') }}
               </button>
             </div>
 
             <!-- Add/Edit Form -->
             <div v-if="showCatalogForm" class="bg-white/[0.04] rounded-lg p-4 space-y-3 border border-white/[0.08]">
-              <h3 class="text-sm font-medium text-white">{{ editingCatalogItem ? 'Leistung bearbeiten' : 'Neue Leistung' }}</h3>
+              <h3 class="text-sm font-medium text-white">{{ editingCatalogItem ? $t('settingsModule.editService') : $t('settingsModule.newService') }}</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Name *</label>
+                  <label class="label">{{ $t('settingsModule.name') }} *</label>
                   <input v-model="catalogForm.name" type="text" class="input" placeholder="z.B. Webentwicklung" />
                 </div>
                 <div>
-                  <label class="label">Einheit</label>
+                  <label class="label">{{ $t('settingsModule.unit') }}</label>
                   <select v-model="catalogForm.unit" class="input">
                     <option v-for="u in catalogUnits" :key="u" :value="u">{{ u }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Einzelpreis (€)</label>
+                  <label class="label">{{ $t('settingsModule.unitPrice') }}</label>
                   <input v-model.number="catalogForm.unit_price" type="number" min="0" step="0.01" class="input" placeholder="0.00" />
                 </div>
                 <div>
-                  <label class="label">Beschreibung (optional)</label>
-                  <input v-model="catalogForm.description" type="text" class="input" placeholder="Kurze Beschreibung" />
+                  <label class="label">{{ $t('scripts.scriptsbeschreibungoptional') }}</label>
+                  <input v-model="catalogForm.description" type="text" class="input" :placeholder="$t('settingsModule.shortDescription')" />
                 </div>
               </div>
               <div class="flex gap-2 justify-end">
@@ -2317,9 +2319,9 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- Catalog List -->
-            <div v-if="catalogLoading" class="text-center py-6 text-gray-400 text-sm">Lade Katalog...</div>
+            <div v-if="catalogLoading" class="text-center py-6 text-gray-400 text-sm">{{ $t('settingsModule.loadingCatalog') }}</div>
             <div v-else-if="serviceCatalog.length === 0 && !showCatalogForm" class="text-center py-8 text-gray-500 text-sm">
-              Noch keine Leistungen angelegt. Klicke auf „Leistung hinzufügen".
+              Noch keine Leistungen angelegt. Klicke auf „{{ $t('settingsModule.addService') }}".
             </div>
             <div v-else class="divide-y divide-white/[0.06]">
               <div
@@ -2336,10 +2338,10 @@ watch(activeTab, (tab) => {
                   <p class="text-gray-500 text-xs">/ {{ item.unit }}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                  <button @click="openEditCatalogItem(item)" class="text-gray-400 hover:text-white transition-colors p-1" title="Bearbeiten">
+                  <button @click="openEditCatalogItem(item)" class="text-gray-400 hover:text-white transition-colors p-1" :title="$t('common.edit')">
                     <PencilIcon class="w-4 h-4" />
                   </button>
-                  <button @click="deleteCatalogItem(item)" class="text-gray-400 hover:text-red-400 transition-colors p-1" title="Löschen">
+                  <button @click="deleteCatalogItem(item)" class="text-gray-400 hover:text-red-400 transition-colors p-1" :title="$t('common.delete')">
                     <TrashIcon class="w-4 h-4" />
                   </button>
                 </div>
@@ -2352,8 +2354,8 @@ watch(activeTab, (tab) => {
         <div v-if="activeTab === 'appearance'" class="space-y-6">
           <!-- Theme Presets -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-2">Farbschema</h2>
-            <p class="text-sm text-gray-400 mb-5">Wähle ein Farbschema für die Benutzeroberfläche</p>
+            <h2 class="text-lg font-semibold text-white mb-2">{{ $t('settingsModule.colorScheme') }}</h2>
+            <p class="text-sm text-gray-400 mb-5">{{ $t('settingsModule.chooseColorScheme') }}</p>
 
             <div class="grid grid-cols-2 gap-3">
               <!-- Slate preset -->
@@ -2367,7 +2369,7 @@ watch(activeTab, (tab) => {
                 <div v-if="uiStore.themePreset === 'slate'" class="absolute top-2 right-2">
                   <CheckCircleIcon class="w-5 h-5 text-primary-400" />
                 </div>
-                <p class="text-sm font-semibold text-white mb-1">Standard</p>
+                <p class="text-sm font-semibold text-white mb-1">{{ $t('settingsModule.themeStandard') }}</p>
                 <p class="text-2xs text-gray-500 mb-3">Neutral & modern</p>
                 <div class="flex gap-1.5">
                   <span class="w-5 h-5 rounded-md" style="background: rgb(26, 26, 32)" />
@@ -2389,8 +2391,8 @@ watch(activeTab, (tab) => {
                 <div v-if="uiStore.themePreset === 'midnight'" class="absolute top-2 right-2">
                   <CheckCircleIcon class="w-5 h-5 text-primary-400" />
                 </div>
-                <p class="text-sm font-semibold text-white mb-1">Dunkel</p>
-                <p class="text-2xs text-gray-500 mb-3">Ideal für OLED & Nachtarbeit</p>
+                <p class="text-sm font-semibold text-white mb-1">{{ $t('settingsModule.themeDark') }}</p>
+                <p class="text-2xs text-gray-500 mb-3">{{ $t('settingsModule.idealForOled') }}</p>
                 <div class="flex gap-1.5">
                   <span class="w-5 h-5 rounded-md" style="background: rgb(10, 10, 15)" />
                   <span class="w-5 h-5 rounded-md" style="background: rgb(17, 17, 24)" />
@@ -2411,8 +2413,8 @@ watch(activeTab, (tab) => {
                 <div v-if="uiStore.themePreset === 'stone'" class="absolute top-2 right-2">
                   <CheckCircleIcon class="w-5 h-5 text-primary-400" />
                 </div>
-                <p class="text-sm font-semibold text-white mb-1">Warm</p>
-                <p class="text-2xs text-gray-500 mb-3">Warme Grautöne, angenehm</p>
+                <p class="text-sm font-semibold text-white mb-1">{{ $t('settingsModule.themeWarm') }}</p>
+                <p class="text-2xs text-gray-500 mb-3">{{ $t('settingsModule.warmGrayTones') }}</p>
                 <div class="flex gap-1.5">
                   <span class="w-5 h-5 rounded-md" style="background: rgb(28, 27, 26)" />
                   <span class="w-5 h-5 rounded-md" style="background: rgb(36, 34, 32)" />
@@ -2433,8 +2435,8 @@ watch(activeTab, (tab) => {
                 <div v-if="uiStore.themePreset === 'nord'" class="absolute top-2 right-2">
                   <CheckCircleIcon class="w-5 h-5 text-primary-400" />
                 </div>
-                <p class="text-sm font-semibold text-white mb-1">Nordisch</p>
-                <p class="text-2xs text-gray-500 mb-3">Kühle Blautöne</p>
+                <p class="text-sm font-semibold text-white mb-1">{{ $t('settingsModule.themeNord') }}</p>
+                <p class="text-2xs text-gray-500 mb-3">{{ $t('settingsModule.coolBlueTones') }}</p>
                 <div class="flex gap-1.5">
                   <span class="w-5 h-5 rounded-md" style="background: rgb(22, 27, 36)" />
                   <span class="w-5 h-5 rounded-md" style="background: rgb(30, 35, 46)" />
@@ -2448,13 +2450,13 @@ watch(activeTab, (tab) => {
 
           <!-- Other appearance settings -->
           <div class="card p-6">
-            <h2 class="text-lg font-semibold text-white mb-6">Allgemein</h2>
+            <h2 class="text-lg font-semibold text-white mb-6">{{ $t('settingsModule.general') }}</h2>
 
             <div class="space-y-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-white font-medium">Dark Mode</p>
-                  <p class="text-gray-400 text-sm">Dunkles Farbschema verwenden</p>
+                  <p class="text-white font-medium">{{ $t('settings.darkMode') }}</p>
+                  <p class="text-gray-400 text-sm">{{ $t('settingsModule.useDarkTheme') }}</p>
                 </div>
                 <button
                   @click="uiStore.toggleDarkMode"
@@ -2470,8 +2472,8 @@ watch(activeTab, (tab) => {
 
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-white font-medium">Kompakte Sidebar</p>
-                  <p class="text-gray-400 text-sm">Sidebar standardmäßig einklappen</p>
+                  <p class="text-white font-medium">{{ $t('settingsModule.compactSidebar') }}</p>
+                  <p class="text-gray-400 text-sm">{{ $t('settingsModule.collapseSidebarByDefault') }}</p>
                 </div>
                 <button
                   @click="uiStore.toggleSidebarCollapse"

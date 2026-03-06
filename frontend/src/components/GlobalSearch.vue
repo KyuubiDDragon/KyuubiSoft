@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   MagnifyingGlassIcon,
   XMarkIcon,
@@ -16,16 +17,18 @@ import {
 import api from '@/core/api/axios'
 import { getAllNavItems } from '@/core/config/navigation'
 
+const { t } = useI18n()
+
 // Navigation items sourced from shared config
 const navigationItems = getAllNavItems()
 
 // Quick actions shown when no search query
-const quickActions = [
-  { name: 'Neue Liste',     icon: PlusIcon,      href: '/lists',     description: 'Liste erstellen',         accent: true },
-  { name: 'Neues Dokument', icon: PlusIcon,      href: '/documents', description: 'Dokument erstellen',      accent: true },
-  { name: 'Neues Snippet',  icon: PlusIcon,      href: '/snippets',  description: 'Snippet erstellen',       accent: true },
-  { name: 'Einstellungen',  icon: Cog6ToothIcon, href: '/settings',  description: 'App-Einstellungen öffnen', accent: false },
-]
+const quickActions = computed(() => [
+  { name: t('search.newList'),     icon: PlusIcon,      href: '/lists',     description: t('search.createList'),         accent: true },
+  { name: t('search.newDocument'), icon: PlusIcon,      href: '/documents', description: t('search.createDocument'),      accent: true },
+  { name: t('search.newSnippet'),  icon: PlusIcon,      href: '/snippets',  description: t('search.createSnippet'),       accent: true },
+  { name: t('common.settings'),    icon: Cog6ToothIcon, href: '/settings',  description: t('search.openSettings'),        accent: false },
+])
 
 const router = useRouter()
 
@@ -64,7 +67,7 @@ const allSelectableItems = computed(() => {
     ]
   }
   return [
-    ...quickActions.map(a => ({ ...a, _type: 'action' })),
+    ...quickActions.value.map(a => ({ ...a, _type: 'action' })),
     ...navigationItems.slice(0, 8).map(n => ({ ...n, _type: 'nav' })),
   ]
 })
@@ -77,11 +80,11 @@ function getIcon(item) {
 }
 
 function getTypeLabel(item) {
-  if (item.category === 'list') return item.list_type || 'Liste'
-  if (item.format === 'code') return 'Code'
-  if (item.format === 'spreadsheet') return 'Tabelle'
-  if (item.format === 'markdown') return 'Markdown'
-  return 'Rich Text'
+  if (item.category === 'list') return item.list_type || t('search.typeList')
+  if (item.format === 'code') return t('search.typeCode')
+  if (item.format === 'spreadsheet') return t('search.typeSpreadsheet')
+  if (item.format === 'markdown') return t('search.typeMarkdown')
+  return t('search.typeRichText')
 }
 
 function open() {
@@ -175,7 +178,7 @@ defineExpose({ open, close })
     class="flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-xl transition-all duration-200 text-gray-500 hover:text-gray-300 group"
   >
     <MagnifyingGlassIcon class="w-4 h-4" />
-    <span class="hidden sm:inline text-sm">Suchen...</span>
+    <span class="hidden sm:inline text-sm">{{ $t('common.search') }}...</span>
     <kbd class="kbd hidden md:inline-flex">
       <span>⌘</span><span>K</span>
     </kbd>
@@ -205,7 +208,7 @@ defineExpose({ open, close })
               v-model="searchQuery"
               @keydown="handleKeydown"
               type="text"
-              placeholder="Seite oder Inhalt suchen…"
+              :placeholder="$t('search.placeholder')"
               class="flex-1 bg-transparent text-white placeholder-gray-500 focus:outline-none text-base"
               autofocus
             />
@@ -228,7 +231,7 @@ defineExpose({ open, close })
               <div v-if="searchQuery.length < 2">
                 <!-- Quick Actions -->
                 <div class="px-3 pt-3 pb-1">
-                  <p class="section-label px-1">Schnellaktionen</p>
+                  <p class="section-label px-1">{{ $t('search.quickActions') }}</p>
                   <div class="grid grid-cols-2 gap-1.5">
                     <button
                       v-for="(action, i) in quickActions"
@@ -256,7 +259,7 @@ defineExpose({ open, close })
 
                 <!-- Navigation Shortcuts -->
                 <div class="px-3 pt-3 pb-3">
-                  <p class="section-label px-1">Navigation</p>
+                  <p class="section-label px-1">{{ $t('search.navigation') }}</p>
                   <div class="space-y-0.5">
                     <button
                       v-for="(item, i) in navigationItems.slice(0, 8)"
@@ -282,12 +285,12 @@ defineExpose({ open, close })
                 <!-- Empty state -->
                 <div v-if="filteredNavItems.length === 0 && allResults.length === 0" class="px-4 py-10 text-center">
                   <SparklesIcon class="w-10 h-10 text-dark-600 mx-auto mb-3" />
-                  <p class="text-gray-500 text-sm">Keine Ergebnisse für <span class="text-gray-300">"{{ searchQuery }}"</span></p>
+                  <p class="text-gray-500 text-sm">{{ $t('search.noResultsFor') }} <span class="text-gray-300">"{{ searchQuery }}"</span></p>
                 </div>
 
                 <!-- Nav matches -->
                 <div v-if="filteredNavItems.length > 0" class="px-3 pt-3 pb-1">
-                  <p class="section-label px-1">Navigation</p>
+                  <p class="section-label px-1">{{ $t('search.navigation') }}</p>
                   <div class="space-y-0.5">
                     <button
                       v-for="(item, i) in filteredNavItems"
@@ -315,7 +318,7 @@ defineExpose({ open, close })
 
                   <!-- Documents -->
                   <template v-if="results.documents.length > 0">
-                    <p class="section-label px-1">Dokumente</p>
+                    <p class="section-label px-1">{{ $t('search.documents') }}</p>
                     <div class="space-y-0.5">
                       <button
                         v-for="(doc, i) in results.documents"
@@ -343,7 +346,7 @@ defineExpose({ open, close })
 
                   <!-- Lists -->
                   <template v-if="results.lists.length > 0">
-                    <p class="section-label px-1 mt-3">Listen</p>
+                    <p class="section-label px-1 mt-3">{{ $t('search.lists') }}</p>
                     <div class="space-y-0.5">
                       <button
                         v-for="(list, i) in results.lists"
@@ -362,7 +365,7 @@ defineExpose({ open, close })
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center gap-2">
                             <span class="text-sm font-medium text-gray-200 truncate">{{ list.title }}</span>
-                            <span v-if="list.item_count" class="text-[11px] text-gray-500 shrink-0">{{ list.item_count }} Einträge</span>
+                            <span v-if="list.item_count" class="text-[11px] text-gray-500 shrink-0">{{ list.item_count }} {{ $t('search.entries') }}</span>
                           </div>
                           <p v-if="list.snippet" class="text-xs text-gray-500 mt-0.5 line-clamp-1">{{ list.snippet }}</p>
                         </div>
@@ -379,16 +382,16 @@ defineExpose({ open, close })
           <div class="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
             <div class="flex items-center gap-3">
               <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-                <kbd class="kbd">↑↓</kbd> Navigieren
+                <kbd class="kbd">↑↓</kbd> {{ $t('search.navigate') }}
               </span>
               <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-                <kbd class="kbd">↵</kbd> Öffnen
+                <kbd class="kbd">↵</kbd> {{ $t('search.open') }}
               </span>
               <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-                <kbd class="kbd">Esc</kbd> Schließen
+                <kbd class="kbd">Esc</kbd> {{ $t('common.close') }}
               </span>
             </div>
-            <span v-if="searchQuery.length >= 2 && results.total > 0">{{ results.total }} Inhaltstreffer</span>
+            <span v-if="searchQuery.length >= 2 && results.total > 0">{{ results.total }} {{ $t('search.contentHits') }}</span>
           </div>
         </div>
       </div>

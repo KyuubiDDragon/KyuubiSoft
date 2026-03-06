@@ -1,6 +1,10 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const domain = ref('')
 const isLoading = ref(false)
 const results = ref(null)
@@ -115,10 +119,10 @@ function getRecordTypeColor(type) {
 
 const dnsStatusCodes = {
   0: { text: 'NOERROR', desc: 'Erfolgreiche Abfrage' },
-  1: { text: 'FORMERR', desc: 'Format-Fehler' },
-  2: { text: 'SERVFAIL', desc: 'Server-Fehler' },
+  1: { text: 'FORMERR', desc: t('toolbox.formatfehler') },
+  2: { text: 'SERVFAIL', desc: t('toolbox.serverfehler') },
   3: { text: 'NXDOMAIN', desc: 'Domain existiert nicht' },
-  4: { text: 'NOTIMP', desc: 'Nicht implementiert' },
+  4: { text: 'NOTIMP', desc: t('toolbox.nichtImplementiert') },
   5: { text: 'REFUSED', desc: 'Abfrage abgelehnt' },
 }
 
@@ -151,7 +155,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
         @click="lookupAll"
         :disabled="isLoading || !domain.trim()"
         class="btn-secondary px-4"
-        title="Alle Record-Typen abfragen"
+        :title="$t('toolbox.alleRecordtypenAbfragen')"
       >
         Alle
       </button>
@@ -172,7 +176,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
 
     <!-- Loading -->
     <div v-if="isLoading" class="text-center py-8 text-gray-400">
-      Führe DNS-Abfrage durch...
+      {{ $t('toolbox.fuehreDnsabfrageDurch') }}
     </div>
 
     <!-- Error -->
@@ -193,7 +197,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
         <div>
           <h3 class="text-white">{{ results.domain }}</h3>
           <p class="text-sm" :class="results.status === 0 ? 'text-green-400' : 'text-yellow-400'">
-            {{ dnsStatusCodes[results.status]?.text || 'Unbekannt' }} -
+            {{ dnsStatusCodes[results.status]?.text || $t('documentsModule.unbekannt') }} -
             {{ dnsStatusCodes[results.status]?.desc || '' }}
           </p>
         </div>
@@ -231,7 +235,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
     <div v-if="results && results.records" class="space-y-4">
       <div class="flex items-center gap-3">
         <h3 class="text-white">{{ results.domain }}</h3>
-        <span class="text-xs text-gray-500">Alle DNS Records</span>
+        <span class="text-xs text-gray-500">{{ $t('toolbox.alleDnsRecords') }}</span>
       </div>
 
       <div v-for="(records, type) in results.records" :key="type" class="space-y-2">
@@ -259,7 +263,7 @@ const quickDomains = ['google.com', 'cloudflare.com', 'github.com']
 
     <!-- Info -->
     <div class="text-xs text-gray-500">
-      <p>DNS-Abfragen werden über Cloudflare DNS-over-HTTPS (1.1.1.1) durchgeführt.</p>
+      <p>{{ $t('toolbox.dnsabfragenWerdenUeberCloudflareDnsoverhttps1111Durchgefuehrt') }}</p>
     </div>
   </div>
 </template>

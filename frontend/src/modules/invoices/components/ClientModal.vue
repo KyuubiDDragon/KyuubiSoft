@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -8,6 +9,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'save'])
+const { t } = useI18n()
 
 const colors = [
   '#6366f1', '#8B5CF6', '#EC4899', '#EF4444', '#F97316',
@@ -93,7 +95,7 @@ function handleSubmit() {
                   :style="{ backgroundColor: form.color }"
                 ></div>
                 <h2 class="text-lg font-bold text-white">
-                  {{ editingClient ? 'Kunde bearbeiten' : 'Neuer Kunde' }}
+                  {{ editingClient ? $t('invoices.editClient') : $t('invoicesModule.neuerKunde') }}
                 </h2>
               </div>
               <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors">
@@ -106,11 +108,11 @@ function handleSubmit() {
               <!-- Name + Company -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Name *</label>
+                  <label class="label">{{ $t('common.name') }} *</label>
                   <input v-model="form.name" type="text" class="input" required placeholder="Max Mustermann" />
                 </div>
                 <div>
-                  <label class="label">Firma</label>
+                  <label class="label">{{ $t('invoices.company') }}</label>
                   <input v-model="form.company" type="text" class="input" placeholder="Muster GmbH" />
                 </div>
               </div>
@@ -118,34 +120,34 @@ function handleSubmit() {
               <!-- Email + Phone -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">E-Mail</label>
+                  <label class="label">{{ $t('invoices.email') }}</label>
                   <input v-model="form.email" type="email" class="input" placeholder="max@example.com" />
                 </div>
                 <div>
-                  <label class="label">Telefon</label>
+                  <label class="label">{{ $t('invoices.phone') }}</label>
                   <input v-model="form.phone" type="tel" class="input" placeholder="+49 ..." />
                 </div>
               </div>
 
               <!-- Address -->
               <div>
-                <label class="label">Adresse</label>
-                <input v-model="form.address_line1" type="text" class="input mb-2" placeholder="Straße und Hausnummer" />
-                <input v-model="form.address_line2" type="text" class="input" placeholder="Adresszusatz (optional)" />
+                <label class="label">{{ $t('invoices.address') }}</label>
+                <input v-model="form.address_line1" type="text" class="input mb-2" :placeholder="$t('invoicesModule.strasseUndHausnummer')" />
+                <input v-model="form.address_line2" type="text" class="input" :placeholder="$t('invoices.addressExtra')" />
               </div>
 
               <!-- PLZ + Stadt + Land -->
               <div class="grid grid-cols-3 gap-3">
                 <div>
-                  <label class="label">PLZ</label>
+                  <label class="label">{{ $t('invoices.postalCode') }}</label>
                   <input v-model="form.postal_code" type="text" class="input" placeholder="12345" />
                 </div>
                 <div>
-                  <label class="label">Stadt</label>
+                  <label class="label">{{ $t('invoices.city') }}</label>
                   <input v-model="form.city" type="text" class="input" placeholder="Berlin" />
                 </div>
                 <div>
-                  <label class="label">Land</label>
+                  <label class="label">{{ $t('invoices.country') }}</label>
                   <input v-model="form.country" type="text" class="input" placeholder="Deutschland" />
                 </div>
               </div>
@@ -153,18 +155,18 @@ function handleSubmit() {
               <!-- VAT + Hourly Rate -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">USt-IdNr.</label>
+                  <label class="label">{{ $t('invoices.vatId') }}</label>
                   <input v-model="form.vat_id" type="text" class="input" placeholder="DE123456789" />
                 </div>
                 <div>
-                  <label class="label">Std.-Satz (EUR)</label>
+                  <label class="label">{{ $t('invoices.hourlyRate') }}</label>
                   <input v-model.number="form.default_hourly_rate" type="number" class="input" step="0.01" min="0" placeholder="0,00" />
                 </div>
               </div>
 
               <!-- Color picker -->
               <div>
-                <label class="label">Farbe</label>
+                <label class="label">{{ $t('common.color') }}</label>
                 <div class="flex gap-2 mt-1">
                   <button
                     v-for="color in colors"
@@ -182,10 +184,10 @@ function handleSubmit() {
               <!-- Actions -->
               <div class="flex gap-3 pt-2">
                 <button type="button" @click="$emit('close')" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1">
-                  {{ editingClient ? 'Speichern' : 'Erstellen' }}
+                  {{ editingClient ? $t('common.save') : $t('common.create') }}
                 </button>
               </div>
             </form>

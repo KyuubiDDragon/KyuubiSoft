@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NodeViewWrapper } from '@tiptap/vue-3'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
@@ -49,6 +50,7 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -65,18 +67,18 @@ const galleryCardSize = ref('medium')
 const selectedRow = ref(null)
 
 // View options
-const viewOptions = [
-  { id: 'table', icon: TableCellsIcon, label: 'Tabelle' },
-  { id: 'board', icon: ViewColumnsIcon, label: 'Board' },
-  { id: 'list', icon: ListBulletIcon, label: 'Liste' },
-  { id: 'calendar', icon: CalendarIcon, label: 'Kalender' },
-  { id: 'gallery', icon: PhotoIcon, label: 'Galerie' },
-]
+const viewOptions = computed(() => [
+  { id: 'table', icon: TableCellsIcon, label: t('notesModule.database.viewTable') },
+  { id: 'board', icon: ViewColumnsIcon, label: t('notesModule.database.viewBoard') },
+  { id: 'list', icon: ListBulletIcon, label: t('notesModule.database.viewList') },
+  { id: 'calendar', icon: CalendarIcon, label: t('notesModule.database.viewCalendar') },
+  { id: 'gallery', icon: PhotoIcon, label: t('notesModule.database.viewGallery') },
+])
 
 // Computed
 const databaseId = computed(() => props.node.attrs.databaseId)
 const noteId = computed(() => props.node.attrs.noteId || props.editor.options?.editorProps?.noteId)
-const databaseName = computed(() => database.value?.name || props.node.attrs.name || 'Datenbank')
+const databaseName = computed(() => database.value?.name || props.node.attrs.name || t('notesModule.database.database'))
 
 // Load or create database
 onMounted(async () => {
@@ -105,7 +107,7 @@ async function loadOrCreateDatabase() {
     }
   } catch (error) {
     console.error('Error loading/creating database:', error)
-    uiStore.showError('Fehler beim Laden der Datenbank')
+    uiStore.showError(t('notesModule.database.loadError'))
   } finally {
     isLoading.value = false
   }
@@ -125,7 +127,7 @@ async function loadDatabase(id) {
 async function createDatabase() {
   try {
     const newDatabase = await databaseStore.createDatabase(noteId.value, {
-      name: props.node.attrs.name || 'Neue Datenbank',
+      name: props.node.attrs.name || t('notesModule.database.newDatabase'),
       default_view: 'table'
     })
 
@@ -174,7 +176,7 @@ async function saveRename() {
     props.updateAttributes({ name: renameValue.value })
     isRenaming.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Umbenennen')
+    uiStore.showError(t('notesModule.database.renameError'))
   }
 }
 
@@ -198,24 +200,24 @@ async function duplicateDatabase() {
     }).run()
 
     showMenu.value = false
-    uiStore.showSuccess('Datenbank dupliziert')
+    uiStore.showSuccess(t('notesModule.database.duplicated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Duplizieren')
+    uiStore.showError(t('notesModule.database.duplicateError'))
   }
 }
 
 // Delete database
 async function handleDelete() {
-  if (!await confirm({ message: 'Datenbank wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notesModule.database.confirmDelete'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     if (database.value) {
       await databaseStore.deleteDatabase(database.value.id)
     }
     props.deleteNode()
-    uiStore.showSuccess('Datenbank gelöscht')
+    uiStore.showSuccess(t('notesModule.database.deleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.database.deleteError'))
   }
 }
 
@@ -246,7 +248,7 @@ async function handleAddRow(options = {}) {
     await handleDatabaseUpdate()
     return newRow
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen')
+    uiStore.showError(t('notesModule.database.addRowError'))
   }
 }
 
@@ -320,7 +322,7 @@ function changeGalleryCardSize(size) {
         <button
           @click="toggleExpanded"
           class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
-          title="Erweitern"
+          :title="$t('notesModule.database.expand')"
         >
           <ArrowsPointingOutIcon class="w-4 h-4" />
         </button>
@@ -344,14 +346,14 @@ function changeGalleryCardSize(size) {
               class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-dark-600"
             >
               <PencilIcon class="w-4 h-4" />
-              Umbenennen
+              {{ $t('notesModule.database.rename') }}
             </button>
             <button
               @click="duplicateDatabase"
               class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-dark-600"
             >
               <DocumentDuplicateIcon class="w-4 h-4" />
-              Duplizieren
+              {{ $t('notesModule.database.duplicate') }}
             </button>
             <hr class="border-dark-600" />
             <button
@@ -359,7 +361,7 @@ function changeGalleryCardSize(size) {
               class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-dark-600"
             >
               <TrashIcon class="w-4 h-4" />
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -376,12 +378,12 @@ function changeGalleryCardSize(size) {
       <!-- Error state -->
       <div v-else-if="!database" class="text-center py-12 text-gray-500">
         <TableCellsIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p>Datenbank konnte nicht geladen werden</p>
+        <p>{{ $t('notesModule.database.couldNotLoad') }}</p>
         <button
           @click="loadOrCreateDatabase"
           class="mt-3 px-3 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700"
         >
-          Erneut versuchen
+          {{ $t('notesModule.database.retry') }}
         </button>
       </div>
 

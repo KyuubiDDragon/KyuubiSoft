@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWikiStore } from '@/stores/wiki'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -31,6 +32,7 @@ import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/vue/24/solid'
 
 const wikiStore = useWikiStore()
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -114,7 +116,7 @@ function createNewPage() {
 
 async function selectPage(pageId) {
   if (isEditing.value || isCreating.value) {
-    if (!await confirm({ message: 'Ungespeicherte Änderungen verwerfen?', type: 'danger', confirmText: 'Verwerfen' })) return
+    if (!await confirm({ message: t('wiki.ungespeicherteAenderungenVerwerfen'), type: 'danger', confirmText: 'Verwerfen' })) return
   }
 
   currentPageId.value = pageId
@@ -129,7 +131,7 @@ async function selectPage(pageId) {
     }
   } catch (err) {
     console.error('Failed to load page:', err)
-    toast.error('Fehler beim Laden der Seite: ' + (err.response?.data?.error || err.message))
+    toast.error(t('wiki.wikifehlerbeimladenderseite') + (err.response?.data?.error || err.message))
   }
 }
 
@@ -171,7 +173,7 @@ async function savePage() {
       isEditing.value = false
     }
   } catch (err) {
-    toast.error('Fehler beim Speichern: ' + (wikiStore.error || err.message))
+    toast.error(t('scripts.scriptsfehlerbeimspeichern') + (wikiStore.error || err.message))
   }
 }
 
@@ -192,14 +194,14 @@ async function togglePublish() {
 }
 
 async function confirmDelete() {
-  if (!await confirm({ message: 'Diese Seite wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('wiki.wikidieseseitewirklichloeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await wikiStore.deletePage(currentPageId.value)
     currentPageId.value = null
     showDropdown.value = false
   } catch (err) {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -233,19 +235,19 @@ async function saveCategory() {
     editingCategory.value = null
     categoryForm.value = { name: '', color: '#6366f1', icon: '', description: '' }
   } catch (err) {
-    toast.error('Fehler beim Speichern der Kategorie')
+    toast.error(t('wiki.wikifehlerbeimspeichernderkategorie'))
   }
 }
 
 // History
 async function restoreVersion(historyId) {
-  if (!await confirm({ message: 'Diese Version wiederherstellen? Aktueller Inhalt wird in die Historie gespeichert.', type: 'danger', confirmText: 'Wiederherstellen' })) return
+  if (!await confirm({ message: t('wiki.wikidieseversionwiederherstellenaktuellerinhaltwirdin'), type: 'danger', confirmText: 'Wiederherstellen' })) return
 
   try {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)
     showHistoryModal.value = false
   } catch (err) {
-    toast.error('Fehler beim Wiederherstellen')
+    toast.error(t('documentsModule.fehlerBeimWiederherstellen'))
   }
 }
 
@@ -440,7 +442,7 @@ onMounted(async () => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('bookmarksModule.suchen')"
             class="input w-full pl-9 text-sm"
             @input="debouncedSearch"
           />
@@ -487,7 +489,7 @@ onMounted(async () => {
             @click="selectedCategory = null"
           >
             <FolderIcon class="w-4 h-4" />
-            <span class="flex-1">Alle Seiten</span>
+            <span class="flex-1">{{ $t('wiki.wikialleseiten') }}</span>
             <span class="text-xs text-gray-500">{{ wikiStore.pages.length }}</span>
           </button>
 
@@ -512,12 +514,12 @@ onMounted(async () => {
             @click="showCategoryModal = true"
           >
             <PlusIcon class="w-4 h-4 inline mr-1" />
-            Kategorie hinzufügen
+            {{ $t('wiki.kategorieHinzufuegen') }}
           </button>
 
           <!-- Page List -->
           <div class="space-y-1">
-            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">Seiten</h4>
+            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">{{ $t('wiki.seiten') }}</h4>
             <button
               v-for="page in filteredPages"
               :key="page.id"
@@ -533,7 +535,7 @@ onMounted(async () => {
 
           <!-- Recent Pages -->
           <div v-if="wikiStore.recentPages.length" class="space-y-1">
-            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">Zuletzt bearbeitet</h4>
+            <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">{{ $t('wiki.zuletztBearbeitet') }}</h4>
             <button
               v-for="page in wikiStore.recentPages.slice(0, 5)"
               :key="page.id"
@@ -553,14 +555,14 @@ onMounted(async () => {
       <!-- Loading state -->
       <div v-if="wikiStore.loading && currentPageId" class="flex flex-col items-center justify-center h-full text-center p-8">
         <ArrowPathIcon class="w-12 h-12 text-indigo-400 animate-spin mb-4" />
-        <p class="text-gray-400">Seite wird geladen...</p>
+        <p class="text-gray-400">{{ $t('wiki.wikiseitewirdgeladen') }}</p>
       </div>
 
       <!-- No page selected -->
       <div v-else-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
         <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
         <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
-        <p class="text-gray-500 mb-6">Wähle eine Seite aus der Sidebar oder erstelle eine neue.</p>
+        <p class="text-gray-500 mb-6">{{ $t('wiki.wikiwaehleeineseiteausdersidebaroder') }}</p>
         <button
           class="btn-primary flex items-center gap-2"
           @click="createNewPage"
@@ -580,9 +582,9 @@ onMounted(async () => {
               v-model="editForm.title"
               type="text"
               class="w-full text-3xl font-bold bg-transparent text-white border-none outline-none placeholder-gray-600"
-              placeholder="Seitentitel"
+              placeholder=$t('wiki.seitentitel')
             />
-            <h1 v-else class="text-3xl font-bold text-white">{{ wikiStore.currentPage?.title || 'Neue Seite' }}</h1>
+            <h1 v-else class="text-3xl font-bold text-white">{{ wikiStore.currentPage?.title || $t('wiki.neueSeite') }}</h1>
 
             <div v-if="wikiStore.currentPage && !isCreating" class="flex items-center gap-4 mt-2 text-sm text-gray-500">
               <span
@@ -647,14 +649,14 @@ onMounted(async () => {
                     @click="togglePin"
                   >
                     <BookmarkIcon class="w-4 h-4" />
-                    {{ wikiStore.currentPage?.is_pinned ? 'Nicht mehr anpinnen' : 'Anpinnen' }}
+                    {{ wikiStore.currentPage?.is_pinned ? $t('wiki.nichtMehrAnpinnen') : 'Anpinnen' }}
                   </button>
                   <button
                     class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="togglePublish"
                   >
                     <GlobeAltIcon class="w-4 h-4" />
-                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : 'Veröffentlichen' }}
+                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : $t('wiki.veroeffentlichen') }}
                   </button>
                   <button
                     class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"

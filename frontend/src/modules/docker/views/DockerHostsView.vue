@@ -18,6 +18,8 @@ import {
   FolderIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const projectStore = useProjectStore()
 const toast = useToast()
@@ -61,7 +63,7 @@ const groupedHosts = computed(() => {
   const grouped = {
     no_project: {
       project_id: null,
-      project_name: 'Ohne Projekt',
+      project_name: t('dockerModule.noProject'),
       project_color: '#6b7280',
       hosts: [],
     },
@@ -232,7 +234,7 @@ async function saveHost() {
 }
 
 async function deleteHost(host) {
-  if (!await confirm({ message: `Docker Host "${host.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('docker.confirmDeleteHost', { name: host.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/docker/hosts/${host.id}`)
@@ -315,13 +317,13 @@ watch(() => projectStore.selectedProjectId, () => {
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <ServerStackIcon class="w-7 h-7" />
-          Docker Hosts
+          {{ $t('dockerModule.hosts') }}
         </h1>
-        <p class="text-gray-400 mt-1">Verwalte deine Docker-Hosts und Server</p>
+        <p class="text-gray-400 mt-1">{{ $t('dockerModule.hostsSubtitle') }}</p>
       </div>
       <button @click="openCreateModal" class="btn btn-primary flex items-center gap-2">
         <PlusIcon class="w-5 h-5" />
-        Host hinzufügen
+        {{ $t('dockerModule.addHost') }}
       </button>
     </div>
 
@@ -333,13 +335,13 @@ watch(() => projectStore.selectedProjectId, () => {
     <!-- Empty State -->
     <div v-else-if="hosts.length === 0" class="card p-12 text-center">
       <ServerStackIcon class="w-16 h-16 mx-auto text-gray-500 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">Keine Docker Hosts konfiguriert</h3>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('dockerModule.noHosts') }}</h3>
       <p class="text-gray-400 mb-6">
-        Füge Docker-Hosts hinzu, um Container auf verschiedenen Servern zu verwalten.
+        {{ $t('dockerModule.noHostsHint') }}
       </p>
       <button @click="openCreateModal" class="btn btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Ersten Host hinzufügen
+        {{ $t('dockerModule.addFirstHost') }}
       </button>
     </div>
 
@@ -378,7 +380,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     <button
                       v-if="host.is_default"
                       class="text-yellow-400"
-                      title="Standard-Host"
+                      :title="$t('dockerModule.defaultHost')"
                     >
                       <StarIconSolid class="w-4 h-4" />
                     </button>
@@ -424,7 +426,7 @@ watch(() => projectStore.selectedProjectId, () => {
                   @click="testConnection(host)"
                   class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
                   :disabled="testingConnection === host.id"
-                  title="Verbindung testen"
+                  :title="$t('dockerModule.testConnection')"
                 >
                   <ArrowPathIcon
                     class="w-4 h-4"
@@ -435,7 +437,7 @@ watch(() => projectStore.selectedProjectId, () => {
                   v-if="!host.is_default"
                   @click="setDefault(host)"
                   class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] rounded transition-colors"
-                  title="Als Standard setzen"
+                  :title="$t('dockerModule.setAsDefault')"
                 >
                   <StarIcon class="w-4 h-4" />
                 </button>
@@ -444,14 +446,14 @@ watch(() => projectStore.selectedProjectId, () => {
                 <button
                   @click="openEditModal(host)"
                   class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
-                  title="Bearbeiten"
+                  :title="$t('common.edit')"
                 >
                   <PencilIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="deleteHost(host)"
                   class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded transition-colors"
-                  title="Löschen"
+                  :title="$t('common.delete')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -469,38 +471,38 @@ watch(() => projectStore.selectedProjectId, () => {
         <div class="relative modal max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <h2 class="text-xl font-bold text-white mb-6">
-              {{ editMode ? 'Docker Host bearbeiten' : 'Docker Host hinzufügen' }}
+              {{ editMode ? $t('dockerModule.editHost') : $t('dockerModule.addHost') }}
             </h2>
 
             <form @submit.prevent="saveHost" class="space-y-4">
               <!-- Name -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.name') }} *</label>
                 <input
                   v-model="form.name"
                   type="text"
                   class="input w-full"
-                  placeholder="z.B. Produktionsserver"
+                  :placeholder="$t('dockerModule.hostNamePlaceholder')"
                   required
                 />
               </div>
 
               <!-- Description -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
                 <input
                   v-model="form.description"
                   type="text"
                   class="input w-full"
-                  placeholder="Optionale Beschreibung"
+                  :placeholder="$t('deploymentsModule.optionalDescription')"
                 />
               </div>
 
               <!-- Project -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Projekt</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.project') }}</label>
                 <select v-model="form.project_id" class="select w-full">
-                  <option value="">Kein Projekt</option>
+                  <option value="">{{ $t('dockerModule.noProject') }}</option>
                   <option v-for="project in projects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
@@ -509,7 +511,7 @@ watch(() => projectStore.selectedProjectId, () => {
 
               <!-- Connection Type -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Verbindungstyp</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.connectionType') }}</label>
                 <div class="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -523,7 +525,7 @@ watch(() => projectStore.selectedProjectId, () => {
                   >
                     <ComputerDesktopIcon class="w-5 h-5 text-blue-400 mb-1" />
                     <div class="font-medium text-white">Socket</div>
-                    <div class="text-xs text-gray-400">Lokaler Docker Socket</div>
+                    <div class="text-xs text-gray-400">{{ $t('dockerModule.localSocket') }}</div>
                   </button>
                   <button
                     type="button"
@@ -537,14 +539,14 @@ watch(() => projectStore.selectedProjectId, () => {
                   >
                     <GlobeAltIcon class="w-5 h-5 text-purple-400 mb-1" />
                     <div class="font-medium text-white">TCP</div>
-                    <div class="text-xs text-gray-400">Remote Docker API</div>
+                    <div class="text-xs text-gray-400">{{ $t('dockerModule.remoteApi') }}</div>
                   </button>
                 </div>
               </div>
 
               <!-- Socket Path -->
               <div v-if="form.type === 'socket'">
-                <label class="block text-sm font-medium text-gray-300 mb-1">Socket Pfad</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.socketPath') }}</label>
                 <input
                   v-model="form.socket_path"
                   type="text"
@@ -557,7 +559,7 @@ watch(() => projectStore.selectedProjectId, () => {
               <template v-else>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Host *</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.host') }} *</label>
                     <input
                       v-model="form.tcp_host"
                       type="text"
@@ -567,7 +569,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Port</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.port') }}</label>
                     <input
                       v-model.number="form.tcp_port"
                       type="number"
@@ -586,14 +588,14 @@ watch(() => projectStore.selectedProjectId, () => {
                     class="rounded bg-white/[0.08] border-white/[0.08] text-primary-500 focus:ring-primary-500"
                   />
                   <label for="tls_enabled" class="text-sm text-gray-300">
-                    TLS/SSL aktivieren (Port 2376)
+                    {{ $t('dockerModule.enableTls') }}
                   </label>
                 </div>
 
                 <!-- TLS Certificates -->
                 <template v-if="form.tls_enabled">
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">CA Zertifikat</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.caCertificate') }}</label>
                     <textarea
                       v-model="form.tls_ca"
                       class="textarea w-full h-20 text-xs font-mono"
@@ -601,7 +603,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     ></textarea>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Client Zertifikat</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.clientCertificate') }}</label>
                     <textarea
                       v-model="form.tls_cert"
                       class="textarea w-full h-20 text-xs font-mono"
@@ -609,7 +611,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     ></textarea>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Client Key</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.clientKey') }}</label>
                     <textarea
                       v-model="form.tls_key"
                       class="textarea w-full h-20 text-xs font-mono"
@@ -621,13 +623,13 @@ watch(() => projectStore.selectedProjectId, () => {
 
               <!-- Portainer Integration (only in edit mode) -->
               <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
-                <h4 class="text-sm font-medium text-white mb-3">Portainer Integration (Optional)</h4>
+                <h4 class="text-sm font-medium text-white mb-3">{{ $t('dockerModule.portainerIntegration') }}</h4>
                 <p class="text-xs text-gray-400 mb-3">
                   Konfiguriere Portainer, um Compose-Dateien direkt von der Portainer API zu laden, wenn sie nicht im Dateisystem verfügbar sind.
                 </p>
                 <div class="grid grid-cols-1 gap-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Portainer URL</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.portainerUrl') }}</label>
                     <input
                       v-model="form.portainer_url"
                       type="url"
@@ -636,7 +638,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">API Token</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.apiToken') }}</label>
                     <input
                       v-model="form.portainer_api_token"
                       type="password"
@@ -646,7 +648,7 @@ watch(() => projectStore.selectedProjectId, () => {
                     <p class="text-xs text-gray-500 mt-1">Erstelle einen API Token in Portainer unter Account Settings → Access Tokens</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Endpoint ID</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.endpointId') }}</label>
                     <input
                       v-model="form.portainer_endpoint_id"
                       type="number"
@@ -663,7 +665,7 @@ watch(() => projectStore.selectedProjectId, () => {
                         class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                       />
                       <div>
-                        <span class="text-sm font-medium text-white">Nur Portainer API verwenden</span>
+                        <span class="text-sm font-medium text-white">{{ $t('dockerModule.portainerOnly') }}</span>
                         <p class="text-xs text-gray-400 mt-0.5">
                           Alle Docker-Daten werden über Portainer geladen. Kein lokaler Docker-Socket nötig.
                         </p>
@@ -677,7 +679,7 @@ watch(() => projectStore.selectedProjectId, () => {
                       :disabled="savingPortainer"
                       class="btn btn-secondary text-sm"
                     >
-                      {{ savingPortainer ? 'Speichern...' : 'Portainer speichern' }}
+                      {{ savingPortainer ? $t('common.saving') : $t('dockerModule.savePortainer') }}
                     </button>
                   </div>
                 </div>
@@ -685,7 +687,7 @@ watch(() => projectStore.selectedProjectId, () => {
 
               <!-- SSH Access (only in edit mode) -->
               <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
-                <h4 class="text-sm font-medium text-white mb-3">SSH-Zugang (Optional)</h4>
+                <h4 class="text-sm font-medium text-white mb-3">{{ $t('dockerModule.sshAccess') }}</h4>
                 <p class="text-xs text-gray-400 mb-3">
                   SSH-Zugang für das Lesen von Compose-Dateien auf Remote-Servern. Ermöglicht Backups für nicht über Portainer erstellte Stacks.
                 </p>
@@ -698,14 +700,14 @@ watch(() => projectStore.selectedProjectId, () => {
                       class="rounded bg-white/[0.08] border-white/[0.08] text-primary-500 focus:ring-primary-500"
                     />
                     <label for="ssh_enabled" class="text-sm text-gray-300">
-                      SSH-Zugang aktivieren
+                      {{ $t('dockerModule.enableSsh') }}
                     </label>
                   </div>
 
                   <template v-if="form.ssh_enabled">
                     <div class="grid grid-cols-2 gap-3">
                       <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Host</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.sshHost') }}</label>
                         <input
                           v-model="form.ssh_host"
                           type="text"
@@ -714,7 +716,7 @@ watch(() => projectStore.selectedProjectId, () => {
                         />
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">SSH Port</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.sshPort') }}</label>
                         <input
                           v-model.number="form.ssh_port"
                           type="number"
@@ -724,7 +726,7 @@ watch(() => projectStore.selectedProjectId, () => {
                       </div>
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-1">Benutzername</label>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.username') }}</label>
                       <input
                         v-model="form.ssh_user"
                         type="text"
@@ -733,16 +735,16 @@ watch(() => projectStore.selectedProjectId, () => {
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-1">Passwort</label>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.password') }}</label>
                       <input
                         v-model="form.ssh_password"
                         type="password"
                         class="input w-full"
-                        placeholder="Optional wenn Private Key verwendet wird"
+                        placeholder=$t('dockerModule.optionalWennPrivateKeyVerwendetWird')
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-1">Private Key (alternativ zum Passwort)</label>
+                      <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.privateKey') }}</label>
                       <textarea
                         v-model="form.ssh_private_key"
                         class="textarea w-full h-24 text-xs font-mono"
@@ -757,10 +759,10 @@ watch(() => projectStore.selectedProjectId, () => {
               <!-- Actions -->
               <div class="flex justify-end gap-3 pt-4">
                 <button type="button" @click="showModal = false" class="btn btn-secondary">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn btn-primary">
-                  {{ editMode ? 'Speichern' : 'Hinzufügen' }}
+                  {{ editMode ? $t('common.save') : $t('common.add') }}
                 </button>
               </div>
             </form>

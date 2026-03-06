@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted, watch, defineAsyncComponent } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import {
   PlusIcon,
@@ -36,6 +37,7 @@ const UniverSheet = defineAsyncComponent(() => import('@/components/UniverSheet.
 
 const route = useRoute()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -84,10 +86,10 @@ const docForm = reactive({
 })
 
 const formatOptions = [
-  { value: 'richtext', label: 'Rich Text', icon: DocumentIcon, description: 'WYSIWYG Editor mit Formatierung' },
-  { value: 'markdown', label: 'Markdown', icon: CodeBracketIcon, description: 'Markdown mit Live-Vorschau' },
-  { value: 'code', label: 'Code', icon: CodeBracketIcon, description: 'Code-Editor mit Syntax-Highlighting' },
-  { value: 'spreadsheet', label: 'Tabelle', icon: TableCellsIcon, description: 'Excel-ähnliche Tabellenkalkulation' },
+  { value: 'richtext', label: t('documentsModule.richText'), icon: DocumentIcon, description: t('documentsModule.richTextDesc') },
+  { value: 'markdown', label: t('documentsModule.markdown'), icon: CodeBracketIcon, description: t('documentsModule.markdownDesc') },
+  { value: 'code', label: t('documentsModule.code'), icon: CodeBracketIcon, description: t('documentsModule.codeDesc') },
+  { value: 'spreadsheet', label: t('documentsModule.spreadsheet'), icon: TableCellsIcon, description: t('documentsModule.spreadsheetDesc') },
 ]
 
 // Simple Markdown to HTML conversion
@@ -146,7 +148,7 @@ async function loadDocuments() {
     const response = await api.get('/api/v1/documents', { params })
     documents.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Dokumente')
+    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderdokumente'))
   } finally {
     isLoading.value = false
   }
@@ -168,9 +170,9 @@ async function createDocument() {
     // Open the new document
     await selectDocument(newDoc.id)
     isEditing.value = true
-    uiStore.showSuccess('Dokument erstellt')
+    uiStore.showSuccess(t('documentsModule.created'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -183,14 +185,14 @@ async function updateDocument() {
     selectedDoc.value.content = editContent.value
     isEditing.value = false
     await loadDocuments()
-    uiStore.showSuccess('Dokument gespeichert')
+    uiStore.showSuccess(t('documentsModule.saved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteDocument(docId) {
-  if (!await confirm({ message: 'Dokument wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('documentsModule.dokumentWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/documents/${docId}`)
@@ -198,9 +200,9 @@ async function deleteDocument(docId) {
     if (selectedDoc.value?.id === docId) {
       selectedDoc.value = null
     }
-    uiStore.showSuccess('Dokument gelöscht')
+    uiStore.showSuccess(t('documentsModule.deleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -211,7 +213,7 @@ async function selectDocument(docId) {
     editContent.value = selectedDoc.value.content || ''
     isEditing.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
   }
 }
 
@@ -297,17 +299,17 @@ async function enableShare() {
       documents.value[docIndex].public_token = shareInfo.value.token
     }
 
-    uiStore.showSuccess('Dokument freigegeben')
+    uiStore.showSuccess(t('documentsModule.shared'))
     await loadSharedDocuments()
   } catch (error) {
-    uiStore.showError('Fehler beim Freigeben')
+    uiStore.showError(t('documentsModule.fehlerBeimFreigeben'))
   } finally {
     isLoadingShare.value = false
   }
 }
 
 async function disableShare() {
-  if (!await confirm({ message: 'Freigabe wirklich deaktivieren?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('documentsModule.confirmDisableShare'), type: 'danger', confirmText: t('common.delete') })) return
 
   isLoadingShare.value = true
   try {
@@ -322,10 +324,10 @@ async function disableShare() {
     }
 
     showShareModal.value = false
-    uiStore.showSuccess('Freigabe deaktiviert')
+    uiStore.showSuccess(t('documentsModule.shareDisabled'))
     await loadSharedDocuments()
   } catch (error) {
-    uiStore.showError('Fehler beim Deaktivieren')
+    uiStore.showError(t('contractsModule.fehlerBeimDeaktivieren'))
   } finally {
     isLoadingShare.value = false
   }
@@ -338,7 +340,7 @@ function getPublicUrl(token) {
 function copyPublicUrl() {
   if (!shareInfo.value?.token) return
   navigator.clipboard.writeText(getPublicUrl(shareInfo.value.token))
-  uiStore.showSuccess('Link kopiert!')
+  uiStore.showSuccess(t('documentsModule.linkCopied'))
 }
 
 async function loadSharedDocuments() {
@@ -375,7 +377,7 @@ async function loadVersions() {
     const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions`)
     versions.value = response.data.data || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Versionen')
+    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderversionen'))
   } finally {
     isLoadingVersions.value = false
   }
@@ -388,14 +390,14 @@ async function previewVersion(version) {
     const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions/${version.id}`)
     versionPreviewContent.value = response.data.data?.content || ''
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Version')
+    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderversion'))
   } finally {
     isLoadingVersions.value = false
   }
 }
 
 async function restoreVersion(version) {
-  if (!await confirm({ message: `Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`, type: 'danger', confirmText: t('common.delete') })) return
 
   isLoadingVersions.value = true
   try {
@@ -406,7 +408,7 @@ async function restoreVersion(version) {
     uiStore.showSuccess(`Version ${version.version_number} wiederhergestellt`)
     await loadVersions() // Reload versions to show the new backup
   } catch (error) {
-    uiStore.showError('Fehler beim Wiederherstellen')
+    uiStore.showError(t('documentsModule.fehlerBeimWiederherstellen'))
   } finally {
     isLoadingVersions.value = false
   }
@@ -415,14 +417,14 @@ async function restoreVersion(version) {
 // Copy public URL to clipboard
 function copyDocumentLink(token) {
   if (!token) {
-    uiStore.showError('Kein öffentlicher Link vorhanden')
+    uiStore.showError(t('documentsModule.noPublicLink'))
     return
   }
   const url = getPublicUrl(token)
   navigator.clipboard.writeText(url).then(() => {
     uiStore.showSuccess('Link kopiert!')
   }).catch(() => {
-    uiStore.showError('Link konnte nicht kopiert werden')
+    uiStore.showError(t('documentsModule.linkCopyFailed'))
   })
 }
 
@@ -453,14 +455,14 @@ onMounted(async () => {
         </button>
         <div>
           <h1 class="text-2xl font-bold text-white">
-            {{ selectedDoc ? selectedDoc.title : 'Dokumente' }}
+            {{ selectedDoc ? selectedDoc.title : 'documents.title' }}
           </h1>
           <p v-if="selectedDoc" class="text-gray-400 mt-1 flex items-center gap-2">
             <ClockIcon class="w-4 h-4" />
-            Zuletzt bearbeitet: {{ formatDate(selectedDoc.updated_at) }}
+            {{ $t('documentsModule.lastEdited') }} {{ formatDate(selectedDoc.updated_at) }}
             <span class="badge badge-primary ml-2">{{ getFormatLabel(selectedDoc.format) }}</span>
           </p>
-          <p v-else class="text-gray-400 mt-1">Verwalte deine Dokumente</p>
+          <p v-else class="text-gray-400 mt-1">{{ $t('documentsModule.documentsmoduleverwaltedeinedokumente') }}</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -469,24 +471,24 @@ onMounted(async () => {
           <template v-if="selectedDoc.format !== 'spreadsheet'">
             <button v-if="!isEditing" @click="startEditing" class="btn-primary">
               <PencilIcon class="w-5 h-5 mr-2" />
-              Bearbeiten
+              {{ $t('common.edit') }}
             </button>
             <template v-else>
-              <button @click="cancelEditing" class="btn-secondary">Abbrechen</button>
-              <button @click="updateDocument" class="btn-primary">Speichern</button>
+              <button @click="cancelEditing" class="btn-secondary">{{ $t('common.cancel') }}</button>
+              <button @click="updateDocument" class="btn-primary">{{ $t('common.save') }}</button>
             </template>
           </template>
           <!-- Spreadsheet auto-saves -->
           <button v-else @click="updateDocument" class="btn-primary">
-            Speichern
+            {{ $t('common.save') }}
           </button>
           <button @click="openVersionsModal" class="btn-secondary">
             <ClockIcon class="w-5 h-5 mr-2" />
-            Versionen
+            {{ $t('documentsModule.versions') }}
           </button>
           <button @click="openShareModal(selectedDoc)" class="btn-secondary">
             <ShareIcon class="w-5 h-5 mr-2" />
-            Teilen
+            {{ $t('documentsModule.share') }}
           </button>
           <button @click="deleteDocument(selectedDoc.id)" class="btn-secondary text-red-400">
             <TrashIcon class="w-5 h-5" />
@@ -494,7 +496,7 @@ onMounted(async () => {
         </template>
         <button v-else @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Neues Dokument
+          {{ $t('documents.newDocument') }}
         </button>
       </div>
     </div>
@@ -512,11 +514,11 @@ onMounted(async () => {
           <TipTapEditor
             v-model="editContent"
             :editable="isEditing"
-            placeholder="Beginne hier zu schreiben..."
+            :placeholder="$t('documentsModule.startWriting')"
           />
         </div>
         <div v-if="!isEditing && !selectedDoc.content" class="text-center py-12 text-gray-400">
-          Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Inhalt hinzuzufügen.
+          {{ $t('documentsModule.emptyDocHint') }}
         </div>
       </template>
 
@@ -529,11 +531,11 @@ onMounted(async () => {
             <textarea
               v-model="editContent"
               class="input font-mono text-sm h-[600px] resize-none"
-              placeholder="Schreibe hier deinen Markdown-Text..."
+              :placeholder="$t('documentsModule.writeMarkdown')"
             ></textarea>
           </div>
           <div class="space-y-2">
-            <label class="label">Vorschau</label>
+            <label class="label">{{ $t('documentsModule.preview') }}</label>
             <div
               class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 h-[600px] overflow-y-auto prose prose-invert max-w-none"
               v-html="sanitizeHtmlWithLinks(renderMarkdown(editContent))"
@@ -548,7 +550,7 @@ onMounted(async () => {
             v-html="sanitizeHtmlWithLinks(renderMarkdown(selectedDoc.content))"
           ></div>
           <div v-if="!selectedDoc.content" class="text-center py-12 text-gray-400">
-            Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Inhalt hinzuzufügen.
+            Dieses Dokument ist leer. Klicke auf $t('common.edit') um Inhalt hinzuzufügen.
           </div>
         </div>
       </template>
@@ -563,7 +565,7 @@ onMounted(async () => {
           />
         </div>
         <div v-if="!isEditing && !selectedDoc.content" class="text-center py-12 text-gray-400">
-          Dieses Dokument ist leer. Klicke auf "Bearbeiten" um Code hinzuzufügen.
+          Dieses Dokument ist leer. Klicke auf $t('common.edit') um Code hinzuzufügen.
         </div>
       </template>
 
@@ -589,7 +591,7 @@ onMounted(async () => {
             ? 'text-primary-400 border-primary-400'
             : 'text-gray-400 border-transparent hover:text-gray-300'"
         >
-          Alle Dokumente
+          {{ $t('documentsModule.allDocuments') }}
           <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/[0.04]">{{ documents.length }}</span>
         </button>
         <button
@@ -600,7 +602,7 @@ onMounted(async () => {
             : 'text-gray-400 border-transparent hover:text-gray-300'"
         >
           <GlobeAltIcon class="w-4 h-4 inline mr-1" />
-          Geteilte Dokumente
+          {{ $t('documentsModule.sharedDocuments') }}
           <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/[0.04]">{{ sharedDocuments.length }}</span>
         </button>
       </div>
@@ -608,11 +610,11 @@ onMounted(async () => {
       <!-- Empty state -->
       <div v-if="activeTab === 'all' && documents.length === 0" class="card p-12 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <h3 class="text-lg font-medium text-white mb-2">Keine Dokumente vorhanden</h3>
-        <p class="text-gray-400 mb-6">Erstelle dein erstes Dokument.</p>
+        <h3 class="text-lg font-medium text-white mb-2">{{ $t('documentsModule.noDocs') }}</h3>
+        <p class="text-gray-400 mb-6">{{ $t('documentsModule.createFirst') }}</p>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Erstes Dokument erstellen
+          {{ $t('documentsModule.createFirstDoc') }}
         </button>
       </div>
 
@@ -635,13 +637,13 @@ onMounted(async () => {
           </div>
           <h3 class="text-lg font-medium text-white mt-4">{{ doc.title }}</h3>
           <p class="text-gray-500 text-sm mt-2">
-            Geändert: {{ formatDate(doc.updated_at) }}
+            {{ $t('documentsModule.modified') }}: {{ formatDate(doc.updated_at) }}
           </p>
           <div class="flex items-center justify-end mt-4 gap-2">
             <button
               @click.stop="openShareModal(doc, $event)"
               class="opacity-0 group-hover:opacity-100 p-2 text-primary-400 hover:bg-primary-400/10 rounded-lg transition-all"
-              :title="doc.is_public ? 'Freigabe bearbeiten' : 'Teilen'"
+              :title="doc.is_public ? $t('documentsModule.freigabeBearbeiten') : 'Teilen'"
             >
               <ShareIcon class="w-4 h-4" />
             </button>
@@ -659,8 +661,8 @@ onMounted(async () => {
       <template v-else-if="activeTab === 'shared'">
         <div v-if="sharedDocuments.length === 0" class="card p-12 text-center">
           <GlobeAltIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-          <h3 class="text-lg font-medium text-white mb-2">Keine geteilten Dokumente</h3>
-          <p class="text-gray-400">Teile ein Dokument um es hier zu sehen.</p>
+          <h3 class="text-lg font-medium text-white mb-2">{{ $t('documentsModule.noSharedDocs') }}</h3>
+          <p class="text-gray-400">{{ $t('documentsModule.shareToSee') }}</p>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -684,10 +686,10 @@ onMounted(async () => {
             <h3 class="text-lg font-medium text-white mt-4">{{ doc.title }}</h3>
             <p class="text-gray-500 text-sm mt-2">
               <EyeIcon class="w-4 h-4 inline mr-1" />
-              {{ doc.public_view_count || 0 }} Aufrufe
+              {{ doc.public_view_count || 0 }} {{ $t('documentsModule.views') }}
             </p>
             <p v-if="doc.public_expires_at" class="text-gray-500 text-sm mt-1">
-              Läuft ab: {{ formatDate(doc.public_expires_at) }}
+              {{ $t('documentsModule.expiresAt') }} {{ formatDate(doc.public_expires_at) }}
             </p>
             <div class="flex items-center gap-2 mt-4">
               <button
@@ -696,13 +698,13 @@ onMounted(async () => {
                 class="flex-1 btn-secondary py-2 text-sm"
               >
                 <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
-                Link kopieren
+                {{ $t('documentsModule.copyLink') }}
               </button>
               <button
                 @click="selectDocument(doc.id)"
                 class="flex-1 btn-secondary py-2 text-sm"
               >
-                Öffnen
+                {{ $t('documentsModule.open') }}
               </button>
               <button
                 v-if="doc.is_owner"
@@ -725,22 +727,22 @@ onMounted(async () => {
         
       >
         <div class="modal p-6 w-full max-w-2xl">
-          <h2 class="text-xl font-bold text-white mb-6">Neues Dokument</h2>
+          <h2 class="text-xl font-bold text-white mb-6">{{ $t('documents.newDocument') }}</h2>
 
           <form @submit.prevent="createDocument" class="space-y-6">
             <div>
-              <label class="label">Titel</label>
+              <label class="label">{{ $t('common.title') }}</label>
               <input
                 v-model="docForm.title"
                 type="text"
                 class="input"
-                placeholder="Dokumentname"
+                :placeholder="$t('documentsModule.documentName')"
                 required
               />
             </div>
 
             <div>
-              <label class="label">Format</label>
+              <label class="label">{{ $t('documentsModule.format') }}</label>
               <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                 <button
                   v-for="option in formatOptions"
@@ -765,10 +767,10 @@ onMounted(async () => {
                 @click="showCreateModal = false"
                 class="btn-secondary flex-1"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
-                Erstellen
+                {{ $t('common.create') }}
               </button>
             </div>
           </form>
@@ -788,7 +790,7 @@ onMounted(async () => {
               <ShareIcon class="w-5 h-5 text-primary-400" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-white">Dokument teilen</h2>
+              <h2 class="text-xl font-bold text-white">{{ $t('documents.shareDocument') }}</h2>
               <p class="text-gray-400 text-sm">{{ shareDoc?.title }}</p>
             </div>
           </div>
@@ -803,7 +805,7 @@ onMounted(async () => {
             <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
               <div class="flex items-center gap-2 text-green-400 mb-2">
                 <GlobeAltIcon class="w-5 h-5" />
-                <span class="font-medium">Dokument ist öffentlich</span>
+                <span class="font-medium">{{ $t('documentsModule.documentIsPublic') }}</span>
               </div>
               <div class="flex items-center gap-4 text-gray-400 text-sm">
                 <span class="flex items-center gap-1">
@@ -812,18 +814,18 @@ onMounted(async () => {
                 </span>
                 <span v-if="shareInfo.can_edit" class="flex items-center gap-1 text-blue-400">
                   <PencilSquareIcon class="w-4 h-4" />
-                  Bearbeiten erlaubt
+                  {{ $t('documentsModule.editAllowed') }}
                 </span>
                 <span v-if="shareInfo.active_editors > 0" class="flex items-center gap-1 text-yellow-400">
                   <UsersIcon class="w-4 h-4" />
-                  {{ shareInfo.active_editors }} aktive Bearbeiter
+                  {{ shareInfo.active_editors }} {{ $t('documentsModule.activeEditors') }}
                 </span>
               </div>
             </div>
 
             <!-- Public URL -->
             <div>
-              <label class="label">Öffentlicher Link</label>
+              <label class="label">{{ $t('documentsModule.publicLink') }}</label>
               <div class="flex gap-2">
                 <input
                   :value="getPublicUrl(shareInfo.token)"
@@ -840,11 +842,11 @@ onMounted(async () => {
             <div class="space-y-2 text-sm text-gray-400">
               <p v-if="shareInfo.has_password" class="flex items-center gap-2">
                 <LockClosedIcon class="w-4 h-4 text-yellow-400" />
-                Passwortgeschützt
+                {{ $t('documentsModule.passwordProtected') }}
               </p>
               <p v-if="shareInfo.can_edit" class="flex items-center gap-2">
                 <PencilSquareIcon class="w-4 h-4 text-blue-400" />
-                Kollaboratives Bearbeiten aktiviert
+                {{ $t('documentsModule.collaborativeEditing') }}
               </p>
               <p v-if="shareInfo.expires_at">
                 Läuft ab: {{ formatDate(shareInfo.expires_at) }}
@@ -858,13 +860,13 @@ onMounted(async () => {
                 class="btn-secondary flex-1 text-red-400"
                 :disabled="isLoadingShare"
               >
-                Freigabe deaktivieren
+                {{ $t('documentsModule.disableShare') }}
               </button>
               <button
                 @click="showShareModal = false"
                 class="btn-primary flex-1"
               >
-                Schließen
+                {{ $t('common.close') }}
               </button>
             </div>
           </div>
@@ -872,12 +874,12 @@ onMounted(async () => {
           <!-- Share Form (when not shared) -->
           <div v-else class="space-y-4">
             <p class="text-gray-400">
-              Erstelle einen öffentlichen Link zu diesem Dokument.
+              {{ $t('documentsModule.createPublicLink') }}
             </p>
 
             <!-- Access Mode -->
             <div>
-              <label class="label">Zugriffsmodus</label>
+              <label class="label">{{ $t('documentsModule.accessMode') }}</label>
               <div class="grid grid-cols-2 gap-3 mt-2">
                 <button
                   type="button"
@@ -888,8 +890,8 @@ onMounted(async () => {
                     : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <EyeIcon class="w-5 h-5 text-primary-400 mb-1" />
-                  <p class="font-medium text-white text-sm">Nur Lesen</p>
-                  <p class="text-xs text-gray-400">Besucher können nur ansehen</p>
+                  <p class="font-medium text-white text-sm">{{ $t('documentsModule.readOnly') }}</p>
+                  <p class="text-xs text-gray-400">{{ $t('documentsModule.visitorsReadOnly') }}</p>
                 </button>
                 <button
                   type="button"
@@ -900,8 +902,8 @@ onMounted(async () => {
                     : 'border-white/[0.06] hover:border-white/[0.08]'"
                 >
                   <PencilSquareIcon class="w-5 h-5 text-blue-400 mb-1" />
-                  <p class="font-medium text-white text-sm">Bearbeiten</p>
-                  <p class="text-xs text-gray-400">Kollaboratives Arbeiten</p>
+                  <p class="font-medium text-white text-sm">{{ $t('common.edit') }}</p>
+                  <p class="text-xs text-gray-400">{{ $t('documentsModule.collaborativeWork') }}</p>
                 </button>
               </div>
               <p v-if="shareForm.can_edit" class="text-xs text-blue-400 mt-2 flex items-center gap-1">
@@ -911,19 +913,19 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="label">Passwort (optional)</label>
+              <label class="label">{{ $t('documentsModule.passwordOptional') }}</label>
               <input
                 v-model="shareForm.password"
                 type="password"
                 class="input"
-                placeholder="Leer lassen für keinen Schutz"
+                :placeholder="$t('documentsModule.leaveEmptyNoProtection')"
               />
             </div>
 
             <div>
-              <label class="label">Gültigkeitsdauer (optional)</label>
+              <label class="label">{{ $t('documentsModule.validityOptional') }}</label>
               <select v-model="shareForm.expires_in_days" class="input">
-                <option :value="null">Unbegrenzt</option>
+                <option :value="null">{{ $t('documentsModule.unlimited') }}</option>
                 <option :value="1">1 Tag</option>
                 <option :value="7">7 Tage</option>
                 <option :value="30">30 Tage</option>
@@ -944,7 +946,7 @@ onMounted(async () => {
                 :disabled="isLoadingShare"
               >
                 <LinkIcon class="w-5 h-5 mr-2" />
-                Link erstellen
+                {{ $t('documentsModule.createLink') }}
               </button>
             </div>
           </div>
@@ -965,7 +967,7 @@ onMounted(async () => {
                 <ClockIcon class="w-5 h-5 text-primary-400" />
               </div>
               <div>
-                <h2 class="text-xl font-bold text-white">Versionshistorie</h2>
+                <h2 class="text-xl font-bold text-white">{{ $t('documentsModule.versionHistory') }}</h2>
                 <p class="text-gray-400 text-sm">{{ selectedDoc?.title }}</p>
               </div>
             </div>
@@ -984,8 +986,8 @@ onMounted(async () => {
           <!-- No versions -->
           <div v-else-if="!versions.length" class="text-center py-12">
             <DocumentDuplicateIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <p class="text-gray-400">Keine Versionen vorhanden</p>
-            <p class="text-gray-500 text-sm mt-2">Versionen werden automatisch beim Speichern erstellt.</p>
+            <p class="text-gray-400">{{ $t('documentsModule.noVersions') }}</p>
+            <p class="text-gray-500 text-sm mt-2">{{ $t('documentsModule.versionsAutoCreated') }}</p>
           </div>
 
           <!-- Versions list and preview -->
@@ -1030,7 +1032,7 @@ onMounted(async () => {
                   :disabled="isLoadingVersions"
                 >
                   <ArrowPathIcon class="w-4 h-4 mr-1" />
-                  Wiederherstellen
+                  {{ $t('documentsModule.restore') }}
                 </button>
               </div>
 
@@ -1056,7 +1058,7 @@ onMounted(async () => {
 
               <!-- No selection -->
               <div v-else class="flex-1 flex items-center justify-center text-gray-500">
-                Klicke auf eine Version um sie anzuzeigen
+                {{ $t('documentsModule.clickToPreview') }}
               </div>
             </div>
           </div>

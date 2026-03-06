@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -26,6 +27,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -82,7 +84,7 @@ async function fetchData() {
     stats.value = statsRes.data.data
   } catch (error) {
     console.error('Failed to fetch links:', error)
-    uiStore.showError('Fehler beim Laden der Links')
+    uiStore.showError(t('links.fehlerBeimLadenDerLinks'))
   } finally {
     isLoading.value = false
   }
@@ -119,11 +121,11 @@ async function createLink() {
     }
 
     await api.post('/api/v1/links', payload)
-    uiStore.showSuccess('Link erstellt')
+    uiStore.showSuccess(t('links.linkErstellt'))
     showCreateModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Erstellen')
+    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
   } finally {
     isProcessing.value = false
   }
@@ -131,14 +133,14 @@ async function createLink() {
 
 // Delete link
 async function deleteLink(link) {
-  if (!await confirm({ message: `Link "${link.short_code}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Link "${link.short_code}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/links/${link.id}`)
-    uiStore.showSuccess('Link gelöscht')
+    uiStore.showSuccess(t('links.linkGeloescht'))
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -150,7 +152,7 @@ async function toggleActive(link) {
     })
     link.is_active = !link.is_active
   } catch (error) {
-    uiStore.showError('Fehler beim Umschalten')
+    uiStore.showError(t('links.fehlerBeimUmschalten'))
   }
 }
 
@@ -164,7 +166,7 @@ async function viewStats(link) {
     const response = await api.get(`/api/v1/links/${link.id}/stats`)
     linkStats.value = response.data.data
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Statistiken')
+    uiStore.showError(t('links.fehlerBeimLadenDerStatistiken'))
   }
 }
 
@@ -178,7 +180,7 @@ async function viewQr(link) {
     const response = await api.get(`/api/v1/links/${link.id}/qr`)
     qrData.value = response.data.data
   } catch (error) {
-    uiStore.showError('Fehler beim Laden des QR-Codes')
+    uiStore.showError(t('links.fehlerBeimLadenDesQrcodes'))
   }
 }
 
@@ -190,7 +192,7 @@ async function copyToClipboard(text) {
     setTimeout(() => copied.value = false, 2000)
     uiStore.showSuccess('In Zwischenablage kopiert')
   } catch (error) {
-    uiStore.showError('Kopieren fehlgeschlagen')
+    uiStore.showError(t('links.kopierenFehlgeschlagen'))
   }
 }
 
@@ -260,7 +262,7 @@ onMounted(fetchData)
             <CursorArrowRaysIcon class="w-6 h-6 text-green-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Gesamt Klicks</p>
+            <p class="text-gray-400 text-sm">{{ $t('links.gesamtKlicks') }}</p>
             <p class="text-xl font-bold text-white">{{ stats.total_clicks.toLocaleString() }}</p>
           </div>
         </div>
@@ -271,7 +273,7 @@ onMounted(fetchData)
             <ChartBarIcon class="w-6 h-6 text-purple-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Klicks heute</p>
+            <p class="text-gray-400 text-sm">{{ $t('links.klicksHeute') }}</p>
             <p class="text-xl font-bold text-white">{{ stats.clicks_today }}</p>
           </div>
         </div>
@@ -282,7 +284,7 @@ onMounted(fetchData)
             <GlobeAltIcon class="w-6 h-6 text-yellow-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Gesamt Links</p>
+            <p class="text-gray-400 text-sm">{{ $t('links.gesamtLinks') }}</p>
             <p class="text-xl font-bold text-white">{{ stats.total_links }}</p>
           </div>
         </div>
@@ -308,7 +310,7 @@ onMounted(fetchData)
     <!-- Links List -->
     <div v-else-if="filteredLinks.length === 0" class="card p-12 text-center">
       <LinkIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">Keine Links vorhanden</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('links.keineLinksVorhanden') }}</h3>
       <p class="text-gray-500 mb-4">Erstelle deinen ersten kurzen Link.</p>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-4 h-4 mr-2" />
@@ -349,7 +351,7 @@ onMounted(fetchData)
               <LockClosedIcon
                 v-if="link.password_hash"
                 class="w-4 h-4 text-gray-500"
-                title="Passwortgeschützt"
+                :title="$t('links.passwortgeschuetzt')"
               />
             </div>
 
@@ -364,7 +366,7 @@ onMounted(fetchData)
               <button
                 @click="copyToClipboard(getShortUrl(link.short_code))"
                 class="p-1 text-gray-500 hover:text-white rounded"
-                title="Kopieren"
+                :title="$t('common.copy')"
               >
                 <ClipboardDocumentIcon class="w-4 h-4" />
               </button>
@@ -422,7 +424,7 @@ onMounted(fetchData)
             <button
               @click="deleteLink(link)"
               class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-              title="Löschen"
+              :title="$t('common.delete')"
             >
               <TrashIcon class="w-5 h-5" />
             </button>
@@ -447,7 +449,7 @@ onMounted(fetchData)
         >
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Neuer Short Link</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('links.neuerShortLink') }}</h3>
               <button @click="showCreateModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -486,16 +488,16 @@ onMounted(fetchData)
                     pattern="[a-zA-Z0-9_-]+"
                   />
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Nur Buchstaben, Zahlen, - und _</p>
+                <p class="text-xs text-gray-500 mt-1">{{ $t('links.nurBuchstabenZahlenUnd') }}</p>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Passwort (optional)</label>
+                <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('links.linkspasswortoptional') }}</label>
                 <input
                   v-model="linkForm.password"
                   type="password"
                   class="input"
-                  placeholder="Link mit Passwort schützen"
+                  :placeholder="$t('links.linkslinkmitpasswortschuetzen')"
                 />
               </div>
 
@@ -509,7 +511,7 @@ onMounted(fetchData)
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">Max. Klicks</label>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('links.maxKlicks') }}</label>
                   <input
                     v-model.number="linkForm.max_clicks"
                     type="number"
@@ -569,12 +571,12 @@ onMounted(fetchData)
                 <!-- Total clicks -->
                 <div class="text-center p-6 bg-white/[0.04] rounded-xl">
                   <p class="text-4xl font-bold text-white">{{ linkStats.total_clicks.toLocaleString() }}</p>
-                  <p class="text-gray-400">Gesamt Klicks</p>
+                  <p class="text-gray-400">{{ $t('links.gesamtKlicks') }}</p>
                 </div>
 
                 <!-- Devices -->
                 <div>
-                  <h4 class="text-white font-medium mb-3">Geräte</h4>
+                  <h4 class="text-white font-medium mb-3">{{ $t('links.geraete') }}</h4>
                   <div class="grid grid-cols-3 gap-3">
                     <div
                       v-for="device in linkStats.devices"
@@ -638,7 +640,7 @@ onMounted(fetchData)
 
                 <!-- Recent clicks -->
                 <div v-if="linkStats.recent_clicks?.length">
-                  <h4 class="text-white font-medium mb-3">Letzte Klicks</h4>
+                  <h4 class="text-white font-medium mb-3">{{ $t('links.letzteKlicks') }}</h4>
                   <div class="space-y-2 max-h-48 overflow-y-auto">
                     <div
                       v-for="click in linkStats.recent_clicks.slice(0, 10)"

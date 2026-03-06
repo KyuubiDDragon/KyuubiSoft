@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   XMarkIcon,
   DocumentTextIcon,
@@ -17,6 +18,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'save'])
+const { t } = useI18n()
 
 const form = ref({
   client_id: null,
@@ -41,18 +43,18 @@ const languages = [
 ]
 
 const documentTypes = [
-  { value: 'invoice', label: 'Rechnung', description: 'Standard Rechnung', color: 'text-white', bg: 'bg-white/[0.08] border-white/[0.08]' },
-  { value: 'quote', label: 'Angebot', description: 'Kostenvoranschlag', color: 'text-yellow-300', bg: 'bg-yellow-500/10 border-yellow-500/30' },
-  { value: 'proforma', label: 'Proforma', description: 'Vorab-Rechnung', color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
-  { value: 'credit_note', label: 'Gutschrift', description: 'Storno / Gutschrift', color: 'text-red-300', bg: 'bg-red-500/10 border-red-500/30' },
-  { value: 'reminder', label: 'Mahnung', description: 'Zahlungserinnerung', color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/30' },
+  { value: 'invoice', label: t('invoicesModule.rechnung'), description: t('invoicesModule.standardRechnung'), color: 'text-white', bg: 'bg-white/[0.08] border-white/[0.08]' },
+  { value: 'quote', label: t('invoices.quote'), description: t('invoices.costEstimate'), color: 'text-yellow-300', bg: 'bg-yellow-500/10 border-yellow-500/30' },
+  { value: 'proforma', label: 'Proforma', description: t('invoicesModule.vorabrechnung'), color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
+  { value: 'credit_note', label: t('invoices.creditNote'), description: t('invoices.cancellationCredit'), color: 'text-red-300', bg: 'bg-red-500/10 border-red-500/30' },
+  { value: 'reminder', label: t('invoices.reminder'), description: t('invoices.paymentReminder'), color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/30' },
 ]
 
 const mahnungLevels = [
-  { value: 0, label: 'Zahlungserinnerung' },
-  { value: 1, label: '1. Mahnung' },
-  { value: 2, label: '2. Mahnung' },
-  { value: 3, label: '3. Mahnung (Letzte Frist)' },
+  { value: 0, label: t('invoices.paymentReminder') },
+  { value: 1, label: t('invoices.reminder1') },
+  { value: 2, label: t('invoices.reminder2') },
+  { value: 3, label: t('invoices.reminder3') },
 ]
 
 function initForm() {
@@ -85,7 +87,7 @@ function initForm() {
       service_date: today,
       tax_rate: props.kleinunternehmerMode ? 0 : 19,
       notes: '',
-      payment_terms: props.defaultPaymentTerms ?? 'Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.',
+      payment_terms: props.defaultPaymentTerms ?? t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum'),
       mahnung_level: 0,
       mahnung_fee: 0,
       show_kleinunternehmer: null,
@@ -136,7 +138,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
             <!-- Header -->
             <div class="sticky top-0 bg-white/[0.04] px-6 py-4 border-b border-white/[0.06] flex items-center justify-between z-10">
               <h2 class="text-lg font-bold text-white">
-                {{ editingInvoice ? 'Rechnung bearbeiten' : 'Neues Dokument' }}
+                {{ editingInvoice ? $t('invoicesModule.rechnungBearbeiten') : $t('documents.newDocument') }}
               </h2>
               <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors">
                 <XMarkIcon class="w-5 h-5" />
@@ -147,7 +149,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
 
               <!-- Document Type selection -->
               <div>
-                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dokumenttyp</label>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{{ $t('invoicesModule.dokumenttyp') }}</label>
                 <div class="grid grid-cols-5 gap-2">
                   <button
                     v-for="dt in documentTypes"
@@ -166,7 +168,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
 
               <!-- Language -->
               <div>
-                <label class="label">Sprache / Language</label>
+                <label class="label">{{ $t('invoices.language') }}</label>
                 <div class="flex gap-2">
                   <button
                     v-for="l in languages"
@@ -185,9 +187,9 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
 
               <!-- Client -->
               <div>
-                <label class="label">Kunde</label>
+                <label class="label">{{ $t('invoices.client') }}</label>
                 <select v-model="form.client_id" class="input">
-                  <option :value="null">Kein Kunde ausgewählt</option>
+                  <option :value="null">{{ $t('invoicesModule.keinKundeAusgewaehlt') }}</option>
                   <option v-for="c in clients" :key="c.id" :value="c.id">
                     {{ c.name }}{{ c.company ? ' — ' + c.company : '' }}
                   </option>
@@ -197,25 +199,25 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
               <!-- Dates grid -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">{{ isQuoteOrProforma ? 'Ausstellungsdatum' : isReminder ? 'Mahndatum' : 'Rechnungsdatum' }} *</label>
+                  <label class="label">{{ isQuoteOrProforma ? $t('invoices.issueDate') : isReminder ? $t('invoices.reminderDate') : $t('invoicesModule.rechnungsdatum') }} *</label>
                   <input v-model="form.issue_date" type="date" class="input" required />
                 </div>
                 <div>
-                  <label class="label">{{ isQuoteOrProforma ? 'Gültig bis' : isReminder ? 'Neue Zahlungsfrist' : 'Fällig bis' }}</label>
+                  <label class="label">{{ isQuoteOrProforma ? $t('ssl.gueltigBis') : isReminder ? $t('invoicesModule.neueZahlungsfrist') : $t('invoicesModule.faelligBis') }}</label>
                   <input v-model="form.due_date" type="date" class="input" />
                 </div>
               </div>
 
               <!-- Service date (only for invoice/credit_note/proforma) -->
               <div v-if="!isQuoteOrProforma && !isReminder">
-                <label class="label">Leistungsdatum <span class="text-gray-500 font-normal">(§ 14 UStG)</span></label>
+                <label class="label">{{ $t('invoices.serviceDate') }} <span class="text-gray-500 font-normal">(§ 14 UStG)</span></label>
                 <input v-model="form.service_date" type="date" class="input" />
               </div>
 
               <!-- Tax rate (not for quotes/proforma) -->
               <div v-if="!isQuoteOrProforma" class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">MwSt.-Satz (%)</label>
+                  <label class="label">{{ $t('invoices.taxRate') }}</label>
                   <div class="flex gap-2">
                     <button
                       v-for="rate in [0, 7, 19]"
@@ -233,13 +235,13 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       v-model.number="form.tax_rate"
                       type="number" min="0" max="100" step="0.1"
                       class="input w-20 text-sm text-center"
-                      title="Individueller Steuersatz"
+                      :title="$t('invoices.customTaxRate')"
                     />
                   </div>
                 </div>
                 <!-- Mahnung level -->
                 <div v-if="isReminder">
-                  <label class="label">Mahnstufe</label>
+                  <label class="label">{{ $t('invoices.reminderLevel') }}</label>
                   <select v-model.number="form.mahnung_level" class="input">
                     <option v-for="ml in mahnungLevels" :key="ml.value" :value="ml.value">{{ ml.label }}</option>
                   </select>
@@ -248,19 +250,19 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
 
               <!-- Mahnung fee -->
               <div v-if="isReminder">
-                <label class="label">Mahngebühr (€)</label>
+                <label class="label">{{ $t('invoicesModule.mahngebuehr') }}</label>
                 <input v-model.number="form.mahnung_fee" type="number" min="0" step="0.01" class="input" placeholder="0,00" />
               </div>
 
               <!-- Payment terms -->
               <div v-if="!isQuoteOrProforma">
-                <label class="label">Zahlungsbedingungen</label>
-                <input v-model="form.payment_terms" type="text" class="input" placeholder="Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum." />
+                <label class="label">{{ $t('invoices.paymentTerms') }}</label>
+                <input v-model="form.payment_terms" type="text" class="input" placeholder=$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum') />
               </div>
 
               <!-- Legal Notices -->
               <div v-if="!isQuoteOrProforma">
-                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Rechtshinweise auf der Rechnung</label>
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{{ $t('invoicesModule.invoicesmodulerechtshinweiseaufderrechnung') }}</label>
                 <div class="space-y-2">
                   <label class="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:border-white/[0.08] transition-colors">
                     <input
@@ -270,8 +272,8 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
                     />
                     <div>
-                      <span class="text-sm text-gray-200">Kleinunternehmer-Hinweis (§ 19 UStG)</span>
-                      <p class="text-xs text-gray-500 mt-0.5">Keine Umsatzsteuer berechnet</p>
+                      <span class="text-sm text-gray-200">{{ $t('invoices.kleinunternehmerHint') }}</span>
+                      <p class="text-xs text-gray-500 mt-0.5">{{ $t('invoicesModule.keineUmsatzsteuerBerechnet') }}</p>
                     </div>
                     <span v-if="form.show_kleinunternehmer === null" class="ml-auto text-xs text-gray-600">Auto</span>
                   </label>
@@ -283,8 +285,8 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
                     />
                     <div>
-                      <span class="text-sm text-gray-200">Reverse-Charge-Hinweis</span>
-                      <p class="text-xs text-gray-500 mt-0.5">Steuerschuldnerschaft des Leistungsempfängers (EU B2B)</p>
+                      <span class="text-sm text-gray-200">{{ $t('invoices.reverseChargeHint') }}</span>
+                      <p class="text-xs text-gray-500 mt-0.5">{{ $t('invoicesModule.steuerschuldnerschaftDesLeistungsempfaengersEuB2b') }}</p>
                     </div>
                     <span v-if="form.show_reverse_charge === null" class="ml-auto text-xs text-gray-600">Auto</span>
                   </label>
@@ -296,8 +298,8 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                       class="w-4 h-4 rounded border-white/20 bg-white/[0.06] text-primary-500 focus:ring-primary-500/50"
                     />
                     <div>
-                      <span class="text-sm text-gray-200">Lizenz-Hinweis</span>
-                      <p class="text-xs text-gray-500 mt-0.5">Non-exclusive, non-transferable Lizenz</p>
+                      <span class="text-sm text-gray-200">{{ $t('invoices.licenseHint') }}</span>
+                      <p class="text-xs text-gray-500 mt-0.5">{{ $t('invoices.licenseText') }}</p>
                     </div>
                   </label>
                 </div>
@@ -305,17 +307,17 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
 
               <!-- Notes -->
               <div>
-                <label class="label">Anmerkungen <span class="text-gray-500 font-normal">(intern)</span></label>
-                <textarea v-model="form.notes" class="input" rows="2" placeholder="Optionale Anmerkungen..."></textarea>
+                <label class="label">{{ $t('invoices.notesInternal') }}</label>
+                <textarea v-model="form.notes" class="input" rows="2" :placeholder="$t('invoices.optionalNotes')"></textarea>
               </div>
 
               <!-- Actions -->
               <div class="flex gap-3 pt-2">
                 <button type="button" @click="$emit('close')" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1">
-                  {{ editingInvoice ? 'Speichern' : 'Erstellen' }}
+                  {{ editingInvoice ? $t('common.save') : $t('common.create') }}
                 </button>
               </div>
             </form>

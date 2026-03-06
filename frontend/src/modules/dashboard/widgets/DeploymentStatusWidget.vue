@@ -1,24 +1,26 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RocketLaunchIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const props = defineProps({ widget: Object, data: Array })
 
-const statusConfig = {
-  pending: { label: 'Ausstehend', dotClass: 'bg-gray-500' },
-  running: { label: 'Laeuft', dotClass: 'bg-amber-400' },
-  success: { label: 'Erfolgreich', dotClass: 'bg-emerald-400' },
-  failed: { label: 'Fehlgeschlagen', dotClass: 'bg-red-400' },
-  cancelled: { label: 'Abgebrochen', dotClass: 'bg-gray-500' },
-  rolled_back: { label: 'Zurueckgerollt', dotClass: 'bg-purple-400' },
-}
+const statusConfig = computed(() => ({
+  pending: { label: t('widgets.statusPending'), dotClass: 'bg-gray-500' },
+  running: { label: t('widgets.statusRunning'), dotClass: 'bg-amber-400' },
+  success: { label: t('widgets.statusSuccess'), dotClass: 'bg-emerald-400' },
+  failed: { label: t('widgets.statusFailed'), dotClass: 'bg-red-400' },
+  cancelled: { label: t('widgets.statusCancelled'), dotClass: 'bg-gray-500' },
+  rolled_back: { label: t('dashboardModule.widgetsstatusrolledback'), dotClass: 'bg-purple-400' },
+}))
 
 function getStatusDot(status) {
-  return statusConfig[status]?.dotClass || 'bg-gray-500'
+  return statusConfig.value[status]?.dotClass || 'bg-gray-500'
 }
 
 function getStatusLabel(status) {
-  return statusConfig[status]?.label || status
+  return statusConfig.value[status]?.label || status
 }
 
 function formatRelativeTime(dateString) {
@@ -31,11 +33,11 @@ function formatRelativeTime(dateString) {
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
 
-  if (diffSec < 60) return 'gerade eben'
-  if (diffMin < 60) return `vor ${diffMin} Min.`
-  if (diffHour < 24) return `vor ${diffHour} Std.`
-  if (diffDay === 1) return 'gestern'
-  if (diffDay < 7) return `vor ${diffDay} Tagen`
+  if (diffSec < 60) return t('time.justNow')
+  if (diffMin < 60) return t('time.minutesAgo', { n: diffMin })
+  if (diffHour < 24) return t('time.hoursAgo', { n: diffHour })
+  if (diffDay === 1) return t('time.yesterday')
+  if (diffDay < 7) return t('time.daysAgo', { n: diffDay })
 
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -57,7 +59,7 @@ const recentDeployments = computed(() => {
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/deployments" class="text-sm text-primary-400 hover:text-primary-300">Alle anzeigen</router-link>
+      <router-link to="/deployments" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.showAll') }}</router-link>
     </div>
     <div class="space-y-2 max-h-64 overflow-y-auto">
       <div
@@ -96,7 +98,7 @@ const recentDeployments = computed(() => {
       </div>
       <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">
         <RocketLaunchIcon class="w-5 h-5 mx-auto mb-1 text-gray-600" />
-        Keine Deployments vorhanden
+        {{ $t('widgets.noDeployments') }}
       </p>
     </div>
   </div>

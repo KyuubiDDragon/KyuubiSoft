@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   ClipboardIcon,
   PlayIcon,
@@ -69,7 +73,7 @@ const showResults = ref(false)
 
 const swqlSchema = {
   'Orion.Nodes': {
-    description: 'Alle überwachten Nodes (Server, Router, Switches, etc.)',
+    description: t('toolbox.alleUeberwachtenNodesServerRouterSwitchesEtc'),
     properties: [
       { name: 'NodeID', type: 'int', description: 'Eindeutige Node-ID' },
       { name: 'Caption', type: 'string', description: 'Anzeigename des Nodes' },
@@ -80,12 +84,12 @@ const swqlSchema = {
       { name: 'StatusDescription', type: 'string', description: 'Status als Text' },
       { name: 'StatusIcon', type: 'string', description: 'Status-Icon Pfad' },
       { name: 'Vendor', type: 'string', description: 'Hersteller (Cisco, HP, etc.)' },
-      { name: 'MachineType', type: 'string', description: 'Gerätetyp' },
+      { name: 'MachineType', type: 'string', description: t('toolbox.geraetetyp') },
       { name: 'SysName', type: 'string', description: 'SNMP sysName' },
-      { name: 'Description', type: 'string', description: 'Beschreibung' },
+      { name: 'Description', type: 'string', description: t('common.description') },
       { name: 'Location', type: 'string', description: 'SNMP Location' },
       { name: 'Contact', type: 'string', description: 'SNMP Contact' },
-      { name: 'IOSVersion', type: 'string', description: 'OS/Firmware Version' },
+      { name: t('toolbox.iosversion'), type: 'string', description: t('toolbox.osfirmwareVersion') },
       { name: 'ObjectSubType', type: 'string', description: 'Subtyp (SNMP, ICMP, WMI, Agent)' },
       { name: 'PercentLoss', type: 'float', description: 'Paketverlust in %' },
       { name: 'AvgResponseTime', type: 'int', description: 'Durchschnittliche Antwortzeit (ms)' },
@@ -97,8 +101,8 @@ const swqlSchema = {
       { name: 'TotalMemory', type: 'float', description: 'Gesamter RAM' },
       { name: 'LastBoot', type: 'datetime', description: 'Letzter Neustart' },
       { name: 'LastSync', type: 'datetime', description: 'Letzte Synchronisation' },
-      { name: 'NextPoll', type: 'datetime', description: 'Nächste Abfrage' },
-      { name: 'NextRediscovery', type: 'datetime', description: 'Nächste Rediscovery' },
+      { name: 'NextPoll', type: 'datetime', description: t('toolbox.naechsteAbfrage') },
+      { name: 'NextRediscovery', type: 'datetime', description: t('toolbox.naechsteRediscovery') },
       { name: 'PollInterval', type: 'int', description: 'Poll-Intervall in Sekunden' },
       { name: 'StatCollection', type: 'int', description: 'Statistik-Intervall' },
       { name: 'RediscoveryInterval', type: 'int', description: 'Rediscovery-Intervall' },
@@ -106,7 +110,7 @@ const swqlSchema = {
       { name: 'UnManageFrom', type: 'datetime', description: 'Unmanage Start' },
       { name: 'UnManageUntil', type: 'datetime', description: 'Unmanage Ende' },
       { name: 'Uri', type: 'string', description: 'SWIS URI des Nodes' },
-      { name: 'DetailsUrl', type: 'string', description: 'URL zur Node-Detail-Seite' },
+      { name: 'DetailsUrl', type: 'string', description: t('toolbox.urlZurNodedetailseite') },
       { name: 'EntityType', type: 'string', description: 'Entity-Typ' },
       { name: 'EngineID', type: 'int', description: 'Polling Engine ID' },
       { name: 'CustomProperties.*', type: 'various', description: 'Custom Properties' }
@@ -118,15 +122,15 @@ const swqlSchema = {
     properties: [
       { name: 'AlertActiveID', type: 'int', description: 'Eindeutige Alert-ID' },
       { name: 'AlertObjectID', type: 'int', description: 'Alert Object ID' },
-      { name: 'TriggeredDateTime', type: 'datetime', description: 'Auslöse-Zeitpunkt' },
+      { name: 'TriggeredDateTime', type: 'datetime', description: t('toolbox.ausloesezeitpunkt') },
       { name: 'TriggeredMessage', type: 'string', description: 'Alert-Nachricht' },
-      { name: 'Acknowledged', type: 'bool', description: 'Bestätigt?' },
-      { name: 'AcknowledgedBy', type: 'string', description: 'Bestätigt von' },
-      { name: 'AcknowledgedDateTime', type: 'datetime', description: 'Bestätigt um' },
-      { name: 'AcknowledgedNote', type: 'string', description: 'Bestätigungs-Notiz' },
-      { name: 'NumberOfNotes', type: 'int', description: 'Anzahl Notizen' },
+      { name: 'Acknowledged', type: 'bool', description: t('toolbox.bestaetigt') },
+      { name: 'AcknowledgedBy', type: 'string', description: t('toolbox.bestaetigtVon') },
+      { name: 'AcknowledgedDateTime', type: 'datetime', description: t('toolbox.bestaetigtUm') },
+      { name: 'AcknowledgedNote', type: 'string', description: t('toolbox.bestaetigungsnotiz') },
+      { name: 'NumberOfNotes', type: 'int', description: t('toolbox.anzahlNotizen') },
       { name: 'LastExecutedEscalationLevel', type: 'int', description: 'Letztes Eskalations-Level' },
-      { name: 'AlertNote', type: 'string', description: 'Alert-Notiz' }
+      { name: 'AlertNote', type: 'string', description: t('toolbox.alertnotiz') }
     ],
     verbs: ['Acknowledge', 'ClearAlert', 'AppendNote']
   },
@@ -135,13 +139,13 @@ const swqlSchema = {
     properties: [
       { name: 'AlertID', type: 'int', description: 'Alert Definition ID' },
       { name: 'Name', type: 'string', description: 'Alert-Name' },
-      { name: 'Description', type: 'string', description: 'Beschreibung' },
+      { name: 'Description', type: 'string', description: t('common.description') },
       { name: 'Enabled', type: 'bool', description: 'Aktiviert?' },
       { name: 'Severity', type: 'int', description: 'Schweregrad (0-3)' },
       { name: 'ObjectType', type: 'string', description: 'Objekt-Typ' },
       { name: 'LastEdit', type: 'datetime', description: 'Letzte Bearbeitung' },
       { name: 'CreatedBy', type: 'string', description: 'Erstellt von' },
-      { name: 'Category', type: 'string', description: 'Kategorie' }
+      { name: 'Category', type: 'string', description: t('snippetsModule.kategorie') }
     ],
     verbs: ['Enable', 'Disable', 'Export']
   },
@@ -153,12 +157,12 @@ const swqlSchema = {
       { name: 'EventType', type: 'int', description: 'Event-Typ' },
       { name: 'Message', type: 'string', description: 'Event-Nachricht' },
       { name: 'TimeStamp', type: 'datetime', description: 'Zeitstempel' },
-      { name: 'AccountID', type: 'string', description: 'Benutzer-Account' }
+      { name: 'AccountID', type: 'string', description: t('toolbox.benutzeraccount') }
     ],
     verbs: []
   },
   'Orion.AlertObjects': {
-    description: 'Objekte die Alerts ausgelöst haben',
+    description: t('toolbox.objekteDieAlertsAusgeloestHaben'),
     properties: [
       { name: 'AlertObjectID', type: 'int', description: 'Alert Object ID' },
       { name: 'AlertID', type: 'int', description: 'Alert Definition ID' },
@@ -169,18 +173,18 @@ const swqlSchema = {
       { name: 'EntityNetObjectId', type: 'string', description: 'Net Object ID' },
       { name: 'RelatedNodeUri', type: 'string', description: 'Related Node URI' },
       { name: 'RelatedNodeCaption', type: 'string', description: 'Related Node Name' },
-      { name: 'TriggeredCount', type: 'int', description: 'Anzahl Auslösungen' },
-      { name: 'LastTriggeredDateTime', type: 'datetime', description: 'Letzte Auslösung' }
+      { name: 'TriggeredCount', type: 'int', description: t('toolbox.anzahlAusloesungen') },
+      { name: 'LastTriggeredDateTime', type: 'datetime', description: t('toolbox.letzteAusloesung') }
     ],
     verbs: []
   },
   'Orion.AlertSuppression': {
-    description: 'Alert-Unterdrückung (Maintenance Windows)',
+    description: t('toolbox.alertunterdrueckungMaintenanceWindows'),
     properties: [
       { name: 'AlertSuppressionID', type: 'int', description: 'Suppression ID' },
       { name: 'EntityUri', type: 'string', description: 'Entity URI' },
-      { name: 'SuppressFrom', type: 'datetime', description: 'Unterdrückung von' },
-      { name: 'SuppressUntil', type: 'datetime', description: 'Unterdrückung bis' }
+      { name: 'SuppressFrom', type: 'datetime', description: t('toolbox.unterdrueckungVon') },
+      { name: 'SuppressUntil', type: 'datetime', description: t('toolbox.unterdrueckungBis') }
     ],
     verbs: ['SuppressAlerts', 'ResumeAlerts']
   },
@@ -188,19 +192,19 @@ const swqlSchema = {
     description: 'Netzwerk-Interfaces',
     properties: [
       { name: 'InterfaceID', type: 'int', description: 'Interface-ID' },
-      { name: 'NodeID', type: 'int', description: 'Zugehörige Node-ID' },
+      { name: 'NodeID', type: 'int', description: t('toolbox.zugehoerigeNodeid') },
       { name: 'InterfaceName', type: 'string', description: 'Interface-Name' },
       { name: 'InterfaceAlias', type: 'string', description: 'Interface-Alias' },
       { name: 'Caption', type: 'string', description: 'Anzeigename' },
-      { name: 'FullName', type: 'string', description: 'Vollständiger Name' },
+      { name: 'FullName', type: 'string', description: t('toolbox.vollstaendigerName') },
       { name: 'Status', type: 'int', description: 'Status-Code' },
       { name: 'StatusDescription', type: 'string', description: 'Status als Text' },
       { name: 'OperStatus', type: 'int', description: 'Operational Status' },
       { name: 'AdminStatus', type: 'int', description: 'Admin Status' },
       { name: 'Speed', type: 'float', description: 'Geschwindigkeit (bps)' },
-      { name: 'MTU', type: 'int', description: 'MTU-Größe' },
+      { name: 'MTU', type: 'int', description: t('toolbox.mtugroesse') },
       { name: 'TypeName', type: 'string', description: 'Interface-Typ' },
-      { name: 'TypeDescription', type: 'string', description: 'Typ-Beschreibung' },
+      { name: 'TypeDescription', type: 'string', description: t('toolbox.typbeschreibung') },
       { name: 'PhysicalAddress', type: 'string', description: 'MAC-Adresse' },
       { name: 'InBandwidth', type: 'float', description: 'Eingehende Bandbreite (%)' },
       { name: 'OutBandwidth', type: 'float', description: 'Ausgehende Bandbreite (%)' },
@@ -227,14 +231,14 @@ const swqlSchema = {
       { name: 'VolumeID', type: 'int', description: 'Volume-ID' },
       { name: 'NodeID', type: 'int', description: 'Node-ID' },
       { name: 'Caption', type: 'string', description: 'Volume-Name' },
-      { name: 'VolumeDescription', type: 'string', description: 'Beschreibung' },
+      { name: 'VolumeDescription', type: 'string', description: t('common.description') },
       { name: 'VolumeType', type: 'string', description: 'Volume-Typ' },
       { name: 'VolumeTypeIcon', type: 'string', description: 'Typ-Icon' },
       { name: 'Status', type: 'int', description: 'Status-Code' },
       { name: 'StatusDescription', type: 'string', description: 'Status als Text' },
-      { name: 'VolumeSize', type: 'float', description: 'Gesamtgröße (Bytes)' },
+      { name: 'VolumeSize', type: 'float', description: t('toolbox.gesamtgroesseBytes') },
       { name: 'VolumeSpaceUsed', type: 'float', description: 'Belegt (Bytes)' },
-      { name: 'VolumeSpaceAvailable', type: 'float', description: 'Verfügbar (Bytes)' },
+      { name: 'VolumeSpaceAvailable', type: 'float', description: t('toolbox.verfuegbarBytes') },
       { name: 'VolumePercentUsed', type: 'float', description: 'Belegt (%)' },
       { name: 'VolumeAllocationFailuresThisHour', type: 'int', description: 'Alloc Failures' },
       { name: 'Unmanaged', type: 'bool', description: 'Ist unmanaged?' },
@@ -243,7 +247,7 @@ const swqlSchema = {
     verbs: ['Unmanage', 'Remanage']
   },
   'Orion.CPUMultiLoad': {
-    description: 'CPU-Load für Multi-CPU-Systeme',
+    description: t('toolbox.cpuloadFuerMulticpusysteme'),
     properties: [
       { name: 'NodeID', type: 'int', description: 'Node-ID' },
       { name: 'CPUIndex', type: 'int', description: 'CPU-Index' },
@@ -262,7 +266,7 @@ const swqlSchema = {
       { name: 'NetworkNode', type: 'int', description: 'Node-ID' },
       { name: 'EventType', type: 'int', description: 'Event-Typ' },
       { name: 'Message', type: 'string', description: 'Event-Nachricht' },
-      { name: 'Acknowledged', type: 'bool', description: 'Bestätigt?' },
+      { name: 'Acknowledged', type: 'bool', description: t('toolbox.bestaetigt') },
       { name: 'NetObjectID', type: 'string', description: 'Net Object ID' },
       { name: 'NetObjectType', type: 'string', description: 'Net Object Typ' }
     ],
@@ -281,11 +285,11 @@ const swqlSchema = {
     verbs: ['Enable', 'Disable']
   },
   'Orion.Groups': {
-    description: 'Orion Gruppen (Container)',
+    description: t('toolbox.orionGruppenContainer'),
     properties: [
       { name: 'ContainerID', type: 'int', description: 'Container-ID' },
-      { name: 'Name', type: 'string', description: 'Gruppen-Name' },
-      { name: 'Description', type: 'string', description: 'Beschreibung' },
+      { name: 'Name', type: 'string', description: t('toolbox.gruppenname') },
+      { name: 'Description', type: 'string', description: t('common.description') },
       { name: 'Owner', type: 'string', description: 'Besitzer' },
       { name: 'Frequency', type: 'int', description: 'Poll-Frequenz' },
       { name: 'StatusCalculator', type: 'int', description: 'Status-Berechnung' },
@@ -300,9 +304,9 @@ const swqlSchema = {
     description: 'Orion Polling Engines',
     properties: [
       { name: 'EngineID', type: 'int', description: 'Engine-ID' },
-      { name: 'ServerName', type: 'string', description: 'Server-Name' },
+      { name: t('toolbox.servername'), type: 'string', description: t('toolbox.servername1') },
       { name: 'IP', type: 'string', description: 'IP-Adresse' },
-      { name: 'ServerType', type: 'string', description: 'Server-Typ' },
+      { name: t('toolbox.servertype'), type: 'string', description: t('toolbox.servertyp') },
       { name: 'PollingCompletion', type: 'float', description: 'Polling Completion (%)' },
       { name: 'Elements', type: 'int', description: 'Anzahl Elemente' },
       { name: 'Nodes', type: 'int', description: 'Anzahl Nodes' },
@@ -324,7 +328,7 @@ const swqlSchema = {
     verbs: []
   },
   'Orion.NodesCustomProperties': {
-    description: 'Custom Properties für Nodes',
+    description: t('toolbox.customPropertiesFuerNodes'),
     properties: [
       { name: 'NodeID', type: 'int', description: 'Node-ID' },
       { name: 'City', type: 'string', description: 'Stadt (Standard CP)' },
@@ -365,18 +369,18 @@ const swqlSchema = {
     verbs: []
   },
   'NCM.Nodes': {
-    description: 'NCM überwachte Nodes',
+    description: t('toolbox.ncmUeberwachteNodes'),
     properties: [
       { name: 'NodeID', type: 'int', description: 'Node-ID' },
       { name: 'CoreNodeID', type: 'int', description: 'Core Node-ID' },
       { name: 'NodeCaption', type: 'string', description: 'Node-Name' },
       { name: 'AgentIP', type: 'string', description: 'Agent IP' },
       { name: 'ConnectionProfile', type: 'int', description: 'Connection Profile' },
-      { name: 'LastConfigDownload', type: 'datetime', description: 'Letzter Config Download' },
+      { name: t('toolbox.lastconfigdownload'), type: 'datetime', description: t('toolbox.letzterConfigDownload') },
       { name: 'LastInventory', type: 'datetime', description: 'Letztes Inventory' },
       { name: 'ConfigStatus', type: 'int', description: 'Config-Status' }
     ],
-    verbs: ['DownloadConfig', 'UploadConfig', 'ExecuteScript']
+    verbs: [t('toolbox.downloadconfig'), 'UploadConfig', 'ExecuteScript']
   },
   'IPAM.IPNode': {
     description: 'IPAM IP-Adressen',
@@ -401,11 +405,11 @@ const swqlSchema = {
       { name: 'Address', type: 'string', description: 'Netzwerk-Adresse' },
       { name: 'CIDR', type: 'int', description: 'CIDR-Notation' },
       { name: 'FriendlyName', type: 'string', description: 'Anzeigename' },
-      { name: 'Description', type: 'string', description: 'Beschreibung' },
+      { name: 'Description', type: 'string', description: t('common.description') },
       { name: 'VLAN', type: 'string', description: 'VLAN' },
       { name: 'Location', type: 'string', description: 'Standort' },
       { name: 'UsedCount', type: 'int', description: 'Genutzte IPs' },
-      { name: 'AvailableCount', type: 'int', description: 'Verfügbare IPs' },
+      { name: 'AvailableCount', type: 'int', description: t('toolbox.verfuegbareIps') },
       { name: 'PercentUsed', type: 'float', description: 'Auslastung (%)' }
     ],
     verbs: []
@@ -422,14 +426,14 @@ const queryTemplates = {
     icon: '🚨',
     templates: [
       {
-        name: 'Alle aktiven Alerts',
+        name: t('toolbox.alleAktivenAlerts'),
         description: 'Zeigt alle aktuell aktiven Alerts',
         query: `SELECT AlertActiveID, AlertObjectID, TriggeredDateTime, TriggeredMessage, Acknowledged, AcknowledgedBy
 FROM Orion.AlertActive
 ORDER BY TriggeredDateTime DESC`
       },
       {
-        name: 'Unbestätigte Alerts',
+        name: t('toolbox.unbestaetigteAlerts'),
         description: 'Alerts die noch nicht acknowledged wurden',
         query: `SELECT aa.AlertActiveID, aa.TriggeredDateTime, aa.TriggeredMessage, ao.EntityCaption, ao.RelatedNodeCaption
 FROM Orion.AlertActive aa
@@ -456,7 +460,7 @@ ORDER BY ac.Severity DESC`
       },
       {
         name: 'Alerts der letzten 24 Stunden',
-        description: 'Alle Alerts der letzten 24 Stunden',
+        description: t('toolbox.alleAlertsDerLetzten24Stunden'),
         query: `SELECT aa.AlertActiveID, aa.TriggeredDateTime, aa.TriggeredMessage, aa.Acknowledged, ao.EntityCaption
 FROM Orion.AlertActive aa
 INNER JOIN Orion.AlertObjects ao ON aa.AlertObjectID = ao.AlertObjectID
@@ -465,15 +469,15 @@ ORDER BY aa.TriggeredDateTime DESC`
       },
       {
         name: 'Alert-Historie (letzte 7 Tage)',
-        description: 'Alle Alert-Events der letzten Woche',
+        description: t('toolbox.alleAlerteventsDerLetztenWoche'),
         query: `SELECT AlertHistoryID, AlertActiveID, EventType, Message, TimeStamp, AccountID
 FROM Orion.AlertHistory
 WHERE TimeStamp > ADDDAY(-7, GETUTCDATE())
 ORDER BY TimeStamp DESC`
       },
       {
-        name: 'Top 10 häufigste Alerts',
-        description: 'Die am häufigsten ausgelösten Alert-Typen',
+        name: t('toolbox.top10HaeufigsteAlerts'),
+        description: t('toolbox.dieAmHaeufigstenAusgeloestenAlerttypen'),
         query: `SELECT TOP 10 ac.Name, ac.Severity, COUNT(*) AS TriggerCount
 FROM Orion.AlertActive aa
 INNER JOIN Orion.AlertObjects ao ON aa.AlertObjectID = ao.AlertObjectID
@@ -483,14 +487,14 @@ ORDER BY TriggerCount DESC`
       },
       {
         name: 'Alert-Konfigurationen',
-        description: 'Alle definierten Alert-Regeln',
+        description: t('toolbox.alleDefiniertenAlertregeln'),
         query: `SELECT AlertID, Name, Description, Enabled, Severity, ObjectType, LastEdit
 FROM Orion.AlertConfigurations
 ORDER BY Name`
       },
       {
         name: 'Deaktivierte Alerts',
-        description: 'Alert-Regeln die deaktiviert sind',
+        description: t('toolbox.alertregelnDieDeaktiviertSind'),
         query: `SELECT AlertID, Name, Description, Severity, LastEdit
 FROM Orion.AlertConfigurations
 WHERE Enabled = FALSE
@@ -498,7 +502,7 @@ ORDER BY Name`
       },
       {
         name: 'Alert Suppression Status',
-        description: 'Alle unterdrückten Alerts (Maintenance)',
+        description: t('toolbox.alleUnterdruecktenAlertsMaintenance'),
         query: `SELECT EntityUri, SuppressFrom, SuppressUntil
 FROM Orion.AlertSuppression
 WHERE SuppressUntil > GETUTCDATE()
@@ -521,7 +525,7 @@ ORDER BY AlertCount DESC`
     icon: '🖥️',
     templates: [
       {
-        name: 'Alle Nodes',
+        name: t('toolbox.alleNodes'),
         description: 'Komplette Node-Liste mit Status',
         query: `SELECT NodeID, Caption, IP_Address, Status, StatusDescription, Vendor, MachineType
 FROM Orion.Nodes
@@ -529,7 +533,7 @@ ORDER BY Caption`
       },
       {
         name: 'Down Nodes',
-        description: 'Alle Nodes die aktuell down sind',
+        description: t('toolbox.alleNodesDieAktuellDownSind'),
         query: `SELECT NodeID, Caption, IP_Address, StatusDescription, Vendor, ResponseTime, PercentLoss
 FROM Orion.Nodes
 WHERE Status = 2
@@ -545,7 +549,7 @@ ORDER BY Caption`
       },
       {
         name: 'Unmanaged Nodes',
-        description: 'Nodes die aktuell nicht überwacht werden',
+        description: t('toolbox.nodesDieAktuellNichtUeberwachtWerden'),
         query: `SELECT NodeID, Caption, IP_Address, UnManageFrom, UnManageUntil
 FROM Orion.Nodes
 WHERE Unmanaged = TRUE
@@ -592,7 +596,7 @@ WHERE ResponseTime > 100
 ORDER BY ResponseTime DESC`
       },
       {
-        name: 'Kürzlich neu gestartet',
+        name: t('toolbox.kuerzlichNeuGestartet'),
         description: 'Nodes die in den letzten 24h gestartet wurden',
         query: `SELECT NodeID, Caption, IP_Address, LastBoot, Vendor
 FROM Orion.Nodes
@@ -601,7 +605,7 @@ ORDER BY LastBoot DESC`
       },
       {
         name: 'Nodes ohne SNMP',
-        description: 'Nodes die per ICMP überwacht werden',
+        description: t('toolbox.nodesDiePerIcmpUeberwachtWerden'),
         query: `SELECT NodeID, Caption, IP_Address, ObjectSubType, Status
 FROM Orion.Nodes
 WHERE ObjectSubType = 'ICMP'
@@ -646,7 +650,7 @@ ORDER BY cp.City, n.Caption`
     icon: '🔌',
     templates: [
       {
-        name: 'Alle Interfaces',
+        name: t('toolbox.alleInterfaces'),
         description: 'Komplette Interface-Liste',
         query: `SELECT i.InterfaceID, i.Caption, i.Status, i.StatusDescription, i.Speed, n.Caption AS NodeName
 FROM Orion.NPM.Interfaces i
@@ -682,7 +686,7 @@ ORDER BY i.OutPercentUtil DESC`
       },
       {
         name: 'Interfaces mit Errors',
-        description: 'Interfaces mit Fehlern in der letzten Stunde',
+        description: t('toolbox.interfacesMitFehlernInDerLetztenStunde'),
         query: `SELECT i.Caption, i.InErrorsThisHour, i.OutErrorsThisHour, n.Caption AS NodeName
 FROM Orion.NPM.Interfaces i
 INNER JOIN Orion.Nodes n ON i.NodeID = n.NodeID
@@ -700,7 +704,7 @@ ORDER BY (i.InDiscardsThisHour + i.OutDiscardsThisHour) DESC`
       },
       {
         name: 'Unmanaged Interfaces',
-        description: 'Interfaces die nicht überwacht werden',
+        description: t('toolbox.interfacesDieNichtUeberwachtWerden'),
         query: `SELECT i.Caption, i.UnManageFrom, i.UnManageUntil, n.Caption AS NodeName
 FROM Orion.NPM.Interfaces i
 INNER JOIN Orion.Nodes n ON i.NodeID = n.NodeID
@@ -708,7 +712,7 @@ WHERE i.Unmanaged = TRUE
 ORDER BY i.UnManageUntil`
       },
       {
-        name: 'Interface-Typen Übersicht',
+        name: t('toolbox.interfacetypenUebersicht'),
         description: 'Statistik nach Interface-Typ',
         query: `SELECT TypeName, COUNT(*) AS InterfaceCount
 FROM Orion.NPM.Interfaces
@@ -740,7 +744,7 @@ ORDER BY InterfaceCount DESC`
       },
       {
         name: 'Top Traffic Interfaces',
-        description: 'Interfaces mit höchstem Traffic',
+        description: t('toolbox.interfacesMitHoechstemTraffic'),
         query: `SELECT TOP 20 i.Caption, i.InBps, i.OutBps, (i.InBps + i.OutBps) AS TotalBps, n.Caption AS NodeName
 FROM Orion.NPM.Interfaces i
 INNER JOIN Orion.Nodes n ON i.NodeID = n.NodeID
@@ -753,8 +757,8 @@ ORDER BY TotalBps DESC`
     icon: '💾',
     templates: [
       {
-        name: 'Alle Volumes',
-        description: 'Komplette Volume-Übersicht',
+        name: t('toolbox.alleVolumes'),
+        description: t('toolbox.kompletteVolumeuebersicht'),
         query: `SELECT v.VolumeID, v.Caption, v.VolumePercentUsed, v.VolumeSize, v.VolumeSpaceAvailable, n.Caption AS NodeName
 FROM Orion.Volumes v
 INNER JOIN Orion.Nodes n ON v.NodeID = n.NodeID
@@ -770,7 +774,7 @@ WHERE v.VolumePercentUsed > 90
 ORDER BY v.VolumePercentUsed DESC`
       },
       {
-        name: 'Warnung Speicherplatz',
+        name: t('toolbox.warnungSpeicherplatz'),
         description: 'Volumes zwischen 80-90% belegt',
         query: `SELECT v.Caption, v.VolumePercentUsed, v.VolumeSpaceAvailable, v.VolumeSize, n.Caption AS NodeName
 FROM Orion.Volumes v
@@ -780,15 +784,15 @@ ORDER BY v.VolumePercentUsed DESC`
       },
       {
         name: 'Volumes nach Status',
-        description: 'Volume-Status Übersicht',
+        description: t('toolbox.volumestatusUebersicht'),
         query: `SELECT StatusDescription, COUNT(*) AS VolumeCount
 FROM Orion.Volumes
 GROUP BY StatusDescription
 ORDER BY VolumeCount DESC`
       },
       {
-        name: 'Größte Volumes',
-        description: 'Top 20 größte Volumes',
+        name: t('toolbox.groessteVolumes'),
+        description: t('toolbox.top20GroessteVolumes'),
         query: `SELECT TOP 20 v.Caption, v.VolumeSize, v.VolumePercentUsed, n.Caption AS NodeName
 FROM Orion.Volumes v
 INNER JOIN Orion.Nodes n ON v.NodeID = n.NodeID
@@ -796,7 +800,7 @@ ORDER BY v.VolumeSize DESC`
       },
       {
         name: 'Unmanaged Volumes',
-        description: 'Volumes die nicht überwacht werden',
+        description: t('toolbox.volumesDieNichtUeberwachtWerden'),
         query: `SELECT v.Caption, v.VolumeType, n.Caption AS NodeName
 FROM Orion.Volumes v
 INNER JOIN Orion.Nodes n ON v.NodeID = n.NodeID
@@ -804,7 +808,7 @@ WHERE v.Unmanaged = TRUE
 ORDER BY n.Caption`
       },
       {
-        name: 'Volume-Typen Übersicht',
+        name: t('toolbox.volumetypenUebersicht'),
         description: 'Statistik nach Volume-Typ',
         query: `SELECT VolumeType, COUNT(*) AS VolumeCount, AVG(VolumePercentUsed) AS AvgUsedPercent
 FROM Orion.Volumes
@@ -888,8 +892,8 @@ GROUP BY EventType
 ORDER BY EventCount DESC`
       },
       {
-        name: 'Events für Node',
-        description: 'Events für einen bestimmten Node (Parameter: @nodeId)',
+        name: t('toolbox.eventsFuerNode'),
+        description: t('toolbox.eventsFuerEinenBestimmtenNodeParameterNodeid'),
         query: `SELECT TOP 50 EventID, EventTime, Message, EventType
 FROM Orion.Events
 WHERE NetworkNode = @nodeId
@@ -897,7 +901,7 @@ ORDER BY EventTime DESC`
       },
       {
         name: 'Audit Log (letzte 24h)',
-        description: 'Audit-Einträge der letzten 24 Stunden',
+        description: t('toolbox.auditeintraegeDerLetzten24Stunden'),
         query: `SELECT AuditEventID, TimeLoggedUtc, AccountID, AuditEventMessage, NetObjectType
 FROM Orion.Audit
 WHERE TimeLoggedUtc > ADDDAY(-1, GETUTCDATE())
@@ -905,7 +909,7 @@ ORDER BY TimeLoggedUtc DESC`
       },
       {
         name: 'Audit nach Benutzer',
-        description: 'Audit-Aktivitäten gruppiert nach User',
+        description: t('toolbox.auditaktivitaetenGruppiertNachUser'),
         query: `SELECT AccountID, COUNT(*) AS ActionCount
 FROM Orion.Audit
 WHERE TimeLoggedUtc > ADDDAY(-7, GETUTCDATE())
@@ -914,7 +918,7 @@ ORDER BY ActionCount DESC`
       },
       {
         name: 'Config Changes (Audit)',
-        description: 'Konfigurationsänderungen im Audit Log',
+        description: t('toolbox.konfigurationsaenderungenImAuditLog'),
         query: `SELECT TimeLoggedUtc, AccountID, AuditEventMessage
 FROM Orion.Audit
 WHERE AuditEventMessage LIKE '%config%' OR AuditEventMessage LIKE '%setting%'
@@ -923,27 +927,27 @@ ORDER BY TimeLoggedUtc DESC`
     ]
   },
   groups: {
-    name: 'Gruppen',
+    name: t('toolbox.gruppen'),
     icon: '📁',
     templates: [
       {
-        name: 'Alle Gruppen',
-        description: 'Übersicht aller Orion-Gruppen',
+        name: t('bookmarks.allGroups'),
+        description: t('toolbox.uebersichtAllerOriongruppen'),
         query: `SELECT ContainerID, Name, Description, Owner, Status, StatusDescription
 FROM Orion.Groups
 ORDER BY Name`
       },
       {
-        name: 'Gruppen mit Problemen',
-        description: 'Gruppen die nicht im Up-Status sind',
+        name: t('toolbox.gruppenMitProblemen'),
+        description: t('toolbox.gruppenDieNichtImUpstatusSind'),
         query: `SELECT ContainerID, Name, Description, Status, StatusDescription
 FROM Orion.Groups
 WHERE Status != 1
 ORDER BY Status DESC`
       },
       {
-        name: 'Gruppen-Statistik',
-        description: 'Anzahl Gruppen nach Status',
+        name: t('toolbox.gruppenstatistik'),
+        description: t('toolbox.anzahlGruppenNachStatus'),
         query: `SELECT StatusDescription, COUNT(*) AS GroupCount
 FROM Orion.Groups
 GROUP BY StatusDescription
@@ -956,8 +960,8 @@ ORDER BY GroupCount DESC`
     icon: '☁️',
     templates: [
       {
-        name: 'Alle VMs',
-        description: 'Übersicht aller virtuellen Maschinen',
+        name: t('toolbox.alleVms'),
+        description: t('toolbox.uebersichtAllerVirtuellenMaschinen'),
         query: `SELECT VirtualMachineID, Name, IPAddress, PowerState, GuestState, CPUCount, MemoryConfigured
 FROM Orion.VIM.VirtualMachines
 ORDER BY Name`
@@ -993,15 +997,15 @@ ORDER BY Name`
     icon: '⚙️',
     templates: [
       {
-        name: 'NCM Nodes Übersicht',
-        description: 'Alle NCM-überwachten Nodes',
+        name: t('toolbox.ncmNodesUebersicht'),
+        description: t('toolbox.alleNcmueberwachtenNodes'),
         query: `SELECT NodeID, NodeCaption, AgentIP, LastConfigDownload, LastInventory, ConfigStatus
 FROM NCM.Nodes
 ORDER BY NodeCaption`
       },
       {
-        name: 'Letzte Config-Downloads',
-        description: 'Kürzlich heruntergeladene Configs',
+        name: t('toolbox.letzteConfigdownloads'),
+        description: t('toolbox.kuerzlichHeruntergeladeneConfigs'),
         query: `SELECT NodeCaption, LastConfigDownload, ConfigStatus
 FROM NCM.Nodes
 WHERE LastConfigDownload > ADDDAY(-7, GETUTCDATE())
@@ -1009,7 +1013,7 @@ ORDER BY LastConfigDownload DESC`
       },
       {
         name: 'Veraltete Configs',
-        description: 'Nodes ohne kürzliche Config-Downloads',
+        description: t('toolbox.nodesOhneKuerzlicheConfigdownloads'),
         query: `SELECT NodeCaption, LastConfigDownload, ConfigStatus
 FROM NCM.Nodes
 WHERE LastConfigDownload < ADDDAY(-30, GETUTCDATE()) OR LastConfigDownload IS NULL
@@ -1022,8 +1026,8 @@ ORDER BY LastConfigDownload`
     icon: '🌐',
     templates: [
       {
-        name: 'Alle Subnets',
-        description: 'IPAM Subnet-Übersicht',
+        name: t('toolbox.alleSubnets'),
+        description: t('toolbox.ipamSubnetuebersicht'),
         query: `SELECT SubnetId, Address, CIDR, FriendlyName, VLAN, PercentUsed, UsedCount, AvailableCount
 FROM IPAM.Subnet
 ORDER BY Address`
@@ -1053,7 +1057,7 @@ WHERE IPAddress LIKE @ip`
       },
       {
         name: 'Benutzte IPs in Subnet',
-        description: 'Alle genutzten IPs in einem Subnet (Parameter: @subnetId)',
+        description: t('toolbox.alleGenutztenIpsInEinemSubnetParameter'),
         query: `SELECT IPAddress, StatusName, DnsBackward, MAC, SystemName, LastSync
 FROM IPAM.IPNode
 WHERE SubnetId = @subnetId AND Status = 2
@@ -1066,15 +1070,15 @@ ORDER BY IPAddress`
     icon: '🔧',
     templates: [
       {
-        name: 'Benutzer-Übersicht',
-        description: 'Alle Orion-Benutzer',
+        name: t('toolbox.benutzeruebersicht'),
+        description: t('toolbox.alleOrionbenutzer'),
         query: `SELECT AccountID, Enabled, AllowAdmin, LastLogin, AccountType
 FROM Orion.Accounts
 ORDER BY AccountID`
       },
       {
         name: 'Admin-Accounts',
-        description: 'Benutzer mit Admin-Rechten',
+        description: t('toolbox.benutzerMitAdminrechten'),
         query: `SELECT AccountID, Enabled, LastLogin
 FROM Orion.Accounts
 WHERE AllowAdmin = TRUE
@@ -1082,7 +1086,7 @@ ORDER BY AccountID`
       },
       {
         name: 'Inaktive Benutzer',
-        description: 'Benutzer ohne Login in den letzten 30 Tagen',
+        description: t('toolbox.benutzerOhneLoginInDenLetzten30'),
         query: `SELECT AccountID, LastLogin, Enabled
 FROM Orion.Accounts
 WHERE LastLogin < ADDDAY(-30, GETUTCDATE()) OR LastLogin IS NULL
@@ -1098,14 +1102,14 @@ ORDER BY PollerType`
       },
       {
         name: 'Deaktivierte Poller',
-        description: 'Alle deaktivierten Poller',
+        description: t('toolbox.alleDeaktiviertenPoller'),
         query: `SELECT PollerID, PollerType, NetObjectType, NetObjectID
 FROM Orion.Pollers
 WHERE Enabled = FALSE
 ORDER BY PollerType`
       },
       {
-        name: 'Custom Properties Übersicht',
+        name: t('toolbox.customPropertiesUebersicht'),
         description: 'Nodes mit Custom Properties',
         query: `SELECT n.NodeID, n.Caption, cp.City, cp.Department, cp.Comments
 FROM Orion.Nodes n
@@ -1125,18 +1129,18 @@ const swqlCheatSheet = {
   basics: {
     title: 'Grundlagen',
     items: [
-      { syntax: 'SELECT column1, column2 FROM Entity', description: 'Spalten auswählen' },
-      { syntax: 'SELECT * FROM Entity', description: 'Alle Spalten (vermeiden!)' },
+      { syntax: 'SELECT column1, column2 FROM Entity', description: t('toolbox.spaltenAuswaehlen') },
+      { syntax: 'SELECT * FROM Entity', description: t('toolbox.alleSpaltenVermeiden') },
       { syntax: 'SELECT DISTINCT column FROM Entity', description: 'Nur eindeutige Werte' },
-      { syntax: 'SELECT TOP 10 column FROM Entity', description: 'Erste N Ergebnisse' },
+      { syntax: 'SELECT TOP 10 column FROM Entity', description: t('toolbox.ersteNErgebnisse') },
       { syntax: 'WHERE column = value', description: 'Filter-Bedingung' },
       { syntax: 'WHERE column LIKE \'%text%\'', description: 'Pattern-Matching' },
       { syntax: 'WHERE column IN (1, 2, 3)', description: 'Wert in Liste' },
       { syntax: 'WHERE column BETWEEN 1 AND 10', description: 'Wert im Bereich' },
-      { syntax: 'WHERE column IS NULL', description: 'Null-Prüfung' },
+      { syntax: 'WHERE column IS NULL', description: t('toolbox.nullpruefung') },
       { syntax: 'ORDER BY column ASC/DESC', description: 'Sortierung' },
       { syntax: 'GROUP BY column', description: 'Gruppierung' },
-      { syntax: 'HAVING COUNT(*) > 5', description: 'Gruppen-Filter' }
+      { syntax: 'HAVING COUNT(*) > 5', description: t('toolbox.gruppenfilter') }
     ]
   },
   joins: {
@@ -1156,8 +1160,8 @@ const swqlCheatSheet = {
       { syntax: 'MIN(column) / MAX(column)', description: 'Minimum / Maximum' },
       { syntax: 'CONCAT(str1, str2)', description: 'Strings verbinden' },
       { syntax: 'SUBSTRING(str, start, length)', description: 'Teil-String' },
-      { syntax: 'LENGTH(str)', description: 'String-Länge' },
-      { syntax: 'TOLOWER(str) / TOUPPER(str)', description: 'Groß-/Kleinschreibung' },
+      { syntax: 'LENGTH(str)', description: t('toolbox.stringlaenge') },
+      { syntax: 'TOLOWER(str) / TOUPPER(str)', description: t('toolbox.grosskleinschreibung') },
       { syntax: 'ISNULL(column, default)', description: 'Null ersetzen' }
     ]
   },
@@ -1200,7 +1204,7 @@ const swqlCheatSheet = {
     title: 'Parameter',
     items: [
       { syntax: '@paramName', description: 'Parameter-Platzhalter in Query' },
-      { syntax: 'Get-SwisData $swis "..." @{paramName="value"}', description: 'PowerShell Parameter-Übergabe' }
+      { syntax: 'Get-SwisData $swis "..." @{paramName="value"}', description: 't('toolbox.powershellParameteruebergabe') }
     ]
   },
   statusCodes: {
@@ -1213,7 +1217,7 @@ const swqlCheatSheet = {
       { syntax: 'Status = 9', description: 'Unmanaged' },
       { syntax: 'Status = 12', description: 'Unreachable' },
       { syntax: 'Status = 14', description: 'Critical' },
-      { syntax: 'Status = 15', description: 'Mixed availability (Gruppe)' },
+      { syntax: 'Status = 15', description: t('toolbox.mixedAvailabilityGruppe') },
       { syntax: 'Status = 16', description: 'Misconfigured' },
       { syntax: 'Status = 17', description: 'Could not poll' }
     ]
@@ -1227,7 +1231,7 @@ const swqlCheatSheet = {
 const verbDefinitions = {
   'Unmanage': {
     entity: 'Orion.Nodes',
-    description: 'Node(s) für einen Zeitraum aus dem Monitoring nehmen',
+    description: t('toolbox.nodesFuerEinenZeitraumAusDemMonitoring'),
     params: [
       { name: 'netObjectId', type: 'string', description: 'N:NodeID (z.B. N:123)' },
       { name: 'start', type: 'datetime', description: 'Start-Zeitpunkt' },
@@ -1241,7 +1245,7 @@ Invoke-SwisVerb $swis Orion.Nodes Unmanage @("N:$nodeId", $now, $later, $false)`
   },
   'Remanage': {
     entity: 'Orion.Nodes',
-    description: 'Node(s) wieder ins Monitoring aufnehmen',
+    description: t('toolbox.nodesWiederInsMonitoringAufnehmen'),
     params: [
       { name: 'netObjectId', type: 'string', description: 'N:NodeID (z.B. N:123)' }
     ],
@@ -1250,7 +1254,7 @@ Invoke-SwisVerb $swis Orion.Nodes Remanage @("N:$nodeId")`
   },
   'PollNow': {
     entity: 'Orion.Nodes',
-    description: 'Sofortiges Polling eines Nodes auslösen',
+    description: t('toolbox.sofortigesPollingEinesNodesAusloesen'),
     params: [
       { name: 'netObjectId', type: 'string', description: 'N:NodeID' }
     ],
@@ -1259,10 +1263,10 @@ Invoke-SwisVerb $swis Orion.Nodes PollNow @("N:$nodeId")`
   },
   'Acknowledge': {
     entity: 'Orion.AlertActive',
-    description: 'Alert(s) bestätigen',
+    description: t('toolbox.alertsBestaetigen'),
     params: [
       { name: 'alertObjectIds', type: 'array', description: 'Array von AlertObjectIDs' },
-      { name: 'note', type: 'string', description: 'Bestätigungs-Notiz' }
+      { name: 'note', type: 'string', description: t('toolbox.bestaetigungsnotiz') }
     ],
     example: `$alertIds = @(1, 2, 3)
 $note = "Acknowledged via API"
@@ -1270,7 +1274,7 @@ Invoke-SwisVerb $swis Orion.AlertActive Acknowledge @($alertIds, $note)`
   },
   'ClearAlert': {
     entity: 'Orion.AlertActive',
-    description: 'Alert manuell zurücksetzen',
+    description: t('toolbox.alertManuellZuruecksetzen'),
     params: [
       { name: 'alertObjectIds', type: 'array', description: 'Array von AlertObjectIDs' }
     ],
@@ -1279,10 +1283,10 @@ Invoke-SwisVerb $swis Orion.AlertActive ClearAlert @($alertIds)`
   },
   'AppendNote': {
     entity: 'Orion.AlertActive',
-    description: 'Notiz zu Alert hinzufügen (ohne Acknowledge)',
+    description: t('toolbox.notizZuAlertHinzufuegenOhneAcknowledge'),
     params: [
       { name: 'alertObjectId', type: 'int', description: 'AlertObjectID' },
-      { name: 'note', type: 'string', description: 'Notiz-Text' }
+      { name: 'note', type: 'string', description: t('toolbox.notiztext') }
     ],
     example: `$alertId = 123
 $note = "Investigation in progress"
@@ -1290,10 +1294,10 @@ Invoke-SwisVerb $swis Orion.AlertActive AppendNote @($alertId, $note)`
   },
   'SuppressAlerts': {
     entity: 'Orion.AlertSuppression',
-    description: 'Alerts für Entity unterdrücken (Maintenance)',
+    description: t('toolbox.alertsFuerEntityUnterdrueckenMaintenance'),
     params: [
       { name: 'entityUri', type: 'string', description: 'Entity URI' },
-      { name: 'suppressUntil', type: 'datetime', description: 'Unterdrücken bis' }
+      { name: 'suppressUntil', type: 'datetime', description: t('toolbox.unterdrueckenBis') }
     ],
     example: `$uri = "swis://localhost/Orion/Orion.Nodes/NodeID=123"
 $until = [DateTime]::UtcNow.AddHours(4)
@@ -1596,10 +1600,10 @@ const tabs = [
           <div class="space-y-4">
             <!-- Entity Selection -->
             <div class="card p-4">
-              <h3 class="text-sm font-semibold text-white mb-3">1. Entity auswählen</h3>
+              <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.1EntityAuswaehlen') }}</h3>
               <select v-model="selectedEntity" @change="changeEntity(selectedEntity)" class="input w-full">
                 <optgroup v-for="(group, idx) in [
-                  { name: 'Nodes & Monitoring', entities: ['Orion.Nodes', 'Orion.NPM.Interfaces', 'Orion.Volumes', 'Orion.CPUMultiLoad'] },
+                  { name: $t('toolbox.nodesMonitoring'), entities: ['Orion.Nodes', 'Orion.NPM.Interfaces', 'Orion.Volumes', 'Orion.CPUMultiLoad'] },
                   { name: 'Alerts', entities: ['Orion.AlertActive', 'Orion.AlertConfigurations', 'Orion.AlertHistory', 'Orion.AlertObjects', 'Orion.AlertSuppression'] },
                   { name: 'System', entities: ['Orion.Events', 'Orion.Pollers', 'Orion.Groups', 'Orion.Engines', 'Orion.Accounts', 'Orion.Audit'] },
                   { name: 'Custom Properties', entities: ['Orion.NodesCustomProperties'] },
@@ -1615,10 +1619,10 @@ const tabs = [
             <!-- Column Selection -->
             <div class="card p-4">
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-white">2. Spalten auswählen</h3>
+                <h3 class="text-sm font-semibold text-white">{{ $t('toolbox.2SpaltenAuswaehlen') }}</h3>
                 <div class="flex gap-2">
-                  <button @click="selectAllColumns" class="text-xs text-primary-400 hover:text-primary-300">Alle</button>
-                  <button @click="clearColumns" class="text-xs text-gray-400 hover:text-gray-300">Keine</button>
+                  <button @click="selectAllColumns" class="text-xs text-primary-400 hover:text-primary-300">{{ $t('common.all') }}</button>
+                  <button @click="clearColumns" class="text-xs text-gray-400 hover:text-gray-300">{{ $t('common.none') }}</button>
                 </div>
               </div>
               <div class="max-h-48 overflow-auto space-y-1">
@@ -1677,18 +1681,18 @@ const tabs = [
                     <TrashIcon class="w-4 h-4" />
                   </button>
                 </div>
-                <p v-if="whereConditions.length === 0" class="text-xs text-gray-500">Keine Filter definiert</p>
+                <p v-if="whereConditions.length === 0" class="text-xs text-gray-500">{{ $t('toolbox.keineFilterDefiniert') }}</p>
               </div>
             </div>
 
             <!-- Order & Options -->
             <div class="card p-4">
-              <h3 class="text-sm font-semibold text-white mb-3">4. Sortierung & Optionen</h3>
+              <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.4SortierungOptionen') }}</h3>
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-xs text-gray-400">ORDER BY</label>
                   <select v-model="orderBy" class="input w-full text-sm mt-1">
-                    <option value="">Keine Sortierung</option>
+                    <option value="">{{ $t('toolbox.keineSortierung') }}</option>
                     <option v-for="col in selectedColumns" :key="col" :value="col">{{ col }}</option>
                   </select>
                 </div>
@@ -1723,10 +1727,10 @@ const tabs = [
                   class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
                 >
                   <ClipboardIcon class="w-4 h-4" />
-                  {{ copied ? 'Kopiert!' : 'Kopieren' }}
+                  {{ copied ? 'Kopiert!' : $t('common.copy') }}
                 </button>
               </div>
-              <pre class="flex-1 p-3 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-green-400 whitespace-pre-wrap">{{ generatedQuery || '-- Wähle Entity und Spalten aus' }}</pre>
+              <pre class="flex-1 p-3 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-green-400 whitespace-pre-wrap">{{ generatedQuery || $t('toolbox.waehleEntityUndSpaltenAus') }}</pre>
             </div>
           </div>
         </div>
@@ -1825,7 +1829,7 @@ const tabs = [
             <div v-if="expandedEntities.includes(entity)" class="border-t border-white/[0.06] p-3">
               <!-- Verbs -->
               <div v-if="data.verbs && data.verbs.length > 0" class="mb-3">
-                <h4 class="text-xs font-semibold text-gray-400 mb-2">Verfügbare Verbs:</h4>
+                <h4 class="text-xs font-semibold text-gray-400 mb-2">{{ $t('toolbox.verfuegbareVerbs') }}</h4>
                 <div class="flex flex-wrap gap-1">
                   <span
                     v-for="verb in data.verbs"
@@ -1843,7 +1847,7 @@ const tabs = [
                   <tr class="text-left text-xs text-gray-500">
                     <th class="pb-2">Property</th>
                     <th class="pb-2">Typ</th>
-                    <th class="pb-2">Beschreibung</th>
+                    <th class="pb-2">{{ $t('common.description') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1869,7 +1873,7 @@ const tabs = [
               class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
             >
               <ClipboardIcon class="w-4 h-4" />
-              {{ copied ? 'Kopiert!' : 'Kopieren' }}
+              {{ copied ? 'Kopiert!' : $t('common.copy') }}
             </button>
           </div>
           <p class="text-xs text-gray-400 mb-3">
@@ -1891,11 +1895,11 @@ const tabs = [
               <pre class="text-xs font-mono text-green-400">Import-Module SwisPowerShell</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Verbindung mit Credentials</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.verbindungMitCredentials') }}</h4>
               <pre class="text-xs font-mono text-green-400">$swis = Connect-Swis -Hostname "orion" -Credential (Get-Credential)</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Verbindung mit Windows Auth</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.verbindungMitWindowsAuth') }}</h4>
               <pre class="text-xs font-mono text-green-400">$swis = Connect-Swis -Hostname "orion" -Trusted</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
@@ -1916,7 +1920,7 @@ const tabs = [
           <!-- Verb Selection -->
           <div class="space-y-4">
             <div class="card p-4">
-              <h3 class="text-sm font-semibold text-white mb-3">Verb auswählen</h3>
+              <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.verbAuswaehlen') }}</h3>
               <select v-model="selectedVerb" class="input w-full">
                 <option v-for="(verb, name) in verbDefinitions" :key="name" :value="name">
                   {{ name }} - {{ verb.description }}
@@ -1962,7 +1966,7 @@ const tabs = [
                 class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
               >
                 <ClipboardIcon class="w-4 h-4" />
-                {{ copied ? 'Kopiert!' : 'Kopieren' }}
+                {{ copied ? 'Kopiert!' : $t('common.copy') }}
               </button>
             </div>
             <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-blue-400">{{ verbPowershellScript }}</pre>
@@ -1971,7 +1975,7 @@ const tabs = [
 
         <!-- Common Verb Examples -->
         <div class="card p-4">
-          <h3 class="text-sm font-semibold text-white mb-3">Häufige Anwendungsfälle</h3>
+          <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.haeufigeAnwendungsfaelle') }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="p-3 bg-white/[0.04] rounded-lg">
               <h4 class="font-medium text-white mb-2">Mehrere Nodes unmanagen</h4>
@@ -1986,7 +1990,7 @@ foreach ($id in $nodeIds) {
 }</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="font-medium text-white mb-2">Alle Alerts acknowledgen</h4>
+              <h4 class="font-medium text-white mb-2">{{ $t('toolbox.alleAlertsAcknowledgen') }}</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$alerts = Get-SwisData $swis @"
 SELECT AlertObjectID
 FROM Orion.AlertActive
@@ -1999,7 +2003,7 @@ $note = "Bulk acknowledged"
 Invoke-SwisVerb $swis Orion.AlertActive Acknowledge @($ids, $note)</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="font-medium text-white mb-2">Custom Property für viele Nodes setzen</h4>
+              <h4 class="font-medium text-white mb-2">{{ $t('toolbox.customPropertyFuerVieleNodesSetzen') }}</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$nodes = Get-SwisData $swis @"
 SELECT Uri
 FROM Orion.Nodes
@@ -2047,7 +2051,7 @@ foreach ($node in $unmanaged) {
 
           <!-- Add Connection Form -->
           <div v-if="showAddConnection" class="mb-4 p-4 bg-white/[0.04] rounded-lg">
-            <h4 class="text-sm font-medium text-white mb-3">Neue Verbindung hinzufügen</h4>
+            <h4 class="text-sm font-medium text-white mb-3">{{ $t('toolbox.neueVerbindungHinzufuegen') }}</h4>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-xs text-gray-400">Name</label>
@@ -2062,7 +2066,7 @@ foreach ($node in $unmanaged) {
                 <input v-model="newConnection.username" class="input w-full mt-1" placeholder="admin" />
               </div>
               <div class="flex items-end">
-                <button @click="addConnection" class="btn btn-primary w-full">Speichern</button>
+                <button @click="addConnection" class="btn btn-primary w-full">{{ $t('common.save') }}</button>
               </div>
             </div>
           </div>
@@ -2098,7 +2102,7 @@ foreach ($node in $unmanaged) {
                   @click="removeConnection(conn.id)"
                   class="btn-icon text-gray-400 hover:text-red-400"
                   :disabled="connections.length <= 1"
-                  title="Entfernen"
+                  :title="$t('calendarModule.entfernen')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -2110,8 +2114,8 @@ foreach ($node in $unmanaged) {
         <div class="card p-4">
           <h3 class="text-sm font-semibold text-white mb-3">Verbindungs-Hinweise</h3>
           <div class="text-sm text-gray-400 space-y-2">
-            <p>Die Verbindungen werden nur lokal im Browser gespeichert (LocalStorage). Passwörter werden NICHT gespeichert.</p>
-            <p>Bei der Ausführung von PowerShell-Scripts wird <code class="text-primary-400">Get-Credential</code> verwendet, um sicher nach dem Passwort zu fragen.</p>
+            <p>{{ $t('toolbox.dieVerbindungenWerdenNurLokalImBrowser') }}</p>
+            <p>Bei der Ausführung von PowerShell-Scripts wird <code class="text-primary-400">Get-Credential</code> {{ $t('toolbox.toolboxverwendetumsichernachdempasswortzu') }}</p>
             <p>Für automatisierte Scripts empfehlen wir die Verwendung von Windows Integrated Authentication (<code class="text-primary-400">-Trusted</code>).</p>
           </div>
         </div>
@@ -2126,7 +2130,7 @@ foreach ($node in $unmanaged) {
               <thead>
                 <tr class="text-left text-xs text-gray-500 border-b border-white/[0.06]">
                   <th class="pb-2 pr-4">Syntax</th>
-                  <th class="pb-2">Beschreibung</th>
+                  <th class="pb-2">{{ $t('common.description') }}</th>
                 </tr>
               </thead>
               <tbody>

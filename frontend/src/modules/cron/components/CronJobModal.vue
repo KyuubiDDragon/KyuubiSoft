@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useCronStore } from '@/modules/cron/stores/cronStore'
@@ -11,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
+const { t } = useI18n()
 const cronStore = useCronStore()
 
 // Form state
@@ -28,13 +30,13 @@ const saving = ref(false)
 let parseTimeout = null
 
 // Preset expressions
-const presets = [
-  { label: 'Jede Minute', value: '* * * * *' },
-  { label: 'Stuendlich', value: '0 * * * *' },
-  { label: 'Taeglich', value: '0 0 * * *' },
-  { label: 'Woechentlich', value: '0 0 * * 1' },
-  { label: 'Monatlich', value: '0 0 1 * *' },
-]
+const presets = computed(() => [
+  { label: t('cron.everyMinute'), value: '* * * * *' },
+  { label: t('cron.hourly'), value: '0 * * * *' },
+  { label: t('cron.daily'), value: '0 0 * * *' },
+  { label: t('cron.weekly'), value: '0 0 * * 1' },
+  { label: t('cron.monthly'), value: '0 0 1 * *' },
+])
 
 // Watch for modal open/close to reset form
 watch(() => props.show, (newVal) => {
@@ -145,7 +147,7 @@ function handleClose() {
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <h3 class="text-lg font-semibold text-white">
-            {{ job ? 'Cron-Job bearbeiten' : 'Neuen Cron-Job erstellen' }}
+            {{ job ? $t('cron.editJob') : $t('cron.createNewJob') }}
           </h3>
           <button @click="handleClose" class="btn-icon-sm">
             <XMarkIcon class="w-5 h-5" />
@@ -156,9 +158,9 @@ function handleClose() {
         <div class="p-5 space-y-5 overflow-y-auto">
           <!-- Server selection -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1.5">Server-Auswahl</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('cron.serverSelection') }}</label>
             <select v-model="form.connection_id" class="select w-full">
-              <option value="">Lokal (kein Server)</option>
+              <option value="">{{ $t('cron.localNoServer') }}</option>
               <option v-for="conn in connections" :key="conn.id" :value="conn.id">
                 {{ conn.name }} ({{ conn.host }})
               </option>
@@ -167,7 +169,7 @@ function handleClose() {
 
           <!-- Cron Expression -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1.5">Cron-Ausdruck</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('cron.expression') }}</label>
 
             <!-- Presets -->
             <div class="flex flex-wrap gap-2 mb-3">
@@ -196,7 +198,7 @@ function handleClose() {
             <div v-if="parsedDescription" class="mt-2 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
               <p class="text-sm text-primary-400 font-medium">{{ parsedDescription }}</p>
               <div v-if="parsedNextRuns.length" class="mt-2">
-                <p class="text-xs text-gray-500 mb-1">Naechste Ausfuehrungen:</p>
+                <p class="text-xs text-gray-500 mb-1">{{ $t('cron.nextExecutions') }}</p>
                 <ul class="space-y-0.5">
                   <li v-for="(run, idx) in parsedNextRuns" :key="idx" class="text-xs text-gray-400 font-mono">
                     {{ run }}
@@ -205,27 +207,27 @@ function handleClose() {
               </div>
             </div>
 
-            <p class="text-xs text-gray-600 mt-1">Format: Minute Stunde Tag Monat Wochentag</p>
+            <p class="text-xs text-gray-600 mt-1">{{ $t('cron.formatHint') }}</p>
           </div>
 
           <!-- Command -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1.5">Befehl</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('cron.command') }}</label>
             <textarea
               v-model="form.command"
               rows="4"
-              placeholder="z.B. /usr/bin/php /var/www/artisan schedule:run"
+              :placeholder="$t('cron.commandPlaceholder')"
               class="input w-full font-mono resize-y"
             ></textarea>
           </div>
 
           <!-- Description -->
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1.5">Beschreibung</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('common.description') }}</label>
             <input
               v-model="form.description"
               type="text"
-              placeholder="Optionale Beschreibung..."
+              :placeholder="$t('cron.optionalDescription')"
               class="input w-full"
             />
           </div>
@@ -234,14 +236,14 @@ function handleClose() {
         <!-- Footer -->
         <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
           <button @click="handleClose" class="btn-secondary">
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button
             @click="handleSave"
             :disabled="saving || !form.expression.trim() || !form.command.trim()"
             class="btn-primary"
           >
-            {{ saving ? 'Speichern...' : (job ? 'Aktualisieren' : 'Erstellen') }}
+            {{ saving ? $t('common.saving') : (job ? $t('common.refresh') : $t('common.create')) }}
           </button>
         </div>
       </div>

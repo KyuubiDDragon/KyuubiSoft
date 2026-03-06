@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { XMarkIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useNotificationRulesStore } from '@/modules/notification-rules/stores/notificationRulesStore'
 
@@ -35,16 +39,16 @@ const form = ref({
 const operators = [
   { value: 'equals', label: 'gleich' },
   { value: 'not_equals', label: 'ungleich' },
-  { value: 'contains', label: 'enthält' },
-  { value: 'not_contains', label: 'enthält nicht' },
-  { value: 'greater_than', label: 'größer als' },
+  { value: 'contains', label: t('notificationRules.enthaelt') },
+  { value: 'not_contains', label: t('notificationRules.enthaeltNicht') },
+  { value: 'greater_than', label: t('notificationRules.groesserAls') },
   { value: 'less_than', label: 'kleiner als' },
 ]
 
 // Action types
 const actionTypes = [
   { value: 'push', label: 'Push-Benachrichtigung' },
-  { value: 'webhook', label: 'Webhook' },
+  { value: 'webhook', label: t('notificationRules.webhook') },
 ]
 
 // Group events by module
@@ -208,7 +212,7 @@ async function handleSave() {
       <div class="modal modal-lg">
         <!-- Header -->
         <div class="modal-header">
-          <h2>{{ isEditMode ? 'Regel bearbeiten' : 'Neue Regel erstellen' }}</h2>
+          <h2>{{ isEditMode ? $t('notificationRules.regelBearbeiten') : $t('notificationRules.neueRegelErstellen') }}</h2>
           <button @click="emit('close')" class="btn-icon-sm">
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -262,7 +266,7 @@ async function handleSave() {
                 v-model="form.name"
                 type="text"
                 class="input w-full"
-                placeholder="z.B. Server-Ausfall Benachrichtigung"
+                placeholder=$t('notificationRules.zbServerausfallBenachrichtigung')
               />
             </div>
 
@@ -271,7 +275,7 @@ async function handleSave() {
                 Trigger-Ereignis
               </label>
               <select v-model="form.trigger_event" class="select w-full">
-                <option value="" disabled>Ereignis auswählen...</option>
+                <option value="" disabled>{{ $t('notificationRules.ereignisAuswaehlen') }}</option>
                 <optgroup
                   v-for="(events, module) in groupedEvents"
                   :key="module"
@@ -294,7 +298,7 @@ async function handleSave() {
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-400">
-                  Bedingungen sind optional. Ohne Bedingungen wird die Regel bei jedem Trigger-Ereignis ausgelöst.
+                  {{ $t('notificationRules.bedingungenSindOptionalOhneBedingungenWirdDie') }}
                 </p>
               </div>
               <button @click="addCondition" class="btn-secondary shrink-0">
@@ -304,8 +308,8 @@ async function handleSave() {
             </div>
 
             <div v-if="form.conditions.length === 0" class="text-center py-8">
-              <p class="text-gray-500 text-sm">Keine Bedingungen definiert</p>
-              <p class="text-gray-600 text-xs mt-1">Regel wird bei jedem passenden Ereignis ausgelöst</p>
+              <p class="text-gray-500 text-sm">{{ $t('notificationRules.keineBedingungenDefiniert') }}</p>
+              <p class="text-gray-600 text-xs mt-1">{{ $t('notificationRules.notificationrulesregelwirdbeijedempassendenereignisausgeloest') }}</p>
             </div>
 
             <div
@@ -361,7 +365,7 @@ async function handleSave() {
           <div v-if="currentStep === 3" class="space-y-4">
             <div class="flex items-center justify-between">
               <p class="text-sm text-gray-400">
-                Definiere mindestens eine Aktion, die bei Auslösung ausgeführt wird.
+                {{ $t('notificationRules.definiereMindestensEineAktionDieBeiAusloesung') }}
               </p>
               <button @click="addAction" class="btn-secondary shrink-0">
                 <PlusIcon class="w-4 h-4 mr-1" />
@@ -370,8 +374,8 @@ async function handleSave() {
             </div>
 
             <div v-if="form.actions.length === 0" class="text-center py-8">
-              <p class="text-gray-500 text-sm">Keine Aktionen definiert</p>
-              <p class="text-gray-600 text-xs mt-1">Mindestens eine Aktion ist erforderlich</p>
+              <p class="text-gray-500 text-sm">{{ $t('workflows.keineAktionenDefiniert') }}</p>
+              <p class="text-gray-600 text-xs mt-1">{{ $t('notificationRules.mindestensEineAktionIstErforderlich') }}</p>
             </div>
 
             <div

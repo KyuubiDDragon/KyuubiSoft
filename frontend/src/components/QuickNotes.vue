@@ -116,7 +116,7 @@ function toggleOpen() {
     v-if="!isOpen"
     @click="toggleOpen"
     class="fixed bottom-6 right-6 w-14 h-14 bg-primary-600 hover:bg-primary-500 rounded-full shadow-glow flex items-center justify-center text-white transition-all z-50 group"
-    title="Quick Notes"
+    :title="$t('quickNotes.title')"
   >
     <PencilSquareIcon class="w-6 h-6" />
     <span
@@ -145,7 +145,7 @@ function toggleOpen() {
       <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
         <div class="flex items-center gap-2">
           <PencilSquareIcon class="w-5 h-5 text-primary-400" />
-          <h3 class="font-semibold text-white">Quick Notes</h3>
+          <h3 class="font-semibold text-white">{{ $t('quickNotes.title') }}</h3>
         </div>
         <div class="flex items-center gap-1">
           <button
@@ -173,7 +173,7 @@ function toggleOpen() {
               v-model="newNoteContent"
               @keyup.enter="createNote"
               type="text"
-              placeholder="Neue Notiz..."
+              :placeholder="$t('quickNotes.newNote')"
               class="input text-sm"
             />
             <button
@@ -199,7 +199,7 @@ function toggleOpen() {
             v-else-if="notes.length === 0"
             class="text-center py-8 text-gray-500 text-sm"
           >
-            Keine Notizen vorhanden
+            {{ $t('quickNotes.noNotes') }}
           </div>
 
           <div

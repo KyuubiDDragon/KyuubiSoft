@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useQuickAccessStore } from '@/stores/quickAccess'
+import { useLocaleStore } from '@/stores/locale'
 import { getIconComponent } from '@/core/config/navigation'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import NotificationCenter from '@/components/NotificationCenter.vue'
@@ -19,6 +20,7 @@ import {
   CheckIcon,
   EllipsisHorizontalIcon,
   ChatBubbleLeftRightIcon,
+  LanguageIcon,
 } from '@heroicons/vue/24/outline'
 
 defineProps<{
@@ -31,10 +33,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const quickAccessStore = useQuickAccessStore()
+const localeStore = useLocaleStore()
 
 const showUserMenu = ref(false)
 const showWidgetsMenu = ref(false)
 const showQuickAccessOverflow = ref(false)
+const showLanguageMenu = ref(false)
 
 onMounted(() => {
   if (!quickAccessStore.isInitialized) {
@@ -104,7 +108,7 @@ function goToSettings() {
         <button
           @click="showQuickAccessOverflow = !showQuickAccessOverflow"
           class="btn-icon-sm"
-          title="Weitere"
+          :title="$t('common.more')"
         >
           <EllipsisHorizontalIcon class="w-4 h-4" />
         </button>
@@ -137,7 +141,7 @@ function goToSettings() {
       <button
         @click="router.push('/inbox')"
         class="btn-icon-sm"
-        title="Inbox"
+        :title="$t('header.inbox')"
       >
         <InboxArrowDownIcon class="w-4 h-4" />
       </button>
@@ -146,7 +150,7 @@ function goToSettings() {
       <button
         @click="router.push('/chat')"
         class="btn-icon-sm"
-        title="Team Chat"
+        :title="$t('header.teamChat')"
       >
         <ChatBubbleLeftRightIcon class="w-4 h-4" />
       </button>
@@ -162,7 +166,7 @@ function goToSettings() {
         <button
           @click="showWidgetsMenu = !showWidgetsMenu"
           class="btn-icon-sm"
-          title="Widgets"
+          :title="$t('header.widgets')"
         >
           <Squares2X2Icon class="w-4 h-4" />
         </button>
@@ -172,7 +176,7 @@ function goToSettings() {
             v-if="showWidgetsMenu"
             class="dropdown right-0 mt-2"
           >
-            <div class="dropdown-header">Widgets</div>
+            <div class="dropdown-header">{{ $t('header.widgets') }}</div>
 
             <button
               @click="uiStore.toggleQuickNotes(); showWidgetsMenu = false"
@@ -180,7 +184,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <PencilSquareIcon class="w-4 h-4 shrink-0" />
-                <span>Quick Notes</span>
+                <span>{{ $t('header.quickNotes') }}</span>
               </div>
               <div v-if="uiStore.showQuickNotes" class="status-online" />
             </button>
@@ -191,7 +195,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <InboxArrowDownIcon class="w-4 h-4 shrink-0" />
-                <span>Quick Capture</span>
+                <span>{{ $t('header.quickCapture') }}</span>
               </div>
               <div v-if="uiStore.showQuickCapture" class="status-online" />
             </button>
@@ -202,7 +206,7 @@ function goToSettings() {
             >
               <div class="flex items-center gap-2.5">
                 <SparklesIcon class="w-4 h-4 shrink-0" />
-                <span>AI Assistent</span>
+                <span>{{ $t('header.aiAssistant') }}</span>
               </div>
               <div v-if="uiStore.showAIAssistant" class="status-online" />
             </button>
@@ -211,7 +215,7 @@ function goToSettings() {
             <template v-if="quickAccessStore.items.length > 0">
               <div class="dropdown-divider" />
               <div class="px-3 py-2">
-                <p class="text-2xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Access Anzahl</p>
+                <p class="text-2xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{{ $t('header.quickAccessCount') }}</p>
                 <div class="flex items-center gap-2.5">
                   <input
                     type="range"
@@ -225,6 +229,38 @@ function goToSettings() {
                 </div>
               </div>
             </template>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- Language switcher -->
+      <div class="relative">
+        <button
+          @click="showLanguageMenu = !showLanguageMenu"
+          class="btn-icon-sm"
+          :title="$t('header.language')"
+        >
+          <LanguageIcon class="w-4 h-4" />
+        </button>
+
+        <Transition name="fade">
+          <div
+            v-if="showLanguageMenu"
+            class="dropdown right-0 mt-2"
+          >
+            <div class="dropdown-header">{{ $t('header.language') }}</div>
+            <button
+              v-for="loc in localeStore.getAvailableLocales()"
+              :key="loc.code"
+              @click="localeStore.setLocale(loc.code); showLanguageMenu = false"
+              class="dropdown-item justify-between"
+            >
+              <div class="flex items-center gap-2.5">
+                <span class="text-sm">{{ loc.flag }}</span>
+                <span>{{ loc.name }}</span>
+              </div>
+              <CheckIcon v-if="localeStore.currentLocale === loc.code" class="w-4 h-4 text-primary-400" />
+            </button>
           </div>
         </Transition>
       </div>
@@ -255,14 +291,14 @@ function goToSettings() {
             <div class="py-1">
               <button @click="goToSettings" class="dropdown-item">
                 <Cog6ToothIcon class="w-4 h-4 shrink-0" />
-                Einstellungen
+                {{ $t('common.settings') }}
               </button>
             </div>
 
             <div class="border-t border-white/[0.06] py-1">
               <button @click="logout" class="dropdown-item-danger">
                 <ArrowRightOnRectangleIcon class="w-4 h-4 shrink-0" />
-                Abmelden
+                {{ $t('auth.logout') }}
               </button>
             </div>
           </div>
@@ -275,4 +311,5 @@ function goToSettings() {
   <div v-if="showUserMenu" @click="closeUserMenu" class="fixed inset-0 z-10" />
   <div v-if="showWidgetsMenu" @click="showWidgetsMenu = false" class="fixed inset-0 z-10" />
   <div v-if="showQuickAccessOverflow" @click="showQuickAccessOverflow = false" class="fixed inset-0 z-10" />
+  <div v-if="showLanguageMenu" @click="showLanguageMenu = false" class="fixed inset-0 z-10" />
 </template>

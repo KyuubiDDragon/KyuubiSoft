@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMockupStore } from '../stores/mockupStore'
 import {
   XMarkIcon,
@@ -35,8 +36,8 @@ watch(() => mockupStore.currentTemplate, (template) => {
 
 // Computed
 const formatOptions = [
-  { value: 'png', label: 'PNG', description: 'Beste Qualität, unterstützt Transparenz' },
-  { value: 'jpg', label: 'JPG', description: 'Kleinere Dateigröße, keine Transparenz' },
+  { value: 'png', label: 'PNG', description: t('mockupEditor.besteQualitaetUnterstuetztTransparenz') },
+  { value: 'jpg', label: 'JPG', description: t('mockupEditor.kleinereDateigroesseKeineTransparenz') },
 ]
 
 const canBeTransparent = computed(() => {
@@ -131,8 +132,8 @@ const close = () => {
                   class="w-full h-2 bg-white/[0.04] rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
                 <div class="flex justify-between text-xs text-gray-500">
-                  <span>Kleinere Datei</span>
-                  <span>Beste Qualität</span>
+                  <span>{{ $t('mockupEditor.mockupeditorkleineredatei') }}</span>
+                  <span>{{ $t('youtubeDownloader.youtubedownloaderbestequalitaet') }}</span>
                 </div>
               </div>
             </Transition>
@@ -153,7 +154,7 @@ const close = () => {
                   <span class="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
                     Transparenter Hintergrund
                   </span>
-                  <p class="text-xs text-gray-500">Entfernt den Hintergrund für PNG-Export</p>
+                  <p class="text-xs text-gray-500">{{ $t('mockupEditor.entferntDenHintergrundFuerPngexport') }}</p>
                 </div>
               </label>
             </div>

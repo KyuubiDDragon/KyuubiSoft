@@ -66,7 +66,7 @@ function formatValue(value) {
       <div class="modal modal-lg">
         <!-- Header -->
         <div class="modal-header">
-          <h2>Audit-Eintrag Details</h2>
+          <h2>{{ $t('audit.entryDetails') }}</h2>
           <button @click="emit('close')" class="btn-icon-sm">
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -77,34 +77,34 @@ function formatValue(value) {
           <!-- Basic Info -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">Zeitpunkt</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.timestamp') }}</label>
               <p class="text-white text-sm mt-1">{{ formattedTimestamp }}</p>
             </div>
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">Aktion</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.action') }}</label>
               <div class="mt-1">
                 <span :class="actionBadgeClass">{{ entry.action }}</span>
               </div>
             </div>
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">Benutzer</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.user') }}</label>
               <p class="text-white text-sm mt-1">
                 {{ entry.user_name || entry.user_email || entry.user_id || '-' }}
               </p>
             </div>
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">IP-Adresse</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.ipAddress') }}</label>
               <p class="text-white text-sm mt-1 font-mono">{{ entry.ip_address || '-' }}</p>
             </div>
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">Entität</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.entity') }}</label>
               <p class="text-white text-sm mt-1">
                 {{ entry.entity_type || '-' }}
                 <span v-if="entry.entity_id" class="text-gray-500 font-mono text-xs ml-1">#{{ entry.entity_id }}</span>
               </p>
             </div>
             <div>
-              <label class="text-xs text-gray-500 uppercase tracking-wider">Entitätsname</label>
+              <label class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.entityName') }}</label>
               <p class="text-white text-sm mt-1">{{ entry.entity_name || '-' }}</p>
             </div>
           </div>
@@ -117,14 +117,14 @@ function formatValue(value) {
 
           <!-- Changes Diff -->
           <div v-if="hasChanges">
-            <label class="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Änderungen</label>
+            <label class="text-xs text-gray-500 uppercase tracking-wider mb-2 block">{{ $t('audit.changes') }}</label>
             <div class="card-inset overflow-hidden">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="border-b border-white/[0.06]">
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">Feld</th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">Vorher</th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">Nachher</th>
+                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">{{ $t('audit.field') }}</th>
+                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">{{ $t('audit.before') }}</th>
+                    <th class="px-4 py-2 text-left text-xs text-gray-500 uppercase">{{ $t('audit.after') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,7 +152,7 @@ function formatValue(value) {
 
           <!-- Details JSON -->
           <div v-if="formattedDetails">
-            <label class="text-xs text-gray-500 uppercase tracking-wider mb-2 block">Details</label>
+            <label class="text-xs text-gray-500 uppercase tracking-wider mb-2 block">{{ $t('audit.details') }}</label>
             <div class="card-inset p-4 overflow-x-auto">
               <pre class="text-xs text-gray-300 font-mono whitespace-pre-wrap">{{ formattedDetails }}</pre>
             </div>
@@ -166,7 +166,7 @@ function formatValue(value) {
 
         <!-- Footer -->
         <div class="modal-footer">
-          <button @click="emit('close')" class="btn-secondary">Schließen</button>
+          <button @click="emit('close')" class="btn-secondary">{{ $t('common.close') }}</button>
         </div>
       </div>
     </div>

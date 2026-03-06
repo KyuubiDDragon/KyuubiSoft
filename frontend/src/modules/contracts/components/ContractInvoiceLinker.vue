@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { XMarkIcon, LinkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
@@ -72,7 +73,7 @@ function formatDate(dateStr) {
       >
         <div class="modal w-full max-w-md max-h-[70vh] flex flex-col">
           <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 class="text-lg font-bold text-white">Rechnung verknuepfen</h2>
+            <h2 class="text-lg font-bold text-white">{{ $t('contracts.linkInvoice') }}</h2>
             <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04]">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -81,14 +82,14 @@ function formatDate(dateStr) {
           <div class="px-6 py-3">
             <div class="relative">
               <MagnifyingGlassIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input v-model="searchQuery" type="text" placeholder="Rechnung suchen..." class="input pl-9 text-sm" />
+              <input v-model="searchQuery" type="text" :placeholder="$t('contracts.searchInvoice')" class="input pl-9 text-sm" />
             </div>
           </div>
 
           <div class="flex-1 overflow-y-auto px-6 pb-4">
-            <div v-if="isLoading" class="text-center py-8 text-gray-500 text-sm">Lade Rechnungen...</div>
+            <div v-if="isLoading" class="text-center py-8 text-gray-500 text-sm">{{ $t('contracts.loadingInvoices') }}</div>
             <div v-else-if="filteredInvoices().length === 0" class="text-center py-8 text-gray-500 text-sm">
-              Keine verfuegbaren Rechnungen
+              {{ $t('contracts.noAvailableInvoices') }}
             </div>
             <div v-else class="space-y-1.5">
               <button

@@ -467,7 +467,7 @@ function applyPreset(preset) {
           Java/Spring
         </button>
         <button @click="clearAll" class="btn-sm bg-red-900/30 hover:bg-red-900/50 text-red-400">
-          Zurücksetzen
+          {{ $t('common.reset') }}
         </button>
       </div>
     </div>
@@ -516,7 +516,7 @@ function applyPreset(preset) {
       <textarea
         v-model="customRules"
         class="input w-full h-20 font-mono text-sm resize-none"
-        placeholder="# Eigene Einträge hier..."
+        :placeholder="$t('toolbox.eigeneEintraegeHier')"
       ></textarea>
     </div>
 

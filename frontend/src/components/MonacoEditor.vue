@@ -185,7 +185,7 @@ defineExpose({
     <!-- Toolbar -->
     <div class="flex items-center justify-between p-2 bg-white/[0.03] border border-white/[0.06] rounded-t-xl">
       <div class="flex items-center gap-2">
-        <label class="text-xs text-gray-400">Sprache:</label>
+        <label class="text-xs text-gray-400">{{ $t('editor.language') }}:</label>
         <select
           v-model="selectedLanguage"
           class="select text-sm py-1"
@@ -201,9 +201,9 @@ defineExpose({
           v-if="!readOnly"
           @click="formatCode"
           class="px-2 py-1 text-xs bg-white/[0.06] hover:bg-white/[0.10] text-gray-300 rounded-lg transition-colors"
-          title="Code formatieren (Shift+Alt+F)"
+          :title="$t('editor.formatCodeShortcut')"
         >
-          Formatieren
+          {{ $t('editor.formatCode') }}
         </button>
       </div>
     </div>
@@ -212,7 +212,7 @@ defineExpose({
     <div v-if="isLoading" class="flex items-center justify-center bg-white/[0.02] border-x border-white/[0.06]" :style="{ height }">
       <div class="text-center">
         <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p class="text-gray-400 text-sm">Editor wird geladen...</p>
+        <p class="text-gray-400 text-sm">{{ $t('editor.loading') }}</p>
       </div>
     </div>
 

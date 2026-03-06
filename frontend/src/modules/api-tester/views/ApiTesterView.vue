@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -19,6 +20,7 @@ import {
   BookmarkIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const uiStore = useUiStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -101,7 +103,7 @@ async function loadData() {
       selectedEnvironmentId.value = activeEnv.id
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Daten')
+    uiStore.showError(t('apiTester.errorLoadingData'))
   } finally {
     isLoading.value = false
   }
@@ -148,7 +150,7 @@ function addRequestToCollection(collectionId) {
 }
 
 function resetRequestForm() {
-  requestForm.name = 'New Request'
+  requestForm.name = t('apiTester.newRequest')
   requestForm.collection_id = ''
   requestForm.method = 'GET'
   requestForm.url = ''
@@ -225,13 +227,13 @@ function formatJson() {
     const parsed = JSON.parse(requestForm.body)
     requestForm.body = JSON.stringify(parsed, null, 2)
   } catch {
-    uiStore.showError('Ungültiges JSON')
+    uiStore.showError(t('apiTester.invalidJson'))
   }
 }
 
 async function sendRequest() {
   if (!requestForm.url) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('apiTester.urlRequired'))
     return
   }
 
@@ -266,7 +268,7 @@ async function sendRequest() {
 
 async function saveRequest() {
   if (!requestForm.name || !requestForm.url) {
-    uiStore.showError('Name und URL sind erforderlich')
+    uiStore.showError(t('apiTester.nameAndUrlRequired'))
     return
   }
 
@@ -285,21 +287,21 @@ async function saveRequest() {
   try {
     if (currentRequest.value) {
       await api.put(`/api/v1/api-tester/requests/${currentRequest.value.id}`, data)
-      uiStore.showSuccess('Request gespeichert')
+      uiStore.showSuccess(t('apiTester.requestSaved'))
     } else {
       const res = await api.post('/api/v1/api-tester/requests', data)
       currentRequest.value = res.data.data
       isNewRequest.value = false
-      uiStore.showSuccess('Request erstellt')
+      uiStore.showSuccess(t('apiTester.requestCreated'))
     }
     await loadData()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('apiTester.errorSaving'))
   }
 }
 
 async function deleteRequest(req) {
-  if (!await confirm({ message: 'Request wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('apiTester.confirmDeleteRequest'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/api-tester/requests/${req.id}`)
     if (currentRequest.value?.id === req.id) {
@@ -307,9 +309,9 @@ async function deleteRequest(req) {
       resetRequestForm()
     }
     await loadData()
-    uiStore.showSuccess('Request gelöscht')
+    uiStore.showSuccess(t('apiTester.requestDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('apiTester.errorDeleting'))
   }
 }
 
@@ -366,34 +368,34 @@ function openCollectionModal(collection = null) {
 
 async function saveCollection() {
   if (!collectionForm.name) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('apiTester.nameRequired'))
     return
   }
 
   try {
     if (editingCollection.value) {
       await api.put(`/api/v1/api-tester/collections/${editingCollection.value.id}`, collectionForm)
-      uiStore.showSuccess('Collection aktualisiert')
+      uiStore.showSuccess(t('apiTester.collectionUpdated'))
     } else {
       await api.post('/api/v1/api-tester/collections', collectionForm)
-      uiStore.showSuccess('Collection erstellt')
+      uiStore.showSuccess(t('apiTester.collectionCreated'))
     }
     await loadData()
     showCollectionModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('apiTester.errorSaving'))
   }
 }
 
 async function deleteCollection(id) {
-  if (!await confirm({ message: 'Collection und alle Requests löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('apiTester.confirmDeleteCollection'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/api-tester/collections/${id}`)
     await loadData()
-    uiStore.showSuccess('Collection gelöscht')
+    uiStore.showSuccess(t('apiTester.collectionDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('apiTester.errorDeleting'))
   }
 }
 
@@ -434,7 +436,7 @@ function removeEnvVar(key) {
 
 async function saveEnvironment() {
   if (!environmentForm.name) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('apiTester.nameRequired'))
     return
   }
 
@@ -446,9 +448,9 @@ async function saveEnvironment() {
       editingEnvironment.value = res.data.data
     }
     await loadData()
-    uiStore.showSuccess('Environment gespeichert')
+    uiStore.showSuccess(t('apiTester.environmentSaved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('apiTester.errorSaving'))
   }
 }
 
@@ -459,23 +461,23 @@ async function activateEnvironment() {
     await api.put(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`, { is_active: true })
     selectedEnvironmentId.value = editingEnvironment.value.id
     await loadData()
-    uiStore.showSuccess('Environment aktiviert')
+    uiStore.showSuccess(t('apiTester.environmentActivated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Aktivieren')
+    uiStore.showError(t('apiTester.errorActivating'))
   }
 }
 
 async function deleteEnvironment() {
   if (!editingEnvironment.value?.id) return
-  if (!await confirm({ message: 'Environment löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('apiTester.confirmDeleteEnvironment'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/api-tester/environments/${editingEnvironment.value.id}`)
     editingEnvironment.value = null
     await loadData()
-    uiStore.showSuccess('Environment gelöscht')
+    uiStore.showSuccess(t('apiTester.environmentDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('apiTester.errorDeleting'))
   }
 }
 
@@ -486,7 +488,7 @@ async function openHistoryModal() {
     const res = await api.get('/api/v1/api-tester/history')
     history.value = res.data.data?.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('apiTester.errorLoading'))
   }
 }
 
@@ -497,7 +499,7 @@ async function loadFromHistory(item) {
 
     currentRequest.value = null
     isNewRequest.value = true
-    requestForm.name = 'From History'
+    requestForm.name = t('apiTester.fromHistory')
     requestForm.method = historyItem.method
     requestForm.url = historyItem.url
     requestForm.headers = historyItem.request_headers || {}
@@ -515,19 +517,19 @@ async function loadFromHistory(item) {
 
     showHistoryModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('apiTester.errorLoading'))
   }
 }
 
 async function clearHistory() {
-  if (!await confirm({ message: 'Gesamte Historie löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('apiTester.confirmClearHistory'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete('/api/v1/api-tester/history')
     history.value = []
-    uiStore.showSuccess('Historie gelöscht')
+    uiStore.showSuccess(t('apiTester.historyCleared'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('apiTester.errorDeleting'))
   }
 }
 
@@ -541,15 +543,15 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">API Tester</h1>
-        <p class="text-gray-400 mt-1">Teste und debugge deine APIs</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('apiTester.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('apiTester.subtitle') }}</p>
       </div>
       <div class="flex gap-2">
         <select
           v-model="selectedEnvironmentId"
           class="input w-40"
         >
-          <option value="">Kein Environment</option>
+          <option value="">{{ $t('apiTester.noEnvironment') }}</option>
           <option v-for="env in environments" :key="env.id" :value="env.id">
             {{ env.name }}
           </option>
@@ -569,7 +571,7 @@ onMounted(() => {
         <!-- Collections -->
         <div class="card p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase">Collections</h3>
+            <h3 class="text-sm font-semibold text-gray-400 uppercase">{{ $t('apiTester.collections') }}</h3>
             <button @click="openCollectionModal()" class="btn-icon">
               <PlusIcon class="w-4 h-4" />
             </button>
@@ -620,7 +622,7 @@ onMounted(() => {
                   </button>
                 </div>
                 <div v-if="getCollectionRequests(collection.id).length === 0" class="text-xs text-gray-500 p-2">
-                  Keine Requests
+                  {{ $t('apiTester.noRequests') }}
                 </div>
               </div>
             </div>
@@ -628,7 +630,7 @@ onMounted(() => {
 
           <!-- Uncategorized -->
           <div class="mt-4 pt-4 border-t border-white/[0.06]">
-            <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Unkategorisiert</h4>
+            <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">{{ $t('apiTester.uncategorized') }}</h4>
             <div class="space-y-1">
               <div
                 v-for="req in uncategorizedRequests"
@@ -645,7 +647,7 @@ onMounted(() => {
             </div>
             <button @click="createNewRequest" class="btn-ghost w-full mt-2 text-sm">
               <PlusIcon class="w-4 h-4 mr-1" />
-              Neuer Request
+              {{ $t('apiTester.newRequest') }}
             </button>
           </div>
         </div>
@@ -674,7 +676,7 @@ onMounted(() => {
             <button @click="sendRequest" :disabled="sending" class="btn-primary px-6">
               <PlayIcon v-if="!sending" class="w-5 h-5 mr-1" />
               <span v-else class="animate-spin w-5 h-5 mr-1 border-2 border-white border-t-transparent rounded-full"></span>
-              {{ sending ? 'Senden...' : 'Senden' }}
+              {{ sending ? $t('apiTester.sending') : $t('apiTester.send') }}
             </button>
             <button v-if="currentRequest || isNewRequest" @click="saveRequest" class="btn-secondary">
               <BookmarkIcon class="w-5 h-5" />
@@ -686,10 +688,10 @@ onMounted(() => {
               v-model="requestForm.name"
               type="text"
               class="input flex-1"
-              placeholder="Request Name"
+              :placeholder="$t('apiTester.requestName')"
             />
             <select v-model="requestForm.collection_id" class="input w-48">
-              <option value="">Keine Collection</option>
+              <option value="">{{ $t('apiTester.noCollection') }}</option>
               <option v-for="col in collections" :key="col.id" :value="col.id">
                 {{ col.name }}
               </option>
@@ -714,7 +716,7 @@ onMounted(() => {
           <div class="mt-4">
             <!-- Params -->
             <div v-if="activeRequestTab === 'params'" class="space-y-2">
-              <p class="text-xs text-gray-500 mb-3">Query Parameter werden an die URL angehängt.</p>
+              <p class="text-xs text-gray-500 mb-3">{{ $t('apiTester.queryParamsHint') }}</p>
               <div v-for="(param, index) in queryParams" :key="index" class="flex gap-2">
                 <input v-model="param.key" type="text" class="input flex-1 font-mono text-sm" placeholder="Key" @input="updateQueryParams" />
                 <input v-model="param.value" type="text" class="input flex-1 font-mono text-sm" placeholder="Value" @input="updateQueryParams" />
@@ -723,7 +725,7 @@ onMounted(() => {
                 </button>
               </div>
               <button @click="addQueryParam" class="btn-ghost text-sm">
-                <PlusIcon class="w-4 h-4 mr-1" /> Parameter hinzufügen
+                <PlusIcon class="w-4 h-4 mr-1" /> {{ $t('apiTester.addParameter') }}
               </button>
             </div>
 
@@ -737,7 +739,7 @@ onMounted(() => {
                 </button>
               </div>
               <button @click="addHeader" class="btn-ghost text-sm">
-                <PlusIcon class="w-4 h-4 mr-1" /> Header hinzufügen
+                <PlusIcon class="w-4 h-4 mr-1" /> {{ $t('apiTester.addHeader') }}
               </button>
             </div>
 
@@ -753,7 +755,7 @@ onMounted(() => {
                 <textarea
                   v-model="requestForm.body"
                   class="input w-full h-40 font-mono text-sm"
-                  placeholder="Request Body"
+                  :placeholder="$t('apiTester.requestBody')"
                 ></textarea>
                 <button
                   v-if="requestForm.body_type === 'json'"
@@ -768,7 +770,7 @@ onMounted(() => {
             <!-- Auth -->
             <div v-if="activeRequestTab === 'auth'">
               <select v-model="requestForm.auth_type" class="input w-48 mb-4">
-                <option value="none">Keine Auth</option>
+                <option value="none">{{ $t('apiTester.noAuth') }}</option>
                 <option value="bearer">Bearer Token</option>
                 <option value="basic">Basic Auth</option>
                 <option value="api_key">API Key</option>
@@ -804,7 +806,7 @@ onMounted(() => {
                   </div>
                 </div>
                 <div>
-                  <label class="text-sm text-gray-400 mb-1 block">Hinzufügen zu</label>
+                  <label class="text-sm text-gray-400 mb-1 block">{{ $t('apiTester.addTo') }}</label>
                   <select v-model="requestForm.auth_config.add_to" class="input w-40">
                     <option value="header">Header</option>
                     <option value="query">Query Params</option>
@@ -858,7 +860,7 @@ onMounted(() => {
 
           <div v-else class="flex flex-col items-center justify-center py-12 text-gray-500">
             <PlayIcon class="w-12 h-12 mb-3 opacity-50" />
-            <p>Sende einen Request um die Response zu sehen</p>
+            <p>{{ $t('apiTester.sendRequestToSeeResponse') }}</p>
           </div>
         </div>
       </div>
@@ -868,22 +870,22 @@ onMounted(() => {
     <div v-if="showCollectionModal" class="modal-overlay" >
       <div class="modal max-w-md">
         <div class="modal-header">
-          <h2>{{ editingCollection ? 'Collection bearbeiten' : 'Neue Collection' }}</h2>
+          <h2>{{ editingCollection ? $t('apiTester.editCollection') : $t('apiTester.newCollection') }}</h2>
           <button @click="showCollectionModal = false" class="btn-icon">
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
         <div class="modal-body space-y-4">
           <div>
-            <label class="text-sm text-gray-400 mb-1 block">Name *</label>
+            <label class="text-sm text-gray-400 mb-1 block">{{ $t('common.name') }} *</label>
             <input v-model="collectionForm.name" type="text" class="input w-full" />
           </div>
           <div>
-            <label class="text-sm text-gray-400 mb-1 block">Beschreibung</label>
+            <label class="text-sm text-gray-400 mb-1 block">{{ $t('common.description') }}</label>
             <textarea v-model="collectionForm.description" class="input w-full" rows="2"></textarea>
           </div>
           <div>
-            <label class="text-sm text-gray-400 mb-1 block">Farbe</label>
+            <label class="text-sm text-gray-400 mb-1 block">{{ $t('apiTester.color') }}</label>
             <div class="flex gap-2">
               <button
                 v-for="color in colors"
@@ -897,8 +899,8 @@ onMounted(() => {
           </div>
         </div>
         <div class="modal-footer">
-          <button @click="showCollectionModal = false" class="btn-secondary">Abbrechen</button>
-          <button @click="saveCollection" class="btn-primary">Speichern</button>
+          <button @click="showCollectionModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+          <button @click="saveCollection" class="btn-primary">{{ $t('common.save') }}</button>
         </div>
       </div>
     </div>
@@ -907,7 +909,7 @@ onMounted(() => {
     <div v-if="showEnvironmentModal" class="modal-overlay" >
       <div class="modal max-w-3xl">
         <div class="modal-header">
-          <h2>Environments</h2>
+          <h2>{{ $t('apiTester.environments') }}</h2>
           <button @click="showEnvironmentModal = false" class="btn-icon">
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -928,19 +930,19 @@ onMounted(() => {
                 </div>
               </div>
               <button @click="createNewEnvironment" class="btn-ghost w-full mt-3 text-sm">
-                <PlusIcon class="w-4 h-4 mr-1" /> Neu
+                <PlusIcon class="w-4 h-4 mr-1" /> {{ $t('apiTester.new') }}
               </button>
             </div>
 
             <div class="flex-1">
               <div v-if="editingEnvironment" class="space-y-4">
                 <div>
-                  <label class="text-sm text-gray-400 mb-1 block">Name *</label>
+                  <label class="text-sm text-gray-400 mb-1 block">{{ $t('common.name') }} *</label>
                   <input v-model="environmentForm.name" type="text" class="input w-full" />
                 </div>
                 <div>
-                  <label class="text-sm text-gray-400 mb-1 block">Variablen</label>
-                  <p class="text-xs text-gray-500 mb-2">Verwende {{variableName}} in Requests.</p>
+                  <label class="text-sm text-gray-400 mb-1 block">{{ $t('apiTester.variables') }}</label>
+                  <p class="text-xs text-gray-500 mb-2">{{ $t('apiTester.variablesHint') }}</p>
                   <div class="space-y-2">
                     <div v-for="(value, key) in environmentForm.variables" :key="key" class="flex gap-2">
                       <input :value="key" type="text" class="input flex-1 font-mono text-sm" @input="updateEnvVarKey(key, $event)" />
@@ -950,20 +952,20 @@ onMounted(() => {
                       </button>
                     </div>
                     <button @click="addEnvVar" class="btn-ghost text-sm">
-                      <PlusIcon class="w-4 h-4 mr-1" /> Variable hinzufügen
+                      <PlusIcon class="w-4 h-4 mr-1" /> {{ $t('apiTester.addVariable') }}
                     </button>
                   </div>
                 </div>
                 <div class="flex gap-2 pt-4">
-                  <button @click="saveEnvironment" class="btn-primary">Speichern</button>
+                  <button @click="saveEnvironment" class="btn-primary">{{ $t('common.save') }}</button>
                   <button v-if="!editingEnvironment.is_active && editingEnvironment.id" @click="activateEnvironment" class="btn-secondary">
-                    Aktivieren
+                    {{ $t('apiTester.activate') }}
                   </button>
-                  <button v-if="editingEnvironment.id" @click="deleteEnvironment" class="btn-danger">Löschen</button>
+                  <button v-if="editingEnvironment.id" @click="deleteEnvironment" class="btn-danger">{{ $t('common.delete') }}</button>
                 </div>
               </div>
               <div v-else class="flex items-center justify-center h-48 text-gray-500">
-                Wähle ein Environment oder erstelle ein neues
+                {{ $t('apiTester.selectOrCreateEnvironment') }}
               </div>
             </div>
           </div>
@@ -975,9 +977,9 @@ onMounted(() => {
     <div v-if="showHistoryModal" class="modal-overlay" >
       <div class="modal max-w-3xl">
         <div class="modal-header">
-          <h2>Request Historie</h2>
+          <h2>{{ $t('apiTester.requestHistory') }}</h2>
           <div class="flex items-center gap-2">
-            <button @click="clearHistory" class="btn-danger text-sm">Löschen</button>
+            <button @click="clearHistory" class="btn-danger text-sm">{{ $t('common.delete') }}</button>
             <button @click="showHistoryModal = false" class="btn-icon">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -986,7 +988,7 @@ onMounted(() => {
         <div class="modal-body">
           <div v-if="history.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-500">
             <ClockIcon class="w-12 h-12 mb-3 opacity-50" />
-            <p>Keine Historie vorhanden</p>
+            <p>{{ $t('apiTester.noHistory') }}</p>
           </div>
           <div v-else class="space-y-2">
             <div

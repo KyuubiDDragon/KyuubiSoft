@@ -4,6 +4,7 @@ import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useI18n } from 'vue-i18n'
 import {
   BoltIcon,
   PlusIcon,
@@ -23,6 +24,7 @@ import {
 const uiStore = useUiStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 const workflows = ref([])
 const templates = ref([])
@@ -114,7 +116,7 @@ function editWorkflow(workflow) {
 
 async function saveWorkflow() {
   if (!workflowForm.value.name) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('workflows.nameRequired'))
     return
   }
 
@@ -134,16 +136,16 @@ async function saveWorkflow() {
 
     if (editMode.value && workflowForm.value.id) {
       await api.put(`/api/v1/workflows/${workflowForm.value.id}`, data)
-      uiStore.showSuccess('Workflow aktualisiert')
+      uiStore.showSuccess(t('workflows.workflowAktualisiert'))
     } else {
       await api.post('/api/v1/workflows', data)
-      uiStore.showSuccess('Workflow erstellt')
+      uiStore.showSuccess(t('workflows.workflowErstellt'))
     }
 
     showCreateModal.value = false
     await fetchWorkflows()
   } catch (error) {
-    const message = error.response?.data?.error || 'Fehler beim Speichern'
+    const message = error.response?.data?.error || t('workflows.errorSaving')
     uiStore.showError(message)
   }
 }
@@ -152,21 +154,21 @@ async function toggleWorkflow(workflow) {
   try {
     const response = await api.post(`/api/v1/workflows/${workflow.id}/toggle`)
     workflow.is_enabled = response.data.data.is_enabled
-    uiStore.showSuccess(workflow.is_enabled ? 'Workflow aktiviert' : 'Workflow deaktiviert')
+    uiStore.showSuccess(workflow.is_enabled ? t('workflows.workflowAktiviert') : t('workflows.workflowDeaktiviert'))
   } catch (error) {
-    uiStore.showError('Fehler beim Umschalten')
+    uiStore.showError(t('workflows.errorToggling'))
   }
 }
 
 async function deleteWorkflow(workflow) {
-  if (!await confirm({ message: `Workflow "${workflow.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('workflows.confirmDelete', { name: workflow.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/workflows/${workflow.id}`)
     workflows.value = workflows.value.filter(w => w.id !== workflow.id)
-    uiStore.showSuccess('Workflow gelöscht')
+    uiStore.showSuccess(t('workflows.workflowGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -177,16 +179,16 @@ async function executeWorkflow(workflow) {
     const result = response.data.data
 
     if (result.status === 'success') {
-      uiStore.showSuccess('Workflow erfolgreich ausgeführt')
+      uiStore.showSuccess(t('workflows.workflowErfolgreichAusgefuehrt'))
     } else if (result.status === 'partial') {
-      uiStore.showError('Workflow teilweise fehlgeschlagen')
+      uiStore.showError(t('workflows.workflowTeilweiseFehlgeschlagen'))
     } else {
-      uiStore.showError('Workflow fehlgeschlagen')
+      uiStore.showError(t('workflows.workflowFehlgeschlagen'))
     }
 
     await fetchWorkflows()
   } catch (error) {
-    const message = error.response?.data?.error || 'Ausführung fehlgeschlagen'
+    const message = error.response?.data?.error || t('workflows.ausfuehrungFehlgeschlagen')
     uiStore.showError(message)
   } finally {
     isExecuting.value[workflow.id] = false
@@ -200,18 +202,18 @@ async function showHistory(workflow) {
     runHistory.value = response.data.data
     showHistoryModal.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Historie')
+    uiStore.showError(t('workflows.fehlerBeimLadenDerHistorie'))
   }
 }
 
 async function createFromTemplate(template) {
   try {
     await api.post(`/api/v1/workflows/templates/${template.id}`)
-    uiStore.showSuccess('Workflow aus Vorlage erstellt')
+    uiStore.showSuccess(t('workflows.workflowAusVorlageErstellt'))
     showTemplatesModal.value = false
     await fetchWorkflows()
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('workflows.errorCreating'))
   }
 }
 
@@ -274,20 +276,20 @@ function getStatusIcon(status) {
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-3">
           <BoltIcon class="w-8 h-8 text-yellow-400" />
-          Automatisierungen
+          {{ $t('workflows.automations') }}
         </h1>
         <p class="text-gray-400 mt-1">
-          Erstelle automatische Workflows wie bei IFTTT
+          {{ $t('workflows.subtitle') }}
         </p>
       </div>
       <div class="flex items-center gap-2">
         <button @click="showTemplatesModal = true" class="btn-secondary">
           <DocumentDuplicateIcon class="w-4 h-4 mr-2" />
-          Vorlagen
+          {{ $t('workflows.templates') }}
         </button>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Neuer Workflow
+          {{ $t('workflows.neuerWorkflow') }}
         </button>
       </div>
     </div>
@@ -304,16 +306,16 @@ function getStatusIcon(status) {
     <!-- Empty state -->
     <div v-else-if="workflows.length === 0" class="card p-12 text-center">
       <BoltIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">Keine Workflows</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('workflows.keineWorkflows') }}</h3>
       <p class="text-gray-500 mb-6">
-        Erstelle deinen ersten Workflow oder wähle eine Vorlage.
+        {{ $t('workflows.emptyDescription') }}
       </p>
       <div class="flex items-center justify-center gap-4">
         <button @click="showTemplatesModal = true" class="btn-secondary">
-          Vorlagen ansehen
+          {{ $t('workflows.viewTemplates') }}
         </button>
         <button @click="openCreateModal" class="btn-primary">
-          Workflow erstellen
+          {{ $t('workflows.createWorkflow') }}
         </button>
       </div>
     </div>
@@ -373,9 +375,9 @@ function getStatusIcon(status) {
 
         <!-- Stats -->
         <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
-          <span>{{ workflow.run_count || 0 }} Ausführungen</span>
+          <span>{{ workflow.run_count || 0 }} {{ $t('workflows.executions') }}</span>
           <span v-if="workflow.last_run_at">
-            Zuletzt: {{ formatDate(workflow.last_run_at) }}
+            {{ $t('workflows.lastRun') }}: {{ formatDate(workflow.last_run_at) }}
           </span>
         </div>
 
@@ -386,7 +388,7 @@ function getStatusIcon(status) {
               @click="executeWorkflow(workflow)"
               :disabled="isExecuting[workflow.id]"
               class="p-2 rounded-lg hover:bg-white/[0.04] text-green-400 transition-colors"
-              title="Ausführen"
+              :title="$t('workflows.ausfuehren')"
             >
               <PlayIcon v-if="!isExecuting[workflow.id]" class="w-4 h-4" />
               <svg v-else class="animate-spin w-4 h-4" viewBox="0 0 24 24">
@@ -397,7 +399,7 @@ function getStatusIcon(status) {
             <button
               @click="showHistory(workflow)"
               class="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"
-              title="Historie"
+              :title="$t('workflows.history')"
             >
               <ClockIcon class="w-4 h-4" />
             </button>
@@ -406,14 +408,14 @@ function getStatusIcon(status) {
             <button
               @click="editWorkflow(workflow)"
               class="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"
-              title="Bearbeiten"
+              :title="$t('common.edit')"
             >
               <PencilSquareIcon class="w-4 h-4" />
             </button>
             <button
               @click="deleteWorkflow(workflow)"
               class="p-2 rounded-lg hover:bg-white/[0.04] text-red-400 transition-colors"
-              title="Löschen"
+              :title="$t('common.delete')"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -439,7 +441,7 @@ function getStatusIcon(status) {
           <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] sticky top-0 bg-white/[0.03]">
               <h3 class="text-lg font-semibold text-white">
-                {{ editMode ? 'Workflow bearbeiten' : 'Neuer Workflow' }}
+                {{ editMode ? $t('workflows.workflowBearbeiten') : $t('workflows.neuerWorkflow') }}
               </h3>
               <button @click="showCreateModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -450,18 +452,18 @@ function getStatusIcon(status) {
               <!-- Basic Info -->
               <div class="space-y-4">
                 <div>
-                  <label class="label">Name</label>
-                  <input v-model="workflowForm.name" type="text" class="input" placeholder="Mein Workflow" />
+                  <label class="label">{{ $t('common.name') }}</label>
+                  <input v-model="workflowForm.name" type="text" class="input" :placeholder="$t('workflows.meinWorkflow')" />
                 </div>
                 <div>
-                  <label class="label">Beschreibung (optional)</label>
-                  <textarea v-model="workflowForm.description" class="input" rows="2" placeholder="Was macht dieser Workflow?"></textarea>
+                  <label class="label">{{ $t('workflows.descriptionOptional') }}</label>
+                  <textarea v-model="workflowForm.description" class="input" rows="2" :placeholder="$t('workflows.whatDoesThisWorkflow')"></textarea>
                 </div>
               </div>
 
               <!-- Trigger -->
               <div>
-                <label class="label">Trigger (Auslöser)</label>
+                <label class="label">{{ $t('workflows.triggerAusloeser') }}</label>
                 <select v-model="workflowForm.trigger_type" class="select">
                   <option v-for="(label, type) in options.trigger_types" :key="type" :value="type">
                     {{ label }}
@@ -470,7 +472,7 @@ function getStatusIcon(status) {
 
                 <!-- Event trigger config -->
                 <div v-if="workflowForm.trigger_type === 'event'" class="mt-3">
-                  <label class="label text-sm">Ereignis</label>
+                  <label class="label text-sm">{{ $t('workflows.event') }}</label>
                   <select v-model="workflowForm.trigger_config.event" class="select">
                     <option v-for="(label, event) in options.events" :key="event" :value="event">
                       {{ label }}
@@ -480,30 +482,30 @@ function getStatusIcon(status) {
 
                 <!-- Schedule trigger config -->
                 <div v-if="workflowForm.trigger_type === 'schedule'" class="mt-3">
-                  <label class="label text-sm">Cron-Ausdruck</label>
+                  <label class="label text-sm">{{ $t('workflows.cronExpression') }}</label>
                   <input
                     v-model="workflowForm.trigger_config.cron"
                     type="text"
                     class="input"
-                    placeholder="0 9 * * * (täglich 9 Uhr)"
+                    :placeholder="$t('workflows.09Taeglich9Uhr')"
                   />
-                  <p class="text-xs text-gray-500 mt-1">Format: Minute Stunde Tag Monat Wochentag</p>
+                  <p class="text-xs text-gray-500 mt-1">{{ $t('workflows.cronFormat') }}</p>
                 </div>
               </div>
 
               <!-- Actions -->
               <div>
                 <div class="flex items-center justify-between mb-3">
-                  <label class="label">Aktionen</label>
+                  <label class="label">{{ $t('workflows.actions') }}</label>
                   <button @click="addAction" class="text-sm text-primary-400 hover:text-primary-300">
-                    + Aktion hinzufügen
+                    + {{ $t('workflows.addAction') }}
                   </button>
                 </div>
 
                 <div v-if="workflowForm.actions.length === 0" class="text-center py-8 bg-white/[0.03] rounded-lg">
-                  <p class="text-gray-500">Keine Aktionen definiert</p>
+                  <p class="text-gray-500">{{ $t('workflows.keineAktionenDefiniert') }}</p>
                   <button @click="addAction" class="text-sm text-primary-400 hover:text-primary-300 mt-2">
-                    Erste Aktion hinzufügen
+                    {{ $t('workflows.addFirstAction') }}
                   </button>
                 </div>
 
@@ -514,7 +516,7 @@ function getStatusIcon(status) {
                     class="p-4 bg-white/[0.03] rounded-lg"
                   >
                     <div class="flex items-center justify-between mb-3">
-                      <span class="text-xs text-gray-500">Aktion {{ index + 1 }}</span>
+                      <span class="text-xs text-gray-500">{{ $t('workflows.action') }} {{ index + 1 }}</span>
                       <button @click="removeAction(index)" class="text-red-400 hover:text-red-300">
                         <TrashIcon class="w-4 h-4" />
                       </button>
@@ -528,8 +530,8 @@ function getStatusIcon(status) {
 
                     <!-- Action-specific config -->
                     <div v-if="action.action_type === 'send_notification'" class="space-y-2">
-                      <input v-model="action.config.title" type="text" class="input" placeholder="Titel" />
-                      <textarea v-model="action.config.body" class="input" rows="2" placeholder="Nachricht ({{variable}} für dynamische Werte)"></textarea>
+                      <input v-model="action.config.title" type="text" class="input" :placeholder="$t('common.title')" />
+                      <textarea v-model="action.config.body" class="input" rows="2" :placeholder="$t('workflows.nachrichtVariableFuerDynamischeWerte')"></textarea>
                     </div>
 
                     <div v-if="action.action_type === 'http_request'" class="space-y-2">
@@ -547,13 +549,13 @@ function getStatusIcon(status) {
                     <div v-if="action.action_type === 'delay'" class="space-y-2">
                       <div class="flex items-center gap-2">
                         <input v-model.number="action.config.seconds" type="number" min="1" max="60" class="input w-24" />
-                        <span class="text-gray-400">Sekunden warten</span>
+                        <span class="text-gray-400">{{ $t('workflows.sekundenWarten') }}</span>
                       </div>
                     </div>
 
                     <label class="flex items-center gap-2 mt-3 text-sm text-gray-400">
                       <input v-model="action.continue_on_error" type="checkbox" class="rounded" />
-                      Bei Fehler fortfahren
+                      {{ $t('workflows.continueOnError') }}
                     </label>
                   </div>
                 </div>
@@ -562,10 +564,10 @@ function getStatusIcon(status) {
 
             <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
               <button @click="showCreateModal = false" class="btn-secondary">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button @click="saveWorkflow" class="btn-primary">
-                {{ editMode ? 'Speichern' : 'Erstellen' }}
+                {{ editMode ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </div>
@@ -589,7 +591,7 @@ function getStatusIcon(status) {
         >
           <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Workflow-Vorlagen</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('workflows.workflowTemplates') }}</h3>
               <button @click="showTemplatesModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -606,23 +608,23 @@ function getStatusIcon(status) {
                     <div class="flex items-center gap-2 mb-2">
                       <h4 class="font-medium text-white">{{ template.name }}</h4>
                       <span v-if="template.is_featured" class="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                        Empfohlen
+                        {{ $t('workflows.recommended') }}
                       </span>
                     </div>
                     <p class="text-sm text-gray-400">{{ template.description }}</p>
                     <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span>{{ getTriggerLabel(template.trigger_type) }}</span>
-                      <span>{{ template.use_count }} mal verwendet</span>
+                      <span>{{ template.use_count }} {{ $t('workflows.timesUsed') }}</span>
                     </div>
                   </div>
                   <button @click="createFromTemplate(template)" class="btn-primary text-sm">
-                    Verwenden
+                    {{ $t('workflows.use') }}
                   </button>
                 </div>
               </div>
 
               <p v-if="templates.length === 0" class="text-center text-gray-500 py-4">
-                Keine Vorlagen verfügbar
+                {{ $t('workflows.noTemplatesAvailable') }}
               </p>
             </div>
           </div>
@@ -647,7 +649,7 @@ function getStatusIcon(status) {
           <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
-                Ausführungs-Historie: {{ selectedWorkflow?.name }}
+                {{ $t('workflows.executionHistory') }}: {{ selectedWorkflow?.name }}
               </h3>
               <button @click="showHistoryModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -657,7 +659,7 @@ function getStatusIcon(status) {
             <div class="p-6">
               <div v-if="runHistory.length === 0" class="text-center py-8">
                 <ClockIcon class="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                <p class="text-gray-500">Noch keine Ausführungen</p>
+                <p class="text-gray-500">{{ $t('workflows.nochKeineAusfuehrungen') }}</p>
               </div>
 
               <div v-else class="space-y-3">
@@ -676,7 +678,7 @@ function getStatusIcon(status) {
                     <div>
                       <p class="text-sm text-white">{{ formatDate(run.started_at) }}</p>
                       <p class="text-xs text-gray-500">
-                        Dauer: {{ run.duration_ms ? `${run.duration_ms}ms` : '-' }}
+                        {{ $t('workflows.duration') }}: {{ run.duration_ms ? `${run.duration_ms}ms` : '-' }}
                       </p>
                     </div>
                   </div>

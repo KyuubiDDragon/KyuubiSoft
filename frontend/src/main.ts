@@ -31,7 +31,7 @@ app.config.errorHandler = (err: unknown, _instance: unknown, info: string): void
   // Show user-facing toast (lazy import to avoid circular deps during init)
   import('./stores/ui').then(({ useUiStore }) => {
     try {
-      useUiStore().showError('Ein unerwarteter Fehler ist aufgetreten.')
+      useUiStore().showError(i18n.global.t('common.unexpectedError'))
     } catch {
       // Store not yet available
     }

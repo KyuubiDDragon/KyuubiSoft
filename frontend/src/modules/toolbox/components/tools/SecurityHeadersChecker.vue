@@ -74,7 +74,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
         :disabled="isLoading || !url.trim()"
         class="btn-primary px-6"
       >
-        {{ isLoading ? 'Prüfe...' : 'Prüfen' }}
+        {{ isLoading ? $t('contractsModule.pruefe') : $t('toolbox.pruefen') }}
       </button>
     </div>
 
@@ -93,7 +93,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
 
     <!-- Loading -->
     <div v-if="isLoading" class="text-center py-8 text-gray-400">
-      Prüfe Security Headers...
+      {{ $t('toolbox.pruefeSecurityHeaders') }}
     </div>
 
     <!-- Error -->
@@ -185,7 +185,7 @@ const quickUrls = ['google.com', 'github.com', 'cloudflare.com']
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
       <p><strong>Security Headers</strong> sind HTTP-Header, die die Sicherheit einer Website verbessern.</p>
-      <p>Ein guter Score bedeutet, dass grundlegende Sicherheitsmaßnahmen implementiert sind.</p>
+      <p>{{ $t('toolbox.einGuterScoreBedeutetDassGrundlegendeSicherheitsmassnahmen') }}</p>
     </div>
   </div>
 </template>

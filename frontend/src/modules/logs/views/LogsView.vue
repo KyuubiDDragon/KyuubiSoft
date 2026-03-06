@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import {
@@ -15,6 +16,7 @@ import {
 
 const toast = useToast()
 
+const { t } = useI18n()
 // =========================================================================
 // State
 // =========================================================================
@@ -71,7 +73,7 @@ async function selectDockerHost(host) {
     const res = await api.get(`/api/v1/logs/docker-hosts/${host.id}/containers`)
     dockerContainers.value = res.data.data.items || []
   } catch {
-    toast.error('Fehler beim Laden der Container')
+    toast.error(t('logs.fehlerBeimLadenDerContainer'))
   }
 }
 
@@ -116,7 +118,7 @@ async function fetchLogs() {
       scrollToBottom()
     }
   } catch (err) {
-    toast.error('Fehler beim Laden der Logs: ' + (err.response?.data?.message || err.message))
+    toast.error(t('logs.fehlerBeimLadenDerLogs') + (err.response?.data?.message || err.message))
   } finally {
     loading.value = false
   }
@@ -241,7 +243,7 @@ onUnmounted(() => {
         <!-- Docker sources -->
         <template v-if="sourceType === 'docker'">
           <div v-if="dockerHosts.length === 0" class="text-gray-500 text-xs text-center py-6">
-            Keine Docker-Hosts verfügbar
+            {{ $t('logs.keineDockerhostsVerfuegbar') }}
           </div>
 
           <template v-for="host in dockerHosts" :key="host.id">

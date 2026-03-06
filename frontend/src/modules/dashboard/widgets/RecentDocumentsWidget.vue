@@ -8,7 +8,7 @@ defineProps({ widget: Object, data: Array })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/documents" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+      <router-link to="/documents" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.all') }}</router-link>
     </div>
     <div class="space-y-2">
       <router-link
@@ -24,7 +24,7 @@ defineProps({ widget: Object, data: Array })
         </div>
         <span class="text-xs text-gray-500">{{ formatDate(doc.updated_at) }}</span>
       </router-link>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine Dokumente</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noDocuments') }}</p>
     </div>
   </div>
 </template>

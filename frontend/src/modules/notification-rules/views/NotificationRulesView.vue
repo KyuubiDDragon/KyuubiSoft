@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   PencilSquareIcon,
@@ -26,10 +30,10 @@ const confirmDeleteId = ref(null)
 
 // Module color mapping for trigger event badges
 const moduleColorMap = {
-  'Server': 'bg-red-500/15 text-red-400',
+  t('server.server'): 'bg-red-500/15 text-red-400',
   'Docker': 'bg-blue-500/15 text-blue-400',
   'Uptime': 'bg-emerald-500/15 text-emerald-400',
-  'Projekte': 'bg-purple-500/15 text-purple-400',
+  t('projects.title'): 'bg-purple-500/15 text-purple-400',
   'Tickets': 'bg-amber-500/15 text-amber-400',
   'Storage': 'bg-cyan-500/15 text-cyan-400',
   'System': 'bg-orange-500/15 text-orange-400',
@@ -51,7 +55,7 @@ function getActionsSummary(actions) {
   if (!actions || actions.length === 0) return '-'
   return actions.map(a => {
     if (a.type === 'push') return 'Push-Benachrichtigung'
-    if (a.type === 'webhook') return 'Webhook'
+    if (a.type === 'webhook') return t('notificationRules.webhook')
     return a.type
   }).join(', ')
 }
@@ -158,7 +162,7 @@ onMounted(async () => {
       <div class="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
         <BellAlertIcon class="w-8 h-8 text-primary-400" />
       </div>
-      <h3 class="text-lg font-semibold text-white mb-2">Keine Regeln erstellt</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('notificationRules.notificationruleskeineregelnerstellt') }}</h3>
       <p class="text-gray-400 text-sm mb-6">
         Erstelle deine erste Benachrichtigungsregel.
       </p>
@@ -206,7 +210,7 @@ onMounted(async () => {
                 <!-- Last triggered -->
                 <div class="flex items-center gap-1.5 text-gray-500">
                   <ClockIcon class="w-4 h-4 shrink-0" />
-                  <span>{{ rule.last_triggered_at ? formatTimestamp(rule.last_triggered_at) : 'Noch nicht ausgelöst' }}</span>
+                  <span>{{ rule.last_triggered_at ? formatTimestamp(rule.last_triggered_at) : $t('notificationRules.nochNichtAusgeloest') }}</span>
                 </div>
               </div>
             </div>
@@ -230,7 +234,7 @@ onMounted(async () => {
               <button
                 @click.stop="handleTest(rule)"
                 class="btn-icon-sm text-gray-400 hover:text-amber-400"
-                title="Regel testen"
+                title=$t('notificationRules.regelTesten')
               >
                 <PlayIcon class="w-4 h-4" />
               </button>
@@ -239,7 +243,7 @@ onMounted(async () => {
               <button
                 @click.stop="openEditModal(rule)"
                 class="btn-icon-sm text-gray-400 hover:text-primary-400"
-                title="Bearbeiten"
+                :title="$t('common.edit')"
               >
                 <PencilSquareIcon class="w-4 h-4" />
               </button>
@@ -249,7 +253,7 @@ onMounted(async () => {
                 v-if="confirmDeleteId !== rule.id"
                 @click.stop="requestDelete(rule.id)"
                 class="btn-icon-sm text-gray-400 hover:text-red-400"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-4 h-4" />
               </button>
@@ -258,7 +262,7 @@ onMounted(async () => {
                   @click.stop="confirmDelete(rule.id)"
                   class="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 transition-colors"
                 >
-                  Löschen
+                  {{ $t('common.delete') }}
                 </button>
                 <button
                   @click.stop="cancelDelete"
@@ -287,7 +291,7 @@ onMounted(async () => {
           class="border-t border-white/[0.06] bg-white/[0.02]"
         >
           <div class="p-5">
-            <h4 class="text-sm font-medium text-gray-400 mb-3">Ausführungshistorie</h4>
+            <h4 class="text-sm font-medium text-gray-400 mb-3">{{ $t('notificationRules.ausfuehrungshistorie') }}</h4>
 
             <!-- Loading History -->
             <div v-if="loadingHistory" class="flex justify-center py-6">
@@ -296,7 +300,7 @@ onMounted(async () => {
 
             <!-- Empty History -->
             <div v-else-if="store.ruleHistory.length === 0" class="text-center py-6">
-              <p class="text-gray-500 text-sm">Keine Ausführungen vorhanden</p>
+              <p class="text-gray-500 text-sm">{{ $t('notificationRules.keineAusfuehrungenVorhanden') }}</p>
             </div>
 
             <!-- History Entries -->
@@ -312,7 +316,7 @@ onMounted(async () => {
                     :class="entry.status === 'success' ? 'bg-emerald-400' : 'bg-red-400'"
                   ></span>
                   <span class="text-sm text-gray-300">
-                    {{ entry.status === 'success' ? 'Erfolgreich' : 'Fehler' }}
+                    {{ entry.status === 'success' ? 'Erfolgreich' : $t('common.error') }}
                   </span>
                   <span v-if="entry.message" class="text-sm text-gray-500 truncate max-w-xs">
                     — {{ entry.message }}

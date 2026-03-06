@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -26,6 +27,7 @@ import {
 
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
 
@@ -66,7 +68,7 @@ const statusOptions = [
   { value: 'open', label: 'Offen', color: 'bg-blue-500', icon: TicketIcon },
   { value: 'in_progress', label: 'In Bearbeitung', color: 'bg-yellow-500', icon: ArrowPathIcon },
   { value: 'waiting', label: 'Warten', color: 'bg-purple-500', icon: ClockIcon },
-  { value: 'resolved', label: 'Gelöst', color: 'bg-green-500', icon: CheckCircleIcon },
+  { value: 'resolved', label: t('tickets.geloest'), color: 'bg-green-500', icon: CheckCircleIcon },
   { value: 'closed', label: 'Geschlossen', color: 'bg-gray-500', icon: XMarkIcon },
 ]
 
@@ -107,7 +109,7 @@ async function fetchTickets() {
     tickets.value = response.data.data.tickets || []
     total.value = response.data.data.total || 0
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Tickets')
+    uiStore.showError(t('tickets.fehlerBeimLadenDerTickets'))
   } finally {
     loading.value = false
   }
@@ -141,7 +143,7 @@ async function createTicket() {
     return
   }
   if (!form.value.description.trim()) {
-    uiStore.showError('Beschreibung ist erforderlich')
+    uiStore.showError(t('tickets.beschreibungIstErforderlich'))
     return
   }
 
@@ -160,7 +162,7 @@ async function createTicket() {
     // Navigate to the new ticket
     router.push(`/tickets/${response.data.data.ticket.id}`)
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Erstellen')
+    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -299,10 +301,10 @@ onMounted(() => {
         <button
           @click="showPublicLinkModal = true"
           class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
-          title="Öffentlichen Support-Link teilen"
+          :title="$t('tickets.oeffentlichenSupportlinkTeilen')"
         >
           <LinkIcon class="w-5 h-5" />
-          <span class="hidden sm:inline">Öffentlicher Link</span>
+          <span class="hidden sm:inline">{{ $t('tickets.oeffentlicherLink') }}</span>
         </button>
         <button
           @click="showFilterPanel = !showFilterPanel"
@@ -320,7 +322,7 @@ onMounted(() => {
           class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
-          <span>Neues Ticket</span>
+          <span>{{ $t('tickets.neuesTicket') }}</span>
         </button>
       </div>
     </div>
@@ -329,11 +331,11 @@ onMounted(() => {
     <div v-if="stats" class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="text-2xl font-bold text-white">{{ stats.total }}</div>
-        <div class="text-sm text-gray-400">Gesamt</div>
+        <div class="text-sm text-gray-400">{{ $t('contractsModule.gesamt') }}</div>
       </div>
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="text-2xl font-bold text-blue-400">{{ stats.open }}</div>
-        <div class="text-sm text-gray-400">Offen</div>
+        <div class="text-sm text-gray-400">{{ $t('tickets.offen') }}</div>
       </div>
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="text-2xl font-bold text-yellow-400">{{ stats.in_progress }}</div>
@@ -341,11 +343,11 @@ onMounted(() => {
       </div>
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="text-2xl font-bold text-purple-400">{{ stats.waiting }}</div>
-        <div class="text-sm text-gray-400">Wartend</div>
+        <div class="text-sm text-gray-400">{{ $t('tickets.wartend') }}</div>
       </div>
       <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
         <div class="text-2xl font-bold text-green-400">{{ stats.resolved + stats.closed }}</div>
-        <div class="text-sm text-gray-400">Erledigt</div>
+        <div class="text-sm text-gray-400">{{ $t('lists.completed') }}</div>
       </div>
     </div>
 
@@ -369,12 +371,12 @@ onMounted(() => {
 
         <!-- Status -->
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.status') }}</label>
           <select
             v-model="filters.status"
             class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
           >
-            <option value="">Alle</option>
+            <option value="">{{ $t('common.all') }}</option>
             <option v-for="s in statusOptions" :key="s.value" :value="s.value">
               {{ s.label }}
             </option>
@@ -383,12 +385,12 @@ onMounted(() => {
 
         <!-- Priority -->
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('quickCapture.priority') }}</label>
           <select
             v-model="filters.priority"
             class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
           >
-            <option value="">Alle</option>
+            <option value="">{{ $t('common.all') }}</option>
             <option v-for="p in priorityOptions" :key="p.value" :value="p.value">
               {{ p.label }}
             </option>
@@ -397,12 +399,12 @@ onMounted(() => {
 
         <!-- Category -->
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+          <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('snippetsModule.kategorie') }}</label>
           <select
             v-model="filters.category_id"
             class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
           >
-            <option value="">Alle</option>
+            <option value="">{{ $t('common.all') }}</option>
             <option v-for="c in categories" :key="c.id" :value="c.id">
               {{ c.name }}
             </option>
@@ -415,7 +417,7 @@ onMounted(() => {
           @click="clearFilters"
           class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
         >
-          Zurücksetzen
+          {{ $t('common.reset') }}
         </button>
         <button
           @click="applyFilters"
@@ -530,9 +532,9 @@ onMounted(() => {
     <!-- Empty state -->
     <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-12 text-center">
       <TicketIcon class="w-16 h-16 text-gray-500 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-white mb-2">Keine Tickets gefunden</h3>
+      <h3 class="text-xl font-semibold text-white mb-2">{{ $t('tickets.keineTicketsGefunden') }}</h3>
       <p class="text-gray-400 mb-6">
-        {{ activeFiltersCount > 0 ? 'Versuchen Sie andere Filteroptionen.' : 'Erstellen Sie Ihr erstes Ticket.' }}
+        {{ activeFiltersCount > 0 ? 'Versuchen Sie andere Filteroptionen.' : $t('tickets.erstellenSieIhrErstesTicket') }}
       </p>
       <button
         v-if="activeFiltersCount === 0"
@@ -547,7 +549,7 @@ onMounted(() => {
         @click="clearFilters"
         class="px-6 py-3 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors"
       >
-        Filter zurücksetzen
+        {{ $t('tickets.filterZuruecksetzen') }}
       </button>
     </div>
 
@@ -559,7 +561,7 @@ onMounted(() => {
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
-            <h2 class="text-lg font-semibold text-white">Neues Ticket erstellen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.ticketsneuesticketerstellen') }}</h2>
             <button
               @click="showCreateModal = false; resetForm()"
               class="p-1 text-gray-400 hover:text-white rounded"
@@ -576,30 +578,30 @@ onMounted(() => {
                 v-model="form.title"
                 type="text"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                placeholder="Kurze Beschreibung des Problems..."
+                :placeholder="$t('tickets.ticketskurzebeschreibungdesproblems')"
               />
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.beschreibung') }}</label>
               <textarea
                 v-model="form.description"
                 rows="5"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
-                placeholder="Detaillierte Beschreibung des Problems, Schritte zur Reproduktion, etc..."
+                :placeholder="$t('tickets.ticketsdetailliertebeschreibungdesproblemsschrittezurreproduktion')"
               ></textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <!-- Category -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('snippetsModule.kategorie') }}</label>
                 <select
                   v-model="form.category_id"
                   class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option value="">Keine Kategorie</option>
+                  <option value="">{{ $t('tickets.ticketskeinekategorie') }}</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
                     {{ c.name }}
                   </option>
@@ -608,7 +610,7 @@ onMounted(() => {
 
               <!-- Priority -->
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('quickCapture.priority') }}</label>
                 <select
                   v-model="form.priority"
                   class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
@@ -647,7 +649,7 @@ onMounted(() => {
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg overflow-hidden">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
-            <h2 class="text-lg font-semibold text-white">Öffentlicher Support-Link</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.oeffentlicherSupportlink') }}</h2>
             <button
               @click="showPublicLinkModal = false"
               class="p-1 text-gray-400 hover:text-white rounded"
@@ -658,7 +660,7 @@ onMounted(() => {
 
           <div class="p-6 space-y-4">
             <p class="text-gray-400 text-sm">
-              Teilen Sie diesen Link mit Ihren Kunden, damit diese Support-Tickets erstellen können, ohne sich anzumelden.
+              {{ $t('tickets.teilenSieDiesenLinkMitIhrenKunden') }}
             </p>
 
             <div class="flex items-center gap-2">
@@ -679,10 +681,10 @@ onMounted(() => {
             <div class="bg-dark-700/50 border border-dark-600 rounded-lg p-4">
               <h4 class="text-sm font-medium text-white mb-2">So funktioniert es:</h4>
               <ul class="text-sm text-gray-400 space-y-1">
-                <li>1. Kunden öffnen den Link</li>
+                <li>{{ $t('tickets.1KundenOeffnenDenLink') }}</li>
                 <li>2. Geben Name, E-Mail und Anliegen ein</li>
                 <li>3. Erhalten einen Zugriffscode zum Verfolgen</li>
-                <li>4. Tickets erscheinen hier in Ihrer Übersicht</li>
+                <li>{{ $t('tickets.4TicketsErscheinenHierInIhrerUebersicht') }}</li>
               </ul>
             </div>
           </div>
@@ -692,14 +694,14 @@ onMounted(() => {
               @click="showPublicLinkModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
             <button
               @click="openPublicTicketPage"
               class="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-500 transition-colors flex items-center gap-2"
             >
               <LinkIcon class="w-4 h-4" />
-              Seite öffnen
+              {{ $t('notesModule.seiteOeffnen') }}
             </button>
             <button
               @click="copyPublicLink"

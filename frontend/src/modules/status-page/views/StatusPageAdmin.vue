@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useStatusPageStore } from '../stores/statusPageStore'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -13,6 +14,7 @@ import {
   ArrowsUpDownIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const store = useStatusPageStore()
 const uiStore = useUiStore()
 
@@ -46,28 +48,28 @@ const updateForm = ref({
 
 const expandedIncidents = ref(new Set())
 
-const statusOptions = [
-  { value: 'investigating', label: 'Untersuchung', color: 'bg-yellow-500' },
-  { value: 'identified', label: 'Identifiziert', color: 'bg-orange-500' },
-  { value: 'monitoring', label: 'Beobachtung', color: 'bg-blue-500' },
-  { value: 'resolved', label: 'Behoben', color: 'bg-green-500' },
-]
+const statusOptions = computed(() => [
+  { value: 'investigating', label: t('statusPage.investigating'), color: 'bg-yellow-500' },
+  { value: 'identified', label: t('statusPage.identified'), color: 'bg-orange-500' },
+  { value: 'monitoring', label: t('statusPage.monitoring'), color: 'bg-blue-500' },
+  { value: 'resolved', label: t('statusPage.resolved'), color: 'bg-green-500' },
+])
 
-const impactOptions = [
-  { value: 'none', label: 'Keine' },
-  { value: 'minor', label: 'Gering' },
-  { value: 'major', label: 'Erheblich' },
-  { value: 'critical', label: 'Kritisch' },
-]
+const impactOptions = computed(() => [
+  { value: 'none', label: t('statusPage.impactNone') },
+  { value: 'minor', label: t('statusPage.impactMinor') },
+  { value: 'major', label: t('statusPage.impactMajor') },
+  { value: 'critical', label: t('statusPage.impactCritical') },
+])
 
 function getStatusBadge(status) {
-  const opt = statusOptions.find(s => s.value === status)
+  const opt = statusOptions.value.find(s => s.value === status)
   return opt || { label: status, color: 'bg-gray-500' }
 }
 
 function getImpactBadge(impact) {
   const colors = { none: 'bg-gray-500', minor: 'bg-yellow-500', major: 'bg-orange-500', critical: 'bg-red-500' }
-  const labels = { none: 'Keine', minor: 'Gering', major: 'Erheblich', critical: 'Kritisch' }
+  const labels = { none: t('statusPage.impactNone'), minor: t('statusPage.impactMinor'), major: t('statusPage.impactMajor'), critical: t('statusPage.impactCritical') }
   return { color: colors[impact] || 'bg-gray-500', label: labels[impact] || impact }
 }
 
@@ -99,22 +101,22 @@ onMounted(async () => {
       }
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Status Page Konfiguration')
+    uiStore.showError(t('statusPage.errorLoadingConfig'))
   }
 })
 
 async function saveConfig() {
   try {
     await store.updateConfig(configForm.value)
-    uiStore.showSuccess('Konfiguration gespeichert')
+    uiStore.showSuccess(t('statusPage.configSaved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('statusPage.errorSaving'))
   }
 }
 
 async function addMonitor() {
   if (!addMonitorForm.value.monitor_id) {
-    uiStore.showError('Bitte einen Monitor auswaehlen')
+    uiStore.showError(t('statusPage.pleaseSelectMonitor'))
     return
   }
   try {
@@ -125,33 +127,33 @@ async function addMonitor() {
     })
     showAddMonitorModal.value = false
     addMonitorForm.value = { monitor_id: '', display_name: '', group_name: '' }
-    uiStore.showSuccess('Monitor hinzugefuegt')
+    uiStore.showSuccess(t('statusPage.monitorAdded'))
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufuegen')
+    uiStore.showError(t('statusPage.errorAdding'))
   }
 }
 
 async function removeMonitor(id) {
   try {
     await store.removeMonitor(id)
-    uiStore.showSuccess('Monitor entfernt')
+    uiStore.showSuccess(t('statusPage.monitorRemoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('statusPage.errorRemoving'))
   }
 }
 
 async function createIncident() {
   if (!incidentForm.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('statusPage.titleRequired'))
     return
   }
   try {
     await store.createIncident(incidentForm.value)
     showIncidentModal.value = false
     incidentForm.value = { title: '', status: 'investigating', message: '', impact: 'minor' }
-    uiStore.showSuccess('Vorfall erstellt')
+    uiStore.showSuccess(t('statusPage.incidentCreated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('statusPage.errorCreating'))
   }
 }
 
@@ -166,7 +168,7 @@ function openUpdateModal(incident) {
 
 async function addUpdate() {
   if (!updateForm.value.message.trim()) {
-    uiStore.showError('Nachricht ist erforderlich')
+    uiStore.showError(t('statusPage.messageRequired'))
     return
   }
   try {
@@ -175,9 +177,9 @@ async function addUpdate() {
       message: updateForm.value.message,
     })
     showUpdateModal.value = false
-    uiStore.showSuccess('Status aktualisiert')
+    uiStore.showSuccess(t('statusPage.statusUpdated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('statusPage.errorUpdating'))
   }
 }
 </script>
@@ -187,37 +189,37 @@ async function addUpdate() {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Status Page</h1>
-        <p class="text-gray-400 mt-1">Verwalte deine oeffentliche Statusseite</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('statusPage.statusPage') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('statusPage.managePublicStatusPage') }}</p>
       </div>
       <div class="flex gap-2">
         <router-link to="/status" target="_blank" class="btn-secondary">
           <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
-          Oeffentliche Seite
+          {{ $t('statusPage.publicPage') }}
         </router-link>
       </div>
     </div>
 
     <!-- Konfiguration -->
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
-      <h2 class="text-lg font-semibold text-white mb-4">Konfiguration</h2>
+      <h2 class="text-lg font-semibold text-white mb-4">{{ $t('statusPage.configuration') }}</h2>
       <div class="space-y-4">
         <div>
-          <label class="label">Titel</label>
+          <label class="label">{{ $t('common.title') }}</label>
           <input v-model="configForm.title" type="text" class="input" placeholder="System Status" />
         </div>
         <div>
-          <label class="label">Beschreibung</label>
-          <textarea v-model="configForm.description" class="input" rows="3" placeholder="Optionale Beschreibung..."></textarea>
+          <label class="label">{{ $t('common.description') }}</label>
+          <textarea v-model="configForm.description" class="input" rows="3" :placeholder="$t('statusPage.optionalDescription')"></textarea>
         </div>
         <div class="flex items-center gap-3">
           <label class="flex items-center gap-2 cursor-pointer">
             <input v-model="configForm.is_public" type="checkbox" class="checkbox" />
-            <span class="text-gray-300">Oeffentlich sichtbar</span>
+            <span class="text-gray-300">{{ $t('statusPage.publiclyVisible') }}</span>
           </label>
         </div>
         <div>
-          <button @click="saveConfig" class="btn-primary">Speichern</button>
+          <button @click="saveConfig" class="btn-primary">{{ $t('common.save') }}</button>
         </div>
       </div>
     </div>
@@ -225,17 +227,17 @@ async function addUpdate() {
     <!-- Monitore -->
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-white">Monitore</h2>
+        <h2 class="text-lg font-semibold text-white">{{ $t('statusPage.monitors') }}</h2>
         <button @click="showAddMonitorModal = true" class="btn-primary text-sm">
           <PlusIcon class="w-4 h-4 mr-1" />
-          Monitor hinzufuegen
+          {{ $t('statusPage.addMonitor') }}
         </button>
       </div>
 
       <div v-if="store.monitors.assigned.length === 0" class="text-center py-8">
         <SignalIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
-        <p class="text-gray-400">Noch keine Monitore zugewiesen</p>
-        <p class="text-gray-500 text-sm mt-1">Fuege Monitore hinzu, die auf der Statusseite angezeigt werden sollen</p>
+        <p class="text-gray-400">{{ $t('statusPage.noMonitorsAssigned') }}</p>
+        <p class="text-gray-500 text-sm mt-1">{{ $t('statusPage.addMonitorsHint') }}</p>
       </div>
 
       <div v-else class="space-y-2">
@@ -255,7 +257,7 @@ async function addUpdate() {
           ></div>
           <div class="flex-1 min-w-0">
             <p class="text-white text-sm font-medium">{{ monitor.display_name || monitor.monitor_name }}</p>
-            <p class="text-gray-500 text-xs">{{ monitor.monitor_type }} &middot; {{ monitor.group_name || 'Keine Gruppe' }}</p>
+            <p class="text-gray-500 text-xs">{{ monitor.monitor_type }} &middot; {{ monitor.group_name || $t('statusPage.noGroup') }}</p>
           </div>
           <button
             @click="removeMonitor(monitor.id)"
@@ -270,15 +272,15 @@ async function addUpdate() {
     <!-- Vorfaelle -->
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-white">Vorfaelle</h2>
+        <h2 class="text-lg font-semibold text-white">{{ $t('statusPage.incidents') }}</h2>
         <button @click="showIncidentModal = true" class="btn-primary text-sm">
           <PlusIcon class="w-4 h-4 mr-1" />
-          Vorfall erstellen
+          {{ $t('statusPage.createIncident') }}
         </button>
       </div>
 
       <div v-if="store.incidents.items.length === 0" class="text-center py-8">
-        <p class="text-gray-400">Keine Vorfaelle</p>
+        <p class="text-gray-400">{{ $t('statusPage.noIncidents') }}</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -313,7 +315,7 @@ async function addUpdate() {
               @click.stop="openUpdateModal(incident)"
               class="px-2 py-1 text-xs bg-white/[0.06] hover:bg-white/[0.1] text-gray-300 rounded transition-colors"
             >
-              Status aktualisieren
+              {{ $t('statusPage.updateStatus') }}
             </button>
           </div>
 
@@ -342,7 +344,7 @@ async function addUpdate() {
                 </div>
               </div>
             </div>
-            <p v-else class="text-sm text-gray-500">Keine Updates vorhanden</p>
+            <p v-else class="text-sm text-gray-500">{{ $t('statusPage.noUpdates') }}</p>
           </div>
         </div>
       </div>
@@ -356,32 +358,32 @@ async function addUpdate() {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-white">Monitor hinzufuegen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('statusPage.addMonitor') }}</h2>
             <button @click="showAddMonitorModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
           <form @submit.prevent="addMonitor" class="p-4 space-y-4">
             <div>
-              <label class="label">Monitor *</label>
+              <label class="label">{{ $t('statusPage.monitor') }} *</label>
               <select v-model="addMonitorForm.monitor_id" class="input">
-                <option value="">Monitor auswaehlen...</option>
+                <option value="">{{ $t('statusPage.selectMonitor') }}</option>
                 <option v-for="m in store.monitors.available" :key="m.id" :value="m.id">
                   {{ m.name }} ({{ m.type }})
                 </option>
               </select>
             </div>
             <div>
-              <label class="label">Anzeigename (optional)</label>
-              <input v-model="addMonitorForm.display_name" type="text" class="input" placeholder="Benutzerdefinierter Name" />
+              <label class="label">{{ $t('statusPage.displayName') }}</label>
+              <input v-model="addMonitorForm.display_name" type="text" class="input" :placeholder="$t('statusPage.customName')" />
             </div>
             <div>
-              <label class="label">Gruppenname (optional)</label>
-              <input v-model="addMonitorForm.group_name" type="text" class="input" placeholder="z.B. Webserver, Datenbanken" />
+              <label class="label">{{ $t('statusPage.groupName') }}</label>
+              <input v-model="addMonitorForm.group_name" type="text" class="input" :placeholder="$t('statusPage.groupNamePlaceholder')" />
             </div>
             <div class="flex gap-3 pt-2">
-              <button type="button" @click="showAddMonitorModal = false" class="btn-secondary flex-1">Abbrechen</button>
-              <button type="submit" class="btn-primary flex-1">Hinzufuegen</button>
+              <button type="button" @click="showAddMonitorModal = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
+              <button type="submit" class="btn-primary flex-1">{{ $t('common.add') }}</button>
             </div>
           </form>
         </div>
@@ -396,37 +398,37 @@ async function addUpdate() {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-white">Vorfall erstellen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('statusPage.createIncident') }}</h2>
             <button @click="showIncidentModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
           <form @submit.prevent="createIncident" class="p-4 space-y-4">
             <div>
-              <label class="label">Titel *</label>
-              <input v-model="incidentForm.title" type="text" class="input" placeholder="Kurze Beschreibung des Vorfalls" required />
+              <label class="label">{{ $t('common.title') }} *</label>
+              <input v-model="incidentForm.title" type="text" class="input" :placeholder="$t('statusPage.incidentDescriptionPlaceholder')" required />
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="label">Status</label>
+                <label class="label">{{ $t('common.status') }}</label>
                 <select v-model="incidentForm.status" class="input">
                   <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
               </div>
               <div>
-                <label class="label">Auswirkung</label>
+                <label class="label">{{ $t('statusPage.impact') }}</label>
                 <select v-model="incidentForm.impact" class="input">
                   <option v-for="opt in impactOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
               </div>
             </div>
             <div>
-              <label class="label">Nachricht</label>
-              <textarea v-model="incidentForm.message" class="input" rows="3" placeholder="Details zum Vorfall..."></textarea>
+              <label class="label">{{ $t('statusPage.message') }}</label>
+              <textarea v-model="incidentForm.message" class="input" rows="3" :placeholder="$t('statusPage.incidentDetailsPlaceholder')"></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-              <button type="button" @click="showIncidentModal = false" class="btn-secondary flex-1">Abbrechen</button>
-              <button type="submit" class="btn-primary flex-1">Erstellen</button>
+              <button type="button" @click="showIncidentModal = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
+              <button type="submit" class="btn-primary flex-1">{{ $t('common.create') }}</button>
             </div>
           </form>
         </div>
@@ -441,25 +443,25 @@ async function addUpdate() {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-white">Status aktualisieren</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('statusPage.updateStatus') }}</h2>
             <button @click="showUpdateModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
           <form @submit.prevent="addUpdate" class="p-4 space-y-4">
             <div>
-              <label class="label">Status</label>
+              <label class="label">{{ $t('common.status') }}</label>
               <select v-model="updateForm.status" class="input">
                 <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
             <div>
-              <label class="label">Nachricht *</label>
-              <textarea v-model="updateForm.message" class="input" rows="3" placeholder="Update-Nachricht..." required></textarea>
+              <label class="label">{{ $t('statusPage.message') }} *</label>
+              <textarea v-model="updateForm.message" class="input" rows="3" :placeholder="$t('statusPage.updateMessagePlaceholder')" required></textarea>
             </div>
             <div class="flex gap-3 pt-2">
-              <button type="button" @click="showUpdateModal = false" class="btn-secondary flex-1">Abbrechen</button>
-              <button type="submit" class="btn-primary flex-1">Aktualisieren</button>
+              <button type="button" @click="showUpdateModal = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
+              <button type="submit" class="btn-primary flex-1">{{ $t('statusPage.update') }}</button>
             </div>
           </form>
         </div>

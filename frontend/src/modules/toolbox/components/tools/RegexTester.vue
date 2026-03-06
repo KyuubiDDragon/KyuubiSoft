@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { sanitizeHtml } from '@/core/services/sanitize'
 
 const pattern = ref('')
@@ -8,8 +9,8 @@ const testString = ref('The quick brown fox jumps over the lazy dog.\nAnother li
 const error = ref('')
 
 const flagOptions = [
-  { id: 'g', name: 'Global (g)', desc: 'Alle Treffer finden' },
-  { id: 'i', name: 'Case Insensitive (i)', desc: 'Groß-/Kleinschreibung ignorieren' },
+  { id: 'g', name: 'Global (g)', desc: t('toolbox.alleTrefferFinden') },
+  { id: 'i', name: 'Case Insensitive (i)', desc: t('toolbox.grosskleinschreibungIgnorieren') },
   { id: 'm', name: 'Multiline (m)', desc: '^ und $ pro Zeile' },
   { id: 's', name: 'Dotall (s)', desc: '. matcht auch Newlines' },
 ]
@@ -129,7 +130,7 @@ function usePattern(p) {
 
     <!-- Common Patterns -->
     <div>
-      <label class="text-sm text-gray-400 mb-1 block">Häufige Patterns</label>
+      <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.haeufigePatterns') }}</label>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="p in commonPatterns"

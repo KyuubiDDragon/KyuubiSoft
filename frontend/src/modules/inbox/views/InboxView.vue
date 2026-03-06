@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useInboxStore } from '@/stores/inbox'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -26,6 +27,7 @@ import api from '@/core/api/axios'
 
 const inboxStore = useInboxStore()
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -44,21 +46,21 @@ const sortBy = ref('newest')
 
 // Move targets
 const moveTargets = [
-  { type: 'list', label: 'Aufgabenliste', icon: ListBulletIcon },
-  { type: 'document', label: 'Dokument', icon: DocumentTextIcon },
-  { type: 'kanban', label: 'Kanban-Board', icon: ViewColumnsIcon },
-  { type: 'calendar', label: 'Kalender', icon: CalendarIcon },
+  { type: 'list', label: t('inboxModule.aufgabenliste'), icon: ListBulletIcon },
+  { type: 'document', label: t('inboxModule.dokument'), icon: DocumentTextIcon },
+  { type: 'kanban', label: t('inboxModule.kanbanBoard'), icon: ViewColumnsIcon },
+  { type: 'calendar', label: t('navigation.calendar'), icon: CalendarIcon },
 ]
 
 const priorities = [
-  { value: 'low', label: 'Niedrig', color: 'text-gray-400', bg: 'bg-gray-500/10' },
-  { value: 'normal', label: 'Normal', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-  { value: 'high', label: 'Hoch', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  { value: 'urgent', label: 'Dringend', color: 'text-red-400', bg: 'bg-red-500/10' },
+  { value: 'low', label: t('inboxModule.priorityLow'), color: 'text-gray-400', bg: 'bg-gray-500/10' },
+  { value: 'normal', label: t('inboxModule.priorityNormal'), color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  { value: 'high', label: t('inboxModule.priorityHigh'), color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { value: 'urgent', label: t('inboxModule.priorityUrgent'), color: 'text-red-400', bg: 'bg-red-500/10' },
 ]
 
 const sortOptions = [
-  { value: 'newest', label: 'Neueste zuerst' },
+  { value: 'newest', label: t('inboxModule.neuesteZuerst') },
   { value: 'oldest', label: 'Alteste zuerst' },
   { value: 'priority', label: 'Nach Prioritat' },
 ]
@@ -121,7 +123,7 @@ async function refreshItems() {
 }
 
 async function deleteItem(id) {
-  if (!await confirm({ message: 'Mochtest du diesen Eintrag wirklich loschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('inboxModule.inboxmodulemochtestdudieseneintragwirklichloschen'), type: 'danger', confirmText: t('common.delete') })) return
   await inboxStore.deleteItem(id)
 }
 
@@ -189,7 +191,7 @@ async function confirmMove() {
 
 async function bulkDelete() {
   if (selectedItems.value.length === 0) return
-  if (!await confirm({ message: `Mochtest du ${selectedItems.value.length} Eintrage wirklich loschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Mochtest du ${selectedItems.value.length} Eintrage wirklich loschen?`, type: 'danger', confirmText: t('common.delete') })) return
   await inboxStore.bulkAction(selectedItems.value, 'delete')
   selectedItems.value = []
 }
@@ -221,7 +223,7 @@ function formatDate(date) {
     <div class="mb-6">
       <div class="flex items-center gap-3 mb-2">
         <InboxArrowDownIcon class="w-8 h-8 text-indigo-400" />
-        <h1 class="text-2xl font-bold text-white">Inbox</h1>
+        <h1 class="text-2xl font-bold text-white">{{ $t('inboxModule.title') }}</h1>
         <span class="px-2 py-0.5 bg-indigo-900/30 text-indigo-300 rounded-full text-sm">
           {{ inboxStore.stats.inbox }} Eintrage
         </span>
@@ -230,26 +232,26 @@ function formatDate(date) {
           {{ inboxStore.stats.urgent }} dringend
         </span>
       </div>
-      <p class="text-gray-400">Erfasste Gedanken und Aufgaben - hier sortierst du sie.</p>
+      <p class="text-gray-400">{{ $t('inboxModule.inboxmoduleerfasstegedankenundaufgabenhiersortierstdu') }}</p>
     </div>
 
     <!-- Stats -->
     <div class="grid grid-cols-4 gap-4 mb-6">
       <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-white">{{ inboxStore.stats.total }}</div>
-        <div class="text-sm text-gray-400">Gesamt</div>
+        <div class="text-sm text-gray-400">{{ $t('contractsModule.gesamt') }}</div>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-indigo-400">{{ inboxStore.stats.inbox }}</div>
-        <div class="text-sm text-gray-400">Im Inbox</div>
+        <div class="text-sm text-gray-400">{{ $t('inboxModule.inInbox') }}</div>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-yellow-400">{{ inboxStore.stats.processing }}</div>
-        <div class="text-sm text-gray-400">In Bearbeitung</div>
+        <div class="text-sm text-gray-400">{{ $t('inboxModule.inProgress') }}</div>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
         <div class="text-2xl font-bold text-green-400">{{ inboxStore.stats.done }}</div>
-        <div class="text-sm text-gray-400">Erledigt</div>
+        <div class="text-sm text-gray-400">{{ $t('lists.completed') }}</div>
       </div>
     </div>
 
@@ -263,7 +265,7 @@ function formatDate(date) {
             v-model="searchQuery"
             @input="refreshItems"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('bookmarksModule.suchen')"
             class="input w-full pl-10"
           />
         </div>
@@ -274,7 +276,7 @@ function formatDate(date) {
           @change="refreshItems"
           class="select"
         >
-          <option :value="null">Alle Prioritaten</option>
+          <option :value="null">{{ $t('inboxModule.allePrioritaten') }}</option>
           <option v-for="p in priorities" :key="p.value" :value="p.value">{{ p.label }}</option>
         </select>
 
@@ -322,10 +324,10 @@ function formatDate(date) {
           @change="toggleSelectAll"
           class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.08] text-indigo-600 focus:ring-indigo-500"
         />
-        <span class="flex-1">Inhalt</span>
+        <span class="flex-1">{{ $t('inboxModule.content') }}</span>
         <span class="w-24 text-center">Prioritat</span>
-        <span class="w-32 text-center">Erstellt</span>
-        <span class="w-24 text-center">Aktionen</span>
+        <span class="w-32 text-center">{{ $t('inboxModule.erstellt') }}</span>
+        <span class="w-24 text-center">{{ $t('inboxModule.actions') }}</span>
       </div>
 
       <!-- Loading -->
@@ -347,8 +349,8 @@ function formatDate(date) {
       <!-- Empty State -->
       <div v-else-if="filteredItems.length === 0" class="text-center py-12">
         <InboxArrowDownIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-gray-400 mb-2">Inbox ist leer</h3>
-        <p class="text-gray-500">Nutze Quick Capture um Gedanken schnell zu erfassen.</p>
+        <h3 class="text-lg font-medium text-gray-400 mb-2">{{ $t('inboxModule.empty') }}</h3>
+        <p class="text-gray-500">{{ $t('inboxModule.useQuickCapture') }} um Gedanken schnell zu erfassen.</p>
       </div>
 
       <!-- Items -->
@@ -440,14 +442,14 @@ function formatDate(date) {
           <button
             @click="editingItem = item.id"
             class="p-1.5 text-gray-400 hover:text-white rounded transition-colors"
-            title="Bearbeiten"
+            :title="$t('common.edit')"
           >
             <PencilIcon class="w-4 h-4" />
           </button>
           <button
             @click="openMoveModal(item.id)"
             class="p-1.5 text-gray-400 hover:text-indigo-400 rounded transition-colors"
-            title="Verschieben"
+            :title="$t('inboxModule.move')"
           >
             <ArrowRightIcon class="w-4 h-4" />
           </button>
@@ -467,7 +469,7 @@ function formatDate(date) {
       <div v-if="showMoveModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showMoveModal = false"></div>
         <div class="relative modal p-6 w-full max-w-md">
-          <h3 class="text-lg font-semibold text-white mb-4">Verschieben nach</h3>
+          <h3 class="text-lg font-semibold text-white mb-4">{{ $t('inboxModule.moveTo') }}</h3>
 
           <!-- Target Type Selection -->
           <div class="grid grid-cols-2 gap-2 mb-4">
@@ -492,7 +494,7 @@ function formatDate(date) {
               v-model="moveTargetId"
               class="select w-full"
             >
-              <option :value="null">Neue Inbox-Liste erstellen</option>
+              <option :value="null">{{ $t('inboxModule.createNewList') }}</option>
               <option v-for="list in lists" :key="list.id" :value="list.id">{{ list.title }}</option>
             </select>
           </div>
@@ -509,7 +511,7 @@ function formatDate(date) {
           </div>
 
           <div v-if="moveTargetType === 'calendar'" class="mb-4">
-            <label class="block text-sm text-gray-400 mb-2">Datum</label>
+            <label class="block text-sm text-gray-400 mb-2">{{ $t('inboxModule.date') }}</label>
             <input
               v-model="moveOptions.start_date"
               type="datetime-local"
@@ -518,11 +520,11 @@ function formatDate(date) {
           </div>
 
           <div v-if="moveTargetType === 'document'" class="mb-4">
-            <label class="block text-sm text-gray-400 mb-2">Dokumenttitel</label>
+            <label class="block text-sm text-gray-400 mb-2">{{ $t('inboxModule.documentTitle') }}</label>
             <input
               v-model="moveOptions.title"
               type="text"
-              placeholder="Optional - wird aus Inhalt generiert"
+              :placeholder="$t('inboxModule.optionalFromContent')"
               class="input w-full"
             />
           </div>

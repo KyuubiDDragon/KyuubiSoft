@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 
 const url = ref('')
@@ -26,9 +27,9 @@ async function analyze() {
     if (response.data && response.data.data) {
       result.value = response.data.data
     } else if (response.data && !response.data.success) {
-      error.value = response.data.error || response.data.message || 'Unbekannter Fehler'
+      error.value = response.data.error || response.data.message || t('financeModule.unbekannterFehler')
     } else {
-      error.value = 'Keine Daten erhalten'
+      error.value = t('toolbox.keineDatenErhalten')
     }
   } catch (e) {
     console.error('Open Graph error:', e)
@@ -45,7 +46,7 @@ const ogTitle = computed(() => {
 
 const ogDescription = computed(() => {
   if (!result.value) return ''
-  return result.value.openGraph?.description || result.value.basic?.description || 'Keine Beschreibung'
+  return result.value.openGraph?.description || result.value.basic?.description || t('galleriesModule.keineBeschreibung')
 })
 
 const ogImage = computed(() => {
@@ -213,7 +214,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
             <div class="text-white text-sm">{{ result.basic?.language || '-' }}</div>
           </div>
           <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-            <span class="text-xs text-gray-500">Beschreibung</span>
+            <span class="text-xs text-gray-500">{{ $t('common.description') }}</span>
             <div class="text-white text-sm line-clamp-3">{{ result.basic?.description || '-' }}</div>
           </div>
           <div v-if="result.favicon" class="p-3 bg-white/[0.04] rounded-lg col-span-2 flex items-center gap-3">

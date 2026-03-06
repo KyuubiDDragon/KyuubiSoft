@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const notes = ref([])
 const currentNote = ref(null)
 const searchQuery = ref('')
@@ -43,7 +44,7 @@ const filteredNotes = computed(() => {
 function createNote() {
   const newNote = {
     id: Date.now().toString(),
-    title: 'Neue Notiz',
+    title: t('toolbox.neueNotiz'),
     content: '',
     color: '#6366f1',
     createdAt: new Date().toISOString(),
@@ -171,7 +172,7 @@ import { computed } from 'vue'
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Suchen..."
+          :placeholder="$t('bookmarksModule.suchen')"
           class="input w-full text-sm py-1"
         />
       </div>
@@ -195,14 +196,14 @@ import { computed } from 'vue'
                 <span v-if="note.pinned" class="text-xs">📌</span>
                 <h4 class="text-sm font-medium text-white truncate">{{ note.title }}</h4>
               </div>
-              <p class="text-xs text-gray-500 truncate">{{ note.content || 'Keine Vorschau' }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ note.content || $t('toolbox.keineVorschau') }}</p>
               <p class="text-xs text-gray-600 mt-1">{{ formatDate(note.updatedAt) }}</p>
             </div>
           </div>
         </div>
 
         <div v-if="filteredNotes.length === 0" class="p-4 text-center text-gray-500 text-sm">
-          {{ searchQuery ? 'Keine Ergebnisse' : 'Keine Notizen' }}
+          {{ searchQuery ? $t('common.noResults') : $t('toolbox.keineNotizen') }}
         </div>
       </div>
 
@@ -262,7 +263,7 @@ import { computed } from 'vue'
           <button
             @click="confirmDelete(currentNote)"
             class="p-1 text-gray-400 hover:text-red-400"
-            title="Löschen"
+            :title="$t('common.delete')"
           >
             🗑️
           </button>
@@ -272,7 +273,7 @@ import { computed } from 'vue'
         <textarea
           v-model="currentNote.content"
           class="flex-1 p-4 bg-transparent text-gray-300 resize-none focus:outline-none"
-          placeholder="Notiz hier eingeben..."
+          placeholder=$t('toolbox.notizHierEingeben')
         ></textarea>
 
         <!-- Status bar -->

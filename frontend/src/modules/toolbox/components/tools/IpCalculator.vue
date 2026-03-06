@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const ipInput = ref('192.168.1.1')
 const cidrInput = ref(24)
 
@@ -110,7 +111,7 @@ function getIpType(ip) {
   // Link-local
   if (parts[0] === 169 && parts[1] === 254) return 'Link-Local'
 
-  return 'Öffentlich'
+  return t('galleriesModule.oeffentlich')
 }
 
 // Common subnets
@@ -160,7 +161,7 @@ function copyToClipboard(text) {
 
     <!-- Validation Error -->
     <div v-if="ipInput && !isValidIp(ipInput)" class="text-red-400 text-sm">
-      Ungültige IP-Adresse
+      {{ $t('toolbox.ungueltigeIpadresse') }}
     </div>
 
     <!-- Results -->
@@ -180,7 +181,7 @@ function copyToClipboard(text) {
           <div class="font-mono text-white">{{ calculations.firstHost }}</div>
         </div>
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Letzter Host</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.letzterHost') }}</span>
           <div class="font-mono text-white">{{ calculations.lastHost }}</div>
         </div>
         <div class="p-3 bg-white/[0.04] rounded-lg">
@@ -196,7 +197,7 @@ function copyToClipboard(text) {
           <div class="font-mono text-white">{{ calculations.usableHosts }}</div>
         </div>
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Gesamt Adressen</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.gesamtAdressen') }}</span>
           <div class="font-mono text-white">{{ calculations.totalHosts }}</div>
         </div>
       </div>
@@ -216,11 +217,11 @@ function copyToClipboard(text) {
       <!-- Binary Representation -->
       <div class="p-3 bg-white/[0.04] rounded-lg space-y-2">
         <div>
-          <span class="text-xs text-gray-500">IP (Binär)</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.ipBinaer') }}</span>
           <div class="font-mono text-xs text-white break-all">{{ calculations.binaryIp }}</div>
         </div>
         <div>
-          <span class="text-xs text-gray-500">Maske (Binär)</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.maskeBinaer') }}</span>
           <div class="font-mono text-xs text-white break-all">{{ calculations.binaryMask }}</div>
         </div>
       </div>
@@ -228,7 +229,7 @@ function copyToClipboard(text) {
 
     <!-- Common Subnets Reference -->
     <div>
-      <h4 class="text-sm text-gray-400 mb-2">Häufige Subnetze</h4>
+      <h4 class="text-sm text-gray-400 mb-2">{{ $t('toolbox.haeufigeSubnetze') }}</h4>
       <div class="grid grid-cols-2 gap-2">
         <button
           v-for="subnet in commonSubnets"

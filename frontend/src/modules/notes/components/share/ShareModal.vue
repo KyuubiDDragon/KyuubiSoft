@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import api from '@/core/api/axios'
@@ -23,6 +24,7 @@ const emit = defineEmits(['close', 'updated'])
 
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 // State
 const loading = ref(false)
@@ -66,7 +68,7 @@ async function loadShareStatus() {
     }
   } catch (err) {
     console.error('Failed to load share status:', err)
-    error.value = 'Fehler beim Laden der Freigabe-Einstellungen'
+    error.value = t('notesModule.share.loadError')
   } finally {
     loading.value = false
   }
@@ -99,7 +101,7 @@ async function toggleSharing() {
     emit('updated')
   } catch (err) {
     console.error('Failed to toggle sharing:', err)
-    error.value = 'Fehler beim Ändern der Freigabe'
+    error.value = t('notesModule.share.toggleError')
   } finally {
     loading.value = false
   }
@@ -124,7 +126,7 @@ async function updateSettings() {
     emit('updated')
   } catch (err) {
     console.error('Failed to update settings:', err)
-    error.value = 'Fehler beim Aktualisieren der Einstellungen'
+    error.value = t('notesModule.share.updateError')
   } finally {
     loading.value = false
   }
@@ -132,7 +134,7 @@ async function updateSettings() {
 
 // Regenerate link
 async function regenerateLink() {
-  if (!await confirm({ message: 'Bisheriger Link wird ungültig. Fortfahren?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notesModule.share.regenerateConfirm'), type: 'danger', confirmText: t('common.confirm') })) return
 
   loading.value = true
   error.value = null
@@ -146,7 +148,7 @@ async function regenerateLink() {
     emit('updated')
   } catch (err) {
     console.error('Failed to regenerate link:', err)
-    error.value = 'Fehler beim Generieren des neuen Links'
+    error.value = t('notesModule.share.regenerateError')
   } finally {
     loading.value = false
   }
@@ -209,7 +211,7 @@ onMounted(() => {
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
             <div>
-              <h2 class="text-xl font-semibold text-white">Seite teilen</h2>
+              <h2 class="text-xl font-semibold text-white">{{ $t('notesModule.share.title') }}</h2>
               <p class="text-sm text-gray-500 mt-0.5 truncate max-w-[250px]">{{ noteTitle }}</p>
             </div>
             <button
@@ -236,8 +238,8 @@ onMounted(() => {
               <!-- Toggle Sharing -->
               <div class="flex items-center justify-between mb-6">
                 <div>
-                  <h3 class="text-white font-medium">Im Web veröffentlichen</h3>
-                  <p class="text-sm text-gray-500">Jeder mit dem Link kann die Seite sehen</p>
+                  <h3 class="text-white font-medium">{{ $t('notesModule.share.publishOnWeb') }}</h3>
+                  <p class="text-sm text-gray-500">{{ $t('notesModule.share.anyoneWithLink') }}</p>
                 </div>
                 <button
                   @click="toggleSharing"
@@ -260,7 +262,7 @@ onMounted(() => {
               <template v-if="settings.enabled && shareUrl">
                 <!-- Link input -->
                 <div class="mb-4">
-                  <label class="block text-sm text-gray-400 mb-2">Link zum Teilen</label>
+                  <label class="block text-sm text-gray-400 mb-2">{{ $t('notesModule.share.shareLink') }}</label>
                   <div class="flex gap-2">
                     <input
                       :value="shareUrl"
@@ -270,7 +272,7 @@ onMounted(() => {
                     <button
                       @click="copyLink"
                       class="px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
-                      :title="copied ? 'Kopiert!' : 'Link kopieren'"
+                      :title="copied ? $t('notesModule.share.copied') : $t('notesModule.share.copyLink')"
                     >
                       <svg v-if="!copied" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -282,7 +284,7 @@ onMounted(() => {
                     <button
                       @click="openPublicPage"
                       class="px-3 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
-                      title="Seite öffnen"
+                      :title="$t('notesModule.share.openPage')"
                     >
                       <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -298,14 +300,14 @@ onMounted(() => {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    {{ viewCount }} Aufrufe
+                    {{ viewCount }} {{ $t('notesModule.share.views') }}
                   </span>
                 </div>
 
                 <!-- Settings -->
                 <div class="border-t border-dark-700 pt-4 space-y-3">
                   <label class="flex items-center justify-between cursor-pointer">
-                    <span class="text-sm text-gray-300">Autor anzeigen</span>
+                    <span class="text-sm text-gray-300">{{ $t('notesModule.share.showAuthor') }}</span>
                     <input
                       v-model="settings.show_author"
                       type="checkbox"
@@ -315,7 +317,7 @@ onMounted(() => {
                   </label>
 
                   <label class="flex items-center justify-between cursor-pointer">
-                    <span class="text-sm text-gray-300">Datum ausblenden</span>
+                    <span class="text-sm text-gray-300">{{ $t('notesModule.share.hideDate') }}</span>
                     <input
                       v-model="settings.hide_date"
                       type="checkbox"
@@ -335,7 +337,7 @@ onMounted(() => {
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Neuen Link generieren
+                    {{ $t('notesModule.share.regenerateLink') }}
                   </button>
                 </div>
               </template>
@@ -347,7 +349,7 @@ onMounted(() => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <p class="text-gray-400 text-sm">
-                    Diese Seite ist privat. Aktiviere die Freigabe, um einen öffentlichen Link zu erstellen.
+                    {{ $t('notesModule.share.privateInfo') }}
                   </p>
                 </div>
               </template>
@@ -368,7 +370,7 @@ onMounted(() => {
               @click="handleClose"
               class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>

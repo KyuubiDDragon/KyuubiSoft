@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -23,6 +24,7 @@ import {
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // Refs
@@ -148,7 +150,7 @@ function cancelEdit() {
 }
 
 async function deleteMessage(messageId) {
-  if (!await confirm({ message: 'Nachricht wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('chat.confirmDeleteMessage'), type: 'danger', confirmText: t('common.delete') })) return
 
   await chatStore.deleteMessage(messageId)
 }
@@ -209,20 +211,20 @@ function toggleParticipant(userId) {
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <ChatBubbleLeftRightIcon class="w-6 h-6 text-primary-400" />
-            <h2 class="text-lg font-semibold text-white">Team Chat</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('chat.title') }}</h2>
           </div>
           <div class="flex items-center gap-1">
             <button
               @click="showNewDMModal = true"
               class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-              title="Neue Direktnachricht"
+              :title="$t('chat.newDirectMessage')"
             >
               <UserIcon class="w-5 h-5" />
             </button>
             <button
               @click="showNewRoomModal = true"
               class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-              title="Neuer Raum"
+              :title="$t('chat.newRoom')"
             >
               <PlusIcon class="w-5 h-5" />
             </button>
@@ -235,7 +237,7 @@ function toggleParticipant(userId) {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('common.search')"
             class="input w-full pl-9 pr-4 py-2 text-sm"
           />
         </div>
@@ -248,7 +250,7 @@ function toggleParticipant(userId) {
         </div>
 
         <div v-else-if="filteredRooms.length === 0" class="text-center py-8 text-gray-500 text-sm">
-          Keine Unterhaltungen
+          {{ $t('chat.noConversations') }}
         </div>
 
         <div v-else>
@@ -269,7 +271,7 @@ function toggleParticipant(userId) {
                   {{ room.unread_count }}
                 </span>
               </div>
-              <p class="text-sm text-gray-500 truncate">{{ room.last_message_preview || 'Keine Nachrichten' }}</p>
+              <p class="text-sm text-gray-500 truncate">{{ room.last_message_preview || $t('chat.noMessages') }}</p>
             </div>
           </div>
         </div>
@@ -283,7 +285,7 @@ function toggleParticipant(userId) {
         <div class="text-center">
           <ChatBubbleLeftRightIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 class="text-lg font-medium text-gray-400">Wahle eine Unterhaltung</h3>
-          <p class="text-gray-500 text-sm mt-1">Oder starte eine neue</p>
+          <p class="text-gray-500 text-sm mt-1">{{ $t('chat.orStartNew') }}</p>
         </div>
       </div>
 
@@ -445,7 +447,7 @@ function toggleParticipant(userId) {
               @keyup.enter="sendMessage"
               @input="handleTyping"
               type="text"
-              placeholder="Nachricht schreiben..."
+              :placeholder="$t('chat.writeMessage')"
               class="input flex-1"
             />
             <button
@@ -474,7 +476,7 @@ function toggleParticipant(userId) {
                 v-model="newRoomForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="Raumname"
+                :placeholder="$t('chat.roomName')"
               />
             </div>
 
@@ -484,7 +486,7 @@ function toggleParticipant(userId) {
                 v-model="newRoomForm.description"
                 rows="2"
                 class="textarea w-full resize-none"
-                placeholder="Optional"
+                :placeholder="$t('common.optional')"
               ></textarea>
             </div>
 
@@ -512,16 +514,12 @@ function toggleParticipant(userId) {
             <button
               @click="showNewRoomModal = false"
               class="btn-secondary"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="createRoom"
               :disabled="!newRoomForm.name.trim()"
               class="btn-primary"
-            >
-              Erstellen
-            </button>
+            >{{ $t('common.create') }}</button>
           </div>
         </div>
       </div>
@@ -532,7 +530,7 @@ function toggleParticipant(userId) {
       <div v-if="showNewDMModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showNewDMModal = false"></div>
         <div class="relative modal p-6 w-full max-w-md">
-          <h3 class="text-lg font-semibold text-white mb-4">Neue Direktnachricht</h3>
+          <h3 class="text-lg font-semibold text-white mb-4">{{ $t('chat.newDirectMessage') }}</h3>
 
           <div class="space-y-1 max-h-80 overflow-y-auto">
             <div
@@ -555,9 +553,7 @@ function toggleParticipant(userId) {
             <button
               @click="showNewDMModal = false"
               class="btn-secondary"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
           </div>
         </div>
       </div>

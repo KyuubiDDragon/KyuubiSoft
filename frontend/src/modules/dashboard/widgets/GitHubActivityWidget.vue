@@ -1,4 +1,7 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 
 function timeAgo(dateString) {
@@ -10,10 +13,10 @@ function timeAgo(dateString) {
   const diffH = Math.floor(diffMs / 3600000)
   const diffD = Math.floor(diffMs / 86400000)
 
-  if (diffMin < 1) return 'gerade eben'
-  if (diffMin < 60) return `vor ${diffMin} Min`
-  if (diffH < 24) return `vor ${diffH} Std`
-  return `vor ${diffD} Tag${diffD > 1 ? 'en' : ''}`
+  if (diffMin < 1) return t('time.justNow')
+  if (diffMin < 60) return t('time.minutesAgo', { n: diffMin })
+  if (diffH < 24) return t('time.hoursAgo', { n: diffH })
+  return t('time.daysAgo', { n: diffD })
 }
 </script>
 
@@ -21,18 +24,18 @@ function timeAgo(dateString) {
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/git" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
+      <router-link to="/git" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.open') }}</router-link>
     </div>
 
     <!-- Stat boxes -->
     <div class="grid grid-cols-2 gap-2 mb-4">
       <div class="bg-white/[0.04] rounded-lg p-3 text-center">
         <p class="text-2xl font-bold text-white">{{ data?.commits_today || 0 }}</p>
-        <p class="text-xs text-gray-500">Heute</p>
+        <p class="text-xs text-gray-500">{{ $t('widgets.today') }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-lg p-3 text-center">
         <p class="text-2xl font-bold text-white">{{ data?.commits_week || 0 }}</p>
-        <p class="text-xs text-gray-500">Woche</p>
+        <p class="text-xs text-gray-500">{{ $t('widgets.week') }}</p>
       </div>
     </div>
 
@@ -49,7 +52,7 @@ function timeAgo(dateString) {
         </div>
         <span class="text-xs text-gray-500 flex-shrink-0">{{ timeAgo(commit.date) }}</span>
       </div>
-      <p v-if="!data?.recent_commits?.length" class="text-gray-500 text-sm text-center py-4">Keine Commits</p>
+      <p v-if="!data?.recent_commits?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noCommits') }}</p>
     </div>
   </div>
 </template>

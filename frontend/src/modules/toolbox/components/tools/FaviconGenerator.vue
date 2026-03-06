@@ -220,7 +220,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
           <p>Bild hochladen</p>
         </div>
         <div v-else class="text-green-400">
-          <p>Bild geladen - Klicken zum Ändern</p>
+          <p>{{ $t('toolbox.bildGeladenKlickenZumAendern') }}</p>
         </div>
       </div>
     </div>
@@ -273,7 +273,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
 
     <!-- All Sizes -->
     <div>
-      <h4 class="text-sm text-gray-400 mb-2">Alle Größen</h4>
+      <h4 class="text-sm text-gray-400 mb-2">{{ $t('toolbox.alleGroessen') }}</h4>
       <div class="grid grid-cols-4 gap-2">
         <button
           v-for="icon in generatedIcons"

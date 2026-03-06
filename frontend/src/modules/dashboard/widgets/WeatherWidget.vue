@@ -49,7 +49,7 @@ defineEmits(['open-config'])
       <!-- Details -->
       <div class="grid grid-cols-2 gap-2 text-sm mb-4">
         <div class="bg-white/[0.04] rounded p-2">
-          <p class="text-gray-500 text-xs">Gefühlt</p>
+          <p class="text-gray-500 text-xs">{{ $t('dashboardModule.gefuehlt') }}</p>
           <p class="text-white">{{ data.current?.feels_like }}°</p>
         </div>
         <div class="bg-white/[0.04] rounded p-2">

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import draggable from 'vuedraggable'
 import {
@@ -19,6 +20,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -48,8 +50,8 @@ const listForm = reactive({
 const listTypes = [
   { value: 'todo', label: 'Todo-Liste' },
   { value: 'shopping', label: 'Einkaufsliste' },
-  { value: 'project', label: 'Projekt' },
-  { value: 'notes', label: 'Notizen' }
+  { value: 'project', label: t('tickets.projekt') },
+  { value: 'notes', label: t('passwords.notes') }
 ]
 
 const colors = [
@@ -98,7 +100,7 @@ async function loadLists() {
     const response = await api.get('/api/v1/lists', { params })
     lists.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Listen')
+    uiStore.showError(t('listsModule.fehlerBeimLadenDerListen'))
   } finally {
     isLoading.value = false
   }
@@ -119,7 +121,7 @@ async function createList() {
     resetForm()
     uiStore.showSuccess('Liste erstellt')
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen der Liste')
+    uiStore.showError(t('listsModule.listsmodulefehlerbeimerstellenderliste'))
   }
 }
 
@@ -131,12 +133,12 @@ async function updateList() {
     showEditModal.value = false
     uiStore.showSuccess('Liste aktualisiert')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteList(listId) {
-  if (!await confirm({ message: 'Liste wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('listsModule.listeWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/lists/${listId}`)
@@ -144,9 +146,9 @@ async function deleteList(listId) {
     if (selectedList.value?.id === listId) {
       selectedList.value = null
     }
-    uiStore.showSuccess('Liste gelöscht')
+    uiStore.showSuccess(t('system.listeGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -163,7 +165,7 @@ async function selectList(listId) {
       selectedList.value.items.sort((a, b) => a.sort_order - b.sort_order)
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Liste')
+    uiStore.showError(t('listsModule.fehlerBeimLadenDerListe'))
   }
 }
 
@@ -178,7 +180,7 @@ async function addItem() {
     selectedList.value.items.push(response.data.data)
     newItemContent.value = ''
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen')
+    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
@@ -190,7 +192,7 @@ async function toggleItem(item) {
     )
     Object.assign(item, response.data.data)
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -199,7 +201,7 @@ async function deleteItem(itemId) {
     await api.delete(`/api/v1/lists/${selectedList.value.id}/items/${itemId}`)
     selectedList.value.items = selectedList.value.items.filter(i => i.id !== itemId)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -217,7 +219,7 @@ async function onDragEnd() {
       items: itemOrders
     })
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern der Reihenfolge')
+    uiStore.showError(t('listsModule.listsmodulefehlerbeimspeichernderreihenfolge'))
     // Reload to get correct order
     await selectList(selectedList.value.id)
   }
@@ -267,7 +269,7 @@ function goBack() {
           <p class="text-gray-400 mt-1">
             {{ selectedList
               ? `${completedCount} von ${totalCount} erledigt`
-              : 'Verwalte deine Listen und Aufgaben'
+              : $t('listsModule.verwalteDeineListenUndAufgaben')
             }}
           </p>
         </div>
@@ -299,7 +301,7 @@ function goBack() {
           v-model="newItemContent"
           @keyup.enter="addItem"
           type="text"
-          placeholder="Neuen Eintrag hinzufügen..."
+          :placeholder="$t('listsModule.listsmoduleneueneintraghinzufuegen')"
           class="input flex-1"
         />
         <button @click="addItem" class="btn-primary">
@@ -310,7 +312,7 @@ function goBack() {
       <!-- Drag hint -->
       <p v-if="selectedList.items?.length > 1" class="text-xs text-gray-500 flex items-center gap-1">
         <Bars3Icon class="w-4 h-4" />
-        Ziehe Einträge am Griff, um sie neu zu sortieren
+        {{ $t('listsModule.zieheEintraegeAmGriffUmSieNeu') }}
       </p>
 
       <!-- Items with Drag & Drop -->
@@ -394,7 +396,7 @@ function goBack() {
           </div>
           <h3 class="text-lg font-medium text-white mt-4">{{ list.title }}</h3>
           <p class="text-gray-400 text-sm mt-1 line-clamp-2">
-            {{ list.description || 'Keine Beschreibung' }}
+            {{ list.description || $t('galleriesModule.keineBeschreibung') }}
           </p>
           <div class="flex items-center justify-between mt-4">
             <span class="text-sm text-gray-500">{{ list.item_count || 0 }} Einträge</span>

@@ -309,7 +309,7 @@ function getOtherServices(currentService) {
   <div class="space-y-4">
     <!-- Quick Add Presets -->
     <div>
-      <label class="block text-xs text-gray-400 mb-2">Schnell hinzufügen</label>
+      <label class="block text-xs text-gray-400 mb-2">{{ $t('toolbox.schnellHinzufuegen') }}</label>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="(preset, key) in servicePresets"
@@ -494,7 +494,7 @@ function getOtherServices(currentService) {
         <div class="flex gap-2">
           <button @click="copyToClipboard" class="btn-sm btn-secondary">
             <component :is="copied ? CheckIcon : ClipboardIcon" class="w-3 h-3" />
-            {{ copied ? 'Kopiert!' : 'Kopieren' }}
+            {{ copied ? 'Kopiert!' : $t('common.copy') }}
           </button>
           <button @click="downloadCompose" class="btn-sm btn-primary">
             <ArrowDownTrayIcon class="w-3 h-3" />

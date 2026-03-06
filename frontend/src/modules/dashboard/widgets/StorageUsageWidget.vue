@@ -6,7 +6,7 @@ defineProps({ widget: Object, data: Object })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
+      <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.oeffnen') }}</router-link>
     </div>
     <div class="text-center">
       <!-- Progress Ring -->

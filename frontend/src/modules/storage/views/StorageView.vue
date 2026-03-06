@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   CloudArrowUpIcon,
   DocumentIcon,
@@ -30,6 +31,7 @@ import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -91,7 +93,7 @@ async function loadFiles() {
     // Load thumbnails after files are loaded
     loadThumbnails()
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Dateien')
+    uiStore.showError(t('storage.storagefehlerbeimladenderdateien'))
   } finally {
     isLoading.value = false
   }
@@ -111,7 +113,7 @@ async function uploadFile(file) {
 
   // Validate size (200MB)
   if (file.size > 200 * 1024 * 1024) {
-    uiStore.showError('Datei zu groß (max. 200MB)')
+    uiStore.showError(t('storage.dateiZuGrossMax200mb'))
     return
   }
 
@@ -130,7 +132,7 @@ async function uploadFile(file) {
     })
 
     files.value.unshift(response.data.data)
-    uiStore.showSuccess('Datei erfolgreich hochgeladen')
+    uiStore.showSuccess(t('storage.dateiErfolgreichHochgeladen'))
     loadStats()
   } catch (error) {
     uiStore.showError(error.response?.data?.message || 'Upload fehlgeschlagen')
@@ -155,20 +157,20 @@ async function downloadFile(file) {
     link.remove()
     window.URL.revokeObjectURL(url)
   } catch (error) {
-    uiStore.showError('Download fehlgeschlagen')
+    uiStore.showError(t('youtubeDownloader.youtubedownloaderdownloadfehlgeschlagen'))
   }
 }
 
 async function deleteFile(file) {
-  if (!await confirm({ message: `"${file.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `"${file.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/storage/${file.id}`)
     files.value = files.value.filter(f => f.id !== file.id)
-    uiStore.showSuccess('Datei gelöscht')
+    uiStore.showSuccess(t('storage.dateiGeloescht'))
     loadStats()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -202,7 +204,7 @@ async function createShare() {
     const response = await api.post(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
     shares.value.unshift(response.data.data)
     shareForm.value = { password: '', max_downloads: null, expires_at: '' }
-    uiStore.showSuccess('Freigabe erstellt')
+    uiStore.showSuccess(t('storage.freigabeErstellt'))
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
@@ -211,7 +213,7 @@ async function createShare() {
     }
     loadStats()
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen der Freigabe')
+    uiStore.showError(t('storage.storagefehlerbeimerstellenderfreigabe'))
   } finally {
     isShareLoading.value = false
   }
@@ -219,12 +221,12 @@ async function createShare() {
 
 async function deleteShare(share) {
   if (!selectedFile.value) return
-  if (!await confirm({ message: 'Freigabe wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('storage.freigabeWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/storage/${selectedFile.value.id}/share?share_id=${share.id}`)
     shares.value = shares.value.filter(s => s.id !== share.id)
-    uiStore.showSuccess('Freigabe gelöscht')
+    uiStore.showSuccess(t('storage.freigabeGeloescht'))
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
@@ -233,7 +235,7 @@ async function deleteShare(share) {
     }
     loadStats()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen der Freigabe')
+    uiStore.showError(t('storage.storagefehlerbeimloeschenderfreigabe'))
   }
 }
 
@@ -248,9 +250,9 @@ async function toggleShareActive(share) {
     if (index !== -1) {
       shares.value[index] = response.data.data
     }
-    uiStore.showSuccess(response.data.data.is_active ? 'Freigabe aktiviert' : 'Freigabe deaktiviert')
+    uiStore.showSuccess(response.data.data.is_active ? t('storage.freigabeAktiviert') : t('storage.freigabeDeaktiviert'))
   } catch (error) {
-    uiStore.showError('Fehler beim Ändern des Status')
+    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
   }
 }
 
@@ -280,9 +282,9 @@ async function renameFile() {
     }
 
     showRenameModal.value = false
-    uiStore.showSuccess('Datei umbenannt')
+    uiStore.showSuccess(t('storage.dateiUmbenannt'))
   } catch (error) {
-    uiStore.showError('Fehler beim Umbenennen')
+    uiStore.showError(t('storage.fehlerBeimUmbenennen'))
   }
 }
 
@@ -409,7 +411,7 @@ onUnmounted(() => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('bookmarksModule.suchen')"
             class="input pl-9 pr-3 py-1.5 text-sm"
           />
         </div>
@@ -445,7 +447,7 @@ onUnmounted(() => {
           class="btn-primary flex items-center gap-1.5 px-3 py-1.5 text-sm"
         >
           <CloudArrowUpIcon class="w-4 h-4" />
-          <span>Hochladen</span>
+          <span>{{ $t('common.upload') }}</span>
         </button>
         <input
           ref="fileInput"
@@ -461,7 +463,7 @@ onUnmounted(() => {
       <div class="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
         <div class="flex items-center gap-2">
           <FolderIcon class="w-5 h-5 text-primary-400" />
-          <span class="text-gray-400 text-sm">Dateien</span>
+          <span class="text-gray-400 text-sm">{{ $t('backupsModule.dateien') }}</span>
         </div>
         <p class="text-xl font-bold text-white mt-1">{{ stats.total_files }}</p>
       </div>
@@ -512,26 +514,26 @@ onUnmounted(() => {
       <!-- Drag Overlay -->
       <div v-if="isDragging" class="p-12 text-center">
         <CloudArrowUpIcon class="w-16 h-16 mx-auto text-primary-500 mb-4" />
-        <p class="text-lg text-white font-medium">Datei hier ablegen</p>
-        <p class="text-gray-400">zum Hochladen</p>
+        <p class="text-lg text-white font-medium">{{ $t('storage.dateiHierAblegen') }}</p>
+        <p class="text-gray-400">{{ $t('storage.zumHochladen') }}</p>
       </div>
 
       <!-- Loading -->
       <div v-else-if="isLoading" class="p-12 text-center">
         <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-gray-400 mt-4">Lade Dateien...</p>
+        <p class="text-gray-400 mt-4">{{ $t('storage.storageladedateien') }}</p>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="files.length === 0" class="p-12 text-center">
         <CloudArrowUpIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <p class="text-lg text-white font-medium">Keine Dateien vorhanden</p>
-        <p class="text-gray-400 mb-4">Lade deine erste Datei hoch oder ziehe sie hierher</p>
+        <p class="text-lg text-white font-medium">{{ $t('storage.storagekeinedateienvorhanden') }}</p>
+        <p class="text-gray-400 mb-4">{{ $t('storage.storageladedeineerstedateihochoderziehe') }}</p>
         <button
           @click="fileInput.click()"
           class="btn-primary"
         >
-          Datei auswählen
+          {{ $t('storage.dateiAuswaehlen') }}
         </button>
       </div>
 
@@ -577,7 +579,7 @@ onUnmounted(() => {
                 <button
                   @click.stop="downloadFile(file)"
                   class="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
-                  title="Herunterladen"
+                  :title="$t('common.download')"
                 >
                   <ArrowDownTrayIcon class="w-3.5 h-3.5 text-white" />
                 </button>
@@ -591,7 +593,7 @@ onUnmounted(() => {
                 <button
                   @click.stop="deleteFile(file)"
                   class="p-1.5 bg-white/10 hover:bg-red-500/50 rounded transition-colors"
-                  title="Löschen"
+                  :title="$t('common.delete')"
                 >
                   <TrashIcon class="w-3.5 h-3.5 text-white" />
                 </button>
@@ -672,14 +674,14 @@ onUnmounted(() => {
             <button
               @click="downloadFile(file)"
               class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white transition-colors"
-              title="Herunterladen"
+              :title="$t('common.download')"
             >
               <ArrowDownTrayIcon class="w-5 h-5" />
             </button>
             <button
               @click="deleteFile(file)"
               class="p-2 hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-              title="Löschen"
+              :title="$t('common.delete')"
             >
               <TrashIcon class="w-5 h-5" />
             </button>
@@ -745,7 +747,7 @@ onUnmounted(() => {
                     <button
                       @click="deleteShare(share)"
                       class="p-1.5 bg-white/[0.08] hover:bg-red-600/30 rounded transition-colors text-gray-400 hover:text-red-400"
-                      title="Löschen"
+                      :title="$t('common.delete')"
                     >
                       <TrashIcon class="w-4 h-4" />
                     </button>
@@ -777,16 +779,16 @@ onUnmounted(() => {
 
             <!-- Divider -->
             <div class="border-t border-white/[0.06] pt-4">
-              <label class="block text-sm font-medium text-gray-300 mb-3">Neue Freigabe erstellen</label>
+              <label class="block text-sm font-medium text-gray-300 mb-3">{{ $t('storage.storageneuefreigabeerstellen') }}</label>
 
               <!-- Password -->
               <div class="space-y-2 mb-3">
-                <label class="block text-xs text-gray-400">Passwort (optional)</label>
+                <label class="block text-xs text-gray-400">{{ $t('links.linkspasswortoptional') }}</label>
                 <div class="relative">
                   <input
                     v-model="shareForm.password"
                     :type="showPassword ? 'text' : 'password'"
-                    placeholder="Passwort eingeben..."
+                    :placeholder="$t('contractsModule.passwortEingeben')"
                     class="input w-full pr-10 text-sm"
                   />
                   <button
@@ -832,7 +834,7 @@ onUnmounted(() => {
               @click="showShareModal = false"
               class="btn-secondary"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
             <button
               @click="createShare"
@@ -854,13 +856,13 @@ onUnmounted(() => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Datei umbenennen</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('storage.dateiUmbenennen') }}</h3>
           </div>
           <div class="p-4">
             <input
               v-model="renameForm.name"
               type="text"
-              placeholder="Neuer Name"
+              :placeholder="$t('storage.neuerName')"
               class="input w-full"
               @keyup.enter="renameFile"
             />

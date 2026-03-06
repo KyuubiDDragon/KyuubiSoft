@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useExport } from '../../composables/useExport'
 
 const props = defineProps({
@@ -16,49 +17,50 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const { isExporting, exportError, exportMarkdown, exportHTML, exportPDF, exportText, exportJSON } = useExport()
+const { t } = useI18n()
 
 const selectedFormat = ref('markdown')
 
-const formats = [
+const formats = computed(() => [
   {
     id: 'markdown',
     name: 'Markdown',
-    description: 'Standard-Textformat für Dokumentation',
+    description: t('notesModule.export.markdownDesc'),
     icon: '📝',
     extension: '.md',
   },
   {
     id: 'html',
     name: 'HTML',
-    description: 'Webseite mit Styling',
+    description: t('notesModule.export.htmlDesc'),
     icon: '🌐',
     extension: '.html',
   },
   {
     id: 'pdf',
     name: 'PDF',
-    description: 'Druckbares Dokument',
+    description: t('notesModule.export.pdfDesc'),
     icon: '📄',
     extension: '.pdf',
   },
   {
     id: 'text',
-    name: 'Text',
-    description: 'Reiner Text ohne Formatierung',
+    name: t('notesModule.export.text'),
+    description: t('notesModule.export.textDesc'),
     icon: '📃',
     extension: '.txt',
   },
   {
     id: 'json',
     name: 'JSON',
-    description: 'Backup & Import Format',
+    description: t('notesModule.export.jsonDesc'),
     icon: '💾',
     extension: '.json',
   },
-]
+])
 
 const selectedFormatInfo = computed(() => {
-  return formats.find(f => f.id === selectedFormat.value)
+  return formats.value.find(f => f.id === selectedFormat.value)
 })
 
 async function handleExport() {
@@ -112,8 +114,8 @@ function handleBackdropClick(e) {
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
             <div>
-              <h2 class="text-xl font-semibold text-white">Notiz exportieren</h2>
-              <p class="text-sm text-gray-500 mt-0.5">{{ note?.title || 'Untitled' }}</p>
+              <h2 class="text-xl font-semibold text-white">{{ $t('notesModule.export.title') }}</h2>
+              <p class="text-sm text-gray-500 mt-0.5">{{ note?.title || $t('notesModule.untitled') }}</p>
             </div>
             <button
               @click="handleClose"
@@ -130,7 +132,7 @@ function handleBackdropClick(e) {
             <!-- Format Selection -->
             <div class="space-y-2">
               <label class="block text-sm font-medium text-gray-300 mb-3">
-                Export-Format wählen
+                {{ $t('notesModule.export.selectFormat') }}
               </label>
 
               <div class="grid grid-cols-1 gap-2">
@@ -190,20 +192,19 @@ function handleBackdropClick(e) {
               class="mt-4 p-3 bg-dark-700 rounded-lg text-sm text-gray-400"
             >
               <template v-if="selectedFormat === 'markdown'">
-                Markdown ist ideal für Dokumentation und kann in vielen Editoren geöffnet werden.
-                Wiki-Links werden als <code class="text-primary-400">[[Link]]</code> exportiert.
+                {{ $t('notesModule.export.markdownInfo') }}
               </template>
               <template v-else-if="selectedFormat === 'html'">
-                Die HTML-Datei enthält ein vollständiges Styling und kann direkt im Browser geöffnet werden.
+                {{ $t('notesModule.export.htmlInfo') }}
               </template>
               <template v-else-if="selectedFormat === 'pdf'">
-                Das PDF ist druckfertig und enthält alle Formatierungen. Optimal zum Teilen.
+                {{ $t('notesModule.export.pdfInfo') }}
               </template>
               <template v-else-if="selectedFormat === 'text'">
-                Nur der Textinhalt ohne Formatierung. Kompatibel mit allen Anwendungen.
+                {{ $t('notesModule.export.textInfo') }}
               </template>
               <template v-else-if="selectedFormat === 'json'">
-                Vollständiges Backup inklusive Metadaten. Kann später wieder importiert werden.
+                {{ $t('notesModule.export.jsonInfo') }}
               </template>
             </div>
           </div>
@@ -214,7 +215,7 @@ function handleBackdropClick(e) {
               @click="handleClose"
               class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="handleExport"
@@ -239,7 +240,7 @@ function handleBackdropClick(e) {
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              {{ isExporting ? 'Exportiere...' : 'Exportieren' }}
+              {{ isExporting ? $t('notesModule.export.exporting') : $t('common.export') }}
             </button>
           </div>
         </div>

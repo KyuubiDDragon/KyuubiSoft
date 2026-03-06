@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -23,6 +24,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 const currentDate = ref(new Date())
@@ -64,16 +66,16 @@ const eventForm = ref({
 // Recurrence options
 const recurrenceOptions = [
   { value: '', label: 'Keine Wiederholung' },
-  { value: 'daily', label: 'Täglich' },
-  { value: 'weekly', label: 'Wöchentlich' },
-  { value: 'biweekly', label: 'Alle 2 Wochen' },
-  { value: 'monthly', label: 'Monatlich' },
-  { value: 'yearly', label: 'Jährlich' },
+  { value: 'daily', label: t('cron.daily') },
+  { value: 'weekly', label: t('cron.weekly') },
+  { value: 'biweekly', label: t('calendarView.biweekly') },
+  { value: 'monthly', label: t('cron.monthly') },
+  { value: 'yearly', label: t('contracts.yearly') },
 ]
 
 // Reminder options
 const reminderOptions = [
-  { value: null, label: 'Keine Erinnerung' },
+  { value: null, label: t('calendarView.noReminder') },
   { value: 0, label: 'Zum Zeitpunkt' },
   { value: 5, label: '5 Minuten vorher' },
   { value: 15, label: '15 Minuten vorher' },
@@ -86,8 +88,8 @@ const reminderOptions = [
 
 // Calendar type options
 const calendarTypes = [
-  { value: 'ical', label: 'iCal URL', description: 'Öffentliche iCal-URL (z.B. Google, Apple)' },
-  { value: 'caldav', label: 'CalDAV', description: 'CalDAV-Server mit Authentifizierung' },
+  { value: 'ical', label: 'iCal URL', description: t('calendarView.publicIcalUrl') },
+  { value: 'caldav', label: 'CalDAV', description: t('calendarView.caldavServerAuth') },
 ]
 
 // Source filters
@@ -243,10 +245,10 @@ async function createEvent() {
     showEventModal.value = false
     resetForm()
     fetchEvents()
-    uiStore.showSuccess('Termin erstellt')
+    uiStore.showSuccess(t('calendarView.eventCreated'))
   } catch (error) {
     console.error('Failed to create event:', error)
-    uiStore.showError('Fehler beim Erstellen des Termins')
+    uiStore.showError(t('calendarView.errorCreatingEvent'))
   }
 }
 
@@ -258,10 +260,10 @@ async function updateEvent() {
     showEventModal.value = false
     resetForm()
     fetchEvents()
-    uiStore.showSuccess('Termin aktualisiert')
+    uiStore.showSuccess(t('calendarView.eventUpdated'))
   } catch (error) {
     console.error('Failed to update event:', error)
-    uiStore.showError('Fehler beim Aktualisieren des Termins')
+    uiStore.showError(t('calendarView.errorUpdatingEvent'))
   }
 }
 
@@ -272,10 +274,10 @@ async function deleteEvent() {
     showEventModal.value = false
     resetForm()
     fetchEvents()
-    uiStore.showSuccess('Termin gelöscht')
+    uiStore.showSuccess(t('calendarView.eventDeleted'))
   } catch (error) {
     console.error('Failed to delete event:', error)
-    uiStore.showError('Fehler beim Löschen des Termins')
+    uiStore.showError(t('calendarView.errorDeletingEvent'))
   }
 }
 
@@ -383,23 +385,23 @@ async function addExternalCalendar() {
     resetCalendarForm()
     await loadExternalCalendars()
     await fetchEvents()
-    uiStore.showSuccess('Kalender hinzugefügt')
+    uiStore.showSuccess(t('calendarView.calendarAdded'))
   } catch (error) {
     console.error('Failed to add calendar:', error)
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen des Kalenders')
+    uiStore.showError(error.response?.data?.message || t('calendarView.errorAddingCalendar'))
   }
 }
 
 async function deleteExternalCalendar(calendarId) {
-  if (!await confirm({ message: 'Kalender wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('calendarView.confirmRemoveCalendar'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/calendar/external/${calendarId}`)
     await loadExternalCalendars()
     await fetchEvents()
-    uiStore.showSuccess('Kalender entfernt')
+    uiStore.showSuccess(t('calendarView.calendarRemoved'))
   } catch (error) {
     console.error('Failed to delete calendar:', error)
-    uiStore.showError('Fehler beim Entfernen des Kalenders')
+    uiStore.showError(t('calendarView.errorRemovingCalendar'))
   }
 }
 
@@ -408,10 +410,10 @@ async function syncExternalCalendar(calendarId) {
   try {
     await api.post(`/api/v1/calendar/external/${calendarId}/sync`)
     await fetchEvents()
-    uiStore.showSuccess('Kalender synchronisiert')
+    uiStore.showSuccess(t('calendarView.calendarSynced'))
   } catch (error) {
     console.error('Failed to sync calendar:', error)
-    uiStore.showError('Fehler beim Synchronisieren')
+    uiStore.showError(t('calendarView.errorSyncing'))
   } finally {
     isSyncingCalendar.value = null
   }
@@ -500,13 +502,13 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Kalender</h1>
-        <p class="text-gray-400 mt-1">Termine, Deadlines und Zeiterfassung im Überblick</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('calendar.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('calendarView.subtitle') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="openSettingsModal" class="btn-secondary">
           <Cog6ToothIcon class="w-4 h-4 mr-2" />
-          Einstellungen
+          {{ $t('common.settings') }}
         </button>
         <button @click="openNewEvent()" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
@@ -543,7 +545,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
         <!-- Source Filters -->
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500">Quellen:</span>
+          <span class="text-sm text-gray-500">{{ $t('calendarView.sources') }}</span>
           <label class="flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer" :class="sourceFilters.events ? 'bg-purple-500/20 text-purple-400' : 'text-gray-500'">
             <input type="checkbox" v-model="sourceFilters.events" class="hidden" />
             <CalendarIcon class="w-4 h-4" />
@@ -557,7 +559,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
           <label class="flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer" :class="sourceFilters.tasks ? 'bg-blue-500/20 text-blue-400' : 'text-gray-500'">
             <input type="checkbox" v-model="sourceFilters.tasks" class="hidden" />
             <ListBulletIcon class="w-4 h-4" />
-            <span class="text-xs">Aufgaben</span>
+            <span class="text-xs">{{ $t('calendarView.tasks') }}</span>
           </label>
           <label class="flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer" :class="sourceFilters.time ? 'bg-green-500/20 text-green-400' : 'text-gray-500'">
             <input type="checkbox" v-model="sourceFilters.time" class="hidden" />
@@ -651,7 +653,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
-                {{ selectedEvent ? 'Termin bearbeiten' : 'Neuer Termin' }}
+                {{ selectedEvent ? $t('calendarView.editEvent') : $t('calendarView.newEvent') }}
               </h3>
               <button @click="showEventModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -666,17 +668,17 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   type="text"
                   required
                   class="input"
-                  placeholder="Terminname"
+                  placeholder=$t('calendarView.eventName')
                 />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Beschreibung</label>
+                <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('common.description') }}</label>
                 <textarea
                   v-model="eventForm.description"
                   rows="2"
                   class="textarea resize-none"
-                  placeholder="Optional"
+                  :placeholder="$t('common.optional')"
                 ></textarea>
               </div>
 
@@ -688,7 +690,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                     v-model="eventForm.all_day"
                     class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500 focus:ring-primary-500"
                   />
-                  <span class="text-sm text-gray-400">Ganztägig</span>
+                  <span class="text-sm text-gray-400">{{ $t('calendar.allDay') }}</span>
                 </label>
               </div>
 
@@ -788,20 +790,16 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   type="button"
                   @click="deleteEvent"
                   class="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                >
-                  Löschen
-                </button>
+                >{{ $t('common.delete') }}</button>
                 <div v-else></div>
                 <div class="flex gap-2">
                   <button
                     type="button"
                     @click="showEventModal = false"
                     class="btn-secondary"
-                  >
-                    Abbrechen
-                  </button>
+                  >{{ $t('common.cancel') }}</button>
                   <button type="submit" class="btn-primary">
-                    {{ selectedEvent ? 'Speichern' : 'Erstellen' }}
+                    {{ selectedEvent ? $t('common.save') : $t('common.create') }}
                   </button>
                 </div>
               </div>
@@ -827,7 +825,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
         >
           <div class="modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Kalender-Einstellungen</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('calendarView.calendarSettings') }}</h3>
               <button @click="showSettingsModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -840,12 +838,12 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   <h4 class="text-md font-medium text-white">Externe Kalender</h4>
                   <button @click="showAddCalendarModal = true" class="btn-primary text-sm py-1.5">
                     <PlusIcon class="w-4 h-4 mr-1" />
-                    Kalender hinzufügen
+                    {{ $t('calendarView.addCalendar') }}
                   </button>
                 </div>
 
                 <p class="text-sm text-gray-400">
-                  Verbinde externe Kalender (Google, Outlook, Apple, etc.) um deren Termine hier anzuzeigen.
+                  {{ $t('calendarView.connectExternalCalendars') }}
                 </p>
 
                 <!-- Loading -->
@@ -856,8 +854,8 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 <!-- Empty state -->
                 <div v-else-if="externalCalendars.length === 0" class="bg-white/[0.03] rounded-lg p-6 text-center">
                   <CalendarIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
-                  <p class="text-gray-400">Keine externen Kalender verbunden</p>
-                  <p class="text-sm text-gray-500 mt-1">Füge einen iCal-Link oder CalDAV-Server hinzu</p>
+                  <p class="text-gray-400">{{ $t('calendarView.noExternalCalendars') }}</p>
+                  <p class="text-sm text-gray-500 mt-1">{{ $t('calendarView.addIcalOrCaldav') }}</p>
                 </div>
 
                 <!-- Calendar list -->
@@ -898,7 +896,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                         @click="syncExternalCalendar(calendar.id)"
                         class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
                         :disabled="isSyncingCalendar === calendar.id"
-                        title="Synchronisieren"
+                        :title="$t('calendarView.sync')"
                       >
                         <ArrowPathIcon
                           class="w-5 h-5"
@@ -909,7 +907,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                       <button
                         @click="deleteExternalCalendar(calendar.id)"
                         class="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Entfernen"
+                        :title="$t('calendarView.remove')"
                       >
                         <TrashIcon class="w-5 h-5" />
                       </button>
@@ -920,9 +918,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
             </div>
 
             <div class="px-6 py-4 border-t border-white/[0.06]">
-              <button @click="showSettingsModal = false" class="btn-secondary w-full">
-                Schließen
-              </button>
+              <button @click="showSettingsModal = false" class="btn-secondary w-full">{{ $t('common.close') }}</button>
             </div>
           </div>
         </div>
@@ -945,7 +941,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
         >
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Kalender hinzufügen</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('calendarView.addCalendar') }}</h3>
               <button @click="showAddCalendarModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -959,7 +955,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   type="text"
                   required
                   class="input"
-                  placeholder="z.B. Google Kalender"
+                  :placeholder="$t('calendarView.calendarNamePlaceholder')"
                 />
               </div>
 
@@ -998,21 +994,21 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
               <!-- CalDAV credentials -->
               <template v-if="calendarForm.type === 'caldav'">
                 <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">Benutzername</label>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('passwords.username') }}</label>
                   <input
                     v-model="calendarForm.username"
                     type="text"
                     class="input"
-                    placeholder="Optional"
+                    :placeholder="$t('common.optional')"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">Passwort</label>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('auth.password') }}</label>
                   <input
                     v-model="calendarForm.password"
                     type="password"
                     class="input"
-                    placeholder="Optional"
+                    :placeholder="$t('common.optional')"
                   />
                 </div>
               </template>
@@ -1048,9 +1044,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   type="button"
                   @click="showAddCalendarModal = false; resetCalendarForm()"
                   class="btn-secondary flex-1"
-                >
-                  Abbrechen
-                </button>
+                >{{ $t('common.cancel') }}</button>
                 <button type="submit" class="btn-primary flex-1">
                   <LinkIcon class="w-4 h-4 mr-2" />
                   Verbinden

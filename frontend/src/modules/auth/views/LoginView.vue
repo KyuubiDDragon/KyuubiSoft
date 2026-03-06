@@ -76,7 +76,7 @@ async function handleSubmit() {
 
       <!-- Login (E-Mail oder Benutzername) -->
       <div v-if="!requires2FA">
-        <label for="login" class="label">E-Mail oder Benutzername</label>
+        <label for="login" class="label">{{ $t('authModule.emailOderBenutzername') }}</label>
         <input
           id="login"
           v-model="form.login"
@@ -92,7 +92,7 @@ async function handleSubmit() {
 
       <!-- Password -->
       <div v-if="!requires2FA">
-        <label for="password" class="label">Passwort</label>
+        <label for="password" class="label">{{ $t('auth.password') }}</label>
         <div class="relative">
           <input
             id="password"
@@ -135,7 +135,7 @@ async function handleSubmit() {
 
       <!-- Forgot password link -->
       <div v-if="!requires2FA" class="flex justify-end">
-        <a href="#" class="text-sm link">Passwort vergessen?</a>
+        <a href="#" class="text-sm link">{{ $t('auth.forgotPassword') }}</a>
       </div>
 
       <!-- Submit button -->
@@ -151,7 +151,7 @@ async function handleSubmit() {
           </svg>
           Anmelden...
         </span>
-        <span v-else>{{ requires2FA ? 'Bestätigen' : 'Anmelden' }}</span>
+        <span v-else>{{ requires2FA ? $t('common.confirm') : 'Anmelden' }}</span>
       </button>
     </form>
 

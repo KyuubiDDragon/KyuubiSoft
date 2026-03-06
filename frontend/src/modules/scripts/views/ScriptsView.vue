@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import MonacoEditor from '@/components/MonacoEditor.vue'
@@ -19,6 +20,7 @@ import {
 
 const toast = useToast()
 
+const { t } = useI18n()
 // =========================================================================
 // State
 // =========================================================================
@@ -60,7 +62,7 @@ async function loadScripts() {
     const res = await api.get('/api/v1/scripts')
     scripts.value = res.data.data.scripts || []
   } catch (err) {
-    toast.error('Fehler beim Laden der Scripts')
+    toast.error(t('scripts.fehlerBeimLadenDerScripts'))
   } finally {
     loading.value = false
   }
@@ -107,7 +109,7 @@ function selectScript(script) {
 function newScript() {
   const fresh = {
     id: null,
-    name: 'Neues Script',
+    name: t('scripts.neuesScript'),
     description: '',
     language: 'bash',
     content: '#!/bin/bash\n\necho "Hello World"',
@@ -150,7 +152,7 @@ async function saveScript() {
       toast.success('Script gespeichert')
     }
   } catch (err) {
-    toast.error('Fehler beim Speichern: ' + (err.response?.data?.message || err.message))
+    toast.error(t('scripts.scriptsfehlerbeimspeichern') + (err.response?.data?.message || err.message))
   }
 }
 
@@ -163,9 +165,9 @@ async function deleteScript(script) {
       selectedScript.value = null
       editForm.value = null
     }
-    toast.success('Script gelöscht')
+    toast.success(t('scripts.scriptGeloescht'))
   } catch {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -181,7 +183,7 @@ async function toggleFavorite(script) {
       selectedScript.value = updated
     }
   } catch {
-    toast.error('Fehler')
+    toast.error(t('common.error'))
   }
 }
 
@@ -219,7 +221,7 @@ async function runScript() {
     }
 
     if (data.exit_code === 0) {
-      toast.success('Script erfolgreich ausgeführt')
+      toast.success(t('scripts.scriptErfolgreichAusgefuehrt'))
     } else {
       toast.error(`Script beendet mit Code ${data.exit_code}`)
     }
@@ -231,7 +233,7 @@ async function runScript() {
       duration:  Date.now() - startTime,
       success:   false,
     }
-    toast.error('Fehler bei der Ausführung')
+    toast.error(t('scripts.fehlerBeiDerAusfuehrung'))
   } finally {
     running.value = false
   }
@@ -294,7 +296,7 @@ onMounted(async () => {
           <button
             @click="newScript"
             class="p-1 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition-colors"
-            title="Neues Script"
+            :title="$t('scripts.neuesScript')"
           >
             <PlusIcon class="w-3.5 h-3.5" />
           </button>
@@ -306,7 +308,7 @@ onMounted(async () => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suchen…"
+            :placeholder="$t('scripts.suchen')"
             class="input pl-7 pr-3 py-1.5 text-xs w-full"
           />
         </div>
@@ -317,7 +319,7 @@ onMounted(async () => {
             @click="filterLang = ''"
             class="px-2 py-0.5 rounded text-xs transition-colors"
             :class="filterLang === '' ? 'bg-primary-600 text-white' : 'text-gray-500 hover:text-gray-300'"
-          >Alle</button>
+          >{{ $t('common.all') }}</button>
           <button
             v-for="lang in languages"
             :key="lang"
@@ -360,7 +362,7 @@ onMounted(async () => {
               <button
                 @click.stop="deleteScript(script)"
                 class="p-0.5 rounded text-gray-500 hover:text-red-400"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-3 h-3" />
               </button>
@@ -384,7 +386,7 @@ onMounted(async () => {
       <div v-if="!editForm" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <CommandLineIcon class="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p class="text-sm">Script auswählen oder neues erstellen</p>
+          <p class="text-sm">{{ $t('scripts.scriptsscriptauswaehlenoderneueserstellen') }}</p>
           <button
             @click="newScript"
             class="mt-4 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm rounded-lg transition-colors"
@@ -440,7 +442,7 @@ onMounted(async () => {
             class="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
           >
             <component :is="running ? ArrowPathIcon : PlayIcon" class="w-3.5 h-3.5" :class="{ 'animate-spin': running }" />
-            {{ running ? 'Läuft…' : 'Ausführen' }}
+            {{ running ? $t('scripts.laeuft') : $t('workflows.ausfuehren') }}
           </button>
         </div>
 
@@ -465,7 +467,7 @@ onMounted(async () => {
             <input
               v-model="editForm.description"
               type="text"
-              placeholder="Beschreibung (optional)"
+              :placeholder="$t('scripts.scriptsbeschreibungoptional')"
               class="w-full bg-transparent text-xs text-gray-400 focus:outline-none placeholder-gray-600"
             />
           </div>

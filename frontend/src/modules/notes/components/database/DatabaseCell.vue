@@ -283,7 +283,7 @@ function updateDate(dateStr) {
             <span class="text-gray-300">{{ option.name }}</span>
           </button>
           <div v-if="selectOptions.length === 0" class="px-2 py-2 text-sm text-gray-500">
-            Keine Optionen
+            {{ $t('notesModule.database.noOptions') }}
           </div>
         </div>
       </div>

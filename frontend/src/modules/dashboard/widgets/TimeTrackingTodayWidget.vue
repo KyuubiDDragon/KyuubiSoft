@@ -12,9 +12,9 @@ defineProps({ widget: Object, data: Object })
       <div v-if="data?.running" class="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
         <div class="flex items-center gap-2 text-green-400">
           <PlayIcon class="w-4 h-4 animate-pulse" />
-          <span class="text-sm font-medium">Läuft</span>
+          <span class="text-sm font-medium">{{ $t('dashboardModule.laeuft') }}</span>
         </div>
-        <p class="text-xs text-gray-400 mt-1 truncate">{{ data.running.project_name || 'Kein Projekt' }}</p>
+        <p class="text-xs text-gray-400 mt-1 truncate">{{ data.running.project_name || $t('timeTracking.keinProjekt') }}</p>
       </div>
     </div>
   </div>

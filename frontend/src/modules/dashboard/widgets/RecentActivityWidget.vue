@@ -20,7 +20,7 @@ defineProps({ widget: Object, data: Array })
         </div>
         <span class="text-xs text-gray-500">{{ formatDate(activity.created_at) }}</span>
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine Aktivität</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noActivity') }}</p>
     </div>
   </div>
 </template>

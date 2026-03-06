@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import {
   XMarkIcon,
@@ -28,6 +29,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'status-change', 'sign', 'download-pdf', 'preview', 'delete', 'duplicate', 'link-invoice', 'unlink-invoice', 'reload', 'share'])
+
+const { t } = useI18n()
 
 const { statusOptions, contractTypeLabels, formatCurrency, formatDate, getStatusInfo, getHistory } = useContracts()
 
@@ -203,28 +206,28 @@ watch(() => props.contract, (val) => {
                   <button
                     @click="$emit('download-pdf', contract)"
                     class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                    title="Als PDF herunterladen"
+                    :title="$t('contracts.downloadAsPdf')"
                   >
                     <ArrowDownTrayIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('share', contract)"
                     class="p-2 rounded-lg text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] transition-colors"
-                    title="Vertrag teilen"
+                    :title="$t('contracts.shareContract')"
                   >
                     <LinkIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('duplicate', contract)"
                     class="p-2 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-white/[0.04] transition-colors"
-                    title="Vertrag duplizieren"
+                    :title="$t('contracts.duplicateContract')"
                   >
                     <DocumentDuplicateIcon class="w-5 h-5" />
                   </button>
                   <button
                     @click="$emit('delete', contract)"
                     class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-white/[0.04] transition-colors"
-                    title="Vertrag löschen"
+                    :title="$t('contracts.deleteContract')"
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
@@ -232,7 +235,7 @@ watch(() => props.contract, (val) => {
                   <button
                     @click="$emit('close')"
                     class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                    title="Schließen (Esc)"
+                    :title="$t('contracts.closeEsc')"
                   >
                     <XMarkIcon class="w-5 h-5" />
                   </button>
@@ -261,8 +264,8 @@ watch(() => props.contract, (val) => {
               <div class="flex gap-1 mt-4">
                 <button
                   v-for="tab in [
-                    { id: 'overview', label: 'Übersicht', icon: DocumentTextIcon },
-                    { id: 'invoices', label: 'Rechnungen', icon: null },
+                    { id: 'overview', label: $t('contracts.overview'), icon: DocumentTextIcon },
+                    { id: 'invoices', label: $t('contracts.invoices'), icon: null },
                     { id: 'history', label: 'Verlauf', icon: null },
                     { id: 'preview', label: 'Vorschau', icon: null },
                   ]"
@@ -291,7 +294,7 @@ watch(() => props.contract, (val) => {
                 <!-- Parties cards -->
                 <div class="grid grid-cols-2 gap-4">
                   <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Auftragnehmer</p>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ $t('contracts.contractor') }}</p>
                     <p class="font-semibold text-white">{{ contract.party_a_name || '–' }}</p>
                     <p v-if="contract.party_a_company" class="text-gray-400 text-sm">{{ contract.party_a_company }}</p>
                     <p v-if="contract.party_a_address" class="text-gray-400 text-sm mt-1 whitespace-pre-line">{{ contract.party_a_address }}</p>
@@ -300,7 +303,7 @@ watch(() => props.contract, (val) => {
                     <p v-if="partyASignedDisplay" class="text-emerald-400 text-xs mt-2 font-medium">Unterschrieben: {{ partyASignedDisplay }}</p>
                   </div>
                   <div class="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Auftraggeber</p>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ $t('contracts.client') }}</p>
                     <p class="font-semibold text-white">{{ contract.party_b_name || '–' }}</p>
                     <p v-if="contract.party_b_company" class="text-gray-400 text-sm">{{ contract.party_b_company }}</p>
                     <p v-if="contract.party_b_address" class="text-gray-400 text-sm mt-1 whitespace-pre-line">{{ contract.party_b_address }}</p>
@@ -323,11 +326,11 @@ watch(() => props.contract, (val) => {
                       <p class="text-white font-medium">{{ contract.end_date ? formatDate(contract.end_date) : 'Unbefristet' }}</p>
                     </div>
                     <div>
-                      <p class="text-xs text-gray-500 mb-1">Kündigungsfrist</p>
+                      <p class="text-xs text-gray-500 mb-1">{{ $t('contracts.noticePeriod') }}</p>
                       <p class="text-white font-medium">{{ contract.notice_period_days || 30 }} Tage</p>
                     </div>
                     <div>
-                      <p class="text-xs text-gray-500 mb-1">Auto-Verlängerung</p>
+                      <p class="text-xs text-gray-500 mb-1">{{ $t('contracts.autoRenewal') }}</p>
                       <p class="text-white font-medium">{{ contract.auto_renewal ? `Ja (${contract.renewal_period})` : 'Nein' }}</p>
                     </div>
                   </div>
@@ -342,7 +345,7 @@ watch(() => props.contract, (val) => {
                       <span class="text-white">{{ contract.payment_schedule || '-' }}</span>
                     </div>
                     <div class="flex justify-between pt-2 border-t border-white/[0.08]">
-                      <span class="text-white font-bold text-lg">Vertragswert</span>
+                      <span class="text-white font-bold text-lg">{{ $t('contracts.contractValue') }}</span>
                       <span class="text-white font-bold text-2xl">{{ formatCurrency(contract.total_value, contract.currency) }}</span>
                     </div>
                   </div>
@@ -373,19 +376,19 @@ watch(() => props.contract, (val) => {
               <!-- INVOICES TAB -->
               <div v-else-if="activeTab === 'invoices'" class="p-6">
                 <div class="flex items-center justify-between mb-4">
-                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Verknüpfte Rechnungen</p>
+                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('contracts.linkedInvoices') }}</p>
                   <button @click="showInvoiceLinker = true" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-500 transition-colors">
                     <LinkIcon class="w-3.5 h-3.5" /> Rechnung verknüpfen
                   </button>
                 </div>
 
                 <div v-if="!contract.invoices?.length" class="bg-white/[0.02] rounded-xl p-6 border border-dashed border-white/[0.06] text-center">
-                  <p class="text-gray-500 text-sm">Keine Rechnungen verknüpft</p>
+                  <p class="text-gray-500 text-sm">{{ $t('contracts.noLinkedInvoices') }}</p>
                   <button
                     @click="showInvoiceLinker = true"
                     class="mt-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"
                   >
-                    Rechnung verknüpfen →
+                    {{ $t('contracts.linkInvoice') }}
                   </button>
                 </div>
                 <div v-else class="space-y-2">
@@ -397,7 +400,7 @@ watch(() => props.contract, (val) => {
                     </div>
                     <div class="flex items-center gap-3">
                       <div class="text-sm font-semibold text-white">{{ formatCurrency(inv.total, inv.currency) }}</div>
-                      <button @click="handleUnlinkInvoice(inv.id)" class="p-1 text-gray-500 hover:text-red-400 transition-colors" title="Verknüpfung entfernen">
+                      <button @click="handleUnlinkInvoice(inv.id)" class="p-1 text-gray-500 hover:text-red-400 transition-colors" :title="$t('contracts.removeLink')">
                         <XMarkIcon class="w-4 h-4" />
                       </button>
                     </div>
@@ -416,7 +419,7 @@ watch(() => props.contract, (val) => {
               <!-- HISTORY TAB -->
               <div v-else-if="activeTab === 'history'" class="p-6">
                 <div v-if="!history.length" class="bg-white/[0.02] rounded-xl p-6 border border-dashed border-white/[0.06] text-center">
-                  <p class="text-gray-500 text-sm">Kein Verlauf vorhanden</p>
+                  <p class="text-gray-500 text-sm">{{ $t('contracts.noHistory') }}</p>
                 </div>
                 <div v-else class="space-y-3">
                   <div v-for="entry in history" :key="entry.id" class="flex gap-3 items-start p-3 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] transition-colors">

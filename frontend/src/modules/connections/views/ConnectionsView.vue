@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -30,6 +31,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -130,7 +132,7 @@ async function loadConnections() {
     const response = await api.get('/api/v1/connections')
     connections.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Verbindungen')
+    uiStore.showError(t('databaseBrowser.fehlerBeimLadenDerVerbindungen'))
   } finally {
     isLoading.value = false
   }
@@ -160,19 +162,19 @@ async function saveConnection() {
     await loadConnections()
     closeModal()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteConnection(connection) {
-  if (!await confirm({ message: `Verbindung "${connection.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Verbindung "${connection.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/connections/${connection.id}`)
     connections.value = connections.value.filter(c => c.id !== connection.id)
-    uiStore.showSuccess('Verbindung gelöscht')
+    uiStore.showSuccess(t('connections.connectionDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -183,7 +185,7 @@ async function toggleFavorite(connection) {
     })
     connection.is_favorite = !connection.is_favorite
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -198,7 +200,7 @@ async function showCredentials(connection) {
     showPrivateKey.value = false
     showCredentialsModal.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Zugangsdaten')
+    uiStore.showError(t('connections.errorLoadingCredentials'))
   }
 }
 
@@ -209,14 +211,14 @@ async function saveTag() {
     showTagModal.value = false
     tagForm.name = ''
     tagForm.color = '#6366f1'
-    uiStore.showSuccess('Tag erstellt')
+    uiStore.showSuccess(t('common.tagCreated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/connections/tags/${tag.id}`)
@@ -224,9 +226,9 @@ async function deleteTag(tag) {
     if (selectedTagId.value === tag.id) {
       selectedTagId.value = ''
     }
-    uiStore.showSuccess('Tag gelöscht')
+    uiStore.showSuccess(t('common.tagDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -239,7 +241,7 @@ async function copyToClipboard(text, fieldName) {
       copiedField.value = ''
     }, 2000)
   } catch (error) {
-    uiStore.showError('Kopieren fehlgeschlagen')
+    uiStore.showError(t('links.kopierenFehlgeschlagen'))
   }
 }
 
@@ -319,8 +321,8 @@ function formatDate(dateString) {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Verbindungen</h1>
-        <p class="text-gray-400 mt-1">Verwalte deine Server- und Datenbankverbindungen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('connections.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('connections.subtitle') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="showTagModal = true" class="btn-secondary">
@@ -329,7 +331,7 @@ function formatDate(dateString) {
         </button>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Neue Verbindung
+          {{ $t('connections.newConnection') }}
         </button>
       </div>
     </div>
@@ -341,18 +343,18 @@ function formatDate(dateString) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Suchen..."
+          :placeholder="$t('common.search')"
           class="input pl-10 w-full"
         />
       </div>
       <select v-model="selectedType" class="input w-full sm:w-48">
-        <option value="">Alle Typen</option>
+        <option value="">{{ $t('contracts.allTypes') }}</option>
         <option v-for="type in connectionTypes" :key="type.value" :value="type.value">
           {{ type.label }}
         </option>
       </select>
       <select v-model="selectedTagId" class="input w-full sm:w-48">
-        <option value="">Alle Tags</option>
+        <option value="">{{ $t('bookmarks.allTags') }}</option>
         <option v-for="tag in tags" :key="tag.id" :value="tag.id">
           {{ tag.name }}
         </option>
@@ -368,17 +370,17 @@ function formatDate(dateString) {
     <div v-else-if="filteredConnections.length === 0" class="card p-12 text-center">
       <ServerIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
       <h3 class="text-lg font-medium text-white mb-2">
-        {{ searchQuery || selectedType || selectedTagId ? 'Keine Ergebnisse' : 'Keine Verbindungen' }}
+        {{ searchQuery || selectedType || selectedTagId ? $t('common.noResults') : $t('connections.noConnections') }}
       </h3>
       <p class="text-gray-400 mb-6">
         {{ searchQuery || selectedType || selectedTagId
           ? 'Versuche andere Suchkriterien'
-          : 'Erstelle deine erste Verbindung'
+          : $t('connections.createFirstConnection')
         }}
       </p>
       <button v-if="!searchQuery && !selectedType && !selectedTagId" @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Verbindung erstellen
+        {{ $t('connections.createConnection') }}
       </button>
     </div>
 
@@ -488,7 +490,7 @@ function formatDate(dateString) {
         <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="p-6 border-b border-white/[0.06]">
             <h2 class="text-xl font-bold text-white">
-              {{ editingConnection ? 'Verbindung bearbeiten' : 'Neue Verbindung' }}
+              {{ editingConnection ? $t('connections.editConnection') : $t('connections.newConnection') }}
             </h2>
           </div>
 
@@ -496,7 +498,7 @@ function formatDate(dateString) {
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
                 <label class="label">Name *</label>
-                <input v-model="form.name" type="text" class="input" required placeholder="Mein Server" />
+                <input v-model="form.name" type="text" class="input" required placeholder=$t('connections.myServer') />
               </div>
 
               <div>
@@ -534,17 +536,17 @@ function formatDate(dateString) {
               </div>
 
               <div>
-                <label class="label">Benutzername</label>
+                <label class="label">{{ $t('passwords.username') }}</label>
                 <input v-model="form.username" type="text" class="input" placeholder="root" />
               </div>
 
               <div>
-                <label class="label">Passwort</label>
+                <label class="label">{{ $t('auth.password') }}</label>
                 <input
                   v-model="form.password"
                   type="password"
                   class="input"
-                  :placeholder="editingConnection ? '(unverändert)' : ''"
+                  :placeholder="editingConnection ? $t('common.unchanged') : ''"
                 />
               </div>
 
@@ -554,13 +556,13 @@ function formatDate(dateString) {
                   v-model="form.private_key"
                   class="input font-mono text-sm"
                   rows="3"
-                  :placeholder="editingConnection ? '(unverändert)' : '-----BEGIN OPENSSH PRIVATE KEY-----'"
+                  :placeholder="editingConnection ? $t('common.unchanged') : '-----BEGIN OPENSSH PRIVATE KEY-----'"
                 ></textarea>
               </div>
 
               <div class="col-span-2">
-                <label class="label">Beschreibung</label>
-                <textarea v-model="form.description" class="input" rows="2" placeholder="Optional"></textarea>
+                <label class="label">{{ $t('common.description') }}</label>
+                <textarea v-model="form.description" class="input" rows="2" :placeholder="$t('common.optional')"></textarea>
               </div>
 
               <div class="col-span-2">
@@ -595,11 +597,9 @@ function formatDate(dateString) {
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" @click="closeModal" class="btn-secondary flex-1">
-                Abbrechen
-              </button>
+              <button type="button" @click="closeModal" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingConnection ? 'Speichern' : 'Erstellen' }}
+                {{ editingConnection ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </form>
@@ -663,7 +663,7 @@ function formatDate(dateString) {
 
               <div v-if="viewingCredentials.username" class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div>
-                  <span class="text-xs text-gray-400">Benutzername</span>
+                  <span class="text-xs text-gray-400">{{ $t('passwords.username') }}</span>
                   <p class="font-mono text-white">{{ viewingCredentials.username }}</p>
                 </div>
                 <button
@@ -677,7 +677,7 @@ function formatDate(dateString) {
 
               <div v-if="viewingCredentials.password" class="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div class="flex-1 min-w-0">
-                  <span class="text-xs text-gray-400">Passwort</span>
+                  <span class="text-xs text-gray-400">{{ $t('auth.password') }}</span>
                   <p class="font-mono text-white truncate">
                     {{ showPassword ? viewingCredentials.password : '••••••••••••' }}
                   </p>
@@ -751,7 +751,7 @@ function formatDate(dateString) {
                 v-model="tagForm.name"
                 type="text"
                 class="input flex-1"
-                placeholder="Neuer Tag..."
+                :placeholder="$t('common.newTag')"
                 required
               />
               <select v-model="tagForm.color" class="input w-24">

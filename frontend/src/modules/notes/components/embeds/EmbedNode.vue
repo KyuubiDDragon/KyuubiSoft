@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { NodeViewWrapper } from '@tiptap/vue-3'
 import {
   PlayIcon,
@@ -28,6 +29,7 @@ const props = defineProps({
   }
 })
 
+const { t } = useI18n()
 const isLoaded = ref(false)
 const isExpanded = ref(false)
 const showControls = ref(false)
@@ -124,21 +126,21 @@ function onIframeLoad() {
         <button
           @click="openExternal"
           class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
-          title="In neuem Tab öffnen"
+          :title="$t('notesModule.embed.openInNewTab')"
         >
           <ArrowTopRightOnSquareIcon class="w-4 h-4" />
         </button>
         <button
           @click="toggleExpanded"
           class="p-1.5 text-gray-400 hover:text-white hover:bg-dark-600 rounded"
-          title="Vollbild"
+          :title="$t('notesModule.embed.fullscreen')"
         >
           <ArrowsPointingOutIcon class="w-4 h-4" />
         </button>
         <button
           @click="deleteNode"
           class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-600 rounded"
-          title="Entfernen"
+          :title="$t('notesModule.embed.remove')"
         >
           <TrashIcon class="w-4 h-4" />
         </button>
@@ -162,7 +164,7 @@ function onIframeLoad() {
         >
           <PlayIcon class="w-8 h-8" :style="{ color: providerColor }" />
         </div>
-        <p class="text-sm text-gray-400">Klicken zum Laden</p>
+        <p class="text-sm text-gray-400">{{ $t('notesModule.embed.clickToLoad') }}</p>
         <p class="text-xs text-gray-500 mt-1 max-w-xs truncate px-4">{{ node.attrs.src }}</p>
       </div>
 

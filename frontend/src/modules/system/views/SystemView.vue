@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -25,18 +26,18 @@ const auditPagination = ref({ page: 1, perPage: 20, total: 0 })
 const auditFilters = ref({ action: '', user_id: '', entity_type: '' })
 const expandedLogId = ref(null)
 const availableEntityTypes = ref([
-  { value: '', label: 'Alle Entitäten' },
-  { value: 'user', label: 'Benutzer' },
+  { value: '', label: 't('system.alleEntitaeten') },
+  { value: 'user', label: t('navigation.users') },
   { value: 'list', label: 'Listen' },
-  { value: 'document', label: 'Dokumente' },
-  { value: 'snippet', label: 'Snippets' },
+  { value: 'document', label: t('navigation.documents') },
+  { value: 'snippet', label: t('navigation.snippets') },
   { value: 'connection', label: 'Verbindungen' },
   { value: 'kanban', label: 'Kanban' },
-  { value: 'project', label: 'Projekte' },
-  { value: 'invoice', label: 'Rechnungen' },
-  { value: 'checklist', label: 'Checklisten' },
-  { value: 'password', label: 'Passwörter' },
-  { value: 'recurring_task', label: 'Wiederkehrende Aufgaben' },
+  { value: 'project', label: t('projects.title') },
+  { value: 'invoice', label: t('contracts.invoices') },
+  { value: 'checklist', label: t('navigation.checklists') },
+  { value: 'password', label: t('passwords.title') },
+  { value: 'recurring_task', label: t('navigation.recurringTasks') },
   { value: 'template', label: 'Templates' },
   { value: 'tag', label: 'Tags' },
   { value: 'api_key', label: 'API-Keys' },
@@ -53,6 +54,7 @@ const isTerminatingSessions = ref(false)
 let metricsInterval = null
 
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 const totalPages = computed(() => Math.ceil(auditPagination.value.total / auditPagination.value.perPage))
@@ -82,75 +84,75 @@ function getActionLabel(action) {
     'user.login': 'Anmeldung',
     'user.logout': 'Abmeldung',
     'user.register': 'Registrierung',
-    'user.update': 'Benutzer aktualisiert',
-    'user.delete': 'Benutzer gelöscht',
-    'user.password_change': 'Passwort geändert',
+    'user.update': t('system.benutzerAktualisiert'),
+    'user.delete': t('system.benutzerGeloescht'),
+    'user.password_change': t('system.passwortGeaendert'),
     '2fa.enabled': '2FA aktiviert',
     '2fa.disabled': '2FA deaktiviert',
     // Lists
     'list.create': 'Liste erstellt',
     'list.update': 'Liste aktualisiert',
-    'list.delete': 'Liste gelöscht',
+    'list.delete': t('system.listeGeloescht'),
     // Documents
-    'document.create': 'Dokument erstellt',
-    'document.update': 'Dokument aktualisiert',
-    'document.delete': 'Dokument gelöscht',
-    'document.share': 'Dokument geteilt',
+    'document.create': t('system.dokumentErstellt'),
+    'document.update': t('system.dokumentAktualisiert'),
+    'document.delete': t('system.dokumentGeloescht'),
+    'document.share': t('system.dokumentGeteilt'),
     // Snippets
-    'snippet.create': 'Snippet erstellt',
-    'snippet.update': 'Snippet aktualisiert',
-    'snippet.delete': 'Snippet gelöscht',
+    'snippet.create': t('snippetsModule.snippetErstellt'),
+    'snippet.update': t('snippetsModule.snippetAktualisiert'),
+    'snippet.delete': t('snippetsModule.snippetGeloescht'),
     // Connections
     'connection.create': 'Verbindung erstellt',
     'connection.update': 'Verbindung aktualisiert',
-    'connection.delete': 'Verbindung gelöscht',
+    'connection.delete': t('connections.connectionDeleted'),
     // Kanban
     'kanban.create': 'Kanban-Board erstellt',
     'kanban.update': 'Kanban-Board aktualisiert',
-    'kanban.delete': 'Kanban-Board gelöscht',
+    'kanban.delete': t('system.kanbanboardGeloescht'),
     // Projects
-    'project.create': 'Projekt erstellt',
-    'project.update': 'Projekt aktualisiert',
-    'project.delete': 'Projekt gelöscht',
+    'project.create': t('system.projektErstellt'),
+    'project.update': t('system.projektAktualisiert'),
+    'project.delete': t('system.projektGeloescht'),
     // Invoices
-    'invoice.create': 'Rechnung erstellt',
-    'invoice.update': 'Rechnung aktualisiert',
-    'invoice.delete': 'Rechnung gelöscht',
+    'invoice.create': t('system.rechnungErstellt'),
+    'invoice.update': t('system.rechnungAktualisiert'),
+    'invoice.delete': t('system.rechnungGeloescht'),
     // Checklists
-    'checklist.create': 'Checkliste erstellt',
-    'checklist.update': 'Checkliste aktualisiert',
-    'checklist.delete': 'Checkliste gelöscht',
+    'checklist.create': t('checklists.checklistCreated'),
+    'checklist.update': t('system.checklisteAktualisiert'),
+    'checklist.delete': t('checklists.checklistDeleted'),
     // Passwords
-    'password.create': 'Passwort erstellt',
-    'password.update': 'Passwort aktualisiert',
-    'password.delete': 'Passwort gelöscht',
-    'password.view': 'Passwort angezeigt',
+    'password.create': t('system.passwortErstellt'),
+    'password.update': t('system.passwortAktualisiert'),
+    'password.delete': t('system.passwortGeloescht'),
+    'password.view': t('system.passwortAngezeigt'),
     // Recurring Tasks
-    'recurring_task.create': 'Wiederkehrende Aufgabe erstellt',
-    'recurring_task.update': 'Wiederkehrende Aufgabe aktualisiert',
-    'recurring_task.delete': 'Wiederkehrende Aufgabe gelöscht',
-    'recurring_task.process': 'Wiederkehrende Aufgabe ausgeführt',
+    'recurring_task.create': t('system.wiederkehrendeAufgabeErstellt'),
+    'recurring_task.update': t('system.wiederkehrendeAufgabeAktualisiert'),
+    'recurring_task.delete': t('system.wiederkehrendeAufgabeGeloescht'),
+    'recurring_task.process': t('system.wiederkehrendeAufgabeAusgefuehrt'),
     // Templates
     'template.create': 'Template erstellt',
     'template.update': 'Template aktualisiert',
-    'template.delete': 'Template gelöscht',
+    'template.delete': t('system.templateGeloescht'),
     'template.use': 'Template verwendet',
     // Tags
-    'tag.create': 'Tag erstellt',
-    'tag.update': 'Tag aktualisiert',
-    'tag.delete': 'Tag gelöscht',
-    'tag.merge': 'Tags zusammengeführt',
+    'tag.create': t('bookmarksModule.tagErstellt'),
+    'tag.update': t('system.tagAktualisiert'),
+    'tag.delete': t('bookmarksModule.tagGeloescht'),
+    'tag.merge': t('system.tagsZusammengefuehrt'),
     // API Keys
     'api_key.create': 'API-Key erstellt',
     'api_key.revoke': 'API-Key widerrufen',
-    'api_key.delete': 'API-Key gelöscht',
+    'api_key.delete': t('system.apikeyGeloescht'),
     // Export/Import
-    'export.create': 'Export durchgeführt',
-    'import.create': 'Import durchgeführt',
+    'export.create': t('system.exportDurchgefuehrt'),
+    'import.create': t('system.importDurchgefuehrt'),
     // System
     'cache.clear': 'Cache geleert',
     'sessions.terminate_all': 'Sessions beendet',
-    'system.settings_update': 'Systemeinstellungen geändert',
+    'system.settings_update': t('system.systemeinstellungenGeaendert'),
   }
   return labels[action] || action
 }
@@ -238,7 +240,7 @@ async function loadAuditLogs() {
 }
 
 async function clearCache() {
-  if (!await confirm({ message: 'Möchten Sie wirklich den Cache leeren?', type: 'warning', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: t('system.moechtenSieWirklichDenCacheLeeren'), type: 'warning', confirmText: t('common.confirm') })) return
 
   isClearingCache.value = true
   try {
@@ -246,14 +248,14 @@ async function clearCache() {
     toast.success('Cache wurde erfolgreich geleert')
     loadAuditLogs()
   } catch (err) {
-    toast.error('Fehler beim Leeren des Caches: ' + (err.response?.data?.error || err.message))
+    toast.error(t('system.fehlerBeimLeerenDesCaches') + (err.response?.data?.error || err.message))
   } finally {
     isClearingCache.value = false
   }
 }
 
 async function terminateSessions() {
-  if (!await confirm({ message: 'Möchten Sie wirklich alle Benutzer-Sessions beenden? Alle Benutzer werden abgemeldet.', type: 'warning', confirmText: 'Bestätigen' })) return
+  if (!await confirm({ message: t('system.systemmoechtensiewirklichallebenutzersessionsbeendenalle'), type: 'warning', confirmText: t('common.confirm') })) return
 
   isTerminatingSessions.value = true
   try {
@@ -261,7 +263,7 @@ async function terminateSessions() {
     toast.success(response.data.message || 'Sessions wurden erfolgreich beendet')
     loadAuditLogs()
   } catch (err) {
-    toast.error('Fehler beim Beenden der Sessions: ' + (err.response?.data?.error || err.message))
+    toast.error(t('system.fehlerBeimBeendenDerSessions') + (err.response?.data?.error || err.message))
   } finally {
     isTerminatingSessions.value = false
   }
@@ -299,7 +301,7 @@ onUnmounted(() => {
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-bold text-white">System</h1>
+      <h1 class="text-2xl font-bold text-white">{{ $t('navigation.system') }}</h1>
       <p class="text-gray-400 mt-1">Systemeinstellungen und -informationen (nur Owner)</p>
     </div>
 
@@ -392,7 +394,7 @@ onUnmounted(() => {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-blue-400">{{ metrics.database.users || 0 }}</p>
-          <p class="text-sm text-gray-400">Benutzer</p>
+          <p class="text-sm text-gray-400">{{ $t('navigation.users') }}</p>
         </div>
         <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-green-400">{{ metrics.database.lists || 0 }}</p>
@@ -400,7 +402,7 @@ onUnmounted(() => {
         </div>
         <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-yellow-400">{{ metrics.database.documents || 0 }}</p>
-          <p class="text-sm text-gray-400">Dokumente</p>
+          <p class="text-sm text-gray-400">{{ $t('documents.title') }}</p>
         </div>
         <div class="text-center p-4 bg-white/[0.04] rounded-xl">
           <p class="text-2xl font-bold text-purple-400">{{ metrics.database.audit_logs || 0 }}</p>
@@ -423,21 +425,21 @@ onUnmounted(() => {
             :disabled="isClearingCache"
             class="btn-danger"
           >
-            {{ isClearingCache ? 'Wird geleert...' : 'Cache leeren' }}
+            {{ isClearingCache ? $t('system.wirdGeleert') : 'Cache leeren' }}
           </button>
         </div>
         <div class="border-t border-white/[0.06]"></div>
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-white font-medium">Alle Sessions beenden</h3>
-            <p class="text-sm text-gray-400">Meldet alle Benutzer ab (außer Sie selbst)</p>
+            <h3 class="text-white font-medium">{{ $t('system.alleSessionsBeenden') }}</h3>
+            <p class="text-sm text-gray-400">{{ $t('system.systemmeldetallebenutzerabaussersieselbst') }}</p>
           </div>
           <button
             @click="terminateSessions"
-            :disabled="isTerminatingSessions"
+            :disabled=$t('system.isterminatingsessions')
             class="btn-danger"
           >
-            {{ isTerminatingSessions ? 'Wird beendet...' : 'Sessions beenden' }}
+            {{ isTerminatingSessions ? $t('system.wirdBeendet') : 'Sessions beenden' }}
           </button>
         </div>
       </div>
@@ -453,7 +455,7 @@ onUnmounted(() => {
       <!-- Filters -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-white/[0.03] rounded-xl">
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Entitätstyp</label>
+          <label class="block text-xs text-gray-400 mb-1">{{ $t('system.entitaetstyp') }}</label>
           <select
             v-model="auditFilters.entity_type"
             class="select"
@@ -464,7 +466,7 @@ onUnmounted(() => {
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Aktion enthält</label>
+          <label class="block text-xs text-gray-400 mb-1">{{ $t('system.aktionEnthaelt') }}</label>
           <input
             v-model="auditFilters.action"
             type="text"
@@ -483,14 +485,14 @@ onUnmounted(() => {
             @click="resetFilters"
             class="btn-secondary text-sm"
           >
-            Zurücksetzen
+            {{ $t('common.reset') }}
           </button>
         </div>
       </div>
 
       <div v-if="isLoadingLogs" class="text-gray-400 py-4">Lade Audit Logs...</div>
 
-      <div v-else-if="auditLogs.length === 0" class="text-gray-400 py-4">Keine Audit Logs vorhanden</div>
+      <div v-else-if="auditLogs.length === 0" class="text-gray-400 py-4">{{ $t('system.keineAuditLogsVorhanden') }}</div>
 
       <div v-else>
         <div class="overflow-x-auto">
@@ -499,9 +501,9 @@ onUnmounted(() => {
               <tr class="text-left text-gray-400 border-b border-white/[0.06]">
                 <th class="pb-3 font-medium w-8"></th>
                 <th class="pb-3 font-medium">Zeitpunkt</th>
-                <th class="pb-3 font-medium">Benutzer</th>
+                <th class="pb-3 font-medium">{{ $t('navigation.users') }}</th>
                 <th class="pb-3 font-medium">Aktion</th>
-                <th class="pb-3 font-medium">Entität</th>
+                <th class="pb-3 font-medium">{{ $t('system.entitaet') }}</th>
                 <th class="pb-3 font-medium">IP</th>
               </tr>
             </thead>
@@ -543,7 +545,7 @@ onUnmounted(() => {
                         <h4 class="text-sm font-medium text-white">Details</h4>
                         <div class="text-xs space-y-1">
                           <p><span class="text-gray-500">ID:</span> <span class="text-gray-300 font-mono">{{ log.id }}</span></p>
-                          <p><span class="text-gray-500">Entität ID:</span> <span class="text-gray-300 font-mono">{{ log.entity_id || '-' }}</span></p>
+                          <p><span class="text-gray-500">{{ $t('system.entitaetId') }}</span> <span class="text-gray-300 font-mono">{{ log.entity_id || '-' }}</span></p>
                           <p><span class="text-gray-500">User Agent:</span> <span class="text-gray-300">{{ log.user_agent || '-' }}</span></p>
                         </div>
                       </div>
@@ -554,7 +556,7 @@ onUnmounted(() => {
                       </div>
                       <!-- New Values -->
                       <div v-if="parseJsonSafe(log.new_values)" class="space-y-2">
-                        <h4 class="text-sm font-medium text-green-400">Neue Werte</h4>
+                        <h4 class="text-sm font-medium text-green-400">{{ $t('system.neueWerte') }}</h4>
                         <pre class="text-xs bg-white/[0.04] rounded p-2 overflow-x-auto text-gray-300">{{ JSON.stringify(parseJsonSafe(log.new_values), null, 2) }}</pre>
                       </div>
                     </div>

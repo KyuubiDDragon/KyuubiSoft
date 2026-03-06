@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -20,6 +21,7 @@ import ContractSignatureModal from '../components/ContractSignatureModal.vue'
 import ContractPdfPreview from '../components/ContractPdfPreview.vue'
 import ContractShareModal from '../components/ContractShareModal.vue'
 
+const { t } = useI18n()
 const uiStore = useUiStore()
 const { downloadPdf } = useContractHtml()
 
@@ -90,7 +92,7 @@ async function openContractDetail(contract) {
     selectedContract.value = response.data.data
     showDetailPanel.value = true
   } catch {
-    uiStore.showError('Fehler beim Laden des Vertrags')
+    uiStore.showError(t('contracts.errorLoadingContract'))
   }
 }
 
@@ -137,7 +139,7 @@ async function handleDownloadPdf(contract, editedHtml) {
     const res = await api.get(`/api/v1/contracts/${contract.id}`)
     await downloadPdf(res.data.data, editedHtml || undefined)
   } catch {
-    uiStore.showError('Fehler beim PDF-Download')
+    uiStore.showError(t('contracts.errorPdfDownload'))
   }
 }
 
@@ -185,34 +187,34 @@ const typeColors = {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Verträge</h1>
-        <p class="text-sm text-gray-400 mt-0.5">Verträge erstellen, verwalten und unterschreiben</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('contractsModule.title') }}</h1>
+        <p class="text-sm text-gray-400 mt-0.5">{{ $t('contractsModule.subtitle') }}</p>
       </div>
       <button
         @click="showWizard = true"
         class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-500 transition-colors"
       >
         <PlusIcon class="w-4 h-4" />
-        Neuer Vertrag
+        {{ $t('contractsModule.newContract') }}
       </button>
     </div>
 
     <!-- Stats Cards -->
     <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Gesamt</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">{{ $t('contracts.total') }}</div>
         <div class="text-2xl font-bold text-white mt-1">{{ stats.total_contracts || 0 }}</div>
       </div>
       <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Aktiv</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">{{ $t('contracts.active') }}</div>
         <div class="text-2xl font-bold text-green-400 mt-1">{{ stats.active || 0 }}</div>
       </div>
       <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Entwürfe</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">{{ $t('contracts.drafts') }}</div>
         <div class="text-2xl font-bold text-gray-300 mt-1">{{ stats.draft || 0 }}</div>
       </div>
       <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.08] transition-colors">
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Aktiver Vertragswert</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">{{ $t('contracts.activeContractValue') }}</div>
         <div class="text-2xl font-bold text-primary-400 mt-1">{{ formatCurrency(stats.total_active_value) }}</div>
       </div>
     </div>
@@ -224,37 +226,37 @@ const typeColors = {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Suchen..."
+          :placeholder="$t('common.search') + '...'"
           class="input pl-9 text-sm"
         />
       </div>
       <select v-model="statusFilter" class="input w-40 text-sm">
-        <option value="">Alle Status</option>
+        <option value="">{{ $t('contracts.allStatuses') }}</option>
         <option v-for="s in statusOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
       <select v-model="typeFilter" class="input w-40 text-sm">
-        <option value="">Alle Typen</option>
+        <option value="">{{ $t('contracts.allTypes') }}</option>
         <option v-for="(label, key) in contractTypeLabels" :key="key" :value="key">{{ label }}</option>
       </select>
     </div>
 
     <!-- Contracts Table -->
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
-      <div v-if="isLoading" class="p-12 text-center text-gray-500">Lade Verträge...</div>
+      <div v-if="isLoading" class="p-12 text-center text-gray-500">{{ $t('contracts.loadingContracts') }}</div>
       <div v-else-if="filteredContracts.length === 0" class="p-12 text-center text-gray-500">
-        <p class="text-lg font-medium">Keine Verträge gefunden</p>
-        <p class="text-sm mt-1">Erstellen Sie Ihren ersten Vertrag mit dem Button oben.</p>
+        <p class="text-lg font-medium">{{ $t('contracts.noContractsFound') }}</p>
+        <p class="text-sm mt-1">{{ $t('contracts.createFirstContract') }}</p>
       </div>
       <table v-else class="w-full">
         <thead>
           <tr class="text-left text-xs text-gray-400 uppercase tracking-wider border-b border-white/[0.06]">
-            <th class="px-4 py-3 font-semibold">Vertrag</th>
-            <th class="px-4 py-3 font-semibold">Typ</th>
-            <th class="px-4 py-3 font-semibold">Kunde</th>
-            <th class="px-4 py-3 font-semibold">Status</th>
-            <th class="px-4 py-3 font-semibold text-right">Wert</th>
-            <th class="px-4 py-3 font-semibold">Laufzeit</th>
-            <th class="px-4 py-3 font-semibold text-right">Aktionen</th>
+            <th class="px-4 py-3 font-semibold">{{ $t('contracts.contract') }}</th>
+            <th class="px-4 py-3 font-semibold">{{ $t('contracts.type') }}</th>
+            <th class="px-4 py-3 font-semibold">{{ $t('contracts.client') }}</th>
+            <th class="px-4 py-3 font-semibold">{{ $t('common.status') }}</th>
+            <th class="px-4 py-3 font-semibold text-right">{{ $t('contracts.value') }}</th>
+            <th class="px-4 py-3 font-semibold">{{ $t('contracts.duration') }}</th>
+            <th class="px-4 py-3 font-semibold text-right">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -288,20 +290,20 @@ const typeColors = {
             <td class="px-4 py-3 text-sm text-gray-400">
               {{ formatDate(contract.start_date) }}
               <span v-if="contract.end_date"> — {{ formatDate(contract.end_date) }}</span>
-              <span v-else class="text-gray-500 text-xs"> (unbefr.)</span>
+              <span v-else class="text-gray-500 text-xs"> ({{ $t('contracts.unlimited') }})</span>
             </td>
             <td class="px-4 py-3 text-right" @click.stop>
               <div class="flex items-center justify-end gap-1">
-                <button @click="openPdfPreview(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="Vorschau">
+                <button @click="openPdfPreview(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" :title="$t('contracts.preview')">
                   <EyeIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDownloadPdf(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="PDF">
+                <button @click="handleDownloadPdf(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" :title="$t('contracts.downloadPdf')">
                   <ArrowDownTrayIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDuplicate(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="Duplizieren">
+                <button @click="handleDuplicate(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" :title="$t('contracts.duplicate')">
                   <DocumentDuplicateIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" title="Löschen">
+                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" :title="$t('common.delete')">
                   <TrashIcon class="w-4 h-4" />
                 </button>
               </div>

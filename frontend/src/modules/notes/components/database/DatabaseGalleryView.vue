@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -26,6 +27,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select-row', 'add-row', 'change-image-property', 'change-card-size'])
+
+const { t } = useI18n()
 
 // Get title property
 const titleProperty = computed(() => {
@@ -77,8 +80,8 @@ const imageHeightClass = computed(() => {
 
 // Get row title
 function getRowTitle(row) {
-  if (!titleProperty.value) return 'Untitled'
-  return row.values?.[titleProperty.value.id] || 'Untitled'
+  if (!titleProperty.value) return t('notesModule.database.untitled')
+  return row.values?.[titleProperty.value.id] || t('notesModule.database.untitled')
 }
 
 // Get row image
@@ -147,13 +150,13 @@ function getPlaceholderGradient(index) {
       <div class="flex items-center gap-2">
         <!-- Image property selector -->
         <div v-if="imageProperties.length > 0" class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">Bild:</span>
+          <span class="text-xs text-gray-500">{{ $t('notesModule.database.image') }}:</span>
           <select
             :value="activeImageProperty?.id"
             @change="emit('change-image-property', $event.target.value)"
             class="select"
           >
-            <option value="">Kein Bild</option>
+            <option value="">{{ $t('notesModule.database.noImage') }}</option>
             <option v-for="prop in imageProperties" :key="prop.id" :value="prop.id">
               {{ prop.name }}
             </option>
@@ -171,7 +174,7 @@ function getPlaceholderGradient(index) {
               cardSize === 'small' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
-            Klein
+            {{ $t('notesModule.database.sizeSmall') }}
           </button>
           <button
             @click="emit('change-card-size', 'medium')"
@@ -180,7 +183,7 @@ function getPlaceholderGradient(index) {
               cardSize === 'medium' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
-            Mittel
+            {{ $t('notesModule.database.sizeMedium') }}
           </button>
           <button
             @click="emit('change-card-size', 'large')"
@@ -189,7 +192,7 @@ function getPlaceholderGradient(index) {
               cardSize === 'large' ? 'bg-white/[0.08] text-white' : 'text-gray-400 hover:text-white'
             ]"
           >
-            Groß
+            {{ $t('notesModule.database.sizeLarge') }}
           </button>
         </div>
       </div>
@@ -268,7 +271,7 @@ function getPlaceholderGradient(index) {
         style="min-height: 150px"
       >
         <PlusIcon class="w-8 h-8 mb-2" />
-        <span class="text-sm">Neu hinzufügen</span>
+        <span class="text-sm">{{ $t('notesModule.database.addNew') }}</span>
       </button>
     </div>
 
@@ -278,12 +281,12 @@ function getPlaceholderGradient(index) {
       class="text-center py-12 text-gray-500"
     >
       <div class="text-5xl mb-4">🖼️</div>
-      <p class="mb-2">Noch keine Einträge</p>
+      <p class="mb-2">{{ $t('notesModule.database.noEntriesYet') }}</p>
       <button
         @click="emit('add-row')"
         class="text-primary-400 hover:text-primary-300 transition-colors"
       >
-        Ersten Eintrag erstellen
+        {{ $t('notesModule.database.createFirstEntry') }}
       </button>
     </div>
   </div>

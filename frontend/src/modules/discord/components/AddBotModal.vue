@@ -8,6 +8,8 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const props = defineProps({
   show: Boolean
@@ -59,7 +61,7 @@ async function validateToken() {
     validatedBot.value = result
     step.value = 3
   } catch (error) {
-    validationError.value = error.response?.data?.message || 'Ungültiger Bot Token'
+    validationError.value = error.response?.data?.message || t('discordModule.invalidBotToken')
   } finally {
     isValidating.value = false
   }
@@ -76,11 +78,11 @@ async function saveBot() {
       bot_token: botToken.value.trim(),
     })
 
-    uiStore.showSuccess('Discord Bot erfolgreich hinzugefügt!')
+    uiStore.showSuccess(t('discordModule.botAddedSuccess'))
     emit('added', bot)
     close()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen des Bots')
+    uiStore.showError(error.response?.data?.message || t('discordModule.errorAddingBot'))
   } finally {
     isAdding.value = false
   }
@@ -94,7 +96,7 @@ async function saveBot() {
         <!-- Header -->
         <div class="p-6 border-b border-white/[0.06]">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-white">Discord Bot hinzufügen</h2>
+            <h2 class="text-xl font-semibold text-white">{{ $t('discordModule.addBot') }}</h2>
             <button @click="close" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
             </button>
@@ -113,21 +115,21 @@ async function saveBot() {
         <div class="p-6 space-y-4">
           <!-- Step 1: Instructions -->
           <div v-if="step === 1">
-            <h3 class="text-lg font-medium text-white mb-4">Bot im Discord Developer Portal erstellen</h3>
+            <h3 class="text-lg font-medium text-white mb-4">{{ $t('discordModule.createBotInPortal') }}</h3>
 
             <div class="bg-white/[0.04] rounded-xl p-4 space-y-3">
               <ol class="list-decimal list-inside space-y-2 text-gray-300">
-                <li>Öffne das <a href="https://discord.com/developers/applications" target="_blank" class="text-primary-400 hover:text-primary-300">Discord Developer Portal</a></li>
-                <li>Klicke auf "New Application" und gib einen Namen ein</li>
-                <li>Gehe zu "Bot" in der linken Seitenleiste</li>
-                <li>Klicke "Add Bot" → "Yes, do it!"</li>
-                <li>Aktiviere unter "Privileged Gateway Intents":
+                <li>{{ $t('discordModule.openThe') }} <a href="https://discord.com/developers/applications" target="_blank" class="text-primary-400 hover:text-primary-300">Discord Developer Portal</a></li>
+                <li>{{ $t('discordModule.clickNewApp') }}</li>
+                <li>{{ $t('discordModule.goToBot') }}</li>
+                <li>{{ $t('discordModule.clickAddBot') }}</li>
+                <li>{{ $t('discordModule.enableIntents') }}
                   <ul class="list-disc list-inside ml-4 mt-1 text-gray-400 text-sm">
-                    <li>Message Content Intent (für Nachrichteninhalt)</li>
-                    <li>Server Members Intent (optional, für Mitgliederliste)</li>
+                    <li>{{ $t('discordModule.messageContentIntent') }}</li>
+                    <li>{{ $t('discordModule.serverMembersIntent') }}</li>
                   </ul>
                 </li>
-                <li>Klicke "Reset Token" um den Bot Token zu kopieren</li>
+                <li>{{ $t('discordModule.clickResetToken') }}</li>
               </ol>
             </div>
 
@@ -141,7 +143,7 @@ async function saveBot() {
 
           <!-- Step 2: Enter Credentials -->
           <div v-if="step === 2">
-            <h3 class="text-lg font-medium text-white mb-4">Bot Credentials eingeben</h3>
+            <h3 class="text-lg font-medium text-white mb-4">{{ $t('discordModule.enterCredentials') }}</h3>
 
             <div class="space-y-4">
               <div>
@@ -152,7 +154,7 @@ async function saveBot() {
                   v-model="clientId"
                   type="text"
                   class="input w-full"
-                  placeholder="z.B. 123456789012345678"
+                  :placeholder="$t('discordModule.clientIdPlaceholder')"
                 />
                 <p class="text-xs text-gray-500 mt-1">
                   Findest du unter "General Information" → "Application ID"
@@ -167,7 +169,7 @@ async function saveBot() {
                   v-model="clientSecret"
                   type="password"
                   class="input w-full"
-                  placeholder="Für OAuth2 Features"
+                  :placeholder="$t('discordModule.forOAuth2')"
                 />
               </div>
 
@@ -179,7 +181,7 @@ async function saveBot() {
                   v-model="botToken"
                   type="password"
                   class="input w-full"
-                  placeholder="Dein Bot Token..."
+                  :placeholder="$t('discordModule.yourBotToken')"
                 />
                 <p class="text-xs text-gray-500 mt-1">
                   Findest du unter "Bot" → "Token"
@@ -207,7 +209,7 @@ async function saveBot() {
 
               <div class="flex items-center justify-center gap-2 text-green-400 mb-2">
                 <CheckCircleIcon class="w-5 h-5" />
-                <span class="font-medium">Bot erfolgreich validiert!</span>
+                <span class="font-medium">{{ $t('discordModule.botValidated') }}</span>
               </div>
 
               <h3 class="text-xl font-bold text-white">
@@ -229,12 +231,12 @@ async function saveBot() {
             @click="step--"
             class="btn-secondary"
           >
-            Zurück
+            {{ $t('common.back') }}
           </button>
           <div v-else></div>
 
           <div class="flex gap-3">
-            <button @click="close" class="btn-secondary">Abbrechen</button>
+            <button @click="close" class="btn-secondary">{{ $t('common.cancel') }}</button>
 
             <!-- Step 1: Continue -->
             <button v-if="step === 1" @click="step = 2" class="btn-primary">
@@ -249,7 +251,7 @@ async function saveBot() {
               class="btn-primary"
             >
               <ArrowPathIcon v-if="isValidating" class="w-5 h-5 mr-2 animate-spin" />
-              Validieren
+              {{ $t('discordModule.validate') }}
             </button>
 
             <!-- Step 3: Save -->
@@ -260,7 +262,7 @@ async function saveBot() {
               class="btn-primary"
             >
               <ArrowPathIcon v-if="isAdding" class="w-5 h-5 mr-2 animate-spin" />
-              Bot hinzufügen
+              {{ $t('discordModule.botHinzufuegen') }}
             </button>
           </div>
         </div>

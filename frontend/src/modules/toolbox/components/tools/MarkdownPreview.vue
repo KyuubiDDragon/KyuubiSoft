@@ -199,7 +199,7 @@ console.log("Hello!");
       </div>
       <div class="flex gap-2">
         <button @click="loadSample" class="text-xs text-gray-400 hover:text-white">Beispiel</button>
-        <button @click="clearAll" class="text-xs text-gray-400 hover:text-white">Löschen</button>
+        <button @click="clearAll" class="text-xs text-gray-400 hover:text-white">{{ $t('common.delete') }}</button>
         <button @click="copyMarkdown" class="text-xs text-primary-400 hover:text-primary-300">MD kopieren</button>
         <button @click="copyHtml" class="text-xs text-primary-400 hover:text-primary-300">HTML kopieren</button>
       </div>
@@ -232,8 +232,8 @@ console.log("Hello!");
     <details class="text-sm">
       <summary class="text-gray-400 cursor-pointer hover:text-white">Markdown Kurzreferenz</summary>
       <div class="mt-2 p-3 bg-white/[0.04] rounded-lg grid grid-cols-2 gap-2 text-xs font-mono">
-        <div><span class="text-gray-500"># </span>Überschrift 1</div>
-        <div><span class="text-gray-500">## </span>Überschrift 2</div>
+        <div><span class="text-gray-500"># </span>{{ $t('toolbox.ueberschrift1') }}</div>
+        <div><span class="text-gray-500">## </span>{{ $t('toolbox.ueberschrift2') }}</div>
         <div><span class="text-gray-500">**</span>fett<span class="text-gray-500">**</span></div>
         <div><span class="text-gray-500">*</span>kursiv<span class="text-gray-500">*</span></div>
         <div><span class="text-gray-500">- </span>Liste</div>

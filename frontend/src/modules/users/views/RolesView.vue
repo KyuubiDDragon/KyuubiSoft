@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -15,6 +16,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const roles = ref([])
@@ -55,7 +57,7 @@ async function loadRoles() {
     const response = await api.get('/api/v1/roles')
     roles.value = response.data.data || []
   } catch (err) {
-    error.value = 'Fehler beim Laden der Rollen'
+    error.value = t('users.usersfehlerbeimladenderrollen')
     console.error(err)
   } finally {
     isLoading.value = false
@@ -128,21 +130,21 @@ async function saveRole() {
         description: formData.value.description,
         hierarchy_level: formData.value.hierarchy_level,
       })
-      uiStore.showSuccess('Rolle erfolgreich aktualisiert')
+      uiStore.showSuccess(t('users.rolleErfolgreichAktualisiert'))
     } else {
       await api.post('/api/v1/roles', {
         name: formData.value.name,
         description: formData.value.description,
         hierarchy_level: formData.value.hierarchy_level,
       })
-      uiStore.showSuccess('Rolle erfolgreich erstellt')
+      uiStore.showSuccess(t('users.rolleErfolgreichErstellt'))
     }
 
     closeModals()
     await loadRoles()
   } catch (err) {
     console.error('Save error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Speichern'
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern')
   } finally {
     isSaving.value = false
   }
@@ -154,12 +156,12 @@ async function deleteRole() {
   isSaving.value = true
   try {
     await api.delete(`/api/v1/roles/${selectedRole.value.id}`)
-    uiStore.showSuccess('Rolle erfolgreich gelöscht')
+    uiStore.showSuccess(t('users.rolleErfolgreichGeloescht'))
     closeModals()
     await loadRoles()
   } catch (err) {
     console.error('Delete error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Löschen'
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.fehlerBeimLoeschen')
   } finally {
     isSaving.value = false
   }
@@ -188,7 +190,7 @@ async function togglePermission(permissionName) {
     }
   } catch (err) {
     console.error('Toggle permission error:', err)
-    uiStore.showError(err.response?.data?.error || 'Fehler beim Ändern der Berechtigung')
+    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimaendernderberechtigung'))
   }
 }
 
@@ -230,19 +232,19 @@ const filteredPermissions = computed(() => {
 
 function getModuleLabel(module) {
   const labels = {
-    users: 'Benutzer',
+    users: t('navigation.users'),
     docker: 'Docker',
     tickets: 'Tickets',
-    backups: 'Backups',
+    backups: t('backups.backups'),
     kanban: 'Kanban',
     storage: 'Speicher',
-    passwords: 'Passwörter',
-    wiki: 'Wiki',
-    notes: 'Notizen',
-    calendar: 'Kalender',
+    passwords: t('passwords.title'),
+    wiki: t('users.wiki'),
+    notes: t('passwords.notes'),
+    calendar: t('navigation.calendar'),
     logs: 'Logs',
     mails: 'Mails',
-    projects: 'Projekte',
+    projects: t('projects.title'),
     settings: 'Einstellungen',
     features: 'Features',
     general: 'Allgemein',
@@ -282,8 +284,8 @@ function canDeleteRole(role) {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Rollen & Gruppen</h1>
-        <p class="text-gray-400 mt-1">Verwalte Rollen und deren Berechtigungen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('users.usersrollengruppen') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('users.usersverwalterollenundderenberechtigungen') }}</p>
       </div>
       <button
         @click="openCreateModal"
@@ -354,7 +356,7 @@ function canDeleteRole(role) {
             v-if="canEditRole(role)"
             @click="openEditModal(role)"
             class="p-2 text-primary-400 hover:text-primary-300 hover:bg-white/[0.04] rounded-lg transition-colors"
-            title="Bearbeiten"
+            :title="$t('common.edit')"
           >
             <PencilIcon class="w-5 h-5" />
           </button>
@@ -362,7 +364,7 @@ function canDeleteRole(role) {
             v-if="canDeleteRole(role)"
             @click="openDeleteModal(role)"
             class="p-2 text-red-400 hover:text-red-300 hover:bg-white/[0.04] rounded-lg transition-colors"
-            title="Löschen"
+            :title="$t('common.delete')"
           >
             <TrashIcon class="w-5 h-5" />
           </button>
@@ -384,7 +386,7 @@ function canDeleteRole(role) {
           <!-- Modal Header -->
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ isEditing ? 'Rolle bearbeiten' : 'Neue Rolle erstellen' }}
+              {{ isEditing ? $t('users.rolleBearbeiten') : $t('users.neueRolleErstellen') }}
             </h3>
             <button @click="closeModals" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -408,17 +410,17 @@ function canDeleteRole(role) {
                 class="input disabled:opacity-50"
                 placeholder="z.B. moderator"
               />
-              <p class="mt-1 text-xs text-gray-500">Nur Kleinbuchstaben, Zahlen, Unterstriche und Bindestriche</p>
+              <p class="mt-1 text-xs text-gray-500">{{ $t('users.nurKleinbuchstabenZahlenUnterstricheUndBindestriche') }}</p>
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
               <textarea
                 v-model="formData.description"
                 rows="2"
                 class="input"
-                placeholder="Beschreibung der Rolle..."
+                :placeholder="$t('users.usersbeschreibungderrolle')"
               ></textarea>
             </div>
 
@@ -438,7 +440,7 @@ function canDeleteRole(role) {
                 <span>Niedrig (1)</span>
                 <span>Hoch (89)</span>
               </div>
-              <p class="mt-1 text-xs text-gray-500">Höhere Ebene = mehr Autorität. Owner (100) und Admin (90) sind reserviert.</p>
+              <p class="mt-1 text-xs text-gray-500">{{ $t('users.hoehereEbeneMehrAutoritaetOwner100Und') }}</p>
             </div>
           </div>
 
@@ -455,7 +457,7 @@ function canDeleteRole(role) {
               :disabled="isSaving"
               class="btn-primary disabled:opacity-50"
             >
-              {{ isSaving ? 'Speichern...' : (isEditing ? 'Speichern' : 'Erstellen') }}
+              {{ isSaving ? $t('common.saving') : (isEditing ? $t('common.save') : $t('common.create')) }}
             </button>
           </div>
         </div>
@@ -470,11 +472,11 @@ function canDeleteRole(role) {
       >
         <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">Rolle löschen</h3>
+            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.rolleLoeschen') }}</h3>
             <p class="text-gray-400">
               Bist du sicher, dass du die Rolle
               <span class="text-white font-medium">{{ selectedRole?.name }}</span>
-              löschen möchtest?
+              {{ $t('users.loeschenMoechtest') }}
             </p>
 
             <div v-if="formErrors.general" class="mt-4 bg-red-900/50 border border-red-700 rounded-lg p-3">
@@ -493,7 +495,7 @@ function canDeleteRole(role) {
               :disabled="isSaving"
               class="btn-danger disabled:opacity-50"
             >
-              {{ isSaving ? 'Löschen...' : 'Löschen' }}
+              {{ isSaving ? $t('users.loeschen') : $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -546,7 +548,7 @@ function canDeleteRole(role) {
               <input
                 v-model="permissionSearch"
                 type="text"
-                placeholder="Berechtigungen suchen..."
+                placeholder=$t('users.berechtigungenSuchen')
                 class="input"
               />
             </div>
@@ -614,7 +616,7 @@ function canDeleteRole(role) {
               @click="closeModals"
               class="btn-secondary"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>

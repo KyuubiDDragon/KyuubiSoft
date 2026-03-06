@@ -205,7 +205,7 @@ const typeIcons = {
         <!-- Font Size & Weight -->
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-300">Größe</label>
+            <label class="block text-sm font-medium text-gray-300">{{ $t('backupsModule.groesse') }}</label>
             <div class="flex items-center gap-2">
               <input
                 v-model.number="localFontSize"

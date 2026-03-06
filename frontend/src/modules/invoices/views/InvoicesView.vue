@@ -137,11 +137,11 @@ async function handleStatusChange(invoice, status) {
 async function handleDownloadPdf(invoice, editedHtml) {
   pdfGenerating.value = invoice.id
   const missing = []
-  if (!invoice.sender_name && !invoice.sender_company) missing.push('Absender-Name')
-  if (!invoice.sender_address) missing.push('Absender-Adresse')
-  if (!invoice.items?.length) missing.push('mind. eine Position')
+  if (!invoice.sender_name && !invoice.sender_company) missing.push(t('invoices.senderName'))
+  if (!invoice.sender_address) missing.push(t('invoices.senderAddress'))
+  if (!invoice.items?.length) missing.push(t('invoices.atLeastOneItem'))
   if (missing.length) {
-    uiStore.showError(`PDF nicht möglich – fehlend: ${missing.join(', ')}`)
+    uiStore.showError(`${t('invoices.pdfNotPossible')}: ${missing.join(', ')}`)
     pdfGenerating.value = null
     return
   }
@@ -154,7 +154,7 @@ async function handleDownloadPdf(invoice, editedHtml) {
     }
     await downloadPdf(fullInvoice, invoiceSenderSettings.value, editedHtml || undefined)
   } catch {
-    uiStore.showError('PDF konnte nicht erstellt werden')
+    uiStore.showError(t('invoices.pdfCreateError'))
   } finally {
     pdfGenerating.value = null
   }
@@ -230,7 +230,7 @@ async function createFromTimeEntries() {
     await api.post('/api/v1/invoices/from-time', { ...payload, time_entry_ids: billableIds })
     showTimeEntriesModal.value = false
     await loadData()
-    uiStore.showSuccess(`Rechnung aus ${billableIds.length} Zeiteinträgen erstellt`)
+    uiStore.showSuccess(`${t('invoices.invoiceFromTimeEntries')} ${billableIds.length} ${t('invoices.timeEntries')}`)
   } catch (err) {
     toast.error('Fehler: ' + (err?.response?.data?.message ?? err?.message ?? 'Unbekannter Fehler'))
   }
@@ -243,8 +243,8 @@ async function createFromTimeEntries() {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Rechnungen</h1>
-        <p class="text-gray-400 mt-1">Erstelle und verwalte deine Rechnungen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('invoices.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('invoices.subtitle') }}</p>
       </div>
       <div class="flex flex-wrap gap-2 items-center">
         <!-- Kleinunternehmer toggle -->
@@ -261,15 +261,15 @@ async function createFromTimeEntries() {
         </button>
         <button @click="openCreateClient" class="btn-secondary">
           <UserIcon class="w-4 h-4 mr-2" />
-          Neuer Kunde
+          {{ $t('invoices.newClient') }}
         </button>
         <button @click="openTimeEntriesModal" class="btn-secondary">
           <ClockIcon class="w-4 h-4 mr-2" />
-          Aus Zeiteinträgen
+          {{ $t('invoices.fromTimeEntries') }}
         </button>
         <button @click="openCreateInvoice" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Neue Rechnung
+          {{ $t('invoices.newInvoice') }}
         </button>
       </div>
     </div>
@@ -288,7 +288,7 @@ async function createFromTimeEntries() {
       v-if="kleinunternehmerMode"
       class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300 space-y-1"
     >
-      <p><span class="font-semibold">Kleinunternehmer-Modus aktiv (§ 19 UStG):</span> Rechnungen ohne MwSt.</p>
+      <p><span class="font-semibold">$t('invoices.kleinunternehmerActive') + ':' </span> {{ $t('invoices.noVat') }}</p>
       <p class="text-amber-400/70 text-xs">Grenzen 2025: Vorjahresumsatz ≤ 25.000 € · Laufendes Jahr voraussichtlich ≤ 100.000 €</p>
     </div>
 
@@ -301,7 +301,7 @@ async function createFromTimeEntries() {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ stats.total_invoices || 0 }}</p>
-            <p class="text-xs text-gray-500">Rechnungen</p>
+            <p class="text-xs text-gray-500">{{ $t('invoices.invoices') }}</p>
           </div>
         </div>
       </div>
@@ -312,7 +312,7 @@ async function createFromTimeEntries() {
           </div>
           <div>
             <p class="text-xl font-bold text-green-400">{{ formatCurrency(stats.total_paid) }}</p>
-            <p class="text-xs text-gray-500">Bezahlt</p>
+            <p class="text-xs text-gray-500">{{ $t('invoices.paid') }}</p>
           </div>
         </div>
       </div>
@@ -334,7 +334,7 @@ async function createFromTimeEntries() {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ clients.length }}</p>
-            <p class="text-xs text-gray-500">Kunden</p>
+            <p class="text-xs text-gray-500">{{ $t('invoices.clients') }}</p>
           </div>
         </div>
       </div>
@@ -343,7 +343,7 @@ async function createFromTimeEntries() {
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-white/[0.06]">
       <button
-        v-for="tab in [{ id: 'invoices', label: 'Rechnungen' }, { id: 'clients', label: 'Kunden' }]"
+        v-for="tab in [{ id: 'invoices', label: 'Rechnungen' }, { id: 'clients', label: $t('invoices.clients') }]"
         :key="tab.id"
         @click="activeTab = tab.id"
         class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
@@ -397,13 +397,13 @@ async function createFromTimeEntries() {
         <table class="w-full">
           <thead class="bg-white/[0.03]">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nr.</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kunde</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Datum</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.number') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.client') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ $t('invoices.date') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Fällig</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Betrag</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Aktionen</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.amount') }}</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.actions') }}</th>
             </tr>
           </thead>
           <TransitionGroup tag="tbody" name="list" class="divide-y divide-white/[0.06]">
@@ -425,7 +425,7 @@ async function createFromTimeEntries() {
                       'bg-red-500/20 text-red-300': invoice.document_type === 'credit_note',
                       'bg-orange-500/20 text-orange-300': invoice.document_type === 'reminder',
                     }"
-                  >{{ { proforma: 'Proforma', quote: 'Angebot', credit_note: 'Gutschrift', reminder: 'Mahnung' }[invoice.document_type] }}</span>
+                  >{{ { proforma: $t('invoices.proforma'), quote: $t('invoices.quote'), credit_note: $t('invoices.creditNote'), reminder: $t('invoices.reminder') }[invoice.document_type] }}</span>
                 </div>
               </td>
               <td class="px-4 py-3">
@@ -454,7 +454,7 @@ async function createFromTimeEntries() {
                   <button
                     @click="openInvoiceDetail(invoice)"
                     class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg"
-                    title="Details anzeigen"
+                    :title="$t('invoices.showDetails')"
                   >
                     <EyeIcon class="w-4 h-4" />
                   </button>
@@ -462,7 +462,7 @@ async function createFromTimeEntries() {
                     @click="handleDownloadPdf(invoice)"
                     class="p-1.5 hover:bg-white/[0.04] rounded-lg"
                     :class="pdfGenerating === invoice.id ? 'text-primary-400 animate-pulse' : 'text-gray-400 hover:text-primary-400'"
-                    title="PDF herunterladen"
+                    :title="$t('invoices.downloadPdf')"
                     :disabled="pdfGenerating === invoice.id"
                   >
                     <ArrowDownTrayIcon class="w-4 h-4" />
@@ -471,7 +471,7 @@ async function createFromTimeEntries() {
                     v-if="invoice.status === 'draft'"
                     @click="handleStatusChange(invoice, 'sent')"
                     class="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-white/[0.04] rounded-lg"
-                    title="Als gesendet markieren"
+                    :title="$t('invoices.markSent')"
                   >
                     <PaperAirplaneIcon class="w-4 h-4" />
                   </button>
@@ -479,7 +479,7 @@ async function createFromTimeEntries() {
                     v-if="invoice.status === 'sent'"
                     @click="handleStatusChange(invoice, 'paid')"
                     class="p-1.5 text-gray-400 hover:text-green-400 hover:bg-white/[0.04] rounded-lg"
-                    title="Als bezahlt markieren"
+                    :title="$t('invoices.markPaid')"
                   >
                     <CheckIcon class="w-4 h-4" />
                   </button>
@@ -493,14 +493,14 @@ async function createFromTimeEntries() {
                   <button
                     @click="duplicateInvoice(invoice)"
                     class="p-1.5 text-gray-400 hover:text-purple-400 hover:bg-white/[0.04] rounded-lg"
-                    title="Duplizieren"
+                    :title="$t('invoices.duplicate')"
                   >
                     <DocumentDuplicateIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="handleDeleteInvoice(invoice)"
                     class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg"
-                    title="Löschen"
+                    {{ $t('invoicesModule.titleloeschen') }}
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -518,11 +518,11 @@ async function createFromTimeEntries() {
           {{ searchQuery || statusFilter ? 'Keine Ergebnisse' : 'Noch keine Rechnungen' }}
         </h3>
         <p class="text-gray-500 mb-6">
-          {{ searchQuery || statusFilter ? 'Versuche andere Suchkriterien.' : 'Erstelle deine erste Rechnung.' }}
+          {{ searchQuery || statusFilter ? $t('invoices.tryOtherCriteria') : 'Erstelle deine erste Rechnung.' }}
         </p>
         <button v-if="!searchQuery && !statusFilter" @click="openCreateInvoice" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Rechnung erstellen
+          {{ $t('invoices.createInvoice') }}
         </button>
       </div>
 
@@ -580,7 +580,7 @@ async function createFromTimeEntries() {
           </div>
 
           <div class="flex items-center justify-between pt-3 border-t border-white/[0.06] text-sm">
-            <span class="text-gray-600">{{ client.invoice_count || 0 }} Rechnungen</span>
+            <span class="text-gray-600">{{ client.invoice_count || 0 }} {{ $t('invoices.invoices') }}</span>
             <span class="text-green-400 font-semibold">{{ formatCurrency(client.total_paid) }}</span>
           </div>
         </div>
@@ -588,11 +588,11 @@ async function createFromTimeEntries() {
 
       <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-16 text-center">
         <UserIcon class="w-16 h-16 mx-auto text-gray-700 mb-4" />
-        <h3 class="text-lg font-semibold text-white mb-2">Keine Kunden</h3>
-        <p class="text-gray-500 mb-6">Füge deinen ersten Kunden hinzu.</p>
+        <h3 class="text-lg font-semibold text-white mb-2">{{ $t('invoices.noClients') }}</h3>
+        <p class="text-gray-500 mb-6">{{ $t('invoices.addFirstClient') }}</p>
         <button @click="openCreateClient" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Kunde hinzufügen
+          {{ $t('invoices.addClient') }}
         </button>
       </div>
     </template>
@@ -658,41 +658,41 @@ async function createFromTimeEntries() {
               class="modal w-full max-w-md"
             >
               <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-                <h3 class="text-lg font-bold text-white">Rechnung aus Zeiteinträgen</h3>
+                <h3 class="text-lg font-bold text-white">{{ $t('invoices.invoiceFromTimeEntriesTitle') }}</h3>
                 <button @click="showTimeEntriesModal = false" class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg">
                   <XMarkIcon class="w-5 h-5" />
                 </button>
               </div>
               <div class="p-6 space-y-4">
                 <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-sm text-blue-300">
-                  Alle abrechenbaren, noch nicht abgerechneten Zeiteinträge des gewählten Projekts werden importiert.
+                  {{ $t('invoices.timeEntriesHint') }}
                 </div>
                 <div>
-                  <label class="label">Projekt</label>
+                  <label class="label">{{ $t('invoices.project') }}</label>
                   <select v-model="timeEntriesForm.project_id" class="input">
-                    <option :value="null">Kein Projekt ausgewählt</option>
+                    <option :value="null">{{ $t('invoices.noProject') }}</option>
                     <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Kunde</label>
+                  <label class="label">{{ $t('invoices.client') }}</label>
                   <select v-model="timeEntriesForm.client_id" class="input">
-                    <option :value="null">Kein Kunde</option>
+                    <option :value="null">{{ $t('invoices.noClient') }}</option>
                     <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Stundensatz (€) <span class="text-gray-500 font-normal">— überschreibt Eintragswert</span></label>
+                  <label class="label">{{ $t('invoices.hourlyRateOverride') }}</label>
                   <input v-model="timeEntriesForm.hourly_rate" type="number" step="0.01" min="0" class="input" placeholder="z.B. 75.00" />
                 </div>
                 <div class="flex gap-3 pt-2">
-                  <button @click="showTimeEntriesModal = false" class="btn-secondary flex-1">Abbrechen</button>
+                  <button @click="showTimeEntriesModal = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
                   <button
                     @click="createFromTimeEntries"
                     class="btn-primary flex-1"
                     :disabled="!timeEntriesForm.project_id && !timeEntriesForm.client_id"
                   >
-                    Rechnung erstellen
+                    {{ $t('invoices.createInvoice') }}
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useContactsStore } from '@/stores/contacts'
 import { useUiStore } from '@/stores/ui'
@@ -22,6 +23,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 const router = useRouter()
 const contactsStore = useContactsStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // Modal state
@@ -59,9 +61,9 @@ const sortOptions = [
   { value: 'name_desc', label: 'Name Z-A' },
   { value: 'company_asc', label: 'Firma A-Z' },
   { value: 'company_desc', label: 'Firma Z-A' },
-  { value: 'created_desc', label: 'Neueste zuerst' },
-  { value: 'created_asc', label: 'Älteste zuerst' },
-  { value: 'last_contact', label: 'Letzter Kontakt' },
+  { value: 'created_desc', label: t('contacts.newestFirst') },
+  { value: 'created_asc', label: t('contacts.oldestFirst') },
+  { value: 'last_contact', label: t('contacts.lastContact') },
 ]
 
 // Load data on mount
@@ -155,26 +157,26 @@ async function saveContact() {
   try {
     if (editingContact.value) {
       await contactsStore.updateContact(editingContact.value.id, contactForm.value)
-      uiStore.showSuccess('Kontakt aktualisiert')
+      uiStore.showSuccess(t('contacts.contactUpdated'))
     } else {
       await contactsStore.createContact(contactForm.value)
-      uiStore.showSuccess('Kontakt erstellt')
+      uiStore.showSuccess(t('contacts.contactCreated'))
     }
     closeModal()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteContact(contact, event) {
   event.stopPropagation()
-  if (!await confirm({ message: `"${contact.first_name} ${contact.last_name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `"${contact.first_name} ${contact.last_name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await contactsStore.deleteContact(contact.id)
-    uiStore.showSuccess('Kontakt gelöscht')
+    uiStore.showSuccess(t('contacts.contactDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -183,7 +185,7 @@ async function toggleFavorite(contact, event) {
   try {
     await contactsStore.toggleFavorite(contact.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -226,7 +228,7 @@ function formatDate(dateStr) {
         <div class="text-2xl font-bold text-white">{{ contactsStore.stats.total }}</div>
         <div class="text-sm text-gray-400 flex items-center justify-center gap-1.5 mt-1">
           <UserGroupIcon class="w-4 h-4" />
-          Kontakte gesamt
+          {{ $t('contacts.totalContacts') }}
         </div>
       </div>
       <div class="card-glass p-4 text-center">
@@ -252,7 +254,7 @@ function formatDate(dateStr) {
         <input
           v-model="contactsStore.filters.search"
           type="text"
-          placeholder="Kontakte suchen..."
+          placeholder=$t('contacts.searchContacts')
           class="input pl-10 w-full"
         />
       </div>
@@ -283,7 +285,7 @@ function formatDate(dateStr) {
 
       <button @click="openCreateModal" class="btn-primary flex items-center justify-center gap-2 whitespace-nowrap">
         <PlusIcon class="w-5 h-5" />
-        Neuer Kontakt
+        {{ $t('contacts.newContact') }}
       </button>
     </div>
 
@@ -295,11 +297,11 @@ function formatDate(dateStr) {
     <!-- Empty State -->
     <div v-else-if="contactsStore.contacts.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-400">
       <UserGroupIcon class="w-16 h-16 mb-4 opacity-50" />
-      <p class="text-lg font-medium text-gray-300">Keine Kontakte gefunden</p>
-      <p class="mt-1 text-sm">Erstellen Sie Ihren ersten Kontakt, um loszulegen.</p>
+      <p class="text-lg font-medium text-gray-300">{{ $t('contacts.noContactsFound') }}</p>
+      <p class="mt-1 text-sm">{{ $t('contacts.createFirstContact') }}</p>
       <button @click="openCreateModal" class="btn-primary mt-4 flex items-center gap-2">
         <PlusIcon class="w-5 h-5" />
-        Kontakt erstellen
+        {{ $t('contacts.createContact') }}
       </button>
     </div>
 
@@ -378,7 +380,7 @@ function formatDate(dateStr) {
           <!-- Header -->
           <div class="flex items-center justify-between p-6 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingContact ? 'Kontakt bearbeiten' : 'Neuer Kontakt' }}
+              {{ editingContact ? $t('contacts.editContact') : $t('contacts.newContact') }}
             </h2>
             <button @click="closeModal" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -410,7 +412,7 @@ function formatDate(dateStr) {
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Nachname *</label>
-                <input v-model="contactForm.last_name" type="text" class="input w-full" placeholder="Mustermann" />
+                <input v-model="contactForm.last_name" type="text" class="input w-full" :placeholder="$t('contacts.lastNamePlaceholder')" />
               </div>
             </div>
 
@@ -418,11 +420,11 @@ function formatDate(dateStr) {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Firma</label>
-                <input v-model="contactForm.company" type="text" class="input w-full" placeholder="Firma GmbH" />
+                <input v-model="contactForm.company" type="text" class="input w-full" :placeholder="$t('contacts.companyPlaceholder')" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Position</label>
-                <input v-model="contactForm.position" type="text" class="input w-full" placeholder="Geschäftsführer" />
+                <input v-model="contactForm.position" type="text" class="input w-full" :placeholder="$t('contacts.ceo')" />
               </div>
             </div>
 
@@ -446,7 +448,7 @@ function formatDate(dateStr) {
             <!-- Address -->
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
-              <input v-model="contactForm.address" type="text" class="input w-full" placeholder="Musterstraße 1" />
+              <input v-model="contactForm.address" type="text" class="input w-full" :placeholder="$t('contacts.sampleAddress')" />
             </div>
 
             <div class="grid grid-cols-3 gap-4">
@@ -456,11 +458,11 @@ function formatDate(dateStr) {
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Stadt</label>
-                <input v-model="contactForm.city" type="text" class="input w-full" placeholder="Berlin" />
+                <input v-model="contactForm.city" type="text" class="input w-full" :placeholder="$t('contacts.cityPlaceholder')" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Land</label>
-                <input v-model="contactForm.country" type="text" class="input w-full" placeholder="Deutschland" />
+                <input v-model="contactForm.country" type="text" class="input w-full" :placeholder="$t('contacts.countryPlaceholder')" />
               </div>
             </div>
 
@@ -490,7 +492,7 @@ function formatDate(dateStr) {
                   v-model="tagInput"
                   type="text"
                   class="input flex-1"
-                  placeholder="Tag hinzufügen..."
+                  :placeholder="$t('quickCapture.addTag')"
                   @keydown.enter.prevent="addTag"
                 />
                 <button @click="addTag" class="btn-secondary px-3">+</button>
@@ -511,9 +513,9 @@ function formatDate(dateStr) {
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-6 border-t border-white/[0.06]">
-            <button @click="closeModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="saveContact" class="btn-primary">
-              {{ editingContact ? 'Speichern' : 'Erstellen' }}
+              {{ editingContact ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

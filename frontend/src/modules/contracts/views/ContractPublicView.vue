@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import {
@@ -68,7 +72,7 @@ async function loadContract(pw) {
   } catch (e) {
     const status = e.response?.status
     const msg = e.response?.data?.message || ''
-    if (status === 401 && (msg.includes('Passwort') || msg.includes('password'))) {
+    if (status === 401 && (msg.includes(t('auth.password')) || msg.includes('password'))) {
       if (pw) {
         passwordError.value = t.value.wrongPassword
         state.value = 'password'
@@ -202,7 +206,7 @@ const contractTypeLabels = {
   de: {
     license: 'Softwarelizenzvertrag',
     development: 'Softwareentwicklungsvertrag',
-    saas: 'SaaS-Vertrag',
+    saas: t('contracts.saasContract'),
     maintenance: 'Wartungsvertrag',
     nda: 'Geheimhaltungsvereinbarung',
     source_code_purchase: 'Source-Code-Kaufvertrag',
@@ -220,7 +224,7 @@ const contractTypeLabels = {
 }
 
 const paymentLabels = {
-  de: { 'one-time': 'Einmalig', monthly: 'Monatlich', quarterly: 'Quartalsweise', yearly: 'Jährlich' },
+  de: { 'one-time': 'Einmalig', monthly: t('cron.monthly'), quarterly: 'Quartalsweise', yearly: t('contracts.yearly') },
   en: { 'one-time': 'One-time', monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' },
 }
 
@@ -229,45 +233,45 @@ const paymentLabel = computed(() => paymentLabels[lang.value]?.[contract.value?.
 
 const t = computed(() => {
   if (isDe.value) return {
-    contractDocument: 'Vertragsdokument',
-    loading: 'Vertrag wird geladen...',
-    passwordRequired: 'Passwort erforderlich',
-    passwordProtected: 'Dieses Dokument ist passwortgeschützt. Bitte geben Sie das Passwort ein.',
-    passwordPlaceholder: 'Passwort eingeben...',
-    checking: 'Prüfe...',
+    contractDocument: t('contracts.contractDocumentTitle'),
+    loading: t('contracts.contractLoading'),
+    passwordRequired: t('contracts.passwordRequired'),
+    passwordProtected: t('contracts.documentPasswordProtected'),
+    passwordPlaceholder: t('contracts.enterPassword'),
+    checking: t('contracts.checking'),
     accessDocument: 'Zugang erhalten',
-    accessDenied: 'Zugriff nicht möglich',
+    accessDenied: t('contracts.accessDenied'),
     serviceProvider: 'Auftragnehmer',
     client: 'Auftraggeber',
     signedOn: 'Unterschrieben am',
-    startDate: 'Vertragsbeginn',
-    endDate: 'Vertragsende',
+    startDate: t('contracts.startDate'),
+    endDate: t('contracts.endDate'),
     indefinite: 'Unbefristet',
     paymentSchedule: 'Zahlungsplan',
-    noticePeriod: 'Kündigungsfrist',
+    noticePeriod: t('contracts.noticePeriod'),
     days: 'Tage',
-    contractClauses: 'Vertragsklauseln',
+    contractClauses: t('contracts.contractClauses'),
     notes: 'Anmerkungen',
-    signContract: 'Vertrag unterschreiben',
-    signHint: 'Zeichnen Sie Ihre Unterschrift in das Feld unten. Sie können auch den Touchscreen verwenden.',
+    signContract: t('contracts.signContract'),
+    signHint: t('contracts.drawSignatureInField'),
     yourName: 'Ihr Name',
     fullName: 'Vor- und Nachname...',
-    signature: 'Unterschrift',
-    clear: 'Löschen',
-    pleaseSign: 'Bitte unterschreiben Sie oben',
-    saving: 'Wird gespeichert...',
-    signBinding: 'Vertrag verbindlich unterschreiben',
-    legalNotice: 'Mit dem Klick auf "Vertrag verbindlich unterschreiben" bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen.',
-    contractSigned: 'Vertrag unterschrieben',
-    thankYou: 'Vielen Dank! Ihre Unterschrift wurde erfolgreich gespeichert.',
-    contractLabel: 'Vertrag:',
+    signature: t('contracts.signature'),
+    clear: t('common.delete'),
+    pleaseSign: t('contracts.pleaseSignAbove'),
+    saving: t('contracts.saving'),
+    signBinding: t('contracts.signContractBinding'),
+    legalNotice: 'Mit dem Klick auf t('contracts.signContractBinding') bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen.',
+    contractSigned: t('contracts.contractSigned'),
+    thankYou: t('contracts.signatureSuccessMessage'),
+    contractLabel: t('contracts.contractDocument'),
     numberLabel: 'Nummer:',
     signedOnLabel: 'Unterschrieben am:',
-    wrongPassword: 'Falsches Passwort',
+    wrongPassword: t('checklists.wrongPassword'),
     linkExpired: 'Dieser Link ist abgelaufen.',
-    contractNotFound: 'Vertrag nicht gefunden.',
-    genericError: 'Ein Fehler ist aufgetreten.',
-    signError: 'Fehler beim Unterschreiben.',
+    contractNotFound: t('contracts.contractNotFound'),
+    genericError: t('common.errorOccurred'),
+    signError: t('contracts.errorSigning'),
   }
   return {
     contractDocument: 'Contract Document',

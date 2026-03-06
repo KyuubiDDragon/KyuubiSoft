@@ -204,7 +204,7 @@ function copyToClipboard(text) {
             <button
               @click="copyToClipboard(colorHex)"
               class="btn-secondary px-3"
-              title="Kopieren"
+              :title="$t('common.copy')"
             >
               📋
             </button>

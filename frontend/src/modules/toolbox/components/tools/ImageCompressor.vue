@@ -135,12 +135,12 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
       />
       <div v-if="!originalImage" class="text-gray-400">
         <div class="text-4xl mb-2">🖼️</div>
-        <p>Bild hierher ziehen oder klicken zum Auswählen</p>
+        <p>{{ $t('toolbox.bildHierherZiehenOderKlickenZumAuswaehlen') }}</p>
         <p class="text-xs text-gray-500 mt-1">PNG, JPG, WebP, GIF</p>
       </div>
       <div v-else class="text-green-400">
         <p>{{ fileName }}</p>
-        <p class="text-xs text-gray-400 mt-1">Klicken für neues Bild</p>
+        <p class="text-xs text-gray-400 mt-1">{{ $t('toolbox.toolboxklickenfuerneuesbild') }}</p>
       </div>
     </div>
 
@@ -177,7 +177,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
         />
       </div>
       <div>
-        <label class="text-sm text-gray-400 mb-1 block">Max. Höhe</label>
+        <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.maxHoehe') }}</label>
         <input
           v-model.number="maxHeight"
           type="number"
@@ -190,7 +190,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
 
     <label v-if="originalImage" class="flex items-center gap-2 text-sm text-gray-400">
       <input type="checkbox" v-model="maintainAspect" class="rounded bg-white/[0.04]" />
-      Seitenverhältnis beibehalten
+      {{ $t('toolbox.seitenverhaeltnisBeibehalten') }}
     </label>
 
     <!-- Preview -->
@@ -230,10 +230,10 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
           class="btn-primary flex-1"
           :disabled="isProcessing"
         >
-          {{ isProcessing ? 'Verarbeite...' : 'Herunterladen' }}
+          {{ isProcessing ? 'Verarbeite...' : $t('common.download') }}
         </button>
         <button @click="reset" class="btn-secondary">
-          Zurücksetzen
+          {{ $t('common.reset') }}
         </button>
       </div>
     </div>

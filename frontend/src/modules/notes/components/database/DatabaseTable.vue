@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -37,6 +38,7 @@ const emit = defineEmits(['change-view', 'updated'])
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -67,7 +69,7 @@ async function loadDatabase() {
   try {
     await databaseStore.fetchDatabase(props.databaseId)
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Datenbank')
+    uiStore.showError(t('notesModule.database.loadError'))
   } finally {
     isLoading.value = false
   }
@@ -79,18 +81,18 @@ async function addRow() {
     await databaseStore.addRow(props.databaseId)
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen der Zeile')
+    uiStore.showError(t('notesModule.database.addRowError'))
   }
 }
 
 // Delete row
 async function deleteRow(rowId) {
-  if (!await confirm({ message: 'Zeile wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notesModule.database.confirmDeleteRow'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await databaseStore.deleteRow(props.databaseId, rowId)
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen der Zeile')
+    uiStore.showError(t('notesModule.database.deleteRowError'))
   }
 }
 
@@ -103,14 +105,14 @@ async function updateCell(rowId, propertyId, value) {
     editingCell.value = null
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('notesModule.database.updateError'))
   }
 }
 
 // Add property
 async function addProperty() {
   if (!newPropertyName.value.trim()) {
-    newPropertyName.value = 'Neue Spalte'
+    newPropertyName.value = t('notesModule.database.newColumn')
   }
 
   try {
@@ -123,7 +125,7 @@ async function addProperty() {
     newPropertyType.value = 'text'
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen der Spalte')
+    uiStore.showError(t('notesModule.database.addColumnError'))
   }
 }
 
@@ -251,7 +253,7 @@ onBeforeUnmount(() => {
               <button
                 @click="showAddProperty = true"
                 class="p-1 text-gray-500 hover:text-white hover:bg-white/[0.04] rounded"
-                title="Spalte hinzufügen"
+                :title="$t('notesModule.database.addColumn')"
               >
                 <PlusIcon class="w-4 h-4" />
               </button>
@@ -278,7 +280,7 @@ onBeforeUnmount(() => {
                 <button
                   @click="deleteRow(row.id)"
                   class="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Löschen"
+                  :title="$t('common.delete')"
                 >
                   <TrashIcon class="w-3 h-3" />
                 </button>
@@ -314,7 +316,7 @@ onBeforeUnmount(() => {
                 class="flex items-center gap-2 w-full px-2 py-2 text-sm text-gray-500 hover:text-white hover:bg-white/[0.04] rounded transition-colors"
               >
                 <PlusIcon class="w-4 h-4" />
-                Neue Zeile
+                {{ $t('notesModule.database.newRow') }}
               </button>
             </td>
           </tr>
@@ -330,22 +332,22 @@ onBeforeUnmount(() => {
         @click.self="showAddProperty = false"
       >
         <div class="modal w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-white mb-4">Neue Spalte</h3>
+          <h3 class="text-lg font-semibold text-white mb-4">{{ $t('notesModule.database.newColumn') }}</h3>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Name</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('notesModule.database.name') }}</label>
               <input
                 v-model="newPropertyName"
                 type="text"
-                placeholder="Spaltenname"
+                :placeholder="$t('notesModule.database.columnName')"
                 class="input w-full"
                 @keydown.enter="addProperty"
               />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Typ</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('notesModule.database.type') }}</label>
               <select
                 v-model="newPropertyType"
                 class="select w-full"
@@ -366,13 +368,13 @@ onBeforeUnmount(() => {
               @click="showAddProperty = false"
               class="px-4 py-2 text-gray-400 hover:text-white"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="addProperty"
               class="btn-primary"
             >
-              Hinzufügen
+              {{ $t('common.add') }}
             </button>
           </div>
         </div>

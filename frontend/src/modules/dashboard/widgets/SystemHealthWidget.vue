@@ -12,7 +12,7 @@ function getBarColor(usage) {
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/system" class="text-sm text-primary-400 hover:text-primary-300">Öffnen</router-link>
+      <router-link to="/system" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.oeffnen') }}</router-link>
     </div>
 
     <p class="text-xs text-gray-500 mb-4">Uptime: {{ data?.uptime || '-' }}</p>

@@ -1,7 +1,9 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const props = defineProps({ widget: Object, data: Array })
 
 function getActionBadgeClass(action) {
@@ -24,11 +26,11 @@ function formatRelativeTime(dateString) {
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
 
-  if (diffSec < 60) return 'gerade eben'
-  if (diffMin < 60) return `vor ${diffMin} Min.`
-  if (diffHour < 24) return `vor ${diffHour} Std.`
-  if (diffDay === 1) return 'gestern'
-  if (diffDay < 7) return `vor ${diffDay} Tagen`
+  if (diffSec < 60) return t('time.justNow')
+  if (diffMin < 60) return t('time.minutesAgo', { n: diffMin })
+  if (diffHour < 24) return t('time.hoursAgo', { n: diffHour })
+  if (diffDay === 1) return t('time.yesterday')
+  if (diffDay < 7) return t('time.daysAgo', { n: diffDay })
 
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -45,7 +47,7 @@ const recentEntries = computed(() => {
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/audit" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+      <router-link to="/audit" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.all') }}</router-link>
     </div>
     <div class="space-y-2 max-h-64 overflow-y-auto">
       <div
@@ -72,7 +74,7 @@ const recentEntries = computed(() => {
           {{ formatRelativeTime(entry.created_at) }}
         </span>
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine Audit-Aktivität</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noAuditActivity') }}</p>
     </div>
   </div>
 </template>

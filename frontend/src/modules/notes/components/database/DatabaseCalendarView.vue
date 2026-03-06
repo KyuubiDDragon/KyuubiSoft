@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -18,6 +19,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select-row', 'add-row', 'change-date-property'])
+
+const { t } = useI18n()
 
 // Calendar state
 const currentDate = ref(new Date())
@@ -51,7 +54,15 @@ const monthName = computed(() => {
 })
 
 // Days of week
-const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+const weekDays = computed(() => [
+  t('notesModule.database.weekdays.mon'),
+  t('notesModule.database.weekdays.tue'),
+  t('notesModule.database.weekdays.wed'),
+  t('notesModule.database.weekdays.thu'),
+  t('notesModule.database.weekdays.fri'),
+  t('notesModule.database.weekdays.sat'),
+  t('notesModule.database.weekdays.sun'),
+])
 
 // Calendar days
 const calendarDays = computed(() => {
@@ -151,8 +162,8 @@ function addRowAtDate(date) {
 
 // Get row display value
 function getRowTitle(row) {
-  if (!titleProperty.value) return 'Untitled'
-  return row.values?.[titleProperty.value.id] || 'Untitled'
+  if (!titleProperty.value) return t('notesModule.database.untitled')
+  return row.values?.[titleProperty.value.id] || t('notesModule.database.untitled')
 }
 
 // Get row color (based on status or random)
@@ -185,7 +196,7 @@ function formatDate(date) {
           @click="goToToday"
           class="px-2 py-1 text-xs text-gray-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.04] rounded transition-colors"
         >
-          Heute
+          {{ $t('notesModule.database.today') }}
         </button>
       </div>
 
@@ -222,8 +233,8 @@ function formatDate(date) {
 
     <!-- No date property warning -->
     <div v-if="!activeDateProperty" class="p-8 text-center text-gray-500">
-      <p class="mb-2">Kein Datumsfeld vorhanden</p>
-      <p class="text-sm">Füge ein Datumsfeld hinzu, um die Kalenderansicht zu nutzen.</p>
+      <p class="mb-2">{{ $t('notesModule.database.noDateField') }}</p>
+      <p class="text-sm">{{ $t('notesModule.database.addDateField') }}</p>
     </div>
 
     <!-- Calendar Grid -->
@@ -291,7 +302,7 @@ function formatDate(date) {
               v-if="getRowsForDate(day.date).length > 3"
               class="text-xs text-gray-500 px-1"
             >
-              +{{ getRowsForDate(day.date).length - 3 }} mehr
+              +{{ getRowsForDate(day.date).length - 3 }} {{ $t('notesModule.database.more') }}
             </div>
           </div>
         </div>

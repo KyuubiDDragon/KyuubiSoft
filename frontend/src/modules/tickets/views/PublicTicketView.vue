@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
@@ -59,7 +63,7 @@ const statusOptions = [
   { value: 'open', label: 'Offen', color: 'bg-blue-500', textColor: 'text-blue-400', icon: TicketIcon },
   { value: 'in_progress', label: 'In Bearbeitung', color: 'bg-yellow-500', textColor: 'text-yellow-400', icon: ArrowPathIcon },
   { value: 'waiting', label: 'Warten auf Antwort', color: 'bg-purple-500', textColor: 'text-purple-400', icon: ClockIcon },
-  { value: 'resolved', label: 'Gelöst', color: 'bg-green-500', textColor: 'text-green-400', icon: CheckCircleIcon },
+  { value: 'resolved', label: t('tickets.geloest'), color: 'bg-green-500', textColor: 'text-green-400', icon: CheckCircleIcon },
   { value: 'closed', label: 'Geschlossen', color: 'bg-gray-500', textColor: 'text-gray-400', icon: XMarkIcon },
 ]
 
@@ -92,7 +96,7 @@ function onCaptchaExpire() {
 
 function onCaptchaError() {
   captchaToken.value = ''
-  error.value = 'Captcha-Fehler. Bitte versuchen Sie es erneut.'
+  error.value = t('tickets.captchafehlerBitteVersuchenSieEsErneut')
 }
 
 function resetCaptcha() {
@@ -108,23 +112,23 @@ async function createTicket() {
   success.value = ''
 
   if (!createForm.value.guest_name.trim()) {
-    error.value = 'Bitte geben Sie Ihren Namen an'
+    error.value = t('tickets.bitteGebenSieIhrenNamenAn')
     return
   }
   if (!createForm.value.guest_email.trim()) {
-    error.value = 'Bitte geben Sie Ihre E-Mail-Adresse an'
+    error.value = t('tickets.bitteGebenSieIhreEmailadresseAn')
     return
   }
   if (!createForm.value.title.trim()) {
-    error.value = 'Bitte geben Sie einen Titel an'
+    error.value = t('tickets.bitteGebenSieEinenTitelAn')
     return
   }
   if (!createForm.value.description.trim()) {
-    error.value = 'Bitte beschreiben Sie Ihr Anliegen'
+    error.value = t('tickets.bitteBeschreibenSieIhrAnliegen')
     return
   }
   if (!captchaToken.value) {
-    error.value = 'Bitte bestätigen Sie, dass Sie kein Roboter sind'
+    error.value = t('tickets.bitteBestaetigenSieDassSieKeinRoboter')
     return
   }
 
@@ -151,7 +155,7 @@ async function createTicket() {
     }
     resetCaptcha()
   } catch (err) {
-    error.value = err.response?.data?.message || 'Fehler beim Erstellen des Tickets'
+    error.value = err.response?.data?.message || t('tickets.ticketsfehlerbeimerstellendestickets')
     resetCaptcha()
   } finally {
     loading.value = false
@@ -163,7 +167,7 @@ async function lookupTicket() {
   error.value = ''
 
   if (!accessCode.value.trim()) {
-    error.value = 'Bitte geben Sie Ihren Zugriffscode ein'
+    error.value = t('tickets.ticketsbittegebensieihrenzugriffscodeein')
     return
   }
 
@@ -175,7 +179,7 @@ async function lookupTicket() {
     comments.value = response.data.data.comments || []
     viewMode.value = 'view'
   } catch (err) {
-    error.value = 'Ticket nicht gefunden. Bitte überprüfen Sie Ihren Zugriffscode.'
+    error.value = t('tickets.ticketNichtGefundenBitteUeberpruefenSieIhren')
   } finally {
     loading.value = false
   }
@@ -196,7 +200,7 @@ async function addComment() {
     comments.value.push(response.data.data.comment)
     newComment.value = ''
   } catch (err) {
-    error.value = 'Fehler beim Hinzufügen des Kommentars'
+    error.value = t('tickets.fehlerBeimHinzufuegenDesKommentars')
   } finally {
     submittingComment.value = false
   }
@@ -271,7 +275,7 @@ onMounted(() => {
           <TicketIcon class="w-8 h-8 text-white" />
         </div>
         <h1 class="text-2xl font-bold text-white">Support-Ticket</h1>
-        <p class="text-gray-400 mt-2">Wir helfen Ihnen gerne weiter</p>
+        <p class="text-gray-400 mt-2">{{ $t('tickets.wirHelfenIhnenGerneWeiter') }}</p>
       </div>
 
       <!-- Error/Success Messages -->
@@ -293,7 +297,7 @@ onMounted(() => {
       <!-- Home View -->
       <div v-if="viewMode === 'home'" class="space-y-4">
         <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 space-y-6">
-          <h2 class="text-lg font-semibold text-white text-center">Was möchten Sie tun?</h2>
+          <h2 class="text-lg font-semibold text-white text-center">{{ $t('tickets.wasMoechtenSieTun') }}</h2>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
@@ -301,8 +305,8 @@ onMounted(() => {
               class="p-6 bg-white/[0.04] hover:bg-white/[0.04] rounded-xl transition-colors text-left"
             >
               <PlusIcon class="w-10 h-10 text-primary-400 mb-3" />
-              <h3 class="font-medium text-white">Neues Ticket erstellen</h3>
-              <p class="text-sm text-gray-400 mt-1">Erstellen Sie eine neue Support-Anfrage</p>
+              <h3 class="font-medium text-white">{{ $t('tickets.ticketsneuesticketerstellen') }}</h3>
+              <p class="text-sm text-gray-400 mt-1">{{ $t('tickets.ticketserstellensieeineneuesupportanfrage') }}</p>
             </button>
 
             <button
@@ -311,7 +315,7 @@ onMounted(() => {
             >
               <MagnifyingGlassIcon class="w-10 h-10 text-primary-400 mb-3" />
               <h3 class="font-medium text-white">Ticket nachverfolgen</h3>
-              <p class="text-sm text-gray-400 mt-1">Status eines bestehenden Tickets prüfen</p>
+              <p class="text-sm text-gray-400 mt-1">{{ $t('tickets.statusEinesBestehendenTicketsPruefen') }}</p>
             </button>
           </div>
         </div>
@@ -324,16 +328,16 @@ onMounted(() => {
           class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeftIcon class="w-5 h-5" />
-          Zurück
+          {{ $t('common.back') }}
         </button>
 
         <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
-          <h2 class="text-lg font-semibold text-white mb-6">Neues Ticket erstellen</h2>
+          <h2 class="text-lg font-semibold text-white mb-6">{{ $t('tickets.ticketsneuesticketerstellen') }}</h2>
 
           <div class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Ihr Name *</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.ihrName') }}</label>
                 <input
                   v-model="createForm.guest_name"
                   type="text"
@@ -359,28 +363,28 @@ onMounted(() => {
                 v-model="createForm.title"
                 type="text"
                 class="input"
-                placeholder="Kurze Beschreibung Ihres Anliegens"
+                :placeholder="$t('tickets.ticketskurzebeschreibungihresanliegens')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.beschreibung') }}</label>
               <textarea
                 v-model="createForm.description"
                 rows="5"
                 class="textarea"
-                placeholder="Beschreiben Sie Ihr Anliegen so detailliert wie möglich..."
+                :placeholder="$t('tickets.beschreibenSieIhrAnliegenSoDetailliertWie')"
               ></textarea>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('snippetsModule.kategorie') }}</label>
                 <select
                   v-model="createForm.category_id"
                   class="select"
                 >
-                  <option value="">Bitte wählen...</option>
+                  <option value="">{{ $t('tickets.bitteWaehlen') }}</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
                     {{ c.name }}
                   </option>
@@ -388,7 +392,7 @@ onMounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('quickCapture.priority') }}</label>
                 <select
                   v-model="createForm.priority"
                   class="select"
@@ -418,7 +422,7 @@ onMounted(() => {
               class="w-full btn-primary flex items-center justify-center gap-2"
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>{{ loading ? 'Wird erstellt...' : 'Ticket absenden' }}</span>
+              <span>{{ loading ? $t('tickets.wirdErstellt') : 'Ticket absenden' }}</span>
             </button>
           </div>
         </div>
@@ -431,7 +435,7 @@ onMounted(() => {
           class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeftIcon class="w-5 h-5" />
-          Zurück
+          {{ $t('common.back') }}
         </button>
 
         <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
@@ -459,7 +463,7 @@ onMounted(() => {
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <MagnifyingGlassIcon v-else class="w-5 h-5" />
-              <span>{{ loading ? 'Wird gesucht...' : 'Ticket suchen' }}</span>
+              <span>{{ loading ? $t('tickets.wirdGesucht') : 'Ticket suchen' }}</span>
             </button>
           </div>
         </div>
@@ -472,7 +476,7 @@ onMounted(() => {
           class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeftIcon class="w-5 h-5" />
-          Zurück
+          {{ $t('common.back') }}
         </button>
 
         <!-- Ticket Details -->
@@ -498,15 +502,15 @@ onMounted(() => {
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
-              <span class="text-gray-500 block">Status</span>
+              <span class="text-gray-500 block">{{ $t('common.status') }}</span>
               <span :class="getStatusInfo(ticket.status).textColor">{{ getStatusInfo(ticket.status).label }}</span>
             </div>
             <div>
-              <span class="text-gray-500 block">Priorität</span>
+              <span class="text-gray-500 block">{{ $t('quickCapture.priority') }}</span>
               <span class="text-white">{{ getPriorityInfo(ticket.priority).label }}</span>
             </div>
             <div>
-              <span class="text-gray-500 block">Erstellt</span>
+              <span class="text-gray-500 block">{{ $t('inboxModule.erstellt') }}</span>
               <span class="text-white">{{ formatDate(ticket.created_at) }}</span>
             </div>
             <div>
@@ -572,13 +576,13 @@ onMounted(() => {
                 :disabled="!newComment.trim() || submittingComment"
                 class="btn-primary"
               >
-                {{ submittingComment ? 'Wird gesendet...' : 'Nachricht senden' }}
+                {{ submittingComment ? $t('tickets.wirdGesendet') : 'Nachricht senden' }}
               </button>
             </div>
           </div>
 
           <div v-else class="border-t border-white/[0.06] pt-4 text-center text-gray-500">
-            Dieses Ticket wurde geschlossen. Keine weiteren Nachrichten möglich.
+            {{ $t('tickets.diesesTicketWurdeGeschlossenKeineWeiterenNachrichten') }}
           </div>
         </div>
       </div>

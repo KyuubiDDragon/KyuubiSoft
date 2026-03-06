@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const generatedUuids = ref([])
 const count = ref(1)
 const version = ref('v4')
@@ -8,7 +9,7 @@ const uppercase = ref(false)
 const noDashes = ref(false)
 
 const versions = [
-  { value: 'v4', name: 'UUID v4 (Random)', desc: 'Zufällig generiert - am häufigsten verwendet' },
+  { value: 'v4', name: 'UUID v4 (Random)', desc: 't('toolbox.zufaelligGeneriertAmHaeufigstenVerwendet') },
   { value: 'v1', name: 'UUID v1 (Timestamp)', desc: 'Basiert auf Zeitstempel + MAC-Adresse' },
   { value: 'ulid', name: 'ULID', desc: 'Sortierbar, kompakter als UUID' },
   { value: 'nanoid', name: 'NanoID (21)', desc: 'Kurze, URL-sichere IDs' },
@@ -219,7 +220,7 @@ generate()
           <button
             @click="copyUuid(uuid.value)"
             class="p-1 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            title="Kopieren"
+            :title="$t('common.copy')"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -231,8 +232,8 @@ generate()
 
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
-      <p><strong>UUID v4:</strong> 128-bit zufällig generiert, Standard für die meisten Anwendungen</p>
-      <p><strong>UUID v1:</strong> Enthält Zeitstempel, chronologisch sortierbar</p>
+      <p><strong>UUID v4:</strong> {{ $t('toolbox.128bitZufaelligGeneriertStandardFuerDieMeisten') }}</p>
+      <p><strong>UUID v1:</strong>{{ $t('toolbox.enthaeltZeitstempelChronologischSortierbar') }}</p>
       <p><strong>ULID:</strong> 128-bit, lexikografisch sortierbar, kompakter als UUID</p>
       <p><strong>NanoID:</strong> URL-sichere, kompakte Alternative zu UUID</p>
     </div>

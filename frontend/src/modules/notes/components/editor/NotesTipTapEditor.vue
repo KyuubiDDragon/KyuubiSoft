@@ -18,6 +18,7 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { common, createLowlight } from 'lowlight'
 import { watch, onBeforeUnmount, onMounted, ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import WikiLink from '../../extensions/WikiLink'
 import Callout from '../../extensions/Callout'
@@ -61,6 +62,7 @@ const emit = defineEmits(['update:modelValue', 'navigate'])
 
 const router = useRouter()
 const notesStore = useNotesStore()
+const { t } = useI18n()
 const collaborationStore = useCollaborationStore()
 
 const lowlight = createLowlight(common)
@@ -90,10 +92,10 @@ const slashRange = ref(null)
 // Available slash commands
 const availableSlashCommands = [
   { title: 'Text', description: 'Normaler Absatztext', icon: 'Aa', keywords: ['paragraph', 'text'] },
-  { title: 'Überschrift 1', description: 'Große Überschrift', icon: 'H1', keywords: ['heading', 'h1'] },
-  { title: 'Überschrift 2', description: 'Mittlere Überschrift', icon: 'H2', keywords: ['heading', 'h2'] },
-  { title: 'Überschrift 3', description: 'Kleine Überschrift', icon: 'H3', keywords: ['heading', 'h3'] },
-  { title: 'Aufzählung', description: 'Punktliste erstellen', icon: '•', keywords: ['bullet', 'list'] },
+  { title: 't('toolbox.ueberschrift1'), description: 't('notesModule.grosseUeberschrift'), icon: 'H1', keywords: ['heading', 'h1'] },
+  { title: 't('toolbox.ueberschrift2'), description: 't('notesModule.mittlereUeberschrift'), icon: 'H2', keywords: ['heading', 'h2'] },
+  { title: 't('notesModule.ueberschrift3'), description: 't('notesModule.kleineUeberschrift'), icon: 'H3', keywords: ['heading', 'h3'] },
+  { title: 't('notesModule.aufzaehlung'), description: 'Punktliste erstellen', icon: '•', keywords: ['bullet', 'list'] },
   { title: 'Nummerierung', description: 'Nummerierte Liste', icon: '1.', keywords: ['number', 'ordered'] },
   { title: 'Checkliste', description: 'Aufgabenliste', icon: '☑', keywords: ['todo', 'task', 'checkbox'] },
   { title: 'Zitat', description: 'Zitat hervorheben', icon: '"', keywords: ['quote', 'blockquote'] },
@@ -104,7 +106,7 @@ const availableSlashCommands = [
   { title: 'Tipp', description: 'Hilfreicher Tipp', icon: '💡', keywords: ['callout', 'tip'] },
   { title: 'Gefahr', description: 'Wichtiger Warnhinweis', icon: '❌', keywords: ['callout', 'danger'] },
   { title: 'Toggle', description: 'Ausklappbarer Bereich', icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
-  { title: 'Tabelle', description: 'Tabelle einfügen', icon: '▦', keywords: ['table', 'grid'] },
+  { title: 'Tabelle', description: 't('notesModule.tabelleEinfuegen'), icon: '▦', keywords: ['table', 'grid'] },
   { title: 'Datenbank', description: 'Inline-Datenbank erstellen', icon: '🗃️', keywords: ['database', 'datenbank', 'notion', 'table', 'board'] },
   { title: 'Embed', description: 'YouTube, Twitter, etc. einbetten', icon: '🔗', keywords: ['embed', 'youtube', 'video', 'twitter', 'spotify', 'einbetten'] },
 ]
@@ -388,7 +390,7 @@ function executeSlashCommand(command) {
         content: [
           {
             type: 'toggleTitle',
-            content: [{ type: 'text', text: 'Klicken zum Öffnen' }]
+            content: [{ type: 'text', text: 't('notesModule.klickenZumOeffnen') }]
           },
           {
             type: 'toggleContent',

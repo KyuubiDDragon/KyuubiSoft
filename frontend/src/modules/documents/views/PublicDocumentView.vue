@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, onMounted, onUnmounted, defineAsyncComponent, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useCollaboration } from '@/composables/useCollaboration'
@@ -28,10 +32,10 @@ const route = useRoute()
 
 // Duck name parts for random name generation (must be before refs that use it)
 const duckAdjectives = [
-  'Feuerwehr', 'Geröstete', 'Fliegende', 'Tanzende', 'Singende', 'Schnelle',
+  'Feuerwehr', t('documentsModule.geroestete'), 'Fliegende', 'Tanzende', 'Singende', 'Schnelle',
   'Mutige', 'Schlaue', 'Coole', 'Ninja', 'Pirat', 'Astronaut', 'Detektiv',
-  'Zauberer', 'Ritter', 'Wikinger', 'Samurai', 'Cowboy', 'Superhelden',
-  'Rockstar', 'DJ', 'Koch', 'Kapitän', 'Professor', 'Doktor', 'Agent',
+  'Zauberer', 'Ritter', t('documentsModule.wikinger'), 'Samurai', 'Cowboy', 'Superhelden',
+  'Rockstar', 'DJ', 'Koch', t('documentsModule.kapitaen'), 'Professor', 'Doktor', 'Agent',
   'Turbo', 'Mega', 'Ultra', 'Super', 'Hyper', 'Power', 'Laser', 'Pixel',
   'Goldene', 'Silberne', 'Diamant', 'Kristall', 'Regenbogen', 'Blitz',
   'Donner', 'Sturm', 'Nebel', 'Schatten', 'Licht', 'Feuer', 'Eis', 'Elektro'
@@ -172,14 +176,14 @@ async function fetchDocument(password = null) {
     if (err.response?.status === 401 && err.response?.data?.errors?.requires_password) {
       requiresPassword.value = true
       if (password) {
-        passwordError.value = 'Falsches Passwort'
+        passwordError.value = t('documentsModule.wrongPassword')
       }
     } else if (err.response?.status === 403) {
-      error.value = err.response?.data?.message || 'Dieser Link ist abgelaufen'
+      error.value = err.response?.data?.message || t('documentsModule.linkExpired')
     } else if (err.response?.status === 404) {
-      error.value = 'Dokument nicht gefunden oder nicht öffentlich freigegeben'
+      error.value = t('documentsModule.docNotFound')
     } else {
-      error.value = 'Fehler beim Laden des Dokuments'
+      error.value = t('documentsModule.documentsmodulefehlerbeimladendesdokuments')
     }
   } finally {
     loading.value = false
@@ -189,7 +193,7 @@ async function fetchDocument(password = null) {
 // Submit password
 async function submitPassword() {
   if (!passwordInput.value.trim()) {
-    passwordError.value = 'Bitte Passwort eingeben'
+    passwordError.value = t('documentsModule.documentsmodulebittepassworteingeben')
     return
   }
   await fetchDocument(passwordInput.value)
@@ -269,7 +273,7 @@ async function joinCollaborativeSession() {
 async function saveDocument() {
   // In collaborative mode, saving is handled by the collaboration server via Redis
   if (collaborationAvailable.value) {
-    console.log('Automatisch über Collaboration-Server gespeichert')
+    console.log(t('documentsModule.automatischUeberCollaborationserverGespeichert'))
     return
   }
 
@@ -292,9 +296,9 @@ async function saveDocument() {
       password: storedPassword.value
     })
     document.value.content = content
-    console.log('Dokument gespeichert')
+    console.log(t('documentsModule.dokumentGespeichert'))
   } catch (error) {
-    console.error('Fehler beim Speichern:', error)
+    console.error(t('documentsModule.documentsmodulefehlerbeimspeichern'), error)
   } finally {
     isSaving.value = false
   }
@@ -365,7 +369,7 @@ function getFormatLabel(format) {
     richtext: 'Rich Text',
     markdown: 'Markdown',
     code: 'Code',
-    spreadsheet: 'Tabelle',
+    spreadsheet: t('documentsModule.spreadsheet'),
   }
   return labels[format] || format
 }
@@ -406,7 +410,7 @@ onUnmounted(() => {
       <!-- Error -->
       <div v-else-if="error" class="text-center py-20">
         <ExclamationCircleIcon class="w-16 h-16 text-red-400 mx-auto mb-4" />
-        <h1 class="text-xl font-bold text-white mb-2">Dokument nicht verfügbar</h1>
+        <h1 class="text-xl font-bold text-white mb-2">{{ $t('documentsModule.documentsmoduledokumentnichtverfuegbar') }}</h1>
         <p class="text-gray-400">{{ error }}</p>
       </div>
 
@@ -414,8 +418,8 @@ onUnmounted(() => {
       <div v-else-if="requiresPassword" class="max-w-md mx-auto">
         <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8 text-center">
           <LockClosedIcon class="w-16 h-16 text-primary-400 mx-auto mb-4" />
-          <h1 class="text-xl font-bold text-white mb-2">Passwortgeschützt</h1>
-          <p class="text-gray-400 mb-6">Dieses Dokument ist mit einem Passwort geschützt.</p>
+          <h1 class="text-xl font-bold text-white mb-2">{{ $t('links.passwortgeschuetzt') }}</h1>
+          <p class="text-gray-400 mb-6">{{ $t('documentsModule.documentsmodulediesesdokumentistmiteinempasswortgeschuetzt') }}</p>
 
           <div class="space-y-4">
             <div>
@@ -423,7 +427,7 @@ onUnmounted(() => {
                 v-model="passwordInput"
                 type="password"
                 class="input w-full"
-                placeholder="Passwort eingeben..."
+                :placeholder="$t('documentsModule.enterPassword')"
                 @keydown.enter="submitPassword"
               />
               <p v-if="passwordError" class="text-red-400 text-sm mt-2">{{ passwordError }}</p>
@@ -433,7 +437,7 @@ onUnmounted(() => {
               @click="submitPassword"
               class="btn-primary w-full"
             >
-              Entsperren
+              {{ $t('documentsModule.unlock') }}
             </button>
           </div>
         </div>
@@ -452,7 +456,7 @@ onUnmounted(() => {
               <div class="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-400">
                 <span class="flex items-center gap-1">
                   <UserIcon class="w-4 h-4" />
-                  {{ document.owner_name || 'Unbekannt' }}
+                  {{ document.owner_name || $t('documentsModule.unbekannt') }}
                 </span>
                 <span class="flex items-center gap-1">
                   <CalendarIcon class="w-4 h-4" />
@@ -460,7 +464,7 @@ onUnmounted(() => {
                 </span>
                 <span class="flex items-center gap-1">
                   <EyeIcon class="w-4 h-4" />
-                  {{ document.public_view_count }} Aufrufe
+                  {{ document.public_view_count }} {{ $t('documentsModule.views') }}
                 </span>
                 <span class="px-2 py-0.5 bg-primary-600/20 text-primary-400 rounded text-xs">
                   {{ getFormatLabel(document.format) }}
@@ -475,7 +479,7 @@ onUnmounted(() => {
                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2"
               >
                 <PencilSquareIcon class="w-5 h-5" />
-                Bearbeiten
+                {{ $t('common.edit') }}
               </button>
             </div>
 
@@ -504,7 +508,7 @@ onUnmounted(() => {
                     class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     <span v-if="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    {{ isSaving ? 'Speichert...' : 'Speichern' }}
+                    {{ isSaving ? $t('common.saving') : $t('common.save') }}
                   </button>
                 </template>
               </div>
@@ -515,7 +519,7 @@ onUnmounted(() => {
           <div v-if="isEditing && collaborationAvailable && connectedUsers.length > 0" class="mt-4 pt-4 border-t border-white/[0.06]">
             <div class="flex flex-wrap items-center gap-2 text-sm text-gray-400">
               <UsersIcon class="w-4 h-4 flex-shrink-0" />
-              <span class="flex-shrink-0">Live-Bearbeiter:</span>
+              <span class="flex-shrink-0">{{ $t('documentsModule.liveEditors') }}:</span>
               <div class="flex flex-wrap items-center gap-2">
                 <span
                   v-for="user in connectedUsers"
@@ -524,7 +528,7 @@ onUnmounted(() => {
                   :style="{ backgroundColor: user.color + '40', borderColor: user.color, borderWidth: '1px' }"
                 >
                   {{ user.name }}
-                  <span v-if="user.isCurrentUser" class="opacity-60">(Du)</span>
+                  <span v-if="user.isCurrentUser" class="opacity-60">({{ $t('documentsModule.you') }})</span>
                 </span>
               </div>
             </div>
@@ -539,7 +543,7 @@ onUnmounted(() => {
         <!-- Connecting indicator -->
         <div v-if="isConnecting" class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8 text-center">
           <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p class="text-gray-400">Verbinde mit Collaboration-Server...</p>
+          <p class="text-gray-400">{{ $t('documentsModule.connectingToServer') }}</p>
         </div>
 
         <!-- Content -->
@@ -556,14 +560,14 @@ onUnmounted(() => {
               :userColor="userColor"
               :editable="true"
               :initialContent="document.content || ''"
-              placeholder="Beginne hier zu schreiben..."
+              :placeholder="$t('documentsModule.startWriting')"
             />
             <!-- Fallback TipTap editor when editing but collaboration is not available -->
             <TipTapEditor
               v-else-if="isEditing && !collaborationAvailable"
               :model-value="document.content"
               :editable="true"
-              placeholder="Collaboration nicht verfügbar. Lokale Bearbeitung aktiv..."
+              :placeholder="$t('documentsModule.collabNotAvailable')"
               @update:model-value="(val) => { localContent = val; document.content = val }"
             />
             <!-- Regular view when not editing -->
@@ -663,13 +667,13 @@ onUnmounted(() => {
 
           <!-- Empty -->
           <div v-if="!document.content && !isEditing" class="p-8 text-center text-gray-400">
-            Dieses Dokument hat keinen Inhalt.
+            {{ $t('documentsModule.noContent') }}
           </div>
         </div>
 
         <!-- Footer -->
         <div class="mt-6 text-center text-sm text-gray-500">
-          Geteilt über KyuubiSoft
+          {{ $t('documentsModule.sharedVia') }}
         </div>
       </div>
     </div>

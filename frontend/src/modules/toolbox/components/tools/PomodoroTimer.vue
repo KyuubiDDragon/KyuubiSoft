@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onUnmounted } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 // Timer settings (in minutes)
 const settings = ref({
   work: 25,
@@ -172,8 +173,8 @@ function playNotification() {
 
   // Also try browser notification
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Pomodoro Timer', {
-      body: mode.value === 'work' ? 'Zeit für eine Pause!' : 'Zurück an die Arbeit!',
+    new Notification(t('toolbox.pomodoroTimer'), {
+      body: mode.value === 'work' ? t('toolbox.zeitFuerEinePause') : t('toolbox.zurueckAnDieArbeit'),
       icon: '🍅',
     })
   }
@@ -276,7 +277,7 @@ onUnmounted(() => {
         <button
           @click="skip"
           class="btn-secondary px-6 py-3"
-          title="Session überspringen"
+          :title="$t('toolbox.sessionUeberspringen')"
         >
           ⏭️
         </button>
@@ -293,7 +294,7 @@ onUnmounted(() => {
         @click="resetAll"
         class="text-xs text-gray-500 hover:text-gray-300"
       >
-        Zurücksetzen
+        {{ $t('common.reset') }}
       </button>
     </div>
 
@@ -309,7 +310,7 @@ onUnmounted(() => {
 
     <!-- Settings -->
     <div class="p-4 bg-white/[0.04] rounded-lg space-y-3">
-      <div class="text-sm font-medium text-white mb-3">Einstellungen (Minuten)</div>
+      <div class="text-sm font-medium text-white mb-3">{{ $t('toolbox.einstellungenMinuten') }}</div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>

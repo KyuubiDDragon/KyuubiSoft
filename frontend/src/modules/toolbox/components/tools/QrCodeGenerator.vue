@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
 
 const activeTab = ref('text')
@@ -18,7 +19,7 @@ const vcardEmail = ref('')
 const tabs = [
   { id: 'text', name: 'Text/URL' },
   { id: 'wifi', name: 'WiFi' },
-  { id: 'vcard', name: 'Kontakt' },
+  { id: 'vcard', name: t('toolbox.kontakt') },
 ]
 
 // Simple QR Code generation using canvas
@@ -102,15 +103,15 @@ onMounted(() => {
             <input v-model="wifiSsid" type="text" class="input w-full" placeholder="MeinWLAN" />
           </div>
           <div>
-            <label class="text-sm text-gray-400 mb-1 block">Passwort</label>
-            <input v-model="wifiPassword" type="text" class="input w-full" placeholder="Passwort" />
+            <label class="text-sm text-gray-400 mb-1 block">{{ $t('auth.password') }}</label>
+            <input v-model="wifiPassword" type="text" class="input w-full" :placeholder="$t('auth.password')" />
           </div>
           <div>
-            <label class="text-sm text-gray-400 mb-1 block">Verschlüsselung</label>
+            <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.verschluesselung') }}</label>
             <select v-model="wifiEncryption" class="input w-full">
               <option value="WPA">WPA/WPA2</option>
               <option value="WEP">WEP</option>
-              <option value="nopass">Keine</option>
+              <option value="nopass">{{ $t('common.none') }}</option>
             </select>
           </div>
         </div>

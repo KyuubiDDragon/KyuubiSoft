@@ -8,7 +8,7 @@ import DockerComposeBuilder from '@/modules/toolbox/components/tools/DockerCompo
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
         <span>🔧</span> Docker Compose Builder
       </h1>
-      <p class="text-gray-400 mt-1">Erstelle docker-compose.yml Dateien visuell</p>
+      <p class="text-gray-400 mt-1">{{ $t('dockerModule.dockermoduleerstelledockercomposeymldateienvisuell') }}</p>
     </div>
 
     <div class="card p-6">

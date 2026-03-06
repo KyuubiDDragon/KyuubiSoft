@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import MonacoEditor from '@/components/MonacoEditor.vue'
@@ -17,6 +18,7 @@ import {
 
 const toast = useToast()
 
+const { t } = useI18n()
 // =========================================================================
 // State
 // =========================================================================
@@ -60,7 +62,7 @@ async function loadConnections() {
     const res = await api.get('/api/v1/database/connections')
     connections.value = res.data.data.items || []
   } catch (err) {
-    toast.error('Fehler beim Laden der Verbindungen')
+    toast.error(t('databaseBrowser.errorLoadingConnections'))
   } finally {
     loadingConns.value = false
   }
@@ -81,7 +83,7 @@ async function selectConnection(conn) {
       selectSchema(schemas.value[0].schema_name)
     }
   } catch {
-    toast.error('Fehler beim Laden der Schemas')
+    toast.error(t('databaseBrowser.errorLoadingSchemas'))
   }
 }
 
@@ -98,7 +100,7 @@ async function selectSchema(name) {
     })
     tables.value = res.data.data.items || []
   } catch {
-    toast.error('Fehler beim Laden der Tabellen')
+    toast.error(t('databaseBrowser.errorLoadingTables'))
   } finally {
     loadingTables.value = false
   }
@@ -125,7 +127,7 @@ async function selectTable(table) {
     tableRows.value   = rowsRes.data.data.rows     || []
     tableTotal.value  = rowsRes.data.data.total    || 0
   } catch {
-    toast.error('Fehler beim Laden der Tabellendaten')
+    toast.error(t('databaseBrowser.errorLoadingTableData'))
   } finally {
     loadingRows.value = false
   }
@@ -148,7 +150,7 @@ async function loadMoreRows(direction) {
     )
     tableRows.value = res.data.data.rows || []
   } catch {
-    toast.error('Fehler beim Laden der Zeilen')
+    toast.error(t('databaseBrowser.errorLoadingRows'))
   } finally {
     loadingRows.value = false
   }
@@ -248,7 +250,7 @@ onMounted(loadConnections)
         </div>
 
         <div v-else-if="connections.length === 0" class="text-gray-500 text-xs text-center py-6 px-2">
-          Keine Datenbankverbindungen.<br>Erstelle eine im Connections-Modul.
+          {{ $t('databaseBrowser.noConnections') }}
         </div>
 
         <template v-for="conn in connections" :key="conn.id">
@@ -381,7 +383,7 @@ onMounted(loadConnections)
                 </tbody>
               </table>
 
-              <div v-else class="text-center text-gray-500 py-8 text-sm">Keine Daten</div>
+              <div v-else class="text-center text-gray-500 py-8 text-sm">{{ $t('databaseBrowser.noData') }}</div>
             </div>
 
             <!-- Pagination -->
@@ -392,12 +394,12 @@ onMounted(loadConnections)
                   @click="loadMoreRows('prev')"
                   :disabled="tableOffset === 0 || loadingRows"
                   class="px-3 py-1 bg-white/[0.04] rounded hover:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                >Zurück</button>
+                >{{ $t('common.back') }}</button>
                 <button
                   @click="loadMoreRows('next')"
                   :disabled="tableOffset + tableLimit >= tableTotal || loadingRows"
                   class="px-3 py-1 bg-white/[0.04] rounded hover:bg-white/[0.08] disabled:opacity-40 transition-colors"
-                >Weiter</button>
+                >{{ $t('common.next') }}</button>
               </div>
             </div>
           </template>
@@ -484,7 +486,7 @@ onMounted(loadConnections)
           </div>
 
           <div v-else-if="history.length === 0" class="text-center py-12 text-gray-500 text-sm">
-            Keine Queries ausgeführt
+            {{ $t('databaseBrowser.noQueriesExecuted') }}
           </div>
 
           <div v-else class="divide-y divide-white/[0.06]">

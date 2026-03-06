@@ -899,7 +899,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Check Interval -->
             <div>
-              <label class="label">Check-Intervall</label>
+              <label class="label">{{ $t('uptime.checkInterval') }}</label>
               <select v-model="form.check_interval" class="input">
                 <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
@@ -911,7 +911,7 @@ function toggleMonitorSelection(monitorId) {
             <div class="flex gap-4">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="form.notify_on_down" type="checkbox" class="checkbox" />
-                <span class="text-gray-300">Bei Ausfall benachrichtigen</span>
+                <span class="text-gray-300">{{ $t('uptime.notifyOnDown') }}</span>
               </label>
             </div>
 
@@ -938,7 +938,7 @@ function toggleMonitorSelection(monitorId) {
         <div class="modal w-full max-w-sm">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingFolder ? 'Ordner bearbeiten' : 'Neuer Ordner' }}
+              {{ editingFolder ? $t('uptime.editFolder') : $t('uptime.newFolder') }}
             </h2>
             <button @click="showFolderModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -952,7 +952,7 @@ function toggleMonitorSelection(monitorId) {
             </div>
 
             <div>
-              <label class="label">Farbe</label>
+              <label class="label">{{ $t('uptime.color') }}</label>
               <div class="flex gap-2 flex-wrap">
                 <button
                   v-for="color in folderColors"
@@ -1007,10 +1007,10 @@ function toggleMonitorSelection(monitorId) {
           <div class="p-4 space-y-6">
             <!-- Game Server Data -->
             <div v-if="selectedMonitor.game_server_data && Object.keys(selectedMonitor.game_server_data).length" class="bg-white/[0.04] rounded-lg p-4">
-              <h3 class="text-sm font-medium text-gray-400 mb-3">Server Info</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('uptime.serverInfo') }}</h3>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div v-if="selectedMonitor.game_server_data.players_online !== undefined">
-                  <p class="text-xs text-gray-500">Spieler</p>
+                  <p class="text-xs text-gray-500">{{ $t('uptime.playersLabel') }}</p>
                   <p class="text-lg font-bold text-white">
                     {{ selectedMonitor.game_server_data.players_online }}/{{ selectedMonitor.game_server_data.players_max }}
                   </p>
@@ -1028,7 +1028,7 @@ function toggleMonitorSelection(monitorId) {
                   <p class="text-sm text-white truncate">{{ selectedMonitor.game_server_data.name }}</p>
                 </div>
                 <div v-if="selectedMonitor.game_server_data.game">
-                  <p class="text-xs text-gray-500">Spiel</p>
+                  <p class="text-xs text-gray-500">{{ $t('uptime.game') }}</p>
                   <p class="text-sm text-white">{{ selectedMonitor.game_server_data.game }}</p>
                 </div>
                 <div v-if="selectedMonitor.game_server_data.motd">
@@ -1040,18 +1040,18 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- SSL Certificate Info -->
             <div v-if="selectedMonitor.type === 'ssl' && selectedMonitor.game_server_data" class="bg-white/[0.04] rounded-lg p-4">
-              <h3 class="text-sm font-medium text-gray-400 mb-3">SSL Zertifikat</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-3">{{ $t('uptime.sslCertificate') }}</h3>
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <p class="text-xs text-gray-500">Common Name</p>
                   <p class="text-sm text-white">{{ selectedMonitor.game_server_data.common_name }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Aussteller</p>
+                  <p class="text-xs text-gray-500">{{ $t('uptime.issuer') }}</p>
                   <p class="text-sm text-white">{{ selectedMonitor.game_server_data.issuer }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Gültig bis</p>
+                  <p class="text-xs text-gray-500">{{ $t('uptime.validUntil') }}</p>
                   <p class="text-sm" :class="selectedMonitor.game_server_data.days_until_expiry < 14 ? 'text-yellow-400' : 'text-white'">
                     {{ selectedMonitor.game_server_data.valid_to }}
                   </p>

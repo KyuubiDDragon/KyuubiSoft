@@ -1456,7 +1456,7 @@ const filteredBots = computed(() => {
                   <button
                     @click.stop="copyInviteUrl(bot)"
                     class="p-1.5 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-white/[0.04] transition-colors"
-                    title="Invite-Link kopieren"
+                    :title="$t('discordModule.copyInviteLinkTooltip')"
                   >
                     <ClipboardDocumentIcon class="w-4 h-4" />
                   </button>
@@ -1496,7 +1496,7 @@ const filteredBots = computed(() => {
               v-model="globalSearchQuery"
               type="text"
               class="input flex-1"
-              placeholder="Nachrichten durchsuchen..."
+              :placeholder="$t('discordModule.searchMessagesPlaceholder')"
               @keyup.enter="performGlobalSearch"
             />
             <button
@@ -1510,11 +1510,11 @@ const filteredBots = computed(() => {
           </div>
 
           <p class="text-sm text-gray-500">
-            Durchsuche alle gesicherten Nachrichten. Mindestens 2 Zeichen erforderlich.
+            {{ $t('discordModule.searchHint') }}
           </p>
 
           <div v-if="globalSearchResults.length > 0" class="text-sm text-gray-400">
-            {{ globalSearchTotal }} Ergebnisse gefunden
+            {{ $t('discordModule.resultsFound', { count: globalSearchTotal }) }}
           </div>
         </div>
       </div>
@@ -1524,8 +1524,8 @@ const filteredBots = computed(() => {
         <!-- Search Results -->
         <div v-if="activeTab === 'search' && globalSearchResults.length > 0" class="card">
           <div class="p-4 border-b border-white/[0.06]">
-            <h3 class="font-semibold text-white">Suchergebnisse</h3>
-            <span class="text-sm text-gray-400">{{ globalSearchTotal }} Nachrichten gefunden</span>
+            <h3 class="font-semibold text-white">{{ $t('discordModule.searchResultsTitle') }}</h3>
+            <span class="text-sm text-gray-400">{{ $t('discordModule.messagesFound', { count: globalSearchTotal }) }}</span>
           </div>
 
           <div class="divide-y divide-white/[0.06] max-h-[600px] overflow-y-auto">
@@ -1665,7 +1665,7 @@ const filteredBots = computed(() => {
                 :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'media' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
               >
                 <PhotoIcon class="w-4 h-4 inline mr-1" />
-                Medien ({{ backupMedia.length }})
+                {{ $t('discordModule.mediaTab', { count: backupMedia.length }) }}
               </button>
               <button
                 @click="backupDetailTab = 'links'"
@@ -1679,7 +1679,7 @@ const filteredBots = computed(() => {
             <!-- Loading State -->
             <div v-if="isLoadingBackupDetails" class="p-8 text-center">
               <ArrowPathIcon class="w-8 h-8 mx-auto text-primary-400 animate-spin" />
-              <p class="text-gray-400 mt-2">Lade Backup-Daten...</p>
+              <p class="text-gray-400 mt-2">{{ $t('discordModule.loadingBackupData') }}</p>
             </div>
 
             <!-- Channels Tab -->
@@ -1696,8 +1696,8 @@ const filteredBots = computed(() => {
                     <span class="text-white">{{ channel.channel_name || channel.discord_channel_id }}</span>
                   </div>
                   <div class="flex items-center gap-3 text-xs text-gray-500">
-                    <span>{{ channel.message_count }} Nachrichten</span>
-                    <span v-if="channel.media_count">{{ channel.media_count }} Medien</span>
+                    <span>{{ channel.message_count }} {{ $t('discordModule.messagesCountLabel') }}</span>
+                    <span v-if="channel.media_count">{{ channel.media_count }} {{ $t('discordModule.mediaCountLabel') }}</span>
                     <ChevronRightIcon class="w-4 h-4" />
                   </div>
                 </div>

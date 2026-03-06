@@ -333,7 +333,7 @@ function removeEnvVar(index) {
   <div class="space-y-4">
     <!-- Template Selection -->
     <div>
-      <label class="block text-xs text-gray-400 mb-2">Sprache / Framework</label>
+      <label class="block text-xs text-gray-400 mb-2">{{ $t('toolbox.sprachFramework') }}</label>
       <div class="grid grid-cols-4 gap-2">
         <button
           v-for="(tpl, key) in templates"
@@ -397,7 +397,7 @@ function removeEnvVar(index) {
     <!-- Environment Variables -->
     <div>
       <div class="flex items-center justify-between mb-2">
-        <label class="text-xs text-gray-400">Umgebungsvariablen</label>
+        <label class="text-xs text-gray-400">{{ $t('toolbox.umgebungsvariablen') }}</label>
         <button @click="addEnvVar" class="text-xs text-primary-400 hover:text-primary-300">
           {{ $t('toolbox.hinzufuegen') }}
         </button>
@@ -426,11 +426,11 @@ function removeEnvVar(index) {
     <!-- Generated Dockerfile -->
     <div>
       <div class="flex items-center justify-between mb-2">
-        <label class="text-xs text-gray-400">Generiertes Dockerfile</label>
+        <label class="text-xs text-gray-400">{{ $t('toolbox.generiertesDockerfile') }}</label>
         <div class="flex gap-2">
           <button @click="copyToClipboard" class="btn-sm btn-secondary">
             <component :is="copied ? CheckIcon : ClipboardIcon" class="w-3 h-3" />
-            {{ copied ? 'Kopiert!' : $t('common.copy') }}
+            {{ copied ? $t('toolbox.kopiert') : $t('common.copy') }}
           </button>
           <button @click="downloadDockerfile" class="btn-sm btn-primary">
             <ArrowDownTrayIcon class="w-3 h-3" />

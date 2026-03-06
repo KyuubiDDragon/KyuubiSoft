@@ -1653,7 +1653,7 @@ const tabs = [
               <div class="space-y-2">
                 <div v-for="(condition, index) in whereConditions" :key="index" class="flex gap-2 items-center">
                   <select v-model="condition.column" class="input flex-1 text-sm">
-                    <option value="">Spalte...</option>
+                    <option value="">{{ $t('toolbox.spalte') }}</option>
                     <option v-for="prop in currentEntityProperties" :key="prop.name" :value="prop.name">
                       {{ prop.name }}
                     </option>
@@ -1673,7 +1673,7 @@ const tabs = [
                   <input
                     v-model="condition.value"
                     class="input flex-1 text-sm"
-                    placeholder="Wert"
+                    :placeholder="$t('toolbox.wert')"
                     :disabled="condition.operator === 'IS NULL' || condition.operator === 'IS NOT NULL'"
                   />
                   <button @click="removeWhereCondition(index)" class="btn-icon text-red-400">
@@ -1696,7 +1696,7 @@ const tabs = [
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-gray-400">Richtung</label>
+                  <label class="text-xs text-gray-400">{{ $t('toolbox.richtung') }}</label>
                   <select v-model="orderDirection" class="input w-full text-sm mt-1">
                     <option>ASC</option>
                     <option>DESC</option>
@@ -1720,13 +1720,13 @@ const tabs = [
           <div class="space-y-4">
             <div class="card p-4 h-full flex flex-col">
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-white">Generierte SWQL Query</h3>
+                <h3 class="text-sm font-semibold text-white">{{ $t('toolbox.generierteSwqlQuery') }}</h3>
                 <button
                   @click="copyToClipboard(generatedQuery)"
                   class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
                 >
                   <ClipboardIcon class="w-4 h-4" />
-                  {{ copied ? 'Kopiert!' : $t('common.copy') }}
+                  {{ copied ? $t('toolbox.kopiert') : $t('common.copy') }}
                 </button>
               </div>
               <pre class="flex-1 p-3 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-green-400 whitespace-pre-wrap">{{ generatedQuery || $t('toolbox.waehleEntityUndSpaltenAus') }}</pre>
@@ -1743,7 +1743,7 @@ const tabs = [
           <input
             v-model="searchTemplates"
             type="text"
-            placeholder="Templates durchsuchen..."
+            :placeholder="$t('toolbox.templatesDurchsuchen')"
             class="input w-full pl-10"
           />
         </div>
@@ -1782,7 +1782,7 @@ const tabs = [
                     class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
                   >
                     <ClipboardIcon class="w-4 h-4" />
-                    Kopieren
+                    {{ $t('toolbox.kopieren') }}
                   </button>
                 </div>
                 <pre class="p-2 bg-white/[0.02] rounded text-xs font-mono overflow-auto text-green-400 max-h-32">{{ template.query }}</pre>
@@ -1800,7 +1800,7 @@ const tabs = [
           <input
             v-model="searchSchema"
             type="text"
-            placeholder="Entity oder Property suchen..."
+            :placeholder="$t('toolbox.entityOderPropertySuchen')"
             class="input w-full pl-10"
           />
         </div>
@@ -1872,11 +1872,11 @@ const tabs = [
               class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
             >
               <ClipboardIcon class="w-4 h-4" />
-              {{ copied ? 'Kopiert!' : $t('common.copy') }}
+              {{ copied ? $t('toolbox.kopiert') : $t('common.copy') }}
             </button>
           </div>
           <p class="text-xs text-gray-400 mb-3">
-            Basierend auf der Query aus dem Query Builder. Wechsle zum Builder-Tab um die Query anzupassen.
+            {{ $t('toolbox.basiertAufQuery') }}
           </p>
           <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-blue-400 max-h-96">{{ powershellScript }}</pre>
         </div>
@@ -1886,11 +1886,11 @@ const tabs = [
           <h3 class="text-sm font-semibold text-white mb-3">Quick Snippets</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Modul installieren</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.modulInstallieren') }}</h4>
               <pre class="text-xs font-mono text-green-400">Install-Module SwisPowerShell</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Modul laden</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.modulLaden') }}</h4>
               <pre class="text-xs font-mono text-green-400">Import-Module SwisPowerShell</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
@@ -1902,11 +1902,11 @@ const tabs = [
               <pre class="text-xs font-mono text-green-400">$swis = Connect-Swis -Hostname "orion" -Trusted</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Query mit Parameter</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.queryMitParameter') }}</h4>
               <pre class="text-xs font-mono text-green-400">Get-SwisData $swis "SELECT * FROM Orion.Nodes WHERE Caption LIKE @name" @{name='%server%'}</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="text-xs font-semibold text-gray-300 mb-2">Property aktualisieren</h4>
+              <h4 class="text-xs font-semibold text-gray-300 mb-2">{{ $t('toolbox.propertyAktualisieren') }}</h4>
               <pre class="text-xs font-mono text-green-400">Set-SwisObject $swis $uri @{PropertyName='Value'}</pre>
             </div>
           </div>
@@ -1928,18 +1928,18 @@ const tabs = [
             </div>
 
             <div class="card p-4" v-if="verbDefinitions[selectedVerb]">
-              <h3 class="text-sm font-semibold text-white mb-3">Verb Details</h3>
+              <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.verbDetails') }}</h3>
               <div class="space-y-3">
                 <div>
                   <span class="text-xs text-gray-400">Entity:</span>
                   <span class="ml-2 font-mono text-primary-400">{{ verbDefinitions[selectedVerb].entity }}</span>
                 </div>
                 <div>
-                  <span class="text-xs text-gray-400">Beschreibung:</span>
+                  <span class="text-xs text-gray-400">{{ $t('toolbox.beschreibung') }}</span>
                   <p class="text-sm text-gray-300 mt-1">{{ verbDefinitions[selectedVerb].description }}</p>
                 </div>
                 <div>
-                  <span class="text-xs text-gray-400">Parameter:</span>
+                  <span class="text-xs text-gray-400">{{ $t('toolbox.parameter') }}</span>
                   <div class="mt-2 space-y-2">
                     <div
                       v-for="param in verbDefinitions[selectedVerb].params"
@@ -1959,13 +1959,13 @@ const tabs = [
           <!-- Generated Verb Script -->
           <div class="card p-4">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-white">PowerShell Beispiel</h3>
+              <h3 class="text-sm font-semibold text-white">{{ $t('toolbox.powershellBeispiel') }}</h3>
               <button
                 @click="copyToClipboard(verbPowershellScript)"
                 class="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
               >
                 <ClipboardIcon class="w-4 h-4" />
-                {{ copied ? 'Kopiert!' : $t('common.copy') }}
+                {{ copied ? $t('toolbox.kopiert') : $t('common.copy') }}
               </button>
             </div>
             <pre class="p-4 bg-white/[0.02] rounded-lg text-sm font-mono overflow-auto text-blue-400">{{ verbPowershellScript }}</pre>
@@ -1977,7 +1977,7 @@ const tabs = [
           <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.haeufigeAnwendungsfaelle') }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="font-medium text-white mb-2">Mehrere Nodes unmanagen</h4>
+              <h4 class="font-medium text-white mb-2">{{ $t('toolbox.mehrereNodesUnmanagen') }}</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$nodeIds = @(1, 2, 3)
 $now = [DateTime]::UtcNow
 $until = $now.AddHours(4)
@@ -2016,7 +2016,7 @@ foreach ($node in $nodes) {
 }</pre>
             </div>
             <div class="p-3 bg-white/[0.04] rounded-lg">
-              <h4 class="font-medium text-white mb-2">Node remanagen nach Maintenance</h4>
+              <h4 class="font-medium text-white mb-2">{{ $t('toolbox.nodeRemanagen') }}</h4>
               <pre class="text-xs font-mono text-green-400 whitespace-pre-wrap">$unmanaged = Get-SwisData $swis @"
 SELECT NodeID
 FROM Orion.Nodes
@@ -2038,13 +2038,13 @@ foreach ($node in $unmanaged) {
       <div v-if="activeTab === 'connections'" class="space-y-4">
         <div class="card p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-white">Gespeicherte Verbindungen</h3>
+            <h3 class="text-sm font-semibold text-white">{{ $t('toolbox.gespeicherteVerbindungen') }}</h3>
             <button
               @click="showAddConnection = !showAddConnection"
               class="btn btn-primary text-sm"
             >
               <PlusIcon class="w-4 h-4 mr-1" />
-              Neue Verbindung
+              {{ $t('toolbox.neueVerbindung') }}
             </button>
           </div>
 
@@ -2093,7 +2093,7 @@ foreach ($node in $unmanaged) {
                 <button
                   @click="setDefaultConnection(conn.id)"
                   class="btn-icon text-gray-400 hover:text-primary-400"
-                  title="Als Standard setzen"
+                  :title="$t('toolbox.alsStandardSetzen')"
                 >
                   <CheckIcon class="w-4 h-4" />
                 </button>
@@ -2111,11 +2111,11 @@ foreach ($node in $unmanaged) {
         </div>
 
         <div class="card p-4">
-          <h3 class="text-sm font-semibold text-white mb-3">Verbindungs-Hinweise</h3>
+          <h3 class="text-sm font-semibold text-white mb-3">{{ $t('toolbox.verbindungsHinweise') }}</h3>
           <div class="text-sm text-gray-400 space-y-2">
             <p>{{ $t('toolbox.dieVerbindungenWerdenNurLokalImBrowser') }}</p>
-            <p>Bei der Ausführung von PowerShell-Scripts wird <code class="text-primary-400">Get-Credential</code> {{ $t('toolbox.toolboxverwendetumsichernachdempasswortzu') }}</p>
-            <p>Für automatisierte Scripts empfehlen wir die Verwendung von Windows Integrated Authentication (<code class="text-primary-400">-Trusted</code>).</p>
+            <p>{{ $t('toolbox.beiDerAusfuehrungVonPowershell') }} <code class="text-primary-400">Get-Credential</code> {{ $t('toolbox.toolboxverwendetumsichernachdempasswortzu') }}</p>
+            <p>{{ $t('toolbox.fuerAutomatisierteScripts') }} (<code class="text-primary-400">-Trusted</code>).</p>
           </div>
         </div>
       </div>
@@ -2154,7 +2154,7 @@ foreach ($node in $unmanaged) {
         class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-float flex items-center gap-2"
       >
         <CheckIcon class="w-5 h-5" />
-        In Zwischenablage kopiert!
+        {{ $t('toolbox.inZwischenablageKopiert') }}
       </div>
     </Transition>
   </div>

@@ -20,7 +20,7 @@ const categories = [
   },
   {
     id: 'weight',
-    name: 'Gewicht',
+    name: t('toolbox.gewicht'),
     icon: '⚖️',
     units: [
       { id: 'mg', name: 'Milligramm', factor: 0.000001 },
@@ -33,7 +33,7 @@ const categories = [
   },
   {
     id: 'temperature',
-    name: 'Temperatur',
+    name: t('toolbox.temperatur'),
     icon: '🌡️',
     units: [
       { id: 'c', name: 'Celsius' },
@@ -58,7 +58,7 @@ const categories = [
   },
   {
     id: 'volume',
-    name: 'Volumen',
+    name: t('toolbox.volumen'),
     icon: '🧊',
     units: [
       { id: 'ml', name: 'Milliliter', factor: 0.001 },
@@ -73,7 +73,7 @@ const categories = [
   },
   {
     id: 'time',
-    name: 'Zeit',
+    name: t('toolbox.zeit'),
     icon: '⏱️',
     units: [
       { id: 'ms', name: 'Millisekunden', factor: 0.001 },
@@ -88,7 +88,7 @@ const categories = [
   },
   {
     id: 'data',
-    name: 'Daten',
+    name: t('toolbox.daten'),
     icon: '💾',
     units: [
       { id: 'b', name: 'Bytes', factor: 1 },
@@ -100,7 +100,7 @@ const categories = [
   },
   {
     id: 'speed',
-    name: 'Geschwindigkeit',
+    name: t('toolbox.geschwindigkeit'),
     icon: '🚀',
     units: [
       { id: 'mps', name: 'm/s', factor: 1 },
@@ -240,14 +240,14 @@ function swapUnits() {
       <button
         @click="swapUnits"
         class="p-3 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg transition-colors self-center mb-6 md:mb-0"
-        title="Einheiten tauschen"
+        :title="$t('toolbox.einheitenTauschen')"
       >
         ⇄
       </button>
 
       <!-- To -->
       <div class="space-y-2">
-        <label class="text-sm text-gray-400">Zu</label>
+        <label class="text-sm text-gray-400">{{ $t('toolbox.zu') }}</label>
         <div class="input w-full text-lg font-mono bg-white/[0.02] min-h-[42px] flex items-center">
           {{ formattedResult || '0' }}
         </div>
@@ -273,7 +273,7 @@ function swapUnits() {
 
     <!-- Quick Reference for current category -->
     <div class="text-xs text-gray-500">
-      <p class="font-medium mb-2">Alle Einheiten ({{ selectedCategory.name }}):</p>
+      <p class="font-medium mb-2">{{ $t('toolbox.alleEinheiten') }} ({{ selectedCategory.name }}):</p>
       <div class="flex flex-wrap gap-2">
         <span
           v-for="unit in selectedCategory.units"

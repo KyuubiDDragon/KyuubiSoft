@@ -247,11 +247,11 @@ function getStatusBadgeClass(status) {
 
 function getStatusText(status) {
   switch (status) {
-    case 'completed': return 'Abgeschlossen'
-    case 'running': return 'Läuft'
-    case 'pending': return 'Wartend'
-    case 'failed': return 'Fehlgeschlagen'
-    case 'cancelled': return 'Abgebrochen'
+    case 'completed': return t('discordModule.statusCompleted2')
+    case 'running': return t('discordModule.statusRunning2')
+    case 'pending': return t('discordModule.statusPending2')
+    case 'failed': return t('discordModule.statusFailed2')
+    case 'cancelled': return t('discordModule.statusCancelled2')
     default: return status
   }
 }
@@ -386,11 +386,11 @@ async function pollActiveBackups() {
     try {
       const updated = await discordStore.getBackup(backup.id)
       if (updated.status === 'completed') {
-        uiStore.showSuccess(`Backup "${updated.target_name}" abgeschlossen`)
+        uiStore.showSuccess(t('discordModule.backupCompletedName', { name: updated.target_name }))
         activeBackups.value.splice(i, 1)
         discordStore.loadBackups() // Refresh backups list
       } else if (updated.status === 'failed') {
-        uiStore.showError(`Backup "${updated.target_name}" fehlgeschlagen: ${updated.error_message || t('common.unknownError')}`)
+        uiStore.showError(t('discordModule.backupFailedName', { name: updated.target_name, error: updated.error_message || t('common.unknownError') }))
         activeBackups.value.splice(i, 1)
         discordStore.loadBackups()
       } else {
@@ -588,8 +588,8 @@ async function addAccount() {
 
 async function removeAccount(account) {
   if (!await confirm({
-    title: 'Account entfernen?',
-    message: `"${account.discord_username}" wirklich entfernen? Alle zugehörigen Backups werden ebenfalls gelöscht.`,
+    title: t('discordModule.removeAccountTitle'),
+    message: t('discordModule.removeAccountMessage', { name: account.discord_username }),
     type: 'danger'
   })) return
 
@@ -604,7 +604,7 @@ async function removeAccount(account) {
 async function syncAccount(accountId) {
   try {
     const result = await discordStore.syncAccount(accountId)
-    uiStore.showSuccess(`${result.servers_synced} Server und ${result.dm_channels_synced} DMs synchronisiert`)
+    uiStore.showSuccess(t('discordModule.syncResult', { servers: result.servers_synced, dms: result.dm_channels_synced }))
   } catch (error) {
     uiStore.showError(t('common.errorSyncing'))
   }
@@ -728,7 +728,7 @@ async function createBackup() {
       uiStore.showSuccess(t('discordModule.backupCompleted'))
       discordStore.loadBackups()
     } else if (backup && backup.status === 'failed') {
-      uiStore.showError(`Backup fehlgeschlagen: ${backup.error_message || t('common.unknownError')}`)
+      uiStore.showError(t('discordModule.backupFailedShort', { error: backup.error_message || t('common.unknownError') }))
     }
   } catch (error) {
     uiStore.showError(t('discordModule.errorCreatingBackup'))
@@ -867,11 +867,11 @@ function getStatusColor(status) {
 
 function getStatusLabel(status) {
   switch (status) {
-    case 'completed': return 'Abgeschlossen'
-    case 'running': return 'Läuft'
-    case 'pending': return 'Wartend'
-    case 'failed': return 'Fehlgeschlagen'
-    case 'cancelled': return 'Abgebrochen'
+    case 'completed': return t('discordModule.statusCompleted2')
+    case 'running': return t('discordModule.statusRunning2')
+    case 'pending': return t('discordModule.statusPending2')
+    case 'failed': return t('discordModule.statusFailed2')
+    case 'cancelled': return t('discordModule.statusCancelled2')
     default: return status
   }
 }
@@ -913,8 +913,8 @@ async function syncBot(bot) {
 
 async function removeBot(bot) {
   if (!await confirm({
-    title: 'Bot entfernen?',
-    message: `"${bot.bot_username}" wirklich entfernen?`,
+    title: t('discordModule.removeBotTitle'),
+    message: t('discordModule.removeBotMessage', { name: bot.bot_username }),
     type: 'danger'
   })) return
 
@@ -1020,11 +1020,11 @@ const filteredBots = computed(() => {
               </div>
               <div class="flex items-center justify-between mt-1">
                 <span class="text-xs text-gray-500">
-                  {{ backup.current_action || 'Wird verarbeitet...' }}
+                  {{ backup.current_action || $t('discordModule.processing') }}
                 </span>
                 <span class="text-xs text-gray-500">
-                  {{ backup.messages_processed || 0 }} Nachrichten
-                  <span v-if="backup.media_count"> • {{ backup.media_count }} Medien</span>
+                  {{ backup.messages_processed || 0 }} {{ $t('discordModule.messagesCount') }}
+                  <span v-if="backup.media_count"> • {{ backup.media_count }} {{ $t('discordModule.mediaCount') }}</span>
                 </span>
               </div>
             </div>
@@ -1037,7 +1037,7 @@ const filteredBots = computed(() => {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4" :class="{ 'mt-20': activeBackups.length > 0 }">
       <div>
         <h1 class="text-2xl font-bold text-white">Discord Manager</h1>
-        <p class="text-gray-400 mt-1">Backups erstellen, Medien herunterladen, Nachrichten verwalten</p>
+        <p class="text-gray-400 mt-1">{{ $t('discordModule.managerSubtitle') }}</p>
       </div>
 
       <div class="flex gap-3">
@@ -1086,7 +1086,7 @@ const filteredBots = computed(() => {
     <div v-if="accounts.length === 0 && !isLoading" class="card p-12 text-center">
       <ChatBubbleLeftRightIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
       <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.noAccountConnected') }}</h3>
-      <p class="text-gray-400 mb-6">Füge deinen Discord User Token hinzu, um loszulegen.</p>
+      <p class="text-gray-400 mb-6">{{ $t('discordModule.addTokenHint') }}</p>
       <button @click="showAddAccountModal = true" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
         {{ $t('discordModule.accountHinzufuegen') }}
@@ -1184,7 +1184,7 @@ const filteredBots = computed(() => {
                       <StarIcon v-else class="w-4 h-4" />
                     </button>
                   </div>
-                  <span class="text-sm text-gray-500">{{ server.channel_count }} Channels</span>
+                  <span class="text-sm text-gray-500">{{ server.channel_count }} {{ $t('discordModule.channels') }}</span>
                 </div>
 
                 <ChevronRightIcon class="w-5 h-5 text-gray-500" />
@@ -1270,15 +1270,15 @@ const filteredBots = computed(() => {
                   v-model="backupSearchQuery"
                   type="text"
                   class="input pl-9 py-2 text-sm w-full"
-                  placeholder="Backup suchen..."
+                  :placeholder="$t('discordModule.searchBackupPlaceholder')"
                 />
               </div>
               <select v-model="backupStatusFilter" class="input py-2 text-sm w-36">
                 <option value="">{{ $t('projects.allStatus') }}</option>
-                <option value="completed">Abgeschlossen</option>
-                <option value="running">Läuft</option>
-                <option value="pending">Wartend</option>
-                <option value="failed">Fehlgeschlagen</option>
+                <option value="completed">{{ $t('discordModule.statusCompleted2') }}</option>
+                <option value="running">{{ $t('discordModule.statusRunning2') }}</option>
+                <option value="pending">{{ $t('discordModule.statusPending2') }}</option>
+                <option value="failed">{{ $t('discordModule.statusFailed2') }}</option>
               </select>
             </div>
           </div>
@@ -1355,7 +1355,7 @@ const filteredBots = computed(() => {
                 <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
                   <span class="flex items-center gap-2">
                     <ArrowPathIcon class="w-3 h-3 animate-spin" />
-                    {{ backup.current_action || 'Verarbeite...' }}
+                    {{ backup.current_action || $t('discordModule.processing') }}
                   </span>
                   <span class="font-medium">{{ backup.progress_percent }}%</span>
                 </div>
@@ -1382,7 +1382,7 @@ const filteredBots = computed(() => {
             <div v-else-if="allBackups.length === 0" class="p-12 text-center text-gray-500">
               <CloudArrowDownIcon class="w-16 h-16 mx-auto mb-4 text-gray-600" />
               <h4 class="text-lg font-medium text-white mb-2">{{ $t('discordModule.noBackups') }}</h4>
-              <p class="text-sm">Erstelle dein erstes Backup über einen Server oder Bot</p>
+              <p class="text-sm">{{ $t('discordModule.createFirstBackupHint') }}</p>
             </div>
           </div>
         </div>
@@ -1463,7 +1463,7 @@ const filteredBots = computed(() => {
                   <button
                     @click.stop="removeBot(bot)"
                     class="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04] transition-colors"
-                    title="Bot entfernen"
+                    :title="$t('discordModule.removeBotTooltip')"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -1480,7 +1480,7 @@ const filteredBots = computed(() => {
                 <CpuChipIcon class="w-8 h-8 text-primary-400" />
               </div>
               <h4 class="text-lg font-medium text-white mb-2">{{ $t('discordModule.noBotConfigured') }}</h4>
-              <p class="text-sm text-gray-400 mb-4">Füge einen Discord Bot hinzu um Server zu sichern</p>
+              <p class="text-sm text-gray-400 mb-4">{{ $t('discordModule.addBotHint') }}</p>
               <button @click="showAddBotModal = true" class="btn-primary">
                 <PlusIcon class="w-5 h-5 mr-2" />
                 {{ $t('discordModule.botHinzufuegen') }}
@@ -1547,7 +1547,7 @@ const filteredBots = computed(() => {
                   <p class="text-gray-300 mt-1 whitespace-pre-wrap break-words">{{ msg.content }}</p>
                   <div v-if="msg.has_attachments" class="flex items-center gap-1 mt-2 text-sm text-gray-400">
                     <PhotoIcon class="w-4 h-4" />
-                    {{ msg.attachment_count }} Anhänge
+                    {{ msg.attachment_count }} {{ $t('discordModule.attachments') }}
                   </div>
                 </div>
               </div>
@@ -1605,15 +1605,15 @@ const filteredBots = computed(() => {
             <div class="grid grid-cols-4 divide-x divide-white/[0.06] border-t border-white/[0.06] bg-white/[0.04]/50">
               <div class="p-3 text-center">
                 <div class="text-xl font-bold text-white">{{ backupChannels.length }}</div>
-                <div class="text-xs text-gray-500">Channels</div>
+                <div class="text-xs text-gray-500">{{ $t('discordModule.channels') }}</div>
               </div>
               <div class="p-3 text-center">
                 <div class="text-xl font-bold text-white">{{ (selectedViewBackup.messages_total || selectedViewBackup.messages_processed || 0).toLocaleString() }}</div>
-                <div class="text-xs text-gray-500">Nachrichten</div>
+                <div class="text-xs text-gray-500">{{ $t('discordModule.messagesCount') }}</div>
               </div>
               <div class="p-3 text-center">
                 <div class="text-xl font-bold text-primary-400">{{ backupMedia.length }}</div>
-                <div class="text-xs text-gray-500">Medien</div>
+                <div class="text-xs text-gray-500">{{ $t('discordModule.mediaCount') }}</div>
               </div>
               <div class="p-3 text-center">
                 <div class="text-xl font-bold text-white">{{ backupLinks.length }}</div>
@@ -1628,7 +1628,7 @@ const filteredBots = computed(() => {
               <ArrowPathIcon class="w-5 h-5 text-primary-400 animate-spin" />
               <div class="flex-1">
                 <div class="flex justify-between mb-1 text-sm">
-                  <span class="text-white">{{ selectedViewBackup.current_action || 'Verarbeite...' }}</span>
+                  <span class="text-white">{{ selectedViewBackup.current_action || $t('discordModule.processing') }}</span>
                   <span class="text-primary-400 font-bold">{{ selectedViewBackup.progress_percent || 0 }}%</span>
                 </div>
                 <div class="w-full bg-white/[0.08] rounded-full h-2">
@@ -1786,7 +1786,7 @@ const filteredBots = computed(() => {
                 <p class="text-gray-300 text-sm whitespace-pre-wrap break-words">{{ msg.content || $t('discordModule.noText') }}</p>
                 <div v-if="msg.has_attachments" class="mt-2 flex items-center gap-1 text-xs text-gray-400">
                   <PhotoIcon class="w-3 h-3" />
-                  {{ msg.attachment_count }} Anhänge
+                  {{ msg.attachment_count }} {{ $t('discordModule.attachments') }}
                 </div>
               </div>
             </div>
@@ -1796,8 +1796,8 @@ const filteredBots = computed(() => {
         <!-- No Backup Selected -->
         <div v-if="activeTab === 'backups' && !selectedViewBackup && allBackups.length > 0" class="card p-12 text-center">
           <CloudArrowDownIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-          <h3 class="text-xl font-medium text-white mb-2">Backup auswählen</h3>
-          <p class="text-gray-400">Klicke auf ein Backup links um die Details anzuzeigen.</p>
+          <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.selectBackup') }}</h3>
+          <p class="text-gray-400">{{ $t('discordModule.selectBackupHint') }}</p>
         </div>
 
         <!-- Links Panel -->
@@ -1806,10 +1806,10 @@ const filteredBots = computed(() => {
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-medium text-white">
                 <LinkIcon class="w-5 h-5 inline mr-2" />
-                Link-Sammlung
+                {{ $t('discordModule.linkCollection') }}
               </h3>
               <span class="text-sm text-gray-400">
-                {{ filteredLinks.length }} von {{ links.length }} Links
+                {{ $t('discordModule.linksOfTotal', { filtered: filteredLinks.length, total: links.length }) }}
               </span>
             </div>
 
@@ -1926,8 +1926,8 @@ const filteredBots = computed(() => {
               <div class="flex-1">
                 <h3 class="text-2xl font-bold text-white">{{ selectedDM.recipient_username || selectedDM.name }}</h3>
                 <p class="text-gray-400 mt-1">
-                  <span v-if="selectedDM.type === 'dm'">Direktnachricht</span>
-                  <span v-else-if="selectedDM.type === 'group_dm'">Gruppen-DM</span>
+                  <span v-if="selectedDM.type === 'dm'">{{ $t('discordModule.directMessage') }}</span>
+                  <span v-else-if="selectedDM.type === 'group_dm'">{{ $t('discordModule.groupDM') }}</span>
                 </p>
 
                 <div class="mt-4 flex flex-wrap gap-4 text-sm">
@@ -2312,7 +2312,7 @@ const filteredBots = computed(() => {
                 <button
                   @click.stop="toggleBotServerFavorite(selectedBotServer)"
                   class="p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
-                  :title="selectedBotServer.is_favorite ? 'Favorit entfernen' : 'Als Favorit markieren'"
+                  :title="selectedBotServer.is_favorite ? $t('discordModule.removeFavorite') : $t('discordModule.markAsFavorite')"
                 >
                   <StarSolidIcon v-if="selectedBotServer.is_favorite" class="w-6 h-6 text-yellow-400" />
                   <StarIcon v-else class="w-6 h-6 text-gray-400 hover:text-yellow-400" />
@@ -2380,9 +2380,9 @@ const filteredBots = computed(() => {
             <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <h4 class="font-medium text-white flex items-center gap-2">
                 <HashtagIcon class="w-5 h-5 text-gray-400" />
-                Channels
+                {{ $t('discordModule.channels') }}
               </h4>
-              <span class="text-sm text-gray-500">{{ selectedBotServer.channels?.length || 0 }} verfügbar</span>
+              <span class="text-sm text-gray-500">{{ selectedBotServer.channels?.length || 0 }} {{ $t('discordModule.available') }}</span>
             </div>
             <div class="divide-y divide-white/[0.06] max-h-[350px] overflow-y-auto">
               <div
@@ -2472,7 +2472,7 @@ const filteredBots = computed(() => {
                   <button @click="openBackupModal(channel)" class="btn-sm btn-secondary" title="Backup">
                     <CloudArrowDownIcon class="w-4 h-4" />
                   </button>
-                  <button @click="openDeleteModal(channel)" class="btn-sm btn-danger" title="Nachrichten löschen">
+                  <button @click="openDeleteModal(channel)" class="btn-sm btn-danger" :title="$t('discordModule.deleteMessagesTooltip')">
                     <TrashIcon class="w-4 h-4" />
                   </button>
                 </div>
@@ -2484,7 +2484,7 @@ const filteredBots = computed(() => {
         <!-- Delete Jobs -->
         <div v-if="deleteJobs.length > 0" class="card">
           <div class="p-4 border-b border-white/[0.06]">
-            <h3 class="font-semibold text-white">Lösch-Jobs</h3>
+            <h3 class="font-semibold text-white">{{ $t('discordModule.deleteJobs') }}</h3>
           </div>
 
           <div class="divide-y divide-white/[0.06]">
@@ -2502,9 +2502,9 @@ const filteredBots = computed(() => {
                     </span>
                   </div>
                   <div class="text-sm text-gray-500 mt-1">
-                    {{ job.deleted_messages }} / {{ job.total_messages }} gelöscht
+                    {{ job.deleted_messages }} / {{ job.total_messages }} {{ $t('discordModule.deleted') }}
                     <span v-if="job.failed_messages > 0" class="text-red-400">
-                      ({{ job.failed_messages }} fehlgeschlagen)
+                      ({{ job.failed_messages }} {{ $t('discordModule.failedCount') }})
                     </span>
                   </div>
                 </div>
@@ -2529,7 +2529,7 @@ const filteredBots = computed(() => {
         <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
           <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-white">Discord Account hinzufügen</h2>
+              <h2 class="text-xl font-semibold text-white">{{ $t('discordModule.addDiscordAccount') }}</h2>
               <button @click="showAddAccountModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-6 h-6" />
               </button>
@@ -2539,8 +2539,7 @@ const filteredBots = computed(() => {
           <div class="p-6 space-y-4">
             <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
               <p class="text-sm text-yellow-400">
-                <strong>Hinweis:</strong> Die Verwendung von User Tokens ist gegen die Discord ToS.
-                Verwende diese Funktion nur für deine eigenen Daten und auf eigenes Risiko.
+                <strong>{{ $t('discordModule.tokenWarningTitle') }}</strong> {{ $t('discordModule.tokenWarningText') }}
               </p>
             </div>
 
@@ -2550,10 +2549,10 @@ const filteredBots = computed(() => {
                 v-model="tokenInput"
                 type="password"
                 class="input w-full"
-                placeholder="Dein Discord User Token..."
+                :placeholder="$t('discordModule.tokenPlaceholder')"
               />
               <p class="text-xs text-gray-500 mt-1">
-                Öffne Discord im Browser → F12 → Network → Filtere nach "api" → Kopiere den "Authorization" Header
+                {{ $t('discordModule.tokenHelpText') }}
               </p>
             </div>
           </div>
@@ -2562,7 +2561,7 @@ const filteredBots = computed(() => {
             <button @click="showAddAccountModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="addAccount" :disabled="isAddingAccount" class="btn-primary">
               <ArrowPathIcon v-if="isAddingAccount" class="w-5 h-5 mr-2 animate-spin" />
-              Hinzufügen
+              {{ $t('discordModule.add') }}
             </button>
           </div>
         </div>
@@ -2575,7 +2574,7 @@ const filteredBots = computed(() => {
         <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
           <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-white">Backup erstellen</h2>
+              <h2 class="text-xl font-semibold text-white">{{ $t('discordModule.createBackupTitle') }}</h2>
               <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-6 h-6" />
               </button>
@@ -2585,7 +2584,7 @@ const filteredBots = computed(() => {
           <div class="p-6 space-y-4">
             <!-- Backup Mode -->
             <div>
-              <label class="block text-sm font-medium text-gray-400 mb-2">Backup-Modus</label>
+              <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('discordModule.backupMode') }}</label>
               <div class="grid grid-cols-3 gap-2">
                 <label
                   :class="[
@@ -2597,7 +2596,7 @@ const filteredBots = computed(() => {
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="full" class="sr-only" />
                   <ChatBubbleLeftRightIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'full' ? 'text-primary-400' : 'text-gray-400'" />
-                  <span class="text-sm" :class="backupForm.backup_mode === 'full' ? 'text-white' : 'text-gray-400'">Komplett</span>
+                  <span class="text-sm" :class="backupForm.backup_mode === 'full' ? 'text-white' : 'text-gray-400'">{{ $t('discordModule.modeFull') }}</span>
                 </label>
                 <label
                   :class="[
@@ -2609,7 +2608,7 @@ const filteredBots = computed(() => {
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="media_only" class="sr-only" />
                   <PhotoIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'media_only' ? 'text-primary-400' : 'text-gray-400'" />
-                  <span class="text-sm" :class="backupForm.backup_mode === 'media_only' ? 'text-white' : 'text-gray-400'">Nur Medien</span>
+                  <span class="text-sm" :class="backupForm.backup_mode === 'media_only' ? 'text-white' : 'text-gray-400'">{{ $t('discordModule.modeMediaOnly') }}</span>
                 </label>
                 <label
                   :class="[
@@ -2621,13 +2620,13 @@ const filteredBots = computed(() => {
                 >
                   <input v-model="backupForm.backup_mode" type="radio" value="links_only" class="sr-only" />
                   <LinkIcon class="w-6 h-6 mb-1" :class="backupForm.backup_mode === 'links_only' ? 'text-primary-400' : 'text-gray-400'" />
-                  <span class="text-sm" :class="backupForm.backup_mode === 'links_only' ? 'text-white' : 'text-gray-400'">Nur Links</span>
+                  <span class="text-sm" :class="backupForm.backup_mode === 'links_only' ? 'text-white' : 'text-gray-400'">{{ $t('discordModule.modeLinksOnly') }}</span>
                 </label>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                <span v-if="backupForm.backup_mode === 'full'">Alle Nachrichten, Medien und Links werden gesichert.</span>
-                <span v-else-if="backupForm.backup_mode === 'media_only'">Nur Bilder und Dateien werden heruntergeladen.</span>
-                <span v-else>Nur Links aus den Nachrichten werden extrahiert.</span>
+                <span v-if="backupForm.backup_mode === 'full'">{{ $t('discordModule.modeFullDesc') }}</span>
+                <span v-else-if="backupForm.backup_mode === 'media_only'">{{ $t('discordModule.modeMediaOnlyDesc') }}</span>
+                <span v-else>{{ $t('discordModule.modeLinksOnlyDesc') }}</span>
               </p>
             </div>
 
@@ -2635,11 +2634,11 @@ const filteredBots = computed(() => {
             <div v-if="backupForm.backup_mode === 'full'" class="grid grid-cols-2 gap-4">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="backupForm.include_media" type="checkbox" class="checkbox" />
-                <span class="text-white">Medien herunterladen</span>
+                <span class="text-white">{{ $t('discordModule.downloadMedia') }}</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="backupForm.include_reactions" type="checkbox" class="checkbox" />
-                <span class="text-white">Reaktionen</span>
+                <span class="text-white">{{ $t('discordModule.reactions') }}</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="backupForm.include_embeds" type="checkbox" class="checkbox" />
@@ -2653,11 +2652,11 @@ const filteredBots = computed(() => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Von (optional)</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('discordModule.fromOptional') }}</label>
                 <input v-model="backupForm.date_from" type="datetime-local" class="input w-full" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Bis (optional)</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('discordModule.toOptional') }}</label>
                 <input v-model="backupForm.date_to" type="datetime-local" class="input w-full" />
               </div>
             </div>
@@ -2667,7 +2666,7 @@ const filteredBots = computed(() => {
             <button @click="showBackupModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="createBackup" class="btn-primary">
               <CloudArrowDownIcon class="w-5 h-5 mr-2" />
-              Backup starten
+              {{ $t('discordModule.startBackup') }}
             </button>
           </div>
         </div>
@@ -2680,7 +2679,7 @@ const filteredBots = computed(() => {
         <div class="bg-white/[0.04] rounded-xl w-full max-w-lg">
           <div class="p-6 border-b border-white/[0.06]">
             <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-white">Nachrichten löschen</h2>
+              <h2 class="text-xl font-semibold text-white">{{ $t('discordModule.deleteMessagesTitle') }}</h2>
               <button @click="showDeleteModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-6 h-6" />
               </button>
@@ -2690,18 +2689,18 @@ const filteredBots = computed(() => {
           <div class="p-6 space-y-4">
             <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
               <p class="text-sm text-red-400">
-                <strong>Warnung:</strong> Diese Aktion löscht permanent alle deine Nachrichten im Channel
-                <strong>{{ deleteForm.channel_name }}</strong>. Dies kann nicht rückgängig gemacht werden!
+                <strong>{{ $t('discordModule.deleteWarning') }}</strong> {{ $t('discordModule.deleteWarningText') }}
+                <strong>{{ deleteForm.channel_name }}</strong>. {{ $t('discordModule.deleteWarningUndone') }}
               </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Von (optional)</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('discordModule.fromOptional') }}</label>
                 <input v-model="deleteForm.date_from" type="datetime-local" class="input w-full" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Bis (optional)</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('discordModule.toOptional') }}</label>
                 <input v-model="deleteForm.date_to" type="datetime-local" class="input w-full" />
               </div>
             </div>
@@ -2712,7 +2711,7 @@ const filteredBots = computed(() => {
                 v-model="deleteForm.keyword_filter"
                 type="text"
                 class="input w-full"
-                placeholder="Nur Nachrichten mit diesem Text löschen..."
+                :placeholder="$t('discordModule.deleteMessagesWithText')"
               />
             </div>
           </div>
@@ -2783,7 +2782,7 @@ const filteredBots = computed(() => {
                 <div v-if="msg.has_attachments" class="mt-2">
                   <div class="flex items-center gap-1 text-xs opacity-75">
                     <PhotoIcon class="w-3 h-3" />
-                    {{ msg.attachment_count }} Anhänge
+                    {{ msg.attachment_count }} {{ $t('discordModule.attachments') }}
                   </div>
                 </div>
 

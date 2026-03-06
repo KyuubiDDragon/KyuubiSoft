@@ -71,13 +71,13 @@ const toolCategories = [
   },
   {
     id: 'dev',
-    name: 'Entwickler Tools',
+    name: t('toolbox.entwicklerTools'),
     icon: '🛠️',
     tools: [
       {
         id: 'json-toolkit',
         name: 'JSON Toolkit',
-        description: 'JSON formatieren, validieren, minifizieren, Base64, UUID',
+        description: t('toolbox.jsonFormatierenValidierenMinifizieren'),
         icon: '📋',
         component: JsonToolkit,
       },
@@ -91,7 +91,7 @@ const toolCategories = [
       {
         id: 'jwt-decoder',
         name: 'JWT Tool',
-        description: 'JWT Tokens dekodieren, analysieren und generieren',
+        description: t('toolbox.jwtTokensDekodierenAnalysieren'),
         icon: '🔐',
         component: JwtDecoder,
       },
@@ -105,28 +105,28 @@ const toolCategories = [
       {
         id: 'diff-viewer',
         name: 'Diff Viewer',
-        description: 'Texte vergleichen und Unterschiede anzeigen',
+        description: t('toolbox.texteVergleichenUndUnterschiede'),
         icon: '📊',
         component: DiffViewer,
       },
       {
         id: 'hash-generator',
         name: 'Hash Generator',
-        description: 'MD5, SHA1, SHA256, SHA512 Hashes erstellen',
+        description: t('toolbox.md5Sha1Sha256Sha512Hashes'),
         icon: '🔒',
         component: HashGenerator,
       },
       {
         id: 'lorem-ipsum',
         name: 'Lorem Ipsum',
-        description: 'Platzhaltertext generieren',
+        description: t('toolbox.platzhaltertextGenerieren'),
         icon: '📝',
         component: LoremIpsumGenerator,
       },
       {
         id: 'timestamp-converter',
         name: 'Timestamp Converter',
-        description: 'Unix/ISO/Datum Zeitstempel umrechnen',
+        description: t('toolbox.unixIsoDatumZeitstempel'),
         icon: '🕐',
         component: TimestampConverter,
       },
@@ -140,49 +140,49 @@ const toolCategories = [
       {
         id: 'markdown-preview',
         name: 'Markdown Preview',
-        description: 'Markdown schreiben und live Vorschau',
+        description: t('toolbox.markdownSchreibenUndLiveVorschau'),
         icon: '📄',
         component: MarkdownPreview,
       },
       {
         id: 'uuid-generator',
         name: 'UUID Generator',
-        description: 'UUID v1/v4, ULID, NanoID generieren',
+        description: t('toolbox.uuidV1V4UlidNanoid'),
         icon: '🆔',
         component: UuidGenerator,
       },
       {
         id: 'text-case-converter',
         name: 'Text Case Converter',
-        description: 'camelCase, snake_case, kebab-case umwandeln',
+        description: t('toolbox.camelCaseSnakeCaseKebabCase'),
         icon: '🔤',
         component: TextCaseConverter,
       },
       {
         id: 'encoding-tool',
         name: 'Encoding Tool',
-        description: 'Base64, URL, HTML, Hex kodieren/dekodieren',
+        description: t('toolbox.base64UrlHtmlHexKodieren'),
         icon: '🔄',
         component: EncodingTool,
       },
       {
         id: 'sql-formatter',
         name: 'SQL Formatter',
-        description: 'SQL-Abfragen formatieren und strukturieren',
+        description: t('toolbox.sqlAbfragenFormatieren'),
         icon: '🗃️',
         component: SqlFormatter,
       },
       {
         id: 'csv-json-converter',
         name: 'CSV/JSON Converter',
-        description: 'CSV und JSON bidirektional konvertieren',
+        description: t('toolbox.csvUndJsonBidirektional'),
         icon: '📊',
         component: CsvJsonConverter,
       },
       {
         id: 'mock-data-generator',
         name: 'Mock Data Generator',
-        description: 'Testdaten generieren (Namen, E-Mails, etc.)',
+        description: t('toolbox.testdatenGenerieren'),
         icon: '🎲',
         component: MockDataGenerator,
       },
@@ -203,7 +203,7 @@ const toolCategories = [
       {
         id: 'docker-manager',
         name: 'Docker Manager',
-        description: 'Container, Images, Volumes verwalten',
+        description: t('toolbox.containerImagesVolumesVerwalten'),
         icon: '📦',
         route: '/docker',
       },
@@ -217,14 +217,14 @@ const toolCategories = [
       {
         id: 'docker-compose-builder',
         name: 'Docker Compose Builder',
-        description: 'docker-compose.yml visuell erstellen',
+        description: t('toolbox.dockerComposeVisuellErstellen'),
         icon: '🔧',
         component: DockerComposeBuilder,
       },
       {
         id: 'docker-command-builder',
         name: 'Docker Command Builder',
-        description: 'docker run Befehle zusammenstellen',
+        description: t('toolbox.dockerRunBefehleZusammenstellen'),
         icon: '⚙️',
         component: DockerCommandBuilder,
       },
@@ -239,7 +239,7 @@ const toolCategories = [
   },
   {
     id: 'media',
-    name: 'Medien Tools',
+    name: t('toolbox.medienTools'),
     icon: '🎬',
     tools: [
       {
@@ -259,14 +259,14 @@ const toolCategories = [
       {
         id: 'color-picker',
         name: 'Color Picker',
-        description: 'Farben konvertieren (HEX, RGB, HSL)',
+        description: t('toolbox.farbenKonvertieren'),
         icon: '🎨',
         component: ColorPicker,
       },
       {
         id: 'image-compressor',
         name: 'Image Compressor',
-        description: 'Bilder komprimieren und konvertieren',
+        description: t('toolbox.bilderKomprimierenUndKonvertieren'),
         icon: '🖼️',
         component: ImageCompressor,
       },
@@ -324,20 +324,20 @@ const toolCategories = [
   },
   {
     id: 'network',
-    name: 'API & Netzwerk',
+    name: t('toolbox.apiUndNetzwerk'),
     icon: '🌐',
     tools: [
       {
         id: 'api-tester',
         name: 'API Tester',
-        description: 'REST APIs testen und debuggen',
+        description: t('toolbox.restApisTesten'),
         icon: '🧪',
         route: '/api-tester',
       },
       {
         id: 'ip-calculator',
         name: 'IP/Subnet Calculator',
-        description: 'IP-Adressen und Subnetze berechnen',
+        description: t('toolbox.ipAdressenUndSubnetzeBerechnen'),
         icon: '🔌',
         component: IpCalculator,
       },
@@ -351,14 +351,14 @@ const toolCategories = [
       {
         id: 'dns-lookup',
         name: 'DNS Lookup',
-        description: 'DNS Records abfragen',
+        description: t('toolbox.dnsRecordsAbfragen'),
         icon: '🔎',
         component: DnsLookup,
       },
       {
         id: 'whois-lookup',
         name: 'WHOIS Lookup',
-        description: 'Domain-Informationen abfragen',
+        description: t('toolbox.domainInformationenAbfragen'),
         icon: '📇',
         component: WhoisLookup,
       },
@@ -372,7 +372,7 @@ const toolCategories = [
       {
         id: 'open-graph',
         name: 'Open Graph Previewer',
-        description: 'Social Media Vorschau und Meta-Tags analysieren',
+        description: t('toolbox.socialMediaVorschau'),
         icon: '🔗',
         component: OpenGraphPreviewer,
       },
@@ -427,7 +427,7 @@ function closeTool() {
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
           <span>🧰</span> Toolbox
         </h1>
-        <p class="text-gray-400 mt-1">{{ totalTools }} praktische Tools für den Alltag</p>
+        <p class="text-gray-400 mt-1">{{ totalTools }} {{ $t('toolbox.praktischeToolsFuerDenAlltag') }}</p>
       </div>
 
       <!-- Search -->
@@ -436,7 +436,7 @@ function closeTool() {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Tool suchen..."
+          :placeholder="$t('toolbox.toolSuchen')"
           class="input w-full pl-10"
         />
       </div>
@@ -476,7 +476,7 @@ function closeTool() {
 
       <!-- No results -->
       <div v-if="filteredCategories.length === 0" class="text-center py-12">
-        <p class="text-gray-400">Kein Tool gefunden für "{{ searchQuery }}"</p>
+        <p class="text-gray-400">{{ $t('toolbox.keinToolGefundenFuer') }} "{{ searchQuery }}"</p>
       </div>
     </div>
 

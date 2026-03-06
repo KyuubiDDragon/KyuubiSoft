@@ -238,7 +238,7 @@ async function saveSchedule() {
 }
 
 async function deleteSchedule(schedule) {
-  if (!await confirm({ message: t('backups.confirmDeleteSchedule', { name: schedule.name }), type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteSchedule', { name: schedule.name }), type: 'danger', confirmText: t('backups.deleteConfirmText') })) return
   try {
     await api.delete(`/api/v1/backups/schedules/${schedule.id}`)
     uiStore.showSuccess(t('backups.scheduleDeleted'))
@@ -364,11 +364,11 @@ function getStatusColor(status) {
 
 function getStatusLabel(status) {
   return {
-    'completed': 'Erfolgreich',
-    'running': 'Läuft',
-    'pending': 'Ausstehend',
-    'failed': 'Fehlgeschlagen',
-    'cancelled': 'Abgebrochen',
+    'completed': t('backups.statusCompleted'),
+    'running': t('backups.statusRunning'),
+    'pending': t('backups.statusPending'),
+    'failed': t('backups.statusFailed'),
+    'cancelled': t('backups.statusCancelled'),
   }[status] || status
 }
 
@@ -397,7 +397,7 @@ onMounted(fetchData)
             <CheckCircleIcon class="w-6 h-6 text-green-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Erfolgreiche Backups</p>
+            <p class="text-gray-400 text-sm">{{ $t('backups.successfulBackups') }}</p>
             <p class="text-xl font-bold text-white">{{ stats.successful_backups }}</p>
           </div>
         </div>
@@ -408,7 +408,7 @@ onMounted(fetchData)
             <ServerStackIcon class="w-6 h-6 text-blue-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Speicherverbrauch</p>
+            <p class="text-gray-400 text-sm">{{ $t('backups.storageUsage') }}</p>
             <p class="text-xl font-bold text-white">{{ formatBytes(stats.total_size) }}</p>
           </div>
         </div>
@@ -419,7 +419,7 @@ onMounted(fetchData)
             <ClockIcon class="w-6 h-6 text-purple-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Aktive Zeitpläne</p>
+            <p class="text-gray-400 text-sm">{{ $t('backups.activeSchedulesLabel') }}</p>
             <p class="text-xl font-bold text-white">{{ stats.active_schedules }}</p>
           </div>
         </div>
@@ -430,9 +430,9 @@ onMounted(fetchData)
             <CalendarIcon class="w-6 h-6 text-yellow-400" />
           </div>
           <div>
-            <p class="text-gray-400 text-sm">Letztes Backup</p>
+            <p class="text-gray-400 text-sm">{{ $t('backups.lastBackupLabel') }}</p>
             <p class="text-sm font-medium text-white">
-              {{ stats.last_backup ? formatDate(stats.last_backup.created_at) : 'Nie' }}
+              {{ stats.last_backup ? formatDate(stats.last_backup.created_at) : $t('backups.never') }}
             </p>
           </div>
         </div>
@@ -491,12 +491,12 @@ onMounted(fetchData)
         <table class="w-full">
           <thead class="bg-white/[0.03]">
             <tr>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Backup</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Typ</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Speicherziel</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Größe</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Erstellt</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.backupHeader') }}</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.typeHeader') }}</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.storageTargetHeader') }}</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.sizeHeader') }}</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.statusHeader') }}</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('backups.createdHeader') }}</th>
               <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
@@ -563,14 +563,14 @@ onMounted(fetchData)
       <div class="flex justify-end">
         <button @click="openScheduleModal()" class="btn-secondary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Zeitplan erstellen
+          {{ $t('backups.createScheduleBtn') }}
         </button>
       </div>
 
       <div v-if="schedules.length === 0" class="card p-12 text-center">
         <ClockIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.noSchedules') }}</h3>
-        <p class="text-gray-500 mb-4">Erstelle automatische Backup-Zeitpläne.</p>
+        <p class="text-gray-500 mb-4">{{ $t('backups.createAutoSchedulesDesc') }}</p>
       </div>
 
       <div v-else class="grid gap-4">
@@ -642,7 +642,7 @@ onMounted(fetchData)
       <div v-if="targets.length === 0" class="card p-12 text-center">
         <ServerStackIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.noStorageTargets') }}</h3>
-        <p class="text-gray-500 mb-4">Füge ein Speicherziel hinzu (Lokal, S3, SFTP, WebDAV).</p>
+        <p class="text-gray-500 mb-4">{{ $t('backups.addStorageTargetDesc') }}</p>
       </div>
 
       <div v-else class="grid gap-4 md:grid-cols-2">
@@ -725,14 +725,14 @@ onMounted(fetchData)
         >
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Backup erstellen</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('backups.createBackupTitle') }}</h3>
               <button @click="showBackupModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
             <form @submit.prevent="createBackup" class="p-6 space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Speicherziel</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('backups.storageTargetLabel') }}</label>
                 <select
                   v-model="backupForm.target_id"
                   class="select"
@@ -808,7 +808,7 @@ onMounted(fetchData)
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <h3 class="text-lg font-semibold text-white">
-                {{ targetForm.id ? 'Speicherziel bearbeiten' : 'Speicherziel hinzufügen' }}
+                {{ targetForm.id ? $t('backups.editStorageTarget') : $t('backups.addStorageTargetBtn') }}
               </h3>
               <button @click="showTargetModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -827,7 +827,7 @@ onMounted(fetchData)
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Typ</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('backups.typeLabel') }}</label>
                 <div class="grid grid-cols-2 gap-2">
                   <button
                     v-for="type in storageTypes"
@@ -1017,7 +1017,7 @@ onMounted(fetchData)
           <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] sticky top-0 bg-white/[0.02]">
               <h3 class="text-lg font-semibold text-white">
-                {{ scheduleForm.id ? 'Zeitplan bearbeiten' : 'Zeitplan erstellen' }}
+                {{ scheduleForm.id ? $t('backups.editSchedule') : $t('backups.createScheduleBtn') }}
               </h3>
               <button @click="showScheduleModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
@@ -1036,7 +1036,7 @@ onMounted(fetchData)
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Speicherziel</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('backups.storageTargetLabel') }}</label>
                 <select
                   v-model="scheduleForm.target_id"
                   class="input"
@@ -1118,7 +1118,7 @@ onMounted(fetchData)
                     v-model="scheduleForm.include_uploads"
                     class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-sm text-gray-400">Upload-Dateien einschließen</span>
+                  <span class="text-sm text-gray-400">{{ $t('backups.includeUploads') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1126,7 +1126,7 @@ onMounted(fetchData)
                     v-model="scheduleForm.include_logs"
                     class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-sm text-gray-400">Log-Dateien einschließen</span>
+                  <span class="text-sm text-gray-400">{{ $t('backups.includeLogs') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1134,7 +1134,7 @@ onMounted(fetchData)
                     v-model="scheduleForm.is_enabled"
                     class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                   />
-                  <span class="text-sm text-gray-400">Zeitplan aktivieren</span>
+                  <span class="text-sm text-gray-400">{{ $t('backups.enableSchedule') }}</span>
                 </label>
               </div>
 
@@ -1171,12 +1171,12 @@ onMounted(fetchData)
               <div class="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
                 <ExclamationTriangleIcon class="w-8 h-8 text-yellow-400" />
               </div>
-              <h3 class="text-lg font-semibold text-white mb-2">Wiederherstellung bestätigen</h3>
+              <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.confirmRestoreTitle') }}</h3>
               <p class="text-gray-400 mb-4">
-                Möchtest du wirklich das Backup <strong class="text-white">{{ selectedBackup?.file_name }}</strong> wiederherstellen?
+                {{ $t('backups.confirmRestoreMessage', { fileName: selectedBackup?.file_name }) }}
               </p>
               <p class="text-sm text-red-400 mb-6">
-                Achtung: Alle aktuellen Daten werden überschrieben!
+                {{ $t('backups.confirmRestoreWarning') }}
               </p>
               <div class="flex gap-2">
                 <button

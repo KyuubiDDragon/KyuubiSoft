@@ -1643,7 +1643,7 @@ const filteredBots = computed(() => {
             <div class="flex items-start gap-2">
               <XCircleIcon class="w-5 h-5 text-red-400 flex-shrink-0" />
               <div>
-                <h4 class="font-medium text-red-400 text-sm">Backup fehlgeschlagen</h4>
+                <h4 class="font-medium text-red-400 text-sm">{{ $t('discordModule.statusFailed2') }}</h4>
                 <p class="text-xs text-red-300 mt-1">{{ selectedViewBackup.error_message || t('common.unknownError') }}</p>
               </div>
             </div>
@@ -1658,7 +1658,7 @@ const filteredBots = computed(() => {
                 :class="['flex-1 px-4 py-3 text-sm font-medium transition-colors', backupDetailTab === 'channels' ? 'text-primary-400 border-b-2 border-primary-400' : 'text-gray-400 hover:text-white']"
               >
                 <HashtagIcon class="w-4 h-4 inline mr-1" />
-                Channels ({{ backupChannels.length }})
+                {{ $t('discordModule.channels') }} ({{ backupChannels.length }})
               </button>
               <button
                 @click="backupDetailTab = 'media'"
@@ -1771,7 +1771,7 @@ const filteredBots = computed(() => {
                 <HashtagIcon class="w-4 h-4 text-gray-400" />
                 <span class="text-white font-medium">{{ selectedBackupChannel.channel_name || selectedBackupChannel.discord_channel_id }}</span>
               </div>
-              <span class="text-xs text-gray-500">{{ backupChannelMessages.length }} Nachrichten</span>
+              <span class="text-xs text-gray-500">{{ backupChannelMessages.length }} {{ $t('discordModule.messagesCountLabel') }}</span>
             </div>
             <div class="max-h-[350px] overflow-y-auto p-3 space-y-2 bg-white/[0.02]">
               <div
@@ -1820,7 +1820,7 @@ const filteredBots = computed(() => {
                 v-model="linkSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="Links durchsuchen..."
+                :placeholder="$t('discordModule.searchLinksPlaceholder')"
               />
               <button
                 v-if="linkSearchQuery"
@@ -1862,7 +1862,7 @@ const filteredBots = computed(() => {
           <!-- Loading -->
           <div v-if="isLoadingLinks" class="p-8 text-center">
             <ArrowPathIcon class="w-8 h-8 mx-auto text-primary-400 animate-spin" />
-            <p class="text-gray-400 mt-2">Lade Links...</p>
+            <p class="text-gray-400 mt-2">{{ $t('discordModule.loadingLinks') }}</p>
           </div>
 
           <!-- Links List -->
@@ -1902,7 +1902,7 @@ const filteredBots = computed(() => {
           <div v-else class="p-12 text-center">
             <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
             <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.noLinksFound') }}</h3>
-            <p class="text-gray-400">Erstelle zuerst ein Backup um Links zu sammeln.</p>
+            <p class="text-gray-400">{{ $t('discordModule.createBackupForLinks') }}</p>
           </div>
         </div>
 
@@ -1951,7 +1951,7 @@ const filteredBots = computed(() => {
             <div class="mt-6 flex gap-3">
               <button @click="openBackupModal(selectedDM)" class="btn-primary">
                 <CloudArrowDownIcon class="w-5 h-5 mr-2" />
-                Chat Backup erstellen
+                {{ $t('discordModule.createChatBackup') }}
               </button>
               <button @click="openDeleteModal(selectedDM)" class="btn-danger">
                 <TrashIcon class="w-5 h-5 mr-2" />
@@ -1963,7 +1963,7 @@ const filteredBots = computed(() => {
           <!-- Loading Channel Data -->
           <div v-if="isLoadingChannelData" class="p-6 border-t border-white/[0.06] text-center">
             <ArrowPathIcon class="w-6 h-6 mx-auto text-primary-400 animate-spin" />
-            <p class="text-gray-400 text-sm mt-2">Lade Medien & Links...</p>
+            <p class="text-gray-400 text-sm mt-2">{{ $t('discordModule.loadingMediaAndLinks') }}</p>
           </div>
 
           <!-- Media Gallery -->
@@ -1971,10 +1971,10 @@ const filteredBots = computed(() => {
             <div class="flex items-center justify-between mb-3">
               <h4 class="text-lg font-medium text-white flex items-center gap-2">
                 <PhotoIcon class="w-5 h-5" />
-                Bilder & Medien
+                {{ $t('discordModule.imagesAndMedia') }}
               </h4>
               <span class="text-sm text-gray-400">
-                {{ filteredChannelMedia.length }} von {{ channelMediaTotal }} Medien
+                {{ $t('discordModule.mediaOfTotal', { filtered: filteredChannelMedia.length, total: channelMediaTotal }) }}
               </span>
             </div>
 
@@ -1985,7 +1985,7 @@ const filteredBots = computed(() => {
                 v-model="mediaSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="Nach Dateiname suchen..."
+                :placeholder="$t('discordModule.searchFilenamesPlaceholder')"
               />
               <button
                 v-if="mediaSearchQuery"
@@ -2018,7 +2018,7 @@ const filteredBots = computed(() => {
                     : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
-                Bilder ({{ mediaTypeCounts.image }})
+                {{ $t('discordModule.images') }} ({{ mediaTypeCounts.image }})
               </button>
               <button
                 @click="mediaTypeFilter = 'video'"
@@ -2041,7 +2041,7 @@ const filteredBots = computed(() => {
                     : 'bg-white/[0.08] text-gray-300 hover:bg-white/[0.04]'
                 ]"
               >
-                Andere ({{ mediaTypeCounts.other }})
+                {{ $t('discordModule.other') }} ({{ mediaTypeCounts.other }})
               </button>
             </div>
 
@@ -2124,7 +2124,7 @@ const filteredBots = computed(() => {
                 v-model="linkSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="Links durchsuchen..."
+                :placeholder="$t('discordModule.searchLinksPlaceholder')"
               />
               <button
                 v-if="linkSearchQuery"
@@ -2222,7 +2222,7 @@ const filteredBots = computed(() => {
                   <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
                   Invite-Link
                 </button>
-                <button @click="copyInviteUrl(selectedBot, true)" class="btn-secondary btn-sm" title="Invite mit erweiterten Rechten">
+                <button @click="copyInviteUrl(selectedBot, true)" class="btn-secondary btn-sm" :title="$t('discordModule.inviteWithExtendedPermissions')">
                   <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
                   Extended
                 </button>
@@ -2258,8 +2258,8 @@ const filteredBots = computed(() => {
                     </button>
                   </div>
                   <div class="flex items-center gap-2 text-sm text-gray-500">
-                    <span v-if="server.member_count">{{ server.member_count }} Mitglieder</span>
-                    <span v-if="server.channel_count">{{ server.channel_count }} Channels</span>
+                    <span v-if="server.member_count">{{ server.member_count }} {{ $t('discordModule.members') }}</span>
+                    <span v-if="server.channel_count">{{ server.channel_count }} {{ $t('discordModule.channelsLabel') }}</span>
                   </div>
                 </div>
 
@@ -2269,8 +2269,8 @@ const filteredBots = computed(() => {
 
             <div v-if="botServers.length === 0" class="p-8 text-center text-gray-500">
               <ServerIcon class="w-12 h-12 mx-auto mb-3 text-gray-600" />
-              <p class="mb-2">Bot ist auf keinem Server</p>
-              <p class="text-sm">Klicke auf "Invite-Link" um den Bot einzuladen</p>
+              <p class="mb-2">{{ $t('discordModule.botNotOnAnyServer') }}</p>
+              <p class="text-sm">{{ $t('discordModule.clickInviteLinkToInvite') }}</p>
             </div>
           </div>
         </div>
@@ -2301,11 +2301,11 @@ const filteredBots = computed(() => {
                   <div class="flex items-center gap-3 mt-2 text-sm text-gray-400">
                     <span class="flex items-center gap-1">
                       <HashtagIcon class="w-4 h-4" />
-                      {{ selectedBotServer.channels?.length || 0 }} Channels
+                      {{ selectedBotServer.channels?.length || 0 }} {{ $t('discordModule.channelsLabel') }}
                     </span>
                     <span v-if="selectedBotServer.member_count" class="flex items-center gap-1">
                       <UserIcon class="w-4 h-4" />
-                      {{ selectedBotServer.member_count.toLocaleString() }} Mitglieder
+                      {{ selectedBotServer.member_count.toLocaleString() }} {{ $t('discordModule.members') }}
                     </span>
                   </div>
                 </div>
@@ -2326,7 +2326,7 @@ const filteredBots = computed(() => {
                 <button
                   @click="navigator.clipboard.writeText(selectedBotServer.discord_guild_id); uiStore.showSuccess(t('discordModule.guildIdCopied'))"
                   class="p-1 text-gray-500 hover:text-primary-400 rounded"
-                  title="Guild ID kopieren"
+                  :title="$t('discordModule.copyGuildIdTooltip')"
                 >
                   <ClipboardDocumentIcon class="w-4 h-4" />
                 </button>
@@ -2345,13 +2345,13 @@ const filteredBots = computed(() => {
               </div>
               <div class="p-4 text-center">
                 <div class="text-2xl font-bold text-white">{{ selectedBotServer.total_messages?.toLocaleString() || '0' }}</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Nachrichten</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">{{ $t('discordModule.messagesCount') }}</div>
               </div>
               <div class="p-4 text-center">
                 <div class="text-sm font-medium text-white">
                   {{ selectedBotServer.last_backup_at ? formatDate(selectedBotServer.last_backup_at) : '-' }}
                 </div>
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Letztes Backup</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">{{ $t('discordModule.lastBackup') }}</div>
               </div>
             </div>
           </div>
@@ -2364,13 +2364,13 @@ const filteredBots = computed(() => {
                   <CloudArrowDownIcon class="w-6 h-6 text-primary-400" />
                 </div>
                 <div>
-                  <h4 class="font-semibold text-white">Server Backup starten</h4>
-                  <p class="text-sm text-gray-400">Alle Channels, Nachrichten, Medien & Einstellungen sichern</p>
+                  <h4 class="font-semibold text-white">{{ $t('discordModule.startServerBackup') }}</h4>
+                  <p class="text-sm text-gray-400">{{ $t('discordModule.backupAllChannelsDesc') }}</p>
                 </div>
               </div>
               <button @click="startBotServerBackup" class="btn-primary px-6" :disabled="isStartingBotBackup">
                 <ArrowPathIcon v-if="isStartingBotBackup" class="w-5 h-5 mr-2 animate-spin" />
-                <template v-else>Backup starten</template>
+                <template v-else>{{ $t('discordModule.startBackup') }}</template>
               </button>
             </div>
           </div>
@@ -2445,12 +2445,12 @@ const filteredBots = computed(() => {
                 />
                 <div>
                   <h3 class="font-semibold text-white">{{ selectedServer.name }}</h3>
-                  <span class="text-sm text-gray-400">{{ selectedServer.channels?.length || 0 }} Channels</span>
+                  <span class="text-sm text-gray-400">{{ selectedServer.channels?.length || 0 }} {{ $t('discordModule.channelsLabel') }}</span>
                 </div>
               </div>
               <button @click="openBackupModal(null, selectedServer)" class="btn-primary">
                 <CloudArrowDownIcon class="w-5 h-5 mr-2" />
-                Server Backup
+                {{ $t('discordModule.serverBackup') }}
               </button>
             </div>
           </div>
@@ -2744,7 +2744,7 @@ const filteredBots = computed(() => {
                 v-model="messageSearch"
                 type="text"
                 class="input flex-1"
-                placeholder="Nachrichten durchsuchen..."
+                :placeholder="$t('discordModule.searchChannelMessagesPlaceholder')"
                 @keyup.enter="searchMessages"
               />
               <button @click="searchMessages" class="btn-secondary">
@@ -2877,7 +2877,7 @@ const filteredBots = computed(() => {
               @click.stop
             >
               <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
-              Herunterladen
+              {{ $t('discordModule.download') }}
             </a>
           </div>
 

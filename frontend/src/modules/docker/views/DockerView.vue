@@ -458,7 +458,7 @@ async function quickDeploy() {
 // Stack Deploy
 async function deployStack() {
   if (!stackDeployForm.value.name || !stackDeployForm.value.compose) {
-    error.value = 'Name und Compose-Inhalt sind erforderlich'
+    error.value = t('dockerModule.nameAndComposeRequired')
     return
   }
 
@@ -1008,7 +1008,7 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Containers Tab -->
       <div v-if="activeTab === 'containers'" class="space-y-4">
         <div v-if="containers.length === 0" class="card p-8 text-center text-gray-400">
-          Keine Container gefunden
+          {{ $t('dockerModule.noContainersFound') }}
         </div>
 
         <template v-else>
@@ -1057,14 +1057,14 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <button
                   @click="stackRestart(stack.name)"
                   class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                  title="Stack neustarten"
+                  :title="$t('dockerModule.restartStack')"
                 >
                   <ArrowPathIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="stackDown(stack.name)"
                   class="btn-icon text-red-400 hover:bg-red-500/20"
-                  title="Stack stoppen"
+                  :title="$t('dockerModule.stopStack')"
                 >
                   <StopIcon class="w-4 h-4" />
                 </button>
@@ -1227,7 +1227,7 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Networks Tab -->
       <div v-if="activeTab === 'networks'" class="space-y-4">
         <div v-if="networks.length === 0" class="card p-8 text-center text-gray-400">
-          Keine Netzwerke gefunden
+          {{ $t('dockerModule.noNetworksFound') }}
         </div>
         <div v-else class="overflow-x-auto">
           <table class="w-full">
@@ -1256,7 +1256,7 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Volumes Tab -->
       <div v-if="activeTab === 'volumes'" class="space-y-4">
         <div v-if="volumes.length === 0" class="card p-8 text-center text-gray-400">
-          Keine Volumes gefunden
+          {{ $t('dockerModule.noVolumesFound') }}
         </div>
         <div v-else class="overflow-x-auto">
           <table class="w-full">
@@ -1411,11 +1411,11 @@ watch(() => projectStore.selectedProjectId, async () => {
                   </p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-400">Erstellt</p>
+                  <p class="text-xs text-gray-400">{{ $t('dockerModule.createdLabel') }}</p>
                   <p class="text-sm text-white">{{ containerDetails.created }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-400">IP-Adresse</p>
+                  <p class="text-xs text-gray-400">{{ $t('dockerModule.ipAddress') }}</p>
                   <p class="text-sm text-white font-mono">{{ containerDetails.network?.ipAddress || '-' }}</p>
                 </div>
               </div>
@@ -1446,7 +1446,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                     class="flex items-center gap-1 text-xs text-gray-400 hover:text-white"
                   >
                     <component :is="showSensitiveEnvVars ? EyeSlashIcon : EyeIcon" class="w-4 h-4" />
-                    {{ showSensitiveEnvVars ? 'Sensible Werte ausblenden' : 'Sensible Werte anzeigen' }}
+                    {{ showSensitiveEnvVars ? $t('dockerModule.hideSensitiveValues') : $t('dockerModule.showSensitiveValues') }}
                   </button>
                 </div>
                 <div class="bg-white/[0.04] rounded overflow-hidden max-h-60 overflow-auto">
@@ -1573,8 +1573,8 @@ watch(() => projectStore.selectedProjectId, async () => {
 
             <div v-else-if="!composeFile?.readable" class="text-center py-8">
               <ExclamationTriangleIcon class="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-              <p class="text-gray-300">{{ composeFile?.message || 'Compose-Datei konnte nicht gelesen werden' }}</p>
-              <p class="text-sm text-gray-500 mt-2">Pfad: {{ composeFile?.path }}</p>
+              <p class="text-gray-300">{{ composeFile?.message || $t('dockerModule.composeFileNotReadable') }}</p>
+              <p class="text-sm text-gray-500 mt-2">{{ $t('dockerModule.path') }}: {{ composeFile?.path }}</p>
             </div>
 
             <div v-else>
@@ -1788,11 +1788,11 @@ DB_PASSWORD=secret"
               </button>
               <button @click="restoreBackup(selectedBackup, false)" class="btn-secondary">
                 <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
-                Nur Dateien
+                {{ $t('dockerModule.filesOnly') }}
               </button>
               <button @click="restoreBackup(selectedBackup, true)" class="btn-primary">
                 <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
-                Wiederherstellen & Deploy
+                {{ $t('dockerModule.restoreAndDeployButton') }}
               </button>
             </div>
           </div>

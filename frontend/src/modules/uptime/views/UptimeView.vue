@@ -1057,7 +1057,7 @@ function toggleMonitorSelection(monitorId) {
                   </p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Tage verbleibend</p>
+                  <p class="text-xs text-gray-500">{{ $t('uptime.daysRemaining') }}</p>
                   <p class="text-lg font-bold" :class="selectedMonitor.game_server_data.days_until_expiry < 14 ? 'text-yellow-400' : 'text-green-400'">
                     {{ selectedMonitor.game_server_data.days_until_expiry }}
                   </p>
@@ -1076,7 +1076,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Recent incidents -->
             <div v-if="selectedMonitor.incidents?.length">
-              <h3 class="text-sm font-medium text-gray-400 mb-2">Letzte Incidents</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-2">{{ $t('uptime.recentIncidents') }}</h3>
               <div class="space-y-2">
                 <div
                   v-for="incident in selectedMonitor.incidents"
@@ -1086,7 +1086,7 @@ function toggleMonitorSelection(monitorId) {
                   <div class="flex items-center justify-between">
                     <span class="text-sm text-red-400">{{ formatDate(incident.started_at) }}</span>
                     <span class="text-sm text-gray-400">
-                      {{ incident.is_resolved ? `Dauer: ${formatDuration(incident.duration_seconds)}` : 'Andauernd' }}
+                      {{ incident.is_resolved ? $t('uptime.durationLabel', { time: formatDuration(incident.duration_seconds) }) : $t('uptime.ongoing') }}
                     </span>
                   </div>
                   <p v-if="incident.cause" class="text-xs text-gray-500 mt-1">{{ incident.cause }}</p>
@@ -1096,7 +1096,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Recent checks -->
             <div>
-              <h3 class="text-sm font-medium text-gray-400 mb-2">Letzte Checks</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-2">{{ $t('uptime.recentChecks') }}</h3>
               <div class="space-y-1 max-h-48 overflow-y-auto">
                 <div
                   v-for="check in selectedMonitor.recent_checks"

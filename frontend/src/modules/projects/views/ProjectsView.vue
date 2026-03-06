@@ -75,20 +75,20 @@ const colors = [
 ]
 
 // Link types
-const linkTypes = [
+const linkTypes = computed(() => [
   { value: 'document', label: t('inboxModule.dokument'), icon: DocumentTextIcon },
-  { value: 'list', label: 'Liste', icon: ListBulletIcon },
-  { value: 'kanban_board', label: 'Kanban Board', icon: ViewColumnsIcon },
-  { value: 'connection', label: 'Verbindung', icon: ServerIcon },
+  { value: 'list', label: t('projects.list'), icon: ListBulletIcon },
+  { value: 'kanban_board', label: t('projects.kanbanBoard'), icon: ViewColumnsIcon },
+  { value: 'connection', label: t('projects.connection'), icon: ServerIcon },
   { value: 'snippet', label: t('projectsModule.snippet'), icon: CodeBracketIcon },
-]
+])
 
 // Status options
-const statusOptions = [
-  { value: 'active', label: 'Aktiv', icon: FolderIcon, color: 'text-green-400' },
-  { value: 'completed', label: 'Abgeschlossen', icon: CheckCircleIcon, color: 'text-blue-400' },
-  { value: 'archived', label: 'Archiviert', icon: ArchiveBoxIcon, color: 'text-gray-400' },
-]
+const statusOptions = computed(() => [
+  { value: 'active', label: t('projects.activeStatus'), icon: FolderIcon, color: 'text-green-400' },
+  { value: 'completed', label: t('projects.completedStatus'), icon: CheckCircleIcon, color: 'text-blue-400' },
+  { value: 'archived', label: t('projects.archivedStatus'), icon: ArchiveBoxIcon, color: 'text-gray-400' },
+])
 
 // Filtered projects
 const filteredProjects = computed(() => {
@@ -624,7 +624,7 @@ onMounted(() => {
       <!-- Linked Items -->
       <div class="bg-dark-800 border border-dark-700 rounded-xl">
         <div class="flex items-center justify-between p-4 border-b border-dark-700">
-          <h2 class="text-lg font-semibold text-white">Verknüpfte Elemente</h2>
+          <h2 class="text-lg font-semibold text-white">{{ $t('projects.linkedElements') }}</h2>
           <div class="flex items-center gap-3">
             <!-- Filter -->
             <select
@@ -641,12 +641,12 @@ onMounted(() => {
               v-model="linkedItemsSort"
               class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
             >
-              <option value="date_desc">Neueste zuerst</option>
-              <option value="date_asc">Älteste zuerst</option>
-              <option value="name_asc">Name A-Z</option>
-              <option value="name_desc">Name Z-A</option>
-              <option value="type_asc">Typ A-Z</option>
-              <option value="type_desc">Typ Z-A</option>
+              <option value="date_desc">{{ $t('projects.newestFirst') }}</option>
+              <option value="date_asc">{{ $t('projects.oldestFirst') }}</option>
+              <option value="name_asc">{{ $t('projects.nameAZ') }}</option>
+              <option value="name_desc">{{ $t('projects.nameZA') }}</option>
+              <option value="type_asc">{{ $t('projects.typeAZ') }}</option>
+              <option value="type_desc">{{ $t('projects.typeZA') }}</option>
             </select>
             <!-- Add buttons -->
             <div class="flex gap-1 border-l border-dark-600 pl-3">
@@ -690,9 +690,9 @@ onMounted(() => {
           </div>
           <div v-else-if="selectedProject.linked_items?.length && linkedItemsFilter" class="text-center py-8">
             <FunnelIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-            <p class="text-gray-400">Keine Elemente für diesen Filter</p>
+            <p class="text-gray-400">{{ $t('projects.noElementsForFilter') }}</p>
             <button @click="linkedItemsFilter = ''" class="text-sm text-primary-500 hover:text-primary-400 mt-1">
-              Filter zurücksetzen
+              {{ $t('projects.resetFilter') }}
             </button>
           </div>
           <div v-else class="text-center py-8">
@@ -728,7 +728,7 @@ onMounted(() => {
                 v-model="form.name"
                 type="text"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                placeholder="Projektname"
+                :placeholder="$t('projects.projectName')"
               />
             </div>
 
@@ -738,7 +738,7 @@ onMounted(() => {
                 v-model="form.description"
                 rows="3"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
-                placeholder="Optionale Beschreibung..."
+                :placeholder="$t('projects.optionalDescription')"
               ></textarea>
             </div>
 
@@ -785,7 +785,7 @@ onMounted(() => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">
-              {{ linkTypes.find(t => t.value === linkType)?.label }} verknüpfen
+              {{ $t('projects.linkItem', { label: linkTypes.find(t => t.value === linkType)?.label }) }}
             </h2>
             <button @click="showLinkModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -828,7 +828,7 @@ onMounted(() => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">
-              Projektmitglieder
+              {{ $t('projects.projectMembers') }}
             </h2>
             <button @click="showMembersModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -898,7 +898,7 @@ onMounted(() => {
                       @change="updateMemberPermission(share.user_id, $event.target.value)"
                       class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
                     >
-                      <option value="view">Lesen</option>
+                      <option value="view">{{ $t('projects.readOnly') }}</option>
                       <option value="edit">{{ $t('common.edit') }}</option>
                     </select>
                     <button

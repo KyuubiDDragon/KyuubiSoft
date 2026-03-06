@@ -62,21 +62,21 @@ const statusForm = ref({
 })
 
 // Status options
-const statusOptions = [
-  { value: 'open', label: 'Offen', color: 'bg-blue-500', textColor: 'text-blue-400' },
-  { value: 'in_progress', label: 'In Bearbeitung', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
-  { value: 'waiting', label: 'Warten', color: 'bg-purple-500', textColor: 'text-purple-400' },
+const statusOptions = computed(() => [
+  { value: 'open', label: t('tickets.open'), color: 'bg-blue-500', textColor: 'text-blue-400' },
+  { value: 'in_progress', label: t('tickets.inProgress'), color: 'bg-yellow-500', textColor: 'text-yellow-400' },
+  { value: 'waiting', label: t('tickets.waiting'), color: 'bg-purple-500', textColor: 'text-purple-400' },
   { value: 'resolved', label: t('tickets.geloest'), color: 'bg-green-500', textColor: 'text-green-400' },
-  { value: 'closed', label: 'Geschlossen', color: 'bg-gray-500', textColor: 'text-gray-400' },
-]
+  { value: 'closed', label: t('tickets.closed'), color: 'bg-gray-500', textColor: 'text-gray-400' },
+])
 
 // Priority options
-const priorityOptions = [
-  { value: 'low', label: 'Niedrig', color: 'bg-gray-500' },
-  { value: 'normal', label: 'Normal', color: 'bg-blue-500' },
-  { value: 'high', label: 'Hoch', color: 'bg-orange-500' },
-  { value: 'urgent', label: 'Dringend', color: 'bg-red-500' },
-]
+const priorityOptions = computed(() => [
+  { value: 'low', label: t('tickets.low'), color: 'bg-gray-500' },
+  { value: 'normal', label: t('tickets.normal'), color: 'bg-blue-500' },
+  { value: 'high', label: t('tickets.high'), color: 'bg-orange-500' },
+  { value: 'urgent', label: t('tickets.urgent'), color: 'bg-red-500' },
+])
 
 // Fetch ticket
 async function fetchTicket() {
@@ -257,10 +257,10 @@ function formatRelativeDate(dateStr) {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return 'gerade eben'
-  if (diffMins < 60) return `vor ${diffMins} Min.`
-  if (diffHours < 24) return `vor ${diffHours} Std.`
-  if (diffDays < 7) return `vor ${diffDays} Tagen`
+  if (diffMins < 1) return t('tickets.justNow')
+  if (diffMins < 60) return t('tickets.minutesAgo', { n: diffMins })
+  if (diffHours < 24) return t('tickets.hoursAgo', { n: diffHours })
+  if (diffDays < 7) return t('tickets.daysAgo', { n: diffDays })
   return date.toLocaleDateString('de-DE')
 }
 
@@ -329,14 +329,14 @@ onMounted(() => {
             class="btn-secondary flex items-center gap-2"
           >
             <UserCircleIcon class="w-5 h-5" />
-            Zuweisen
+            {{ $t('tickets.assign') }}
           </button>
           <button
             @click="openEditModal"
             class="btn-secondary flex items-center gap-2"
           >
             <PencilIcon class="w-5 h-5" />
-            Bearbeiten
+            {{ $t('tickets.editTicket') }}
           </button>
           <button
             @click="deleteTicket"
@@ -360,7 +360,7 @@ onMounted(() => {
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
             <h3 class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
               <ChatBubbleLeftIcon class="w-5 h-5" />
-              Kommentare ({{ comments.length }})
+              {{ $t('tickets.comments') }} ({{ comments.length }})
             </h3>
 
             <!-- Comment list -->
@@ -377,11 +377,11 @@ onMounted(() => {
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="font-medium text-white">
-                      {{ comment.username || comment.guest_name || 'Gast' }}
+                      {{ comment.username || comment.guest_name || $t('tickets.guest') }}
                     </span>
                     <span class="text-xs text-gray-500">{{ formatRelativeDate(comment.created_at) }}</span>
                     <span v-if="comment.is_internal" class="text-xs text-yellow-500 bg-yellow-500/20 px-2 py-0.5 rounded">
-                      Intern
+                      {{ $t('tickets.internal') }}
                     </span>
                   </div>
                   <p class="text-gray-300 whitespace-pre-wrap">{{ comment.content }}</p>
@@ -396,7 +396,7 @@ onMounted(() => {
               </div>
 
               <div v-if="comments.length === 0" class="text-center py-8 text-gray-500">
-                Noch keine Kommentare
+                {{ $t('tickets.noComments') }}
               </div>
             </div>
 
@@ -406,7 +406,7 @@ onMounted(() => {
                 v-model="newComment"
                 rows="3"
                 class="textarea"
-                placeholder="Kommentar schreiben..."
+                :placeholder="$t('tickets.writeComment')"
               ></textarea>
               <div class="flex items-center justify-between mt-3">
                 <label v-if="canManage" class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
@@ -423,7 +423,7 @@ onMounted(() => {
                   :disabled="!newComment.trim() || submittingComment"
                   class="btn-primary"
                 >
-                  {{ submittingComment ? $t('tickets.wirdGesendet') : 'Kommentar senden' }}
+                  {{ submittingComment ? $t('tickets.wirdGesendet') : $t('tickets.sendComment') }}
                 </button>
               </div>
             </div>
@@ -433,7 +433,7 @@ onMounted(() => {
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6">
             <h3 class="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
               <ClockIcon class="w-5 h-5" />
-              Verlauf
+              {{ $t('tickets.history') }}
             </h3>
 
             <div class="space-y-4">
@@ -450,9 +450,9 @@ onMounted(() => {
                     <span class="text-white font-medium">{{ history.changed_by_name || 'System' }}</span>
                     <span class="text-gray-500">{{ $t('tickets.hatDenStatusGeaendert') }}</span>
                     <span v-if="history.old_status" class="text-gray-400">
-                      von <span :class="getStatusInfo(history.old_status).textColor">{{ getStatusInfo(history.old_status).label }}</span>
+                      {{ $t('tickets.fromLabel') }} <span :class="getStatusInfo(history.old_status).textColor">{{ getStatusInfo(history.old_status).label }}</span>
                     </span>
-                    <span class="text-gray-500">auf</span>
+                    <span class="text-gray-500">{{ $t('tickets.toLabel') }}</span>
                     <span :class="getStatusInfo(history.new_status).textColor">{{ getStatusInfo(history.new_status).label }}</span>
                   </div>
                   <p v-if="history.comment" class="text-sm text-gray-400 mt-1">{{ history.comment }}</p>
@@ -478,14 +478,14 @@ onMounted(() => {
                   {{ ticket.creator_name?.[0]?.toUpperCase() || ticket.guest_name?.[0]?.toUpperCase() || '?' }}
                 </div>
                 <div>
-                  <div class="text-white text-sm">{{ ticket.creator_name || ticket.guest_name || 'Gast' }}</div>
+                  <div class="text-white text-sm">{{ ticket.creator_name || ticket.guest_name || $t('tickets.guest') }}</div>
                   <div v-if="ticket.guest_email" class="text-xs text-gray-500">{{ ticket.guest_email }}</div>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Zugewiesen an</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.assignedTo') }}</h4>
               <div v-if="ticket.assignee_name" class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm">
                   {{ ticket.assignee_name[0].toUpperCase() }}
@@ -528,7 +528,7 @@ onMounted(() => {
             </div>
 
             <div v-if="ticket.access_code">
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">Zugriffscode</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.accessCode') }}</h4>
               <div class="text-gray-300 text-sm font-mono bg-white/[0.04] px-2 py-1 rounded">
                 {{ ticket.access_code }}
               </div>
@@ -546,7 +546,7 @@ onMounted(() => {
       >
         <div class="modal w-full max-w-2xl">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Ticket bearbeiten</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.editTicketModal') }}</h2>
             <button @click="showEditModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -554,7 +554,7 @@ onMounted(() => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.titleLabel') }}</label>
               <input
                 v-model="editForm.title"
                 type="text"
@@ -563,7 +563,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.descriptionLabel') }}</label>
               <textarea
                 v-model="editForm.description"
                 rows="5"
@@ -573,12 +573,12 @@ onMounted(() => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.categoryLabel') }}</label>
                 <select
                   v-model="editForm.category_id"
                   class="select"
                 >
-                  <option value="">Keine Kategorie</option>
+                  <option value="">{{ $t('tickets.noCategoryOption') }}</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
                     {{ c.name }}
                   </option>
@@ -586,7 +586,7 @@ onMounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Priorität</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.priorityLabel') }}</label>
                 <select
                   v-model="editForm.priority"
                   class="select"
@@ -619,7 +619,7 @@ onMounted(() => {
       >
         <div class="modal w-full">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Status ändern</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.changeStatus') }}</h2>
             <button @click="showStatusModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -627,7 +627,7 @@ onMounted(() => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Neuer Status</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('tickets.newStatus') }}</label>
               <div class="grid grid-cols-2 gap-2">
                 <button
                   v-for="s in statusOptions"
@@ -644,12 +644,12 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kommentar (optional)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.commentOptional') }}</label>
               <textarea
                 v-model="statusForm.comment"
                 rows="3"
                 class="textarea"
-                placeholder="Grund für die Statusänderung..."
+                :placeholder="$t('tickets.reasonPlaceholder')"
               ></textarea>
             </div>
           </div>
@@ -659,7 +659,7 @@ onMounted(() => {
               {{ $t('common.cancel') }}
             </button>
             <button @click="updateStatus" class="btn-primary">
-              Status ändern
+              {{ $t('tickets.changeStatus') }}
             </button>
           </div>
         </div>
@@ -674,7 +674,7 @@ onMounted(() => {
       >
         <div class="modal w-full">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Ticket zuweisen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.assignTicket') }}</h2>
             <button @click="showAssignModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -690,7 +690,7 @@ onMounted(() => {
                 <div class="w-8 h-8 rounded-full bg-dark-500 flex items-center justify-center">
                   <XMarkIcon class="w-4 h-4 text-gray-400" />
                 </div>
-                <span>Nicht zugewiesen</span>
+                <span>{{ $t('tickets.notAssigned') }}</span>
               </button>
 
               <button

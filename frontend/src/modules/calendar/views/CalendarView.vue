@@ -1035,7 +1035,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                 <ul class="text-gray-500 space-y-1 text-xs">
                   <li><strong>Google:</strong> Kalendereinstellungen → "Geheime Adresse im iCal-Format"</li>
                   <li><strong>Outlook:</strong> Kalendereinstellungen → Freigeben → ICS-Link</li>
-                  <li><strong>Apple:</strong> iCloud → Kalender → Öffentlichen Kalender teilen</li>
+                  <li><strong>Apple:</strong> {{ $t('calendar.appleCalendarShare') }}</li>
                 </ul>
               </div>
 

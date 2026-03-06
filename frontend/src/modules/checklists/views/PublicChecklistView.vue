@@ -1444,7 +1444,7 @@ onUnmounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.requiredTesters') }}</label>
                 <input
                   v-model.number="newItem.required_testers"
                   type="number"
@@ -1561,7 +1561,7 @@ onUnmounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.requiredTesters') }}</label>
                 <input
                   v-model.number="editingItem.required_testers"
                   type="number"

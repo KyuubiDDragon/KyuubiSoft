@@ -766,7 +766,7 @@ onUnmounted(() => {
                       Passwort
                     </span>
                     <span v-if="share.expires_at" class="text-orange-400">
-                      Läuft ab: {{ formatDate(share.expires_at) }}
+                      {{ $t('common.expiresAt') }} {{ formatDate(share.expires_at) }}
                     </span>
                   </div>
                 </div>

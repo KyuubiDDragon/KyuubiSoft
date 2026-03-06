@@ -198,7 +198,7 @@ async function copyLink() {
                 </div>
                 <div v-if="shareExpiresAt" class="flex items-center gap-1.5 text-gray-400">
                   <CalendarIcon class="w-4 h-4" />
-                  <span>Läuft ab: {{ new Date(shareExpiresAt).toLocaleDateString('de-DE') }}</span>
+                  <span>{{ $t('common.expiresAt') }} {{ new Date(shareExpiresAt).toLocaleDateString('de-DE') }}</span>
                 </div>
               </div>
 
@@ -230,7 +230,7 @@ async function copyLink() {
               <div class="space-y-3">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" v-model="setPassword" class="rounded border-gray-600 text-primary-500 focus:ring-primary-500 bg-dark-700" />
-                  <span class="text-sm text-gray-300">Mit Passwort schützen</span>
+                  <span class="text-sm text-gray-300">{{ $t('common.passwordProtect') }}</span>
                 </label>
                 <input
                   v-if="setPassword"

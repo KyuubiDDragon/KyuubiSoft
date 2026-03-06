@@ -432,7 +432,8 @@
     "title": "Calendar",
     "today": "Today",
     "week": "Week",
-    "year": "Year"
+    "year": "Year",
+    "appleCalendarShare": "Apple: iCloud → Calendar → Share Public Calendar"
   },
   "calendarModule": {
     "alle2Wochen": "Every 2 weeks",
@@ -826,7 +827,12 @@
     "urlRequired": "URL is required",
     "version": "Version",
     "warning": "Warning",
-    "yes": "Yes"
+    "yes": "Yes",
+    "expiresAt": "Expires at:",
+    "requiredTesters": "Required testers",
+    "linkInvoice": "Link invoice",
+    "passwordProtect": "Protect with password",
+    "multipleEditorsSync": "Multiple people can edit simultaneously - changes are synced."
   },
   "connections": {
     "confirmDelete": "Really delete connection \"{name}\"?",
@@ -905,7 +911,8 @@
     "subjectOrDescriptionRequired": "Subject or description required",
     "subtitle": "Manage contacts",
     "title": "Contacts",
-    "totalContacts": "Total contacts"
+    "totalContacts": "Total contacts",
+    "confirmDeleteWithActivities": "Really delete \"{name}\"? All activities will also be deleted."
   },
   "contactsModule": {
     "activityCreated": "Activity created",
@@ -1312,7 +1319,9 @@
     "yearly": "Yearly",
     "yourName": "Your name",
     "zeroUnlimited": "0 = unlimited",
-    "zipArchive": "ZIP archive"
+    "zipArchive": "ZIP archive",
+    "publicPasswordProtected": "This document is password protected. Please enter the password.",
+    "signHint": "Draw your signature in the field below. You can also use the touchscreen."
   },
   "contractsModule": {
     "24Stunden": "24 hours",
@@ -2206,7 +2215,10 @@
     "verifying": "Checking...",
     "webtropiaApiToken": "Webtropia API Token",
     "wtDomainHint": "Select domain at Webtropia",
-    "wtTokenPlaceholder": "Enter Webtropia/myLoc API token..."
+    "wtTokenPlaceholder": "Enter Webtropia/myLoc API token...",
+    "cloudflareApiHint": "Required for sync with Cloudflare.",
+    "mylocApiHint": "OAuth token from the myLoc ZKM panel. Required for sync.",
+    "zonePastePlaceholder": "; Paste zone file here..."
   },
   "dnsModule": {
     "addDomain": "Add Domain",
@@ -2436,7 +2448,10 @@
     "path": "Path",
     "filesOnly": "Files only",
     "restoreAndDeployButton": "Restore & Deploy",
-    "nameAndComposeRequired": "Name and compose content are required"
+    "nameAndComposeRequired": "Name and compose content are required",
+    "portainerHint": "Configure Portainer to load Compose files directly from the Portainer API when they are not available in the filesystem.",
+    "sshHint": "SSH access for reading Compose files on remote servers. Enables backups for stacks not created via Portainer.",
+    "privateKeyHint": "If no password is used, paste the private key here"
   },
   "documents": {
     "accessMode": "Access Mode",
@@ -2516,7 +2531,9 @@
     "visitorsReadOnly": "Visitors can only view",
     "writeMarkdown": "Write your Markdown text here...",
     "wrongPassword": "Wrong password",
-    "you": "(You)"
+    "you": "(You)",
+    "previewVersion": "Preview - Version {n}",
+    "selectVersion": "Select a version"
   },
   "documentsModule": {
     "accessMode": "Access Mode",

@@ -432,7 +432,8 @@
     "title": "Kalender",
     "today": "Heute",
     "week": "Woche",
-    "year": "Jahr"
+    "year": "Jahr",
+    "appleCalendarShare": "Apple: iCloud → Kalender → Öffentlichen Kalender teilen"
   },
   "calendarModule": {
     "alle2Wochen": "Alle 2 Wochen",
@@ -826,7 +827,12 @@
     "urlRequired": "URL ist erforderlich",
     "version": "Version",
     "warning": "Warnung",
-    "yes": "Ja"
+    "yes": "Ja",
+    "expiresAt": "Läuft ab:",
+    "requiredTesters": "Benötigte Tester",
+    "linkInvoice": "Rechnung verknüpfen",
+    "passwordProtect": "Mit Passwort schützen",
+    "multipleEditorsSync": "Mehrere Personen können gleichzeitig bearbeiten - Änderungen werden synchronisiert."
   },
   "connections": {
     "confirmDelete": "Verbindung \"{name}\" wirklich löschen?",
@@ -905,7 +911,8 @@
     "subjectOrDescriptionRequired": "Betreff oder Beschreibung erforderlich",
     "subtitle": "Kontakte verwalten",
     "title": "Kontakte",
-    "totalContacts": "Kontakte gesamt"
+    "totalContacts": "Kontakte gesamt",
+    "confirmDeleteWithActivities": "\"{name}\" wirklich löschen? Alle Aktivitäten werden ebenfalls gelöscht."
   },
   "contactsModule": {
     "activityCreated": "Aktivität erstellt",
@@ -1312,7 +1319,9 @@
     "yearly": "Jährlich",
     "yourName": "Ihr Name",
     "zeroUnlimited": "0 = unbegrenzt",
-    "zipArchive": "ZIP-Archiv"
+    "zipArchive": "ZIP-Archiv",
+    "publicPasswordProtected": "Dieses Dokument ist passwortgeschützt. Bitte geben Sie das Passwort ein.",
+    "signHint": "Zeichnen Sie Ihre Unterschrift in das Feld unten. Sie können auch den Touchscreen verwenden."
   },
   "contractsModule": {
     "24Stunden": "24 Stunden",
@@ -2206,7 +2215,10 @@
     "verifying": "Pruefen...",
     "webtropiaApiToken": "Webtropia API Token",
     "wtDomainHint": "Domain bei Webtropia auswählen",
-    "wtTokenPlaceholder": "Webtropia/myLoc API Token eingeben..."
+    "wtTokenPlaceholder": "Webtropia/myLoc API Token eingeben...",
+    "cloudflareApiHint": "Wird für Sync mit Cloudflare benötigt.",
+    "mylocApiHint": "OAuth-Token aus dem myLoc ZKM-Panel. Wird für Sync benötigt.",
+    "zonePastePlaceholder": "; Zone-Datei hier einfügen..."
   },
   "dnsModule": {
     "addDomain": "Add Domain",
@@ -2436,7 +2448,10 @@
     "path": "Pfad",
     "filesOnly": "Nur Dateien",
     "restoreAndDeployButton": "Wiederherstellen & Deploy",
-    "nameAndComposeRequired": "Name und Compose-Inhalt sind erforderlich"
+    "nameAndComposeRequired": "Name und Compose-Inhalt sind erforderlich",
+    "portainerHint": "Konfiguriere Portainer, um Compose-Dateien direkt von der Portainer API zu laden, wenn sie nicht im Dateisystem verfügbar sind.",
+    "sshHint": "SSH-Zugang für das Lesen von Compose-Dateien auf Remote-Servern. Ermöglicht Backups für nicht über Portainer erstellte Stacks.",
+    "privateKeyHint": "Falls kein Passwort verwendet wird, hier den Private Key einfügen"
   },
   "documents": {
     "accessMode": "Zugriffsmodus",
@@ -2516,7 +2531,9 @@
     "visitorsReadOnly": "Besucher können nur ansehen",
     "writeMarkdown": "Schreibe hier deinen Markdown-Text...",
     "wrongPassword": "Falsches Passwort",
-    "you": "(Du)"
+    "you": "(Du)",
+    "previewVersion": "Vorschau - Version {n}",
+    "selectVersion": "Wähle eine Version"
   },
   "documentsModule": {
     "accessMode": "Access Mode",

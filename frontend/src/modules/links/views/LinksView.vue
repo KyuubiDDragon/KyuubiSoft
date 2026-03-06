@@ -387,7 +387,7 @@ onMounted(fetchData)
               </span>
               <span v-if="link.expires_at" class="flex items-center gap-1">
                 <ClockIcon class="w-3 h-3" />
-                Läuft ab: {{ formatDate(link.expires_at) }}
+                {{ $t('common.expiresAt') }} {{ formatDate(link.expires_at) }}
               </span>
               <span v-if="link.max_clicks" class="flex items-center gap-1">
                 Max: {{ link.max_clicks }}

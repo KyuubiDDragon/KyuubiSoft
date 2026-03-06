@@ -849,7 +849,7 @@ onMounted(async () => {
                 {{ $t('documentsModule.collaborativeEditing') }}
               </p>
               <p v-if="shareInfo.expires_at">
-                Läuft ab: {{ formatDate(shareInfo.expires_at) }}
+                {{ $t('common.expiresAt') }} {{ formatDate(shareInfo.expires_at) }}
               </p>
             </div>
 
@@ -908,7 +908,7 @@ onMounted(async () => {
               </div>
               <p v-if="shareForm.can_edit" class="text-xs text-blue-400 mt-2 flex items-center gap-1">
                 <UsersIcon class="w-3 h-3" />
-                Mehrere Personen können gleichzeitig bearbeiten - Änderungen werden synchronisiert.
+                {{ $t('common.multipleEditorsSync') }}
               </p>
             </div>
 

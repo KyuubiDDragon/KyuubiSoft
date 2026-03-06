@@ -429,11 +429,11 @@ onMounted(loadConnections)
 
             <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
               <input v-model="queryAllowWrite" type="checkbox" class="rounded" />
-              Schreibzugriff erlauben
+              {{ $t('databaseBrowser.allowWrite') }}
             </label>
 
             <span v-if="queryResult" class="text-xs text-gray-500 ml-auto">
-              {{ queryResult.row_count }} Zeilen · {{ queryResult.duration_ms }}ms
+              {{ $t('databaseBrowser.rowsInMs', { count: queryResult.row_count, ms: queryResult.duration_ms }) }}
             </span>
           </div>
 
@@ -474,7 +474,7 @@ onMounted(loadConnections)
             </table>
 
             <div v-else-if="!queryRunning && !queryError" class="flex items-center justify-center py-12 text-gray-500 text-sm">
-              Query schreiben und ausführen
+              {{ $t('databaseBrowser.writeAndExecute') }}
             </div>
           </div>
         </div>
@@ -501,11 +501,11 @@ onMounted(loadConnections)
                   @click="useHistoryQuery(item.query)"
                   class="flex-shrink-0 text-xs text-primary-400 hover:text-primary-300 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  Verwenden
+                  {{ $t('databaseBrowser.use') }}
                 </button>
               </div>
               <div class="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                <span>{{ item.rows_returned ?? 0 }} Zeilen</span>
+                <span>{{ $t('databaseBrowser.rowsCount', { count: item.rows_returned ?? 0 }) }}</span>
                 <span v-if="item.duration_ms">{{ item.duration_ms }}ms</span>
                 <span>{{ item.executed_at }}</span>
               </div>

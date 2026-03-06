@@ -1,6 +1,8 @@
 <script setup>
 import { LinkIcon } from '@heroicons/vue/24/outline'
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 </script>
 
@@ -13,9 +15,9 @@ defineProps({ widget: Object, data: Object })
     <div class="text-center">
       <LinkIcon class="w-8 h-8 text-primary-400 mx-auto mb-2" />
       <p class="text-2xl font-bold text-white">{{ data?.total_links || 0 }}</p>
-      <p class="text-gray-500 text-sm">Kurzlinks</p>
+      <p class="text-gray-500 text-sm">{{ t('dashboard.shortLinks') }}</p>
       <p class="text-xl font-bold text-green-400 mt-2">{{ data?.total_clicks || 0 }}</p>
-      <p class="text-gray-500 text-sm">{{ $t('dashboardModule.klicksGesamt') }}</p>
+      <p class="text-gray-500 text-sm">{{ $t('dashboardModule.totalClicks') }}</p>
     </div>
   </div>
 </template>

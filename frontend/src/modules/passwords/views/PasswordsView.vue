@@ -112,7 +112,7 @@ async function openEditPassword(pwd) {
     showPassword.value = false
     showPasswordModal.value = true
   } catch (error) {
-    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
+    uiStore.showError(t('documentsModule.errorLoading'))
   }
 }
 
@@ -125,14 +125,14 @@ async function savePassword() {
   try {
     if (editingPassword.value) {
       await passwordsStore.updatePassword(editingPassword.value.id, passwordForm.value)
-      uiStore.showSuccess(t('system.passwortAktualisiert'))
+      uiStore.showSuccess(t('system.passwordUpdated'))
     } else {
       await passwordsStore.createPassword(passwordForm.value)
-      uiStore.showSuccess(t('system.passwortErstellt'))
+      uiStore.showSuccess(t('system.passwordCreated'))
     }
     showPasswordModal.value = false
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -141,9 +141,9 @@ async function deletePassword(pwd) {
 
   try {
     await passwordsStore.deletePassword(pwd.id)
-    uiStore.showSuccess(t('system.passwortGeloescht'))
+    uiStore.showSuccess(t('system.passwordDeleted'))
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -161,7 +161,7 @@ async function generatePassword() {
     passwordForm.value.password = password
     showPassword.value = true
   } catch (error) {
-    uiStore.showError(t('passwordsModule.fehlerBeimGenerieren'))
+    uiStore.showError(t('passwordsModule.errorGenerating'))
   }
 }
 
@@ -181,7 +181,7 @@ async function copyPassword(pwd) {
     await copyToClipboard(fullPassword.password, pwd.id)
     uiStore.showSuccess(t('passwordsModule.passwortKopiert'))
   } catch (error) {
-    uiStore.showError(t('passwordsModule.passwordsmodulefehlerbeimkopieren'))
+    uiStore.showError(t('passwordsModule.errorCopying'))
   }
 }
 
@@ -239,7 +239,7 @@ async function saveCategory() {
     }
     showCategoryModal.value = false
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -249,7 +249,7 @@ async function deleteCategory(cat) {
   try {
     await passwordsStore.deleteCategory(cat.id)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -355,7 +355,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
 
         <div v-else-if="passwordsStore.filteredPasswords.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
           <KeyIcon class="w-16 h-16 mb-4 opacity-50" />
-          <p>{{ $t('passwordsModule.keinePasswoerterGefunden') }}</p>
+          <p>{{ $t('passwordsModule.noPasswordsFound') }}</p>
         </div>
 
         <div v-else class="space-y-2">
@@ -517,7 +517,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
               <div>
                 <label class="label">{{ $t('snippetsModule.kategorie') }}</label>
                 <select v-model="passwordForm.category_id" class="input">
-                  <option :value="null">{{ $t('tickets.ticketskeinekategorie') }}</option>
+                  <option :value="null">{{ $t('tickets.noCategory') }}</option>
                   <option v-for="cat in passwordsStore.categories" :key="cat.id" :value="cat.id">
                     {{ cat.name }}
                   </option>

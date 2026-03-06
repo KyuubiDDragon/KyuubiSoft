@@ -307,7 +307,7 @@ async function handleSave() {
             </div>
 
             <div v-if="form.conditions.length === 0" class="text-center py-8">
-              <p class="text-gray-500 text-sm">{{ $t('notificationRules.keineBedingungenDefiniert') }}</p>
+              <p class="text-gray-500 text-sm">{{ $t('notificationRules.noConditionsDefined') }}</p>
               <p class="text-gray-600 text-xs mt-1">{{ $t('notificationRules.notificationrulesregelwirdbeijedempassendenereignisausgeloest') }}</p>
             </div>
 
@@ -373,7 +373,7 @@ async function handleSave() {
             </div>
 
             <div v-if="form.actions.length === 0" class="text-center py-8">
-              <p class="text-gray-500 text-sm">{{ $t('workflows.keineAktionenDefiniert') }}</p>
+              <p class="text-gray-500 text-sm">{{ $t('workflows.noActionsDefined') }}</p>
               <p class="text-gray-600 text-xs mt-1">{{ $t('notificationRules.mindestensEineAktionIstErforderlich') }}</p>
             </div>
 

@@ -366,7 +366,7 @@ onMounted(() => {
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-3xl font-bold text-white">Git Repositories</h1>
-        <p class="text-gray-400">{{ $t('gitModule.verwalteUndUeberwacheDeineGitRepositories') }}</p>
+        <p class="text-gray-400">{{ $t('gitModule.manageGitRepos') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="syncAllRepositories" :disabled="syncingAll" class="btn-secondary">

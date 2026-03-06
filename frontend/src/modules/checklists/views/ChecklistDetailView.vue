@@ -170,7 +170,7 @@ async function updateSettings() {
     newPassword.value = ''
     uiStore.showSuccess(t('checklists.settingsSaved'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -187,9 +187,9 @@ async function addCategory() {
     expandedCategories.value[response.data.data.id] = true
     showAddCategoryModal.value = false
     newCategory.value = { name: '', description: '' }
-    uiStore.showSuccess(t('tickets.kategorieErstellt'))
+    uiStore.showSuccess(t('tickets.categoryCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -200,9 +200,9 @@ async function updateCategory(category) {
       description: category.description,
     })
     editingCategory.value = null
-    uiStore.showSuccess(t('tickets.kategorieAktualisiert'))
+    uiStore.showSuccess(t('tickets.categoryUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -219,7 +219,7 @@ async function deleteCategory(category) {
       }
       return item
     })
-    uiStore.showSuccess(t('tickets.kategorieGeloescht'))
+    uiStore.showSuccess(t('tickets.categoryDeleted'))
   } catch (error) {
     uiStore.showError(t('common.errorDeleting'))
   }
@@ -239,7 +239,7 @@ async function addItem() {
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     uiStore.showSuccess(t('checklists.itemCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -318,7 +318,7 @@ async function updateItem(item) {
     editingItem.value = null
     uiStore.showSuccess(t('checklists.itemUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 

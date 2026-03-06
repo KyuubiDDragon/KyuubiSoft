@@ -132,7 +132,7 @@ async function loadConnections() {
     const response = await api.get('/api/v1/connections')
     connections.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError(t('databaseBrowser.fehlerBeimLadenDerVerbindungen'))
+    uiStore.showError(t('databaseBrowser.errorLoadingConnections'))
   } finally {
     isLoading.value = false
   }
@@ -162,7 +162,7 @@ async function saveConnection() {
     await loadConnections()
     closeModal()
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -185,7 +185,7 @@ async function toggleFavorite(connection) {
     })
     connection.is_favorite = !connection.is_favorite
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -213,7 +213,7 @@ async function saveTag() {
     tagForm.color = '#6366f1'
     uiStore.showSuccess(t('common.tagCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 

@@ -711,7 +711,7 @@ WHERE i.Unmanaged = TRUE
 ORDER BY i.UnManageUntil`
       },
       {
-        name: t('toolbox.interfacetypenUebersicht'),
+        name: t('toolbox.interfaceTypesOverview'),
         description: 'Statistik nach Interface-Typ',
         query: `SELECT TypeName, COUNT(*) AS InterfaceCount
 FROM Orion.NPM.Interfaces
@@ -757,7 +757,7 @@ ORDER BY TotalBps DESC`
     templates: [
       {
         name: t('toolbox.alleVolumes'),
-        description: t('toolbox.kompletteVolumeuebersicht'),
+        description: t('toolbox.completeVolumeOverview'),
         query: `SELECT v.VolumeID, v.Caption, v.VolumePercentUsed, v.VolumeSize, v.VolumeSpaceAvailable, n.Caption AS NodeName
 FROM Orion.Volumes v
 INNER JOIN Orion.Nodes n ON v.NodeID = n.NodeID
@@ -783,7 +783,7 @@ ORDER BY v.VolumePercentUsed DESC`
       },
       {
         name: 'Volumes nach Status',
-        description: t('toolbox.volumestatusUebersicht'),
+        description: t('toolbox.volumeStatusOverview'),
         query: `SELECT StatusDescription, COUNT(*) AS VolumeCount
 FROM Orion.Volumes
 GROUP BY StatusDescription
@@ -807,7 +807,7 @@ WHERE v.Unmanaged = TRUE
 ORDER BY n.Caption`
       },
       {
-        name: t('toolbox.volumetypenUebersicht'),
+        name: t('toolbox.volumeTypesOverview'),
         description: 'Statistik nach Volume-Typ',
         query: `SELECT VolumeType, COUNT(*) AS VolumeCount, AVG(VolumePercentUsed) AS AvgUsedPercent
 FROM Orion.Volumes
@@ -931,7 +931,7 @@ ORDER BY TimeLoggedUtc DESC`
     templates: [
       {
         name: t('bookmarks.allGroups'),
-        description: t('toolbox.uebersichtAllerOriongruppen'),
+        description: t('toolbox.orionGroupsOverview'),
         query: `SELECT ContainerID, Name, Description, Owner, Status, StatusDescription
 FROM Orion.Groups
 ORDER BY Name`
@@ -960,7 +960,7 @@ ORDER BY GroupCount DESC`
     templates: [
       {
         name: t('toolbox.alleVms'),
-        description: t('toolbox.uebersichtAllerVirtuellenMaschinen'),
+        description: t('toolbox.virtualMachinesOverview'),
         query: `SELECT VirtualMachineID, Name, IPAddress, PowerState, GuestState, CPUCount, MemoryConfigured
 FROM Orion.VIM.VirtualMachines
 ORDER BY Name`
@@ -996,7 +996,7 @@ ORDER BY Name`
     icon: '⚙️',
     templates: [
       {
-        name: t('toolbox.ncmNodesUebersicht'),
+        name: t('toolbox.ncmNodesOverview'),
         description: t('toolbox.alleNcmueberwachtenNodes'),
         query: `SELECT NodeID, NodeCaption, AgentIP, LastConfigDownload, LastInventory, ConfigStatus
 FROM NCM.Nodes
@@ -1026,7 +1026,7 @@ ORDER BY LastConfigDownload`
     templates: [
       {
         name: t('toolbox.alleSubnets'),
-        description: t('toolbox.ipamSubnetuebersicht'),
+        description: t('toolbox.ipamSubnetOverview'),
         query: `SELECT SubnetId, Address, CIDR, FriendlyName, VLAN, PercentUsed, UsedCount, AvailableCount
 FROM IPAM.Subnet
 ORDER BY Address`
@@ -1069,7 +1069,7 @@ ORDER BY IPAddress`
     icon: '🔧',
     templates: [
       {
-        name: t('toolbox.benutzeruebersicht'),
+        name: t('toolbox.userOverview'),
         description: t('toolbox.alleOrionbenutzer'),
         query: `SELECT AccountID, Enabled, AllowAdmin, LastLogin, AccountType
 FROM Orion.Accounts
@@ -1108,7 +1108,7 @@ WHERE Enabled = FALSE
 ORDER BY PollerType`
       },
       {
-        name: t('toolbox.customPropertiesUebersicht'),
+        name: t('toolbox.customPropertiesOverview'),
         description: 'Nodes mit Custom Properties',
         query: `SELECT n.NodeID, n.Caption, cp.City, cp.Department, cp.Comments
 FROM Orion.Nodes n
@@ -1680,7 +1680,7 @@ const tabs = [
                     <TrashIcon class="w-4 h-4" />
                   </button>
                 </div>
-                <p v-if="whereConditions.length === 0" class="text-xs text-gray-500">{{ $t('toolbox.keineFilterDefiniert') }}</p>
+                <p v-if="whereConditions.length === 0" class="text-xs text-gray-500">{{ $t('toolbox.noFiltersDefined') }}</p>
               </div>
             </div>
 
@@ -1691,7 +1691,7 @@ const tabs = [
                 <div>
                   <label class="text-xs text-gray-400">ORDER BY</label>
                   <select v-model="orderBy" class="input w-full text-sm mt-1">
-                    <option value="">{{ $t('toolbox.keineSortierung') }}</option>
+                    <option value="">{{ $t('toolbox.noSorting') }}</option>
                     <option v-for="col in selectedColumns" :key="col" :value="col">{{ col }}</option>
                   </select>
                 </div>

@@ -792,7 +792,7 @@ onMounted(async () => {
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
             <button @click="closeRecordModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="saveRecord" class="btn-primary" :disabled="!recordForm.value.trim()">
-              {{ editingRecord ? 'Speichern' : 'Erstellen' }}
+              {{ editingRecord ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

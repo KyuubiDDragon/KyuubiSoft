@@ -123,7 +123,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
         </div>
 
         <div v-if="result.parsed.expiryDate" class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">{{ $t('toolbox.laeuftAb') }}</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.expiring') }}</span>
           <div class="text-white">
             {{ formatDate(result.parsed.expiryDate) }}
             <span
@@ -137,7 +137,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
         </div>
 
         <div v-if="result.parsed.updatedDate" class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">{{ $t('tickets.zuletztAktualisiert') }}</span>
+          <span class="text-xs text-gray-500">{{ $t('tickets.lastUpdated') }}</span>
           <div class="text-white">{{ formatDate(result.parsed.updatedDate) }}</div>
         </div>
 

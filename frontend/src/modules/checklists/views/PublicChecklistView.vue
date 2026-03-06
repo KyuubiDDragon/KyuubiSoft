@@ -354,7 +354,7 @@ async function quickTest(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    toast.error(err.response?.data?.error || t('webhooks.errorSaving'))
   }
 }
 
@@ -382,7 +382,7 @@ async function quickFail(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    toast.error(err.response?.data?.error || t('webhooks.errorSaving'))
   }
 }
 
@@ -410,7 +410,7 @@ async function quickUncertain(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    toast.error(err.response?.data?.error || t('webhooks.errorSaving'))
   }
 }
 
@@ -443,7 +443,7 @@ async function addEntry() {
     selectedItem.value = null
     newEntry.value = { status: 'passed', notes: '' }
   } catch (err) {
-    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    toast.error(err.response?.data?.error || t('webhooks.errorSaving'))
   }
 }
 
@@ -474,7 +474,7 @@ async function updateEntryStatus(entry, newStatus) {
       }
     }
   } catch (err) {
-    toast.error(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    toast.error(t('webhooks.errorUpdating'))
   }
 }
 
@@ -589,7 +589,7 @@ async function addItem() {
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     toast.success(t('checklists.itemCreated'))
   } catch (err) {
-    toast.error(err.response?.data?.error || t('links.bookmarksmodulefehlerbeimerstellen'))
+    toast.error(err.response?.data?.error || t('links.errorCreating'))
   }
 }
 
@@ -615,9 +615,9 @@ async function addCategory() {
 
     showAddCategoryModal.value = false
     newCategory.value = { name: '', description: '' }
-    toast.success(t('tickets.kategorieErstellt'))
+    toast.success(t('tickets.categoryCreated'))
   } catch (err) {
-    toast.error(err.response?.data?.error || t('links.bookmarksmodulefehlerbeimerstellen'))
+    toast.error(err.response?.data?.error || t('links.errorCreating'))
   }
 }
 
@@ -654,7 +654,7 @@ async function updateItem() {
     editingItem.value = null
     toast.success(t('checklists.itemUpdated'))
   } catch (err) {
-    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    toast.error(err.response?.data?.error || t('webhooks.errorUpdating'))
   }
 }
 

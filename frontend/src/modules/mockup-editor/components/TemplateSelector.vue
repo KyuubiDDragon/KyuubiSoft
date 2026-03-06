@@ -99,7 +99,7 @@ const deleteCustomTemplate = async (e, template) => {
             <button
               @click="(e) => deleteCustomTemplate(e, template)"
               class="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-              :title="$t('mockupEditor.templateLoeschen')"
+              :title="$t('mockupEditor.deleteTemplate')"
             >
               <TrashIcon class="w-3 h-3" />
             </button>

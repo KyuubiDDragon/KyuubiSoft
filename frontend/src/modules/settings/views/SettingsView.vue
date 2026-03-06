@@ -1065,7 +1065,7 @@ watch(activeTab, (tab) => {
 
               <div class="flex gap-3">
                 <button @click="cancelEnable2FA" class="btn-secondary">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button @click="verify2FA" class="btn-primary">
                   {{ $t('settingsModule.verifyAndActivate') }}
@@ -1092,7 +1092,7 @@ watch(activeTab, (tab) => {
 
               <div class="flex gap-3">
                 <button @click="isDisabling2FA = false; disableCode = ''" class="btn-secondary">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button @click="disable2FA" class="btn-primary bg-red-600 hover:bg-red-700">
                   {{ $t('settingsModule.disable2FA') }}

@@ -310,7 +310,7 @@ onUnmounted(() => {
 
     <!-- Settings -->
     <div class="p-4 bg-white/[0.04] rounded-lg space-y-3">
-      <div class="text-sm font-medium text-white mb-3">{{ $t('toolbox.einstellungenMinuten') }}</div>
+      <div class="text-sm font-medium text-white mb-3">{{ $t('toolbox.settingsMinutes') }}</div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>

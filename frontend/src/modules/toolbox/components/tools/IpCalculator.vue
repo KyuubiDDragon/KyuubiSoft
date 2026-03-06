@@ -111,7 +111,7 @@ function getIpType(ip) {
   // Link-local
   if (parts[0] === 169 && parts[1] === 254) return 'Link-Local'
 
-  return t('galleriesModule.oeffentlich')
+  return t('galleriesModule.public')
 }
 
 // Common subnets

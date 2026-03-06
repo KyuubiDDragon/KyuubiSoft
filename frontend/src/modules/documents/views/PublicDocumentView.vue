@@ -182,7 +182,7 @@ async function fetchDocument(password = null) {
     } else if (err.response?.status === 404) {
       error.value = t('documentsModule.docNotFound')
     } else {
-      error.value = t('documentsModule.documentsmodulefehlerbeimladendesdokuments')
+      error.value = t('documentsModule.errorLoadingDocument')
     }
   } finally {
     loading.value = false
@@ -297,7 +297,7 @@ async function saveDocument() {
     document.value.content = content
     console.log(t('documentsModule.dokumentGespeichert'))
   } catch (error) {
-    console.error(t('documentsModule.documentsmodulefehlerbeimspeichern'), error)
+    console.error(t('documentsModule.errorSaving'), error)
   } finally {
     isSaving.value = false
   }

@@ -24,7 +24,7 @@ defineProps({ widget: Object, data: Array })
           {{ monitor.status === 'up' ? $t('widgets.online') : $t('widgets.offline') }}
         </span>
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('dashboardModule.widgetsnomonitors') }}</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('dashboardModule.noMonitors') }}</p>
     </div>
   </div>
 </template>

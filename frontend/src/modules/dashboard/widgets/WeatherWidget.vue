@@ -26,8 +26,8 @@ defineEmits(['open-config'])
     <!-- No location configured -->
     <div v-else-if="!widget.config?.location" class="text-center py-6">
       <MapPinIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-      <p class="text-gray-500 text-sm mb-3">Ort nicht konfiguriert</p>
-      <button @click="$emit('open-config')" class="btn-secondary text-xs">Ort festlegen</button>
+      <p class="text-gray-500 text-sm mb-3">{{ $t('dashboard.locationNotConfigured') }}</p>
+      <button @click="$emit('open-config')" class="btn-secondary text-xs">{{ $t('dashboard.setLocation') }}</button>
     </div>
 
     <!-- Weather data -->
@@ -49,11 +49,11 @@ defineEmits(['open-config'])
       <!-- Details -->
       <div class="grid grid-cols-2 gap-2 text-sm mb-4">
         <div class="bg-white/[0.04] rounded p-2">
-          <p class="text-gray-500 text-xs">{{ $t('dashboardModule.gefuehlt') }}</p>
+          <p class="text-gray-500 text-xs">{{ $t('dashboardModule.feelsLike') }}</p>
           <p class="text-white">{{ data.current?.feels_like }}°</p>
         </div>
         <div class="bg-white/[0.04] rounded p-2">
-          <p class="text-gray-500 text-xs">Wind</p>
+          <p class="text-gray-500 text-xs">{{ $t('dashboard.wind') }}</p>
           <p class="text-white">{{ data.current?.wind_speed }} km/h</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ defineEmits(['open-config'])
     </div>
 
     <div v-else class="text-center py-6">
-      <p class="text-gray-500 text-sm">Wetterdaten werden geladen...</p>
+      <p class="text-gray-500 text-sm">{{ $t('dashboard.loadingWeather') }}</p>
     </div>
   </div>
 </template>

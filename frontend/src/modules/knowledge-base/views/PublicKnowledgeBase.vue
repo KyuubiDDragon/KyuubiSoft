@@ -195,7 +195,7 @@ onMounted(async () => {
         </div>
 
         <div v-if="store.publicCategories.length === 0" class="col-span-full text-center py-16 text-gray-500">
-          {{ $t('knowledgeBase.keineKategorienVerfuegbar') }}
+          {{ $t('knowledgeBase.noCategoriesAvailable') }}
         </div>
       </div>
 

@@ -53,7 +53,7 @@ async function fetchWebhooks() {
     const response = await api.get('/api/v1/webhooks')
     webhooks.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError(t('webhooks.fehlerBeimLadenDerWebhooks'))
+    uiStore.showError(t('webhooks.errorLoadingWebhooks'))
   } finally {
     loading.value = false
   }
@@ -110,15 +110,15 @@ async function saveWebhook() {
   try {
     if (editingWebhook.value) {
       await api.put(`/api/v1/webhooks/${editingWebhook.value.id}`, form.value)
-      uiStore.showSuccess(t('webhooks.webhookAktualisiert'))
+      uiStore.showSuccess(t('webhooks.webhookUpdated'))
     } else {
       await api.post('/api/v1/webhooks', form.value)
-      uiStore.showSuccess(t('webhooks.webhookErstellt'))
+      uiStore.showSuccess(t('webhooks.webhookCreated'))
     }
     await fetchWebhooks()
     showModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -128,10 +128,10 @@ async function deleteWebhook(webhook) {
 
   try {
     await api.delete(`/api/v1/webhooks/${webhook.id}`)
-    uiStore.showSuccess(t('webhooks.webhookGeloescht'))
+    uiStore.showSuccess(t('webhooks.webhookDeleted'))
     await fetchWebhooks()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -143,7 +143,7 @@ async function toggleActive(webhook) {
     })
     webhook.is_active = !webhook.is_active
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -415,13 +415,13 @@ onMounted(() => {
               @click="showModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveWebhook"
               class="btn-primary"
             >
-              {{ editingWebhook ? 'Speichern' : 'Erstellen' }}
+              {{ editingWebhook ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

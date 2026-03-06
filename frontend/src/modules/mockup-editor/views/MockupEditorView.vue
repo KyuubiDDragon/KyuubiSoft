@@ -115,7 +115,7 @@ const handleDuplicateElement = () => {
 const handleDeleteElement = () => {
   if (!mockupStore.selectedElementId) return
   mockupStore.deleteElement(mockupStore.selectedElementId)
-  toast.success(t('mockupEditor.elementGeloescht'))
+  toast.success(t('mockupEditor.elementDeleted'))
 }
 
 // Alignment
@@ -413,7 +413,7 @@ onUnmounted(() => {
             </button>
             <button @click="handleDeleteElement"
                     class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-                    :title="$t('mockupEditor.elementLoeschen')">
+                    :title="$t('mockupEditor.deleteElement')">
               <TrashIcon class="w-4 h-4" />
             </button>
           </template>
@@ -571,14 +571,14 @@ onUnmounted(() => {
                 @click="showSaveTemplateModal = false"
                 class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button
                 @click="confirmSaveTemplate"
                 :disabled="mockupStore.isLoading"
                 class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50"
               >
-                {{ mockupStore.isLoading ? 'Speichert...' : 'Speichern' }}
+                {{ mockupStore.isLoading ? 'Speichert...' : $t('common.save') }}
               </button>
             </div>
           </div>

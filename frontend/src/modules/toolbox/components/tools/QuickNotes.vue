@@ -196,14 +196,14 @@ import { computed } from 'vue'
                 <span v-if="note.pinned" class="text-xs">📌</span>
                 <h4 class="text-sm font-medium text-white truncate">{{ note.title }}</h4>
               </div>
-              <p class="text-xs text-gray-500 truncate">{{ note.content || $t('toolbox.keineVorschau') }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ note.content || $t('toolbox.noPreview') }}</p>
               <p class="text-xs text-gray-600 mt-1">{{ formatDate(note.updatedAt) }}</p>
             </div>
           </div>
         </div>
 
         <div v-if="filteredNotes.length === 0" class="p-4 text-center text-gray-500 text-sm">
-          {{ searchQuery ? $t('common.noResults') : $t('toolbox.keineNotizen') }}
+          {{ searchQuery ? $t('common.noResults') : $t('toolbox.noNotes') }}
         </div>
       </div>
 
@@ -304,10 +304,10 @@ import { computed } from 'vue'
         </p>
         <div class="flex gap-2">
           <button @click="showDeleteConfirm = false" class="btn-secondary flex-1">
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button @click="deleteNote" class="btn-primary bg-red-600 hover:bg-red-500 flex-1">
-            Löschen
+            {{ $t('common.delete') }}
           </button>
         </div>
       </div>

@@ -212,7 +212,7 @@ async function saveEditCard() {
 }
 
 async function deleteCard(card) {
-  if (!window.confirm(t('kanbanModule.karteWirklichLoeschen'))) return
+  if (!window.confirm(t('kanbanModule.confirmDeleteCard'))) return
   try {
     await axios.delete(`${apiBase}/kanban/public/${token.value}/cards/${card.id}`, {
       data: getAuthPayload(),
@@ -667,7 +667,7 @@ function formatDate(dateStr) {
       </div>
 
       <!-- Footer -->
-      <div class="mt-4 text-center text-sm text-gray-600">{{ $t('kanbanModule.erstelltMitKyuubisoft') }}</div>
+      <div class="mt-4 text-center text-sm text-gray-600">{{ $t('kanbanModule.createdWithKyuubisoft') }}</div>
     </div>
 
     <!-- Card Detail Modal (read-only) -->

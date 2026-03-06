@@ -37,7 +37,7 @@ watch(() => mockupStore.currentTemplate, (template) => {
 // Computed
 const formatOptions = [
   { value: 'png', label: 'PNG', description: t('mockupEditor.besteQualitaetUnterstuetztTransparenz') },
-  { value: 'jpg', label: 'JPG', description: t('mockupEditor.kleinereDateigroesseKeineTransparenz') },
+  { value: 'jpg', label: 'JPG', description: t('mockupEditor.smallerFileSizeNoTransparency') },
 ]
 
 const canBeTransparent = computed(() => {
@@ -222,7 +222,7 @@ const close = () => {
               @click="close"
               class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="handleExport"

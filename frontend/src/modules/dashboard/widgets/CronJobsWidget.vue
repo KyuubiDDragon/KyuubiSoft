@@ -22,7 +22,7 @@ function formatRelativeTime(dateString) {
   if (diffDay === 1) return t('time.yesterday')
   if (diffDay < 7) return t('time.daysAgo', { n: diffDay })
 
-  return date.toLocaleDateString('de-DE', {
+  return date.toLocaleDateString(undefined, {
     day: '2-digit',
     month: '2-digit',
   })

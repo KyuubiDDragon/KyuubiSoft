@@ -560,7 +560,7 @@ async function createFromTimeEntries() {
               <button
                 @click="handleDeleteClient(client)"
                 class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-4 h-4" />
               </button>

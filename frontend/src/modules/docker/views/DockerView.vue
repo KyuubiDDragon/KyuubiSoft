@@ -562,7 +562,7 @@ async function backupStack(stackName, sensitiveToken = null) {
       show2FAModal.value = true
       return
     }
-    error.value = e.response?.data?.message || t('dockerModule.backupKonnteNichtErstelltWerden')
+    error.value = e.response?.data?.message || t('dockerModule.backupCouldNotBeCreated')
   }
 }
 
@@ -647,7 +647,7 @@ async function deleteBackup(backup) {
     await loadBackups()
     showBackupModal.value = false
   } catch (e) {
-    error.value = t('dockerModule.backupKonnteNichtGeloeschtWerden')
+    error.value = t('dockerModule.backupCouldNotBeDeleted')
   }
 }
 
@@ -658,7 +658,7 @@ async function removeContainer(container) {
     await api.delete(`/api/v1/docker/containers/${container.id}`, { params: { force: 'true', ...getHostParams() } })
     await loadContainers()
   } catch (e) {
-    error.value = t('dockerModule.containerKonnteNichtGeloeschtWerden')
+    error.value = t('dockerModule.containerCouldNotBeDeleted')
   }
 }
 
@@ -1102,7 +1102,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                   <div class="flex items-center gap-4">
                     <div class="text-right hidden sm:block">
                       <p class="text-sm text-gray-300">{{ container.status }}</p>
-                      <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.keinePorts') }}</p>
+                      <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.noPorts') }}</p>
                     </div>
                     <div class="flex items-center gap-2" @click.stop>
                       <button
@@ -1159,7 +1159,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <div class="flex items-center gap-4">
                   <div class="text-right hidden sm:block">
                     <p class="text-sm text-gray-300">{{ container.status }}</p>
-                    <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.keinePorts') }}</p>
+                    <p class="text-xs text-gray-500">{{ container.ports || $t('dockerModule.noPorts') }}</p>
                   </div>
                   <div class="flex items-center gap-2" @click.stop>
                     <button
@@ -1332,7 +1332,7 @@ watch(() => projectStore.selectedProjectId, async () => {
               <button
                 @click="deleteBackup(backup)"
                 class="btn-icon text-red-400 hover:bg-red-500/20"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-4 h-4" />
               </button>
@@ -1671,7 +1671,7 @@ watch(() => projectStore.selectedProjectId, async () => {
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showQuickDeployModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" :disabled="deploying" class="btn-primary flex-1">
                 <ArrowPathIcon v-if="deploying" class="w-4 h-4 animate-spin" />
@@ -1736,7 +1736,7 @@ DB_PASSWORD=secret"
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showStackDeployModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" :disabled="deployingStack" class="btn-primary flex-1">
                 <ArrowPathIcon v-if="deployingStack" class="w-4 h-4 animate-spin" />
@@ -1784,7 +1784,7 @@ DB_PASSWORD=secret"
             <div class="flex items-center gap-2">
               <button @click="deleteBackup(selectedBackup)" class="btn-secondary text-red-400">
                 <TrashIcon class="w-4 h-4 mr-1" />
-                Löschen
+                {{ $t('common.delete') }}
               </button>
               <button @click="restoreBackup(selectedBackup, false)" class="btn-secondary">
                 <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
@@ -1848,7 +1848,7 @@ DB_PASSWORD=secret"
                   class="btn-secondary flex-1"
                   :disabled="verifying2FA"
                 >
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button
                   @click="verify2FAAndRetry"

@@ -148,7 +148,7 @@ async function loadDocuments() {
     const response = await api.get('/api/v1/documents', { params })
     documents.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderdokumente'))
+    uiStore.showError(t('documentsModule.errorLoadingDocuments'))
   } finally {
     isLoading.value = false
   }
@@ -172,7 +172,7 @@ async function createDocument() {
     isEditing.value = true
     uiStore.showSuccess(t('documentsModule.created'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -187,12 +187,12 @@ async function updateDocument() {
     await loadDocuments()
     uiStore.showSuccess(t('documentsModule.saved'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
 async function deleteDocument(docId) {
-  if (!await confirm({ message: t('documentsModule.dokumentWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('documentsModule.confirmDeleteDocument'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/documents/${docId}`)
@@ -202,7 +202,7 @@ async function deleteDocument(docId) {
     }
     uiStore.showSuccess(t('documentsModule.deleted'))
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -213,7 +213,7 @@ async function selectDocument(docId) {
     editContent.value = selectedDoc.value.content || ''
     isEditing.value = false
   } catch (error) {
-    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
+    uiStore.showError(t('documentsModule.errorLoading'))
   }
 }
 
@@ -302,7 +302,7 @@ async function enableShare() {
     uiStore.showSuccess(t('documentsModule.shared'))
     await loadSharedDocuments()
   } catch (error) {
-    uiStore.showError(t('documentsModule.fehlerBeimFreigeben'))
+    uiStore.showError(t('documentsModule.errorSharing'))
   } finally {
     isLoadingShare.value = false
   }
@@ -327,7 +327,7 @@ async function disableShare() {
     uiStore.showSuccess(t('documentsModule.shareDisabled'))
     await loadSharedDocuments()
   } catch (error) {
-    uiStore.showError(t('contractsModule.fehlerBeimDeaktivieren'))
+    uiStore.showError(t('contractsModule.errorDeactivating'))
   } finally {
     isLoadingShare.value = false
   }
@@ -377,7 +377,7 @@ async function loadVersions() {
     const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions`)
     versions.value = response.data.data || []
   } catch (error) {
-    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderversionen'))
+    uiStore.showError(t('documentsModule.errorLoadingVersions'))
   } finally {
     isLoadingVersions.value = false
   }
@@ -390,7 +390,7 @@ async function previewVersion(version) {
     const response = await api.get(`/api/v1/documents/${selectedDoc.value.id}/versions/${version.id}`)
     versionPreviewContent.value = response.data.data?.content || ''
   } catch (error) {
-    uiStore.showError(t('documentsModule.documentsmodulefehlerbeimladenderversion'))
+    uiStore.showError(t('documentsModule.errorLoadingVersion'))
   } finally {
     isLoadingVersions.value = false
   }
@@ -408,7 +408,7 @@ async function restoreVersion(version) {
     uiStore.showSuccess(`Version ${version.version_number} wiederhergestellt`)
     await loadVersions() // Reload versions to show the new backup
   } catch (error) {
-    uiStore.showError(t('documentsModule.fehlerBeimWiederherstellen'))
+    uiStore.showError(t('documentsModule.errorRestoring'))
   } finally {
     isLoadingVersions.value = false
   }
@@ -462,7 +462,7 @@ onMounted(async () => {
             {{ $t('documentsModule.lastEdited') }} {{ formatDate(selectedDoc.updated_at) }}
             <span class="badge badge-primary ml-2">{{ getFormatLabel(selectedDoc.format) }}</span>
           </p>
-          <p v-else class="text-gray-400 mt-1">{{ $t('documentsModule.documentsmoduleverwaltedeinedokumente') }}</p>
+          <p v-else class="text-gray-400 mt-1">{{ $t('documentsModule.manageYourDocuments') }}</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -938,7 +938,7 @@ onMounted(async () => {
                 @click="showShareModal = false"
                 class="btn-secondary flex-1"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button
                 @click="enableShare"

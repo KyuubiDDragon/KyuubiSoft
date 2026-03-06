@@ -129,7 +129,7 @@ async function generateJwt() {
     try {
       header = JSON.parse(headerJson.value)
     } catch {
-      throw new Error(t('toolbox.headerIstKeinGueltigesJson'))
+      throw new Error(t('toolbox.headerNotValidJson'))
     }
 
     // Parse and validate payload
@@ -137,7 +137,7 @@ async function generateJwt() {
     try {
       payload = JSON.parse(payloadJson.value)
     } catch {
-      throw new Error(t('toolbox.payloadIstKeinGueltigesJson'))
+      throw new Error(t('toolbox.payloadNotValidJson'))
     }
 
     // Ensure header has alg

@@ -915,10 +915,10 @@ function toggleMonitorSelection(monitorId) {
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingMonitor ? 'Speichern' : 'Erstellen' }}
+                {{ editingMonitor ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </form>
@@ -966,10 +966,10 @@ function toggleMonitorSelection(monitorId) {
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showFolderModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingFolder ? 'Speichern' : 'Erstellen' }}
+                {{ editingFolder ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </form>

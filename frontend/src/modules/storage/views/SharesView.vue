@@ -46,7 +46,7 @@ async function loadShares() {
     shares.value = response.data.data.items || []
     summary.value = response.data.data.summary || {}
   } catch (error) {
-    uiStore.showError(t('storage.storagefehlerbeimladenderfreigaben'))
+    uiStore.showError(t('storage.errorLoadingShares'))
   } finally {
     isLoading.value = false
   }
@@ -66,7 +66,7 @@ async function toggleShareActive(share) {
     uiStore.showSuccess(response.data.data.is_active ? t('storage.freigabeAktiviert') : t('storage.freigabeDeaktiviert'))
     loadShares() // Reload to update summary
   } catch (error) {
-    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
+    uiStore.showError(t('storage.errorChangingStatus'))
   }
 }
 
@@ -76,10 +76,10 @@ async function deleteShare(share) {
   try {
     await api.delete(`/api/v1/storage/${share.file_id}/share`)
     shares.value = shares.value.filter(s => s.id !== share.id)
-    uiStore.showSuccess(t('storage.freigabeGeloescht'))
+    uiStore.showSuccess(t('storage.shareDeleted'))
     loadShares() // Reload to update summary
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -209,7 +209,7 @@ onMounted(() => {
       <!-- Empty State -->
       <div v-else-if="filteredShares.length === 0" class="p-12 text-center">
         <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <p class="text-lg text-white font-medium">{{ $t('storage.storagekeinefreigabenvorhanden') }}</p>
+        <p class="text-lg text-white font-medium">{{ $t('storage.noShares') }}</p>
         <p class="text-gray-400">Erstelle Freigaben im Cloud Storage</p>
       </div>
 
@@ -222,8 +222,8 @@ onMounted(() => {
               <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('common.status') }}</th>
               <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('galleriesModule.aufrufe') }}</th>
               <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">Downloads</th>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('inboxModule.erstellt') }}</th>
-              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('toolbox.laeuftAb') }}</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('inboxModule.created') }}</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('toolbox.expiring') }}</th>
               <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('common.actions') }}</th>
             </tr>
           </thead>

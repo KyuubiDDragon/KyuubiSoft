@@ -116,7 +116,7 @@ async function fetchProjects() {
     const response = await api.get('/api/v1/projects')
     projects.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError(t('projectsModule.projectsmodulefehlerbeimladenderprojekte'))
+    uiStore.showError(t('projectsModule.errorLoadingProjects'))
   } finally {
     loading.value = false
   }
@@ -128,7 +128,7 @@ async function fetchProject(projectId) {
     const response = await api.get(`/api/v1/projects/${projectId}`)
     selectedProject.value = response.data.data
   } catch (error) {
-    uiStore.showError(t('projectsModule.projectsmodulefehlerbeimladendesprojekts'))
+    uiStore.showError(t('projectsModule.errorLoadingProject'))
     selectedProject.value = null
   }
 }
@@ -159,19 +159,19 @@ async function saveProject() {
   try {
     if (editingProject.value) {
       await api.put(`/api/v1/projects/${editingProject.value.id}`, form.value)
-      uiStore.showSuccess(t('system.projektAktualisiert'))
+      uiStore.showSuccess(t('system.projectUpdated'))
       if (selectedProject.value?.id === editingProject.value.id) {
         await fetchProject(selectedProject.value.id)
       }
     } else {
       const response = await api.post('/api/v1/projects', form.value)
-      uiStore.showSuccess(t('system.projektErstellt'))
+      uiStore.showSuccess(t('system.projectCreated'))
       await fetchProject(response.data.data.id)
     }
     await fetchProjects()
     showModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -181,13 +181,13 @@ async function deleteProject(project) {
 
   try {
     await api.delete(`/api/v1/projects/${project.id}`)
-    uiStore.showSuccess(t('system.projektGeloescht'))
+    uiStore.showSuccess(t('system.projectDeleted'))
     if (selectedProject.value?.id === project.id) {
       selectedProject.value = null
     }
     await fetchProjects()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -202,7 +202,7 @@ async function toggleFavorite(project) {
       selectedProject.value.is_favorite = project.is_favorite
     }
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -216,7 +216,7 @@ async function updateStatus(project, status) {
     }
     uiStore.showSuccess(t('common.statusUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -240,7 +240,7 @@ async function openLinkModal(type) {
     const response = await api.get(`/api/v1/projects/${selectedProject.value.id}/linkable/${type}`)
     linkableItems.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
+    uiStore.showError(t('documentsModule.errorLoading'))
     linkableItems.value = []
   } finally {
     loadingLinkable.value = false
@@ -258,7 +258,7 @@ async function addLink(item) {
     showLinkModal.value = false
     await fetchProject(selectedProject.value.id)
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('projectsModule.fehlerBeimVerknuepfen'))
+    uiStore.showError(error.response?.data?.message || t('projectsModule.errorLinking'))
   }
 }
 
@@ -271,7 +271,7 @@ async function removeLink(link) {
     uiStore.showSuccess(t('projectsModule.verknuepfungEntfernt'))
     await fetchProject(selectedProject.value.id)
   } catch (error) {
-    uiStore.showError(t('server.serverfehlerbeimentfernen'))
+    uiStore.showError(t('server.errorRemoving'))
   }
 }
 
@@ -356,7 +356,7 @@ async function fetchProjectShares() {
     const response = await api.get(`/api/v1/projects/${selectedProject.value.id}/shares`)
     projectShares.value = response.data.data.shares || []
   } catch (error) {
-    uiStore.showError(t('projectsModule.fehlerBeimLadenDerMitglieder'))
+    uiStore.showError(t('projectsModule.errorLoadingMembers'))
     projectShares.value = []
   } finally {
     loadingShares.value = false
@@ -387,7 +387,7 @@ async function addMember() {
     newMemberEmail.value = ''
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(error.response?.data?.message || t('newsModule.errorAdding'))
   }
 }
 
@@ -400,7 +400,7 @@ async function removeMember(userId) {
     uiStore.showSuccess(t('projects.memberRemoved'))
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError(t('server.serverfehlerbeimentfernen'))
+    uiStore.showError(t('server.errorRemoving'))
   }
 }
 
@@ -411,10 +411,10 @@ async function updateMemberPermission(userId, permission) {
       user_id: userId,
       permission
     })
-    uiStore.showSuccess(t('projectsModule.berechtigungAktualisiert'))
+    uiStore.showSuccess(t('projectsModule.permissionUpdated'))
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -762,13 +762,13 @@ onMounted(() => {
               @click="showModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveProject"
               class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
             >
-              {{ editingProject ? 'Speichern' : 'Erstellen' }}
+              {{ editingProject ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

@@ -1955,7 +1955,7 @@ const filteredBots = computed(() => {
               </button>
               <button @click="openDeleteModal(selectedDM)" class="btn-danger">
                 <TrashIcon class="w-5 h-5 mr-2" />
-                {{ $t('discordModule.meineNachrichtenLoeschen') }}
+                {{ $t('discordModule.deleteMyMessages') }}
               </button>
             </div>
           </div>
@@ -2514,7 +2514,7 @@ const filteredBots = computed(() => {
                   @click="cancelDeleteJob(job)"
                   class="btn-sm btn-danger"
                 >
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
               </div>
             </div>
@@ -2721,7 +2721,7 @@ const filteredBots = computed(() => {
             <button @click="showDeleteModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="createDeleteJob" class="btn-danger">
               <TrashIcon class="w-5 h-5 mr-2" />
-              Löschen starten
+              {{ $t('common.startDeleting') }}
             </button>
           </div>
         </div>

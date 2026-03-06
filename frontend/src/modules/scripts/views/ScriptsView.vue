@@ -62,7 +62,7 @@ async function loadScripts() {
     const res = await api.get('/api/v1/scripts')
     scripts.value = res.data.data.scripts || []
   } catch (err) {
-    toast.error(t('scripts.fehlerBeimLadenDerScripts'))
+    toast.error(t('scripts.errorLoadingScripts'))
   } finally {
     loading.value = false
   }
@@ -152,7 +152,7 @@ async function saveScript() {
       toast.success(t('scripts.scriptSaved'))
     }
   } catch (err) {
-    toast.error(t('scripts.scriptsfehlerbeimspeichern') + (err.response?.data?.message || err.message))
+    toast.error(t('scripts.errorSaving') + (err.response?.data?.message || err.message))
   }
 }
 
@@ -165,9 +165,9 @@ async function deleteScript(script) {
       selectedScript.value = null
       editForm.value = null
     }
-    toast.success(t('scripts.scriptGeloescht'))
+    toast.success(t('scripts.scriptDeleted'))
   } catch {
-    toast.error(t('bookmarksModule.fehlerBeimLoeschen'))
+    toast.error(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -233,7 +233,7 @@ async function runScript() {
       duration:  Date.now() - startTime,
       success:   false,
     }
-    toast.error(t('scripts.fehlerBeiDerAusfuehrung'))
+    toast.error(t('scripts.errorExecuting'))
   } finally {
     running.value = false
   }
@@ -432,7 +432,7 @@ onMounted(async () => {
             @click="saveScript"
             class="btn-secondary px-3 py-1.5 text-xs"
           >
-            Speichern
+            {{ $t('common.save') }}
           </button>
 
           <!-- Run -->
@@ -442,7 +442,7 @@ onMounted(async () => {
             class="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors"
           >
             <component :is="running ? ArrowPathIcon : PlayIcon" class="w-3.5 h-3.5" :class="{ 'animate-spin': running }" />
-            {{ running ? $t('scripts.laeuft') : $t('workflows.ausfuehren') }}
+            {{ running ? $t('scripts.running') : $t('workflows.ausfuehren') }}
           </button>
         </div>
 

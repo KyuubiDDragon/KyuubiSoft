@@ -777,7 +777,7 @@ onMounted(fetchData)
 
               <div class="flex gap-2 pt-4">
                 <button type="button" @click="showBackupModal = false" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1" :disabled="isProcessing">
                   <ArrowPathIcon v-if="isProcessing" class="w-4 h-4 mr-2 animate-spin" />
@@ -988,10 +988,10 @@ onMounted(fetchData)
 
               <div class="flex gap-2 pt-4">
                 <button type="button" @click="showTargetModal = false" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1" :disabled="isProcessing">
-                  {{ targetForm.id ? 'Speichern' : 'Erstellen' }}
+                  {{ targetForm.id ? $t('common.save') : $t('common.create') }}
                 </button>
               </div>
             </form>
@@ -1140,10 +1140,10 @@ onMounted(fetchData)
 
               <div class="flex gap-2 pt-4">
                 <button type="button" @click="showScheduleModal = false" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1" :disabled="isProcessing">
-                  {{ scheduleForm.id ? 'Speichern' : 'Erstellen' }}
+                  {{ scheduleForm.id ? $t('common.save') : $t('common.create') }}
                 </button>
               </div>
             </form>
@@ -1183,7 +1183,7 @@ onMounted(fetchData)
                   @click="showRestoreConfirm = false; selectedBackup = null"
                   class="btn-secondary flex-1"
                 >
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button
                   @click="restoreBackup"

@@ -131,7 +131,7 @@ async function selectPage(pageId) {
     }
   } catch (err) {
     console.error('Failed to load page:', err)
-    toast.error(t('wiki.wikifehlerbeimladenderseite') + (err.response?.data?.error || err.message))
+    toast.error(t('wiki.errorLoadingPage') + (err.response?.data?.error || err.message))
   }
 }
 
@@ -173,7 +173,7 @@ async function savePage() {
       isEditing.value = false
     }
   } catch (err) {
-    toast.error(t('scripts.scriptsfehlerbeimspeichern') + (wikiStore.error || err.message))
+    toast.error(t('scripts.errorSaving') + (wikiStore.error || err.message))
   }
 }
 
@@ -194,14 +194,14 @@ async function togglePublish() {
 }
 
 async function confirmDelete() {
-  if (!await confirm({ message: t('wiki.wikidieseseitewirklichloeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('wiki.confirmDeletePage'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await wikiStore.deletePage(currentPageId.value)
     currentPageId.value = null
     showDropdown.value = false
   } catch (err) {
-    toast.error(t('bookmarksModule.fehlerBeimLoeschen'))
+    toast.error(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -235,7 +235,7 @@ async function saveCategory() {
     editingCategory.value = null
     categoryForm.value = { name: '', color: '#6366f1', icon: '', description: '' }
   } catch (err) {
-    toast.error(t('wiki.wikifehlerbeimspeichernderkategorie'))
+    toast.error(t('wiki.errorSavingCategory'))
   }
 }
 
@@ -247,7 +247,7 @@ async function restoreVersion(historyId) {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)
     showHistoryModal.value = false
   } catch (err) {
-    toast.error(t('documentsModule.fehlerBeimWiederherstellen'))
+    toast.error(t('documentsModule.errorRestoring'))
   }
 }
 
@@ -616,13 +616,13 @@ onMounted(async () => {
                 @click="savePage"
               >
                 <CheckIcon class="w-4 h-4 inline mr-1" />
-                Speichern
+                {{ $t('common.save') }}
               </button>
               <button
                 class="btn-secondary text-sm"
                 @click="cancelEdit"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
             </template>
             <template v-else>
@@ -656,7 +656,7 @@ onMounted(async () => {
                     @click="togglePublish"
                   >
                     <GlobeAltIcon class="w-4 h-4" />
-                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : $t('wiki.veroeffentlichen') }}
+                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : $t('wiki.publish') }}
                   </button>
                   <button
                     class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
@@ -671,7 +671,7 @@ onMounted(async () => {
                     @click="confirmDelete"
                   >
                     <TrashIcon class="w-4 h-4" />
-                    Löschen
+                    {{ $t('common.delete') }}
                   </button>
                 </div>
               </div>
@@ -829,10 +829,10 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
           </div>
           <div class="flex justify-end gap-2 mt-6">
             <button class="btn-secondary" @click="showCategoryModal = false">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button class="btn-primary" @click="saveCategory">
-              Speichern
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>

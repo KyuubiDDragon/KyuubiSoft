@@ -29,7 +29,7 @@ async function analyze() {
     } else if (response.data && !response.data.success) {
       error.value = response.data.error || response.data.message || t('financeModule.unbekannterFehler')
     } else {
-      error.value = t('toolbox.keineDatenErhalten')
+      error.value = t('toolbox.noDataReceived')
     }
   } catch (e) {
     console.error('Open Graph error:', e)
@@ -46,7 +46,7 @@ const ogTitle = computed(() => {
 
 const ogDescription = computed(() => {
   if (!result.value) return ''
-  return result.value.openGraph?.description || result.value.basic?.description || t('galleriesModule.keineBeschreibung')
+  return result.value.openGraph?.description || result.value.basic?.description || t('galleriesModule.noDescription')
 })
 
 const ogImage = computed(() => {

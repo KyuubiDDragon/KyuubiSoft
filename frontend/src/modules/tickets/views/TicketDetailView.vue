@@ -129,7 +129,7 @@ async function addComment() {
     isInternalComment.value = false
     uiStore.showSuccess(t('tickets.kommentarHinzugefuegt'))
   } catch (error) {
-    uiStore.showError(t('tickets.fehlerBeimHinzufuegenDesKommentars'))
+    uiStore.showError(t('tickets.errorAddingComment'))
   } finally {
     submittingComment.value = false
   }
@@ -137,14 +137,14 @@ async function addComment() {
 
 // Delete comment
 async function deleteComment(commentId) {
-  if (!await confirm({ message: t('tickets.kommentarWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('tickets.confirmDeleteComment'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}/comments/${commentId}`)
     comments.value = comments.value.filter(c => c.id !== commentId)
-    uiStore.showSuccess(t('tickets.kommentarGeloescht'))
+    uiStore.showSuccess(t('tickets.commentDeleted'))
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -172,7 +172,7 @@ async function saveEdit() {
     showEditModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -193,7 +193,7 @@ async function updateStatus() {
     showStatusModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorUpdating'))
   }
 }
 
@@ -207,20 +207,20 @@ async function assignTicket(userId) {
     showAssignModal.value = false
     fetchTicket()
   } catch (error) {
-    uiStore.showError(t('tickets.fehlerBeiDerZuweisung'))
+    uiStore.showError(t('tickets.errorAssigning'))
   }
 }
 
 // Delete ticket
 async function deleteTicket() {
-  if (!await confirm({ message: t('tickets.ticketsticketwirklichloeschendieseaktionkannnicht'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('tickets.confirmDeleteTicket'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/tickets/${ticket.value.id}`)
-    uiStore.showSuccess(t('tickets.ticketGeloescht'))
+    uiStore.showSuccess(t('tickets.ticketDeleted'))
     router.push('/tickets')
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -461,7 +461,7 @@ onMounted(() => {
               </div>
 
               <div v-if="statusHistory.length === 0" class="text-center py-4 text-gray-500 text-sm">
-                {{ $t('tickets.keineStatusaenderungen') }}
+                {{ $t('tickets.noStatusChanges') }}
               </div>
             </div>
           </div>
@@ -472,7 +472,7 @@ onMounted(() => {
           <!-- Meta Info -->
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 space-y-4">
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.erstelltVon') }}</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.createdBy') }}</h4>
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-white text-sm">
                   {{ ticket.creator_name?.[0]?.toUpperCase() || ticket.guest_name?.[0]?.toUpperCase() || '?' }}
@@ -504,7 +504,7 @@ onMounted(() => {
                 ></div>
                 <span class="text-white text-sm">{{ ticket.category_name }}</span>
               </div>
-              <div v-else class="text-gray-500 text-sm">{{ $t('tickets.ticketskeinekategorie') }}</div>
+              <div v-else class="text-gray-500 text-sm">{{ $t('tickets.noCategory') }}</div>
             </div>
 
             <div v-if="ticket.project_name">
@@ -513,12 +513,12 @@ onMounted(() => {
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.erstelltAm') }}</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.createdAt') }}</h4>
               <div class="text-white text-sm">{{ formatDate(ticket.created_at) }}</div>
             </div>
 
             <div>
-              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.zuletztAktualisiert') }}</h4>
+              <h4 class="text-xs font-medium text-gray-500 uppercase mb-1">{{ $t('tickets.lastUpdated') }}</h4>
               <div class="text-white text-sm">{{ formatDate(ticket.updated_at) }}</div>
             </div>
 
@@ -601,10 +601,10 @@ onMounted(() => {
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showEditModal = false" class="btn-secondary">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button @click="saveEdit" class="btn-primary">
-              Speichern
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>
@@ -656,7 +656,7 @@ onMounted(() => {
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showStatusModal = false" class="btn-secondary">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button @click="updateStatus" class="btn-primary">
               Status ändern

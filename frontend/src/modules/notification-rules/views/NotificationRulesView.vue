@@ -161,7 +161,7 @@ onMounted(async () => {
       <div class="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
         <BellAlertIcon class="w-8 h-8 text-primary-400" />
       </div>
-      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('notificationRules.notificationruleskeineregelnerstellt') }}</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('notificationRules.noRulesCreated') }}</h3>
       <p class="text-gray-400 text-sm mb-6">
         Erstelle deine erste Benachrichtigungsregel.
       </p>
@@ -267,7 +267,7 @@ onMounted(async () => {
                   @click.stop="cancelDelete"
                   class="text-xs text-gray-400 hover:text-white font-medium px-2 py-1"
                 >
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
               </div>
 
@@ -299,7 +299,7 @@ onMounted(async () => {
 
             <!-- Empty History -->
             <div v-else-if="store.ruleHistory.length === 0" class="text-center py-6">
-              <p class="text-gray-500 text-sm">{{ $t('notificationRules.keineAusfuehrungenVorhanden') }}</p>
+              <p class="text-gray-500 text-sm">{{ $t('notificationRules.noExecutions') }}</p>
             </div>
 
             <!-- History Entries -->

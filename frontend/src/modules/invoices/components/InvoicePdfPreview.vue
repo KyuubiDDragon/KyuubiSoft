@@ -128,7 +128,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
           :disabled="isSaving"
         >
           <CheckIcon class="w-3.5 h-3.5" />
-          {{ isSaving ? 'Speichern...' : 'Speichern' }}
+          {{ isSaving ? $t('common.saving') : $t('common.save') }}
         </button>
         <!-- Reset -->
         <button

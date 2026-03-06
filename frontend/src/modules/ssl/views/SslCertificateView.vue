@@ -225,7 +225,7 @@ const getStatusIcon = (status) => {
 const getStatusLabel = (status) => {
   const labels = {
     valid: t('ssl.gueltig'),
-    expiring_soon: t('ssl.laeuftBaldAb'),
+    expiring_soon: t('ssl.expiringSoon'),
     expired: 'Abgelaufen',
     invalid: t('ssl.ungueltig'),
     error: t('common.error'),

@@ -194,7 +194,7 @@ const quickDomains = [
       </div>
 
       <div v-if="result.certificate?.daysUntilExpiry > 0 && result.certificate?.daysUntilExpiry < 30" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
-        {{ $t('toolbox.dasZertifikatLaeuftInWenigerAls30') }}
+        {{ $t('toolbox.certExpiringWithin30') }}
       </div>
     </div>
 

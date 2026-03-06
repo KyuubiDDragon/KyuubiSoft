@@ -137,7 +137,7 @@ async function saveEdit() {
     isEditing.value = false
     uiStore.showSuccess(t('contacts.contactUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -145,7 +145,7 @@ async function toggleFavorite() {
   try {
     await contactsStore.toggleFavorite(contact.value.id)
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -187,7 +187,7 @@ async function saveActivity() {
     showActivityForm.value = false
     uiStore.showSuccess(t('contacts.activityCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 

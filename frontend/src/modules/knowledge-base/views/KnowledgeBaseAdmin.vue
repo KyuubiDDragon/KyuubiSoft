@@ -330,7 +330,7 @@ watch(articlePublishedFilter, () => {
 
                   <span class="truncate flex-1">{{ cat.name }}</span>
 
-                  <EyeSlashIcon v-if="!cat.is_published" class="w-3.5 h-3.5 text-gray-600" :title="$t('knowledgeBase.unveroeffentlicht')" />
+                  <EyeSlashIcon v-if="!cat.is_published" class="w-3.5 h-3.5 text-gray-600" :title="$t('knowledgeBase.unpublished')" />
 
                   <!-- Actions -->
                   <div class="hidden group-hover:flex items-center gap-0.5">
@@ -680,7 +680,7 @@ watch(articlePublishedFilter, () => {
       <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showDeleteConfirm = false"></div>
         <div class="relative card-glass p-6 w-full max-w-md mx-4">
-          <h2 class="text-lg font-semibold text-white mb-4">Löschen bestätigen</h2>
+          <h2 class="text-lg font-semibold text-white mb-4">{{ $t('common.confirmDelete') }}</h2>
           <p class="text-gray-400 mb-6">
             Möchten Sie
             <span class="text-white font-medium">{{ deleteTarget.name }}</span>

@@ -73,7 +73,7 @@ async function selectDockerHost(host) {
     const res = await api.get(`/api/v1/logs/docker-hosts/${host.id}/containers`)
     dockerContainers.value = res.data.data.items || []
   } catch {
-    toast.error(t('logs.fehlerBeimLadenDerContainer'))
+    toast.error(t('logs.errorLoadingContainers'))
   }
 }
 
@@ -118,7 +118,7 @@ async function fetchLogs() {
       scrollToBottom()
     }
   } catch (err) {
-    toast.error(t('logs.fehlerBeimLadenDerLogs') + (err.response?.data?.message || err.message))
+    toast.error(t('logs.errorLoadingLogs') + (err.response?.data?.message || err.message))
   } finally {
     loading.value = false
   }
@@ -243,7 +243,7 @@ onUnmounted(() => {
         <!-- Docker sources -->
         <template v-if="sourceType === 'docker'">
           <div v-if="dockerHosts.length === 0" class="text-gray-500 text-xs text-center py-6">
-            {{ $t('logs.keineDockerhostsVerfuegbar') }}
+            {{ $t('logs.noDockerHosts') }}
           </div>
 
           <template v-for="host in dockerHosts" :key="host.id">

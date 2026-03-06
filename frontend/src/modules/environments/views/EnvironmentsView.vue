@@ -363,7 +363,7 @@ onMounted(async () => {
       <div v-else class="flex-1 overflow-y-auto space-y-4 pr-1">
         <div v-if="Object.keys(groupedEnvironments).length === 0" class="text-center text-gray-500 py-8">
           <KeyIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
-          <p class="text-sm">{{ $t('environmentsModule.keineUmgebungenVorhanden') }}</p>
+          <p class="text-sm">{{ $t('environmentsModule.noEnvironments') }}</p>
         </div>
 
         <div v-for="(envs, groupName) in groupedEnvironments" :key="groupName">
@@ -401,7 +401,7 @@ onMounted(async () => {
       <div v-if="!selectedEnvironment" class="flex-1 flex items-center justify-center">
         <div class="text-center">
           <KeyIcon class="w-16 h-16 text-gray-700 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-400 mb-2">{{ $t('environmentsModule.keineUmgebungAusgewaehlt') }}</h3>
+          <h3 class="text-lg font-medium text-gray-400 mb-2">{{ $t('environmentsModule.noEnvironmentSelected') }}</h3>
           <p class="text-gray-600 text-sm">{{ $t('environmentsModule.waehlenSieEineUmgebungAusDerListe') }}</p>
         </div>
       </div>
@@ -436,7 +436,7 @@ onMounted(async () => {
                 Import
               </button>
               <template v-if="deleteConfirmId === selectedEnvId">
-                <span class="text-xs text-red-400 ml-2">{{ $t('environmentsModule.wirklichLoeschen') }}</span>
+                <span class="text-xs text-red-400 ml-2">{{ $t('environmentsModule.confirmDelete') }}</span>
                 <button @click="handleDeleteEnv" class="btn-secondary text-xs text-red-400 border-red-500/30 hover:bg-red-500/10">Ja</button>
                 <button @click="deleteConfirmId = null" class="btn-secondary text-xs">Nein</button>
               </template>

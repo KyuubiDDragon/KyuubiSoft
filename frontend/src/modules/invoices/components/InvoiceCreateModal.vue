@@ -189,7 +189,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
               <div>
                 <label class="label">{{ $t('invoices.client') }}</label>
                 <select v-model="form.client_id" class="input">
-                  <option :value="null">{{ $t('invoicesModule.keinKundeAusgewaehlt') }}</option>
+                  <option :value="null">{{ $t('invoicesModule.noCustomerSelected') }}</option>
                   <option v-for="c in clients" :key="c.id" :value="c.id">
                     {{ c.name }}{{ c.company ? ' — ' + c.company : '' }}
                   </option>
@@ -273,7 +273,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
                     />
                     <div>
                       <span class="text-sm text-gray-200">{{ $t('invoices.kleinunternehmerHint') }}</span>
-                      <p class="text-xs text-gray-500 mt-0.5">{{ $t('invoicesModule.keineUmsatzsteuerBerechnet') }}</p>
+                      <p class="text-xs text-gray-500 mt-0.5">{{ $t('invoicesModule.noVatCalculated') }}</p>
                     </div>
                     <span v-if="form.show_kleinunternehmer === null" class="ml-auto text-xs text-gray-600">Auto</span>
                   </label>

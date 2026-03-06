@@ -455,7 +455,7 @@ onMounted(async () => {
             @click="createNewPage"
           >
             <PlusIcon class="w-4 h-4" />
-            Neue Seite
+            {{ $t('wiki.newPage') }}
           </button>
           <button
             class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white"
@@ -468,7 +468,7 @@ onMounted(async () => {
 
         <!-- Search Results -->
         <div v-if="searchQuery && wikiStore.searchResults.length" class="space-y-1">
-          <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider">Suchergebnisse</h4>
+          <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('wiki.searchResults') }}</h4>
           <button
             v-for="result in wikiStore.searchResults"
             :key="result.id"
@@ -561,14 +561,14 @@ onMounted(async () => {
       <!-- No page selected -->
       <div v-else-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
         <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
-        <h3 class="text-xl font-semibold text-gray-400 mb-2">Willkommen im Wiki</h3>
+        <h3 class="text-xl font-semibold text-gray-400 mb-2">{{ $t('wiki.welcomeToWiki') }}</h3>
         <p class="text-gray-500 mb-6">{{ $t('wiki.wikiwaehleeineseiteausdersidebaroder') }}</p>
         <button
           class="btn-primary flex items-center gap-2"
           @click="createNewPage"
         >
           <PlusIcon class="w-5 h-5" />
-          Erste Seite erstellen
+          {{ $t('wiki.createFirstPage') }}
         </button>
       </div>
 
@@ -596,14 +596,14 @@ onMounted(async () => {
               </span>
               <span class="flex items-center gap-1">
                 <EyeIcon class="w-4 h-4" />
-                {{ wikiStore.currentPage.view_count }} Aufrufe
+                {{ wikiStore.currentPage.view_count }} {{ $t('wiki.views') }}
               </span>
               <span class="flex items-center gap-1">
                 <ClockIcon class="w-4 h-4" />
-                {{ wikiStore.currentPage.reading_time }} Min.
+                {{ wikiStore.currentPage.reading_time }} {{ $t('wiki.minRead') }}
               </span>
               <span>
-                Aktualisiert {{ formatDate(wikiStore.currentPage.updated_at) }}
+                {{ $t('wiki.updated') }} {{ formatDate(wikiStore.currentPage.updated_at) }}
               </span>
             </div>
           </div>
@@ -631,7 +631,7 @@ onMounted(async () => {
                 @click="startEdit"
               >
                 <PencilIcon class="w-4 h-4 inline mr-1" />
-                Bearbeiten
+                {{ $t('wiki.edit') }}
               </button>
               <div class="relative">
                 <button
@@ -649,21 +649,21 @@ onMounted(async () => {
                     @click="togglePin"
                   >
                     <BookmarkIcon class="w-4 h-4" />
-                    {{ wikiStore.currentPage?.is_pinned ? $t('wiki.nichtMehrAnpinnen') : 'Anpinnen' }}
+                    {{ wikiStore.currentPage?.is_pinned ? $t('wiki.nichtMehrAnpinnen') : $t('wiki.pin') }}
                   </button>
                   <button
                     class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="togglePublish"
                   >
                     <GlobeAltIcon class="w-4 h-4" />
-                    {{ wikiStore.currentPage?.is_published ? 'Verstecken' : $t('wiki.publish') }}
+                    {{ wikiStore.currentPage?.is_published ? $t('wiki.hide') : $t('wiki.publish') }}
                   </button>
                   <button
                     class="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-white/[0.04] flex items-center gap-2"
                     @click="showHistoryModal = true; showDropdown = false"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
-                    Versionen
+                    {{ $t('wiki.versions') }}
                   </button>
                   <hr class="border-white/[0.06] my-1" />
                   <button
@@ -682,12 +682,12 @@ onMounted(async () => {
         <!-- Editor Options -->
         <div v-if="isEditing || isCreating" class="flex flex-wrap gap-4 mb-4 p-4 bg-white/[0.04] rounded-xl">
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Kategorie</label>
+            <label class="block text-xs text-gray-500 mb-1">{{ $t('wiki.categoryLabel') }}</label>
             <select
               v-model="editForm.category_id"
               class="select text-sm"
             >
-              <option :value="null">Keine Kategorie</option>
+              <option :value="null">{{ $t('wiki.noCategoryOption') }}</option>
               <option v-for="cat in wikiStore.categories" :key="cat.id" :value="cat.id">
                 {{ cat.name }}
               </option>
@@ -695,12 +695,12 @@ onMounted(async () => {
           </div>
 
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Übergeordnete Seite</label>
+            <label class="block text-xs text-gray-500 mb-1">{{ $t('wiki.parentPage') }}</label>
             <select
               v-model="editForm.parent_id"
               class="select text-sm"
             >
-              <option :value="null">Keine</option>
+              <option :value="null">{{ $t('wiki.noneOption') }}</option>
               <option v-for="page in availableParents" :key="page.id" :value="page.id">
                 {{ page.title }}
               </option>
@@ -709,12 +709,12 @@ onMounted(async () => {
 
           <label class="flex items-center gap-2 text-sm text-gray-300">
             <input type="checkbox" v-model="editForm.is_published" class="rounded bg-white/[0.04] border-white/[0.06] text-indigo-600" />
-            Veröffentlicht
+            {{ $t('wiki.published') }}
           </label>
 
           <label class="flex items-center gap-2 text-sm text-gray-300">
             <input type="checkbox" v-model="editForm.is_pinned" class="rounded bg-white/[0.04] border-white/[0.06] text-indigo-600" />
-            Angepinnt
+            {{ $t('wiki.pinned') }}
           </label>
         </div>
 
@@ -724,9 +724,7 @@ onMounted(async () => {
             v-if="isEditing || isCreating"
             v-model="editForm.content"
             class="textarea w-full min-h-[400px] font-mono text-sm resize-y"
-            placeholder="Schreibe deinen Inhalt in Markdown...
-
-Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
+            :placeholder="$t('wiki.markdownPlaceholder')"
           ></textarea>
 
           <div
@@ -740,7 +738,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         <div v-if="wikiStore.currentPage?.backlinks?.length && !isEditing" class="mt-8 pt-4 border-t border-white/[0.06]">
           <h4 class="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
             <LinkIcon class="w-4 h-4" />
-            Backlinks
+            {{ $t('wiki.backlinks') }}
           </h4>
           <div class="flex flex-wrap gap-2">
             <button
@@ -758,7 +756,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         <div v-if="wikiStore.currentPage?.children?.length && !isEditing" class="mt-6">
           <h4 class="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
             <MapIcon class="w-4 h-4" />
-            Unterseiten
+            {{ $t('wiki.subpages') }}
           </h4>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
             <button
@@ -781,7 +779,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showGraphView = false"></div>
         <div class="modal relative w-full max-w-4xl h-[600px] flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Wissensgraph</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('wiki.knowledgeGraph') }}</h3>
             <button class="p-1 text-gray-400 hover:text-white" @click="showGraphView = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
@@ -797,20 +795,20 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showCategoryModal = false"></div>
         <div class="modal relative p-6 w-full max-w-md">
           <h3 class="text-lg font-semibold text-white mb-4">
-            {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
+            {{ editingCategory ? $t('wiki.editCategory') : $t('wiki.newCategory') }}
           </h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Name</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('wiki.nameLabel') }}</label>
               <input
                 v-model="categoryForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="Kategoriename"
+                :placeholder="$t('wiki.categoryNamePlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Farbe</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('wiki.colorLabel') }}</label>
               <input
                 v-model="categoryForm.color"
                 type="color"
@@ -818,12 +816,12 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
               />
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Beschreibung</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('wiki.descriptionLabel') }}</label>
               <textarea
                 v-model="categoryForm.description"
                 class="textarea w-full resize-none"
                 rows="2"
-                placeholder="Optionale Beschreibung"
+                :placeholder="$t('wiki.optionalDescription')"
               ></textarea>
             </div>
           </div>
@@ -845,14 +843,14 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="showHistoryModal = false"></div>
         <div class="modal relative w-full max-w-lg max-h-[80vh] flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Versionshistorie</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('wiki.versionHistory') }}</h3>
             <button class="p-1 text-gray-400 hover:text-white" @click="showHistoryModal = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
           <div class="flex-1 overflow-y-auto p-4">
             <div v-if="wikiStore.pageHistory.length === 0" class="text-center py-8 text-gray-500">
-              Keine Versionen verfügbar
+              {{ $t('wiki.noVersions') }}
             </div>
             <div v-else class="space-y-3">
               <div
@@ -866,7 +864,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
                     <span class="text-white">{{ entry.title }}</span>
                   </div>
                   <div class="text-sm text-gray-500 mt-1">
-                    von {{ entry.changed_by_name }} - {{ formatDate(entry.created_at) }}
+                    {{ $t('wiki.by') }} {{ entry.changed_by_name }} - {{ formatDate(entry.created_at) }}
                   </div>
                   <div v-if="entry.change_note" class="text-sm text-gray-400 italic mt-1">
                     {{ entry.change_note }}
@@ -876,7 +874,7 @@ Nutze [[Seitentitel]] um auf andere Seiten zu verlinken."
                   class="px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.08] rounded text-sm text-white"
                   @click="restoreVersion(entry.id)"
                 >
-                  Wiederherstellen
+                  {{ $t('wiki.restore') }}
                 </button>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import type { Ref, DeepReadonly } from 'vue'
+import i18n from '@/locales'
 
 // Interfaces
 type ConfirmDialogType = 'warning' | 'danger' | 'info'
@@ -30,11 +31,12 @@ interface UseConfirmDialogReturn {
 }
 
 const isOpen: Ref<boolean> = ref<boolean>(false)
+const t = () => (i18n.global as any).t
 const dialogConfig: Ref<ConfirmDialogConfig> = ref<ConfirmDialogConfig>({
-  title: 'Bestätigung',
+  title: '',
   message: '',
-  confirmText: 'Bestätigen',
-  cancelText: 'Abbrechen',
+  confirmText: '',
+  cancelText: '',
   type: 'warning', // 'warning', 'danger', 'info'
   resolve: null
 })
@@ -50,10 +52,10 @@ export function useConfirmDialog(): UseConfirmDialogReturn {
       }
 
       dialogConfig.value = {
-        title: opts.title || 'Bestätigung',
+        title: opts.title || t()('common.confirmation'),
         message: opts.message || '',
-        confirmText: opts.confirmText || 'Bestätigen',
-        cancelText: opts.cancelText || 'Abbrechen',
+        confirmText: opts.confirmText || t()('common.confirm'),
+        cancelText: opts.cancelText || t()('common.cancel'),
         type: opts.type || 'warning',
         resolve
       }

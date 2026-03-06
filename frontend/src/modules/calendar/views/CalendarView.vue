@@ -65,7 +65,7 @@ const eventForm = ref({
 
 // Recurrence options
 const recurrenceOptions = [
-  { value: '', label: 'Keine Wiederholung' },
+  { value: '', label: t('calendar.noRepeat') },
   { value: 'daily', label: t('cron.daily') },
   { value: 'weekly', label: t('cron.weekly') },
   { value: 'biweekly', label: t('calendarView.biweekly') },

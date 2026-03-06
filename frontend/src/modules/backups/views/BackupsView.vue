@@ -94,7 +94,7 @@ const storageTypes = [
 const compressionOptions = [
   { value: 'gzip', label: 'GZIP (.tar.gz)' },
   { value: 'zip', label: 'ZIP (.zip)' },
-  { value: 'none', label: 'Keine Kompression' },
+  { value: 'none', label: t('backups.noCompression') },
 ]
 
 const cronPresets = [
@@ -124,7 +124,7 @@ async function fetchData() {
     stats.value = statsRes.data.data
   } catch (error) {
     console.error('Failed to fetch backup data:', error)
-    uiStore.showError('Fehler beim Laden der Backup-Daten')
+    uiStore.showError(t('backups.errorLoadingData'))
   } finally {
     isLoading.value = false
   }
@@ -157,28 +157,28 @@ async function saveTarget() {
   try {
     if (targetForm.value.id) {
       await api.put(`/api/v1/backups/targets/${targetForm.value.id}`, targetForm.value)
-      uiStore.showSuccess('Speicherziel aktualisiert')
+      uiStore.showSuccess(t('backups.targetUpdated'))
     } else {
       await api.post('/api/v1/backups/targets', targetForm.value)
-      uiStore.showSuccess('Speicherziel erstellt')
+      uiStore.showSuccess(t('backups.targetCreated'))
     }
     showTargetModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('common.errorSaving'))
   } finally {
     isProcessing.value = false
   }
 }
 
 async function deleteTarget(target) {
-  if (!await confirm({ message: `Speicherziel "${target.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteTarget', { name: target.name }), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/backups/targets/${target.id}`)
-    uiStore.showSuccess('Speicherziel gelöscht')
+    uiStore.showSuccess(t('backups.targetDeleted'))
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -186,13 +186,13 @@ async function testTarget(target) {
   try {
     const response = await api.post(`/api/v1/backups/targets/${target.id}/test`)
     if (response.data.data.success) {
-      uiStore.showSuccess('Verbindung erfolgreich!')
+      uiStore.showSuccess(t('backups.connectionSuccess'))
     } else {
-      uiStore.showError(response.data.data.message || 'Verbindung fehlgeschlagen')
+      uiStore.showError(response.data.data.message || t('backups.connectionFailed'))
     }
     await fetchData()
   } catch (error) {
-    uiStore.showError('Verbindungstest fehlgeschlagen')
+    uiStore.showError(t('backups.connectionTestFailed'))
   }
 }
 
@@ -223,28 +223,28 @@ async function saveSchedule() {
   try {
     if (scheduleForm.value.id) {
       await api.put(`/api/v1/backups/schedules/${scheduleForm.value.id}`, scheduleForm.value)
-      uiStore.showSuccess('Zeitplan aktualisiert')
+      uiStore.showSuccess(t('backups.scheduleUpdated'))
     } else {
       await api.post('/api/v1/backups/schedules', scheduleForm.value)
-      uiStore.showSuccess('Zeitplan erstellt')
+      uiStore.showSuccess(t('backups.scheduleCreated'))
     }
     showScheduleModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('common.errorSaving'))
   } finally {
     isProcessing.value = false
   }
 }
 
 async function deleteSchedule(schedule) {
-  if (!await confirm({ message: `Zeitplan "${schedule.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteSchedule', { name: schedule.name }), type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/schedules/${schedule.id}`)
-    uiStore.showSuccess('Zeitplan gelöscht')
+    uiStore.showSuccess(t('backups.scheduleDeleted'))
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -255,7 +255,7 @@ async function toggleSchedule(schedule) {
     })
     schedule.is_enabled = !schedule.is_enabled
   } catch (error) {
-    uiStore.showError('Fehler beim Umschalten')
+    uiStore.showError(t('common.errorToggling'))
   }
 }
 
@@ -277,7 +277,7 @@ async function createBackup() {
     showBackupModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Backup fehlgeschlagen')
+    uiStore.showError(error.response?.data?.message || t('backups.backupFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -287,10 +287,10 @@ async function deleteBackup(backup) {
   if (!await confirm({ message: t('backups.confirmDeleteBackup'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/backups/${backup.id}`)
-    uiStore.showSuccess('Backup gelöscht')
+    uiStore.showSuccess(t('backups.backupDeleted'))
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -304,11 +304,11 @@ async function restoreBackup() {
   isProcessing.value = true
   try {
     await api.post(`/api/v1/backups/${selectedBackup.value.id}/restore`)
-    uiStore.showSuccess('Wiederherstellung abgeschlossen!')
+    uiStore.showSuccess(t('backups.restoreCompleted'))
     showRestoreConfirm.value = false
     selectedBackup.value = null
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Wiederherstellung fehlgeschlagen')
+    uiStore.showError(error.response?.data?.message || t('backups.restoreFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -327,7 +327,7 @@ async function downloadBackup(backup) {
     link.click()
     link.remove()
   } catch (error) {
-    uiStore.showError('Download fehlgeschlagen')
+    uiStore.showError(t('backups.downloadFailed'))
   }
 }
 
@@ -497,7 +497,7 @@ onMounted(fetchData)
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Größe</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Erstellt</th>
-              <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Aktionen</th>
+              <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/[0.06]">

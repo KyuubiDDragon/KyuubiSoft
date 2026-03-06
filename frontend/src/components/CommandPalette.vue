@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { getAllNavItems, type NavItem } from '@/core/config/navigation'
 import {
@@ -16,6 +17,7 @@ interface PaletteItem {
   icon: any
 }
 
+const { t } = useI18n()
 const router = useRouter()
 const uiStore = useUiStore()
 
@@ -27,7 +29,7 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const allItems = computed<PaletteItem[]>(() => {
   return getAllNavItems().map(item => ({
     id: item.id,
-    label: item.name,
+    label: t(item.name),
     path: item.href,
     category: 'Navigation',
     icon: item.icon,
@@ -192,13 +194,13 @@ onUnmounted(() => {
           <!-- Footer -->
           <div class="px-5 py-3 border-t border-white/[0.06] flex items-center gap-4">
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">&#8593;&#8595;</kbd> Navigieren
+              <kbd class="kbd">&#8593;&#8595;</kbd> {{ $t('commandPalette.navigate') }}
             </span>
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">&#8629;</kbd> Öffnen
+              <kbd class="kbd">&#8629;</kbd> {{ $t('commandPalette.open') }}
             </span>
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">ESC</kbd> Schließen
+              <kbd class="kbd">ESC</kbd> {{ $t('commandPalette.close') }}
             </span>
           </div>
         </div>

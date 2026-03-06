@@ -139,7 +139,7 @@ async function fetchStats() {
 // Create ticket
 async function createTicket() {
   if (!form.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('common.titleRequired'))
     return
   }
   if (!form.value.description.trim()) {
@@ -153,7 +153,7 @@ async function createTicket() {
     }
 
     const response = await api.post('/api/v1/tickets', form.value)
-    uiStore.showSuccess('Ticket erstellt')
+    uiStore.showSuccess(t('tickets.ticketCreated'))
     showCreateModal.value = false
     resetForm()
     fetchTickets()
@@ -264,7 +264,7 @@ const publicTicketUrl = computed(() => {
 async function copyPublicLink() {
   try {
     await navigator.clipboard.writeText(publicTicketUrl.value)
-    uiStore.showSuccess('Link in die Zwischenablage kopiert!')
+    uiStore.showSuccess(t('common.linkCopiedToClipboard'))
   } catch (error) {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
@@ -273,7 +273,7 @@ async function copyPublicLink() {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
-    uiStore.showSuccess('Link in die Zwischenablage kopiert!')
+    uiStore.showSuccess(t('common.linkCopiedToClipboard'))
   }
 }
 

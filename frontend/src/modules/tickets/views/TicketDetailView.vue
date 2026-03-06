@@ -87,7 +87,7 @@ async function fetchTicket() {
     comments.value = response.data.data.comments || []
     statusHistory.value = response.data.data.status_history || []
   } catch (error) {
-    uiStore.showError('Ticket nicht gefunden')
+    uiStore.showError(t('tickets.ticketNotFound'))
     router.push('/tickets')
   } finally {
     loading.value = false
@@ -162,13 +162,13 @@ function openEditModal() {
 // Save edit
 async function saveEdit() {
   if (!editForm.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('common.titleRequired'))
     return
   }
 
   try {
     await api.put(`/api/v1/tickets/${ticket.value.id}`, editForm.value)
-    uiStore.showSuccess('Ticket aktualisiert')
+    uiStore.showSuccess(t('tickets.ticketUpdated'))
     showEditModal.value = false
     fetchTicket()
   } catch (error) {
@@ -189,7 +189,7 @@ function openStatusModal() {
 async function updateStatus() {
   try {
     await api.put(`/api/v1/tickets/${ticket.value.id}/status`, statusForm.value)
-    uiStore.showSuccess('Status aktualisiert')
+    uiStore.showSuccess(t('common.statusUpdated'))
     showStatusModal.value = false
     fetchTicket()
   } catch (error) {
@@ -203,7 +203,7 @@ async function assignTicket(userId) {
     await api.put(`/api/v1/tickets/${ticket.value.id}/assign`, {
       assigned_to: userId,
     })
-    uiStore.showSuccess('Ticket zugewiesen')
+    uiStore.showSuccess(t('tickets.ticketAssigned'))
     showAssignModal.value = false
     fetchTicket()
   } catch (error) {

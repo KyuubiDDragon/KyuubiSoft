@@ -557,8 +557,8 @@ onMounted(() => {
                 </label>
               </div>
               <div class="flex justify-end gap-3 pt-4">
-                <button type="button" @click="showModal = false; resetForm()" class="btn-secondary">Abbrechen</button>
-                <button type="submit" class="btn-primary">Speichern</button>
+                <button type="button" @click="showModal = false; resetForm()" class="btn-secondary">{{ $t('common.cancel') }}</button>
+                <button type="submit" class="btn-primary">{{ $t('common.save') }}</button>
               </div>
             </form>
           </div>
@@ -589,7 +589,7 @@ onMounted(() => {
                 </div>
               </div>
               <div class="flex justify-end gap-3 pt-4">
-                <button type="button" @click="showFolderModal = false" class="btn-secondary">Abbrechen</button>
+                <button type="button" @click="showFolderModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
                 <button type="submit" class="btn-primary">{{ $t('common.create') }}</button>
               </div>
             </form>
@@ -727,7 +727,7 @@ onMounted(() => {
 
           <!-- Footer -->
           <div class="flex items-center justify-between p-5 border-t border-white/[0.06]">
-            <button @click="closeImportModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeImportModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button
               v-if="importSelectedIds.size > 0"
               @click="handleBulkImport"

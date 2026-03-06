@@ -142,14 +142,14 @@ async function saveScript() {
       selectedScript.value = created
       editForm.value = { ...created, tags: Array.isArray(created.tags) ? [...created.tags] : [] }
       isNew.value = false
-      toast.success('Script erstellt')
+      toast.success(t('scripts.scriptCreated'))
     } else {
       res = await api.put(`/api/v1/scripts/${editForm.value.id}`, payload)
       const updated = res.data.data.script
       const idx = scripts.value.findIndex(s => s.id === updated.id)
       if (idx !== -1) scripts.value[idx] = updated
       selectedScript.value = updated
-      toast.success('Script gespeichert')
+      toast.success(t('scripts.scriptSaved'))
     }
   } catch (err) {
     toast.error(t('scripts.scriptsfehlerbeimspeichern') + (err.response?.data?.message || err.message))
@@ -250,7 +250,7 @@ async function loadHistory() {
     const res = await api.get(`/api/v1/scripts/${selectedScript.value.id}/history`)
     history.value = res.data.data.executions || []
   } catch {
-    toast.error('Verlauf konnte nicht geladen werden')
+    toast.error(t('scripts.historyLoadFailed'))
   } finally {
     historyLoading.value = false
   }

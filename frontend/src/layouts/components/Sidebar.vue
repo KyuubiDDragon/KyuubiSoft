@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
@@ -23,6 +24,8 @@ import {
   FolderIcon,
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   isMobile?: boolean
@@ -126,14 +129,14 @@ const filteredTreeGroups = computed<NavGroup[]>(() => {
 
   return filteredGroups.value
     .map(group => {
-      const groupNameMatches = group.name.toLowerCase().includes(query)
+      const groupNameMatches = t(group.name).toLowerCase().includes(query)
 
       if (group.href) {
         return groupNameMatches ? group : null
       }
 
       const matchingChildren = group.children?.filter(
-        child => child.name.toLowerCase().includes(query)
+        child => t(child.name).toLowerCase().includes(query)
       ) ?? []
 
       if (groupNameMatches) return group
@@ -214,7 +217,8 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function highlightMatch(text: string): string {
+function highlightMatch(key: string): string {
+  const text = t(key)
   if (!treeFilter.value.trim()) return text
   const query = treeFilter.value.trim()
   const regex = new RegExp(`(${escapeRegex(query)})`, 'gi')
@@ -394,7 +398,7 @@ function closePopover() {
                 'sidebar-item-collapsed-active': isGroupActive(group),
                 'bg-white/[0.06] text-gray-300': popoverGroup?.id === group.id && !isGroupActive(group),
               }"
-              :title="group.name"
+              :title="$t(group.name)"
             >
               <span v-if="isGroupActive(group)" class="nav-active-bar" />
               <component :is="group.icon" class="w-5 h-5" />
@@ -433,7 +437,7 @@ function closePopover() {
                 <span
                   v-if="!treeFilter.trim()"
                   class="tree-label"
-                >{{ group.name }}</span>
+                >{{ $t(group.name) }}</span>
                 <span
                   v-else
                   class="tree-label"
@@ -460,7 +464,7 @@ function closePopover() {
                 <span
                   v-if="!treeFilter.trim()"
                   class="tree-label"
-                >{{ group.name }}</span>
+                >{{ $t(group.name) }}</span>
                 <span
                   v-else
                   class="tree-label"
@@ -491,7 +495,7 @@ function closePopover() {
                       <span
                         v-if="!treeFilter.trim()"
                         class="tree-label"
-                      >{{ item.name }}</span>
+                      >{{ $t(item.name) }}</span>
                       <span
                         v-else
                         class="tree-label"
@@ -651,7 +655,7 @@ function closePopover() {
           left: popoverPosition.left + 'px',
         }"
       >
-        <div class="dropdown-header">{{ popoverGroup.name }}</div>
+        <div class="dropdown-header">{{ $t(popoverGroup.name) }}</div>
         <button
           v-for="item in popoverGroup.children"
           :key="item.id"
@@ -660,7 +664,7 @@ function closePopover() {
           :class="{ 'dropdown-item-active': isActive(item.href) }"
         >
           <component :is="item.icon" class="w-4 h-4 shrink-0" />
-          <span class="truncate">{{ item.name }}</span>
+          <span class="truncate">{{ $t(item.name) }}</span>
         </button>
       </div>
     </Transition>

@@ -95,11 +95,11 @@ function openModal(webhook = null) {
 // Save webhook
 async function saveWebhook() {
   if (!form.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
   if (!form.value.url.trim()) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('common.urlRequired'))
     return
   }
   if (form.value.events.length === 0) {
@@ -153,12 +153,12 @@ async function testWebhook(webhook) {
   try {
     const response = await api.post(`/api/v1/webhooks/${webhook.id}/test`)
     if (response.data.data.success) {
-      uiStore.showSuccess('Test erfolgreich gesendet')
+      uiStore.showSuccess(t('webhooks.testSentSuccess'))
     } else {
       uiStore.showError(response.data.data.message)
     }
   } catch (error) {
-    uiStore.showError('Test fehlgeschlagen')
+    uiStore.showError(t('webhooks.testFailed'))
   } finally {
     testing.value = null
   }

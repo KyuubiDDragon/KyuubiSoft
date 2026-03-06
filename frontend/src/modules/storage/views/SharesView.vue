@@ -224,7 +224,7 @@ onMounted(() => {
               <th class="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase">Downloads</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('inboxModule.erstellt') }}</th>
               <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('toolbox.laeuftAb') }}</th>
-              <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">Aktionen</th>
+              <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/[0.06]">

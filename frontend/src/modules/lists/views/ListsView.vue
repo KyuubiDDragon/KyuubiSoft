@@ -119,7 +119,7 @@ async function createList() {
     lists.value.unshift(newList)
     showCreateModal.value = false
     resetForm()
-    uiStore.showSuccess('Liste erstellt')
+    uiStore.showSuccess(t('listsModule.listCreated'))
   } catch (error) {
     uiStore.showError(t('listsModule.listsmodulefehlerbeimerstellenderliste'))
   }
@@ -131,7 +131,7 @@ async function updateList() {
     await loadLists()
     await selectList(selectedList.value.id)
     showEditModal.value = false
-    uiStore.showSuccess('Liste aktualisiert')
+    uiStore.showSuccess(t('listsModule.listUpdated'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }

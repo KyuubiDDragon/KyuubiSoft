@@ -153,10 +153,10 @@ async function saveConnection() {
 
     if (editingConnection.value) {
       await api.put(`/api/v1/connections/${editingConnection.value.id}`, data)
-      uiStore.showSuccess('Verbindung aktualisiert')
+      uiStore.showSuccess(t('connections.connectionUpdated'))
     } else {
       await api.post('/api/v1/connections', data)
-      uiStore.showSuccess('Verbindung erstellt')
+      uiStore.showSuccess(t('connections.connectionCreated'))
     }
 
     await loadConnections()
@@ -167,7 +167,7 @@ async function saveConnection() {
 }
 
 async function deleteConnection(connection) {
-  if (!await confirm({ message: `Verbindung "${connection.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('connections.confirmDelete', { name: connection.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/connections/${connection.id}`)
@@ -218,7 +218,7 @@ async function saveTag() {
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('connections.confirmDeleteTag', { name: tag.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/connections/tags/${tag.id}`)
@@ -583,7 +583,7 @@ function formatDate(dateString) {
                     {{ tag.name }}
                   </button>
                   <span v-if="tags.length === 0" class="text-gray-500 text-sm">
-                    Noch keine Tags erstellt
+                    {{ $t('tags.noTagsCreated') }}
                   </span>
                 </div>
               </div>
@@ -787,7 +787,7 @@ function formatDate(dateString) {
                 </button>
               </div>
               <p v-if="tags.length === 0" class="text-center text-gray-500 py-4">
-                Noch keine Tags erstellt
+                {{ $t('tags.noTagsCreated') }}
               </p>
             </div>
           </div>

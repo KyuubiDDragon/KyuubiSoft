@@ -110,7 +110,7 @@ function openModal(category = null) {
 // Save category
 async function saveCategory() {
   if (!form.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 

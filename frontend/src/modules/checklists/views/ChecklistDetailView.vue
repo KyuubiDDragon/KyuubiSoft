@@ -168,7 +168,7 @@ async function updateSettings() {
     checklist.value = { ...checklist.value, ...response.data.data }
     showSettingsModal.value = false
     newPassword.value = ''
-    uiStore.showSuccess('Einstellungen gespeichert')
+    uiStore.showSuccess(t('checklists.settingsSaved'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
@@ -176,7 +176,7 @@ async function updateSettings() {
 
 async function addCategory() {
   if (!newCategory.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 
@@ -227,7 +227,7 @@ async function deleteCategory(category) {
 
 async function addItem() {
   if (!newItem.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('common.titleRequired'))
     return
   }
 
@@ -237,7 +237,7 @@ async function addItem() {
     checklist.value.items.push({ ...response.data.data, entries: [], passed_count: 0, failed_count: 0, entry_count: 0 })
     showAddItemModal.value = false
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
-    uiStore.showSuccess('Testpunkt erstellt')
+    uiStore.showSuccess(t('checklists.itemCreated'))
   } catch (error) {
     uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
@@ -292,10 +292,10 @@ async function addBatchItems() {
   }
 
   if (successCount > 0) {
-    toast.success(`${successCount} Testpunkt${successCount > 1 ? 'e' : ''} erstellt`)
+    toast.success(t('checklists.itemCreatedCount', { count: successCount }))
   }
   if (errorCount > 0) {
-    toast.error(`${errorCount} Testpunkt${errorCount > 1 ? 'e' : ''} fehlgeschlagen`)
+    toast.error(t('checklists.itemFailedCount', { count: errorCount }))
   }
 
   showBatchAddModal.value = false
@@ -316,7 +316,7 @@ async function updateItem(item) {
       required_testers: item.required_testers,
     })
     editingItem.value = null
-    uiStore.showSuccess('Testpunkt aktualisiert')
+    uiStore.showSuccess(t('checklists.itemUpdated'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
@@ -392,7 +392,7 @@ async function uploadEntryImage(entry, event) {
 
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    toast.warning(t('checklists.onlyImagesAllowed'))
     return
   }
 
@@ -412,7 +412,7 @@ async function uploadEntryImage(entry, event) {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )
     entry.image_path = response.data.data.image_path
-    toast.success('Bild hochgeladen')
+    toast.success(t('checklists.imageUploaded'))
   } catch (error) {
     toast.error(error.response?.data?.error || t('checklists.errorUploading'))
   } finally {

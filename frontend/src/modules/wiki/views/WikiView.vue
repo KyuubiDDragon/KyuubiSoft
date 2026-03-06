@@ -116,7 +116,7 @@ function createNewPage() {
 
 async function selectPage(pageId) {
   if (isEditing.value || isCreating.value) {
-    if (!await confirm({ message: t('wiki.ungespeicherteAenderungenVerwerfen'), type: 'danger', confirmText: 'Verwerfen' })) return
+    if (!await confirm({ message: t('wiki.ungespeicherteAenderungenVerwerfen'), type: 'danger', confirmText: t('common.discard') })) return
   }
 
   currentPageId.value = pageId
@@ -159,7 +159,7 @@ function cancelEdit() {
 
 async function savePage() {
   if (!editForm.value.title.trim()) {
-    toast.warning('Titel ist erforderlich')
+    toast.warning(t('wiki.titleRequired'))
     return
   }
 
@@ -221,7 +221,7 @@ function debouncedSearch() {
 // Category methods
 async function saveCategory() {
   if (!categoryForm.value.name.trim()) {
-    toast.warning('Name ist erforderlich')
+    toast.warning(t('wiki.nameRequired'))
     return
   }
 
@@ -241,7 +241,7 @@ async function saveCategory() {
 
 // History
 async function restoreVersion(historyId) {
-  if (!await confirm({ message: t('wiki.wikidieseversionwiederherstellenaktuellerinhaltwirdin'), type: 'danger', confirmText: 'Wiederherstellen' })) return
+  if (!await confirm({ message: t('wiki.wikidieseversionwiederherstellenaktuellerinhaltwirdin'), type: 'danger', confirmText: t('common.restore') })) return
 
   try {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)

@@ -78,7 +78,7 @@ async function openInvoiceDetail(invoice) {
     selectedInvoice.value = response.data.data
     showDetailPanel.value = true
   } catch {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('common.errorLoading'))
   }
 }
 
@@ -89,7 +89,7 @@ async function refreshSelectedInvoice() {
     selectedInvoice.value = response.data.data
     await loadData()
   } catch {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('common.errorUpdating'))
   }
 }
 
@@ -167,9 +167,9 @@ async function handleRegenerate(invoice) {
       selectedInvoice.value = res.data.data
     }
     await loadData()
-    uiStore.showSuccess('Rechnungsdaten wurden neu geladen')
+    uiStore.showSuccess(t('invoices.dataReloaded'))
   } catch {
-    uiStore.showError('Fehler beim Regenerieren')
+    uiStore.showError(t('invoices.errorRegenerating'))
   }
 }
 
@@ -207,7 +207,7 @@ async function openTimeEntriesModal() {
 
 async function createFromTimeEntries() {
   if (!timeEntriesForm.value.project_id && !timeEntriesForm.value.client_id) {
-    toast.error('Bitte Projekt oder Kunden auswählen')
+    toast.error(t('invoices.selectProjectOrCustomer'))
     return
   }
   try {
@@ -224,7 +224,7 @@ async function createFromTimeEntries() {
     const allEntries = teResp.data.data?.items ?? teResp.data.items ?? []
     const billableIds = allEntries.filter(e => e.is_billable && !e.invoiced).map(e => e.id)
     if (billableIds.length === 0) {
-      toast.error('Keine abrechenbaren, noch nicht abgerechneten Zeiteinträge gefunden')
+      toast.error(t('invoices.noBillableEntries'))
       return
     }
     await api.post('/api/v1/invoices/from-time', { ...payload, time_entry_ids: billableIds })
@@ -232,7 +232,7 @@ async function createFromTimeEntries() {
     await loadData()
     uiStore.showSuccess(`${t('invoices.invoiceFromTimeEntries')} ${billableIds.length} ${t('invoices.timeEntries')}`)
   } catch (err) {
-    toast.error('Fehler: ' + (err?.response?.data?.message ?? err?.message ?? 'Unbekannter Fehler'))
+    toast.error(t('invoices.errorPrefix', { msg: err?.response?.data?.message ?? err?.message ?? 'Unknown' }))
   }
 }
 </script>
@@ -387,7 +387,7 @@ async function createFromTimeEntries() {
           </button>
         </div>
         <select v-model="statusFilter" class="input w-40">
-          <option value="">Alle Status</option>
+          <option value="">{{ $t('projects.allStatus') }}</option>
           <option v-for="s in statusOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
       </div>
@@ -486,7 +486,7 @@ async function createFromTimeEntries() {
                   <button
                     @click="openEditInvoice(invoice)"
                     class="p-1.5 text-gray-400 hover:text-yellow-400 hover:bg-white/[0.04] rounded-lg"
-                    title="Bearbeiten"
+                    :title="$t('common.edit')"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
@@ -515,7 +515,7 @@ async function createFromTimeEntries() {
       <div v-else class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-16 text-center">
         <DocumentTextIcon class="w-16 h-16 mx-auto text-gray-700 mb-4" />
         <h3 class="text-lg font-semibold text-white mb-2">
-          {{ searchQuery || statusFilter ? 'Keine Ergebnisse' : 'Noch keine Rechnungen' }}
+          {{ searchQuery || statusFilter ? $t('common.noResults') : $t('invoices.noInvoicesYet') }}
         </h3>
         <p class="text-gray-500 mb-6">
           {{ searchQuery || statusFilter ? $t('invoices.tryOtherCriteria') : 'Erstelle deine erste Rechnung.' }}
@@ -553,7 +553,7 @@ async function createFromTimeEntries() {
               <button
                 @click="openEditClient(client)"
                 class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-                title="Bearbeiten"
+                :title="$t('common.edit')"
               >
                 <PencilIcon class="w-4 h-4" />
               </button>

@@ -135,7 +135,7 @@ async function uploadFile(file) {
     uiStore.showSuccess(t('storage.dateiErfolgreichHochgeladen'))
     loadStats()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Upload fehlgeschlagen')
+    uiStore.showError(error.response?.data?.message || t('common.uploadFailed'))
   } finally {
     isUploading.value = false
     uploadProgress.value = 0

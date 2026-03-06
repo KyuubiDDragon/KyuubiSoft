@@ -60,7 +60,7 @@ const handleDrop = async (e, elementId) => {
 
   const file = files[0]
   if (!file.type.startsWith('image/')) {
-    toast.error('Nur Bilddateien erlaubt')
+    toast.error(t('mockupEditor.onlyImagesAllowed'))
     return
   }
 
@@ -78,7 +78,7 @@ const handleFileSelect = (e, elementId) => {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    toast.error('Nur Bilddateien erlaubt')
+    toast.error(t('mockupEditor.onlyImagesAllowed'))
     return
   }
 
@@ -503,7 +503,7 @@ const renderTextWithHighlight = (element) => {
               class="flex flex-col items-center gap-1 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-gray-900 rounded-lg transition-colors"
             >
               <PencilSquareIcon class="w-6 h-6" />
-              <span class="text-xs font-medium">Bearbeiten</span>
+              <span class="text-xs font-medium">{{ $t('common.edit') }}</span>
             </button>
 
             <!-- Replace Button -->
@@ -857,7 +857,7 @@ const renderTextWithHighlight = (element) => {
                 class="flex flex-col items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-gray-900 rounded-lg transition-colors"
               >
                 <PencilSquareIcon class="w-5 h-5" />
-                <span class="text-xs font-medium">Bearbeiten</span>
+                <span class="text-xs font-medium">{{ $t('common.edit') }}</span>
               </button>
 
               <!-- Replace Button -->

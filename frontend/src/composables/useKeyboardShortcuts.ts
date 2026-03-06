@@ -3,11 +3,12 @@ import type { Ref, ComputedRef } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Router } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import i18n from '@/locales'
 
 // Interfaces
 interface ShortcutDefinition {
   key: string
-  description: string
+  descriptionKey: string
   route?: string
   action?: string
 }
@@ -23,24 +24,24 @@ interface UseKeyboardShortcutsReturn {
 // Global shortcut definitions
 const globalShortcuts: ShortcutDefinition[] = [
   // Navigation
-  { key: 'g h', description: 'Dashboard öffnen', route: '/' },
-  { key: 'g l', description: 'Listen öffnen', route: '/lists' },
-  { key: 'g d', description: 'Dokumente öffnen', route: '/documents' },
-  { key: 'g k', description: 'Kanban öffnen', route: '/kanban' },
-  { key: 'g p', description: 'Projekte öffnen', route: '/projects' },
-  { key: 'g s', description: 'Snippets öffnen', route: '/snippets' },
-  { key: 'g b', description: 'Bookmarks öffnen', route: '/bookmarks' },
-  { key: 'g t', description: 'Zeiterfassung öffnen', route: '/time' },
-  { key: 'g c', description: 'Kalender öffnen', route: '/calendar' },
-  { key: 'g n', description: 'News öffnen', route: '/news' },
-  { key: 'g e', description: 'Einstellungen öffnen', route: '/settings' },
+  { key: 'g h', descriptionKey: 'shortcuts.openDashboard', route: '/' },
+  { key: 'g l', descriptionKey: 'shortcuts.openLists', route: '/lists' },
+  { key: 'g d', descriptionKey: 'shortcuts.openDocuments', route: '/documents' },
+  { key: 'g k', descriptionKey: 'shortcuts.openKanban', route: '/kanban' },
+  { key: 'g p', descriptionKey: 'shortcuts.openProjects', route: '/projects' },
+  { key: 'g s', descriptionKey: 'shortcuts.openSnippets', route: '/snippets' },
+  { key: 'g b', descriptionKey: 'shortcuts.openBookmarks', route: '/bookmarks' },
+  { key: 'g t', descriptionKey: 'shortcuts.openTimeTracking', route: '/time' },
+  { key: 'g c', descriptionKey: 'shortcuts.openCalendar', route: '/calendar' },
+  { key: 'g n', descriptionKey: 'shortcuts.openNews', route: '/news' },
+  { key: 'g e', descriptionKey: 'shortcuts.openSettings', route: '/settings' },
 
   // Actions
-  { key: '/', description: 'Globale Suche', action: 'search' },
-  { key: 'Ctrl+k', description: 'Command Palette öffnen', action: 'commandPalette' },
-  { key: '?', description: 'Shortcuts anzeigen', action: 'showShortcuts' },
-  { key: 'Escape', description: 'Modal/Dialog schließen', action: 'escape' },
-  { key: 'n', description: 'Neu erstellen (kontextabhängig)', action: 'new' },
+  { key: '/', descriptionKey: 'shortcuts.globalSearch', action: 'search' },
+  { key: 'Ctrl+k', descriptionKey: 'shortcuts.openCommandPalette', action: 'commandPalette' },
+  { key: '?', descriptionKey: 'shortcuts.showShortcuts', action: 'showShortcuts' },
+  { key: 'Escape', descriptionKey: 'shortcuts.closeDialog', action: 'escape' },
+  { key: 'n', descriptionKey: 'shortcuts.createNew', action: 'new' },
 ]
 
 // Store for the keyboard shortcuts state

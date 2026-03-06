@@ -411,7 +411,7 @@ async function saveComposeFile() {
     composeContent.value = data.content || ''
 
     error.value = null
-    toast.success('Compose-Datei gespeichert! Führe "docker compose up -d" aus um Änderungen anzuwenden.')
+    toast.success(t('docker.composeSavedRun'))
   } catch (e) {
     console.error('Failed to save compose file:', e)
     error.value = t('dockerModule.composedateiKonnteNichtGespeichertWerden')
@@ -491,7 +491,7 @@ async function stackUp(stackName) {
 }
 
 async function stackDown(stackName) {
-  if (!await confirm({ message: `Stack "${stackName}" stoppen?`, type: 'danger', confirmText: t('common.confirm') })) return
+  if (!await confirm({ message: t('docker.confirmStopStack', { name: stackName }), type: 'danger', confirmText: t('common.confirm') })) return
   try {
     await api.post(`/api/v1/docker/stacks/${stackName}/down`, null, { params: getHostParams() })
     await loadContainers()
@@ -510,13 +510,13 @@ async function stackRestart(stackName) {
 }
 
 async function stackPullAndRedeploy(stackName) {
-  if (!await confirm({ message: `Stack "${stackName}" neu pullen und redeployen? Dies kann einige Minuten dauern.`, type: 'danger', confirmText: t('common.confirm') })) return
+  if (!await confirm({ message: t('docker.confirmRedeployStack', { name: stackName }), type: 'danger', confirmText: t('common.confirm') })) return
   try {
     loading.value = true
     const response = await api.post(`/api/v1/docker/stacks/${stackName}/pull-redeploy`, null, { params: getHostParams() })
     await loadContainers()
     const data = response.data.data || response.data
-    toast.success(`Stack "${stackName}" erfolgreich aktualisiert!\n\nPull Output:\n${data.pull_output?.substring(0, 500) || 'OK'}`)
+    toast.success(t('docker.stackUpdatedSuccess', { name: stackName }))
   } catch (e) {
     error.value = e.response?.data?.message || 'Pull & Redeploy fehlgeschlagen'
   } finally {
@@ -546,7 +546,7 @@ async function backupStack(stackName, sensitiveToken = null) {
     }
     const response = await api.post(`/api/v1/docker/stacks/${stackName}/backup`, null, { params })
     const data = response.data.data || response.data
-    toast.success(`Backup erstellt: ${data.backup_file}\nDateien: ${data.files?.join(', ')}`)
+    toast.success(t('docker.backupCreatedFile', { file: data.backup_file }))
     await loadBackups()
   } catch (e) {
     // Check if 2FA verification is required (status 428)
@@ -625,7 +625,7 @@ async function viewBackup(backup) {
 
 async function restoreBackup(backup, deploy = false) {
   const action = deploy ? 'wiederherstellen und deployen' : 'nur wiederherstellen'
-  if (!await confirm({ message: `Backup "${backup.file}" ${action}?`, type: 'danger', confirmText: t('common.confirm') })) return
+  if (!await confirm({ message: t('docker.confirmBackupAction', { name: backup.file, action }), type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.post(`/api/v1/docker/backups/${backup.file}/restore`, { deploy, ...getHostParams() })
@@ -640,7 +640,7 @@ async function restoreBackup(backup, deploy = false) {
 }
 
 async function deleteBackup(backup) {
-  if (!await confirm({ message: `Backup "${backup.file}" wirklich löschen?`, type: 'danger', confirmText: t('common.confirm') })) return
+  if (!await confirm({ message: t('docker.confirmDeleteBackup', { name: backup.file }), type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.delete(`/api/v1/docker/backups/${backup.file}`, { params: getHostParams() })
@@ -652,7 +652,7 @@ async function deleteBackup(backup) {
 }
 
 async function removeContainer(container) {
-  if (!await confirm({ message: `Container "${container.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.confirm') })) return
+  if (!await confirm({ message: t('docker.confirmDeleteContainer', { name: container.name }), type: 'danger', confirmText: t('common.confirm') })) return
 
   try {
     await api.delete(`/api/v1/docker/containers/${container.id}`, { params: { force: 'true', ...getHostParams() } })
@@ -1604,7 +1604,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                 class="btn-primary"
               >
                 <ArrowPathIcon v-if="savingCompose" class="w-4 h-4 animate-spin" />
-                <template v-else>Speichern</template>
+                <template v-else>{{ $t('common.save') }}</template>
               </button>
             </div>
           </div>

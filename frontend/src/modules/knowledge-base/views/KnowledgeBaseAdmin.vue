@@ -577,8 +577,8 @@ watch(articlePublishedFilter, () => {
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
-            <button @click="showCategoryModal = false" class="btn-secondary">Abbrechen</button>
-            <button @click="saveCategory" class="btn-primary" :disabled="!categoryForm.name.trim()">Speichern</button>
+            <button @click="showCategoryModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+            <button @click="saveCategory" class="btn-primary" :disabled="!categoryForm.name.trim()">{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>
@@ -668,8 +668,8 @@ watch(articlePublishedFilter, () => {
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
-            <button @click="showArticleModal = false" class="btn-secondary">Abbrechen</button>
-            <button @click="saveArticle" class="btn-primary" :disabled="!articleForm.title.trim()">Speichern</button>
+            <button @click="showArticleModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+            <button @click="saveArticle" class="btn-primary" :disabled="!articleForm.title.trim()">{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>
@@ -687,8 +687,8 @@ watch(articlePublishedFilter, () => {
             wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
           </p>
           <div class="flex justify-end gap-3">
-            <button @click="showDeleteConfirm = false" class="btn-secondary">Abbrechen</button>
-            <button @click="executeDelete" class="btn-primary bg-red-600 hover:bg-red-700">Löschen</button>
+            <button @click="showDeleteConfirm = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+            <button @click="executeDelete" class="btn-primary bg-red-600 hover:bg-red-700">{{ $t('common.delete') }}</button>
           </div>
         </div>
       </div>

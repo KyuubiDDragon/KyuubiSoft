@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/core/api/axios'
+import i18n from '@/locales'
 
 interface RecurringTask {
   id: string
@@ -47,31 +48,33 @@ export const useRecurringTasksStore = defineStore('recurringTasks', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  const frequencyLabels: FrequencyLabels = {
-    daily: 'Täglich',
-    weekly: 'Wöchentlich',
-    biweekly: 'Zweiwöchentlich',
-    monthly: 'Monatlich',
-    yearly: 'Jährlich',
-    custom: 'Benutzerdefiniert'
-  }
+  const t = () => (i18n.global as any).t
 
-  const targetTypeLabels: TargetTypeLabels = {
-    list: 'Liste',
-    checklist: 'Checkliste',
-    kanban: 'Kanban-Board',
-    project: 'Projekt'
-  }
+  const frequencyLabels = computed<FrequencyLabels>(() => ({
+    daily: t()('recurringTasks.daily'),
+    weekly: t()('recurringTasks.weekly'),
+    biweekly: t()('recurringTasks.biweekly'),
+    monthly: t()('recurringTasks.monthly'),
+    yearly: t()('recurringTasks.yearly'),
+    custom: t()('recurringTasks.custom')
+  }))
 
-  const dayOfWeekLabels: DayOfWeekLabels = {
-    1: 'Montag',
-    2: 'Dienstag',
-    3: 'Mittwoch',
-    4: 'Donnerstag',
-    5: 'Freitag',
-    6: 'Samstag',
-    0: 'Sonntag'
-  }
+  const targetTypeLabels = computed<TargetTypeLabels>(() => ({
+    list: t()('recurringTasks.targetList'),
+    checklist: t()('recurringTasks.targetChecklist'),
+    kanban: t()('recurringTasks.targetKanban'),
+    project: t()('recurringTasks.targetProject')
+  }))
+
+  const dayOfWeekLabels = computed<DayOfWeekLabels>(() => ({
+    1: t()('recurringTasks.monday'),
+    2: t()('recurringTasks.tuesday'),
+    3: t()('recurringTasks.wednesday'),
+    4: t()('recurringTasks.thursday'),
+    5: t()('recurringTasks.friday'),
+    6: t()('recurringTasks.saturday'),
+    0: t()('recurringTasks.sunday')
+  }))
 
   const activeTasks = computed<RecurringTask[]>(() => tasks.value.filter(t => t.is_active))
   const inactiveTasks = computed<RecurringTask[]>(() => tasks.value.filter(t => !t.is_active))

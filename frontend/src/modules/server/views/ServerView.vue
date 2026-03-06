@@ -150,7 +150,7 @@ async function loadCustomServices() {
 
 async function addCustomService() {
   if (!newServiceName.value.trim()) {
-    uiStore.showError('Service-Name ist erforderlich')
+    uiStore.showError(t('server.serviceNameRequired'))
     return
   }
 
@@ -170,7 +170,7 @@ async function removeCustomService(serviceName) {
 
   try {
     await api.delete(`/api/v1/server/services/custom/${encodeURIComponent(serviceName)}`)
-    uiStore.showSuccess('Service entfernt')
+    uiStore.showSuccess(t('server.serviceRemoved'))
     await loadCustomServices()
   } catch (e) {
     uiStore.showError(t('server.serverfehlerbeimentfernen'))
@@ -217,7 +217,7 @@ async function initialLoad() {
 // Crontab Actions
 async function addCrontab() {
   if (!newCrontab.value.schedule || !newCrontab.value.command) {
-    uiStore.showError('Schedule und Command sind erforderlich')
+    uiStore.showError(t('server.scheduleAndCommandRequired'))
     return
   }
 
@@ -247,7 +247,7 @@ async function deleteCrontab(line) {
 async function saveCrontabRaw() {
   try {
     await api.put('/api/v1/server/crontabs', { content: rawCrontab.value })
-    uiStore.showSuccess('Crontab gespeichert')
+    uiStore.showSuccess(t('server.crontabSaved'))
     showEditCrontabModal.value = false
     await loadCrontabs()
   } catch (e) {
@@ -263,7 +263,7 @@ async function killProcess(pid, signal = 'TERM') {
     const response = await api.post('/api/v1/server/processes/kill', { pid, signal })
     const data = response.data.data
     if (data.terminated) {
-      uiStore.showSuccess('Prozess beendet')
+      uiStore.showSuccess(t('server.processTerminated'))
     } else {
       uiStore.showWarning(t('server.signalGesendetProzessLaeuftNoch'))
     }
@@ -605,7 +605,7 @@ watch(activeTab, (newTab) => {
               <th class="p-3">Service</th>
               <th class="p-3">{{ $t('common.status') }}</th>
               <th class="p-3 hidden sm:table-cell">{{ $t('common.description') }}</th>
-              <th class="p-3 text-right">Aktionen</th>
+              <th class="p-3 text-right">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 
+const { t } = useI18n()
 const domain = ref('')
 const port = ref(443)
 const isLoading = ref(false)
@@ -37,7 +38,7 @@ async function checkSSL() {
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
-  return date.toLocaleDateString('de-DE', {
+  return date.toLocaleDateString(undefined, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -48,10 +49,10 @@ function formatDate(dateStr) {
 
 function getExpiryStatus(days) {
   if (days === null || days === undefined) return { class: 'text-gray-400', text: t('documentsModule.unbekannt') }
-  if (days < 0) return { class: 'text-red-500', text: 'Abgelaufen' }
-  if (days < 7) return { class: 'text-red-400', text: `${days} Tage (Kritisch)` }
-  if (days < 30) return { class: 'text-yellow-400', text: `${days} Tage (Warnung)` }
-  return { class: 'text-green-400', text: `${days} Tage` }
+  if (days < 0) return { class: 'text-red-500', text: t('ssl.expired') }
+  if (days < 7) return { class: 'text-red-400', text: `${days} ${t('ssl.daysCritical')}` }
+  if (days < 30) return { class: 'text-yellow-400', text: `${days} ${t('ssl.daysWarning')}` }
+  return { class: 'text-green-400', text: `${days} ${t('ssl.daysLabel')}` }
 }
 
 // Common domains for quick test
@@ -92,7 +93,7 @@ const quickDomains = [
 
     <!-- Quick domains -->
     <div class="flex gap-2 flex-wrap">
-      <span class="text-xs text-gray-500">Schnelltest:</span>
+      <span class="text-xs text-gray-500">{{ $t('ssl.quickTest') }}:</span>
       <button
         v-for="d in quickDomains"
         :key="d"
@@ -126,7 +127,7 @@ const quickDomains = [
         <div>
           <h3 class="text-lg font-medium text-white">{{ result.domain }}:{{ result.port }}</h3>
           <p :class="result.valid ? 'text-green-400' : 'text-red-400'">
-            {{ result.valid ? $t('toolbox.sslzertifikatGueltig') : 'SSL-Problem erkannt' }}
+            {{ result.valid ? $t('toolbox.sslzertifikatGueltig') : $t('ssl.sslProblemDetected') }}
           </p>
         </div>
       </div>
@@ -134,7 +135,7 @@ const quickDomains = [
       <!-- Certificate Details -->
       <div class="grid grid-cols-2 gap-3" v-if="result.certificate">
         <div class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-          <span class="text-xs text-gray-500">Common Name</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.commonName') }}</span>
           <div class="text-white font-mono">{{ result.certificate.commonName }}</div>
         </div>
 
@@ -154,24 +155,24 @@ const quickDomains = [
         </div>
 
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Verbleibende Zeit</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.remainingTime') }}</span>
           <div :class="getExpiryStatus(result.certificate.daysUntilExpiry).class">
             {{ getExpiryStatus(result.certificate.daysUntilExpiry).text }}
           </div>
         </div>
 
         <div class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Signatur-Algorithmus</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.signatureAlgorithm') }}</span>
           <div class="text-white text-sm">{{ result.certificate.signatureAlgorithm || '-' }}</div>
         </div>
 
         <div v-if="result.certificate.serialNumber" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-          <span class="text-xs text-gray-500">Seriennummer</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.serialNumber') }}</span>
           <div class="text-sm text-gray-300 font-mono break-all">{{ result.certificate.serialNumber }}</div>
         </div>
 
         <div v-if="result.certificate.san?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-          <span class="text-xs text-gray-500">Alternative Namen (SAN)</span>
+          <span class="text-xs text-gray-500">{{ $t('ssl.subjectAlternativeNames') }}</span>
           <div class="flex flex-wrap gap-1 mt-1">
             <span
               v-for="name in result.certificate.san"
@@ -186,7 +187,7 @@ const quickDomains = [
 
       <!-- Warnings -->
       <div v-if="result.certificate?.isExpired" class="p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-sm text-red-400">
-        Das Zertifikat ist abgelaufen!
+        {{ $t('ssl.certificateExpired') }}
       </div>
 
       <div v-if="result.certificate?.isNotYetValid" class="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-400">
@@ -200,7 +201,7 @@ const quickDomains = [
 
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
-      <p class="font-medium">Hinweis:</p>
+      <p class="font-medium">{{ $t('ssl.note') }}:</p>
       <p>{{ $t('toolbox.dieserCheckPrueftDasSsltlszertifikatEinerDomain') }}</p>
     </div>
   </div>

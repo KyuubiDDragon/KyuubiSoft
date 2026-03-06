@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { getAllNavItems, type NavItem } from '@/core/config/navigation'
 import {
@@ -16,6 +17,7 @@ interface PaletteItem {
   icon: any
 }
 
+const { t } = useI18n()
 const router = useRouter()
 const uiStore = useUiStore()
 
@@ -27,7 +29,7 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const allItems = computed<PaletteItem[]>(() => {
   return getAllNavItems().map(item => ({
     id: item.id,
-    label: item.name,
+    label: t(item.name),
     path: item.href,
     category: 'Navigation',
     icon: item.icon,

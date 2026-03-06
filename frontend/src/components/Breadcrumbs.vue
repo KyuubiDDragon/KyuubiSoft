@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { getAllNavItems, findGroupByHref } from '@/core/config/navigation'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -74,14 +76,14 @@ function navigate(href) {
         class="text-gray-500 hover:text-gray-300 transition-colors duration-150 truncate max-w-[120px]"
         :class="crumb.isGroup ? 'text-gray-600' : ''"
       >
-        {{ crumb.name }}
+        {{ t(crumb.name) }}
       </button>
       <span
         v-else
         class="truncate max-w-[160px] font-medium"
         :class="index === breadcrumbs.length - 1 ? 'text-gray-300' : crumb.isGroup ? 'text-gray-600' : 'text-gray-500'"
       >
-        {{ crumb.name }}
+        {{ t(crumb.name) }}
       </span>
     </template>
   </nav>

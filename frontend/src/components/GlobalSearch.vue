@@ -53,7 +53,7 @@ const filteredNavItems = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
   if (!q) return []
   return navigationItems.filter(item =>
-    item.name.toLowerCase().includes(q) ||
+    t(item.name).toLowerCase().includes(q) ||
     (item.group && item.group.toLowerCase().includes(q))
   ).slice(0, 6)
 })
@@ -272,7 +272,7 @@ defineExpose({ open, close })
                       @mouseenter="selectedIndex = quickActions.length + i"
                     >
                       <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                      <span class="text-sm flex-1">{{ item.name }}</span>
+                      <span class="text-sm flex-1">{{ $t(item.name) }}</span>
                       <span v-if="item.group" class="text-[11px] text-dark-500 shrink-0">{{ item.group }}</span>
                       <ArrowRightIcon class="w-3.5 h-3.5 text-dark-500 shrink-0" />
                     </button>
@@ -305,7 +305,7 @@ defineExpose({ open, close })
                       <div class="w-7 h-7 rounded-lg bg-dark-700/60 flex items-center justify-center shrink-0">
                         <component :is="item.icon" class="w-4 h-4" />
                       </div>
-                      <span class="text-sm flex-1">{{ item.name }}</span>
+                      <span class="text-sm flex-1">{{ $t(item.name) }}</span>
                       <span v-if="item.group" class="text-[11px] text-dark-500 shrink-0 hidden sm:inline">{{ item.group }}</span>
                       <ArrowRightIcon class="w-3.5 h-3.5 text-dark-500 shrink-0" />
                     </button>

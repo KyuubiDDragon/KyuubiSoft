@@ -98,7 +98,7 @@ function goToSettings() {
         :key="item.nav_id"
         @click="navigateToQuickAccess(item)"
         class="btn-icon-sm"
-        :title="item.nav_name"
+        :title="$t(item.nav_name)"
       >
         <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4" />
       </button>
@@ -125,7 +125,7 @@ function goToSettings() {
               class="dropdown-item"
             >
               <component :is="getIconComponent(item.nav_icon)" class="w-4 h-4 shrink-0" />
-              {{ item.nav_name }}
+              {{ $t(item.nav_name) }}
             </button>
           </div>
         </Transition>

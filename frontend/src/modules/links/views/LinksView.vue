@@ -133,7 +133,7 @@ async function createLink() {
 
 // Delete link
 async function deleteLink(link) {
-  if (!await confirm({ message: `Link "${link.short_code}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('links.confirmDelete', { code: link.short_code }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/links/${link.id}`)

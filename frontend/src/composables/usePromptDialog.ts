@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import type { Ref, DeepReadonly } from 'vue'
+import i18n from '@/locales'
 
 // Interfaces
 interface PromptDialogOptions {
@@ -34,12 +35,13 @@ interface UsePromptDialogReturn {
 
 const isOpen: Ref<boolean> = ref<boolean>(false)
 const inputValue: Ref<string> = ref<string>('')
+const t = () => (i18n.global as any).t
 const dialogConfig: Ref<PromptDialogConfig> = ref<PromptDialogConfig>({
-  title: 'Eingabe',
+  title: '',
   message: '',
   placeholder: '',
   confirmText: 'OK',
-  cancelText: 'Abbrechen',
+  cancelText: '',
   inputType: 'text',
   resolve: null
 })
@@ -55,12 +57,12 @@ export function usePromptDialog(): UsePromptDialogReturn {
       }
 
       dialogConfig.value = {
-        title: opts.title || 'Eingabe',
+        title: opts.title || t()('common.input'),
         message: opts.message || '',
         placeholder: opts.placeholder || '',
         defaultValue: opts.defaultValue || '',
         confirmText: opts.confirmText || 'OK',
-        cancelText: opts.cancelText || 'Abbrechen',
+        cancelText: opts.cancelText || t()('common.cancel'),
         inputType: opts.inputType || 'text',
         resolve
       }

@@ -213,7 +213,7 @@
     "errorLoadingBackupData": "Error loading backup data",
     "failed": "Failed",
     "files": "Files",
-    "lastBackup": "Last Backup",
+    "lastBackup": "Last backup",
     "newBackup": "New Backup",
     "noBackups": "No backups available",
     "noSchedules": "No schedules",
@@ -242,7 +242,23 @@
     "dailyBackupPlaceholder": "e.g. Daily backup",
     "monthly": "Monthly (1st of month)",
     "every6hours": "Every 6 hours",
-    "hourly": "Hourly"
+    "hourly": "Hourly",
+    "confirmDeleteTarget": "Really delete storage target \"{name}\"?",
+    "confirmDeleteSchedule": "Really delete schedule \"{name}\"?",
+    "targetSaved": "Storage target saved",
+    "targetDeleted": "Storage target deleted",
+    "scheduleSaved": "Schedule saved",
+    "backupStarted": "Backup started",
+    "restoreStarted": "Restore started",
+    "completed": "Completed",
+    "confirmRestoreBackup": "Really restore this backup? Current data will be overwritten.",
+    "storageTargets": "Storage targets",
+    "nextBackup": "Next backup",
+    "noBackupsYet": "No backups yet",
+    "source": "Source",
+    "target": "Target",
+    "retention": "Retention",
+    "days": "days"
   },
   "backupsModule": {
     "aktiveZeitplaene": "Active schedules",
@@ -316,7 +332,10 @@
     "tagDeleted": "Tag deleted",
     "title": "Bookmarks",
     "groupName": "Group name",
-    "bookmarkMoved": "Bookmark moved"
+    "bookmarkMoved": "Bookmark moved",
+    "confirmDeleteBookmark": "Really delete \"{title}\"?",
+    "confirmDeleteGroup": "Really delete group \"{name}\"? Bookmarks will be preserved.",
+    "confirmDeleteTag": "Really delete tag \"{name}\"?"
   },
   "bookmarksModule": {
     "alleTags": "All Tags",
@@ -353,7 +372,8 @@
     "title": "Calendar",
     "today": "Today",
     "week": "Week",
-    "year": "Year"
+    "year": "Year",
+    "noRepeat": "No repeat"
   },
   "calendarModule": {
     "alle2Wochen": "Every 2 weeks",
@@ -519,7 +539,17 @@
     "bulkImportPlaceholder": "Login with email\nLogin with Google\nForgot password || Check if email is sent\nLogout",
     "bulkImportTip": "Tip: For description use",
     "bulkImportTipSeparator": "or Tab",
-    "bulkImportTipExample": "Title || Description"
+    "bulkImportTipExample": "Title || Description",
+    "confirmDeleteChecklist": "Really delete checklist \"{title}\"?",
+    "confirmDeleteItem": "Really delete \"{title}\"?",
+    "itemCreatedCount": "{count} test point(s) created",
+    "itemFailedCount": "{count} test point(s) failed",
+    "onlyImagesAllowed": "Only JPEG, PNG, GIF and WebP images are allowed",
+    "imageUploaded": "Image uploaded",
+    "titleRequired": "Title is required",
+    "nameRequired": "Name is required",
+    "itemCreated": "Test point created",
+    "itemUpdated": "Test point updated"
   },
   "checklistsModule": {
     "alleEintraegeWurdenZurueckgesetzt": "Alle Einträge wurden zurückgesetzt",
@@ -647,7 +677,26 @@
     "errorOccurred": "An error occurred",
     "created": "Created",
     "resetFilters": "Reset filters",
-    "restore": "Restore"
+    "restore": "Restore",
+    "confirmation": "Confirmation",
+    "input": "Input",
+    "remove": "Remove",
+    "enable": "Enable",
+    "disable": "Disable",
+    "copied": "Copied!",
+    "details": "Details",
+    "overview": "Overview",
+    "type": "Type",
+    "size": "Size",
+    "version": "Version",
+    "discard": "Discard",
+    "navigate": "Navigate",
+    "retry": "Retry",
+    "test": "Test",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "confirmDeleteItem": "Really delete \"{name}\"?",
+    "confirmDeleteItemWithDetail": "Really delete \"{name}\"? {detail}"
   },
   "connections": {
     "connectionDeleted": "Connection deleted",
@@ -671,7 +720,9 @@
     "myServer": "My server",
     "websocketError": "WebSocket error",
     "websocketConnectionError": "WebSocket connection error to terminal server",
-    "testConnection": "Test connection"
+    "testConnection": "Test connection",
+    "confirmDelete": "Really delete connection \"{name}\"?",
+    "confirmDeleteTag": "Really delete tag \"{name}\"?"
   },
   "connectionsModule": {
     "connectionserrorcreatingterminal": "connections.errorCreatingTerminal",
@@ -859,7 +910,7 @@
     "hours8": "8 hours",
     "invoices": "Invoices",
     "linkCopied": "Link copied",
-    "linkInvoice": "Link invoice",
+    "linkInvoice": "Link Invoice",
     "linkedInvoices": "Linked Invoices",
     "loadingContracts": "Loading contracts...",
     "loadingInvoices": "Loading invoices...",
@@ -965,7 +1016,17 @@
     "customContractHint": "Enter your individual contract text here. You can use the editor to format the text.",
     "enterContractText": "Enter contract text...",
     "noticePeriodHint": "Number of days before end date by which notice must be given.",
-    "saveAsTemplateHint": "Saves the contract text as a reusable template for future contracts."
+    "saveAsTemplateHint": "Saves the contract text as a reusable template for future contracts.",
+    "passwordProtected": "Password protected",
+    "paymentOneTime": "One-time",
+    "paymentMonthly": "Monthly",
+    "paymentQuarterly": "Quarterly",
+    "paymentYearly": "Yearly",
+    "lawDE": "German Law",
+    "lawAT": "Austrian Law",
+    "lawCH": "Swiss Law",
+    "lawDK": "Danish Law",
+    "confirmDelete": "Really delete contract \"{name}\"?"
   },
   "contractsModule": {
     "24Stunden": "24 hours",
@@ -1284,13 +1345,14 @@
     "queryExecuted": "Query executed successfully",
     "rows": "Rows",
     "searchTable": "Search table...",
-    "selectConnection": "Select a connection",
+    "selectConnection": "Select a database connection",
     "sqlEditor": "SQL Editor",
     "tableBrowser": "Table Browser",
     "tables": "Tables",
     "title": "Databases",
     "wirdAusgefuehrt": "Wird ausgeführt…",
-    "noData": "No data"
+    "noData": "No data",
+    "selectTable": "Select a table in the sidebar"
   },
   "deployments": {
     "addStep": "Add step",
@@ -1601,9 +1663,9 @@
     "minCharsRequired": "Min Chars Required",
     "nachDateinameSuchen": "Nach Dateiname suchen...",
     "nachrichtenLoeschen": "Nachrichten löschen",
-    "noAccountConnected": "No Account Connected",
-    "noBotConfigured": "No Bot Configured",
-    "noResults": "No Results",
+    "noAccountConnected": "No Discord account connected",
+    "noBotConfigured": "No bot configured",
+    "noResults": "No results",
     "nurNachrichtenMitDiesemTextLoeschen": "Nur Nachrichten mit diesem Text löschen...",
     "openThe": "Open The",
     "openbackupmodalchannel": "openBackupModal(channel)",
@@ -1654,7 +1716,26 @@
     "actionCannotBeUndone": "This action cannot be undone.",
     "accountHinzufuegen": "Add account",
     "botHinzufuegen": "Add bot",
-    "meineNachrichtenLoeschen": "Delete my messages"
+    "meineNachrichtenLoeschen": "Delete my messages",
+    "confirmDisconnect": "Really disconnect the Discord bot?",
+    "noServersFound": "No servers found",
+    "noServersMatchQuery": "No servers matching \"{query}\" found",
+    "noDmsFound": "No DMs found",
+    "noDmsMatchQuery": "No DMs matching \"{query}\" found",
+    "noBackups": "No backups yet",
+    "noBackupsMatchQuery": "No backups matching \"{query}\" found",
+    "noBotsMatchQuery": "No bots matching \"{query}\" found",
+    "noMessagesMatchQuery": "No messages matching \"{query}\" found.",
+    "noChannelsFound": "No channels found",
+    "noMediaFound": "No media found",
+    "noLinksFound": "No links found",
+    "noText": "[No text]",
+    "noLinksWithFilter": "No links matching current filter found.",
+    "noLinksFoundTitle": "No links found",
+    "noMediaSmall": "No media found",
+    "noLinksWithFilterSmall": "No links matching current filter",
+    "noMediaOrLinks": "No media or links found. Create a backup to collect content.",
+    "noMessagesFound": "No messages found"
   },
   "dns": {
     "addDomain": "Add Domain",
@@ -1807,7 +1888,24 @@
     "username": "Username",
     "confirmDeleteHost": "Delete this host?",
     "local": "Local",
-    "noHost": "No host"
+    "noHost": "No host",
+    "confirmStopStack": "Stop stack \"{name}\"?",
+    "confirmRedeployStack": "Re-pull and redeploy stack \"{name}\"? This may take a few minutes.",
+    "confirmBackupAction": "{action} backup \"{name}\"?",
+    "confirmDeleteBackup": "Really delete backup \"{name}\"?",
+    "confirmDeleteContainer": "Really delete container \"{name}\"?",
+    "composeSaved": "Compose file saved!",
+    "stackUpdated": "Stack updated successfully!",
+    "stackStopped": "Stack stopped",
+    "stackRedeployed": "Stack redeployed!",
+    "containerDeleted": "Container deleted",
+    "backupCreated": "Backup created!",
+    "backupRestored": "Backup restored!",
+    "backupDeleted": "Backup deleted",
+    "composeSavedRun": "Compose file saved! Run \"docker compose up -d\" to apply changes.",
+    "stackUpdatedSuccess": "Stack \"{name}\" updated successfully!",
+    "backupCreatedFile": "Backup created: {file}",
+    "portainerInfo": "All Docker data is loaded via Portainer. No local Docker socket needed."
   },
   "dockerModule": {
     "addFirstHost": "Add First Host",
@@ -2068,7 +2166,8 @@
     "wikinger": "Wikinger",
     "writeMarkdown": "Write Markdown",
     "wrongPassword": "Wrong Password",
-    "you": "You"
+    "you": "You",
+    "confirmRestoreVersion": "Really restore version {version}? Current content will be saved as backup."
   },
   "editor": {
     "addCol": "Add column",
@@ -2867,7 +2966,8 @@
     "neuerShortLink": "Newr Short Link",
     "nurBuchstabenZahlenUnd": "Nur Buchstaben, Zahlen, - and _",
     "passwortOptional": "Password (optional)",
-    "passwortgeschuetzt": "Password geschützt"
+    "passwortgeschuetzt": "Password geschützt",
+    "confirmDelete": "Really delete link \"{code}\"?"
   },
   "lists": {
     "addItem": "Add Item",
@@ -2922,7 +3022,14 @@
     "tuerke": "Türkçe",
     "vergroessern": "Enlarge",
     "wiederverwendbareVorlage": "Wiederverwendbare Template",
-    "zoomZuruecksetzen": "Zoom reset"
+    "zoomZuruecksetzen": "Zoom reset",
+    "saving": "Saving...",
+    "onlyImagesAllowed": "Only image files allowed",
+    "elementDuplicated": "Element duplicated",
+    "templateSaved": "Template saved!",
+    "draftSaved": "Draft saved!",
+    "exportSuccess": "Export successful!",
+    "exportFailed": "Export failed"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -3259,7 +3366,8 @@
     "confirmPermanentDelete": "Permanently delete this note?",
     "confirmRestoreVersion": "Restore this version?",
     "noteNotExistCreate": "Note does not exist. Create it?",
-    "versionRestored": "Version restored"
+    "versionRestored": "Version restored",
+    "startWriting": "Start writing... Use [[...]] for wiki links"
   },
   "notesModule": {
     "archive": "Archive",
@@ -3597,7 +3705,9 @@
     "webhook": "Webhook",
     "zbServerausfallBenachrichtigung": "z.B. Server-Ausfall Benachrichtigung",
     "bedingungenSindOptionalOhneBedingungenWirdDie": "Conditions are optional. Without conditions, the rule always triggers.",
-    "definiereMindestensEineAktionDieBeiAusloesung": "Define at least one action to execute when triggered."
+    "definiereMindestensEineAktionDieBeiAusloesung": "Define at least one action to execute when triggered.",
+    "disable": "Disable",
+    "enable": "Enable"
   },
   "notifications": {
     "channels": "Channels",
@@ -3652,7 +3762,12 @@
     "newProject": "New Project",
     "progress": "Progress",
     "projectName": "Project Name",
-    "title": "Projects"
+    "title": "Projects",
+    "link": "Link",
+    "unlink": "Unlink",
+    "noItemsLinked": "No items linked",
+    "milestones": "Milestones",
+    "budget": "Budget"
   },
   "projectsModule": {
     "berechtigungAktualisiert": "Berechtigung aktualisiert",
@@ -3741,7 +3856,7 @@
     "subtitle": "Automatically created tasks on a schedule",
     "sun": "Sun",
     "targetChecklist": "Checklist",
-    "targetKanban": "Kanban board",
+    "targetKanban": "Kanban Board",
     "targetList": "List",
     "targetProject": "Project",
     "targetType": "Target type",
@@ -3763,7 +3878,14 @@
     "weekly": "Weekly",
     "yearly": "Yearly",
     "confirmDelete": "Delete this recurring task?",
-    "inDays": "in {n} days"
+    "inDays": "in {n} days",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
   },
   "scripts": {
     "beschreibungOptional": "Description (optional)",
@@ -3778,7 +3900,11 @@
     "scriptsbeschreibungoptional": "scripts.beschreibungOptional",
     "scriptsfehlerbeimspeichern": "scripts.fehlerBeimSpeichern",
     "scriptsscriptauswaehlenoderneueserstellen": "scripts.scriptAuswaehlenOderNeuesErstellen",
-    "suchen": "Searchn…"
+    "suchen": "Searchn…",
+    "scriptCreated": "Script created",
+    "scriptSaved": "Script saved",
+    "scriptFinishedWithCode": "Script finished with code {code}",
+    "historyLoadFailed": "Failed to load history"
   },
   "search": {
     "contentHits": "Content matches",
@@ -4492,7 +4618,9 @@
     "wiederkehrendeAufgabeGeloescht": "Wiederkehrende Aufgabe gelöscht",
     "wirdBeendet": "Wird beendet...",
     "wirdGeleert": "Wird geleert...",
-    "allEntities": "All Entities"
+    "allEntities": "All Entities",
+    "cacheClearedSuccess": "Cache cleared successfully",
+    "sessionsTerminated": "Sessions terminated successfully"
   },
   "tags": {
     "createFirst": "Create your first tag",
@@ -4540,7 +4668,9 @@
     "typeSnippet": "Snippets",
     "usages": "Usages",
     "confirmDelete": "Delete this tag?",
-    "createTag": "Create tag"
+    "createTag": "Create tag",
+    "addTags": "Add tags...",
+    "noTagsCreated": "No tags created yet"
   },
   "tickets": {
     "1KundenOeffnenDenLink": "1. Customern open the Link",
@@ -5025,7 +5155,9 @@
     "uptimeinordnerverschieben": "uptime.inOrdnerVerschieben",
     "uptimekeinemonitore": "uptime.keineMonitore",
     "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver",
-    "checkNow": "Check Now"
+    "checkNow": "Check Now",
+    "confirmDeleteMonitor": "Really delete monitor \"{name}\"?",
+    "confirmDeleteFolder": "Really delete folder \"{name}\"?"
   },
   "users": {
     "aufProjekteEinschraenken": "Auf Projecte einschränken",
@@ -5092,7 +5224,9 @@
     "neuerWebhook": "Newr Webhook",
     "webhookAktualisiert": "Webhook updated",
     "webhookErstellt": "Webhook created",
-    "webhookGeloescht": "Webhook deleted"
+    "webhookGeloescht": "Webhook deleted",
+    "disable": "Disable",
+    "enable": "Enable"
   },
   "widgets": {
     "boards": "Boards",
@@ -5145,7 +5279,15 @@
     "wikifehlerbeimspeichernderkategorie": "wiki.fehlerBeimSpeichernDerKategorie",
     "wikiseitewirdgeladen": "wiki.seiteWirdGeladen",
     "wikiwaehleeineseiteausdersidebaroder": "wiki.waehleEineSeiteAusDerSidebarOder",
-    "zuletztBearbeitet": "Last edited"
+    "zuletztBearbeitet": "Last edited",
+    "confirmDiscard": "Discard",
+    "confirmRestore": "Restore",
+    "titleRequired": "Title is required",
+    "nameRequired": "Name is required",
+    "pageSaved": "Page saved",
+    "pageCreated": "Page created",
+    "pageDeleted": "Page deleted",
+    "versionRestored": "Version restored"
   },
   "workflows": {
     "09Taeglich9Uhr": "0 9 * * * (daily 9 AM)",
@@ -5350,6 +5492,40 @@
     "unit": "Unit",
     "unitPrice": "Unit price",
     "vat": "VAT",
-    "vatId": "VAT ID"
+    "vatId": "VAT ID",
+    "selectProjectOrCustomer": "Please select a project or customer",
+    "noBillableEntries": "No billable, not yet billed time entries found",
+    "unitHour": "Hour",
+    "unitPiece": "Piece",
+    "unitFlatRate": "Flat rate",
+    "unitDay": "Day",
+    "unitMonth": "Month",
+    "unitKm": "km",
+    "errorPrefix": "Error: {msg}"
+  },
+  "shortcuts": {
+    "openDashboard": "Open Dashboard",
+    "openLists": "Open Lists",
+    "openDocuments": "Open Documents",
+    "openKanban": "Open Kanban",
+    "openProjects": "Open Projects",
+    "openSnippets": "Open Snippets",
+    "openBookmarks": "Open Bookmarks",
+    "openTimeTracking": "Open Time Tracking",
+    "openCalendar": "Open Calendar",
+    "openNews": "Open News",
+    "openSettings": "Open Settings",
+    "globalSearch": "Global Search",
+    "openCommandPalette": "Open Command Palette",
+    "showShortcuts": "Show Shortcuts",
+    "closeDialog": "Close Modal/Dialog",
+    "createNew": "Create new (context-dependent)",
+    "pressToShowHelp": "Press {key} at any time to show this help",
+    "title": "Keyboard Shortcuts"
+  },
+  "commandPalette": {
+    "navigate": "Navigate",
+    "open": "Open",
+    "close": "Close"
   }
 }

@@ -605,7 +605,7 @@ watch(activeTab, (newTab) => {
               <th class="p-3">Service</th>
               <th class="p-3">{{ $t('common.status') }}</th>
               <th class="p-3 hidden sm:table-cell">{{ $t('common.description') }}</th>
-              <th class="p-3 text-right">Aktionen</th>
+              <th class="p-3 text-right">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>

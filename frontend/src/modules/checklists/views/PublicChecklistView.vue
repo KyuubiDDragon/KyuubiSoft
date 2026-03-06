@@ -503,7 +503,7 @@ async function uploadEntryImage(entry, event) {
   // Validate file type
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    toast.warning(t('checklists.onlyImagesAllowed'))
     return
   }
 
@@ -554,7 +554,7 @@ function openImagePreview(imagePath) {
 
 async function addItem() {
   if (!newItem.value.title.trim()) {
-    toast.warning('Titel ist erforderlich')
+    toast.warning(t('checklists.titleRequired'))
     return
   }
 
@@ -587,7 +587,7 @@ async function addItem() {
     showAddItemModal.value = false
     addItemCategoryId.value = null
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
-    toast.success('Testpunkt erstellt')
+    toast.success(t('checklists.itemCreated'))
   } catch (err) {
     toast.error(err.response?.data?.error || t('links.bookmarksmodulefehlerbeimerstellen'))
   }
@@ -595,7 +595,7 @@ async function addItem() {
 
 async function addCategory() {
   if (!newCategory.value.name.trim()) {
-    toast.warning('Name ist erforderlich')
+    toast.warning(t('checklists.nameRequired'))
     return
   }
 
@@ -628,7 +628,7 @@ function openEditItem(item) {
 
 async function updateItem() {
   if (!editingItem.value?.title?.trim()) {
-    toast.warning('Titel ist erforderlich')
+    toast.warning(t('checklists.titleRequired'))
     return
   }
 
@@ -652,14 +652,14 @@ async function updateItem() {
 
     showEditItemModal.value = false
     editingItem.value = null
-    toast.success('Testpunkt aktualisiert')
+    toast.success(t('checklists.itemUpdated'))
   } catch (err) {
     toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: `"${item.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteItem', { title: item.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/items/${item.id}?requested_by=${encodeURIComponent(testerName.value)}`)

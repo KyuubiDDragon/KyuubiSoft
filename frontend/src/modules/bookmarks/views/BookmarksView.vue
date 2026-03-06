@@ -186,7 +186,7 @@ async function saveBookmark() {
 }
 
 async function deleteBookmark(bookmark) {
-  if (!await confirm({ message: `"${bookmark.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('bookmarks.confirmDeleteBookmark', { title: bookmark.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/${bookmark.id}`)
@@ -252,7 +252,7 @@ async function saveGroup() {
 }
 
 async function deleteGroup(group) {
-  if (!await confirm({ message: `Gruppe "${group.name}" wirklich löschen?\n\nLesezeichen bleiben erhalten`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('bookmarks.confirmDeleteGroup', { name: group.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/groups/${group.id}`)
@@ -299,7 +299,7 @@ async function saveTag() {
 }
 
 async function deleteTag(tag) {
-  if (!await confirm({ message: `Tag "${tag.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('bookmarks.confirmDeleteTag', { name: tag.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/bookmarks/tags/${tag.id}`)
@@ -749,7 +749,7 @@ function isGroupExpanded(groupId) {
                 </button>
               </div>
               <p v-if="tags.length === 0" class="text-center text-gray-500 py-4">
-                Noch keine Tags erstellt
+                {{ $t('tags.noTagsCreated') }}
               </p>
             </div>
           </div>

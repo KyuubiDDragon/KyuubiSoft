@@ -194,13 +194,13 @@ onUnmounted(() => {
           <!-- Footer -->
           <div class="px-5 py-3 border-t border-white/[0.06] flex items-center gap-4">
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">&#8593;&#8595;</kbd> Navigieren
+              <kbd class="kbd">&#8593;&#8595;</kbd> {{ $t('commandPalette.navigate') }}
             </span>
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">&#8629;</kbd> Öffnen
+              <kbd class="kbd">&#8629;</kbd> {{ $t('commandPalette.open') }}
             </span>
             <span class="flex items-center gap-1.5 text-2xs text-gray-500">
-              <kbd class="kbd">ESC</kbd> Schließen
+              <kbd class="kbd">ESC</kbd> {{ $t('commandPalette.close') }}
             </span>
           </div>
         </div>

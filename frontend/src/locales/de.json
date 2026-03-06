@@ -242,7 +242,23 @@
     "dailyBackupPlaceholder": "z.B. Tägliches Backup",
     "monthly": "Monatlich (1. des Monats)",
     "every6hours": "Alle 6 Stunden",
-    "hourly": "Stündlich"
+    "hourly": "Stündlich",
+    "confirmDeleteTarget": "Speicherziel \"{name}\" wirklich löschen?",
+    "confirmDeleteSchedule": "Zeitplan \"{name}\" wirklich löschen?",
+    "targetSaved": "Speicherziel gespeichert",
+    "targetDeleted": "Speicherziel gelöscht",
+    "scheduleSaved": "Zeitplan gespeichert",
+    "backupStarted": "Backup gestartet",
+    "restoreStarted": "Wiederherstellung gestartet",
+    "completed": "Abgeschlossen",
+    "confirmRestoreBackup": "Backup wirklich wiederherstellen? Aktuelle Daten werden überschrieben.",
+    "storageTargets": "Speicherziele",
+    "nextBackup": "Nächstes Backup",
+    "noBackupsYet": "Noch keine Backups",
+    "source": "Quelle",
+    "target": "Ziel",
+    "retention": "Aufbewahrung",
+    "days": "Tage"
   },
   "backupsModule": {
     "aktiveZeitplaene": "Aktive Zeitpläne",
@@ -316,7 +332,10 @@
     "tagDeleted": "Tag gelöscht",
     "title": "Lesezeichen",
     "groupName": "Gruppenname",
-    "bookmarkMoved": "Lesezeichen verschoben"
+    "bookmarkMoved": "Lesezeichen verschoben",
+    "confirmDeleteBookmark": "\"{title}\" wirklich löschen?",
+    "confirmDeleteGroup": "Gruppe \"{name}\" wirklich löschen?\n\nLesezeichen bleiben erhalten",
+    "confirmDeleteTag": "Tag \"{name}\" wirklich löschen?"
   },
   "bookmarksModule": {
     "alleTags": "Alle Tags",
@@ -353,7 +372,8 @@
     "title": "Kalender",
     "today": "Heute",
     "week": "Woche",
-    "year": "Jahr"
+    "year": "Jahr",
+    "noRepeat": "Keine Wiederholung"
   },
   "calendarModule": {
     "alle2Wochen": "Alle 2 Wochen",
@@ -519,7 +539,17 @@
     "bulkImportPlaceholder": "Login mit E-Mail\nLogin mit Google\nPasswort vergessen || Überprüfe ob E-Mail gesendet wird\nLogout",
     "bulkImportTip": "Tipp: Für Beschreibung",
     "bulkImportTipSeparator": "oder Tab verwenden",
-    "bulkImportTipExample": "Titel || Beschreibung"
+    "bulkImportTipExample": "Titel || Beschreibung",
+    "confirmDeleteChecklist": "Checkliste \"{title}\" wirklich löschen?",
+    "confirmDeleteItem": "\"{title}\" wirklich löschen?",
+    "itemCreatedCount": "{count} Testpunkt(e) erstellt",
+    "itemFailedCount": "{count} Testpunkt(e) fehlgeschlagen",
+    "onlyImagesAllowed": "Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt",
+    "imageUploaded": "Bild hochgeladen",
+    "titleRequired": "Titel ist erforderlich",
+    "nameRequired": "Name ist erforderlich",
+    "itemCreated": "Testpunkt erstellt",
+    "itemUpdated": "Testpunkt aktualisiert"
   },
   "checklistsModule": {
     "alleEintraegeWurdenZurueckgesetzt": "Alle Einträge wurden zurückgesetzt",
@@ -598,7 +628,7 @@
     "enabled": "Aktiviert",
     "error": "Fehler",
     "export": "Exportieren",
-    "filter": "Filtern",
+    "filter": "Filter",
     "filterPlaceholder": "Filter...",
     "from": "From",
     "hide": "Ausblenden",
@@ -616,21 +646,21 @@
     "noResults": "Keine Ergebnisse",
     "none": "Keine",
     "note": "Note",
-    "open": "Open",
+    "open": "Öffnen",
     "optional": "Optional",
     "paste": "Einfügen",
     "previous": "Vorherige",
     "refresh": "Aktualisieren",
     "reset": "Zurücksetzen",
     "save": "Speichern",
-    "saving": "Speichern...",
+    "saving": "Speichert...",
     "search": "Suchen",
     "searchOrNavigate": "Suchen oder navigieren...",
     "settings": "Einstellungen",
     "show": "Anzeigen",
     "showAll": "Show All",
     "status": "Status",
-    "success": "Erfolgreich",
+    "success": "Erfolg",
     "time": "Zeit",
     "title": "Titel",
     "to": "To",
@@ -647,7 +677,26 @@
     "errorOccurred": "Ein Fehler ist aufgetreten",
     "created": "Erstellt",
     "resetFilters": "Filter zurücksetzen",
-    "restore": "Wiederherstellen"
+    "restore": "Wiederherstellen",
+    "confirmation": "Bestätigung",
+    "input": "Eingabe",
+    "remove": "Entfernen",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "copied": "Kopiert!",
+    "details": "Details",
+    "overview": "Übersicht",
+    "type": "Typ",
+    "size": "Größe",
+    "version": "Version",
+    "discard": "Verwerfen",
+    "navigate": "Navigieren",
+    "retry": "Wiederholen",
+    "test": "Testen",
+    "selectAll": "Alle auswählen",
+    "deselectAll": "Alle abwählen",
+    "confirmDeleteItem": "\"{name}\" wirklich löschen?",
+    "confirmDeleteItemWithDetail": "\"{name}\" wirklich löschen? {detail}"
   },
   "connections": {
     "connectionDeleted": "Verbindung gelöscht",
@@ -671,7 +720,9 @@
     "myServer": "Mein Server",
     "websocketError": "WebSocket-Fehler",
     "websocketConnectionError": "WebSocket-Verbindungsfehler zum Terminalserver",
-    "testConnection": "Verbindung testen"
+    "testConnection": "Verbindung testen",
+    "confirmDelete": "Verbindung \"{name}\" wirklich löschen?",
+    "confirmDeleteTag": "Tag \"{name}\" wirklich löschen?"
   },
   "connectionsModule": {
     "connectionserrorcreatingterminal": "connections.errorCreatingTerminal",
@@ -965,7 +1016,17 @@
     "customContractHint": "Gib hier deinen individuellen Vertragstext ein. Du kannst den Editor zur Formatierung verwenden.",
     "enterContractText": "Vertragstext eingeben...",
     "noticePeriodHint": "Anzahl Tage vor Enddatum bis wann gekündigt werden muss.",
-    "saveAsTemplateHint": "Speichert den Vertragstext als wiederverwendbare Vorlage für künftige Verträge."
+    "saveAsTemplateHint": "Speichert den Vertragstext als wiederverwendbare Vorlage für künftige Verträge.",
+    "passwordProtected": "Passwortgeschützt",
+    "paymentOneTime": "Einmalig",
+    "paymentMonthly": "Monatlich",
+    "paymentQuarterly": "Quartalsweise",
+    "paymentYearly": "Jährlich",
+    "lawDE": "Deutsches Recht",
+    "lawAT": "Österreichisches Recht",
+    "lawCH": "Schweizer Recht",
+    "lawDK": "Dänisches Recht",
+    "confirmDelete": "Vertrag \"{name}\" wirklich löschen?"
   },
   "contractsModule": {
     "24Stunden": "24 Stunden",
@@ -1284,13 +1345,14 @@
     "queryExecuted": "Abfrage erfolgreich ausgeführt",
     "rows": "Zeilen",
     "searchTable": "Tabelle suchen...",
-    "selectConnection": "Wählen Sie eine Verbindung",
+    "selectConnection": "Wähle eine Datenbankverbindung",
     "sqlEditor": "SQL-Editor",
     "tableBrowser": "Tabellen-Browser",
     "tables": "Tabellen",
     "title": "Datenbanken",
     "wirdAusgefuehrt": "Wird ausgeführt…",
-    "noData": "Keine Daten"
+    "noData": "Keine Daten",
+    "selectTable": "Tabelle in der Sidebar auswählen"
   },
   "deployments": {
     "addStep": "Schritt hinzufügen",
@@ -1601,9 +1663,9 @@
     "minCharsRequired": "Min Chars Required",
     "nachDateinameSuchen": "Nach Dateiname suchen...",
     "nachrichtenLoeschen": "Nachrichten löschen",
-    "noAccountConnected": "No Account Connected",
-    "noBotConfigured": "No Bot Configured",
-    "noResults": "No Results",
+    "noAccountConnected": "Kein Discord Account verbunden",
+    "noBotConfigured": "Kein Bot konfiguriert",
+    "noResults": "Keine Ergebnisse",
     "nurNachrichtenMitDiesemTextLoeschen": "Nur Nachrichten mit diesem Text löschen...",
     "openThe": "Open The",
     "openbackupmodalchannel": "openBackupModal(channel)",
@@ -1654,7 +1716,26 @@
     "actionCannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "accountHinzufuegen": "Konto hinzufügen",
     "botHinzufuegen": "Bot hinzufügen",
-    "meineNachrichtenLoeschen": "Meine Nachrichten löschen"
+    "meineNachrichtenLoeschen": "Meine Nachrichten löschen",
+    "confirmDisconnect": "Discord-Bot wirklich trennen?",
+    "noServersFound": "Keine Server gefunden",
+    "noServersMatchQuery": "Keine Server mit \"{query}\" gefunden",
+    "noDmsFound": "Keine DMs gefunden",
+    "noDmsMatchQuery": "Keine DMs mit \"{query}\" gefunden",
+    "noBackups": "Noch keine Backups",
+    "noBackupsMatchQuery": "Keine Backups mit \"{query}\" gefunden",
+    "noBotsMatchQuery": "Keine Bots mit \"{query}\" gefunden",
+    "noMessagesMatchQuery": "Keine Nachrichten mit \"{query}\" gefunden.",
+    "noChannelsFound": "Keine Channels gefunden",
+    "noMediaFound": "Keine Medien gefunden",
+    "noLinksFound": "Keine Links gefunden",
+    "noText": "[Kein Text]",
+    "noLinksWithFilter": "Keine Links mit aktuellem Filter gefunden.",
+    "noLinksFoundTitle": "Keine Links gefunden",
+    "noMediaSmall": "Keine Medien gefunden",
+    "noLinksWithFilterSmall": "Keine Links mit aktuellem Filter",
+    "noMediaOrLinks": "Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.",
+    "noMessagesFound": "Keine Nachrichten gefunden"
   },
   "dns": {
     "addDomain": "Domain bearbeiten",
@@ -1807,7 +1888,24 @@
     "username": "Benutzername",
     "confirmDeleteHost": "Diesen Host löschen?",
     "local": "Lokal",
-    "noHost": "Kein Host"
+    "noHost": "Kein Host",
+    "confirmStopStack": "Stack \"{name}\" stoppen?",
+    "confirmRedeployStack": "Stack \"{name}\" neu pullen und redeployen? Dies kann einige Minuten dauern.",
+    "confirmBackupAction": "Backup \"{name}\" {action}?",
+    "confirmDeleteBackup": "Backup \"{name}\" wirklich löschen?",
+    "confirmDeleteContainer": "Container \"{name}\" wirklich löschen?",
+    "composeSaved": "Compose-Datei gespeichert!",
+    "stackUpdated": "Stack erfolgreich aktualisiert!",
+    "stackStopped": "Stack gestoppt",
+    "stackRedeployed": "Stack redeployed!",
+    "containerDeleted": "Container gelöscht",
+    "backupCreated": "Backup erstellt!",
+    "backupRestored": "Backup wiederhergestellt!",
+    "backupDeleted": "Backup gelöscht",
+    "composeSavedRun": "Compose-Datei gespeichert! Führe \"docker compose up -d\" aus um Änderungen anzuwenden.",
+    "stackUpdatedSuccess": "Stack \"{name}\" erfolgreich aktualisiert!",
+    "backupCreatedFile": "Backup erstellt: {file}",
+    "portainerInfo": "Alle Docker-Daten werden über Portainer geladen. Kein lokaler Docker-Socket nötig."
   },
   "dockerModule": {
     "addFirstHost": "Add First Host",
@@ -2068,7 +2166,8 @@
     "wikinger": "Wikinger",
     "writeMarkdown": "Write Markdown",
     "wrongPassword": "Wrong Password",
-    "you": "You"
+    "you": "You",
+    "confirmRestoreVersion": "Version {version} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert."
   },
   "editor": {
     "addCol": "Spalte hinzufügen",
@@ -2867,7 +2966,8 @@
     "neuerShortLink": "Neuer Short Link",
     "nurBuchstabenZahlenUnd": "Nur Buchstaben, Zahlen, - und _",
     "passwortOptional": "Passwort (optional)",
-    "passwortgeschuetzt": "Passwortgeschützt"
+    "passwortgeschuetzt": "Passwortgeschützt",
+    "confirmDelete": "Link \"{code}\" wirklich löschen?"
   },
   "lists": {
     "addItem": "Eintrag hinzufügen",
@@ -2922,7 +3022,14 @@
     "tuerke": "Türkçe",
     "vergroessern": "Vergrössern",
     "wiederverwendbareVorlage": "Wiederverwendbare Vorlage",
-    "zoomZuruecksetzen": "Zoom zurücksetzen"
+    "zoomZuruecksetzen": "Zoom zurücksetzen",
+    "saving": "Speichert...",
+    "onlyImagesAllowed": "Nur Bilddateien erlaubt",
+    "elementDuplicated": "Element dupliziert",
+    "templateSaved": "Template gespeichert!",
+    "draftSaved": "Entwurf gespeichert!",
+    "exportSuccess": "Export erfolgreich!",
+    "exportFailed": "Export fehlgeschlagen"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -3259,7 +3366,8 @@
     "confirmPermanentDelete": "Diese Notiz dauerhaft löschen?",
     "confirmRestoreVersion": "Diese Version wiederherstellen?",
     "noteNotExistCreate": "Notiz existiert nicht. Erstellen?",
-    "versionRestored": "Version wiederhergestellt"
+    "versionRestored": "Version wiederhergestellt",
+    "startWriting": "Beginne zu schreiben... Nutze [[...]] für Wiki-Links"
   },
   "notesModule": {
     "archive": "Archive",
@@ -3597,7 +3705,9 @@
     "webhook": "Webhook",
     "zbServerausfallBenachrichtigung": "z.B. Server-Ausfall Benachrichtigung",
     "bedingungenSindOptionalOhneBedingungenWirdDie": "Bedingungen sind optional. Ohne Bedingungen wird die Regel immer ausgelöst.",
-    "definiereMindestensEineAktionDieBeiAusloesung": "Definiere mindestens eine Aktion, die bei Auslösung ausgeführt wird."
+    "definiereMindestensEineAktionDieBeiAusloesung": "Definiere mindestens eine Aktion, die bei Auslösung ausgeführt wird.",
+    "disable": "Deaktivieren",
+    "enable": "Aktivieren"
   },
   "notifications": {
     "channels": "Kanäle",
@@ -3652,7 +3762,12 @@
     "newProject": "Neues Projekt",
     "progress": "Fortschritt",
     "projectName": "Projektname",
-    "title": "Projekte"
+    "title": "Projekte",
+    "link": "Verknüpfen",
+    "unlink": "Verknüpfung lösen",
+    "noItemsLinked": "Keine Einträge verknüpft",
+    "milestones": "Meilensteine",
+    "budget": "Budget"
   },
   "projectsModule": {
     "berechtigungAktualisiert": "Berechtigung aktualisiert",
@@ -3763,7 +3878,14 @@
     "weekly": "Wöchentlich",
     "yearly": "Jährlich",
     "confirmDelete": "Diese wiederkehrende Aufgabe löschen?",
-    "inDays": "in {n} Tagen"
+    "inDays": "in {n} Tagen",
+    "monday": "Montag",
+    "tuesday": "Dienstag",
+    "wednesday": "Mittwoch",
+    "thursday": "Donnerstag",
+    "friday": "Freitag",
+    "saturday": "Samstag",
+    "sunday": "Sonntag"
   },
   "scripts": {
     "beschreibungOptional": "Beschreibung (optional)",
@@ -3778,7 +3900,11 @@
     "scriptsbeschreibungoptional": "scripts.beschreibungOptional",
     "scriptsfehlerbeimspeichern": "scripts.fehlerBeimSpeichern",
     "scriptsscriptauswaehlenoderneueserstellen": "scripts.scriptAuswaehlenOderNeuesErstellen",
-    "suchen": "Suchen…"
+    "suchen": "Suchen…",
+    "scriptCreated": "Script erstellt",
+    "scriptSaved": "Script gespeichert",
+    "scriptFinishedWithCode": "Script beendet mit Code {code}",
+    "historyLoadFailed": "Verlauf konnte nicht geladen werden"
   },
   "search": {
     "contentHits": "Treffer im Inhalt",
@@ -4492,7 +4618,9 @@
     "wiederkehrendeAufgabeGeloescht": "Wiederkehrende Aufgabe gelöscht",
     "wirdBeendet": "Wird beendet...",
     "wirdGeleert": "Wird geleert...",
-    "allEntities": "Alle Entitäten"
+    "allEntities": "Alle Entitäten",
+    "cacheClearedSuccess": "Cache wurde erfolgreich geleert",
+    "sessionsTerminated": "Sessions wurden erfolgreich beendet"
   },
   "tags": {
     "createFirst": "Erstelle deinen ersten Tag",
@@ -4540,7 +4668,9 @@
     "typeSnippet": "Snippets",
     "usages": "Verwendungen",
     "confirmDelete": "Diesen Tag löschen?",
-    "createTag": "Tag erstellen"
+    "createTag": "Tag erstellen",
+    "addTags": "Tags hinzufügen...",
+    "noTagsCreated": "Noch keine Tags erstellt"
   },
   "tickets": {
     "1KundenOeffnenDenLink": "1. Kunden öffnen den Link",
@@ -5025,7 +5155,9 @@
     "uptimeinordnerverschieben": "uptime.inOrdnerVerschieben",
     "uptimekeinemonitore": "uptime.keineMonitore",
     "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver",
-    "checkNow": "Jetzt prüfen"
+    "checkNow": "Jetzt prüfen",
+    "confirmDeleteMonitor": "Monitor \"{name}\" wirklich löschen?",
+    "confirmDeleteFolder": "Ordner \"{name}\" wirklich löschen?"
   },
   "users": {
     "aufProjekteEinschraenken": "Auf Projekte einschränken",
@@ -5092,7 +5224,9 @@
     "neuerWebhook": "Neuer Webhook",
     "webhookAktualisiert": "Webhook aktualisiert",
     "webhookErstellt": "Webhook erstellt",
-    "webhookGeloescht": "Webhook gelöscht"
+    "webhookGeloescht": "Webhook gelöscht",
+    "disable": "Deaktivieren",
+    "enable": "Aktivieren"
   },
   "widgets": {
     "boards": "Boards",
@@ -5145,7 +5279,15 @@
     "wikifehlerbeimspeichernderkategorie": "wiki.fehlerBeimSpeichernDerKategorie",
     "wikiseitewirdgeladen": "wiki.seiteWirdGeladen",
     "wikiwaehleeineseiteausdersidebaroder": "wiki.waehleEineSeiteAusDerSidebarOder",
-    "zuletztBearbeitet": "Zuletzt bearbeitet"
+    "zuletztBearbeitet": "Zuletzt bearbeitet",
+    "confirmDiscard": "Verwerfen",
+    "confirmRestore": "Wiederherstellen",
+    "titleRequired": "Titel ist erforderlich",
+    "nameRequired": "Name ist erforderlich",
+    "pageSaved": "Seite gespeichert",
+    "pageCreated": "Seite erstellt",
+    "pageDeleted": "Seite gelöscht",
+    "versionRestored": "Version wiederhergestellt"
   },
   "workflows": {
     "09Taeglich9Uhr": "0 9 * * * (täglich 9 Uhr)",
@@ -5350,6 +5492,40 @@
     "unit": "Einheit",
     "unitPrice": "Stückpreis",
     "vat": "MwSt.",
-    "vatId": "USt-IdNr."
+    "vatId": "USt-IdNr.",
+    "selectProjectOrCustomer": "Bitte Projekt oder Kunden auswählen",
+    "noBillableEntries": "Keine abrechenbaren, noch nicht abgerechneten Zeiteinträge gefunden",
+    "unitHour": "Stunde",
+    "unitPiece": "Stück",
+    "unitFlatRate": "Pauschal",
+    "unitDay": "Tag",
+    "unitMonth": "Monat",
+    "unitKm": "km",
+    "errorPrefix": "Fehler: {msg}"
+  },
+  "shortcuts": {
+    "openDashboard": "Dashboard öffnen",
+    "openLists": "Listen öffnen",
+    "openDocuments": "Dokumente öffnen",
+    "openKanban": "Kanban öffnen",
+    "openProjects": "Projekte öffnen",
+    "openSnippets": "Snippets öffnen",
+    "openBookmarks": "Bookmarks öffnen",
+    "openTimeTracking": "Zeiterfassung öffnen",
+    "openCalendar": "Kalender öffnen",
+    "openNews": "News öffnen",
+    "openSettings": "Einstellungen öffnen",
+    "globalSearch": "Globale Suche",
+    "openCommandPalette": "Command Palette öffnen",
+    "showShortcuts": "Shortcuts anzeigen",
+    "closeDialog": "Modal/Dialog schließen",
+    "createNew": "Neu erstellen (kontextabhängig)",
+    "pressToShowHelp": "Drücke {key} jederzeit um diese Hilfe anzuzeigen",
+    "title": "Tastaturkürzel"
+  },
+  "commandPalette": {
+    "navigate": "Navigieren",
+    "open": "Öffnen",
+    "close": "Schließen"
   }
 }

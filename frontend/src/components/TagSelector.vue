@@ -18,7 +18,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Tags hinzufügen...'
+    default: t('tags.addTags')
   },
   readonly: {
     type: Boolean,

@@ -245,7 +245,7 @@ async function clearCache() {
   isClearingCache.value = true
   try {
     await api.post('/api/v1/system/clear-cache')
-    toast.success('Cache wurde erfolgreich geleert')
+    toast.success(t('system.cacheClearedSuccess'))
     loadAuditLogs()
   } catch (err) {
     toast.error(t('system.fehlerBeimLeerenDesCaches') + (err.response?.data?.error || err.message))
@@ -260,7 +260,7 @@ async function terminateSessions() {
   isTerminatingSessions.value = true
   try {
     const response = await api.post('/api/v1/system/terminate-sessions')
-    toast.success(response.data.message || 'Sessions wurden erfolgreich beendet')
+    toast.success(response.data.message || t('system.sessionsTerminated'))
     loadAuditLogs()
   } catch (err) {
     toast.error(t('system.fehlerBeimBeendenDerSessions') + (err.response?.data?.error || err.message))
@@ -542,7 +542,7 @@ onUnmounted(() => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <!-- General Info -->
                       <div class="space-y-2">
-                        <h4 class="text-sm font-medium text-white">Details</h4>
+                        <h4 class="text-sm font-medium text-white">{{ $t('common.details') }}</h4>
                         <div class="text-xs space-y-1">
                           <p><span class="text-gray-500">ID:</span> <span class="text-gray-300 font-mono">{{ log.id }}</span></p>
                           <p><span class="text-gray-500">{{ $t('system.entitaetId') }}</span> <span class="text-gray-300 font-mono">{{ log.entity_id || '-' }}</span></p>

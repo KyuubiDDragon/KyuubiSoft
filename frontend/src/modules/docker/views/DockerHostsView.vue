@@ -667,7 +667,7 @@ watch(() => projectStore.selectedProjectId, () => {
                       <div>
                         <span class="text-sm font-medium text-white">{{ $t('dockerModule.portainerOnly') }}</span>
                         <p class="text-xs text-gray-400 mt-0.5">
-                          Alle Docker-Daten werden über Portainer geladen. Kein lokaler Docker-Socket nötig.
+                          {{ $t('docker.portainerInfo') }}
                         </p>
                       </div>
                     </label>

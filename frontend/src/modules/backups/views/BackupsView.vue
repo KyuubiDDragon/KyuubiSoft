@@ -94,7 +94,7 @@ const storageTypes = [
 const compressionOptions = [
   { value: 'gzip', label: 'GZIP (.tar.gz)' },
   { value: 'zip', label: 'ZIP (.zip)' },
-  { value: 'none', label: 'Keine Kompression' },
+  { value: 'none', label: t('backups.noCompression') },
 ]
 
 const cronPresets = [
@@ -172,7 +172,7 @@ async function saveTarget() {
 }
 
 async function deleteTarget(target) {
-  if (!await confirm({ message: `Speicherziel "${target.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteTarget', { name: target.name }), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/backups/targets/${target.id}`)
     uiStore.showSuccess('Speicherziel gelöscht')
@@ -238,7 +238,7 @@ async function saveSchedule() {
 }
 
 async function deleteSchedule(schedule) {
-  if (!await confirm({ message: `Zeitplan "${schedule.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteSchedule', { name: schedule.name }), type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/schedules/${schedule.id}`)
     uiStore.showSuccess('Zeitplan gelöscht')
@@ -497,7 +497,7 @@ onMounted(fetchData)
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Größe</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Erstellt</th>
-              <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Aktionen</th>
+              <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/[0.06]">

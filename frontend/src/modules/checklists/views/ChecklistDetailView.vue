@@ -292,10 +292,10 @@ async function addBatchItems() {
   }
 
   if (successCount > 0) {
-    toast.success(`${successCount} Testpunkt${successCount > 1 ? 'e' : ''} erstellt`)
+    toast.success(t('checklists.itemCreatedCount', { count: successCount }))
   }
   if (errorCount > 0) {
-    toast.error(`${errorCount} Testpunkt${errorCount > 1 ? 'e' : ''} fehlgeschlagen`)
+    toast.error(t('checklists.itemFailedCount', { count: errorCount }))
   }
 
   showBatchAddModal.value = false
@@ -392,7 +392,7 @@ async function uploadEntryImage(entry, event) {
 
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    toast.warning('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt')
+    toast.warning(t('checklists.onlyImagesAllowed'))
     return
   }
 
@@ -412,7 +412,7 @@ async function uploadEntryImage(entry, event) {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )
     entry.image_path = response.data.data.image_path
-    toast.success('Bild hochgeladen')
+    toast.success(t('checklists.imageUploaded'))
   } catch (error) {
     toast.error(error.response?.data?.error || t('checklists.errorUploading'))
   } finally {

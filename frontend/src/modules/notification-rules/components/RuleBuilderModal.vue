@@ -461,7 +461,7 @@ async function handleSave() {
           <div v-else></div>
 
           <div class="flex items-center gap-3">
-            <button @click="emit('close')" class="btn-secondary">Abbrechen</button>
+            <button @click="emit('close')" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button
               v-if="currentStep < totalSteps"
               @click="nextStep"

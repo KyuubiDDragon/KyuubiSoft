@@ -38,7 +38,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Beginne zu schreiben... Nutze [[...]] für Wiki-Links'
+    default: ''
   },
   editable: {
     type: Boolean,
@@ -196,7 +196,7 @@ const editor = useEditor({
       },
     }),
     Placeholder.configure({
-      placeholder: props.placeholder,
+      placeholder: props.placeholder || t('notes.startWriting'),
     }),
     TextAlign.configure({
       types: ['heading', 'paragraph'],

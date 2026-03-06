@@ -397,7 +397,7 @@ async function previewVersion(version) {
 }
 
 async function restoreVersion(version) {
-  if (!await confirm({ message: `Version ${version.version_number} wirklich wiederherstellen? Der aktuelle Inhalt wird als Backup gespeichert.`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('documentsModule.confirmRestoreVersion', { version: version.version_number }), type: 'danger', confirmText: t('common.delete') })) return
 
   isLoadingVersions.value = true
   try {

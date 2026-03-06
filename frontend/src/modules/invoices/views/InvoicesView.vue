@@ -207,7 +207,7 @@ async function openTimeEntriesModal() {
 
 async function createFromTimeEntries() {
   if (!timeEntriesForm.value.project_id && !timeEntriesForm.value.client_id) {
-    toast.error('Bitte Projekt oder Kunden auswählen')
+    toast.error(t('invoices.selectProjectOrCustomer'))
     return
   }
   try {
@@ -224,7 +224,7 @@ async function createFromTimeEntries() {
     const allEntries = teResp.data.data?.items ?? teResp.data.items ?? []
     const billableIds = allEntries.filter(e => e.is_billable && !e.invoiced).map(e => e.id)
     if (billableIds.length === 0) {
-      toast.error('Keine abrechenbaren, noch nicht abgerechneten Zeiteinträge gefunden')
+      toast.error(t('invoices.noBillableEntries'))
       return
     }
     await api.post('/api/v1/invoices/from-time', { ...payload, time_entry_ids: billableIds })
@@ -232,7 +232,7 @@ async function createFromTimeEntries() {
     await loadData()
     uiStore.showSuccess(`${t('invoices.invoiceFromTimeEntries')} ${billableIds.length} ${t('invoices.timeEntries')}`)
   } catch (err) {
-    toast.error('Fehler: ' + (err?.response?.data?.message ?? err?.message ?? 'Unbekannter Fehler'))
+    toast.error(t('invoices.errorPrefix', { msg: err?.response?.data?.message ?? err?.message ?? 'Unknown' }))
   }
 }
 </script>

@@ -1085,7 +1085,7 @@ const filteredBots = computed(() => {
     <!-- No Account State -->
     <div v-if="accounts.length === 0 && !isLoading" class="card p-12 text-center">
       <ChatBubbleLeftRightIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-xl font-medium text-white mb-2">Kein Discord Account verbunden</h3>
+      <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.noAccountConnected') }}</h3>
       <p class="text-gray-400 mb-6">Füge deinen Discord User Token hinzu, um loszulegen.</p>
       <button @click="showAddAccountModal = true" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
@@ -1192,10 +1192,10 @@ const filteredBots = computed(() => {
             </div>
 
             <div v-if="filteredServers.length === 0 && serverSearchQuery" class="p-8 text-center text-gray-500">
-              Keine Server mit "{{ serverSearchQuery }}" gefunden
+              {{ $t('discordModule.noServersMatchQuery', { query: serverSearchQuery }) }}
             </div>
             <div v-else-if="servers.length === 0" class="p-8 text-center text-gray-500">
-              Keine Server gefunden
+              {{ $t('discordModule.noServersFound') }}
             </div>
           </div>
         </div>
@@ -1244,10 +1244,10 @@ const filteredBots = computed(() => {
             </div>
 
             <div v-if="sortedDMChannels.length === 0 && dmSearchQuery" class="p-8 text-center text-gray-500">
-              Keine DMs mit "{{ dmSearchQuery }}" gefunden
+              {{ $t('discordModule.noDmsMatchQuery', { query: dmSearchQuery }) }}
             </div>
             <div v-else-if="dmChannels.length === 0" class="p-8 text-center text-gray-500">
-              Keine DMs gefunden
+              {{ $t('discordModule.noDmsFound') }}
             </div>
           </div>
         </div>
@@ -1374,14 +1374,14 @@ const filteredBots = computed(() => {
 
             <div v-if="filteredAllBackups.length === 0 && backupSearchQuery" class="p-8 text-center text-gray-500">
               <MagnifyingGlassIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
-              <p>Keine Backups mit "{{ backupSearchQuery }}" gefunden</p>
+              <p>{{ $t('discordModule.noBackupsMatchQuery', { query: backupSearchQuery }) }}</p>
               <button @click="backupSearchQuery = ''; backupStatusFilter = ''" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
                 {{ $t('tickets.filterZuruecksetzen') }}
               </button>
             </div>
             <div v-else-if="allBackups.length === 0" class="p-12 text-center text-gray-500">
               <CloudArrowDownIcon class="w-16 h-16 mx-auto mb-4 text-gray-600" />
-              <h4 class="text-lg font-medium text-white mb-2">Noch keine Backups</h4>
+              <h4 class="text-lg font-medium text-white mb-2">{{ $t('discordModule.noBackups') }}</h4>
               <p class="text-sm">Erstelle dein erstes Backup über einen Server oder Bot</p>
             </div>
           </div>
@@ -1473,13 +1473,13 @@ const filteredBots = computed(() => {
 
             <div v-if="filteredBots.length === 0 && botSearchQuery" class="p-8 text-center text-gray-500">
               <MagnifyingGlassIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
-              <p>Keine Bots mit "{{ botSearchQuery }}" gefunden</p>
+              <p>{{ $t('discordModule.noBotsMatchQuery', { query: botSearchQuery }) }}</p>
             </div>
             <div v-else-if="bots.length === 0" class="p-10 text-center">
               <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-500/20 flex items-center justify-center">
                 <CpuChipIcon class="w-8 h-8 text-primary-400" />
               </div>
-              <h4 class="text-lg font-medium text-white mb-2">Kein Bot konfiguriert</h4>
+              <h4 class="text-lg font-medium text-white mb-2">{{ $t('discordModule.noBotConfigured') }}</h4>
               <p class="text-sm text-gray-400 mb-4">Füge einen Discord Bot hinzu um Server zu sichern</p>
               <button @click="showAddBotModal = true" class="btn-primary">
                 <PlusIcon class="w-5 h-5 mr-2" />
@@ -1558,8 +1558,8 @@ const filteredBots = computed(() => {
         <!-- No Search Results -->
         <div v-if="activeTab === 'search' && globalSearchQuery.length >= 2 && globalSearchResults.length === 0 && !isSearching" class="card p-12 text-center">
           <MagnifyingGlassIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-          <h3 class="text-xl font-medium text-white mb-2">Keine Ergebnisse</h3>
-          <p class="text-gray-400">Keine Nachrichten mit "{{ globalSearchQuery }}" gefunden.</p>
+          <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.noResults') }}</h3>
+          <p class="text-gray-400">{{ $t('discordModule.noMessagesMatchQuery', { query: globalSearchQuery }) }}</p>
         </div>
 
         <!-- Backup Details Panel -->
@@ -1704,7 +1704,7 @@ const filteredBots = computed(() => {
               </div>
               <div v-if="backupChannels.length === 0" class="p-8 text-center text-gray-500">
                 <HashtagIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
-                <p>Keine Channels gefunden</p>
+                <p>{{ $t('discordModule.noChannelsFound') }}</p>
               </div>
             </div>
 
@@ -1731,7 +1731,7 @@ const filteredBots = computed(() => {
               </div>
               <div v-else class="p-8 text-center text-gray-500">
                 <PhotoIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
-                <p>Keine Medien gefunden</p>
+                <p>{{ $t('discordModule.noMediaFound') }}</p>
               </div>
             </div>
 
@@ -1756,7 +1756,7 @@ const filteredBots = computed(() => {
               </div>
               <div v-if="backupLinks.length === 0" class="p-8 text-center text-gray-500">
                 <LinkIcon class="w-10 h-10 mx-auto mb-2 text-gray-600" />
-                <p>Keine Links gefunden</p>
+                <p>{{ $t('discordModule.noLinksFound') }}</p>
               </div>
             </div>
           </div>
@@ -1783,7 +1783,7 @@ const filteredBots = computed(() => {
                   <span class="font-medium text-primary-400 text-sm">{{ msg.author_username }}</span>
                   <span class="text-xs text-gray-500">{{ formatDate(msg.message_timestamp) }}</span>
                 </div>
-                <p class="text-gray-300 text-sm whitespace-pre-wrap break-words">{{ msg.content || '[Kein Text]' }}</p>
+                <p class="text-gray-300 text-sm whitespace-pre-wrap break-words">{{ msg.content || $t('discordModule.noText') }}</p>
                 <div v-if="msg.has_attachments" class="mt-2 flex items-center gap-1 text-xs text-gray-400">
                   <PhotoIcon class="w-3 h-3" />
                   {{ msg.attachment_count }} Anhänge
@@ -1892,7 +1892,7 @@ const filteredBots = computed(() => {
           <!-- No Links (after filter) -->
           <div v-else-if="links.length > 0" class="p-8 text-center">
             <FunnelIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
-            <p class="text-gray-400">Keine Links mit aktuellem Filter gefunden.</p>
+            <p class="text-gray-400">{{ $t('discordModule.noLinksWithFilter') }}</p>
             <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
               {{ $t('tickets.filterZuruecksetzen') }}
             </button>
@@ -1901,7 +1901,7 @@ const filteredBots = computed(() => {
           <!-- No Links at all -->
           <div v-else class="p-12 text-center">
             <LinkIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 class="text-xl font-medium text-white mb-2">Keine Links gefunden</h3>
+            <h3 class="text-xl font-medium text-white mb-2">{{ $t('discordModule.noLinksFound') }}</h3>
             <p class="text-gray-400">Erstelle zuerst ein Backup um Links zu sammeln.</p>
           </div>
         </div>
@@ -2086,7 +2086,7 @@ const filteredBots = computed(() => {
             <!-- No results after filter -->
             <div v-if="filteredChannelMedia.length === 0 && channelMedia.length > 0" class="text-center text-gray-500 py-4">
               <MagnifyingGlassIcon class="w-8 h-8 mx-auto mb-2" />
-              <p class="text-sm">Keine Medien gefunden</p>
+              <p class="text-sm">{{ $t('discordModule.noMediaFound') }}</p>
               <button @click="mediaSearchQuery = ''; mediaTypeFilter = 'all'" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
                 {{ $t('tickets.filterZuruecksetzen') }}
               </button>
@@ -2184,7 +2184,7 @@ const filteredBots = computed(() => {
             <!-- No Links after filter -->
             <div v-else class="text-center text-gray-500 py-4">
               <FunnelIcon class="w-8 h-8 mx-auto mb-2" />
-              <p class="text-sm">Keine Links mit aktuellem Filter</p>
+              <p class="text-sm">{{ $t('discordModule.noLinksWithFilterSmall') }}</p>
               <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
                 {{ $t('tickets.filterZuruecksetzen') }}
               </button>
@@ -2193,7 +2193,7 @@ const filteredBots = computed(() => {
 
           <!-- No Data Yet -->
           <div v-if="!isLoadingChannelData && channelMedia.length === 0 && channelLinks.length === 0" class="p-6 border-t border-white/[0.06] text-center text-gray-500">
-            <p>Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.</p>
+            <p>{{ $t('discordModule.noMediaOrLinks') }}</p>
           </div>
         </div>
 
@@ -2425,7 +2425,7 @@ const filteredBots = computed(() => {
 
               <div v-if="!selectedBotServer.channels?.length" class="p-8 text-center text-gray-500">
                 <HashtagIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
-                <p>Keine Channels gefunden</p>
+                <p>{{ $t('discordModule.noChannelsFound') }}</p>
                 <p class="text-sm mt-1">Synchronisiere den Bot um Channels zu laden</p>
               </div>
             </div>
@@ -2559,7 +2559,7 @@ const filteredBots = computed(() => {
           </div>
 
           <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
-            <button @click="showAddAccountModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="showAddAccountModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="addAccount" :disabled="isAddingAccount" class="btn-primary">
               <ArrowPathIcon v-if="isAddingAccount" class="w-5 h-5 mr-2 animate-spin" />
               Hinzufügen
@@ -2664,7 +2664,7 @@ const filteredBots = computed(() => {
           </div>
 
           <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
-            <button @click="showBackupModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="showBackupModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="createBackup" class="btn-primary">
               <CloudArrowDownIcon class="w-5 h-5 mr-2" />
               Backup starten
@@ -2718,7 +2718,7 @@ const filteredBots = computed(() => {
           </div>
 
           <div class="p-6 border-t border-white/[0.06] flex justify-end gap-3">
-            <button @click="showDeleteModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="showDeleteModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="createDeleteJob" class="btn-danger">
               <TrashIcon class="w-5 h-5 mr-2" />
               Löschen starten
@@ -2777,7 +2777,7 @@ const filteredBots = computed(() => {
                 </div>
 
                 <!-- Message content -->
-                <p class="whitespace-pre-wrap break-words text-sm">{{ msg.content || '[Kein Text]' }}</p>
+                <p class="whitespace-pre-wrap break-words text-sm">{{ msg.content || $t('discordModule.noText') }}</p>
 
                 <!-- Attachments -->
                 <div v-if="msg.has_attachments" class="mt-2">
@@ -2800,7 +2800,7 @@ const filteredBots = computed(() => {
             </div>
 
             <div v-if="backupMessages.length === 0" class="text-center text-gray-500 py-8">
-              Keine Nachrichten gefunden
+              {{ $t('discordModule.noMessagesFound') }}
             </div>
           </div>
         </div>

@@ -109,7 +109,7 @@ const handleAddElement = (type) => {
 const handleDuplicateElement = () => {
   if (!mockupStore.selectedElementId) return
   mockupStore.duplicateElement(mockupStore.selectedElementId)
-  toast.success('Element dupliziert')
+  toast.success(t('mockupEditor.elementDuplicated'))
 }
 
 const handleDeleteElement = () => {
@@ -153,7 +153,7 @@ const confirmSaveTemplate = async () => {
       saveTemplateName.value.trim(),
       saveTemplateDescription.value.trim()
     )
-    toast.success('Template gespeichert!')
+    toast.success(t('mockupEditor.templateSaved'))
     showSaveTemplateModal.value = false
   } catch (err) {
     toast.error(t('mockupEditor.speichernFehlgeschlagen'))
@@ -165,7 +165,7 @@ const handleSaveDraft = async () => {
   showSaveMenu.value = false
   try {
     await mockupStore.saveDraft()
-    toast.success('Entwurf gespeichert!')
+    toast.success(t('mockupEditor.draftSaved'))
   } catch (err) {
     toast.error(t('mockupEditor.speichernFehlgeschlagen'))
   }
@@ -219,11 +219,11 @@ const performExport = async (options) => {
 
   try {
     await canvasRef.value.exportImage(options)
-    toast.success('Export erfolgreich!')
+    toast.success(t('mockupEditor.exportSuccess'))
     showExportModal.value = false
   } catch (error) {
     console.error('Export failed:', error)
-    toast.error('Export fehlgeschlagen')
+    toast.error(t('mockupEditor.exportFailed'))
   }
 }
 
@@ -442,7 +442,7 @@ onUnmounted(() => {
           <button @click="handleExport"
                   class="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-gray-900 font-medium rounded-lg transition-colors">
             <ArrowDownTrayIcon class="w-4 h-4" />
-            <span class="text-sm">Exportieren</span>
+            <span class="text-sm">{{ $t('common.export') }}</span>
           </button>
         </div>
       </div>

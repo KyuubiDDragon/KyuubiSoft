@@ -852,7 +852,7 @@ onMounted(() => {
                   class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
                   <option value="view">Lesen</option>
-                  <option value="edit">Bearbeiten</option>
+                  <option value="edit">{{ $t('common.edit') }}</option>
                 </select>
                 <button
                   @click="addMember"
@@ -899,7 +899,7 @@ onMounted(() => {
                       class="bg-dark-600 border border-dark-500 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary-500"
                     >
                       <option value="view">Lesen</option>
-                      <option value="edit">Bearbeiten</option>
+                      <option value="edit">{{ $t('common.edit') }}</option>
                     </select>
                     <button
                       @click="removeMember(share.user_id)"

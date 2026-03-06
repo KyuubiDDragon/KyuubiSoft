@@ -73,7 +73,7 @@ async function createChecklist() {
 }
 
 async function deleteChecklist(checklist) {
-  if (!await confirm({ message: `Checkliste "${checklist.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteChecklist', { title: checklist.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklist.id}`)

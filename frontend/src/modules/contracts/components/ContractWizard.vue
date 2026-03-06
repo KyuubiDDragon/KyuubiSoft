@@ -86,7 +86,7 @@ const contractTypes = [
   { value: 'maintenance', label: 'Wartung', description: 'Wartung & Support', icon: WrenchScrewdriverIcon, color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/30' },
   { value: 'nda', label: 'NDA', description: 'Geheimhaltungsvereinbarung', icon: ShieldCheckIcon, color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/30' },
   { value: 'source_code_purchase', label: 'Source-Code-Kauf', description: 'Kauf von Quellcode / IP', icon: CommandLineIcon, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/30' },
-  { value: 'custom', label: 'Individuell', description: 'Eigener {{ $t('contracts.contractText') }}', icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
+  { value: 'custom', label: t('contracts.custom'), description: t('contracts.customContractDescription'), icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
 ]
 
 // Custom templates

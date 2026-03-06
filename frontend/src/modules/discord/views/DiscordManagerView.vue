@@ -219,9 +219,9 @@ async function selectBackupChannel(channel) {
 
 async function deleteBackupConfirm(backup) {
   const confirmed = await confirm({
-    title: 't('discordModule.backupLoeschen'),
-    message: `Möchtest du das Backup "${backup.target_name}" wirklich löschen? Alle gesicherten Nachrichten und Medien werden unwiderruflich gelöscht.`,
-    confirmText: 'Löschen',
+    title: t('discordModule.deleteBackup'),
+    message: t('discordModule.confirmDeleteBackup', { name: backup.target_name }),
+    confirmText: t('common.delete'),
     confirmClass: 'btn-danger',
   })
 
@@ -737,8 +737,8 @@ async function createBackup() {
 
 async function deleteBackup(backup) {
   if (!await confirm({
-    title: 't('discordModule.backupLoeschen1'),
-    message: `Backup von "${backup.target_name}" wirklich löschen?`,
+    title: t('discordModule.deleteBackup'),
+    message: t('discordModule.confirmDeleteBackup', { name: backup.target_name }),
     type: 'danger'
   })) return
 
@@ -822,8 +822,8 @@ function openDeleteModal(channel) {
 
 async function createDeleteJob() {
   if (!await confirm({
-    title: 't('discordModule.nachrichtenLoeschen1'),
-    message: 't('discordModule.dieseAktionKannNichtRueckgaengigGemachtWerden'),
+    title: t('discordModule.deleteMessages'),
+    message: t('discordModule.actionCannotBeUndone'),
     type: 'danger'
   })) return
 
@@ -1343,7 +1343,7 @@ const filteredBots = computed(() => {
                   <button
                     @click.stop="deleteBackupConfirm(backup)"
                     class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04] transition-colors"
-                    {{ $t('discordModule.titlebackupLoeschen') }}
+                    :title="$t('discordModule.deleteBackup')"
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
@@ -1579,7 +1579,7 @@ const filteredBots = computed(() => {
               <button
                 @click="deleteBackupConfirm(selectedViewBackup)"
                 class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04]/50"
-                {{ $t('discordModule.titlebackupLoeschen') }}
+                :title="$t('discordModule.deleteBackup')"
               >
                 <TrashIcon class="w-5 h-5" />
               </button>

@@ -1,5 +1,5 @@
 <script setup>
-import { useI18n } from \'vue-i18n\'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
@@ -261,7 +261,7 @@ const t = computed(() => {
     pleaseSign: t('contracts.pleaseSignAbove'),
     saving: t('contracts.saving'),
     signBinding: t('contracts.signContractBinding'),
-    legalNotice: 'Mit dem Klick auf t('contracts.signContractBinding') bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen.',
+    legalNotice: t('contracts.legalNotice'),
     contractSigned: t('contracts.contractSigned'),
     thankYou: t('contracts.signatureSuccessMessage'),
     contractLabel: t('contracts.contractDocument'),

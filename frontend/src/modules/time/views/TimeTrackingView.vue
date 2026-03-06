@@ -243,7 +243,7 @@ async function saveEntry() {
 
 // Delete entry
 async function deleteEntry(entry) {
-  if (!await confirm({ message: 't('checklistsModule.eintragWirklichLoeschen'), type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('timeTracking.confirmDeleteEntry'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/time/${entry.id}`)

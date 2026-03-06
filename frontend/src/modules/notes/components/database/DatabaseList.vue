@@ -74,8 +74,8 @@ function toggleRow(rowId) {
 
 // Get row title
 function getRowTitle(row) {
-  if (!titleProperty.value) return 't('notesModule.database.untitled')'
-  return row.cells?.[titleProperty.value.id]?.value || 't('notesModule.database.untitled')'
+  if (!titleProperty.value) return t('notes.database.untitled')
+  return row.cells?.[titleProperty.value.id]?.value || t('notes.database.untitled')
 }
 
 // Add new row

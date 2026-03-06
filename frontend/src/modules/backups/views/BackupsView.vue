@@ -98,11 +98,11 @@ const compressionOptions = [
 ]
 
 const cronPresets = [
-  { value: '0 3 * * *', label: 't('backups.dailyAt3am') },
-  { value: '0 3 * * 0', label: 't('backups.weeklySunday3am') },
-  { value: '0 3 1 * *', label: 'Monatlich (1. des Monats)' },
-  { value: '0 */6 * * *', label: 'Alle 6 Stunden' },
-  { value: '0 * * * *', label: 't('cron.hourly') },
+  { value: '0 3 * * *', label: t('backups.dailyAt3am') },
+  { value: '0 3 * * 0', label: t('backups.weeklySunday3am') },
+  { value: '0 3 1 * *', label: t('backups.monthly') },
+  { value: '0 */6 * * *', label: t('backups.every6hours') },
+  { value: '0 * * * *', label: t('backups.hourly') },
 ]
 
 // Computed
@@ -284,7 +284,7 @@ async function createBackup() {
 }
 
 async function deleteBackup(backup) {
-  if (!await confirm({ message: 't('backups.confirmDeleteBackup'), type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('backups.confirmDeleteBackup'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/backups/${backup.id}`)
     uiStore.showSuccess('Backup gelöscht')
@@ -546,7 +546,7 @@ onMounted(fetchData)
                   <button
                     @click="deleteBackup(backup)"
                     class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                    {{ $t('common.delete') }}
+                    :title="$t('common.delete')"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -699,7 +699,7 @@ onMounted(fetchData)
               <button
                 @click="deleteTarget(target)"
                 class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                {{ $t('common.delete') }}
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-4 h-4" />
               </button>

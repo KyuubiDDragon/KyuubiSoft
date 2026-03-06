@@ -90,26 +90,26 @@ const slashCoords = ref(null)
 const slashRange = ref(null)
 
 // Available slash commands
-const availableSlashCommands = [
-  { title: 'Text', description: 'Normaler Absatztext', icon: 'Aa', keywords: ['paragraph', 'text'] },
-  { title: 't('toolbox.ueberschrift1'), description: 't('notesModule.grosseUeberschrift'), icon: 'H1', keywords: ['heading', 'h1'] },
-  { title: 't('toolbox.ueberschrift2'), description: 't('notesModule.mittlereUeberschrift'), icon: 'H2', keywords: ['heading', 'h2'] },
-  { title: 't('notesModule.ueberschrift3'), description: 't('notesModule.kleineUeberschrift'), icon: 'H3', keywords: ['heading', 'h3'] },
-  { title: 't('notesModule.aufzaehlung'), description: 'Punktliste erstellen', icon: '•', keywords: ['bullet', 'list'] },
-  { title: 'Nummerierung', description: 'Nummerierte Liste', icon: '1.', keywords: ['number', 'ordered'] },
-  { title: 'Checkliste', description: 'Aufgabenliste', icon: '☑', keywords: ['todo', 'task', 'checkbox'] },
-  { title: 'Zitat', description: 'Zitat hervorheben', icon: '"', keywords: ['quote', 'blockquote'] },
-  { title: 'Codeblock', description: 'Code mit Syntax', icon: '</>', keywords: ['code', 'syntax'] },
-  { title: 'Trennlinie', description: 'Horizontale Linie', icon: '—', keywords: ['divider', 'line'] },
-  { title: 'Info', description: 'Informationshinweis', icon: 'ℹ️', keywords: ['callout', 'info'] },
-  { title: 'Warnung', description: 'Warnhinweis', icon: '⚠️', keywords: ['callout', 'warning'] },
-  { title: 'Tipp', description: 'Hilfreicher Tipp', icon: '💡', keywords: ['callout', 'tip'] },
-  { title: 'Gefahr', description: 'Wichtiger Warnhinweis', icon: '❌', keywords: ['callout', 'danger'] },
-  { title: 'Toggle', description: 'Ausklappbarer Bereich', icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
-  { title: 'Tabelle', description: 't('notesModule.tabelleEinfuegen'), icon: '▦', keywords: ['table', 'grid'] },
-  { title: 'Datenbank', description: 'Inline-Datenbank erstellen', icon: '🗃️', keywords: ['database', 'datenbank', 'notion', 'table', 'board'] },
-  { title: 'Embed', description: 'YouTube, Twitter, etc. einbetten', icon: '🔗', keywords: ['embed', 'youtube', 'video', 'twitter', 'spotify', 'einbetten'] },
-]
+const availableSlashCommands = computed(() => [
+  { title: 'Text', description: t('notes.editor.slash.paragraphDesc'), icon: 'Aa', keywords: ['paragraph', 'text'] },
+  { title: t('notes.editor.slash.heading1'), description: t('notes.editor.slash.heading1Desc'), icon: 'H1', keywords: ['heading', 'h1'] },
+  { title: t('notes.editor.slash.heading2'), description: t('notes.editor.slash.heading2Desc'), icon: 'H2', keywords: ['heading', 'h2'] },
+  { title: t('notes.editor.slash.heading3'), description: t('notes.editor.slash.heading3Desc'), icon: 'H3', keywords: ['heading', 'h3'] },
+  { title: t('notes.editor.slash.bulletList'), description: t('notes.editor.slash.bulletListDesc'), icon: '•', keywords: ['bullet', 'list'] },
+  { title: t('notes.editor.slash.numberedList'), description: t('notes.editor.slash.numberedListDesc'), icon: '1.', keywords: ['number', 'ordered'] },
+  { title: t('notes.editor.slash.checklist'), description: t('notes.editor.slash.checklistDesc'), icon: '☑', keywords: ['todo', 'task', 'checkbox'] },
+  { title: t('notes.editor.slash.quote'), description: t('notes.editor.slash.quoteDesc'), icon: '"', keywords: ['quote', 'blockquote'] },
+  { title: t('notes.editor.slash.codeBlock'), description: t('notes.editor.slash.codeBlockDesc'), icon: '</>', keywords: ['code', 'syntax'] },
+  { title: t('notes.editor.slash.divider'), description: t('notes.editor.slash.dividerDesc'), icon: '—', keywords: ['divider', 'line'] },
+  { title: 'Info', description: t('notes.editor.slash.infoDesc'), icon: 'ℹ️', keywords: ['callout', 'info'] },
+  { title: t('notes.editor.slash.warning'), description: t('notes.editor.slash.warningDesc'), icon: '⚠️', keywords: ['callout', 'warning'] },
+  { title: t('notes.editor.slash.tip'), description: t('notes.editor.slash.tipDesc'), icon: '💡', keywords: ['callout', 'tip'] },
+  { title: t('notes.editor.slash.danger'), description: t('notes.editor.slash.dangerDesc'), icon: '❌', keywords: ['callout', 'danger'] },
+  { title: 'Toggle', description: t('notes.editor.slash.toggleDesc'), icon: '▶', keywords: ['toggle', 'collapse', 'expand'] },
+  { title: t('notes.editor.slash.table'), description: t('notes.editor.slash.tableDesc'), icon: '▦', keywords: ['table', 'grid'] },
+  { title: t('notes.editor.slash.database'), description: t('notes.editor.slash.databaseDesc'), icon: '🗃️', keywords: ['database', 'datenbank', 'notion', 'table', 'board'] },
+  { title: 'Embed', description: t('notes.editor.slash.embedDesc'), icon: '🔗', keywords: ['embed', 'youtube', 'video', 'twitter', 'spotify', 'einbetten'] },
+])
 
 // Handle wiki link navigation
 function handleWikiLinkNavigation(href) {
@@ -303,7 +303,7 @@ function checkForSlashCommand() {
     slashCoords.value = coords
 
     // Filter commands by query
-    const filtered = availableSlashCommands.filter(cmd =>
+    const filtered = availableSlashCommands.value.filter(cmd =>
       cmd.title.toLowerCase().includes(query.toLowerCase()) ||
       cmd.keywords?.some(k => k.toLowerCase().includes(query.toLowerCase()))
     )
@@ -390,7 +390,7 @@ function executeSlashCommand(command) {
         content: [
           {
             type: 'toggleTitle',
-            content: [{ type: 'text', text: 't('notesModule.klickenZumOeffnen') }]
+            content: [{ type: 'text', text: t('notes.editor.clickToOpen') }]
           },
           {
             type: 'toggleContent',

@@ -205,7 +205,7 @@
     "addStorageTarget": "Add a storage target (Local, S3, SFTP)",
     "backupDeleted": "Backup deleted",
     "backups": "Backups",
-    "confirmDeleteBackup": "Really delete this backup?",
+    "confirmDeleteBackup": "Are you sure you want to delete this backup?",
     "createAutoSchedules": "Create automatic backup schedules",
     "createBackup": "Create Backup",
     "createSchedule": "Create Schedule",
@@ -239,7 +239,10 @@
     "dailyAt3am": "Daily at 3:00 AM",
     "weeklySunday3am": "Weekly (Sunday 3:00 AM)",
     "localStoragePlaceholder": "e.g. Local storage",
-    "dailyBackupPlaceholder": "e.g. Daily backup"
+    "dailyBackupPlaceholder": "e.g. Daily backup",
+    "monthly": "Monthly (1st of month)",
+    "every6hours": "Every 6 hours",
+    "hourly": "Hourly"
   },
   "backupsModule": {
     "aktiveZeitplaene": "Active schedules",
@@ -955,7 +958,10 @@
     "manuallyEdited": "Manually edited.",
     "resetToOriginal": "Reset",
     "active": "Active",
-    "duration": "Duration"
+    "duration": "Duration",
+    "custom": "Custom",
+    "customContractDescription": "Custom contract text",
+    "legalNotice": "By clicking \"Sign contract\" you confirm that you have read and agree to the contract."
   },
   "contractsModule": {
     "24Stunden": "24 hours",
@@ -1631,7 +1637,10 @@
     "validate": "Validate",
     "viewbackupmessagesbackup": "viewBackupMessages(backup)",
     "wirdVerarbeitet": "Wird verarbeitet...",
-    "yourBotToken": "Your Bot Token"
+    "yourBotToken": "Your Bot Token",
+    "deleteBackup": "Delete Backup",
+    "confirmDeleteBackup": "Do you really want to delete the backup \"{name}\"? All saved messages and media will be permanently deleted.",
+    "actionCannotBeUndone": "This action cannot be undone."
   },
   "dns": {
     "addDomain": "Add Domain",
@@ -2754,35 +2763,36 @@
         "codeBlock": "Code with syntax",
         "codeBlockDesc": "Code with syntax",
         "danger": "Danger",
-        "dangerDesc": "Danger",
+        "dangerDesc": "Important warning",
         "database": "Database",
-        "databaseDesc": "Database",
-        "divider": "Horizontal line",
+        "databaseDesc": "Create inline database",
+        "divider": "Divider",
         "dividerDesc": "Horizontal line",
         "embed": "Embed",
-        "embedDesc": "Embed",
+        "embedDesc": "Embed YouTube, Twitter, etc.",
         "heading1": "Heading 1",
-        "heading1Desc": "Heading 1",
+        "heading1Desc": "Large heading",
         "heading2": "Heading 2",
-        "heading2Desc": "Heading 2",
-        "heading3": "Small Heading",
-        "heading3Desc": "Small Heading",
+        "heading2Desc": "Medium heading",
+        "heading3": "Heading 3",
+        "heading3Desc": "Small heading",
         "info": "Info",
-        "infoDesc": "Info",
+        "infoDesc": "Information note",
         "numberedList": "Numbered List",
-        "numberedListDesc": "Numbered List",
-        "quote": "Highlight quote",
+        "numberedListDesc": "Numbered list",
+        "quote": "Quote",
         "quoteDesc": "Highlight quote",
         "table": "Table",
-        "tableDesc": "Table",
+        "tableDesc": "Insert table",
         "text": "Normal paragraph text",
         "textDesc": "Normal paragraph text",
-        "tip": "Helpful tip",
+        "tip": "Tip",
         "tipDesc": "Helpful tip",
         "toggle": "Toggle",
-        "toggleDesc": "Toggle",
+        "toggleDesc": "Collapsible section",
         "warning": "Warning",
-        "warningDesc": "Warning"
+        "warningDesc": "Warning note",
+        "paragraphDesc": "Normal paragraph text"
       },
       "toCreateNewNote": "to create a new note"
     },
@@ -4107,7 +4117,8 @@
     "wiederkehrendeAufgabeErstellt": "Wiederkehrende Aufgabe erstellt",
     "wiederkehrendeAufgabeGeloescht": "Wiederkehrende Aufgabe gelöscht",
     "wirdBeendet": "Wird beendet...",
-    "wirdGeleert": "Wird geleert..."
+    "wirdGeleert": "Wird geleert...",
+    "allEntities": "All Entities"
   },
   "tags": {
     "createFirst": "Create your first tag",
@@ -4266,7 +4277,8 @@
     "timetrackingkeinprojekt": "timeTracking.keinProjekt",
     "timetrackingmanuellereintrag": "timeTracking.manuellerEintrag",
     "timetrackingstartedentimerobenumzeitzu": "timeTracking.starteDenTimerObenUmZeitZu",
-    "verdienst": "Earnings"
+    "verdienst": "Earnings",
+    "confirmDeleteEntry": "Really delete this entry?"
   },
   "toolbox": {
     "100Woerter": "100 Wörter",
@@ -4564,7 +4576,9 @@
     "zeitFuerEinePause": "Zeit für eine Pause!",
     "zugehoerigeNodeid": "Zugehörige Node-ID",
     "zurueckAnDieArbeit": "Zurück an die Arbeit!",
-    "zusaetzlicheInstruktionen": "Additional instructions"
+    "zusaetzlicheInstruktionen": "Additional instructions",
+    "uuidV4Desc": "Randomly generated, most commonly used",
+    "powershellParameterPassing": "PowerShell parameter passing"
   },
   "uptime": {
     "alleOrdner": "All Folder",
@@ -4613,7 +4627,8 @@
     "uptimealleordner": "uptime.alleOrdner",
     "uptimeinordnerverschieben": "uptime.inOrdnerVerschieben",
     "uptimekeinemonitore": "uptime.keineMonitore",
-    "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver"
+    "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver",
+    "checkNow": "Check Now"
   },
   "users": {
     "aufProjekteEinschraenken": "Auf Projecte einschränken",

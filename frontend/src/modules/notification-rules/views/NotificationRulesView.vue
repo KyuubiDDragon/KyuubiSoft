@@ -1,5 +1,5 @@
 <script setup>
-import { useI18n } from \'vue-i18n\'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 import { ref, computed, onMounted } from 'vue'
@@ -30,14 +30,14 @@ const confirmDeleteId = ref(null)
 
 // Module color mapping for trigger event badges
 const moduleColorMap = {
-  t('server.server'): 'bg-red-500/15 text-red-400',
+  'Server': 'bg-red-500/15 text-red-400',
   'Docker': 'bg-blue-500/15 text-blue-400',
   'Uptime': 'bg-emerald-500/15 text-emerald-400',
-  t('projects.title'): 'bg-purple-500/15 text-purple-400',
+  'Projects': 'bg-purple-500/15 text-purple-400',
   'Tickets': 'bg-amber-500/15 text-amber-400',
   'Storage': 'bg-cyan-500/15 text-cyan-400',
   'System': 'bg-orange-500/15 text-orange-400',
-  'Sonstige': 'bg-gray-500/15 text-gray-400',
+  'Other': 'bg-gray-500/15 text-gray-400',
 }
 
 function getEventBadgeClass(triggerEvent) {

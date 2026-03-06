@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -29,6 +30,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -96,13 +98,13 @@ const typeIcons = {
   ssl: ShieldCheckIcon,
 }
 
-const intervalOptions = [
-  { value: 60, label: '1 Minute' },
-  { value: 300, label: '5 Minuten' },
-  { value: 600, label: '10 Minuten' },
-  { value: 1800, label: '30 Minuten' },
-  { value: 3600, label: '1 Stunde' },
-]
+const intervalOptions = computed(() => [
+  { value: 60, label: t('uptime.oneMinute') },
+  { value: 300, label: t('uptime.fiveMinutes') },
+  { value: 600, label: t('uptime.tenMinutes') },
+  { value: 1800, label: t('uptime.thirtyMinutes') },
+  { value: 3600, label: t('uptime.oneHour') },
+])
 
 const dnsRecordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']
 
@@ -248,7 +250,7 @@ async function saveMonitor() {
 }
 
 async function deleteMonitor(monitor) {
-  if (!await confirm({ message: `Monitor "${monitor.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('uptime.confirmDeleteMonitor', { name: monitor.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/uptime/${monitor.id}`)
@@ -281,7 +283,7 @@ async function checkNow(monitor) {
     if (result.data) {
       monitor.game_server_data = result.data
     }
-    uiStore.showSuccess(`Check abgeschlossen: ${result.status.toUpperCase()}`)
+    uiStore.showSuccess(t('uptime.checkCompleted', { status: result.status.toUpperCase() }))
   } catch (error) {
     uiStore.showError(t('common.errorChecking'))
   } finally {
@@ -322,7 +324,7 @@ async function saveFolder() {
 }
 
 async function deleteFolder(folder) {
-  if (!await confirm({ message: `Ordner "${folder.name}" löschen? Monitore werden nicht gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('uptime.confirmDeleteFolder', { name: folder.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/uptime/folders/${folder.id}`)
@@ -414,7 +416,7 @@ function openFolderModal(folder = null) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return 'Nie'
+  if (!dateStr) return t('uptime.never')
   return new Date(dateStr).toLocaleString('de-DE')
 }
 
@@ -455,7 +457,7 @@ function formatGameServerInfo(monitor) {
   if (!data) return null
 
   if (data.players_online !== undefined) {
-    return `${data.players_online}/${data.players_max} Spieler`
+    return t('uptime.players', { online: data.players_online, max: data.players_max })
   }
   return null
 }
@@ -475,17 +477,17 @@ function toggleMonitorSelection(monitorId) {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Uptime Monitor</h1>
-        <p class="text-gray-400 mt-1">Überwache Websites, Server und Game-Server</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('uptime.uptimeMonitor') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('uptime.subtitle') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="openFolderModal()" class="btn-secondary">
           <FolderPlusIcon class="w-5 h-5 mr-2" />
-          Ordner
+          {{ $t('uptime.folder') }}
         </button>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Neuer Monitor
+          {{ $t('uptime.newMonitor') }}
         </button>
       </div>
     </div>
@@ -494,18 +496,18 @@ function toggleMonitorSelection(monitorId) {
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4">
       <div class="flex items-center gap-2 mb-3">
         <FunnelIcon class="w-4 h-4 text-gray-400" />
-        <span class="text-sm text-gray-400">Filter</span>
+        <span class="text-sm text-gray-400">{{ $t('uptime.filter') }}</span>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <select v-model="filters.project_id" class="input text-sm">
-          <option value="">Alle Projekte</option>
+          <option value="">{{ $t('uptime.allProjects') }}</option>
           <option v-for="project in projects" :key="project.id" :value="project.id">
             {{ project.name }}
           </option>
         </select>
         <select v-model="filters.folder_id" class="input text-sm">
-          <option :value="null">Alle Ordner</option>
-          <option value="">Ohne Ordner</option>
+          <option :value="null">{{ $t('uptime.allFolders') }}</option>
+          <option value="">{{ $t('uptime.withoutFolder') }}</option>
           <option v-for="folder in folders" :key="folder.id" :value="folder.id">
             {{ folder.name }}
           </option>
@@ -518,9 +520,9 @@ function toggleMonitorSelection(monitorId) {
         </select>
         <select v-model="filters.status" class="input text-sm">
           <option value="">{{ $t('projects.allStatus') }}</option>
-          <option value="up">Online</option>
-          <option value="down">Offline</option>
-          <option value="pending">Ausstehend</option>
+          <option value="up">{{ $t('uptime.online') }}</option>
+          <option value="down">{{ $t('uptime.offline') }}</option>
+          <option value="pending">{{ $t('uptime.pending') }}</option>
         </select>
       </div>
     </div>
@@ -534,7 +536,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ monitors.length }}</p>
-            <p class="text-sm text-gray-400">Monitore</p>
+            <p class="text-sm text-gray-400">{{ $t('uptime.monitors') }}</p>
           </div>
         </div>
       </div>
@@ -545,7 +547,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
           <div>
             <p class="text-2xl font-bold text-green-400">{{ upCount }}</p>
-            <p class="text-sm text-gray-400">Online</p>
+            <p class="text-sm text-gray-400">{{ $t('uptime.online') }}</p>
           </div>
         </div>
       </div>
@@ -556,7 +558,7 @@ function toggleMonitorSelection(monitorId) {
           </div>
           <div>
             <p class="text-2xl font-bold text-red-400">{{ downCount }}</p>
-            <p class="text-sm text-gray-400">Offline</p>
+            <p class="text-sm text-gray-400">{{ $t('uptime.offline') }}</p>
           </div>
         </div>
       </div>
@@ -567,19 +569,19 @@ function toggleMonitorSelection(monitorId) {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ folders.length }}</p>
-            <p class="text-sm text-gray-400">Ordner</p>
-          </div>
+            <p class="text-sm text-gray-400">{{ $t('uptime.folders') }}</p>
+</div>
         </div>
       </div>
     </div>
 
     <!-- Bulk actions -->
     <div v-if="selectedMonitorIds.length > 0" class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-4 flex items-center justify-between">
-      <span class="text-primary-400">{{ selectedMonitorIds.length }} Monitor(e) ausgewählt</span>
+      <span class="text-primary-400">{{ $t('uptime.monitorsSelected', { count: selectedMonitorIds.length }) }}</span>
       <div class="flex items-center gap-2">
         <select @change="moveToFolder(selectedMonitorIds, $event.target.value); $event.target.value = ''" class="input text-sm w-48">
-          <option value="">In Ordner verschieben...</option>
-          <option :value="null">Ohne Ordner</option>
+          <option value="">{{ $t('uptime.moveToFolder') }}</option>
+          <option :value="null">{{ $t('uptime.noFolder') }}</option>
           <option v-for="folder in folders" :key="folder.id" :value="folder.id">
             {{ folder.name }}
           </option>
@@ -598,11 +600,11 @@ function toggleMonitorSelection(monitorId) {
     <!-- Empty state -->
     <div v-else-if="monitors.length === 0 && folders.length === 0" class="card p-12 text-center">
       <SignalIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">Keine Monitore</h3>
-      <p class="text-gray-400 mb-6">Erstelle deinen ersten Monitor</p>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('uptime.noMonitors') }}</h3>
+      <p class="text-gray-400 mb-6">{{ $t('uptime.createFirstMonitor') }}</p>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Monitor erstellen
+        {{ $t('uptime.createMonitor') }}
       </button>
     </div>
 
@@ -651,7 +653,7 @@ function toggleMonitorSelection(monitorId) {
             class="flex items-center px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]"
           >
             <FolderIcon class="w-4 h-4 text-gray-500 mr-2" />
-            <span class="text-gray-400">Ohne Ordner</span>
+            <span class="text-gray-400">{{ $t('uptime.unfiled') }}</span>
             <span class="text-sm text-gray-500 ml-2">({{ group.monitors.length }})</span>
           </div>
 
@@ -696,7 +698,7 @@ function toggleMonitorSelection(monitorId) {
                     {{ monitor.project_name }}
                   </span>
                   <span v-if="monitor.is_paused" class="px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
-                    Pausiert
+                    {{ $t('uptime.paused') }}
                   </span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-gray-500">
@@ -740,7 +742,7 @@ function toggleMonitorSelection(monitorId) {
                 <button
                   @click="togglePause(monitor)"
                   class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-                  :title="monitor.is_paused ? 'Fortsetzen' : 'Pausieren'"
+                  :title="monitor.is_paused ? $t('uptime.resume') : $t('uptime.pause')"
                 >
                   <PlayIcon v-if="monitor.is_paused" class="w-5 h-5" />
                   <PauseIcon v-else class="w-5 h-5" />
@@ -774,7 +776,7 @@ function toggleMonitorSelection(monitorId) {
         <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingMonitor ? 'Monitor bearbeiten' : 'Neuer Monitor' }}
+              {{ editingMonitor ? $t('uptime.editMonitor') : $t('uptime.newMonitor') }}
             </h2>
             <button @click="showModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -791,18 +793,18 @@ function toggleMonitorSelection(monitorId) {
             <!-- Project & Folder -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="label">Projekt</label>
+                <label class="label">{{ $t('uptime.project') }}</label>
                 <select v-model="form.project_id" class="input">
-                  <option value="">Kein Projekt</option>
+                  <option value="">{{ $t('uptime.noProject') }}</option>
                   <option v-for="project in projects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
               </div>
               <div>
-                <label class="label">Ordner</label>
+                <label class="label">{{ $t('uptime.folder') }}</label>
                 <select v-model="form.folder_id" class="input">
-                  <option value="">Kein Ordner</option>
+                  <option value="">{{ $t('uptime.noFolderOption') }}</option>
                   <option v-for="folder in folders" :key="folder.id" :value="folder.id">
                     {{ folder.name }}
                   </option>
@@ -812,7 +814,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Type Selection -->
             <div>
-              <label class="label">Typ *</label>
+              <label class="label">{{ $t('uptime.type') }}</label>
               <div class="grid grid-cols-3 gap-2">
                 <button
                   v-for="(info, type) in monitorTypes"
@@ -841,7 +843,7 @@ function toggleMonitorSelection(monitorId) {
 
             <!-- Hostname (for other types) -->
             <div v-if="showHostnameField">
-              <label class="label">Hostname / IP *</label>
+              <label class="label">{{ $t('uptime.hostnameIp') }}</label>
               <input v-model="form.hostname" type="text" class="input" placeholder="play.example.com" required />
             </div>
 
@@ -852,7 +854,7 @@ function toggleMonitorSelection(monitorId) {
                 <input v-model.number="form.port" type="number" class="input" :placeholder="currentTypeInfo.default_port || '25565'" />
               </div>
               <div>
-                <label class="label">Timeout (Sek.)</label>
+                <label class="label">{{ $t('uptime.timeoutSec') }}</label>
                 <input v-model.number="form.timeout" type="number" class="input" min="5" max="60" />
               </div>
             </div>
@@ -861,23 +863,23 @@ function toggleMonitorSelection(monitorId) {
             <div v-if="showHttpFields" class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Timeout (Sek.)</label>
+                  <label class="label">{{ $t('uptime.timeoutSec') }}</label>
                   <input v-model.number="form.timeout" type="number" class="input" min="5" max="60" />
                 </div>
                 <div>
-                  <label class="label">Erwarteter Status</label>
+                  <label class="label">{{ $t('uptime.expectedStatus') }}</label>
                   <input v-model.number="form.expected_status_code" type="number" class="input" />
                 </div>
               </div>
               <div>
-                <label class="label">Erwartetes Keyword (optional)</label>
+                <label class="label">{{ $t('uptime.expectedKeyword') }}</label>
                 <input v-model="form.expected_keyword" type="text" class="input" placeholder="z.B. 'OK' oder 'Welcome'" />
               </div>
             </div>
 
             <!-- DNS-specific fields -->
             <div v-if="showDnsFields">
-              <label class="label">DNS Record Typ</label>
+              <label class="label">{{ $t('uptime.dnsRecordType') }}</label>
               <select v-model="form.dns_record_type" class="input">
                 <option v-for="type in dnsRecordTypes" :key="type" :value="type">{{ type }}</option>
               </select>
@@ -890,7 +892,7 @@ function toggleMonitorSelection(monitorId) {
                 <input v-model.number="form.port" type="number" class="input" placeholder="443" />
               </div>
               <div>
-                <label class="label">Warnung (Tage vor Ablauf)</label>
+                <label class="label">{{ $t('uptime.warnDaysBefore') }}</label>
                 <input v-model.number="form.ssl_expiry_warn_days" type="number" class="input" min="1" max="90" />
               </div>
             </div>

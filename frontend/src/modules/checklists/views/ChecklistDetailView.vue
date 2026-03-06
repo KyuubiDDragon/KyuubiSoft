@@ -507,7 +507,7 @@ watch(() => route.params.id, () => {
     <!-- Loading -->
     <div v-if="isLoading" class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-12 text-center">
       <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-gray-400 mt-4">Lade Checkliste...</p>
+      <p class="text-gray-400 mt-4">{{ $t('checklists.loadingChecklist') }}</p>
     </div>
 
     <template v-else-if="checklist">
@@ -597,7 +597,7 @@ watch(() => route.params.id, () => {
             class="flex items-center gap-2 btn-primary"
           >
             <PlusIcon class="w-4 h-4" />
-            <span>Testpunkt</span>
+            <span>{{ $t('checklists.testPoint') }}</span>
           </button>
           <button
             @click="showBatchAddModal = true"
@@ -863,12 +863,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-lg">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Einstellungen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.settingsTitle') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.titleLabel') }}</label>
               <input
                 v-model="checklist.title"
                 type="text"
@@ -877,7 +877,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="checklist.description"
                 rows="3"
@@ -965,12 +965,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neue Kategorie</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.newCategory') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.nameRequiredLabel') }}</label>
               <input
                 v-model="newCategory.name"
                 type="text"
@@ -981,11 +981,11 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <input
                 v-model="newCategory.description"
                 type="text"
-                placeholder="Optional..."
+                :placeholder="$t('checklists.optionalDescription')"
                 class="input"
               />
             </div>
@@ -1013,12 +1013,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neuer Testpunkt</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.newTestPoint') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.titleRequiredLabel') }}</label>
               <input
                 v-model="newItem.title"
                 type="text"
@@ -1029,11 +1029,11 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="newItem.description"
                 rows="2"
-                placeholder="Testanweisungen..."
+                :placeholder="$t('checklists.testInstructionsPlaceholder')"
                 class="textarea"
               ></textarea>
             </div>
@@ -1172,7 +1172,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="editingItem.description"
                 rows="2"
@@ -1181,7 +1181,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.categoryLabel') }}</label>
               <select
                 v-model="editingItem.category_id"
                 class="input"
@@ -1227,7 +1227,7 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Kategorie bearbeiten</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.editCategory') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
@@ -1241,7 +1241,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <input
                 v-model="editingCategory.description"
                 type="text"

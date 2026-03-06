@@ -1118,7 +1118,7 @@ const filteredBots = computed(() => {
             :class="['px-4 py-2 text-sm font-medium border-b-2 -mb-px', activeTab === 'search' ? 'text-primary-400 border-primary-400' : 'text-gray-400 border-transparent hover:text-white']"
           >
             <MagnifyingGlassIcon class="w-4 h-4 inline mr-1" />
-            Suche
+            {{ $t('discordModule.search') }}
           </button>
           <button
             @click="activeTab = 'links'; loadAllLinks()"
@@ -1153,7 +1153,7 @@ const filteredBots = computed(() => {
                 v-model="serverSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="Server suchen..."
+                :placeholder="$t('discordModule.searchServersPlaceholder')"
               />
             </div>
           </div>
@@ -1210,7 +1210,7 @@ const filteredBots = computed(() => {
                 v-model="dmSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="DM suchen..."
+                :placeholder="$t('discordModule.searchDMsPlaceholder')"
               />
             </div>
           </div>
@@ -1336,7 +1336,7 @@ const filteredBots = computed(() => {
                     v-if="backup.status === 'completed'"
                     @click.stop="viewBackupMessages(backup)"
                     class="p-2 text-gray-400 hover:text-primary-400 rounded-lg hover:bg-white/[0.04] transition-colors"
-                    title="Nachrichten anzeigen"
+                    :title="$t('discordModule.showMessagesTooltip')"
                   >
                     <ChatBubbleLeftRightIcon class="w-5 h-5" />
                   </button>
@@ -1407,7 +1407,7 @@ const filteredBots = computed(() => {
                 v-model="botSearchQuery"
                 type="text"
                 class="input pl-9 py-2 text-sm w-full"
-                placeholder="Bot suchen..."
+                :placeholder="$t('discordModule.searchBotsPlaceholder')"
               />
             </div>
           </div>
@@ -1449,7 +1449,7 @@ const filteredBots = computed(() => {
                     @click.stop="syncBot(bot)"
                     :disabled="isSyncingBot"
                     class="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
-                    title="Server synchronisieren"
+                    :title="$t('discordModule.syncServersTooltip')"
                   >
                     <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': isSyncingBot }" />
                   </button>

@@ -79,13 +79,13 @@ const backupForm = ref({
 
 // Options
 const backupTypes = [
-  { value: 'full', label: 'Vollbackup', description: 'Datenbank + Dateien' },
-  { value: 'database', label: 'Datenbank', description: 'Nur MySQL-Dump' },
-  { value: 'files', label: 'Dateien', description: 'Nur Uploads' },
+  { value: 'full', label: t('backups.fullBackup'), description: t('backups.fullBackupDesc') },
+  { value: 'database', label: t('backups.databaseOnly'), description: t('backups.databaseOnlyDesc') },
+  { value: 'files', label: t('backups.filesOnly'), description: t('backups.filesOnlyDesc') },
 ]
 
 const storageTypes = [
-  { value: 'local', label: 'Lokal', icon: FolderIcon },
+  { value: 'local', label: t('backups.localType'), icon: FolderIcon },
   { value: 's3', label: 'S3 / MinIO', icon: CloudArrowUpIcon },
   { value: 'sftp', label: 'SFTP', icon: ServerStackIcon },
   { value: 'webdav', label: 'WebDAV', icon: CloudArrowUpIcon },
@@ -464,7 +464,7 @@ onMounted(fetchData)
           :class="activeTab === 'targets' ? 'border-primary-500 text-white' : 'border-transparent text-gray-400 hover:text-white'"
         >
           <ServerStackIcon class="w-4 h-4 inline mr-2" />
-          Speicherziele
+          {{ $t('backups.storageTargetsTab') }}
         </button>
       </nav>
     </div>
@@ -847,7 +847,7 @@ onMounted(fetchData)
 
               <!-- Local Config -->
               <div v-if="targetForm.type === 'local'">
-                <label class="block text-sm font-medium text-gray-400 mb-1">Pfad</label>
+                <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.pathLabel') }}</label>
                 <input
                   v-model="targetForm.config.path"
                   type="text"
@@ -868,7 +868,7 @@ onMounted(fetchData)
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">Bucket</label>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.bucketLabel') }}</label>
                   <input
                     v-model="targetForm.config.bucket"
                     type="text"
@@ -900,7 +900,7 @@ onMounted(fetchData)
               <template v-if="targetForm.type === 'sftp'">
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Host</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.hostLabel') }}</label>
                     <input
                       v-model="targetForm.config.host"
                       type="text"
@@ -908,7 +908,7 @@ onMounted(fetchData)
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Port</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.portLabel') }}</label>
                     <input
                       v-model="targetForm.config.port"
                       type="number"
@@ -919,7 +919,7 @@ onMounted(fetchData)
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Benutzername</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.usernameLabel') }}</label>
                     <input
                       v-model="targetForm.config.username"
                       type="text"
@@ -927,7 +927,7 @@ onMounted(fetchData)
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.passwordLabel') }}</label>
                     <input
                       v-model="targetForm.config.password"
                       type="password"
@@ -936,7 +936,7 @@ onMounted(fetchData)
                   </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-400 mb-1">Pfad</label>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.pathLabel') }}</label>
                   <input
                     v-model="targetForm.config.path"
                     type="text"
@@ -959,7 +959,7 @@ onMounted(fetchData)
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Benutzername</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.usernameLabel') }}</label>
                     <input
                       v-model="targetForm.config.username"
                       type="text"
@@ -967,7 +967,7 @@ onMounted(fetchData)
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">{{ $t('backups.passwordLabel') }}</label>
                     <input
                       v-model="targetForm.config.password"
                       type="password"
@@ -983,7 +983,7 @@ onMounted(fetchData)
                   v-model="targetForm.is_default"
                   class="w-4 h-4 rounded border-white/[0.06] bg-white/[0.04] text-primary-500"
                 />
-                <span class="text-sm text-gray-400">Als Standard-Speicherziel festlegen</span>
+                <span class="text-sm text-gray-400">{{ $t('backups.setAsDefault') }}</span>
               </label>
 
               <div class="flex gap-2 pt-4">
@@ -1067,7 +1067,7 @@ onMounted(fetchData)
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Zeitplan</label>
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ $t('backups.scheduleLabel') }}</label>
                 <select
                   v-model="scheduleForm.cron_expression"
                   class="input"

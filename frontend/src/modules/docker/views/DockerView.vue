@@ -1124,7 +1124,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                       <button
                         @click="restartContainer(container)"
                         class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                        title="Neustarten"
+                        :title="$t('dockerModule.restartContainer')"
                       >
                         <ArrowPathIcon class="w-4 h-4" />
                       </button>
@@ -1181,7 +1181,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                     <button
                       @click="restartContainer(container)"
                       class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                      title="Neustarten"
+                      :title="$t('dockerModule.restartContainer')"
                     >
                       <ArrowPathIcon class="w-4 h-4" />
                     </button>
@@ -1196,7 +1196,7 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Images Tab -->
       <div v-if="activeTab === 'images'" class="space-y-4">
         <div v-if="images.length === 0" class="card p-8 text-center text-gray-400">
-          Keine Images gefunden
+          {{ $t('dockerModule.noImagesFound') }}
         </div>
         <div v-else class="overflow-x-auto">
           <table class="w-full">
@@ -1205,8 +1205,8 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <th class="pb-3 font-medium">Repository</th>
                 <th class="pb-3 font-medium">Tag</th>
                 <th class="pb-3 font-medium">ID</th>
-                <th class="pb-3 font-medium">Erstellt</th>
-                <th class="pb-3 font-medium">Größe</th>
+                <th class="pb-3 font-medium">{{ $t('dockerModule.created') }}</th>
+                <th class="pb-3 font-medium">{{ $t('dockerModule.size') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1283,10 +1283,10 @@ watch(() => projectStore.selectedProjectId, async () => {
       <!-- Backups Tab -->
       <div v-if="activeTab === 'backups'" class="space-y-4">
         <div class="flex justify-between items-center">
-          <p class="text-gray-400 text-sm">Backups deiner Stack-Konfigurationen (.env und docker-compose)</p>
+          <p class="text-gray-400 text-sm">{{ $t('dockerModule.backupsDescription') }}</p>
           <button @click="loadBackups" class="btn-secondary">
             <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loadingBackups }" />
-            Aktualisieren
+            {{ $t('dockerModule.refresh') }}
           </button>
         </div>
 
@@ -1296,8 +1296,8 @@ watch(() => projectStore.selectedProjectId, async () => {
 
         <div v-else-if="backups.length === 0" class="card p-8 text-center text-gray-400">
           <ArchiveBoxIcon class="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Backups vorhanden</p>
-          <p class="text-sm mt-2">Erstelle Backups über das Archiv-Symbol bei deinen Stacks</p>
+          <p>{{ $t('dockerModule.noBackupsAvailable') }}</p>
+          <p class="text-sm mt-2">{{ $t('dockerModule.createBackupsHint') }}</p>
         </div>
 
         <div v-else class="space-y-2">
@@ -1318,14 +1318,14 @@ watch(() => projectStore.selectedProjectId, async () => {
               <button
                 @click="viewBackup(backup)"
                 class="btn-icon text-gray-400 hover:text-white"
-                title="Anzeigen"
+                :title="$t('dockerModule.showTooltip')"
               >
                 <EyeIcon class="w-4 h-4" />
               </button>
               <button
                 @click="restoreBackup(backup, true)"
                 class="btn-icon text-green-400 hover:bg-green-500/20"
-                title="Wiederherstellen & Deployen"
+                :title="$t('dockerModule.restoreAndDeploy')"
               >
                 <ArrowUpTrayIcon class="w-4 h-4" />
               </button>
@@ -1470,7 +1470,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                           <button
                             @click="copyEnvValue(env.value)"
                             class="btn-icon p-1 text-gray-400 hover:text-white"
-                            title="Kopieren"
+                            :title="$t('dockerModule.copyTooltip')"
                           >
                             <ClipboardDocumentIcon class="w-3 h-3" />
                           </button>
@@ -1487,22 +1487,22 @@ watch(() => projectStore.selectedProjectId, async () => {
               <div class="flex justify-end">
                 <button @click="refreshLogs" class="btn-sm btn-secondary">
                   <ArrowPathIcon class="w-3 h-3" />
-                  Aktualisieren
+                  {{ $t('dockerModule.refresh') }}
                 </button>
               </div>
-              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-96 whitespace-pre-wrap">{{ containerLogs || 'Keine Logs verfügbar' }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-96 whitespace-pre-wrap">{{ containerLogs || $t('dockerModule.noLogsAvailable') }}</pre>
             </div>
 
             <!-- Stats Tab -->
             <div v-else-if="detailsTab === 'stats'" class="space-y-4">
               <div v-if="selectedContainer.state !== 'running'" class="text-center text-gray-400 py-8">
-                Stats sind nur für laufende Container verfügbar
+                {{ $t('dockerModule.statsOnlyRunning') }}
               </div>
               <template v-else-if="containerStats">
                 <div class="flex justify-end">
                   <button @click="refreshStats" class="btn-sm btn-secondary">
                     <ArrowPathIcon class="w-3 h-3" />
-                    Aktualisieren
+                    {{ $t('dockerModule.refresh') }}
                   </button>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -1595,7 +1595,7 @@ watch(() => projectStore.selectedProjectId, async () => {
             </p>
             <div class="flex items-center gap-2">
               <button @click="closeComposeModal" class="btn-secondary">
-                Schließen
+                {{ $t('dockerModule.close') }}
               </button>
               <button
                 v-if="composeFile?.writable"
@@ -1677,7 +1677,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <ArrowPathIcon v-if="deploying" class="w-4 h-4 animate-spin" />
                 <template v-else>
                   <PlayIcon class="w-4 h-4 mr-1" />
-                  Starten
+                  {{ $t('dockerModule.start') }}
                 </template>
               </button>
             </div>
@@ -1813,18 +1813,18 @@ DB_PASSWORD=secret"
                 </svg>
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-white">2FA-Verifizierung erforderlich</h3>
-                <p class="text-sm text-gray-400">SSH-Zugriff erfordert zusätzliche Sicherheit</p>
+                <h3 class="text-lg font-semibold text-white">{{ $t('dockerModule.twoFARequired') }}</h3>
+                <p class="text-sm text-gray-400">{{ $t('dockerModule.twoFADescription') }}</p>
               </div>
             </div>
 
             <p class="text-gray-300 mb-4">
-              Um auf den Remote-Server per SSH zuzugreifen, bestätige bitte mit deinem 2FA-Code.
+              {{ $t('dockerModule.twoFAPrompt') }}
             </p>
 
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">2FA-Code</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('dockerModule.twoFACode') }}</label>
                 <input
                   v-model="twoFactorCode"
                   type="text"
@@ -1856,7 +1856,7 @@ DB_PASSWORD=secret"
                   :disabled="verifying2FA || twoFactorCode.length < 6"
                 >
                   <ArrowPathIcon v-if="verifying2FA" class="w-4 h-4 mr-2 animate-spin" />
-                  {{ verifying2FA ? 'Verifiziere...' : 'Bestätigen' }}
+                  {{ verifying2FA ? $t('dockerModule.verifying') : $t('dockerModule.confirm') }}
                 </button>
               </div>
             </div>

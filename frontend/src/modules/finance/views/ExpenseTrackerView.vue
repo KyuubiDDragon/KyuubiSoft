@@ -406,9 +406,9 @@ async function downloadEuerPdf() {
     <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:30px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
         <div>
-          <h1 style="margin:0;font-size:24px;font-weight:700;">Einnahmen-Überschuss-Rechnung</h1>
+          <h1 style="margin:0;font-size:24px;font-weight:700;">${t('financeModule.incomeExpenseStatement')}</h1>
           <p style="margin:4px 0;color:#6b7280;">Wirtschaftsjahr ${data.year} · Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
-          <p style="margin:4px 0;font-size:11px;color:#9ca3af;">Hinweis: Diese Übersicht ersetzt nicht das amtliche ELSTER-Formular.</p>
+          <p style="margin:4px 0;font-size:11px;color:#9ca3af;">${t('financeModule.elsterDisclaimer')}</p>
         </div>
       </div>
 
@@ -428,7 +428,7 @@ async function downloadEuerPdf() {
         </div>
       </div>
 
-      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">Monatsübersicht</h3>
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">${t('financeModule.monthlyOverview')}</h3>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
         <thead>
           <tr style="background:#f9fafb;">

@@ -655,7 +655,7 @@ onMounted(() => {
                 :key="type.value"
                 @click="openLinkModal(type.value)"
                 class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-                :title="type.label + ' verknüpfen'"
+                :title="type.label + ' ' + $t('common.link')"
               >
                 <component :is="type.icon" class="w-5 h-5" />
               </button>

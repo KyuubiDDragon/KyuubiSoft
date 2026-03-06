@@ -449,7 +449,7 @@ onUnmounted(() => {
     <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-white">Audit Log</h2>
-        <span class="text-sm text-gray-400">{{ auditPagination.total }} Einträge</span>
+        <span class="text-sm text-gray-400">{{ auditPagination.total }} {{ $t('common.entries') }}</span>
       </div>
 
       <!-- Filters -->
@@ -574,7 +574,7 @@ onUnmounted(() => {
             :disabled="auditPagination.page <= 1"
             class="px-3 py-1 bg-white/[0.04] text-white rounded hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Zurück
+            {{ $t('common.back') }}
           </button>
           <span class="text-gray-400">Seite {{ auditPagination.page }} von {{ totalPages }}</span>
           <button

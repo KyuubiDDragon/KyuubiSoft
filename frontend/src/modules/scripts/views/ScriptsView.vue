@@ -157,7 +157,7 @@ async function saveScript() {
 }
 
 async function deleteScript(script) {
-  if (!confirm(`Script "${script.name}" wirklich löschen?`)) return
+  if (!confirm(t('scripts.confirmDelete', { name: script.name }))) return
   try {
     await api.delete(`/api/v1/scripts/${script.id}`)
     scripts.value = scripts.value.filter(s => s.id !== script.id)
@@ -516,7 +516,7 @@ onMounted(async () => {
           </div>
 
           <div v-else-if="history.length === 0" class="text-center py-12 text-gray-500 text-sm">
-            Noch keine Ausführungen
+            {{ $t('scripts.noExecutions') }}
           </div>
 
           <table v-else class="w-full text-xs">

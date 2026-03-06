@@ -156,7 +156,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
       <div class="flex-1 flex flex-col min-w-0">
         <div class="px-4 py-2 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
           <span class="text-xs text-gray-500 font-mono">{{ $t('invoices.htmlSource') }}</span>
-          <span v-if="hasEdits" class="text-xs text-amber-400">Geändert</span>
+          <span v-if="hasEdits" class="text-xs text-amber-400">{{ $t('invoices.modified') }}</span>
         </div>
         <textarea
           v-model="editedHtml"
@@ -183,7 +183,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
             <div class="w-8 h-8 border-4 border-gray-200 border-t-primary-400 rounded-full animate-spin"></div>
           </div>
         </div>
-        <p class="text-center text-xs text-gray-600 mt-3">Dies ist eine Vorschau. Das endgültige PDF kann leicht abweichen.</p>
+        <p class="text-center text-xs text-gray-600 mt-3">{{ $t('invoices.previewDisclaimer') }}</p>
       </div>
     </div>
   </div>

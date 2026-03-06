@@ -363,7 +363,7 @@ onUnmounted(() => {
         @click="requestNotificationPermission"
         class="w-full mt-2 text-xs text-primary-400 hover:text-primary-300"
       >
-        🔔 Benachrichtigungen aktivieren
+        🔔 {{ $t('toolbox.enableNotifications') }}
       </button>
     </div>
   </div>

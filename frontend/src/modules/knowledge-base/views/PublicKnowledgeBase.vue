@@ -244,7 +244,7 @@ onMounted(async () => {
         </h2>
 
         <div v-if="store.searchResults.length === 0 && !store.loading" class="text-center py-12">
-          <p class="text-gray-500">Keine Ergebnisse für "{{ searchQuery }}" gefunden.</p>
+          <p class="text-gray-500">{{ $t('knowledgeBase.noResultsFor', { query: searchQuery }) }}</p>
         </div>
 
         <div v-else class="space-y-3">

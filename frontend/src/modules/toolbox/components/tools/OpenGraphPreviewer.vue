@@ -301,7 +301,7 @@ const quickUrls = ['github.com', 'youtube.com', 'twitter.com']
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
       <p><strong>Open Graph</strong> Tags bestimmen, wie Links in sozialen Medien angezeigt werden.</p>
-      <p><strong>Twitter Cards</strong> ermöglichen reichhaltige Vorschauen auf Twitter.</p>
+      <p><strong>Twitter Cards</strong> {{ $t('toolbox.twitterCardsDescription') }}</p>
     </div>
   </div>
 </template>

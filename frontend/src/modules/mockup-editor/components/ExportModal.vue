@@ -121,7 +121,7 @@ const close = () => {
             <Transition name="slide-down">
               <div v-if="format === 'jpg'" class="space-y-3">
                 <label class="block text-sm font-medium text-gray-300">
-                  Qualität: {{ quality }}%
+                  {{ $t('mockupEditor.quality') }}: {{ quality }}%
                 </label>
                 <input
                   v-model="quality"

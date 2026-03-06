@@ -203,7 +203,7 @@ onMounted(async () => {
                 <!-- Trigger count -->
                 <div class="flex items-center gap-1.5 text-gray-500">
                   <GlobeAltIcon class="w-4 h-4 shrink-0" />
-                  <span>{{ rule.trigger_count || 0 }}x ausgelöst</span>
+                  <span>{{ $t('notificationRules.triggered', { count: rule.trigger_count || 0 }) }}</span>
                 </div>
 
                 <!-- Last triggered -->

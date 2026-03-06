@@ -423,7 +423,7 @@ onUnmounted(() => {
           <button @click="handleReset"
                   class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
             <ArrowPathIcon class="w-4 h-4" />
-            <span class="text-sm">Zurücksetzen</span>
+            <span class="text-sm">{{ $t('common.reset') }}</span>
           </button>
 
           <button @click="showTemplateSelector = true"
@@ -473,8 +473,8 @@ onUnmounted(() => {
         <template v-else>
           <div class="text-center">
             <PhotoIcon class="w-16 h-16 mx-auto text-gray-600" />
-            <h2 class="mt-4 text-xl font-semibold text-gray-400">Wähle ein Template</h2>
-            <p class="mt-2 text-gray-500">Wähle ein Template aus der Liste, um zu beginnen.</p>
+            <h2 class="mt-4 text-xl font-semibold text-gray-400">{{ $t('mockupEditor.selectTemplate') }}</h2>
+            <p class="mt-2 text-gray-500">{{ $t('mockupEditor.selectTemplateHint') }}</p>
           </div>
         </template>
       </div>

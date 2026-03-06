@@ -692,7 +692,7 @@ function formatDate(dateStr) {
                   {{ getPriorityLabel(viewingCard.priority) }}
                 </span>
                 <span v-if="viewingCard.due_date" class="text-xs text-gray-400">
-                  Fällig: {{ formatDate(viewingCard.due_date) }}
+                  {{ $t('kanban.dueDate') }}: {{ formatDate(viewingCard.due_date) }}
                 </span>
                 <span v-if="viewingCard.assignee_name" class="text-xs text-gray-400">
                   {{ viewingCard.assignee_name }}
@@ -740,7 +740,7 @@ function formatDate(dateStr) {
             <!-- Attachments -->
             <div v-if="viewingCard.attachments?.length">
               <h4 class="text-sm font-medium text-gray-400 mb-2">
-                Anhänge ({{ viewingCard.attachments.length }})
+                {{ $t('kanban.attachments') }} ({{ viewingCard.attachments.length }})
               </h4>
               <div class="grid grid-cols-2 gap-2">
                 <img

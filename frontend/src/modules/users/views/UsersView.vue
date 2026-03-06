@@ -93,7 +93,7 @@ async function approveUser(user) {
 }
 
 async function rejectUser(user) {
-  if (!confirm(`Möchtest du die Registrierung von "${user.username || user.email}" wirklich ablehnen? Der Benutzer wird gelöscht.`)) {
+  if (!confirm(t('users.confirmRejectRegistration', { name: user.username || user.email }))) {
     return
   }
   try {
@@ -952,7 +952,7 @@ function canDeleteUser(user) {
               @click="closeModals"
               class="btn-secondary"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>

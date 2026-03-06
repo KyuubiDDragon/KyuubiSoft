@@ -458,7 +458,7 @@ const positionLabel = computed(() => {
     <!-- Info -->
     <div class="mt-4 p-3 bg-white/[0.02] rounded-lg border border-white/[0.06]">
       <p class="text-xs text-gray-500">
-        💡 Chips erscheinen {{ positionLabel }} und werden nach Kategorie in Reihen sortiert.
+        💡 {{ $t('mockupEditor.chipsHint', { position: positionLabel }) }}
       </p>
     </div>
   </div>

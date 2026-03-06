@@ -513,7 +513,7 @@ function canDeleteRole(role) {
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06] flex-shrink-0">
             <div>
               <h3 class="text-lg font-semibold text-white">
-                Berechtigungen für {{ selectedRole?.name }}
+                {{ $t('users.permissionsFor', { name: selectedRole?.name }) }}
               </h3>
               <p v-if="selectedRole?.description" class="text-sm text-gray-400">
                 {{ selectedRole?.description }}
@@ -529,7 +529,7 @@ function canDeleteRole(role) {
             <!-- System role warning -->
             <div v-if="selectedRole?.is_system" class="mb-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
               <p class="text-sm text-yellow-400">
-                Dies ist eine geschützte Systemrolle ({{ selectedRole?.name }}). Berechtigungen können nicht geändert werden.
+                {{ $t('users.protectedRoleHint', { name: selectedRole?.name }) }}
               </p>
             </div>
 

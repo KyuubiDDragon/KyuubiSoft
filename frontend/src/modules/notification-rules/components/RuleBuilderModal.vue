@@ -456,7 +456,7 @@ async function handleSave() {
             class="btn-secondary"
           >
             <ChevronLeftIcon class="w-4 h-4 mr-1" />
-            Zurück
+            {{ $t('common.back') }}
           </button>
           <div v-else></div>
 

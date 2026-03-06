@@ -1023,7 +1023,7 @@ onMounted(async () => {
             <div class="flex-1 flex flex-col overflow-hidden border-l border-white/[0.06] pl-4">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-medium text-gray-400">
-                  {{ selectedVersion ? `Vorschau - Version ${selectedVersion.version_number}` : 'Wähle eine Version' }}
+                  {{ selectedVersion ? $t('documents.previewVersion', { n: selectedVersion.version_number }) : $t('documents.selectVersion') }}
                 </h3>
                 <button
                   v-if="selectedVersion"

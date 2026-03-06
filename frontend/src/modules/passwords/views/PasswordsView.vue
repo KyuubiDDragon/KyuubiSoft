@@ -611,7 +611,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
             ></div>
           </div>
 
-          <p class="text-sm text-gray-400">Gültig noch {{ totpData.seconds_remaining }}s</p>
+          <p class="text-sm text-gray-400">{{ $t('passwords.validFor', { seconds: totpData.seconds_remaining }) }}</p>
 
           <div class="flex gap-3 mt-6">
             <button @click="copyToClipboard(totpData.code, 'totp')" class="btn-secondary flex-1">

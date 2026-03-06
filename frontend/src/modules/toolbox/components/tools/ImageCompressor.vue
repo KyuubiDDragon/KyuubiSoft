@@ -148,7 +148,7 @@ watch([quality, maxWidth, maxHeight, maintainAspect, outputFormat], () => {
     <div v-if="originalImage" class="grid grid-cols-2 gap-4">
       <div>
         <label class="text-sm text-gray-400 mb-1 block">
-          Qualität: {{ quality }}%
+          {{ $t('toolbox.quality') }}: {{ quality }}%
         </label>
         <input
           v-model.number="quality"

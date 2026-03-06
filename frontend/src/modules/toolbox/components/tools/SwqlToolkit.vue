@@ -1415,7 +1415,7 @@ $query = @"
 ${generatedQuery.value}
 "@
 
-# Query ausführen
+# Execute query
 $result = Get-SwisData $swis $query
 
 # Ergebnis anzeigen

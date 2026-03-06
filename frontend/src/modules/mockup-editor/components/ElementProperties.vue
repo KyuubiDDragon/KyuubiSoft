@@ -344,7 +344,7 @@ const typeIcons = {
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
             <div class="bg-white/[0.02] rounded-lg p-3">
-              <span class="text-gray-500">Größe</span>
+              <span class="text-gray-500">{{ $t('mockupEditor.size') }}</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
           </div>
@@ -360,7 +360,7 @@ const typeIcons = {
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
             <div class="bg-white/[0.02] rounded-lg p-3">
-              <span class="text-gray-500">Größe</span>
+              <span class="text-gray-500">{{ $t('mockupEditor.size') }}</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
           </div>
@@ -415,7 +415,7 @@ const typeIcons = {
               <p class="text-white">{{ mockupStore.selectedElement.x }}, {{ mockupStore.selectedElement.y }}</p>
             </div>
             <div class="bg-white/[0.02] rounded-lg p-3">
-              <span class="text-gray-500">Größe</span>
+              <span class="text-gray-500">{{ $t('mockupEditor.size') }}</span>
               <p class="text-white">{{ mockupStore.selectedElement.width }} x {{ mockupStore.selectedElement.height }}</p>
             </div>
           </div>

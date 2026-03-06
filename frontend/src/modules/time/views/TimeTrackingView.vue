@@ -388,7 +388,7 @@ watch(runningEntry, (val) => {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ stats.totals?.entry_count || 0 }}</p>
-            <p class="text-sm text-gray-400">Einträge</p>
+            <p class="text-sm text-gray-400">{{ $t('common.entries') }}</p>
           </div>
         </div>
       </div>
@@ -466,7 +466,7 @@ watch(runningEntry, (val) => {
                     </span>
                     <span class="flex items-center gap-1">
                       <CalendarIcon class="w-4 h-4" />
-                      {{ formatTime(entry.started_at) }} - {{ entry.ended_at ? formatTime(entry.ended_at) : 'läuft' }}
+                      {{ formatTime(entry.started_at) }} - {{ entry.ended_at ? formatTime(entry.ended_at) : $t('time.running') }}
                     </span>
                     <span v-if="entry.is_billable" class="flex items-center gap-1 text-green-400">
                       <CurrencyEuroIcon class="w-4 h-4" />
@@ -503,7 +503,7 @@ watch(runningEntry, (val) => {
       <!-- Empty state -->
       <div v-if="groupedEntries.length === 0" class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 text-center">
         <ClockIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
-        <p class="text-gray-400">Keine Zeiteinträge vorhanden</p>
+        <p class="text-gray-400">{{ $t('time.noTimeEntries') }}</p>
         <p class="text-sm text-gray-500 mt-1">Starte den Timer oben um Zeit zu erfassen</p>
       </div>
     </div>

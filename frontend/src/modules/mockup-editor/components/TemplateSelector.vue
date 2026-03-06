@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMockupStore } from '../stores/mockupStore'
 import {
   PhotoIcon,
@@ -12,6 +13,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const emit = defineEmits(['select'])
+const { t } = useI18n()
 const mockupStore = useMockupStore()
 
 // Load custom templates on mount
@@ -60,7 +62,7 @@ const selectCustomTemplate = (template) => {
 
 const deleteCustomTemplate = async (e, template) => {
   e.stopPropagation()
-  if (confirm(`Template "${template.name}" wirklich löschen?`)) {
+  if (confirm(t('mockupEditor.confirmDeleteTemplate', { name: template.name }))) {
     try {
       await mockupStore.deleteCustomTemplate(template.id)
     } catch (err) {

@@ -268,7 +268,7 @@ onMounted(() => {
                   Antwort: {{ category.sla_response_hours }}h
                 </div>
                 <div v-if="category.sla_resolution_hours" class="text-gray-400">
-                  Lösung: {{ category.sla_resolution_hours }}h
+                  {{ $t('tickets.resolution') }}: {{ category.sla_resolution_hours }}h
                 </div>
               </div>
 
@@ -399,7 +399,7 @@ onMounted(() => {
 
             <!-- Parent Category -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Übergeordnete Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.parentCategory') }}</label>
               <select
                 v-model="form.parent_id"
                 class="select"
@@ -443,7 +443,7 @@ onMounted(() => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">SLA Lösungszeit (Stunden)</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.slaResolutionTime') }}</label>
                 <input
                   v-model.number="form.sla_resolution_hours"
                   type="number"

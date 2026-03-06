@@ -300,7 +300,7 @@ onUnmounted(() => {
       <div v-if="!selectedContainer && !selectedFile" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <DocumentTextIcon class="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p class="text-sm">Log-Quelle auswählen</p>
+          <p class="text-sm">{{ $t('logs.selectLogSource') }}</p>
         </div>
       </div>
 
@@ -369,7 +369,7 @@ onUnmounted(() => {
 
         <!-- Log count -->
         <div class="px-4 py-1 border-b border-white/[0.06] text-xs text-gray-600 flex-shrink-0">
-          {{ filteredLogs.length.toLocaleString() }} Einträge
+          {{ filteredLogs.length.toLocaleString() }} {{ $t('common.entries') }}
           <span v-if="filterText || filterLevel">(gefiltert von {{ logs.length.toLocaleString() }})</span>
         </div>
 

@@ -152,7 +152,7 @@ async function toggleFavorite() {
 async function deleteContact() {
   if (!contact.value) return
   if (!await confirm({
-    message: `"${contact.value.first_name} ${contact.value.last_name}" wirklich löschen? Alle Aktivitäten werden ebenfalls gelöscht.`,
+    message: t('contacts.confirmDeleteWithActivities', { name: `${contact.value.first_name} ${contact.value.last_name}` }),
     type: 'danger',
     confirmText: t('common.delete'),
   })) return

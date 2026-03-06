@@ -185,9 +185,9 @@ function regenerate() {
 
     <!-- Stats -->
     <div class="flex gap-4 text-sm text-gray-400">
-      <span>{{ stats.paragraphs }} Absätze</span>
-      <span>{{ stats.sentences }} Sätze</span>
-      <span>{{ stats.words }} Wörter</span>
+      <span>{{ stats.paragraphs }} {{ $t('toolbox.paragraphs') }}</span>
+      <span>{{ stats.sentences }} {{ $t('toolbox.sentences') }}</span>
+      <span>{{ stats.words }} {{ $t('toolbox.words') }}</span>
       <span>{{ stats.chars }} Zeichen</span>
     </div>
 

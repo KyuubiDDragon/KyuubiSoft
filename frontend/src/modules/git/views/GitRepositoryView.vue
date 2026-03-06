@@ -507,7 +507,7 @@ onMounted(() => {
         <p class="mt-2 text-gray-500">{{ $t('gitRepo.addFirstRepo') }}</p>
         <button @click="showModal = true" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Repository hinzufügen
+          {{ $t('gitRepo.addRepository') }}
         </button>
       </div>
     </div>

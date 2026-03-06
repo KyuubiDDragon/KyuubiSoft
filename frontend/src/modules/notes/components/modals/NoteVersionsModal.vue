@@ -65,9 +65,9 @@ function formatRelativeTime(date) {
   const diffDays = Math.floor(diffMs / 86400000)
 
   if (diffMins < 1) return t('notes.time.justNow')
-  if (diffMins < 60) return `vor ${diffMins} Min.`
-  if (diffHours < 24) return `vor ${diffHours} Std.`
-  if (diffDays < 7) return `vor ${diffDays} Tagen`
+  if (diffMins < 60) return t('notes.time.minutesAgo', { count: diffMins })
+  if (diffHours < 24) return t('notes.time.hoursAgo', { count: diffHours })
+  if (diffDays < 7) return t('notes.time.daysAgo', { count: diffDays })
   return formatDate(date)
 }
 

@@ -548,7 +548,7 @@ function canDeleteRole(role) {
               <input
                 v-model="permissionSearch"
                 type="text"
-                placeholder=$t('users.berechtigungenSuchen')
+                :placeholder="$t('users.berechtigungenSuchen')"
                 class="input"
               />
             </div>

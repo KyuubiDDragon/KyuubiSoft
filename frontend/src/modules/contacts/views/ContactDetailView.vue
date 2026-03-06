@@ -528,7 +528,7 @@ function formatDate(dateStr) {
 
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
-              <textarea v-model="activityForm.description" rows="3" class="input w-full resize-none" placeholder=$t('common.description')></textarea>
+              <textarea v-model="activityForm.description" rows="3" class="input w-full resize-none" :placeholder="$t('common.description')"></textarea>
             </div>
 
             <div>

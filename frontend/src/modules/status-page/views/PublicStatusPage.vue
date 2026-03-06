@@ -201,7 +201,7 @@ function formatDate(dateStr) {
 
       <!-- Monitors Grid -->
       <div v-if="data.monitors && data.monitors.length > 0" class="space-y-6 mb-8">
-        <template v-for=$t('statusPage.groupGiInGroupedmonitors') :key="gi">
+        <template v-for="(group, gi) in groupedMonitors" :key="gi">
           <div v-if="group.name" class="mb-2">
             <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ group.name }}</h3>
           </div>

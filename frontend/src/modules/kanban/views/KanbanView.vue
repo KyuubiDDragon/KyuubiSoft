@@ -2552,7 +2552,7 @@ onMounted(async () => {
                       <input
                         v-model="publicShareForm.password"
                         type="text"
-                        placeholder=$t('kanbanModule.passwortFuerDenZugriff')
+                        :placeholder="$t('kanbanModule.passwortFuerDenZugriff')"
                         class="w-full bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                       />
                     </div>

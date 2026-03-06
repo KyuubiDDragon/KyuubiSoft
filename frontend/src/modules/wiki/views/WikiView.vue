@@ -582,7 +582,7 @@ onMounted(async () => {
               v-model="editForm.title"
               type="text"
               class="w-full text-3xl font-bold bg-transparent text-white border-none outline-none placeholder-gray-600"
-              placeholder=$t('wiki.seitentitel')
+              :placeholder="$t('wiki.seitentitel')"
             />
             <h1 v-else class="text-3xl font-bold text-white">{{ wikiStore.currentPage?.title || $t('wiki.neueSeite') }}</h1>
 

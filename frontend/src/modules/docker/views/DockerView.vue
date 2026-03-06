@@ -1036,14 +1036,14 @@ watch(() => projectStore.selectedProjectId, async () => {
                 <button
                   @click="backupStack(stack.name)"
                   class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
-                  title=$t('backups.createBackup')
+                  :title="$t('backups.createBackup')"
                 >
                   <ArchiveBoxIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="openComposeModal(stack.name)"
                   class="btn-icon text-gray-400 hover:text-white hover:bg-white/[0.04]"
-                  title=$t('dockerModule.composedateiAnzeigen')
+                  :title="$t('dockerModule.composedateiAnzeigen')"
                 >
                   <CodeBracketIcon class="w-4 h-4" />
                 </button>
@@ -1109,7 +1109,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                         v-if="container.state !== 'running'"
                         @click="startContainer(container)"
                         class="btn-icon text-green-400 hover:bg-green-500/20"
-                        title=$t('server.starten')
+                        :title="$t('server.starten')"
                       >
                         <PlayIcon class="w-4 h-4" />
                       </button>
@@ -1166,7 +1166,7 @@ watch(() => projectStore.selectedProjectId, async () => {
                       v-if="container.state !== 'running'"
                       @click="startContainer(container)"
                       class="btn-icon text-green-400 hover:bg-green-500/20"
-                      title=$t('server.starten')
+                      :title="$t('server.starten')"
                     >
                       <PlayIcon class="w-4 h-4" />
                     </button>

@@ -668,7 +668,7 @@ const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
                   type="text"
                   required
                   class="input"
-                  placeholder=$t('calendarView.eventName')
+                  :placeholder="$t('calendarView.eventName')"
                 />
               </div>
 

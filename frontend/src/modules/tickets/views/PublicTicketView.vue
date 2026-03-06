@@ -1,9 +1,8 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'

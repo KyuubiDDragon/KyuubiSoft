@@ -1,9 +1,8 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   PencilSquareIcon,
@@ -234,7 +233,7 @@ onMounted(async () => {
               <button
                 @click.stop="handleTest(rule)"
                 class="btn-icon-sm text-gray-400 hover:text-amber-400"
-                title=$t('notificationRules.regelTesten')
+                :title="$t('notificationRules.regelTesten')"
               >
                 <PlayIcon class="w-4 h-4" />
               </button>

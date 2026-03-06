@@ -961,7 +961,11 @@
     "duration": "Duration",
     "custom": "Custom",
     "customContractDescription": "Custom contract text",
-    "legalNotice": "By clicking \"Sign contract\" you confirm that you have read and agree to the contract."
+    "legalNotice": "By clicking \"Sign contract\" you confirm that you have read and agree to the contract.",
+    "customContractHint": "Enter your individual contract text here. You can use the editor to format the text.",
+    "enterContractText": "Enter contract text...",
+    "noticePeriodHint": "Number of days before end date by which notice must be given.",
+    "saveAsTemplateHint": "Saves the contract text as a reusable template for future contracts."
   },
   "contractsModule": {
     "24Stunden": "24 hours",

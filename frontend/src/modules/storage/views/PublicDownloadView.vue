@@ -1,9 +1,8 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import {
   DocumentIcon,
@@ -251,7 +250,7 @@ onMounted(() => {
         <!-- Download Section -->
         <div class="p-4 pt-0">
           <!-- Password Field -->
-          <div v-if=$t('storage.showpasswordfieldCandownload') class="mb-4">
+          <div v-if="showPasswordField && canDownload" class="mb-4">
             <label class="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
               <LockClosedIcon class="w-4 h-4" />
               Passwort erforderlich
@@ -279,14 +278,14 @@ onMounted(() => {
           <!-- Download Button -->
           <button
             @click="downloadFile"
-            :disabled=$t('storage.candownloadIsdownloadingShowpasswordfieldPassword')
+            :disabled="!canDownload || isDownloading || (showPasswordField && !password)"
             class="w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-purple-600 rounded-xl text-white font-medium transition-all shadow-float shadow-indigo-500/25"
           >
-            <template v-if=$t('storage.isdownloading')>
+            <template v-if="isDownloading">
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>{{ $t('storage.wirdHeruntergeladen') }}</span>
             </template>
-            <template v-else-if=$t('storage.candownload')>
+            <template v-else-if="!canDownload">
               <ExclamationTriangleIcon class="w-5 h-5" />
               <span>Download-Limit erreicht</span>
             </template>

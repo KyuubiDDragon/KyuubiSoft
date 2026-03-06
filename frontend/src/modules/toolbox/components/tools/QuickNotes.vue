@@ -273,7 +273,7 @@ import { computed } from 'vue'
         <textarea
           v-model="currentNote.content"
           class="flex-1 p-4 bg-transparent text-gray-300 resize-none focus:outline-none"
-          placeholder=$t('toolbox.notizHierEingeben')
+          :placeholder="$t('toolbox.notizHierEingeben')"
         ></textarea>
 
         <!-- Status bar -->

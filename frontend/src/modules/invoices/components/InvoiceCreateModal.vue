@@ -257,7 +257,7 @@ const isQuoteOrProforma = computed(() => ['quote', 'proforma'].includes(form.val
               <!-- Payment terms -->
               <div v-if="!isQuoteOrProforma">
                 <label class="label">{{ $t('invoices.paymentTerms') }}</label>
-                <input v-model="form.payment_terms" type="text" class="input" placeholder=$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum') />
+                <input v-model="form.payment_terms" type="text" class="input" :placeholder="$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum')" />
               </div>
 
               <!-- Legal Notices -->

@@ -151,11 +151,11 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
           <div class="text-white">{{ result.parsed.registrantCountry }}</div>
         </div>
 
-        <div v-if=$t('toolbox.resultparsednameserverslength') class="p-3 bg-white/[0.04] rounded-lg col-span-2">
+        <div v-if="result.parsed.nameservers?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Nameserver</span>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
-              v-for=$t('toolbox.nsInResultparsednameservers')
+              v-for="ns in result.parsed.nameservers"
               :key="ns"
               class="px-2 py-0.5 text-xs bg-white/[0.08] text-gray-300 rounded font-mono"
             >

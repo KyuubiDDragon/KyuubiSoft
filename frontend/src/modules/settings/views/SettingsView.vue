@@ -2208,7 +2208,7 @@ watch(activeTab, (tab) => {
             <p class="text-sm text-gray-400">{{ $t('settingsModule.paymentTermsDescription') }}</p>
             <div>
               <label class="label">{{ $t('settingsModule.paymentDeadline') }}</label>
-              <input v-model="invoiceSettings.invoice_default_payment_terms" type="text" class="input" placeholder=$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum') />
+              <input v-model="invoiceSettings.invoice_default_payment_terms" type="text" class="input" :placeholder="$t('invoicesModule.zahlbarInnerhalbVon30TagenNachRechnungsdatum')" />
             </div>
           </div>
 

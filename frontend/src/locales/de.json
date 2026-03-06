@@ -961,7 +961,11 @@
     "duration": "Laufzeit",
     "custom": "Individuell",
     "customContractDescription": "Eigener Vertragstext",
-    "legalNotice": "Mit dem Klick auf \"Vertrag unterschreiben\" bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen."
+    "legalNotice": "Mit dem Klick auf \"Vertrag unterschreiben\" bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen.",
+    "customContractHint": "Gib hier deinen individuellen Vertragstext ein. Du kannst den Editor zur Formatierung verwenden.",
+    "enterContractText": "Vertragstext eingeben...",
+    "noticePeriodHint": "Anzahl Tage vor Enddatum bis wann gekündigt werden muss.",
+    "saveAsTemplateHint": "Speichert den Vertragstext als wiederverwendbare Vorlage für künftige Verträge."
   },
   "contractsModule": {
     "24Stunden": "24 Stunden",

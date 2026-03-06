@@ -980,7 +980,7 @@ onMounted(loadExpenseData)
                 </div>
                 <div>
                   <label class="label">{{ $t('financeModule.route') }}</label>
-                  <input v-model="expenseForm.mileage_route" type="text" class="input" placeholder=$t('financeModule.zbMuenchenAugsburg') />
+                  <input v-model="expenseForm.mileage_route" type="text" class="input" :placeholder="$t('financeModule.zbMuenchenAugsburg')" />
                 </div>
                 <div>
                   <label class="label">{{ $t('financeModule.amount') }} (€) <span class="text-gray-500 font-normal">— {{ $t('financeModule.autoFromKm') }}</span></label>

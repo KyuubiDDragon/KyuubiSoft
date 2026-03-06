@@ -1,9 +1,5 @@
 <script setup>
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import {
@@ -66,7 +62,7 @@ async function loadContract(pw) {
     }
     contract.value = resData
     state.value = 'view'
-    if (contract.value.party_b_signed_at) {
+    if (contraclabels.value.party_b_signed_at) {
       state.value = 'signed'
     }
   } catch (e) {
@@ -74,20 +70,20 @@ async function loadContract(pw) {
     const msg = e.response?.data?.message || ''
     if (status === 401 && (msg.includes(t('auth.password')) || msg.includes('password'))) {
       if (pw) {
-        passwordError.value = t.value.wrongPassword
+        passwordError.value = labels.value.wrongPassword
         state.value = 'password'
       } else {
         state.value = 'password'
       }
     } else if (status === 403) {
       state.value = 'error'
-      errorMessage.value = msg || t.value.linkExpired
+      errorMessage.value = msg || labels.value.linkExpired
     } else if (status === 404) {
       state.value = 'error'
-      errorMessage.value = t.value.contractNotFound
+      errorMessage.value = labels.value.contractNotFound
     } else {
       state.value = 'error'
-      errorMessage.value = msg || t.value.genericError
+      errorMessage.value = msg || labels.value.genericError
     }
   }
 }
@@ -175,7 +171,7 @@ async function submitSignature() {
     await axios.post(`${apiBase}/contracts/public/${token.value}/sign`, payload)
     state.value = 'signed'
   } catch (e) {
-    errorMessage.value = e.response?.data?.message || t.value.signError
+    errorMessage.value = e.response?.data?.message || labels.value.signError
   } finally {
     isSigning.value = false
   }
@@ -231,47 +227,47 @@ const paymentLabels = {
 const contractTypeLabel = computed(() => contractTypeLabels[lang.value]?.[contract.value?.contract_type] || contract.value?.contract_type)
 const paymentLabel = computed(() => paymentLabels[lang.value]?.[contract.value?.payment_schedule] || contract.value?.payment_schedule || '-')
 
-const t = computed(() => {
+const labels = computed(() => {
   if (isDe.value) return {
-    contractDocument: t('contracts.contractDocumentTitle'),
-    loading: t('contracts.contractLoading'),
-    passwordRequired: t('contracts.passwordRequired'),
-    passwordProtected: t('contracts.documentPasswordProtected'),
-    passwordPlaceholder: t('contracts.enterPassword'),
-    checking: t('contracts.checking'),
+    contractDocument: 'Vertragsdokument',
+    loading: 'Vertrag wird geladen...',
+    passwordRequired: 'Passwort erforderlich',
+    passwordProtected: 'Dieses Dokument ist passwortgeschützt. Bitte geben Sie das Passwort ein.',
+    passwordPlaceholder: 'Passwort eingeben...',
+    checking: 'Wird geprüft...',
     accessDocument: 'Zugang erhalten',
-    accessDenied: t('contracts.accessDenied'),
+    accessDenied: 'Zugang verweigert',
     serviceProvider: 'Auftragnehmer',
     client: 'Auftraggeber',
     signedOn: 'Unterschrieben am',
-    startDate: t('contracts.startDate'),
-    endDate: t('contracts.endDate'),
+    startDate: 'Startdatum',
+    endDate: 'Enddatum',
     indefinite: 'Unbefristet',
     paymentSchedule: 'Zahlungsplan',
-    noticePeriod: t('contracts.noticePeriod'),
+    noticePeriod: 'Kündigungsfrist',
     days: 'Tage',
-    contractClauses: t('contracts.contractClauses'),
+    contractClauses: 'Vertragsklauseln',
     notes: 'Anmerkungen',
-    signContract: t('contracts.signContract'),
-    signHint: t('contracts.drawSignatureInField'),
+    signContract: 'Vertrag unterschreiben',
+    signHint: 'Zeichnen Sie Ihre Unterschrift in das Feld unten. Sie können auch den Touchscreen verwenden.',
     yourName: 'Ihr Name',
     fullName: 'Vor- und Nachname...',
-    signature: t('contracts.signature'),
-    clear: t('common.delete'),
-    pleaseSign: t('contracts.pleaseSignAbove'),
-    saving: t('contracts.saving'),
-    signBinding: t('contracts.signContractBinding'),
-    legalNotice: t('contracts.legalNotice'),
-    contractSigned: t('contracts.contractSigned'),
-    thankYou: t('contracts.signatureSuccessMessage'),
-    contractLabel: t('contracts.contractDocument'),
+    signature: 'Unterschrift',
+    clear: 'Löschen',
+    pleaseSign: 'Bitte unterschreiben Sie oben',
+    saving: 'Wird gespeichert...',
+    signBinding: 'Vertrag unterschreiben',
+    legalNotice: 'Mit dem Klick auf "Vertrag unterschreiben" bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen.',
+    contractSigned: 'Vertrag unterschrieben',
+    thankYou: 'Vielen Dank! Ihre Unterschrift wurde erfolgreich gespeichert.',
+    contractLabel: 'Vertrag:',
     numberLabel: 'Nummer:',
     signedOnLabel: 'Unterschrieben am:',
-    wrongPassword: t('checklists.wrongPassword'),
+    wrongPassword: 'Falsches Passwort',
     linkExpired: 'Dieser Link ist abgelaufen.',
-    contractNotFound: t('contracts.contractNotFound'),
-    genericError: t('common.errorOccurred'),
-    signError: t('contracts.errorSigning'),
+    contractNotFound: 'Vertrag nicht gefunden.',
+    genericError: 'Ein Fehler ist aufgetreten.',
+    signError: 'Fehler beim Unterschreiben des Vertrags.',
   }
   return {
     contractDocument: 'Contract Document',
@@ -323,7 +319,7 @@ const t = computed(() => {
     <div class="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 shadow-sm">
       <div class="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
         <DocumentTextIcon class="w-6 h-6 text-blue-600" />
-        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ t.contractDocument }}</h1>
+        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ labels.contractDocument }}</h1>
       </div>
     </div>
 
@@ -331,7 +327,7 @@ const t = computed(() => {
       <!-- Loading -->
       <div v-if="state === 'loading'" class="text-center py-20">
         <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p class="text-gray-500 dark:text-gray-400">{{ t.loading }}</p>
+        <p class="text-gray-500 dark:text-gray-400">{{ labels.loading }}</p>
       </div>
 
       <!-- Password Required -->
@@ -340,15 +336,15 @@ const t = computed(() => {
           <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
             <LockClosedIcon class="w-7 h-7 text-amber-600" />
           </div>
-          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ t.passwordRequired }}</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">{{ t.passwordProtected }}</p>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ labels.passwordRequired }}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">{{ labels.passwordProtected }}</p>
 
           <form @submit.prevent="submitPassword" class="space-y-4">
             <div>
               <input
                 v-model="password"
                 type="password"
-                :placeholder="t.passwordPlaceholder"
+                :placeholder="labels.passwordPlaceholder"
                 class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-dark-600 text-gray-900 dark:text-gray-100 dark:bg-dark-700 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-colors"
                 autofocus
               />
@@ -359,7 +355,7 @@ const t = computed(() => {
               :disabled="!password || isSubmitting"
               class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {{ isSubmitting ? t.checking : t.accessDocument }}
+              {{ isSubmitting ? labels.checking : labels.accessDocument }}
             </button>
           </form>
         </div>
@@ -371,7 +367,7 @@ const t = computed(() => {
           <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
             <ExclamationTriangleIcon class="w-7 h-7 text-red-600" />
           </div>
-          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ t.accessDenied }}</h2>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ labels.accessDenied }}</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ errorMessage }}</p>
         </div>
       </div>
@@ -397,18 +393,18 @@ const t = computed(() => {
           <!-- Parties -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border-b border-gray-100 dark:border-dark-700">
             <div>
-              <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{{ t.serviceProvider }}</div>
+              <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{{ labels.serviceProvider }}</div>
               <div class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ contract.party_a_name }}</div>
               <div v-if="contract.party_a_company" class="text-sm text-gray-600 dark:text-gray-400">{{ contract.party_a_company }}</div>
               <div v-if="contract.party_a_address" class="text-sm text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ contract.party_a_address }}</div>
               <div v-if="contract.party_a_email" class="text-sm text-gray-500 dark:text-gray-400">{{ contract.party_a_email }}</div>
               <div v-if="contract.party_a_signed_at" class="text-sm text-green-600 font-medium mt-2">
                 <CheckCircleIcon class="w-4 h-4 inline-block mr-1" />
-                {{ t.signedOn }} {{ formatDate(contract.party_a_signed_at) }}
+                {{ labels.signedOn }} {{ formatDate(contract.party_a_signed_at) }}
               </div>
             </div>
             <div>
-              <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{{ t.client }}</div>
+              <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">{{ labels.client }}</div>
               <div class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ contract.party_b_name }}</div>
               <div v-if="contract.party_b_company" class="text-sm text-gray-600 dark:text-gray-400">{{ contract.party_b_company }}</div>
               <div v-if="contract.party_b_address" class="text-sm text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ contract.party_b_address }}</div>
@@ -419,32 +415,32 @@ const t = computed(() => {
           <!-- Contract Details -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6 p-8 border-b border-gray-100 dark:border-dark-700">
             <div>
-              <div class="text-xs text-gray-400 uppercase font-semibold">{{ t.startDate }}</div>
+              <div class="text-xs text-gray-400 uppercase font-semibold">{{ labels.startDate }}</div>
               <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ formatDate(contract.start_date) }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400 uppercase font-semibold">{{ t.endDate }}</div>
-              <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ contract.end_date ? formatDate(contract.end_date) : t.indefinite }}</div>
+              <div class="text-xs text-gray-400 uppercase font-semibold">{{ labels.endDate }}</div>
+              <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ contract.end_date ? formatDate(contract.end_date) : labels.indefinite }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400 uppercase font-semibold">{{ t.paymentSchedule }}</div>
+              <div class="text-xs text-gray-400 uppercase font-semibold">{{ labels.paymentSchedule }}</div>
               <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ paymentLabel }}</div>
             </div>
             <div>
-              <div class="text-xs text-gray-400 uppercase font-semibold">{{ t.noticePeriod }}</div>
-              <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ contract.notice_period_days || 30 }} {{ t.days }}</div>
+              <div class="text-xs text-gray-400 uppercase font-semibold">{{ labels.noticePeriod }}</div>
+              <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">{{ contract.notice_period_days || 30 }} {{ labels.days }}</div>
             </div>
           </div>
 
           <!-- Contract Content (all §-paragraphs) -->
           <div v-if="contract.content_html" class="p-8 border-b border-gray-100 dark:border-dark-700">
-            <div class="text-xs text-gray-400 uppercase font-semibold mb-3">{{ t.contractClauses }}</div>
+            <div class="text-xs text-gray-400 uppercase font-semibold mb-3">{{ labels.contractClauses }}</div>
             <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 dark:prose-invert contract-content-wrapper" v-html="contract.content_html"></div>
           </div>
 
           <!-- Notes -->
           <div v-if="contract.notes" class="p-8">
-            <div class="text-xs text-gray-400 uppercase font-semibold mb-2">{{ t.notes }}</div>
+            <div class="text-xs text-gray-400 uppercase font-semibold mb-2">{{ labels.notes }}</div>
             <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ contract.notes }}</div>
           </div>
         </div>
@@ -452,25 +448,25 @@ const t = computed(() => {
         <!-- Signature Section -->
         <div class="bg-white dark:bg-dark-800 rounded-2xl shadow-lg border border-gray-200 dark:border-dark-700 overflow-hidden">
           <div class="px-8 py-5 border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-850">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ t.signContract }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t.signHint }}</p>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ labels.signContract }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ labels.signHint }}</p>
           </div>
 
           <div class="p-8 space-y-4">
             <!-- Signer Name -->
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400 font-medium block mb-1.5">{{ t.yourName }}</label>
+              <label class="text-sm text-gray-600 dark:text-gray-400 font-medium block mb-1.5">{{ labels.yourName }}</label>
               <input
                 v-model="signerName"
                 type="text"
-                :placeholder="t.fullName"
+                :placeholder="labels.fullName"
                 class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-dark-600 text-gray-900 dark:text-gray-100 dark:bg-dark-700 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-colors"
               />
             </div>
 
             <!-- Signature Canvas -->
             <div>
-              <label class="text-sm text-gray-600 dark:text-gray-400 font-medium block mb-1.5">{{ t.signature }}</label>
+              <label class="text-sm text-gray-600 dark:text-gray-400 font-medium block mb-1.5">{{ labels.signature }}</label>
               <div class="bg-white dark:bg-dark-700 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-dark-600 border-dashed">
                 <canvas
                   ref="canvasRef"
@@ -489,9 +485,9 @@ const t = computed(() => {
                   @click="clearCanvas"
                   class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
                 >
-                  <TrashIcon class="w-4 h-4" /> {{ t.clear }}
+                  <TrashIcon class="w-4 h-4" /> {{ labels.clear }}
                 </button>
-                <span v-if="!hasDrawn" class="text-xs text-gray-400">{{ t.pleaseSign }}</span>
+                <span v-if="!hasDrawn" class="text-xs text-gray-400">{{ labels.pleaseSign }}</span>
               </div>
             </div>
 
@@ -504,11 +500,11 @@ const t = computed(() => {
               :disabled="!hasDrawn || isSigning"
               class="w-full py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
             >
-              {{ isSigning ? t.saving : t.signBinding }}
+              {{ isSigning ? labels.saving : labels.signBinding }}
             </button>
 
             <p class="text-xs text-gray-400 text-center">
-              {{ t.legalNotice }}
+              {{ labels.legalNotice }}
             </p>
           </div>
         </div>
@@ -520,14 +516,14 @@ const t = computed(() => {
           <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircleIcon class="w-9 h-9 text-green-600" />
           </div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ t.contractSigned }}</h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ labels.contractSigned }}</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {{ t.thankYou }}
+            {{ labels.thankYou }}
           </p>
           <div v-if="contract" class="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-dark-700 rounded-xl p-4 text-left space-y-1">
-            <div><span class="font-medium">{{ t.contractLabel }}</span> {{ contract.title }}</div>
-            <div><span class="font-medium">{{ t.numberLabel }}</span> {{ contract.contract_number }}</div>
-            <div v-if="contract.party_b_signed_at"><span class="font-medium">{{ t.signedOnLabel }}</span> {{ formatDate(contract.party_b_signed_at) }}</div>
+            <div><span class="font-medium">{{ labels.contractLabel }}</span> {{ contract.title }}</div>
+            <div><span class="font-medium">{{ labels.numberLabel }}</span> {{ contract.contract_number }}</div>
+            <div v-if="contract.party_b_signed_at"><span class="font-medium">{{ labels.signedOnLabel }}</span> {{ formatDate(contract.party_b_signed_at) }}</div>
           </div>
         </div>
       </div>

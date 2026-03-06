@@ -208,7 +208,7 @@
             class="prose prose-invert max-w-none text-sm email-body"
             v-html="sanitizeHtml(emailStore.currentMessage.body_html)"
           />
-          <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap font-sans">{{ emailStore.currentMessage.body_text || '{{ $t('emailModule.noContent') }}' }}</pre>
+          <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap font-sans">{{ emailStore.currentMessage.body_text || $t('emailModule.noContent') }}</pre>
         </div>
       </div>
     </div>

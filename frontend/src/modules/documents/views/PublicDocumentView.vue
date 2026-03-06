@@ -1,9 +1,8 @@
 <script setup>
+import { ref, onMounted, onUnmounted, defineAsyncComponent, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, onMounted, onUnmounted, defineAsyncComponent, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import api from '@/core/api/axios'
 import { useCollaboration } from '@/composables/useCollaboration'

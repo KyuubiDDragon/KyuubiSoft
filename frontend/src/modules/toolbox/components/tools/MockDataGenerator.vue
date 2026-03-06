@@ -1,10 +1,9 @@
 <script setup>
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
 import { ref, computed } from 'vue'
 
 import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const count = ref(5)
 const format = ref('json')
 const selectedFields = ref(['id', 'name', 'email'])

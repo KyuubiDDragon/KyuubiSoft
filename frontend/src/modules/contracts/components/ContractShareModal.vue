@@ -1,9 +1,8 @@
 <script setup>
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import {
   XMarkIcon,
@@ -237,7 +236,7 @@ async function copyLink() {
                   v-if="setPassword"
                   v-model="sharePassword"
                   type="text"
-                  placeholder=$t('contracts.enterPassword')
+                  :placeholder="$t('contracts.enterPassword')"
                   class="input text-sm w-full"
                 />
               </div>

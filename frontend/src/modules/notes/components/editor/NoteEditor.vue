@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import NotesTipTapEditor from './NotesTipTapEditor.vue'
 
 const props = defineProps({
@@ -18,6 +19,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:content', 'navigate'])
+const { t } = useI18n()
 
 const localContent = ref(props.content)
 
@@ -49,7 +51,7 @@ function handleNavigate(href) {
       :model-value="localContent"
       :editable="editable"
       :note-id="noteId"
-      placeholder="Beginne zu schreiben... Nutze [[...]] für Wiki-Links"
+      :placeholder="t('notesModule.editor.placeholder')"
       min-height="100%"
       @update:model-value="handleUpdate"
       @navigate="handleNavigate"

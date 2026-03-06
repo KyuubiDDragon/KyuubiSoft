@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -17,6 +18,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -51,7 +53,7 @@ async function fetchWebhooks() {
     const response = await api.get('/api/v1/webhooks')
     webhooks.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Webhooks')
+    uiStore.showError(t('webhooks.fehlerBeimLadenDerWebhooks'))
   } finally {
     loading.value = false
   }
@@ -101,35 +103,35 @@ async function saveWebhook() {
     return
   }
   if (form.value.events.length === 0) {
-    uiStore.showError('Mindestens ein Event ist erforderlich')
+    uiStore.showError(t('webhooks.mindestensEinEventIstErforderlich'))
     return
   }
 
   try {
     if (editingWebhook.value) {
       await api.put(`/api/v1/webhooks/${editingWebhook.value.id}`, form.value)
-      uiStore.showSuccess('Webhook aktualisiert')
+      uiStore.showSuccess(t('webhooks.webhookAktualisiert'))
     } else {
       await api.post('/api/v1/webhooks', form.value)
-      uiStore.showSuccess('Webhook erstellt')
+      uiStore.showSuccess(t('webhooks.webhookErstellt'))
     }
     await fetchWebhooks()
     showModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete webhook
 async function deleteWebhook(webhook) {
-  if (!await confirm({ message: `Webhook "${webhook.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Webhook "${webhook.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/webhooks/${webhook.id}`)
-    uiStore.showSuccess('Webhook gelöscht')
+    uiStore.showSuccess(t('webhooks.webhookGeloescht'))
     await fetchWebhooks()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -141,7 +143,7 @@ async function toggleActive(webhook) {
     })
     webhook.is_active = !webhook.is_active
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -186,10 +188,10 @@ const groupedEvents = computed(() => {
 
 // Category labels
 const categoryLabels = {
-  document: 'Dokumente',
+  document: t('navigation.documents'),
   list: 'Listen',
   kanban: 'Kanban',
-  project: 'Projekte',
+  project: t('projects.title'),
   time: 'Zeiterfassung',
 }
 
@@ -205,14 +207,14 @@ onMounted(() => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">Webhooks</h1>
-        <p class="text-gray-400 text-sm mt-1">Benachrichtigungen an Discord, Slack oder andere Dienste senden</p>
+        <p class="text-gray-400 text-sm mt-1">{{ $t('webhooks.benachrichtigungenAnDiscordSlackOderAndereDienste') }}</p>
       </div>
       <button
         @click="openModal()"
         class="btn-primary flex items-center gap-2"
       >
         <PlusIcon class="w-5 h-5" />
-        <span>Neuer Webhook</span>
+        <span>{{ $t('webhooks.neuerWebhook') }}</span>
       </button>
     </div>
 

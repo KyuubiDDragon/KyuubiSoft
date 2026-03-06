@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const categories = [
   {
     id: 'length',
-    name: 'Länge',
+    name: t('toolbox.laenge'),
     icon: '📏',
     units: [
       { id: 'mm', name: 'Millimeter', factor: 0.001 },
@@ -12,7 +13,7 @@ const categories = [
       { id: 'm', name: 'Meter', factor: 1 },
       { id: 'km', name: 'Kilometer', factor: 1000 },
       { id: 'in', name: 'Zoll (inch)', factor: 0.0254 },
-      { id: 'ft', name: 'Fuß (feet)', factor: 0.3048 },
+      { id: 'ft', name: t('toolbox.fussFeet'), factor: 0.3048 },
       { id: 'yd', name: 'Yard', factor: 0.9144 },
       { id: 'mi', name: 'Meile', factor: 1609.344 },
     ],
@@ -43,7 +44,7 @@ const categories = [
   },
   {
     id: 'area',
-    name: 'Fläche',
+    name: t('toolbox.flaeche'),
     icon: '📐',
     units: [
       { id: 'mm2', name: 'mm²', factor: 0.000001 },
@@ -214,7 +215,7 @@ function swapUnits() {
     <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end">
       <!-- From -->
       <div class="space-y-2">
-        <label class="text-sm text-gray-400">Von</label>
+        <label class="text-sm text-gray-400">{{ $t('emailModule.von') }}</label>
         <input
           v-model="inputValue"
           type="number"

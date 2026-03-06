@@ -18,9 +18,11 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { common, createLowlight } from 'lowlight'
 import { watch, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePromptDialog } from '@/composables/usePromptDialog'
 
 const { prompt } = usePromptDialog()
+const { t } = useI18n()
 const showCodeView = ref(false)
 const htmlCode = ref('')
 
@@ -135,8 +137,8 @@ onBeforeUnmount(() => {
 async function setLink() {
   const previousUrl = editor.value.getAttributes('link').href
   const url = await prompt({
-    title: 'Link einfügen',
-    message: 'URL eingeben:',
+    title: t('editor.insertLink'),
+    message: t('editor.enterUrl'),
     placeholder: 'https://...',
     defaultValue: previousUrl || ''
   })
@@ -153,9 +155,9 @@ async function setLink() {
 
 async function addImage() {
   const url = await prompt({
-    title: 'Bild einfügen',
-    message: 'Bild-URL eingeben:',
-    placeholder: 'https://example.com/bild.jpg'
+    title: t('editor.insertImage'),
+    message: t('editor.enterImageUrl'),
+    placeholder: 'https://example.com/image.jpg'
   })
   if (url) {
     editor.value.chain().focus().setImage({ src: url }).run()
@@ -234,7 +236,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleBold().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('bold') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Fett (Strg+B)"
+          :title="$t('editor.boldShortcut')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/>
@@ -244,7 +246,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleItalic().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('italic') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Kursiv (Strg+I)"
+          :title="$t('editor.italicShortcut')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4h4m-2 0v16m-4 0h8"/>
@@ -254,7 +256,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleUnderline().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('underline') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Unterstrichen (Strg+U)"
+          :title="$t('editor.underlineShortcut')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3 M4 21h16"/>
@@ -264,7 +266,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleStrike().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('strike') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Durchgestrichen"
+          :title="$t('editor.strikethrough')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2 M12 2v8m0 4v8"/>
@@ -278,7 +280,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 1 }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
-          title="Überschrift 1"
+          :title="$t('editor.heading1')"
         >
           H1
         </button>
@@ -286,7 +288,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 2 }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
-          title="Überschrift 2"
+          :title="$t('editor.heading2')"
         >
           H2
         </button>
@@ -294,7 +296,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('heading', { level: 3 }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
-          title="Überschrift 3"
+          :title="$t('editor.heading3')"
         >
           H3
         </button>
@@ -306,7 +308,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleBulletList().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('bulletList') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Aufzählung"
+          :title="$t('editor.bulletList')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -316,7 +318,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleOrderedList().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('orderedList') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Nummerierte Liste"
+          :title="$t('editor.numberedList')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
@@ -326,7 +328,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleTaskList().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('taskList') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Checkliste"
+          :title="$t('editor.checklist')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -340,7 +342,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().setTextAlign('left').run()"
           :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'left' }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Linksbündig"
+          :title="$t('editor.alignLeft')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/>
@@ -350,7 +352,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().setTextAlign('center').run()"
           :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'center' }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Zentriert"
+          :title="$t('editor.alignCenter')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"/>
@@ -360,7 +362,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().setTextAlign('right').run()"
           :class="{ 'bg-white/[0.10]': editor.isActive({ textAlign: 'right' }) }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Rechtsbündig"
+          :title="$t('editor.alignRight')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"/>
@@ -374,7 +376,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleBlockquote().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('blockquote') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Zitat"
+          :title="$t('editor.quote')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -384,7 +386,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleCode().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('code') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Inline-Code"
+          :title="$t('editor.inlineCode')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
@@ -394,7 +396,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleCodeBlock().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('codeBlock') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Code-Block"
+          :title="$t('editor.codeBlock')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -404,7 +406,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleHighlight().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('highlight') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Markieren"
+          :title="$t('editor.highlight')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
@@ -414,7 +416,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleSubscript().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('subscript') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
-          title="Tiefgestellt (z.B. H₂O)"
+          :title="$t('editor.subscript')"
         >
           X₂
         </button>
@@ -422,7 +424,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().toggleSuperscript().run()"
           :class="{ 'bg-white/[0.10]': editor.isActive('superscript') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs font-bold"
-          title="Hochgestellt (z.B. E=mc²)"
+          :title="$t('editor.superscript')"
         >
           X²
         </button>
@@ -434,7 +436,7 @@ function onCodeChange(event) {
           @click="setLink"
           :class="{ 'bg-white/[0.10]': editor.isActive('link') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Link einfügen"
+          :title="$t('editor.insertLink')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -443,7 +445,7 @@ function onCodeChange(event) {
         <button
           @click="addImage"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Bild einfügen"
+          :title="$t('editor.insertImage')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -453,7 +455,7 @@ function onCodeChange(event) {
           @click="insertTable"
           :class="{ 'bg-white/[0.10]': editor.isActive('table') }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors"
-          title="Tabelle einfügen"
+          :title="$t('editor.insertTable')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -466,37 +468,37 @@ function onCodeChange(event) {
         <button
           @click="editor.chain().focus().addColumnBefore().run()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
-          title="Spalte davor"
+          :title="$t('editor.columnBefore')"
         >
-          +Spalte←
+          {{ $t('editor.addColLeft') }}
         </button>
         <button
           @click="editor.chain().focus().addColumnAfter().run()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
-          title="Spalte danach"
+          :title="$t('editor.columnAfter')"
         >
-          +Spalte→
+          {{ $t('editor.addColRight') }}
         </button>
         <button
           @click="editor.chain().focus().addRowBefore().run()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
-          title="Zeile davor"
+          :title="$t('editor.rowBefore')"
         >
-          +Zeile↑
+          {{ $t('editor.addRowUp') }}
         </button>
         <button
           @click="editor.chain().focus().addRowAfter().run()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors text-xs"
-          title="Zeile danach"
+          :title="$t('editor.rowAfter')"
         >
-          +Zeile↓
+          {{ $t('editor.addRowDown') }}
         </button>
         <button
           @click="editor.chain().focus().deleteTable().run()"
           class="p-2 hover:bg-red-600/20 text-red-400 rounded transition-colors text-xs"
-          title="Tabelle löschen"
+          :title="$t('editor.deleteTable')"
         >
-          Löschen
+          {{ $t('common.delete') }}
         </button>
       </div>
 
@@ -506,7 +508,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().undo().run()"
           :disabled="!editor.can().undo()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors disabled:opacity-30"
-          title="Rückgängig (Strg+Z)"
+          :title="$t('editor.undoShortcut')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
@@ -516,7 +518,7 @@ function onCodeChange(event) {
           @click="editor.chain().focus().redo().run()"
           :disabled="!editor.can().redo()"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors disabled:opacity-30"
-          title="Wiederholen (Strg+Y)"
+          :title="$t('editor.redoShortcut')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/>
@@ -530,12 +532,12 @@ function onCodeChange(event) {
           @click="toggleCodeView"
           :class="{ 'bg-primary-600 text-white': showCodeView }"
           class="p-2 hover:bg-white/[0.06] rounded transition-colors flex items-center gap-1"
-          title="HTML-Code bearbeiten"
+          :title="$t('editor.editHtml')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
           </svg>
-          <span class="text-xs">{{ showCodeView ? 'Visual' : 'HTML' }}</span>
+          <span class="text-xs">{{ showCodeView ? $t('editor.visual') : 'HTML' }}</span>
         </button>
       </div>
     </div>
@@ -560,7 +562,7 @@ function onCodeChange(event) {
         @input="onCodeChange"
         class="w-full h-full p-4 bg-dark-950 text-green-400 font-mono text-sm resize-none focus:outline-none"
         :style="{ minHeight: props.minHeight }"
-        placeholder="HTML-Code hier bearbeiten..."
+        :placeholder="$t('editor.htmlPlaceholder')"
         spellcheck="false"
       ></textarea>
     </div>

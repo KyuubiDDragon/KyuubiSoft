@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   XMarkIcon,
   ChevronLeftIcon,
@@ -79,13 +80,13 @@ const form = ref({
 })
 
 const contractTypes = [
-  { value: 'license', label: 'Softwarelizenz', description: 'Lizenzvertrag für fertige Software', icon: DocumentTextIcon, color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
+  { value: 'license', label: 'Softwarelizenz', description: t('contracts.softwareLicenseAgreement'), icon: DocumentTextIcon, color: 'text-blue-300', bg: 'bg-blue-500/10 border-blue-500/30' },
   { value: 'development', label: 'Entwicklung', description: 'Individuelle Softwareentwicklung', icon: CodeBracketIcon, color: 'text-purple-300', bg: 'bg-purple-500/10 border-purple-500/30' },
   { value: 'saas', label: 'SaaS', description: 'Software as a Service', icon: CloudIcon, color: 'text-cyan-300', bg: 'bg-cyan-500/10 border-cyan-500/30' },
   { value: 'maintenance', label: 'Wartung', description: 'Wartung & Support', icon: WrenchScrewdriverIcon, color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/30' },
   { value: 'nda', label: 'NDA', description: 'Geheimhaltungsvereinbarung', icon: ShieldCheckIcon, color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/30' },
   { value: 'source_code_purchase', label: 'Source-Code-Kauf', description: 'Kauf von Quellcode / IP', icon: CommandLineIcon, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/30' },
-  { value: 'custom', label: 'Individuell', description: 'Eigener Vertragstext', icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
+  { value: 'custom', label: 'Individuell', description: 'Eigener {{ $t('contracts.contractText') }}', icon: PencilSquareIcon, color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/30' },
 ]
 
 // Custom templates
@@ -118,32 +119,32 @@ const languages = [
 ]
 
 const customerTypes = [
-  { value: 0, label: 'B2B (Geschäftskunde)' },
+  { value: 0, label: t('contracts.b2bCustomer') },
   { value: 1, label: 'B2C (Privatkunde)' },
 ]
 
 const paymentSchedules = [
   { value: 'one-time', label: 'Einmalig' },
-  { value: 'monthly', label: 'Monatlich' },
+  { value: 'monthly', label: t('cron.monthly') },
   { value: 'quarterly', label: 'Quartalsweise' },
-  { value: 'yearly', label: 'Jährlich' },
+  { value: 'yearly', label: t('contracts.yearly') },
 ]
 
 const governingLaws = [
   { value: 'DE', label: 'Deutsches Recht' },
-  { value: 'AT', label: 'Österreichisches Recht' },
+  { value: 'AT', label: t('contracts.austrianLaw') },
   { value: 'CH', label: 'Schweizer Recht' },
-  { value: 'DK', label: 'Dänisches Recht' },
+  { value: 'DK', label: t('contracts.danishLaw') },
   { value: 'EU', label: 'EU-Recht' },
 ]
 
 const renewalPeriods = [
-  { value: 'monthly', label: 'Monatlich' },
-  { value: 'yearly', label: 'Jährlich' },
+  { value: 'monthly', label: t('cron.monthly') },
+  { value: 'yearly', label: t('contracts.yearly') },
 ]
 
 // Step labels
-const stepLabels = ['Vertragstyp', 'Parteien', 'Details', 'Laufzeit & Zahlung', 'Rechtliches']
+const stepLabels = [t('contracts.contractType'), 'Parteien', 'Details', 'Laufzeit & Zahlung', 'Rechtliches']
 
 // Populate sender data from settings
 function initForm() {
@@ -275,7 +276,7 @@ watch(() => props.show, (val) => {
 watch(() => form.value.contract_type, (newType) => {
   form.value.variables_data = getDefaultVariables(newType)
   // Auto-set title
-  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: 'SaaS-Vertrag', maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung', source_code_purchase: 'Source-Code-Kaufvertrag', custom: 'Individualvertrag' }
+  const typeLabels = { license: 'Softwarelizenzvertrag', development: 'Softwareentwicklungsvertrag', saas: t('contracts.saasContract'), maintenance: 'Wartungsvertrag', nda: 'Geheimhaltungsvereinbarung', source_code_purchase: 'Source-Code-Kaufvertrag', custom: 'Individualvertrag' }
   if (!form.value.title || Object.values(typeLabels).includes(form.value.title)) {
     form.value.title = typeLabels[newType] || ''
   }
@@ -395,7 +396,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
             <!-- Header -->
             <div class="sticky top-0 bg-white/[0.04] px-6 py-4 border-b border-white/[0.06] flex items-center justify-between z-10">
               <div>
-                <h2 class="text-lg font-bold text-white">Neuer Vertrag</h2>
+                <h2 class="text-lg font-bold text-white">{{ $t('contracts.newContract') }}</h2>
                 <div class="text-xs text-gray-400 mt-0.5">Schritt {{ currentStep }} von {{ totalSteps }} — {{ stepLabels[currentStep - 1] }}</div>
               </div>
               <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors">
@@ -421,8 +422,8 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <!-- Contract Type -->
                 <div>
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                    Vertragstyp
-                    <FieldTooltip>Wähle den passenden Vertragstyp. Jeder Typ enthält vorgefertigte Klauseln für den jeweiligen Anwendungsfall.</FieldTooltip>
+                    {{ $t('contracts.contractType') }}
+                    <FieldTooltip>{{ $t('contracts.hintContractType') }}</FieldTooltip>
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <button
@@ -444,7 +445,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div v-if="isCustom && customTemplates.length > 0" class="mt-4">
                     <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                       Vorlage verwenden (optional)
-                      <FieldTooltip>Wähle eine gespeicherte Vorlage als Basis oder starte mit leerem Text.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintTemplate') }}</FieldTooltip>
                     </label>
                     <select
                       :value="selectedTemplateId"
@@ -461,7 +462,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-5">
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Sprache
-                    <FieldTooltip>Die Sprache bestimmt, in welcher Sprache der Vertragstext generiert wird.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintLanguage') }}</FieldTooltip>
                   </label>
                   <div class="flex gap-2">
                     <button
@@ -481,7 +482,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-5">
                   <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Kundentyp
-                    <FieldTooltip>B2B = Geschäftskunde, B2C = Privatkunde. Bei B2C werden automatisch Verbraucherschutzklauseln und Widerrufsbelehrung eingefügt.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintCustomerType') }}</FieldTooltip>
                   </label>
                   <div class="flex gap-2">
                     <button
@@ -495,7 +496,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                         : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white hover:border-white/[0.08]'"
                     >{{ ct.label }}</button>
                   </div>
-                  <p v-if="form.is_b2c" class="text-xs text-amber-400 mt-2">Hinweis: B2C-Verträge enthalten automatisch Widerrufsbelehrung und Verbraucherschutzklauseln.</p>
+                  <p v-if="form.is_b2c" class="text-xs text-amber-400 mt-2">{{ $t('contracts.noteB2cProtection') }}</p>
                 </div>
               </div>
 
@@ -505,22 +506,22 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mb-6">
                   <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-1.5">
                     Auftragnehmer (Sie)
-                    <FieldTooltip>Deine Daten als Vertragspartei A. Wird aus deinen Einstellungen vorausgefüllt.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintSenderData') }}</FieldTooltip>
                   </h3>
                   <div class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
                       <div>
                         <label class="label">Name *</label>
-                        <input v-model="form.party_a_name" type="text" class="input" placeholder="Ihr Name" required />
+                        <input v-model="form.party_a_name" type="text" class="input" :placeholder="$t('contracts.yourName')" required />
                       </div>
                       <div>
                         <label class="label">Firma</label>
-                        <input v-model="form.party_a_company" type="text" class="input" placeholder="Firmenname" />
+                        <input v-model="form.party_a_company" type="text" class="input" :placeholder="$t('contracts.companyNamePlaceholder')" />
                       </div>
                     </div>
                     <div>
                       <label class="label">Adresse</label>
-                      <textarea v-model="form.party_a_address" class="input" rows="2" placeholder="Strasse, PLZ Ort, Land"></textarea>
+                      <textarea v-model="form.party_a_address" class="input" rows="2" :placeholder="$t('contracts.addressPlaceholder')"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                       <div>
@@ -530,7 +531,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       <div>
                         <label class="label flex items-center gap-1.5">
                           USt-IdNr.
-                          <FieldTooltip>Umsatzsteuer-Identifikationsnummer, z.B. DE123456789. Wichtig für B2B-Verträge innerhalb der EU.</FieldTooltip>
+                          <FieldTooltip>{{ $t('contracts.hintSenderVatId') }}</FieldTooltip>
                         </label>
                         <input v-model="form.party_a_vat_id" type="text" class="input" placeholder="DE123456789" />
                       </div>
@@ -544,10 +545,10 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-6">
                   <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-1.5">
                     Auftraggeber (Kunde)
-                    <FieldTooltip>Daten deines Kunden / Vertragspartners. Wähle einen bestehenden Kunden oder gib die Daten manuell ein.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintClientData') }}</FieldTooltip>
                   </h3>
                   <div class="mb-3">
-                    <label class="label">Aus Kundenstamm wählen</label>
+                    <label class="label">{{ $t('contracts.selectFromClients') }}</label>
                     <select v-model="form.client_id" class="input">
                       <option :value="null">Manuell eingeben</option>
                       <option v-for="c in clients" :key="c.id" :value="c.id">
@@ -559,7 +560,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div class="grid grid-cols-2 gap-3">
                       <div>
                         <label class="label">Name *</label>
-                        <input v-model="form.party_b_name" type="text" class="input" placeholder="Kundenname" required />
+                        <input v-model="form.party_b_name" type="text" class="input" :placeholder="$t('contracts.clientNamePlaceholder')" required />
                       </div>
                       <div>
                         <label class="label">Firma</label>
@@ -568,7 +569,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     </div>
                     <div>
                       <label class="label">Adresse</label>
-                      <textarea v-model="form.party_b_address" class="input" rows="2" placeholder="Strasse, PLZ Ort, Land"></textarea>
+                      <textarea v-model="form.party_b_address" class="input" rows="2" :placeholder="$t('contracts.addressPlaceholder')"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                       <div>
@@ -578,7 +579,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       <div>
                         <label class="label flex items-center gap-1.5">
                           USt-IdNr.
-                          <FieldTooltip>Umsatzsteuer-Identifikationsnummer deines Kunden. Wichtig für B2B-Verträge innerhalb der EU.</FieldTooltip>
+                          <FieldTooltip>{{ $t('contracts.hintClientVatId') }}</FieldTooltip>
                         </label>
                         <input v-model="form.party_b_vat_id" type="text" class="input" />
                       </div>
@@ -591,16 +592,16 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
               <div v-if="currentStep === 3">
                 <div class="mb-4">
                   <label class="label">Vertragstitel *</label>
-                  <input v-model="form.title" type="text" class="input" placeholder="z.B. Softwarelizenzvertrag für XY" required />
+                  <input v-model="form.title" type="text" class="input" :placeholder="$t('contracts.hintContractTitle')" required />
                 </div>
 
                 <!-- Custom contract editor -->
                 <div v-if="isCustom">
                   <label class="label flex items-center gap-1.5 mb-2">
-                    Vertragstext
-                    <FieldTooltip>Gib hier deinen individuellen Vertragstext ein. Du kannst Formatierungen, Listen und Überschriften verwenden.</FieldTooltip>
+                    {{ $t('contracts.contractText') }}
+                    <FieldTooltip>{{ $t('contracts.gibHierDeinenIndividuellen{{ $t('contracts.contractText') }}EinDu') }}</FieldTooltip>
                   </label>
-                  <TipTapEditor v-model="form.content_html" placeholder="Vertragstext eingeben..." min-height="300px" />
+                  <TipTapEditor v-model="form.content_html" placeholder="{{ $t('contracts.contractText') }} eingeben..." min-height="300px" />
                 </div>
 
                 <!-- License specific -->
@@ -608,7 +609,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="label">Software-Name</label>
-                      <input v-model="form.variables_data.software_name" type="text" class="input" placeholder="z.B. Jasper CRM" />
+                      <input v-model="form.variables_data.software_name" type="text" class="input" :placeholder="$t('contracts.softwareNamePlaceholder')" />
                     </div>
                     <div>
                       <label class="label">Version</label>
@@ -618,7 +619,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Lizenztyp
-                      <FieldTooltip>Einfach = Mehrfachvergabe möglich. Exklusiv = Nur dieser Lizenznehmer darf die Software nutzen.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintLicenseExclusivity') }}</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button type="button" @click="form.variables_data.license_type = 'simple'"
@@ -629,7 +630,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       <button type="button" @click="form.variables_data.license_type = 'exclusive'"
                         class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
                         :class="form.variables_data.license_type === 'exclusive' ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
-                        Ausschließliche Lizenz
+                        {{ $t('contracts.exclusiveLicense') }}
                       </button>
                     </div>
                   </div>
@@ -637,14 +638,14 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Max. Nutzer
-                        <FieldTooltip>Maximale Anzahl gleichzeitiger Nutzer, die die Software verwenden dürfen.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintMaxUsers') }}</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.max_users" type="number" min="1" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Gebietsrechte
-                        <FieldTooltip>Räumlicher Geltungsbereich der Lizenz.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintLicenseTerritory') }}</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.territory" class="input">
                         <option value="worldwide">Weltweit</option>
@@ -658,7 +659,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Installationstyp
-                        <FieldTooltip>Wo die Software betrieben wird. Beeinflusst Vertragsklauseln zu Datenspeicherung und Zugriff.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintHostingLocation') }}</FieldTooltip>
                       </label>
                       <div class="flex gap-2">
                         <button v-for="it in [{v:'on_premise',l:'On-Premise'},{v:'cloud',l:'Cloud'},{v:'hybrid',l:'Hybrid'}]" :key="it.v"
@@ -672,7 +673,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Lizenzmodell
-                        <FieldTooltip>Perpetual = dauerhaft. Abo = zeitlich begrenzt. Named-User = pro Benutzer. Concurrent = gleichzeitige Nutzer. Standort = Standortlizenz.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintLicenseModel') }}</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.license_model" class="input">
                         <option value="perpetual">Dauerhaft (Perpetual)</option>
@@ -687,12 +688,12 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.source_code_access" type="checkbox" class="checkbox" />
                       Quellcode-Zugang
-                      <FieldTooltip>Ob der Lizenznehmer Zugriff auf den Quellcode erhält.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSourceCodeAccess') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.modification_rights" type="checkbox" class="checkbox" />
-                      Änderungsrechte
-                      <FieldTooltip>Ob der Lizenznehmer den Quellcode verändern darf.</FieldTooltip>
+                      {{ $t('contracts.modificationRights') }}
+                      <FieldTooltip>{{ $t('contracts.hintModificationRights') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.updates_included" type="checkbox" class="checkbox" />
@@ -701,7 +702,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.backup_copies" type="checkbox" class="checkbox" />
                       Sicherungskopien erlaubt
-                      <FieldTooltip>Ob der Lizenznehmer Sicherungskopien der Software erstellen darf (§ 69d Abs. 2 UrhG).</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintBackupRights') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.affiliate_use" type="checkbox" class="checkbox" />
@@ -711,22 +712,22 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.api_access" type="checkbox" class="checkbox" />
                       API-Zugang
-                      <FieldTooltip>Ob der Lizenznehmer die Software-API für Integrationen nutzen darf.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintApiAccess') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.data_processing" type="checkbox" class="checkbox" />
                       Personenbez. Daten
-                      <FieldTooltip>Aktiviert DSGVO-Klausel im Vertrag wenn die Software personenbezogene Daten verarbeitet.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintGdprClause') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.audit_rights" type="checkbox" class="checkbox" />
                       Audit-Recht
-                      <FieldTooltip>Lizenzgeber darf einmal jährlich die vertragsgemäße Nutzung prüfen.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintAuditRight') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.open_source_included" type="checkbox" class="checkbox" />
                       Open-Source-Komponenten
-                      <FieldTooltip>Fügt OSS-Compliance-Klausel ein. Aktivieren wenn die Software Open-Source-Bibliotheken enthält.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintOssComplianceLicense') }}</FieldTooltip>
                     </label>
                   </div>
                   <div v-if="form.variables_data.updates_included">
@@ -736,16 +737,16 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Support-Level
-                      <FieldTooltip>Kein Support = ohne. Basic = E-Mail. Premium = E-Mail + Telefon. Enterprise = 24/7 mit SLA.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSupportLevel') }}</FieldTooltip>
                     </label>
                     <select v-model="form.variables_data.support_level" class="input">
-                      <option value="none">Kein Support</option>
+                      <option value="none">{{ $t('contracts.noSupport') }}</option>
                       <option value="basic">Basic</option>
                       <option value="premium">Premium</option>
                       <option value="enterprise">Enterprise</option>
                     </select>
                   </div>
-                  <p v-if="form.variables_data.data_processing" class="text-xs text-amber-400">Hinweis: DSGVO-Datenschutzklausel wird automatisch in den Vertrag eingefügt.</p>
+                  <p v-if="form.variables_data.data_processing" class="text-xs text-amber-400">{{ $t('contracts.noteGdprAutoClause') }}</p>
                 </div>
 
                 <!-- Development specific -->
@@ -753,14 +754,14 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Projektbeschreibung
-                      <FieldTooltip>Detaillierte Beschreibung des zu entwickelnden Projekts und der Anforderungen.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintProjectDescription') }}</FieldTooltip>
                     </label>
-                    <textarea v-model="form.variables_data.project_description" class="input" rows="3" placeholder="Beschreiben Sie das Projekt..."></textarea>
+                    <textarea v-model="form.variables_data.project_description" class="input" rows="3" :placeholder="$t('contracts.describeProject')"></textarea>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Vergütungsmodell
-                      <FieldTooltip>Festpreis = Gesamtbetrag fix. Stundenbasis = Abrechnung nach Aufwand. Meilensteine = Zahlung nach Abschluss einzelner Phasen.</FieldTooltip>
+                      {{ $t('contracts.compensationModel') }}
+                      <FieldTooltip>{{ $t('contracts.hintPricingModel') }}</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button v-for="pm in [{v:'fixed',l:'Festpreis'},{v:'hourly',l:'Stundensatz'},{v:'milestone',l:'Meilensteine'}]" :key="pm.v"
@@ -774,7 +775,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div v-if="form.variables_data.pricing_model === 'hourly'">
                     <label class="label flex items-center gap-1.5">
                       Stundensatz (EUR)
-                      <FieldTooltip>Netto-Stundensatz in EUR für die Softwareentwicklung.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintHourlyRate') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.variables_data.hourly_rate" type="number" min="0" step="0.01" class="input" />
                   </div>
@@ -782,10 +783,10 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div v-if="form.variables_data.pricing_model === 'milestone'">
                     <label class="label flex items-center gap-1.5 mb-2">
                       Meilensteine
-                      <FieldTooltip>Definiere Projektphasen mit Datum und Teilbetrag. Jeder Meilenstein wird separat abgerechnet.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintMilestones') }}</FieldTooltip>
                     </label>
                     <div v-for="(ms, idx) in form.variables_data.milestones" :key="idx" class="flex gap-2 mb-2">
-                      <input v-model="ms.name" type="text" class="input flex-1" placeholder="Meilenstein" />
+                      <input v-model="ms.name" type="text" class="input flex-1" :placeholder="$t('contracts.milestonePlaceholder')" />
                       <input v-model="ms.date" type="date" class="input w-36" />
                       <input v-model.number="ms.amount" type="number" min="0" step="0.01" class="input w-28" placeholder="EUR" />
                       <button v-if="form.variables_data.milestones.length > 1" type="button" @click="removeMilestone(idx)"
@@ -796,14 +797,14 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Abnahmeverfahren
-                      <FieldTooltip>Beschreibe, wie die Abnahme der Software erfolgt (z.B. Testphase, Abnahmeprotokoll).</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintAcceptanceProcedure') }}</FieldTooltip>
                     </label>
-                    <textarea v-model="form.variables_data.acceptance_procedure" class="input" rows="2" placeholder="Beschreibung des Abnahmeverfahrens"></textarea>
+                    <textarea v-model="form.variables_data.acceptance_procedure" class="input" rows="2" :placeholder="$t('contracts.descriptionAcceptanceProcedure')"></textarea>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Gewährleistungsfrist (Monate)
-                      <FieldTooltip>Zeitraum nach Abnahme, in dem Mängel kostenlos behoben werden. Standard: 12 Monate.</FieldTooltip>
+                      {{ $t('contracts.warrantyPeriodMonths') }}
+                      <FieldTooltip>{{ $t('contracts.hintWarrantyRepair') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.variables_data.warranty_months" type="number" min="1" class="input" />
                   </div>
@@ -811,11 +812,11 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.documentation_required" type="checkbox" class="checkbox" />
                       Technische Dokumentation
-                      <FieldTooltip>Lieferung von API-Docs, Installationsanleitung und Architektur-Übersicht als Pflicht.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintDeliverables') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.deployment_support" type="checkbox" class="checkbox" />
-                      Deployment-Unterstützung
+                      {{ $t('contracts.deploymentSupport') }}
                       <FieldTooltip>Go-Live-Begleitung und Deployment-Support nach Abnahme.</FieldTooltip>
                     </label>
                   </div>
@@ -826,26 +827,26 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Service-Beschreibung
-                      <FieldTooltip>Beschreibung des SaaS-Dienstes und der enthaltenen Funktionen.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSaasDescription') }}</FieldTooltip>
                     </label>
-                    <textarea v-model="form.variables_data.service_description" class="input" rows="3" placeholder="Beschreibung des SaaS-Dienstes..."></textarea>
+                    <textarea v-model="form.variables_data.service_description" class="input" rows="3" :placeholder="$t('contracts.descriptionSaasService')"></textarea>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="label flex items-center gap-1.5">
-                        SLA Verfügbarkeit (%)
-                        <FieldTooltip>Garantierte Verfügbarkeit in Prozent pro Jahr. 99,9% = max. 8,76h Ausfall/Jahr.</FieldTooltip>
+                        {{ $t('contracts.slaAvailability') }}
+                        <FieldTooltip>{{ $t('contracts.hintSlaUptime') }}</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.sla_uptime" type="number" min="90" max="100" step="0.1" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Abo-Modell
-                        <FieldTooltip>Abrechnungszyklus für den SaaS-Dienst.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintBillingCycle') }}</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.subscription_model" class="input">
                         <option value="monthly">Monatlich</option>
-                        <option value="yearly">Jährlich</option>
+                        <option value="yearly">{{ $t('contracts.yearly') }}</option>
                       </select>
                     </div>
                   </div>
@@ -856,7 +857,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     </div>
                     <div>
                       <label class="label">Max. Nutzer</label>
-                      <input v-model.number="form.variables_data.max_users" type="number" min="0" class="input" placeholder="0 = unbegrenzt" />
+                      <input v-model.number="form.variables_data.max_users" type="number" min="0" class="input" :placeholder="$t('contracts.zeroUnlimited')" />
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
@@ -867,7 +868,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Datenstandort
-                        <FieldTooltip>Wo die Kundendaten gespeichert werden. Wichtig für DSGVO-Konformität.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintDataLocation') }}</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.data_location" class="input">
                         <option value="DE">Deutschland</option>
@@ -880,7 +881,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.sla_credit" type="checkbox" class="checkbox" />
                       SLA-Gutschriften
-                      <FieldTooltip>Bei Unterschreitung der SLA-Verfügbarkeit erhält der Kunde anteilige Gutschriften.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSlaCredits') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.support_included" type="checkbox" class="checkbox" />
@@ -890,7 +891,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div v-if="form.variables_data.support_included">
                     <label class="label flex items-center gap-1.5">
                       Support-Level
-                      <FieldTooltip>Kein Support = ohne. Basic = E-Mail. Premium = E-Mail + Telefon. Enterprise = 24/7 mit SLA.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSupportLevel') }}</FieldTooltip>
                     </label>
                     <select v-model="form.variables_data.support_level" class="input">
                       <option value="basic">Basic</option>
@@ -905,9 +906,9 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Zu wartende Software
-                      <FieldTooltip>Name und Version der Software, für die der Wartungsvertrag gilt.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSoftwareName') }}</FieldTooltip>
                     </label>
-                    <input v-model="form.variables_data.maintained_software" type="text" class="input" placeholder="Name der Software" />
+                    <input v-model="form.variables_data.maintained_software" type="text" class="input" :placeholder="$t('contracts.softwareName')" />
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -923,10 +924,10 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                         <FieldTooltip>Maximale Zeit bis zur ersten Reaktion auf eine Supportanfrage.</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.response_time" class="input">
-                        <option value="4h">4 Stunden</option>
-                        <option value="8h">8 Stunden</option>
-                        <option value="24h">24 Stunden</option>
-                        <option value="48h">48 Stunden</option>
+                        <option value="4h">{{ $t('contracts.hours4') }}</option>
+                        <option value="8h">{{ $t('contracts.hours8') }}</option>
+                        <option value="24h">{{ $t('contracts.hours24') }}</option>
+                        <option value="48h">{{ $t('contracts.hours48') }}</option>
                       </select>
                     </div>
                   </div>
@@ -950,7 +951,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.emergency_support" type="checkbox" class="checkbox" />
                       24/7 Notfall-Support
-                      <FieldTooltip>Rund-um-die-Uhr-Support für kritische Systemausfälle (Totalausfall, Datenverlust).</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSupport247') }}</FieldTooltip>
                     </label>
                   </div>
                 </div>
@@ -960,7 +961,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       NDA-Typ
-                      <FieldTooltip>Gegenseitig = beide Parteien. Einseitig = nur eine Partei offenbart vertrauliche Informationen.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintNdaType') }}</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button type="button" @click="form.variables_data.nda_type = 'unilateral'"
@@ -980,20 +981,20 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       Vertrauliche Informationen
                       <FieldTooltip>Beschreibe, welche Informationen als vertraulich gelten sollen.</FieldTooltip>
                     </label>
-                    <textarea v-model="form.variables_data.confidential_info_description" class="input" rows="3" placeholder="Beschreibung der vertraulichen Informationen..."></textarea>
+                    <textarea v-model="form.variables_data.confidential_info_description" class="input" rows="3" :placeholder="$t('contracts.descriptionConfidentialInfo')"></textarea>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Geltungsdauer (Jahre)
-                        <FieldTooltip>Wie lange die Geheimhaltungspflicht gilt. Üblich: 2-5 Jahre.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintConfidentialityPeriod') }}</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.duration_years" type="number" min="1" max="10" class="input" />
                     </div>
                     <div>
                       <label class="label flex items-center gap-1.5">
-                        Vertragsstrafe (EUR, optional)
-                        <FieldTooltip>Optionale Konventionalstrafe bei Verstoß gegen die Geheimhaltung.</FieldTooltip>
+                        {{ $t('contracts.penalty') }}
+                        <FieldTooltip>{{ $t('contracts.hintPenaltyClause') }}</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.penalty_amount" type="number" min="0" step="100" class="input" />
                     </div>
@@ -1005,7 +1006,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="label">Software-Name</label>
-                      <input v-model="form.variables_data.software_name" type="text" class="input" placeholder="z.B. Jasper CRM" />
+                      <input v-model="form.variables_data.software_name" type="text" class="input" :placeholder="$t('contracts.softwareNamePlaceholder')" />
                     </div>
                     <div>
                       <label class="label">Version</label>
@@ -1017,18 +1018,18 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                       Umfang des Quellcodes
                       <FieldTooltip>Beschreibe, welcher Quellcode und welche Komponenten Gegenstand des Kaufs sind.</FieldTooltip>
                     </label>
-                    <textarea v-model="form.variables_data.source_code_scope" class="input" rows="3" placeholder="z.B. Gesamte Codebasis inkl. Frontend, Backend, Datenbank-Migrationen..."></textarea>
+                    <textarea v-model="form.variables_data.source_code_scope" class="input" rows="3" :placeholder="$t('contracts.hintSourceCodeScope')"></textarea>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      IP-Übertragung
-                      <FieldTooltip>Exklusiv = alle Rechte gehen vollständig auf den Käufer über. Nicht-exklusiv = Verkäufer behält Nutzungsrechte.</FieldTooltip>
+                      {{ $t('contracts.ipTransfer') }}
+                      <FieldTooltip>{{ $t('contracts.hintExclusiveRights') }}</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
                       <button type="button" @click="form.variables_data.ip_transfer_type = 'exclusive'"
                         class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
                         :class="form.variables_data.ip_transfer_type === 'exclusive' ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
-                        Exklusiv (vollständige Übertragung)
+                        {{ $t('contracts.exclusiveFullTransfer') }}
                       </button>
                       <button type="button" @click="form.variables_data.ip_transfer_type = 'non_exclusive'"
                         class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
@@ -1041,7 +1042,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <div>
                       <label class="label flex items-center gap-1.5">
                         Lieferung
-                        <FieldTooltip>Wie der Quellcode übergeben wird.</FieldTooltip>
+                        <FieldTooltip>{{ $t('contracts.hintCodeDelivery') }}</FieldTooltip>
                       </label>
                       <select v-model="form.variables_data.delivery_type" class="input">
                         <option value="repository">Repository-Zugang</option>
@@ -1065,10 +1066,10 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div v-if="form.variables_data.delivery_type !== 'zip'">
                     <label class="label flex items-center gap-1.5">
                       Repository-Zugang nach Kauf
-                      <FieldTooltip>Transfer = Repository wird auf Käufer übertragen. Goodwill = Zugang bleibt bestehen als Kulanz. Vertraglich = Zugang ist vertraglich garantiert.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintTransferMethod') }}</FieldTooltip>
                     </label>
                     <div class="flex gap-2">
-                      <button v-for="rt in [{v:'transfer',l:'Transfer'},{v:'goodwill',l:'Kulanz'},{v:'contractual',l:'Vertraglich'}]" :key="rt.v"
+                      <button v-for="rt in [{v:'transfer',l:'Transfer'},{v:'goodwill',l:'Kulanz'},{v:'contractual',l:$t('contracts.contractual')}]" :key="rt.v"
                         type="button" @click="form.variables_data.repository_access_type = rt.v"
                         class="flex-1 py-2 rounded-lg text-xs font-medium transition-colors border"
                         :class="form.variables_data.repository_access_type === rt.v ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
@@ -1079,8 +1080,8 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="label flex items-center gap-1.5">
-                        Gewährleistung (Monate)
-                        <FieldTooltip>Zeitraum, in dem der Verkäufer für Mängel im Quellcode haftet. Standard bei Kauf: 6 Monate.</FieldTooltip>
+                        {{ $t('contracts.warrantyMonths') }}
+                        <FieldTooltip>{{ $t('contracts.hintSellerWarranty') }}</FieldTooltip>
                       </label>
                       <input v-model.number="form.variables_data.warranty_months" type="number" min="0" class="input" />
                     </div>
@@ -1089,17 +1090,17 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.includes_documentation" type="checkbox" class="checkbox" />
                       Technische Dokumentation
-                      <FieldTooltip>API-Docs, Architektur-Übersicht, Setup-Anleitung werden mitgeliefert.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintDocumentation') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.includes_deployment_support" type="checkbox" class="checkbox" />
                       Deployment-Support
-                      <FieldTooltip>Unterstützung beim Aufsetzen und Inbetriebnahme nach Übergabe.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintSetupSupport') }}</FieldTooltip>
                     </label>
                     <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                       <input v-model="form.variables_data.open_source_included" type="checkbox" class="checkbox" />
                       Open-Source-Komponenten
-                      <FieldTooltip>Enthält der Code Open-Source-Bibliotheken? Fügt OSS-Compliance-Klausel ein.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintOssCompliance') }}</FieldTooltip>
                     </label>
                   </div>
                 </div>
@@ -1110,15 +1111,15 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Vertragsbeginn *
-                      <FieldTooltip>Ab wann der Vertrag wirksam wird.</FieldTooltip>
+                      {{ $t('contracts.startDate') }} *
+                      <FieldTooltip>{{ $t('contracts.hintStartDate') }}</FieldTooltip>
                     </label>
                     <input v-model="form.start_date" type="date" class="input" required />
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Vertragsende
-                      <FieldTooltip>Leer lassen für unbefristete Verträge. Ansonsten festes Enddatum.</FieldTooltip>
+                      {{ $t('contracts.endDate') }}
+                      <FieldTooltip>{{ $t('contracts.hintEndDate') }}</FieldTooltip>
                     </label>
                     <input v-model="form.end_date" type="date" class="input" />
                   </div>
@@ -1127,12 +1128,12 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-4">
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.auto_renewal" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
-                    Automatische Verlängerung
-                    <FieldTooltip>Vertrag verlängert sich automatisch, wenn nicht rechtzeitig gekündigt wird.</FieldTooltip>
+                    {{ $t('contracts.autoRenewal') }}
+                    <FieldTooltip>{{ $t('contracts.hintAutoRenewal') }}</FieldTooltip>
                   </label>
                 </div>
                 <div v-if="form.auto_renewal" class="mt-3">
-                  <label class="label">Verlängerungszeitraum</label>
+                  <label class="label">{{ $t('contracts.renewalPeriod') }}</label>
                   <select v-model="form.renewal_period" class="input">
                     <option v-for="rp in renewalPeriods" :key="rp.value" :value="rp.value">{{ rp.label }}</option>
                   </select>
@@ -1141,15 +1142,15 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="grid grid-cols-2 gap-3 mt-4">
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Kündigungsfrist (Tage)
-                      <FieldTooltip>Anzahl Tage vor Vertragsende, bis wann gekündigt werden muss.</FieldTooltip>
+                      {{ $t('contracts.noticePeriodDays') }}
+                      <FieldTooltip>{{ $t('contracts.anzahlTageVor{{ $t('contracts.endDate') }}BisWannGekuendigt') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Mindestlaufzeit (Monate)
-                      <FieldTooltip>Mindestvertragslaufzeit, bevor eine ordentliche Kündigung möglich ist. 0 = keine Mindestlaufzeit.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintMinTerm') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.min_term_months" type="number" min="0" class="input" />
                   </div>
@@ -1157,11 +1158,11 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
 
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
-                    Kündigungsart
-                    <FieldTooltip>Ordentlich = fristgerecht zum Periodenende. Außerordentlich = nur aus wichtigem Grund (§ 314 BGB). Beides = beide Optionen im Vertrag.</FieldTooltip>
+                    {{ $t('contracts.terminationType') }}
+                    <FieldTooltip>{{ $t('contracts.hintTerminationType') }}</FieldTooltip>
                   </label>
                   <div class="flex gap-2">
-                    <button v-for="ct in [{v:'ordinary',l:'Ordentlich'},{v:'extraordinary',l:'Außerordentlich'},{v:'both',l:'Beides'}]" :key="ct.v"
+                    <button v-for="ct in [{v:'ordinary',l:'Ordentlich'},{v:'extraordinary',l:$t('contracts.extraordinary')},{v:'both',l:'Beides'}]" :key="ct.v"
                       type="button" @click="form.cancellation_type = ct.v"
                       class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
                       :class="form.cancellation_type === ct.v ? 'bg-primary-600 border-primary-500 text-white' : 'bg-white/[0.04] border-white/[0.06] text-gray-400 hover:text-white'">
@@ -1175,15 +1176,15 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Vertragswert (gesamt)
-                      <FieldTooltip>Gesamtwert des Vertrags (netto).</FieldTooltip>
+                      {{ $t('contracts.totalValue') }}
+                      <FieldTooltip>{{ $t('contracts.hintTotalValue') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.total_value" type="number" min="0" step="0.01" class="input" />
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Währung
-                      <FieldTooltip>Vertragswährung für die Rechnungsstellung.</FieldTooltip>
+                      {{ $t('contracts.currency') }}
+                      <FieldTooltip>{{ $t('contracts.hintCurrency') }}</FieldTooltip>
                     </label>
                     <select v-model="form.currency" class="input">
                       <option value="EUR">EUR</option>
@@ -1198,7 +1199,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Zahlungsplan
-                    <FieldTooltip>Einmalig = eine Zahlung. Monatlich/Quartalsweise/Jährlich = wiederkehrende Zahlungen.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintPaymentType') }}</FieldTooltip>
                   </label>
                   <div class="grid grid-cols-4 gap-2">
                     <button
@@ -1218,7 +1219,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Zahlungsziel (Tage)
-                      <FieldTooltip>Innerhalb welcher Frist die Rechnung nach Zugang zu zahlen ist.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintPaymentDeadline') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.payment_due_days" type="number" min="0" class="input" />
                   </div>
@@ -1237,7 +1238,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div>
                   <label class="label flex items-center gap-1.5">
                     Anwendbares Recht
-                    <FieldTooltip>Nach welchem Landesrecht der Vertrag ausgelegt wird.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintGoverningLaw') }}</FieldTooltip>
                   </label>
                   <select v-model="form.governing_law" class="input">
                     <option v-for="gl in governingLaws" :key="gl.value" :value="gl.value">{{ gl.label }}</option>
@@ -1247,33 +1248,33 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Gerichtsstand
-                    <FieldTooltip>Welches Gericht bei Streitigkeiten zuständig ist. Nur bei B2B frei wählbar.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintJurisdiction') }}</FieldTooltip>
                   </label>
-                  <input v-model="form.jurisdiction" type="text" class="input" placeholder="z.B. Hamburg, Deutschland" />
+                  <input v-model="form.jurisdiction" type="text" class="input" :placeholder="$t('contracts.jurisdictionPlaceholder')" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 mt-4">
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Kundenland
-                      <FieldTooltip>Land des Kunden. Relevant für USt-IdNr., Reverse-Charge und anwendbares Recht.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintClientCountry') }}</FieldTooltip>
                     </label>
                     <select v-model="form.customer_country" class="input">
                       <option value="DE">Deutschland</option>
-                      <option value="AT">Österreich</option>
+                      <option value="AT">{{ $t('contracts.austria') }}</option>
                       <option value="CH">Schweiz</option>
-                      <option value="DK">Dänemark</option>
+                      <option value="DK">{{ $t('contracts.denmark') }}</option>
                       <option value="NL">Niederlande</option>
                       <option value="FR">Frankreich</option>
                       <option value="US">USA</option>
-                      <option value="GB">Vereinigtes Königreich</option>
+                      <option value="GB">{{ $t('contracts.unitedKingdom') }}</option>
                       <option value="OTHER">Sonstiges</option>
                     </select>
                   </div>
                   <div>
                     <label class="label flex items-center gap-1.5">
-                      Gewährleistungsdauer (Monate)
-                      <FieldTooltip>Allgemeine Gewährleistungsfrist. Bei B2C wird automatisch auf 24 Monate erhöht.</FieldTooltip>
+                      {{ $t('contracts.warrantyDurationMonths') }}
+                      <FieldTooltip>{{ $t('contracts.hintWarrantyPeriod') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.warranty_duration_months" type="number" min="0" class="input" />
                   </div>
@@ -1283,7 +1284,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       Haftungsdeckel
-                      <FieldTooltip>Faktor × Vertragswert als maximale Haftung. z.B. 1 = Haftung max. Vertragswert. 2 = doppelter Vertragswert. Mindestens 5.000 EUR.</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.hintLiabilityFactor') }}</FieldTooltip>
                     </label>
                     <select v-model.number="form.liability_cap_factor" class="input">
                       <option :value="0.5">0,5× Vertragswert</option>
@@ -1299,29 +1300,29 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.include_nda_clause" type="checkbox" :true-value="1" :false-value="0" class="checkbox" />
                     Geheimhaltungsklausel einbinden
-                    <FieldTooltip>Fügt eine zusätzliche NDA-Klausel in den Vertrag ein.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.hintNdaClause') }}</FieldTooltip>
                   </label>
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.exclude_cisg" type="checkbox" class="checkbox" />
-                    CISG ausschließen
-                    <FieldTooltip>Schließt das UN-Kaufrecht (CISG) aus. Standard bei Software-Verträgen, da CISG für Warenhandel konzipiert ist.</FieldTooltip>
+                    {{ $t('contracts.excludeCisg') }}
+                    <FieldTooltip>{{ $t('contracts.hintCisgExclusion') }}</FieldTooltip>
                   </label>
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.as_is_clause" type="checkbox" class="checkbox" />
-                    As-Is-Klausel (Gewährleistungsausschluss)
-                    <FieldTooltip>Software wird "wie besehen" verkauft. NUR bei B2B möglich. Bei B2C nicht wirksam.</FieldTooltip>
+                    {{ $t('contracts.asIsWarrantyExclusion') }}
+                    <FieldTooltip>{{ $t('contracts.hintAsIsClause') }}</FieldTooltip>
                   </label>
                 </div>
 
                 <div v-if="form.as_is_clause && form.is_b2c" class="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
-                  <p class="text-xs text-red-300">Hinweis: As-Is-Klausel ist bei B2C-Verträgen nicht wirksam und wird im generierten Vertrag ignoriert.</p>
+                  <p class="text-xs text-red-300">{{ $t('contracts.noteAsIsClause') }}</p>
                 </div>
 
                 <div v-if="form.is_b2c" class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
                   <p class="text-sm text-amber-300 font-medium">B2C-Vertrag: Automatische Klauseln</p>
                   <ul class="text-xs text-amber-200/70 mt-1 space-y-0.5">
-                    <li>Widerrufsbelehrung (14 Tage gemäß Fernabsatzgesetz)</li>
-                    <li>Verbraucherschutz-Gewährleistung</li>
+                    <li>{{ $t('contracts.hintWithdrawalNotice') }}</li>
+                    <li>{{ $t('contracts.consumerProtectionWarranty') }}</li>
                     <li v-if="form.governing_law !== 'DE'">Zwingende Verbraucherschutzvorschriften des Wohnsitzlandes</li>
                   </ul>
                 </div>
@@ -1329,9 +1330,9 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div class="mt-4">
                   <label class="label flex items-center gap-1.5">
                     Anmerkungen (optional)
-                    <FieldTooltip>Interne Notizen zum Vertrag. Erscheinen nicht im generierten Vertragstext.</FieldTooltip>
+                    <FieldTooltip>Interne Notizen zum Vertrag. Erscheinen nicht im generierten {{ $t('contracts.contractText') }}.</FieldTooltip>
                   </label>
-                  <textarea v-model="form.notes" class="input" rows="3" placeholder="Interne Notizen zum Vertrag"></textarea>
+                  <textarea v-model="form.notes" class="input" rows="3" :placeholder="$t('contracts.hintInternalNotes')"></textarea>
                 </div>
 
                 <!-- Save as Template (custom contracts only) -->
@@ -1339,11 +1340,11 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.save_as_template" type="checkbox" class="checkbox" />
                     Als Vorlage speichern
-                    <FieldTooltip>Speichert den Vertragstext als wiederverwendbare Vorlage. Beim nächsten Individualvertrag kannst du diese Vorlage auswählen.</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.speichertDen{{ $t('contracts.contractText') }}AlsWiederverwendbareVorlageBeim') }}</FieldTooltip>
                   </label>
                   <div v-if="form.save_as_template" class="mt-3">
                     <label class="label">Vorlagenname *</label>
-                    <input v-model="form.template_name" type="text" class="input" placeholder="z.B. Freelancer-Vertrag" />
+                    <input v-model="form.template_name" type="text" class="input" placeholder=$t('contracts.hintCustomTitle') />
                   </div>
                 </div>
               </div>
@@ -1357,9 +1358,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 @click="prevStep"
                 class="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <ChevronLeftIcon class="w-4 h-4" />
-                Zurück
-              </button>
+                <ChevronLeftIcon class="w-4 h-4" />{{ $t('common.back') }}</button>
               <div v-else></div>
 
               <div class="flex gap-2">
@@ -1367,7 +1366,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   type="button"
                   @click="$emit('close')"
                   class="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >Abbrechen</button>
+                >{{ $t('common.cancel') }}</button>
                 <button
                   v-if="currentStep < totalSteps"
                   type="button"
@@ -1385,7 +1384,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   class="flex items-center gap-1 px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-500 transition-colors"
                 >
                   <CheckIcon class="w-4 h-4" />
-                  Vertrag erstellen
+                  {{ $t('contracts.createContract') }}
                 </button>
               </div>
             </div>

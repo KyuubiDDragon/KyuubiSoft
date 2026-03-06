@@ -50,7 +50,7 @@ function getQueryName() {
       <div class="relative card-glass w-full max-w-lg flex flex-col">
         <!-- Header -->
         <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-          <h3 class="text-lg font-semibold text-white">DNS-Propagation pruefen</h3>
+          <h3 class="text-lg font-semibold text-white">{{ $t('dnsModule.checkPropagation') }}</h3>
           <button @click="close" class="btn-icon-sm">
             <XMarkIcon class="w-5 h-5" />
           </button>
@@ -61,15 +61,15 @@ function getQueryName() {
           <!-- Record Info -->
           <div class="bg-black/20 rounded-lg p-4 space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 uppercase tracking-wider">Abfrage</span>
+              <span class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('dnsModule.query') }}</span>
               <code class="text-sm text-primary-400 font-mono">{{ getQueryName() }}</code>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 uppercase tracking-wider">Typ</span>
+              <span class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('dnsModule.type') }}</span>
               <span class="text-sm text-gray-300">{{ record.type }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500 uppercase tracking-wider">Erwarteter Wert</span>
+              <span class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('dnsModule.expectedValue') }}</span>
               <code class="text-sm text-gray-300 font-mono max-w-[250px] truncate">{{ record.value }}</code>
             </div>
           </div>
@@ -81,7 +81,7 @@ function getQueryName() {
             class="btn-primary w-full"
           >
             <ArrowPathIcon class="w-4 h-4 mr-2" :class="{ 'animate-spin': checking }" />
-            {{ checking ? 'Pruefe...' : 'Propagation pruefen' }}
+            {{ checking ? $t('dnsModule.checking') : $t('dnsModule.checkPropagation') }}
           </button>
 
           <!-- Result -->
@@ -97,7 +97,7 @@ function getQueryName() {
                 class="text-sm font-medium"
                 :class="result.propagated ? 'text-emerald-400' : 'text-red-400'"
               >
-                {{ result.propagated ? 'Propagiert' : 'Nicht propagiert' }}
+                {{ result.propagated ? $t('dnsModule.propagated') : $t('dnsModule.notPropagated') }}
               </span>
               <span class="text-xs text-gray-500 ml-auto">
                 {{ new Date(result.checked_at).toLocaleTimeString('de-DE') }}
@@ -109,9 +109,9 @@ function getQueryName() {
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-white/[0.06]">
-                    <th class="text-left text-xs text-gray-500 font-medium p-3">Host</th>
-                    <th class="text-left text-xs text-gray-500 font-medium p-3">Typ</th>
-                    <th class="text-left text-xs text-gray-500 font-medium p-3">Wert</th>
+                    <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.host') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.type') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.value') }}</th>
                     <th class="text-right text-xs text-gray-500 font-medium p-3">TTL</th>
                   </tr>
                 </thead>
@@ -135,7 +135,7 @@ function getQueryName() {
               v-else
               class="bg-black/20 rounded-lg p-4 text-center text-sm text-gray-500"
             >
-              Keine DNS-Eintraege gefunden.
+              {{ $t('dnsModule.noDnsEntries') }}
             </div>
           </div>
         </div>

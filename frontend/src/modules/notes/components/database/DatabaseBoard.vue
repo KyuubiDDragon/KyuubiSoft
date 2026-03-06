@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -21,6 +22,7 @@ const emit = defineEmits(['updated'])
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
 
+const { t } = useI18n()
 const isLoading = ref(true)
 const database = ref(null)
 const groupByProperty = ref(null)
@@ -61,7 +63,7 @@ const groupedRows = computed(() => {
 
   // Add ungrouped column
   groups['_ungrouped'] = {
-    option: { id: '_ungrouped', name: 'Ohne Status', color: 'gray' },
+    option: { id: '_ungrouped', name: t('notesModule.database.noStatus'), color: 'gray' },
     rows: []
   }
 
@@ -93,7 +95,7 @@ async function loadDatabase() {
     database.value = await databaseStore.fetchDatabase(props.databaseId)
   } catch (error) {
     console.error('Error loading database:', error)
-    uiStore.showError('Fehler beim Laden der Datenbank')
+    uiStore.showError(t('notesModule.database.loadError'))
   } finally {
     isLoading.value = false
   }
@@ -113,7 +115,7 @@ async function addRow(groupId) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('notesModule.database.createError'))
   }
 }
 
@@ -124,7 +126,7 @@ async function updateRowCell(rowId, propertyId, value) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('notesModule.database.updateError'))
   }
 }
 
@@ -135,7 +137,7 @@ async function deleteRow(rowId) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.database.deleteError'))
   }
 }
 
@@ -151,7 +153,7 @@ async function moveCard(rowId, newGroupId) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Verschieben')
+    uiStore.showError(t('notesModule.database.moveError'))
   }
 }
 
@@ -163,8 +165,8 @@ const titleProperty = computed(() => {
 
 // Get display title for row
 function getRowTitle(row) {
-  if (!titleProperty.value) return 'Ohne Titel'
-  return row.cells?.[titleProperty.value.id]?.value || 'Ohne Titel'
+  if (!titleProperty.value) return t('notesModule.database.untitled')
+  return row.cells?.[titleProperty.value.id]?.value || t('notesModule.database.untitled')
 }
 
 // Get visible properties for card (excluding group and title)
@@ -248,8 +250,8 @@ function handleDrop(event, groupId) {
 
     <!-- No group property found -->
     <div v-else-if="!groupProperty" class="text-center py-12 text-gray-500">
-      <p class="mb-2">Board-Ansicht benötigt eine Select-Spalte</p>
-      <p class="text-sm">Füge eine Select- oder Multi-Select-Spalte hinzu um die Board-Ansicht zu nutzen</p>
+      <p class="mb-2">{{ $t('notesModule.database.boardNeedsSelect') }}</p>
+      <p class="text-sm">{{ $t('notesModule.database.addSelectColumn') }}</p>
     </div>
 
     <!-- Board -->
@@ -309,7 +311,7 @@ function handleDrop(event, groupId) {
             v-if="group.rows.length === 0"
             class="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-white/[0.06] rounded-xl"
           >
-            Keine Einträge
+            {{ $t('notesModule.database.noEntries') }}
           </div>
         </div>
 
@@ -320,7 +322,7 @@ function handleDrop(event, groupId) {
             class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <PlusIcon class="w-4 h-4" />
-            Neu
+            {{ $t('notesModule.database.new') }}
           </button>
         </div>
       </div>

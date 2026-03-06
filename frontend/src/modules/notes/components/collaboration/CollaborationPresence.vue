@@ -62,7 +62,7 @@ function isTyping(userId) {
         'w-2 h-2 rounded-full mr-2',
         collaborationStore.isConnected ? 'bg-green-500' : 'bg-gray-500'
       ]"
-      :title="collaborationStore.isConnected ? 'Verbunden' : 'Nicht verbunden'"
+      :title="collaborationStore.isConnected ? $t('notesModule.collaboration.connected') : $t('notesModule.collaboration.disconnected')"
     />
 
     <!-- Participant avatars -->

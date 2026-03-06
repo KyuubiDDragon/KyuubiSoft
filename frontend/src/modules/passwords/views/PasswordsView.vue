@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePasswordsStore } from '@/stores/passwords'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -26,6 +27,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 const passwordsStore = usePasswordsStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -110,38 +112,38 @@ async function openEditPassword(pwd) {
     showPassword.value = false
     showPasswordModal.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
   }
 }
 
 async function savePassword() {
   if (!passwordForm.value.name || !passwordForm.value.password) {
-    uiStore.showError('Name und Passwort sind erforderlich')
+    uiStore.showError(t('passwordsModule.nameUndPasswortSindErforderlich'))
     return
   }
 
   try {
     if (editingPassword.value) {
       await passwordsStore.updatePassword(editingPassword.value.id, passwordForm.value)
-      uiStore.showSuccess('Passwort aktualisiert')
+      uiStore.showSuccess(t('system.passwortAktualisiert'))
     } else {
       await passwordsStore.createPassword(passwordForm.value)
-      uiStore.showSuccess('Passwort erstellt')
+      uiStore.showSuccess(t('system.passwortErstellt'))
     }
     showPasswordModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deletePassword(pwd) {
-  if (!await confirm({ message: `"${pwd.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `"${pwd.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await passwordsStore.deletePassword(pwd.id)
-    uiStore.showSuccess('Passwort gelöscht')
+    uiStore.showSuccess(t('system.passwortGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -149,7 +151,7 @@ async function toggleFavorite(pwd) {
   try {
     await passwordsStore.toggleFavorite(pwd.id)
   } catch (error) {
-    uiStore.showError('Fehler')
+    uiStore.showError(t('common.error'))
   }
 }
 
@@ -159,7 +161,7 @@ async function generatePassword() {
     passwordForm.value.password = password
     showPassword.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Generieren')
+    uiStore.showError(t('passwordsModule.fehlerBeimGenerieren'))
   }
 }
 
@@ -169,7 +171,7 @@ async function copyToClipboard(text, fieldName) {
     copiedField.value = fieldName
     setTimeout(() => copiedField.value = null, 2000)
   } catch (error) {
-    uiStore.showError('Kopieren fehlgeschlagen')
+    uiStore.showError(t('links.kopierenFehlgeschlagen'))
   }
 }
 
@@ -177,9 +179,9 @@ async function copyPassword(pwd) {
   try {
     const fullPassword = await passwordsStore.getPassword(pwd.id)
     await copyToClipboard(fullPassword.password, pwd.id)
-    uiStore.showSuccess('Passwort kopiert')
+    uiStore.showSuccess(t('passwordsModule.passwortKopiert'))
   } catch (error) {
-    uiStore.showError('Fehler beim Kopieren')
+    uiStore.showError(t('passwordsModule.passwordsmodulefehlerbeimkopieren'))
   }
 }
 
@@ -198,7 +200,7 @@ async function showTOTP(pwd) {
       }
     }, 1000)
   } catch (error) {
-    uiStore.showError('TOTP nicht verfügbar')
+    uiStore.showError(t('passwordsModule.totpNichtVerfuegbar'))
   }
 }
 
@@ -237,17 +239,17 @@ async function saveCategory() {
     }
     showCategoryModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 async function deleteCategory(cat) {
-  if (!await confirm({ message: `Kategorie "${cat.name}" löschen? Passwörter bleiben erhalten.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Kategorie "${cat.name}" löschen? Passwörter bleiben erhalten.`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await passwordsStore.deleteCategory(cat.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -275,7 +277,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
           <input
             v-model="passwordsStore.searchQuery"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('bookmarksModule.suchen')"
             class="input pl-10 w-full"
           />
         </div>
@@ -289,7 +291,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
           :class="!passwordsStore.selectedCategory ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/[0.04]'"
         >
           <KeyIcon class="w-5 h-5" />
-          <span>Alle Passwörter</span>
+          <span>{{ $t('passwordsModule.allePasswoerter') }}</span>
           <span class="ml-auto text-xs opacity-70">{{ passwordsStore.passwords.length }}</span>
         </button>
 
@@ -338,7 +340,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Header -->
       <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-white">Passwort-Manager</h1>
+        <h1 class="text-xl font-semibold text-white">{{ $t('passwordsModule.passwortmanager') }}</h1>
         <button @click="openCreatePassword" class="btn-primary flex items-center gap-2">
           <PlusIcon class="w-5 h-5" />
           Neues Passwort
@@ -353,7 +355,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
 
         <div v-else-if="passwordsStore.filteredPasswords.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400">
           <KeyIcon class="w-16 h-16 mb-4 opacity-50" />
-          <p>Keine Passwörter gefunden</p>
+          <p>{{ $t('passwordsModule.keinePasswoerterGefunden') }}</p>
         </div>
 
         <div v-else class="space-y-2">
@@ -401,21 +403,21 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                   @click="copyPassword(pwd)"
                   class="p-2 text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] rounded-lg"
                   :class="{ 'text-green-400': copiedField === pwd.id }"
-                  title="Passwort kopieren"
+                  :title="$t('passwords.copyPassword')"
                 >
                   <ClipboardIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="openEditPassword(pwd)"
                   class="p-2 text-gray-400 hover:text-primary-400 hover:bg-white/[0.04] rounded-lg"
-                  title="Bearbeiten"
+                  :title="$t('common.edit')"
                 >
                   <PencilIcon class="w-5 h-5" />
                 </button>
                 <button
                   @click="deletePassword(pwd)"
                   class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg"
-                  title="Löschen"
+                  :title="$t('common.delete')"
                 >
                   <TrashIcon class="w-5 h-5" />
                 </button>
@@ -434,7 +436,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
           <div class="p-6">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-lg font-semibold text-white">
-                {{ editingPassword ? 'Passwort bearbeiten' : 'Neues Passwort' }}
+                {{ editingPassword ? $t('passwordsModule.passwortBearbeiten') : $t('passwords.newPassword') }}
               </h2>
               <button @click="showPasswordModal = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-6 h-6" />
@@ -448,7 +450,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
               </div>
 
               <div>
-                <label class="label">Benutzername</label>
+                <label class="label">{{ $t('passwords.username') }}</label>
                 <div class="relative">
                   <UserIcon class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input v-model="passwordForm.username" type="text" class="input pl-10" placeholder="E-Mail oder Benutzername" />
@@ -456,7 +458,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
               </div>
 
               <div>
-                <label class="label">Passwort *</label>
+                <label class="label">{{ $t('passwordsModule.passwort') }}</label>
                 <div class="flex gap-2">
                   <div class="relative flex-1">
                     <LockClosedIcon class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -474,7 +476,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                       <EyeSlashIcon v-else class="w-5 h-5" />
                     </button>
                   </div>
-                  <button @click="generatePassword" class="btn-secondary" title="Generieren">
+                  <button @click="generatePassword" class="btn-secondary" :title="$t('passwordsModule.generieren')">
                     <ArrowPathIcon class="w-5 h-5" />
                   </button>
                 </div>
@@ -513,9 +515,9 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
               </div>
 
               <div>
-                <label class="label">Kategorie</label>
+                <label class="label">{{ $t('snippetsModule.kategorie') }}</label>
                 <select v-model="passwordForm.category_id" class="input">
-                  <option :value="null">Keine Kategorie</option>
+                  <option :value="null">{{ $t('tickets.ticketskeinekategorie') }}</option>
                   <option v-for="cat in passwordsStore.categories" :key="cat.id" :value="cat.id">
                     {{ cat.name }}
                   </option>
@@ -524,18 +526,18 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
 
               <div>
                 <label class="label">TOTP Secret (optional)</label>
-                <input v-model="passwordForm.totp_secret" type="text" class="input font-mono" placeholder="BASE32 Secret für 2FA" />
+                <input v-model="passwordForm.totp_secret" type="text" class="input font-mono" :placeholder="$t('passwordsModule.base32SecretFuer2fa')" />
               </div>
 
               <div>
                 <label class="label">Notizen</label>
-                <textarea v-model="passwordForm.notes" class="input" rows="3" placeholder="Zusätzliche Informationen..."></textarea>
+                <textarea v-model="passwordForm.notes" class="input" rows="3" :placeholder="$t('passwordsModule.zusaetzlicheInformationen')"></textarea>
               </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-6">
-              <button @click="showPasswordModal = false" class="btn-secondary">Abbrechen</button>
-              <button @click="savePassword" class="btn-primary">Speichern</button>
+              <button @click="showPasswordModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+              <button @click="savePassword" class="btn-primary">{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -549,13 +551,13 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
         <div class="relative modal w-full max-w-sm">
           <div class="p-6">
             <h2 class="text-lg font-semibold text-white mb-4">
-              {{ editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie' }}
+              {{ editingCategory ? $t('tickets.kategorieBearbeiten') : $t('tickets.neueKategorie') }}
             </h2>
 
             <div class="space-y-4">
               <div>
                 <label class="label">Name</label>
-                <input v-model="categoryForm.name" type="text" class="input" placeholder="Kategoriename" />
+                <input v-model="categoryForm.name" type="text" class="input" placeholder=$t('tickets.kategoriename') />
               </div>
 
               <div>
@@ -579,11 +581,11 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
                 @click="deleteCategory(editingCategory)"
                 class="btn-secondary text-red-400"
               >
-                Löschen
+                {{ $t('common.delete') }}
               </button>
               <div class="flex gap-3 ml-auto">
-                <button @click="showCategoryModal = false" class="btn-secondary">Abbrechen</button>
-                <button @click="saveCategory" class="btn-primary">Speichern</button>
+                <button @click="showCategoryModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+                <button @click="saveCategory" class="btn-primary">{{ $t('common.save') }}</button>
               </div>
             </div>
           </div>
@@ -615,7 +617,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
             <button @click="copyToClipboard(totpData.code, 'totp')" class="btn-secondary flex-1">
               <ClipboardIcon class="w-5 h-5 mx-auto" />
             </button>
-            <button @click="closeTOTPModal" class="btn-primary flex-1">Schließen</button>
+            <button @click="closeTOTPModal" class="btn-primary flex-1">{{ $t('common.close') }}</button>
           </div>
         </div>
       </div>

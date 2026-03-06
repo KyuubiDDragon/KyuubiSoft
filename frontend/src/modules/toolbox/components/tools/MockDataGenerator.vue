@@ -1,6 +1,10 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const count = ref(5)
 const format = ref('json')
 const selectedFields = ref(['id', 'name', 'email'])
@@ -8,15 +12,15 @@ const generatedData = ref([])
 
 // German names and data
 const firstNames = ['Max', 'Anna', 'Paul', 'Sophie', 'Felix', 'Emma', 'Leon', 'Mia', 'Noah', 'Hannah', 'Lukas', 'Lena', 'Jonas', 'Marie', 'Tim', 'Laura', 'Jan', 'Sarah', 'Tom', 'Julia']
-const lastNames = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch', 'Richter', 'Klein', 'Wolf', 'Neumann', 'Schwarz', 'Braun', 'Zimmermann', 'Krüger', 'Hartmann']
+const lastNames = [t('toolbox.mueller'), 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch', 'Richter', 'Klein', 'Wolf', 'Neumann', 'Schwarz', 'Braun', 'Zimmermann', t('toolbox.krueger'), 'Hartmann']
 const domains = ['gmail.com', 'outlook.com', 'web.de', 'gmx.de', 'yahoo.de', 'mail.de', 'icloud.com', 'posteo.de']
-const streets = ['Hauptstraße', 'Bahnhofstraße', 'Schulstraße', 'Gartenstraße', 'Dorfstraße', 'Bergstraße', 'Waldstraße', 'Ringstraße', 'Kirchstraße', 'Lindenstraße']
-const cities = ['Berlin', 'Hamburg', 'München', 'Köln', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Leipzig', 'Dortmund', 'Essen', 'Bremen', 'Dresden', 'Hannover', 'Nürnberg', 'Duisburg']
-const countries = ['Deutschland', 'Österreich', 'Schweiz']
+const streets = [t('toolbox.hauptstrasse'), t('toolbox.bahnhofstrasse'), t('toolbox.schulstrasse'), t('toolbox.gartenstrasse'), t('toolbox.dorfstrasse'), t('toolbox.bergstrasse'), t('toolbox.waldstrasse'), t('toolbox.ringstrasse'), t('toolbox.kirchstrasse'), t('toolbox.lindenstrasse')]
+const cities = ['Berlin', 'Hamburg', t('toolbox.muenchen'), t('toolbox.koeln'), 'Frankfurt', 'Stuttgart', t('toolbox.duesseldorf'), 'Leipzig', 'Dortmund', 'Essen', 'Bremen', 'Dresden', 'Hannover', t('toolbox.nuernberg'), 'Duisburg']
+const countries = ['Deutschland', t('contractsModule.oesterreich'), 'Schweiz']
 const companies = ['TechCorp GmbH', 'Digital Solutions AG', 'WebDev Pro', 'CloudSoft GmbH', 'DataTech AG', 'NetWorks GmbH', 'CyberSystems', 'SmartIT GmbH', 'FutureTech AG', 'InnoSoft GmbH']
-const jobTitles = ['Software Entwickler', 'Projektmanager', 'Designer', 'Marketing Manager', 'Vertriebsleiter', 'Produktmanager', 'DevOps Engineer', 'Data Scientist', 'UX Designer', 'Teamleiter']
-const products = ['Laptop', 'Smartphone', 'Tablet', 'Monitor', 'Tastatur', 'Maus', 'Kopfhörer', 'Webcam', 'USB-Hub', 'SSD']
-const colors = ['Rot', 'Blau', 'Grün', 'Gelb', 'Orange', 'Lila', 'Pink', 'Schwarz', 'Weiß', 'Grau']
+const jobTitles = ['Software Entwickler', t('toolbox.projektmanager'), 'Designer', 'Marketing Manager', 'Vertriebsleiter', 'Produktmanager', 'DevOps Engineer', 'Data Scientist', 'UX Designer', 'Teamleiter']
+const products = ['Laptop', 'Smartphone', 'Tablet', t('toolbox.monitor'), 'Tastatur', 'Maus', t('toolbox.kopfhoerer'), 'Webcam', 'USB-Hub', 'SSD']
+const colors = ['Rot', 'Blau', t('toolbox.gruen'), 'Gelb', 'Orange', 'Lila', 'Pink', 'Schwarz', t('toolbox.weiss'), 'Grau']
 const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.'
 
 const fieldTypes = [
@@ -30,7 +34,7 @@ const fieldTypes = [
   { id: 'age', name: 'Alter', category: 'Person' },
   { id: 'birthDate', name: 'Geburtsdatum', category: 'Person' },
   { id: 'gender', name: 'Geschlecht', category: 'Person' },
-  { id: 'street', name: 'Straße', category: 'Adresse' },
+  { id: 'street', name: t('toolbox.strasse'), category: 'Adresse' },
   { id: 'city', name: 'Stadt', category: 'Adresse' },
   { id: 'zip', name: 'PLZ', category: 'Adresse' },
   { id: 'country', name: 'Land', category: 'Adresse' },
@@ -106,7 +110,7 @@ function generateFieldValue(fieldId, index) {
     case 'birthDate':
       return generateDate(new Date(1950, 0, 1), new Date(2005, 11, 31)).toISOString().split('T')[0]
     case 'gender':
-      return random(['männlich', 'weiblich', 'divers'])
+      return random([t('toolbox.maennlich'), 'weiblich', 'divers'])
     case 'street':
       return `${random(streets)} ${randomInt(1, 150)}`
     case 'city':
@@ -247,7 +251,7 @@ generate()
 
     <!-- Field Selection -->
     <div>
-      <label class="block text-xs text-gray-400 mb-2">Felder auswählen</label>
+      <label class="block text-xs text-gray-400 mb-2">{{ $t('toolbox.felderAuswaehlen') }}</label>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto p-1">
         <div v-for="(fields, category) in fieldCategories" :key="category">
           <div class="text-xs text-gray-500 mb-1">{{ category }}</div>
@@ -279,7 +283,7 @@ generate()
     <!-- Output -->
     <div v-if="output">
       <div class="flex items-center justify-between mb-1">
-        <label class="text-xs text-gray-400">Ausgabe</label>
+        <label class="text-xs text-gray-400">{{ $t('toolbox.ausgabe') }}</label>
         <button @click="copyToClipboard" class="text-xs text-primary-400 hover:text-primary-300">
           Kopieren
         </button>

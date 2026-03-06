@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, provide, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import NoteTreeItem from './NoteTreeItem.vue'
@@ -31,6 +32,7 @@ const emit = defineEmits(['toggle-collapse', 'select-note', 'create-note', 'show
 
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 // State
 const searchQuery = ref('')
@@ -103,9 +105,9 @@ function createNote(parentId = null) {
 async function handleMove({ noteId, newParentId }) {
   try {
     await notesStore.moveNote(noteId, newParentId)
-    uiStore.showSuccess('Notiz verschoben')
+    uiStore.showSuccess(t('notesModule.noteMoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Verschieben der Notiz')
+    uiStore.showError(t('notesModule.errors.moveNote'))
   }
 }
 
@@ -161,7 +163,7 @@ async function handleReorder({ noteId, targetId, position }) {
     await notesStore.fetchTree()
   } catch (error) {
     console.error('Reorder error:', error)
-    uiStore.showError('Fehler beim Sortieren')
+    uiStore.showError(t('notesModule.errors.reorder'))
   }
 }
 
@@ -226,14 +228,14 @@ watch(() => props.selectedNoteId, (id) => {
         <button
           @click="$emit('create-note')"
           class="rounded-lg bg-primary-600 p-2 text-white hover:bg-primary-700"
-          title="Neue Notiz"
+          :title="$t('notesModule.newNote')"
         >
           <PlusIcon class="h-5 w-5" />
         </button>
         <button
           @click="$emit('show-templates')"
           class="rounded p-2 text-gray-400 hover:bg-dark-700 hover:text-white"
-          title="Vorlagen"
+          :title="$t('notesModule.templatesLabel')"
         >
           <Squares2X2Icon class="h-5 w-5" />
         </button>
@@ -249,7 +251,7 @@ watch(() => props.selectedNoteId, (id) => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suchen..."
+            :placeholder="$t('notesModule.searchPlaceholder')"
             class="w-full rounded-lg bg-dark-700 py-2 pl-9 pr-3 text-sm text-white placeholder-gray-500 focus:bg-dark-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
@@ -264,7 +266,7 @@ watch(() => props.selectedNoteId, (id) => {
             class="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary-600 py-2 text-sm font-medium text-white hover:bg-primary-700"
           >
             <PlusIcon class="h-4 w-4" />
-            Neue Notiz
+            {{ $t('notesModule.newNote') }}
           </button>
         </div>
 
@@ -275,7 +277,7 @@ watch(() => props.selectedNoteId, (id) => {
             class="flex w-full items-center gap-2 rounded px-2 py-1 text-xs font-semibold uppercase text-gray-500 hover:bg-dark-700"
           >
             <StarIcon class="h-4 w-4 text-yellow-500" />
-            <span>Favoriten</span>
+            <span>{{ $t('sidebar.favorites') }}</span>
             <ChevronRightIcon
               :class="[
                 'ml-auto h-3 w-3 transition-transform',
@@ -311,7 +313,7 @@ watch(() => props.selectedNoteId, (id) => {
             <svg class="h-4 w-4 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M16 4v4h1V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v4h1V4h6z"/>
             </svg>
-            <span>Angepinnt</span>
+            <span>{{ $t('notesModule.sidebar.pinned') }}</span>
             <ChevronRightIcon
               :class="[
                 'ml-auto h-3 w-3 transition-transform',
@@ -345,7 +347,7 @@ watch(() => props.selectedNoteId, (id) => {
             class="flex w-full items-center gap-2 rounded px-2 py-1 text-xs font-semibold uppercase text-gray-500 hover:bg-dark-700"
           >
             <ClockIcon class="h-4 w-4 text-gray-400" />
-            <span>Kürzlich</span>
+            <span>{{ $t('notesModule.sidebar.recent') }}</span>
             <ChevronRightIcon
               :class="[
                 'ml-auto h-3 w-3 transition-transform',
@@ -382,7 +384,7 @@ watch(() => props.selectedNoteId, (id) => {
             class="flex w-full items-center gap-2 rounded px-2 py-1 text-xs font-semibold uppercase text-gray-500 hover:bg-dark-700"
           >
             <FolderIcon class="h-4 w-4" />
-            <span>Alle Notizen</span>
+            <span>{{ $t('notesModule.sidebar.allNotes') }}</span>
             <ChevronRightIcon
               :class="[
                 'ml-auto h-3 w-3 transition-transform',
@@ -394,16 +396,16 @@ watch(() => props.selectedNoteId, (id) => {
           <div v-show="expandedSections.all" class="mt-1">
             <!-- Loading state -->
             <div v-if="isLoadingTree" class="px-2 py-4 text-center text-gray-500 text-sm">
-              Laden...
+              {{ $t('common.loading') }}
             </div>
 
             <!-- Empty state -->
             <div v-else-if="filteredTree.length === 0" class="px-2 py-4 text-center text-gray-500 text-sm">
               <template v-if="searchQuery">
-                Keine Ergebnisse für "{{ searchQuery }}"
+                {{ $t('notes.sidebar.noResultsFor', { query: searchQuery }) }}
               </template>
               <template v-else>
-                Noch keine Notizen
+                {{ $t('notesModule.sidebar.noNotesYet') }}
               </template>
             </div>
 
@@ -432,7 +434,7 @@ watch(() => props.selectedNoteId, (id) => {
           class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-400 hover:bg-dark-700 hover:text-white"
         >
           <TrashIcon class="h-4 w-4" />
-          <span>Papierkorb</span>
+          <span>{{ $t('notesModule.trash') }}</span>
         </button>
       </div>
     </template>

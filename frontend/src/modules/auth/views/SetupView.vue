@@ -1,11 +1,13 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { markSetupComplete } from '@/router'
 import api from '@/core/api/axios'
 import { EyeIcon, EyeSlashIcon, CheckCircleIcon, ServerIcon } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const uiStore = useUiStore()
 
@@ -57,7 +59,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Failed to check setup status:', error)
-    uiStore.showError('Verbindung zum Server fehlgeschlagen')
+    uiStore.showError(t('errors.connectionFailed'))
   } finally {
     isChecking.value = false
   }
@@ -68,33 +70,33 @@ async function handleSubmit() {
 
   // Validate
   if (!form.email) {
-    errors.value.email = 'E-Mail ist erforderlich'
+    errors.value.email = t('authModule.emailRequired')
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.value.email = 'Ungültige E-Mail-Adresse'
+    errors.value.email = t('authModule.invalidEmail')
   }
 
   if (!form.username) {
-    errors.value.username = 'Benutzername ist erforderlich'
+    errors.value.username = t('authModule.usernameRequired')
   } else if (form.username.length < 3) {
-    errors.value.username = 'Benutzername muss mindestens 3 Zeichen lang sein'
+    errors.value.username = t('authModule.usernameMinLength')
   }
 
   if (!form.password) {
-    errors.value.password = 'Passwort ist erforderlich'
+    errors.value.password = t('authModule.passwordRequired')
   } else if (form.password.length < 12) {
-    errors.value.password = 'Passwort muss mindestens 12 Zeichen lang sein'
+    errors.value.password = t('authModule.passwordMinLength')
   } else if (!/[A-Z]/.test(form.password)) {
-    errors.value.password = 'Passwort muss mindestens einen Großbuchstaben enthalten'
+    errors.value.password = t('authModule.passwordNeedsUppercase')
   } else if (!/[a-z]/.test(form.password)) {
-    errors.value.password = 'Passwort muss mindestens einen Kleinbuchstaben enthalten'
+    errors.value.password = t('authModule.passwordNeedsLowercase')
   } else if (!/[0-9]/.test(form.password)) {
-    errors.value.password = 'Passwort muss mindestens eine Zahl enthalten'
+    errors.value.password = t('authModule.passwordNeedsNumber')
   } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password)) {
-    errors.value.password = 'Passwort muss mindestens ein Sonderzeichen enthalten'
+    errors.value.password = t('authModule.passwordNeedsSpecial')
   }
 
   if (form.password !== form.confirm_password) {
-    errors.value.confirm_password = 'Passwörter stimmen nicht überein'
+    errors.value.confirm_password = t('authModule.passwordsDoNotMatch')
   }
 
   if (Object.keys(errors.value).length > 0) {
@@ -110,14 +112,14 @@ async function handleSubmit() {
     markSetupComplete()
 
     setupComplete.value = true
-    uiStore.showSuccess('Einrichtung abgeschlossen! Du kannst dich jetzt anmelden.')
+    uiStore.showSuccess(t('authModule.setupComplete'))
 
     // Redirect to login after 2 seconds
     setTimeout(() => {
       router.push('/login')
     }, 2000)
   } catch (error) {
-    const message = error.response?.data?.error || 'Einrichtung fehlgeschlagen'
+    const message = error.response?.data?.error || t('authModule.setupFailed')
     errors.value.general = message
     uiStore.showError(message)
   } finally {
@@ -134,24 +136,24 @@ async function handleSubmit() {
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
-      <p class="mt-4 text-gray-400">Prüfe Setup-Status...</p>
+      <p class="mt-4 text-gray-400">{{ $t('authModule.checkingSetupStatus') }}</p>
     </div>
 
     <!-- Setup Complete -->
     <div v-else-if="setupComplete" class="text-center py-8">
       <CheckCircleIcon class="h-16 w-16 mx-auto text-green-500 mb-4" />
-      <h2 class="text-2xl font-bold text-white mb-2">Einrichtung abgeschlossen!</h2>
-      <p class="text-gray-400 mb-6">Du wirst zum Login weitergeleitet...</p>
+      <h2 class="text-2xl font-bold text-white mb-2">{{ $t('authModule.setupCompleteTitle') }}</h2>
+      <p class="text-gray-400 mb-6">{{ $t('authModule.redirectingToLogin') }}</p>
     </div>
 
     <!-- Setup Form -->
     <div v-else-if="setupRequired">
       <div class="flex items-center gap-3 mb-2">
         <ServerIcon class="h-8 w-8 text-primary-500" />
-        <h2 class="text-2xl font-bold text-white">Ersteinrichtung</h2>
+        <h2 class="text-2xl font-bold text-white">{{ $t('authModule.initialSetup') }}</h2>
       </div>
       <p class="text-gray-400 mb-6">
-        Willkommen! Erstelle deinen Administrator-Account, um zu starten.
+        {{ $t('authModule.setupDescription') }}
       </p>
 
       <form @submit.prevent="handleSubmit" class="space-y-5">
@@ -165,20 +167,20 @@ async function handleSubmit() {
 
         <!-- Instance Name -->
         <div>
-          <label for="instance_name" class="label">Instanz-Name</label>
+          <label for="instance_name" class="label">{{ $t('authModule.instanceName') }}</label>
           <input
             id="instance_name"
             v-model="form.instance_name"
             type="text"
             class="input"
-            placeholder="Mein KyuubiSoft"
+            :placeholder="$t('authModule.instanceNamePlaceholder')"
           />
-          <p class="mt-1 text-xs text-gray-500">Der Name deiner Installation (wird im Titel angezeigt)</p>
+          <p class="mt-1 text-xs text-gray-500">{{ $t('authModule.instanceNameHint') }}</p>
         </div>
 
         <!-- E-Mail -->
         <div>
-          <label for="email" class="label">E-Mail *</label>
+          <label for="email" class="label">{{ $t('auth.email') }} *</label>
           <input
             id="email"
             v-model="form.email"
@@ -194,7 +196,7 @@ async function handleSubmit() {
 
         <!-- Username -->
         <div>
-          <label for="username" class="label">Benutzername *</label>
+          <label for="username" class="label">{{ $t('auth.username') }} *</label>
           <input
             id="username"
             v-model="form.username"
@@ -210,7 +212,7 @@ async function handleSubmit() {
 
         <!-- Password -->
         <div>
-          <label for="password" class="label">Passwort *</label>
+          <label for="password" class="label">{{ $t('auth.password') }} *</label>
           <div class="relative">
             <input
               id="password"
@@ -237,26 +239,26 @@ async function handleSubmit() {
           <!-- Password strength indicators -->
           <div v-if="form.password" class="mt-2 grid grid-cols-2 gap-1 text-xs">
             <div :class="passwordStrength.hasMinLength ? 'text-green-500' : 'text-gray-500'">
-              {{ passwordStrength.hasMinLength ? '✓' : '○' }} Mind. 12 Zeichen
+              {{ passwordStrength.hasMinLength ? '✓' : '○' }} {{ $t('authModule.pwMinLength') }}
             </div>
             <div :class="passwordStrength.hasUppercase ? 'text-green-500' : 'text-gray-500'">
-              {{ passwordStrength.hasUppercase ? '✓' : '○' }} Großbuchstabe
+              {{ passwordStrength.hasUppercase ? '✓' : '○' }} {{ $t('authModule.pwUppercase') }}
             </div>
             <div :class="passwordStrength.hasLowercase ? 'text-green-500' : 'text-gray-500'">
-              {{ passwordStrength.hasLowercase ? '✓' : '○' }} Kleinbuchstabe
+              {{ passwordStrength.hasLowercase ? '✓' : '○' }} {{ $t('authModule.pwLowercase') }}
             </div>
             <div :class="passwordStrength.hasNumber ? 'text-green-500' : 'text-gray-500'">
-              {{ passwordStrength.hasNumber ? '✓' : '○' }} Zahl
+              {{ passwordStrength.hasNumber ? '✓' : '○' }} {{ $t('authModule.pwNumber') }}
             </div>
             <div :class="passwordStrength.hasSpecial ? 'text-green-500' : 'text-gray-500'" class="col-span-2">
-              {{ passwordStrength.hasSpecial ? '✓' : '○' }} Sonderzeichen (!@#$%^&*...)
+              {{ passwordStrength.hasSpecial ? '✓' : '○' }} {{ $t('authModule.pwSpecialChars') }}
             </div>
           </div>
         </div>
 
         <!-- Confirm Password -->
         <div>
-          <label for="confirm_password" class="label">Passwort bestätigen *</label>
+          <label for="confirm_password" class="label">{{ $t('auth.confirmPassword') }} *</label>
           <div class="relative">
             <input
               id="confirm_password"
@@ -282,7 +284,7 @@ async function handleSubmit() {
 
         <!-- Info Box -->
         <div class="bg-primary-500/10 border border-primary-500/30 text-primary-300 px-4 py-3 rounded-lg text-sm">
-          <strong>Hinweis:</strong> Dieser Account erhält automatisch volle Administrator-Rechte (Owner-Rolle).
+          <strong>{{ $t('common.note') }}:</strong> {{ $t('authModule.adminAccountNote') }}
         </div>
 
         <!-- Submit button -->
@@ -296,9 +298,9 @@ async function handleSubmit() {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Einrichtung...
+            {{ $t('authModule.settingUp') }}
           </span>
-          <span v-else>Einrichtung abschließen</span>
+          <span v-else>{{ $t('authModule.completeSetup') }}</span>
         </button>
       </form>
     </div>

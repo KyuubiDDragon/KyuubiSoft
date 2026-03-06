@@ -525,7 +525,7 @@ function formatRelativeTime(date) {
                     class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-dark-600"
                   >
                     <TrashIcon class="h-4 w-4" />
-                    Löschen
+                    {{ $t('common.delete') }}
                   </button>
                 </div>
               </div>

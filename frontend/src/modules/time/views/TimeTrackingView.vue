@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
@@ -22,6 +23,7 @@ import {
 import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -241,7 +243,7 @@ async function saveEntry() {
 
 // Delete entry
 async function deleteEntry(entry) {
-  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: 't('checklistsModule.eintragWirklichLoeschen'), type: 'danger', confirmText: 'Löschen' })) return
 
   try {
     await api.delete(`/api/v1/time/${entry.id}`)

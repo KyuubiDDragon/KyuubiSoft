@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -33,6 +34,7 @@ import axios from 'axios'
 
 const route = useRoute()
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 const { prompt } = usePromptDialog()
 
@@ -243,11 +245,11 @@ async function loadChecklist(silent = false) {
   } catch (err) {
     if (!silent) {
       if (err.response?.status === 404) {
-        error.value = 'Checkliste nicht gefunden'
+        error.value = t('checklists.checklistNotFound')
       } else if (err.response?.status === 403) {
-        error.value = err.response.data?.error || 'Checkliste nicht verfügbar'
+        error.value = err.response.data?.error || t('checklists.checklistNotAvailable')
       } else {
-        error.value = 'Ein Fehler ist aufgetreten'
+        error.value = t('errors.generic')
       }
     } else {
       syncError.value = true
@@ -309,10 +311,10 @@ async function ensureTesterName() {
   if (checklist.value.require_name) {
     const name = await prompt({
       title: 'Name erforderlich',
-      message: 'Bitte gib deinen Namen ein, um abzustimmen:',
+      message: t('checklists.enterNameToVote'),
       placeholder: 'Dein Name',
       confirmText: 'Weiter',
-      cancelText: 'Abbrechen',
+      cancelText: t('common.cancel'),
     })
 
     if (name && name.trim()) {
@@ -352,7 +354,7 @@ async function quickTest(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -380,7 +382,7 @@ async function quickFail(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -408,7 +410,7 @@ async function quickUncertain(item) {
       newEntryIds.value.delete(response.data.data.id)
     }, 2000)
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -441,7 +443,7 @@ async function addEntry() {
     selectedItem.value = null
     newEntry.value = { status: 'passed', notes: '' }
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Speichern')
+    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -472,12 +474,12 @@ async function updateEntryStatus(entry, newStatus) {
       }
     }
   } catch (err) {
-    toast.error('Fehler beim Aktualisieren')
+    toast.error(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteEntry(entry, item) {
-  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteEntry'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`)
@@ -490,7 +492,7 @@ async function deleteEntry(entry, item) {
 
     recalculateProgress()
   } catch (err) {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('common.errorDeleting'))
   }
 }
 
@@ -507,7 +509,7 @@ async function uploadEntryImage(entry, event) {
 
   // Validate file size (5MB)
   if (file.size > 5 * 1024 * 1024) {
-    toast.warning('Bild darf maximal 5MB groß sein')
+    toast.warning(t('checklists.imageMaxSize5mb'))
     return
   }
 
@@ -523,7 +525,7 @@ async function uploadEntryImage(entry, event) {
     )
     entry.image_path = response.data.data.image_path
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Hochladen')
+    toast.error(err.response?.data?.error || t('checklists.errorUploading'))
   } finally {
     uploadingEntryId.value = null
     // Reset file input
@@ -532,13 +534,13 @@ async function uploadEntryImage(entry, event) {
 }
 
 async function deleteEntryImage(entry) {
-  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteImage'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`)
     entry.image_path = null
   } catch (err) {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('common.errorDeleting'))
   }
 }
 
@@ -587,7 +589,7 @@ async function addItem() {
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     toast.success('Testpunkt erstellt')
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
+    toast.error(err.response?.data?.error || t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -613,9 +615,9 @@ async function addCategory() {
 
     showAddCategoryModal.value = false
     newCategory.value = { name: '', description: '' }
-    toast.success('Kategorie erstellt')
+    toast.success(t('tickets.kategorieErstellt'))
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Erstellen')
+    toast.error(err.response?.data?.error || t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -652,20 +654,20 @@ async function updateItem() {
     editingItem.value = null
     toast.success('Testpunkt aktualisiert')
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Aktualisieren')
+    toast.error(err.response?.data?.error || t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: `"${item.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `"${item.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await axios.delete(`/api/v1/checklists/public/${token.value}/items/${item.id}?requested_by=${encodeURIComponent(testerName.value)}`)
 
     checklist.value.items = checklist.value.items.filter(i => i.id !== item.id)
-    toast.success('Testpunkt gelöscht')
+    toast.success(t('checklists.testPointDeleted'))
   } catch (err) {
-    toast.error(err.response?.data?.error || 'Fehler beim Löschen')
+    toast.error(err.response?.data?.error || t('common.errorDeleting'))
   }
 }
 
@@ -739,7 +741,7 @@ function getStatusIcon(status) {
 function getStatusLabel(status) {
   switch (status) {
     case 'passed': return 'OK'
-    case 'failed': return 'Fehler'
+    case 'failed': return t('common.error')
     case 'in_progress': return 'In Arbeit'
     case 'blocked': return 'Blockiert'
     case 'uncertain': return 'Unsicher'
@@ -813,7 +815,7 @@ onUnmounted(() => {
       <!-- Error -->
       <div v-else-if="error" class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-12 text-center">
         <ExclamationTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
-        <h2 class="text-xl font-semibold text-white mb-2">Nicht verfügbar</h2>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ $t('storage.nichtVerfuegbar') }}</h2>
         <p class="text-gray-400">{{ error }}</p>
       </div>
 
@@ -824,19 +826,19 @@ onUnmounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ checklist?.title || 'Geschützte Checkliste' }}</h2>
-        <p class="text-gray-400 mb-6">Diese Checkliste ist passwortgeschützt</p>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ checklist?.title || $t('checklists.protectedChecklist') }}</h2>
+        <p class="text-gray-400 mb-6">{{ $t('checklists.passwordProtected') }}</p>
 
         <div class="space-y-4">
           <input
             v-model="passwordInput"
             type="password"
-            placeholder="Passwort eingeben"
+            :placeholder="$t('checklists.enterPassword')"
             class="input"
             :class="passwordError ? 'border-red-500' : ''"
             @keyup.enter="submitPassword"
           />
-          <p v-if="passwordError" class="text-red-400 text-sm">Falsches Passwort</p>
+          <p v-if="passwordError" class="text-red-400 text-sm">{{ $t('checklists.wrongPassword') }}</p>
           <button
             @click="submitPassword"
             class="btn-primary w-full py-3"
@@ -1020,7 +1022,7 @@ onUnmounted(() => {
                 class="text-sm text-gray-400 hover:text-white flex items-center gap-1"
               >
                 <XMarkIcon class="w-4 h-4" />
-                Filter zurücksetzen
+                {{ $t('common.resetFilters') }}
               </button>
             </div>
           </div>
@@ -1045,7 +1047,7 @@ onUnmounted(() => {
             class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
           >
             <FolderIcon class="w-5 h-5" />
-            <span>Kategorie</span>
+            <span>{{ $t('checklists.category') }}</span>
           </button>
         </div>
 
@@ -1057,15 +1059,15 @@ onUnmounted(() => {
             class="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-8 text-center"
           >
             <MagnifyingGlassIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
-            <h3 class="text-white font-medium mb-2">Keine Ergebnisse</h3>
+            <h3 class="text-white font-medium mb-2">{{ $t('common.noResults') }}</h3>
             <p class="text-gray-400 text-sm mb-4">
-              Für deine Filter wurden keine Testpunkte gefunden.
+              {{ $t('checklists.noTestPointsForFilter') }}
             </p>
             <button
               @click="clearFilters"
               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm transition-colors"
             >
-              Filter zurücksetzen
+              {{ $t('common.resetFilters') }}
             </button>
           </div>
 
@@ -1092,7 +1094,7 @@ onUnmounted(() => {
                 v-if="checklist.allow_add_items"
                 @click.stop="openAddItemInCategory(category.id)"
                 class="p-1.5 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
-                title="Testpunkt in dieser Kategorie hinzufügen"
+                :title="$t('checklists.addTestItemInCategory')"
               >
                 <PlusIcon class="w-4 h-4" />
               </button>
@@ -1101,7 +1103,7 @@ onUnmounted(() => {
             <!-- Items -->
             <div v-if="expandedCategories[category.id]" class="divide-y divide-gray-700/50">
               <div v-if="category.items.length === 0" class="p-6 text-center text-gray-500">
-                Keine Testpunkte
+                {{ $t('checklists.noTestItems') }}
               </div>
 
               <div
@@ -1125,14 +1127,14 @@ onUnmounted(() => {
                         <button
                           @click="openEditItem(item)"
                           class="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white"
-                          title="Bearbeiten"
+                          :title="$t('common.edit')"
                         >
                           <PencilIcon class="w-4 h-4" />
                         </button>
                         <button
                           @click="deleteItem(item)"
                           class="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-red-400"
-                          title="Löschen"
+                          :title="$t('common.delete')"
                         >
                           <TrashIcon class="w-4 h-4" />
                         </button>
@@ -1207,7 +1209,7 @@ onUnmounted(() => {
                               v-if="entry.status !== 'passed'"
                               @click="updateEntryStatus(entry, 'passed')"
                               class="p-1 hover:bg-gray-600 rounded"
-                              title="Als OK markieren"
+                              :title="$t('checklists.markAsOk')"
                             >
                               <CheckCircleIcon class="w-4 h-4 text-green-400" />
                             </button>
@@ -1215,7 +1217,7 @@ onUnmounted(() => {
                               v-if="entry.status !== 'uncertain'"
                               @click="updateEntryStatus(entry, 'uncertain')"
                               class="p-1 hover:bg-gray-600 rounded"
-                              title="Als Unsicher markieren"
+                              :title="$t('checklists.markAsUnsure')"
                             >
                               <QuestionMarkCircleIcon class="w-4 h-4 text-yellow-400" />
                             </button>
@@ -1223,14 +1225,14 @@ onUnmounted(() => {
                               v-if="entry.status !== 'failed'"
                               @click="updateEntryStatus(entry, 'failed')"
                               class="p-1 hover:bg-gray-600 rounded"
-                              title="Als Fehler markieren"
+                              :title="$t('checklists.markAsError')"
                             >
                               <XCircleIcon class="w-4 h-4 text-red-400" />
                             </button>
                             <!-- Image Upload Button -->
                             <label
                               class="p-1 hover:bg-gray-600 rounded cursor-pointer"
-                              :title="entry.image_path ? 'Bild ersetzen' : 'Screenshot hinzufügen'"
+                              :title="entry.image_path ? 'Bild ersetzen' : $t('checklists.addScreenshot')"
                             >
                               <CameraIcon class="w-4 h-4" :class="entry.image_path ? 'text-indigo-400' : 'text-gray-400'" />
                               <input
@@ -1244,7 +1246,7 @@ onUnmounted(() => {
                             <button
                               @click="deleteEntry(entry, item)"
                               class="p-1 hover:bg-gray-600 rounded"
-                              title="Löschen"
+                              :title="$t('common.delete')"
                             >
                               <TrashIcon class="w-4 h-4 text-gray-400" />
                             </button>
@@ -1263,7 +1265,7 @@ onUnmounted(() => {
                               v-if="entry.tester_name === testerName"
                               @click="deleteEntryImage(entry)"
                               class="absolute -top-1 -right-1 p-1 bg-red-600 hover:bg-red-500 rounded-full"
-                              title="Bild löschen"
+                              :title="$t('checklists.deleteImage')"
                             >
                               <XMarkIcon class="w-3 h-3 text-white" />
                             </button>
@@ -1283,7 +1285,7 @@ onUnmounted(() => {
                     <button
                       @click="quickTest(item)"
                       class="flex items-center gap-1 px-2.5 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white text-sm transition-colors"
-                      title="Als OK markieren"
+                      :title="$t('checklists.markAsOk')"
                     >
                       <HandThumbUpIcon class="w-5 h-5" />
                       <span class="hidden sm:inline">OK</span>
@@ -1291,7 +1293,7 @@ onUnmounted(() => {
                     <button
                       @click="quickUncertain(item)"
                       class="flex items-center gap-1 px-2.5 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-white text-sm transition-colors"
-                      title="Als Unsicher markieren"
+                      :title="$t('checklists.markAsUnsure')"
                     >
                       <QuestionMarkCircleIcon class="w-5 h-5" />
                       <span class="hidden sm:inline">?</span>
@@ -1299,15 +1301,15 @@ onUnmounted(() => {
                     <button
                       @click="quickFail(item)"
                       class="flex items-center gap-1 px-2.5 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm transition-colors"
-                      title="Als Fehler markieren"
+                      :title="$t('checklists.markAsError')"
                     >
                       <HandThumbDownIcon class="w-5 h-5" />
-                      <span class="hidden sm:inline">Fehler</span>
+                      <span class="hidden sm:inline">{{ $t('common.error') }}</span>
                     </button>
                     <button
                       @click="openAddEntry(item)"
                       class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
-                      title="Mit Notizen"
+                      :title="$t('checklists.withNotes')"
                     >
                       <PlusIcon class="w-5 h-5" />
                     </button>
@@ -1376,7 +1378,7 @@ onUnmounted(() => {
                 <textarea
                   v-model="newEntry.notes"
                   rows="3"
-                  placeholder="z.B. Fehler bei Schritt 3..."
+                  :placeholder="$t('checklists.errorExamplePlaceholder')"
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 ></textarea>
               </div>
@@ -1386,15 +1388,11 @@ onUnmounted(() => {
               <button
                 @click="showAddEntryModal = false"
                 class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Abbrechen
-              </button>
+              >{{ $t('common.cancel') }}</button>
               <button
                 @click="addEntry"
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
-              >
-                Speichern
-              </button>
+              >{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -1417,7 +1415,7 @@ onUnmounted(() => {
                 <input
                   v-model="newItem.title"
                   type="text"
-                  placeholder="z.B. Login mit E-Mail"
+                  :placeholder="$t('checklists.testPointPlaceholder')"
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1438,7 +1436,7 @@ onUnmounted(() => {
                   v-model="newItem.category_id"
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option :value="null">Keine Kategorie</option>
+                  <option :value="null">{{ $t('checklists.noCategory') }}</option>
                   <option v-for="cat in checklist.categories" :key="cat.id" :value="cat.id">
                     {{ cat.name }}
                   </option>
@@ -1461,15 +1459,11 @@ onUnmounted(() => {
               <button
                 @click="showAddItemModal = false"
                 class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Abbrechen
-              </button>
+              >{{ $t('common.cancel') }}</button>
               <button
                 @click="addItem"
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
-              >
-                Erstellen
-              </button>
+              >{{ $t('common.create') }}</button>
             </div>
           </div>
         </div>
@@ -1492,7 +1486,7 @@ onUnmounted(() => {
                 <input
                   v-model="newCategory.name"
                   type="text"
-                  placeholder="z.B. Login-Tests"
+                  :placeholder="$t('checklists.sectionPlaceholder')"
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   @keyup.enter="addCategory"
                 />
@@ -1513,15 +1507,11 @@ onUnmounted(() => {
               <button
                 @click="showAddCategoryModal = false"
                 class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Abbrechen
-              </button>
+              >{{ $t('common.cancel') }}</button>
               <button
                 @click="addCategory"
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
-              >
-                Erstellen
-              </button>
+              >{{ $t('common.create') }}</button>
             </div>
           </div>
         </div>
@@ -1563,7 +1553,7 @@ onUnmounted(() => {
                   v-model="editingItem.category_id"
                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option :value="null">Keine Kategorie</option>
+                  <option :value="null">{{ $t('checklists.noCategory') }}</option>
                   <option v-for="cat in checklist.categories" :key="cat.id" :value="cat.id">
                     {{ cat.name }}
                   </option>
@@ -1586,15 +1576,11 @@ onUnmounted(() => {
               <button
                 @click="showEditItemModal = false; editingItem = null"
                 class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Abbrechen
-              </button>
+              >{{ $t('common.cancel') }}</button>
               <button
                 @click="updateItem"
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors"
-              >
-                Speichern
-              </button>
+              >{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>

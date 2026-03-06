@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -20,6 +21,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -65,20 +67,20 @@ const itemForm = ref({
 
 const layouts = [
   { value: 'grid', label: 'Grid', icon: Squares2X2Icon },
-  { value: 'list', label: 'Liste', icon: ListBulletIcon },
+  { value: 'list', label: t('galleriesModule.list'), icon: ListBulletIcon },
   { value: 'masonry', label: 'Masonry', icon: Squares2X2Icon },
 ]
 
 const themes = [
   { value: 'auto', label: 'Auto' },
-  { value: 'light', label: 'Hell' },
-  { value: 'dark', label: 'Dunkel' },
+  { value: 'light', label: t('galleriesModule.light') },
+  { value: 'dark', label: t('galleriesModule.dark') },
 ]
 
 const itemTypes = [
-  { value: 'custom', label: 'Benutzerdefiniert' },
-  { value: 'image', label: 'Bild' },
-  { value: 'video', label: 'Video' },
+  { value: 'custom', label: t('galleriesModule.benutzerdefiniert') },
+  { value: 'image', label: t('galleriesModule.image') },
+  { value: 'video', label: t('galleriesModule.video') },
   { value: 'link', label: 'Link' },
   { value: 'embed', label: 'Embed' },
 ]
@@ -123,7 +125,7 @@ const saveGallery = async () => {
 }
 
 const deleteGallery = async (id) => {
-  if (!await confirm({ message: 'Galerie wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('galleriesModule.galerieWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/galleries/${id}`)
     await loadGalleries()
@@ -146,7 +148,7 @@ const addItem = async () => {
 
 const removeItem = async (itemId) => {
   if (!selectedGallery.value) return
-  if (!await confirm({ message: 'Element entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('galleriesModule.removeElement'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/galleries/${selectedGallery.value.gallery.id}/items/${itemId}`)
     await loadGalleryDetails(selectedGallery.value.gallery.id)
@@ -217,12 +219,12 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Galerien</h1>
-        <p class="text-gray-500 dark:text-gray-400">Erstelle und teile öffentliche Sammlungen</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $t('galleriesModule.title') }}</h1>
+        <p class="text-gray-500 dark:text-gray-400">{{ $t('galleriesModule.erstelleUndTeileOeffentlicheSammlungen') }}</p>
       </div>
       <button @click="showModal = true" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Neue Galerie
+        {{ $t('galleriesModule.newGallery') }}
       </button>
     </div>
 
@@ -250,7 +252,7 @@ onMounted(() => {
           </div>
           <div class="absolute bottom-2 left-2">
             <span class="px-2 py-1 bg-black/30 rounded-xl backdrop-blur text-white text-xs">
-              {{ gallery.item_count || 0 }} Elemente
+              {{ gallery.item_count || 0 }} {{ $t('galleriesModule.elements') }}
             </span>
           </div>
         </div>
@@ -261,7 +263,7 @@ onMounted(() => {
             <div>
               <h3 class="font-semibold text-gray-900 dark:text-white">{{ gallery.name }}</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                {{ gallery.description || 'Keine Beschreibung' }}
+                {{ gallery.description || $t('galleriesModule.keineBeschreibung') }}
               </p>
             </div>
           </div>
@@ -281,12 +283,12 @@ onMounted(() => {
           <div class="flex items-center justify-between pt-3 border-t border-white/[0.06]">
             <button @click="loadGalleryDetails(gallery.id)"
                     class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
-              Öffnen
+              {{ $t('galleriesModule.open') }}
             </button>
             <div class="flex items-center gap-2">
               <button @click="copyPublicUrl(gallery)"
                       class="p-2 text-gray-400 hover:text-indigo-600"
-                      title="Link kopieren">
+                      :title="$t('galleriesModule.copyLink')">
                 <LinkIcon class="w-4 h-4" />
               </button>
               <button @click="editGallery(gallery)"
@@ -306,8 +308,8 @@ onMounted(() => {
       <div v-if="galleries.length === 0" class="col-span-full">
         <div class="text-center py-12 bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06]">
           <PhotoIcon class="w-12 h-12 mx-auto text-gray-400" />
-          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Keine Galerien</h3>
-          <p class="mt-2 text-gray-500">Erstelle deine erste öffentliche Galerie.</p>
+          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">{{ $t('galleriesModule.keineGalerien') }}</h3>
+          <p class="mt-2 text-gray-500">{{ $t('galleriesModule.erstelleDeineErsteOeffentlicheGalerie') }}</p>
           <button @click="showModal = true" class="mt-4 btn-primary">
             <PlusIcon class="w-5 h-5 mr-2" />
             Galerie erstellen
@@ -323,19 +325,19 @@ onMounted(() => {
           <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
           <div class="relative modal w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {{ editingGallery ? 'Galerie bearbeiten' : 'Neue Galerie' }}
+              {{ editingGallery ? 'Galerie bearbeiten' : $t('galleriesModule.neueGalerie') }}
             </h2>
             <form @submit.prevent="saveGallery" class="space-y-4">
               <div>
-                <label class="label">Name</label>
+                <label class="label">{{ $t('common.name') }}</label>
                 <input v-model="form.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="label">Beschreibung</label>
+                <label class="label">{{ $t('common.description') }}</label>
                 <textarea v-model="form.description" rows="2" class="input"></textarea>
               </div>
               <div>
-                <label class="label">URL-Slug</label>
+                <label class="label">{{ $t('galleriesModule.urlSlug') }}</label>
                 <div class="flex items-center">
                   <span class="text-gray-500 text-sm mr-2">/gallery/</span>
                   <input v-model="form.slug" type="text" placeholder="meine-galerie" class="input flex-1" />
@@ -343,26 +345,26 @@ onMounted(() => {
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Layout</label>
+                  <label class="label">{{ $t('galleriesModule.layout') }}</label>
                   <select v-model="form.layout" class="input">
                     <option v-for="l in layouts" :key="l.value" :value="l.value">{{ l.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Theme</label>
+                  <label class="label">{{ $t('galleriesModule.theme') }}</label>
                   <select v-model="form.theme" class="input">
                     <option v-for="t in themes" :key="t.value" :value="t.value">{{ t.label }}</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label class="label">Passwort (optional)</label>
-                <input v-model="form.password" type="password" placeholder="Leer lassen für keinen Schutz" class="input" />
+                <label class="label">{{ $t('links.linkspasswortoptional') }}</label>
+                <input v-model="form.password" type="password" :placeholder="$t('galleriesModule.galleriesmoduleleerlassenfuerkeinenschutz')" class="input" />
               </div>
               <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input v-model="form.is_public" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Öffentlich</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('galleriesModule.oeffentlich') }}</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.show_header" type="checkbox" class="rounded" />
@@ -374,8 +376,8 @@ onMounted(() => {
                 </label>
               </div>
               <div class="flex justify-end gap-3 pt-4">
-                <button type="button" @click="showModal = false; resetForm()" class="btn-secondary">Abbrechen</button>
-                <button type="submit" class="btn-primary">Speichern</button>
+                <button type="button" @click="showModal = false; resetForm()" class="btn-secondary">{{ $t('common.cancel') }}</button>
+                <button type="submit" class="btn-primary">{{ $t('common.save') }}</button>
               </div>
             </form>
           </div>
@@ -407,7 +409,7 @@ onMounted(() => {
             <div v-if="selectedGallery.stats" class="grid grid-cols-3 gap-4 mb-6">
               <div class="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
                 <div class="text-2xl font-bold">{{ selectedGallery.stats.total_views || 0 }}</div>
-                <div class="text-sm text-gray-500">Aufrufe</div>
+                <div class="text-sm text-gray-500">{{ $t('galleriesModule.aufrufe') }}</div>
               </div>
               <div class="bg-white/[0.04] rounded-xl p-3 text-center border border-white/[0.06]">
                 <div class="text-2xl font-bold">{{ selectedGallery.stats.unique_visitors || 0 }}</div>
@@ -446,7 +448,7 @@ onMounted(() => {
                 <button @click="showItemModal = true"
                         class="h-40 bg-white/[0.04] rounded-xl border-2 border-dashed border-white/[0.06] flex flex-col items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-600 transition-colors">
                   <PlusIcon class="w-8 h-8" />
-                  <span class="text-sm mt-2">Element hinzufügen</span>
+                  <span class="text-sm mt-2">{{ $t('galleriesModule.elementHinzufuegen') }}</span>
                 </button>
               </div>
             </div>
@@ -461,24 +463,24 @@ onMounted(() => {
         <div class="flex items-center justify-center min-h-screen px-4">
           <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showItemModal = false"></div>
           <div class="relative modal w-full max-w-md p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Element hinzufügen</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ $t('galleriesModule.elementHinzufuegen') }}</h2>
             <form @submit.prevent="addItem" class="space-y-4">
               <div>
-                <label class="label">Typ</label>
+                <label class="label">{{ $t('galleriesModule.type') }}</label>
                 <select v-model="itemForm.item_type" class="input">
                   <option v-for="t in itemTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                 </select>
               </div>
               <div>
-                <label class="label">Titel</label>
+                <label class="label">{{ $t('galleriesModule.itemTitle') }}</label>
                 <input v-model="itemForm.title" type="text" class="input" />
               </div>
               <div>
-                <label class="label">URL</label>
+                <label class="label">{{ $t('galleriesModule.url') }}</label>
                 <input v-model="itemForm.url" type="url" placeholder="https://..." class="input" />
               </div>
               <div>
-                <label class="label">Thumbnail URL</label>
+                <label class="label">{{ $t('galleriesModule.thumbnailUrl') }}</label>
                 <input v-model="itemForm.thumbnail_url" type="url" class="input" />
               </div>
               <div class="flex items-center gap-4">
@@ -488,12 +490,12 @@ onMounted(() => {
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="itemForm.allow_download" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Download erlauben</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('galleriesModule.downloadErlauben') }}</span>
                 </label>
               </div>
               <div class="flex justify-end gap-3 pt-4">
-                <button type="button" @click="showItemModal = false; resetItemForm()" class="btn-secondary">Abbrechen</button>
-                <button type="submit" class="btn-primary">Hinzufügen</button>
+                <button type="button" @click="showItemModal = false; resetItemForm()" class="btn-secondary">{{ $t('common.cancel') }}</button>
+                <button type="submit" class="btn-primary">{{ $t('common.add') }}</button>
               </div>
             </form>
           </div>

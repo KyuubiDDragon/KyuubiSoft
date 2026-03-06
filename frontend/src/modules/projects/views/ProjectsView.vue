@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -31,6 +32,7 @@ import { StarIcon as StarIconSolid, FolderIcon as FolderIconSolid } from '@heroi
 
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -74,11 +76,11 @@ const colors = [
 
 // Link types
 const linkTypes = [
-  { value: 'document', label: 'Dokument', icon: DocumentTextIcon },
+  { value: 'document', label: t('inboxModule.dokument'), icon: DocumentTextIcon },
   { value: 'list', label: 'Liste', icon: ListBulletIcon },
   { value: 'kanban_board', label: 'Kanban Board', icon: ViewColumnsIcon },
   { value: 'connection', label: 'Verbindung', icon: ServerIcon },
-  { value: 'snippet', label: 'Snippet', icon: CodeBracketIcon },
+  { value: 'snippet', label: t('projectsModule.snippet'), icon: CodeBracketIcon },
 ]
 
 // Status options
@@ -114,7 +116,7 @@ async function fetchProjects() {
     const response = await api.get('/api/v1/projects')
     projects.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Projekte')
+    uiStore.showError(t('projectsModule.projectsmodulefehlerbeimladenderprojekte'))
   } finally {
     loading.value = false
   }
@@ -126,7 +128,7 @@ async function fetchProject(projectId) {
     const response = await api.get(`/api/v1/projects/${projectId}`)
     selectedProject.value = response.data.data
   } catch (error) {
-    uiStore.showError('Fehler beim Laden des Projekts')
+    uiStore.showError(t('projectsModule.projectsmodulefehlerbeimladendesprojekts'))
     selectedProject.value = null
   }
 }
@@ -157,35 +159,35 @@ async function saveProject() {
   try {
     if (editingProject.value) {
       await api.put(`/api/v1/projects/${editingProject.value.id}`, form.value)
-      uiStore.showSuccess('Projekt aktualisiert')
+      uiStore.showSuccess(t('system.projektAktualisiert'))
       if (selectedProject.value?.id === editingProject.value.id) {
         await fetchProject(selectedProject.value.id)
       }
     } else {
       const response = await api.post('/api/v1/projects', form.value)
-      uiStore.showSuccess('Projekt erstellt')
+      uiStore.showSuccess(t('system.projektErstellt'))
       await fetchProject(response.data.data.id)
     }
     await fetchProjects()
     showModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete project
 async function deleteProject(project) {
-  if (!await confirm({ message: `Projekt "${project.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Projekt "${project.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/projects/${project.id}`)
-    uiStore.showSuccess('Projekt gelöscht')
+    uiStore.showSuccess(t('system.projektGeloescht'))
     if (selectedProject.value?.id === project.id) {
       selectedProject.value = null
     }
     await fetchProjects()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -200,7 +202,7 @@ async function toggleFavorite(project) {
       selectedProject.value.is_favorite = project.is_favorite
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -214,7 +216,7 @@ async function updateStatus(project, status) {
     }
     uiStore.showSuccess('Status aktualisiert')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -238,7 +240,7 @@ async function openLinkModal(type) {
     const response = await api.get(`/api/v1/projects/${selectedProject.value.id}/linkable/${type}`)
     linkableItems.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('documentsModule.fehlerBeimLaden'))
     linkableItems.value = []
   } finally {
     loadingLinkable.value = false
@@ -252,24 +254,24 @@ async function addLink(item) {
       type: linkType.value,
       item_id: item.id,
     })
-    uiStore.showSuccess('Element verknüpft')
+    uiStore.showSuccess(t('projectsModule.elementVerknuepft'))
     showLinkModal.value = false
     await fetchProject(selectedProject.value.id)
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Verknüpfen')
+    uiStore.showError(error.response?.data?.message || t('projectsModule.fehlerBeimVerknuepfen'))
   }
 }
 
 // Remove link
 async function removeLink(link) {
-  if (!await confirm({ message: 'Verknüpfung wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('projectsModule.projectsmoduleverknuepfungwirklichentfernen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/projects/${selectedProject.value.id}/links/${link.link_id}`)
-    uiStore.showSuccess('Verknüpfung entfernt')
+    uiStore.showSuccess(t('projectsModule.verknuepfungEntfernt'))
     await fetchProject(selectedProject.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('server.serverfehlerbeimentfernen'))
   }
 }
 
@@ -354,7 +356,7 @@ async function fetchProjectShares() {
     const response = await api.get(`/api/v1/projects/${selectedProject.value.id}/shares`)
     projectShares.value = response.data.data.shares || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Mitglieder')
+    uiStore.showError(t('projectsModule.fehlerBeimLadenDerMitglieder'))
     projectShares.value = []
   } finally {
     loadingShares.value = false
@@ -381,24 +383,24 @@ async function addMember() {
       email: newMemberEmail.value.trim(),
       permission: newMemberPermission.value
     })
-    uiStore.showSuccess('Mitglied hinzugefügt')
+    uiStore.showSuccess(t('projectsModule.mitgliedHinzugefuegt'))
     newMemberEmail.value = ''
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
 // Remove project member
 async function removeMember(userId) {
-  if (!await confirm({ message: 'Mitglied wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('projectsModule.projectsmodulemitgliedwirklichentfernen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/projects/${selectedProject.value.id}/shares/${userId}`)
     uiStore.showSuccess('Mitglied entfernt')
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('server.serverfehlerbeimentfernen'))
   }
 }
 
@@ -409,10 +411,10 @@ async function updateMemberPermission(userId, permission) {
       user_id: userId,
       permission
     })
-    uiStore.showSuccess('Berechtigung aktualisiert')
+    uiStore.showSuccess(t('projectsModule.berechtigungAktualisiert'))
     await fetchProjectShares()
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -437,7 +439,7 @@ onMounted(() => {
         </button>
         <div>
           <h1 class="text-2xl font-bold text-white">
-            {{ selectedProject ? selectedProject.name : 'Projekte' }}
+            {{ selectedProject ? selectedProject.name : $t('projects.title') }}
           </h1>
           <p v-if="selectedProject?.description" class="text-gray-400 text-sm mt-1">
             {{ selectedProject.description }}
@@ -458,14 +460,14 @@ onMounted(() => {
             class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
           >
             <UserGroupIcon class="w-5 h-5" />
-            <span>Mitglieder</span>
+            <span>{{ $t('projects.members') }}</span>
           </button>
           <button
             @click="openModal(selectedProject)"
             class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-white/[0.04] transition-colors flex items-center gap-2"
           >
             <PencilIcon class="w-5 h-5" />
-            <span>Bearbeiten</span>
+            <span>{{ $t('common.edit') }}</span>
           </button>
         </template>
         <template v-else>

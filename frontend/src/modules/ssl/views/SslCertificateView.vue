@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -21,6 +22,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -119,7 +121,7 @@ const saveCertificate = async () => {
 }
 
 const deleteCertificate = async (id) => {
-  if (!await confirm({ message: 'Zertifikat wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: 'Zertifikat wirklich entfernen?', type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/ssl/certificates/${id}`)
     await loadCertificates()
@@ -222,11 +224,11 @@ const getStatusIcon = (status) => {
 
 const getStatusLabel = (status) => {
   const labels = {
-    valid: 'Gültig',
-    expiring_soon: 'Läuft bald ab',
+    valid: t('ssl.gueltig'),
+    expiring_soon: t('ssl.laeuftBaldAb'),
     expired: 'Abgelaufen',
-    invalid: 'Ungültig',
-    error: 'Fehler',
+    invalid: t('ssl.ungueltig'),
+    error: t('common.error'),
     pending: 'Ausstehend',
   }
   return labels[status] || status
@@ -256,12 +258,12 @@ onMounted(() => {
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">SSL Zertifikate</h1>
-        <p class="text-gray-500 dark:text-gray-400">Überwache SSL-Zertifikate und erhalte Benachrichtigungen vor Ablauf</p>
+        <p class="text-gray-500 dark:text-gray-400">{{ $t('ssl.ueberwacheSslzertifikateUndErhalteBenachrichtigungenVorAblauf') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="checkAllCertificates" :disabled="checkingId === 'all'" class="btn-secondary">
           <ArrowPathIcon class="w-5 h-5 mr-2" :class="{ 'animate-spin': checkingId === 'all' }" />
-          Alle prüfen
+          {{ $t('ssl.allePruefen') }}
         </button>
         <button @click="showFolderModal = true" class="btn-secondary">
           <FolderPlusIcon class="w-5 h-5 mr-2" />
@@ -277,11 +279,11 @@ onMounted(() => {
     <!-- Stats -->
     <div v-if="stats" class="grid grid-cols-5 gap-4">
       <div class="bg-white/[0.04] rounded-xl p-4 shadow-glass border border-white/[0.06]">
-        <div class="text-gray-500 dark:text-gray-400 text-sm">Gesamt</div>
+        <div class="text-gray-500 dark:text-gray-400 text-sm">{{ $t('contractsModule.gesamt') }}</div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
       </div>
       <div class="bg-green-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
-        <div class="text-green-600 dark:text-green-400 text-sm">Gültig</div>
+        <div class="text-green-600 dark:text-green-400 text-sm">{{ $t('ssl.gueltig') }}</div>
         <div class="text-2xl font-bold text-green-700 dark:text-green-300">{{ stats.valid }}</div>
       </div>
       <div class="bg-amber-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
@@ -293,7 +295,7 @@ onMounted(() => {
         <div class="text-2xl font-bold text-red-700 dark:text-red-300">{{ stats.expired }}</div>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-4 shadow-glass border border-white/[0.06]">
-        <div class="text-gray-500 dark:text-gray-400 text-sm">Fehler</div>
+        <div class="text-gray-500 dark:text-gray-400 text-sm">{{ $t('common.error') }}</div>
         <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.error }}</div>
       </div>
     </div>
@@ -320,7 +322,7 @@ onMounted(() => {
             <component :is="group.isCollapsed ? ChevronRightIcon : ChevronDownIcon" class="w-5 h-5 text-gray-400" />
           </div>
           <div v-else class="px-4 py-3 bg-white/[0.03]">
-            <span class="font-medium text-gray-900 dark:text-white">Ohne Ordner</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ $t('ssl.sslohneordner') }}</span>
             <span class="text-sm text-gray-500 ml-2">({{ group.certificates.length }})</span>
           </div>
 
@@ -344,19 +346,19 @@ onMounted(() => {
                 </div>
                 <div class="flex items-center gap-8 text-sm">
                   <div class="text-center">
-                    <div class="text-gray-500 text-xs">Tage bis Ablauf</div>
+                    <div class="text-gray-500 text-xs">{{ $t('ssl.tageBisAblauf') }}</div>
                     <div class="font-bold text-lg" :class="getDaysColor(cert.days_until_expiry)">
                       {{ cert.days_until_expiry ?? '-' }}
                     </div>
                   </div>
                   <div class="text-center">
-                    <div class="text-gray-500 text-xs">Gültig bis</div>
+                    <div class="text-gray-500 text-xs">{{ $t('ssl.gueltigBis') }}</div>
                     <div class="font-medium text-gray-700 dark:text-gray-300">
                       {{ formatDate(cert.valid_until) }}
                     </div>
                   </div>
                   <div class="text-center">
-                    <div class="text-gray-500 text-xs">Aussteller</div>
+                    <div class="text-gray-500 text-xs">{{ $t('ssl.aussteller') }}</div>
                     <div class="font-medium text-gray-700 dark:text-gray-300 max-w-32 truncate">
                       {{ cert.issuer || '-' }}
                     </div>

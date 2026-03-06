@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useProjectStore } from '@/stores/project'
@@ -21,6 +22,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
+const { t } = useI18n()
 const route = useRoute()
 const uiStore = useUiStore()
 const projectStore = useProjectStore()
@@ -129,7 +131,7 @@ async function loadSnippets() {
     categories.value = categoriesRes.data.data || []
     languages.value = languagesRes.data.data || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Snippets')
+    uiStore.showError(t('snippetsModule.errorLoading'))
   } finally {
     isLoading.value = false
   }
@@ -141,7 +143,7 @@ async function saveSnippet() {
 
     if (editingSnippet.value) {
       await api.put(`/api/v1/snippets/${editingSnippet.value.id}`, data)
-      uiStore.showSuccess('Snippet aktualisiert')
+      uiStore.showSuccess(t('snippetsModule.snippetUpdated'))
     } else {
       const response = await api.post('/api/v1/snippets', data)
       const newSnippet = response.data.data
@@ -151,25 +153,25 @@ async function saveSnippet() {
         await projectStore.linkToSelectedProject('snippet', newSnippet.id)
       }
 
-      uiStore.showSuccess('Snippet erstellt')
+      uiStore.showSuccess(t('snippetsModule.snippetCreated'))
     }
 
     await loadSnippets()
     closeModal()
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('snippetsModule.errorSaving'))
   }
 }
 
 async function deleteSnippet(snippet) {
-  if (!await confirm({ message: `Snippet "${snippet.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('snippetsModule.confirmDelete', { title: snippet.title }), type: 'danger', confirmText: t('snippetsModule.delete') })) return
 
   try {
     await api.delete(`/api/v1/snippets/${snippet.id}`)
     snippets.value = snippets.value.filter(s => s.id !== snippet.id)
-    uiStore.showSuccess('Snippet gelöscht')
+    uiStore.showSuccess(t('snippetsModule.snippetDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('snippetsModule.errorDeleting'))
   }
 }
 
@@ -180,7 +182,7 @@ async function toggleFavorite(snippet) {
     })
     snippet.is_favorite = !snippet.is_favorite
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('snippetsModule.errorUpdating'))
   }
 }
 
@@ -199,7 +201,7 @@ async function copySnippet(snippet) {
       copiedId.value = ''
     }, 2000)
   } catch (error) {
-    uiStore.showError('Kopieren fehlgeschlagen')
+    uiStore.showError(t('snippetsModule.copyFailed'))
   }
 }
 
@@ -259,12 +261,12 @@ function getLanguageLabel(lang) {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Snippets</h1>
-        <p class="text-gray-400 mt-1">Speichere häufig genutzte Befehle und Code</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('snippetsModule.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('snippetsModule.subtitle') }}</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Neues Snippet
+        {{ $t('snippetsModule.newSnippet') }}
       </button>
     </div>
 
@@ -275,18 +277,18 @@ function getLanguageLabel(lang) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Suchen..."
+          :placeholder="$t('snippetsModule.search')"
           class="input pl-10 w-full"
         />
       </div>
       <select v-model="selectedLanguage" class="input w-full sm:w-48">
-        <option value="">Alle Sprachen</option>
+        <option value="">{{ $t('snippetsModule.allLanguages') }}</option>
         <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
           {{ lang.label }}
         </option>
       </select>
       <select v-model="selectedCategory" class="input w-full sm:w-48">
-        <option value="">Alle Kategorien</option>
+        <option value="">{{ $t('snippetsModule.allCategories') }}</option>
         <option v-for="cat in categories" :key="cat.category" :value="cat.category">
           {{ cat.category }} ({{ cat.count }})
         </option>
@@ -302,17 +304,17 @@ function getLanguageLabel(lang) {
     <div v-else-if="filteredSnippets.length === 0" class="card p-12 text-center">
       <CodeBracketIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
       <h3 class="text-lg font-medium text-white mb-2">
-        {{ searchQuery || selectedLanguage || selectedCategory ? 'Keine Ergebnisse' : 'Keine Snippets' }}
+        {{ searchQuery || selectedLanguage || selectedCategory ? $t('snippetsModule.noResults') : $t('snippetsModule.noSnippets') }}
       </h3>
       <p class="text-gray-400 mb-6">
         {{ searchQuery || selectedLanguage || selectedCategory
-          ? 'Versuche andere Suchkriterien'
-          : 'Erstelle dein erstes Snippet'
+          ? $t('snippetsModule.tryOtherCriteria')
+          : $t('snippetsModule.createFirstSnippet')
         }}
       </p>
       <button v-if="!searchQuery && !selectedLanguage && !selectedCategory" @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Snippet erstellen
+        {{ $t('snippetsModule.createSnippet') }}
       </button>
     </div>
 
@@ -362,7 +364,7 @@ function getLanguageLabel(lang) {
 
             <!-- Meta -->
             <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-              <span>{{ snippet.use_count || 0 }}x verwendet</span>
+              <span>{{ snippet.use_count || 0 }}x {{ $t('snippetsModule.used') }}</span>
             </div>
           </div>
 
@@ -405,12 +407,12 @@ function getLanguageLabel(lang) {
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-        
+
       >
         <div class="modal w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-xl font-bold text-white">
-              {{ editingSnippet ? 'Snippet bearbeiten' : 'Neues Snippet' }}
+              {{ editingSnippet ? $t('snippetsModule.editSnippet') : $t('snippetsModule.newSnippet') }}
             </h2>
             <button @click="closeModal" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -420,12 +422,12 @@ function getLanguageLabel(lang) {
           <form @submit.prevent="saveSnippet" class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2 sm:col-span-1">
-                <label class="label">Titel *</label>
-                <input v-model="form.title" type="text" class="input" required placeholder="SSH Login Production" />
+                <label class="label">{{ $t('snippetsModule.titleLabel') }} *</label>
+                <input v-model="form.title" type="text" class="input" required :placeholder="$t('snippetsModule.titlePlaceholder')" />
               </div>
 
               <div class="col-span-2 sm:col-span-1">
-                <label class="label">Sprache</label>
+                <label class="label">{{ $t('snippetsModule.language') }}</label>
                 <select v-model="form.language" class="input">
                   <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
                     {{ lang.label }}
@@ -434,7 +436,7 @@ function getLanguageLabel(lang) {
               </div>
 
               <div class="col-span-2 sm:col-span-1">
-                <label class="label">Kategorie</label>
+                <label class="label">{{ $t('snippetsModule.category') }}</label>
                 <input
                   v-model="form.category"
                   type="text"
@@ -448,14 +450,14 @@ function getLanguageLabel(lang) {
               </div>
 
               <div class="col-span-2 sm:col-span-1">
-                <label class="label">Tags</label>
+                <label class="label">{{ $t('snippetsModule.tags') }}</label>
                 <div class="flex gap-2">
                   <input
                     v-model="tagInput"
                     @keydown.enter.prevent="addTag"
                     type="text"
                     class="input flex-1"
-                    placeholder="Tag hinzufügen..."
+                    :placeholder="$t('snippetsModule.addTag')"
                   />
                   <button type="button" @click="addTag" class="btn-secondary">
                     <PlusIcon class="w-5 h-5" />
@@ -476,12 +478,12 @@ function getLanguageLabel(lang) {
               </div>
 
               <div class="col-span-2">
-                <label class="label">Beschreibung</label>
-                <input v-model="form.description" type="text" class="input" placeholder="Optional" />
+                <label class="label">{{ $t('snippetsModule.description') }}</label>
+                <input v-model="form.description" type="text" class="input" :placeholder="$t('snippetsModule.optional')" />
               </div>
 
               <div class="col-span-2">
-                <label class="label">Code/Befehl *</label>
+                <label class="label">{{ $t('snippetsModule.codeCommand') }} *</label>
                 <textarea
                   v-model="form.content"
                   class="input font-mono text-sm"
@@ -494,17 +496,17 @@ function getLanguageLabel(lang) {
               <div class="col-span-2">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input v-model="form.is_favorite" type="checkbox" class="checkbox" />
-                  <span class="text-gray-300">Als Favorit markieren</span>
+                  <span class="text-gray-300">{{ $t('snippetsModule.markAsFavorite') }}</span>
                 </label>
               </div>
             </div>
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="closeModal" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('snippetsModule.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
-                {{ editingSnippet ? 'Speichern' : 'Erstellen' }}
+                {{ editingSnippet ? $t('snippetsModule.save') : $t('snippetsModule.create') }}
               </button>
             </div>
           </form>

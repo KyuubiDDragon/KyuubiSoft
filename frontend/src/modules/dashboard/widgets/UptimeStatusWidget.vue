@@ -7,7 +7,7 @@ defineProps({ widget: Object, data: Array })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/uptime" class="text-sm text-primary-400 hover:text-primary-300">Alle</router-link>
+      <router-link to="/uptime" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('common.all') }}</router-link>
     </div>
     <div class="space-y-2">
       <div
@@ -21,10 +21,10 @@ defineProps({ widget: Object, data: Array })
           <p class="text-xs text-gray-500">{{ monitor.response_time }}ms</p>
         </div>
         <span class="text-xs" :class="getStatusColor(monitor.status)">
-          {{ monitor.status === 'up' ? 'Online' : 'Offline' }}
+          {{ monitor.status === 'up' ? $t('widgets.online') : $t('widgets.offline') }}
         </span>
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine Monitore</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('dashboardModule.widgetsnomonitors') }}</p>
     </div>
   </div>
 </template>

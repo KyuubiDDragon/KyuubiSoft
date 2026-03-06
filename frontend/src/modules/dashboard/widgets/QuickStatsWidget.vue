@@ -11,11 +11,11 @@ defineProps({ widget: Object, data: Object })
         <p class="text-2xl font-bold text-white">{{ data?.lists || 0 }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-lg p-4">
-        <p class="text-gray-400 text-sm">Offene Aufgaben</p>
+        <p class="text-gray-400 text-sm">{{ $t('dashboardModule.dashboardmoduleoffeneaufgaben') }}</p>
         <p class="text-2xl font-bold text-yellow-400">{{ data?.open_tasks || 0 }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-lg p-4">
-        <p class="text-gray-400 text-sm">Dokumente</p>
+        <p class="text-gray-400 text-sm">{{ $t('documents.title') }}</p>
         <p class="text-2xl font-bold text-white">{{ data?.documents || 0 }}</p>
       </div>
       <div class="bg-white/[0.04] rounded-lg p-4">

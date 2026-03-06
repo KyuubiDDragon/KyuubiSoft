@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   ArrowDownTrayIcon,
   FunnelIcon,
@@ -13,6 +14,7 @@ import {
 import { useAuditStore } from '@/modules/audit/stores/auditStore'
 import AuditDetailModal from '@/modules/audit/components/AuditDetailModal.vue'
 
+const { t } = useI18n()
 const auditStore = useAuditStore()
 
 // Local state
@@ -20,16 +22,16 @@ const showDetailModal = ref(false)
 const selectedEntry = ref(null)
 
 // Action types for filter dropdown
-const actionTypes = [
-  { value: '', label: 'Alle Aktionen' },
-  { value: 'login', label: 'Login' },
-  { value: 'logout', label: 'Logout' },
-  { value: 'create', label: 'Erstellen' },
-  { value: 'update', label: 'Aktualisieren' },
-  { value: 'delete', label: 'Löschen' },
-  { value: 'export', label: 'Export' },
-  { value: 'import', label: 'Import' },
-]
+const actionTypes = computed(() => [
+  { value: '', label: t('audit.allActions') },
+  { value: 'login', label: t('auth.login') },
+  { value: 'logout', label: t('auth.logout') },
+  { value: 'create', label: t('common.create') },
+  { value: 'update', label: t('common.refresh') },
+  { value: 'delete', label: t('common.delete') },
+  { value: 'export', label: t('common.export') },
+  { value: 'import', label: t('common.import') },
+])
 
 // Computed
 const paginationRange = computed(() => {
@@ -134,12 +136,12 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Audit Log</h1>
-        <p class="text-gray-400 mt-1">Alle Systemaktivitäten überwachen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('audit.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('audit.subtitle') }}</p>
       </div>
       <button @click="handleExport" class="btn-primary">
         <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
-        Exportieren
+        {{ $t('common.export') }}
       </button>
     </div>
 
@@ -152,7 +154,7 @@ onMounted(async () => {
             <BoltIcon class="w-5 h-5 text-primary-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Ereignisse heute</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.eventsToday') }}</p>
             <p class="text-xl font-bold text-white mt-0.5">{{ auditStore.stats.total_today }}</p>
           </div>
         </div>
@@ -165,7 +167,7 @@ onMounted(async () => {
             <UsersIcon class="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Aktive Benutzer</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.activeUsers') }}</p>
             <p class="text-xl font-bold text-white mt-0.5">{{ auditStore.stats.unique_users }}</p>
           </div>
         </div>
@@ -178,7 +180,7 @@ onMounted(async () => {
             <ClockIcon class="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Häufigste Aktion</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('audit.mostCommonAction') }}</p>
             <p class="text-xl font-bold text-white mt-0.5">{{ auditStore.stats.most_common_action }}</p>
           </div>
         </div>
@@ -207,7 +209,7 @@ onMounted(async () => {
           @input="auditStore.setFilter('search', $event.target.value)"
           @keyup.enter="applyFilters"
           type="text"
-          placeholder="Benutzer suchen..."
+          :placeholder="$t('audit.searchUser')"
           class="input w-auto min-w-[180px]"
         />
 
@@ -217,7 +219,7 @@ onMounted(async () => {
           @change="auditStore.setFilter('date_from', $event.target.value); applyFilters()"
           type="date"
           class="input w-auto"
-          title="Von Datum"
+          :title="$t('audit.fromDate')"
         />
 
         <!-- Date To -->
@@ -226,7 +228,7 @@ onMounted(async () => {
           @change="auditStore.setFilter('date_to', $event.target.value); applyFilters()"
           type="date"
           class="input w-auto"
-          title="Bis Datum"
+          :title="$t('audit.toDate')"
         />
 
         <!-- IP Address -->
@@ -235,13 +237,13 @@ onMounted(async () => {
           @input="auditStore.setFilter('ip_address', $event.target.value)"
           @keyup.enter="applyFilters"
           type="text"
-          placeholder="IP-Adresse..."
+          :placeholder="$t('audit.ipAddressPlaceholder')"
           class="input w-auto min-w-[140px]"
         />
 
         <!-- Search button -->
         <button @click="applyFilters" class="btn-secondary">
-          Suchen
+          {{ $t('common.search') }}
         </button>
 
         <!-- Clear Filters -->
@@ -249,10 +251,10 @@ onMounted(async () => {
           v-if="auditStore.hasActiveFilters"
           @click="clearFilters"
           class="btn-ghost text-gray-400 hover:text-white"
-          title="Filter zurücksetzen"
+          :title="$t('common.reset')"
         >
           <XMarkIcon class="w-4 h-4 mr-1" />
-          Zurücksetzen
+          {{ $t('common.reset') }}
         </button>
       </div>
     </div>
@@ -267,11 +269,11 @@ onMounted(async () => {
       <table class="table-glass">
         <thead>
           <tr>
-            <th>Zeitpunkt</th>
-            <th>Benutzer</th>
-            <th>Aktion</th>
-            <th>Entität</th>
-            <th>IP-Adresse</th>
+            <th>{{ $t('audit.timestamp') }}</th>
+            <th>{{ $t('audit.user') }}</th>
+            <th>{{ $t('audit.action') }}</th>
+            <th>{{ $t('audit.entity') }}</th>
+            <th>{{ $t('audit.ipAddress') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -306,7 +308,7 @@ onMounted(async () => {
           </tr>
           <tr v-if="auditStore.entries.length === 0">
             <td colspan="5" class="text-center py-12 text-gray-500">
-              Keine Audit-Einträge gefunden
+              {{ $t('audit.noEntries') }}
             </td>
           </tr>
         </tbody>
@@ -319,7 +321,7 @@ onMounted(async () => {
       class="flex items-center justify-between"
     >
       <p class="text-sm text-gray-500">
-        {{ auditStore.pagination.total }} Einträge gesamt
+        {{ auditStore.pagination.total }} {{ $t('audit.totalEntries') }}
       </p>
       <div class="flex items-center gap-1">
         <button

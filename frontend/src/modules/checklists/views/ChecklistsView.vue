@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   ClipboardDocumentListIcon,
@@ -21,6 +22,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -45,7 +47,7 @@ async function loadChecklists() {
     const response = await api.get('/api/v1/checklists')
     checklists.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Checklisten')
+    uiStore.showError(t('checklists.errorLoadingChecklists'))
   } finally {
     isLoading.value = false
   }
@@ -62,23 +64,23 @@ async function createChecklist() {
     checklists.value.unshift(response.data.data)
     showCreateModal.value = false
     resetNewChecklist()
-    uiStore.showSuccess('Checkliste erstellt')
+    uiStore.showSuccess(t('checklists.checklistCreated'))
     // Navigate to detail view
     router.push({ name: 'checklist-detail', params: { id: response.data.data.id } })
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
 async function deleteChecklist(checklist) {
-  if (!await confirm({ message: `Checkliste "${checklist.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Checkliste "${checklist.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklist.id}`)
     checklists.value = checklists.value.filter(c => c.id !== checklist.id)
-    uiStore.showSuccess('Checkliste gelöscht')
+    uiStore.showSuccess(t('checklists.checklistDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -91,9 +93,9 @@ async function toggleActive(checklist) {
     if (index !== -1) {
       checklists.value[index] = response.data.data
     }
-    uiStore.showSuccess(response.data.data.is_active ? 'Checkliste aktiviert' : 'Checkliste deaktiviert')
+    uiStore.showSuccess(response.data.data.is_active ? t('checklists.checklistActivated') : t('checklists.checklistDeactivated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Ändern des Status')
+    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
   }
 }
 
@@ -135,8 +137,8 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Test-Checklisten</h1>
-        <p class="text-gray-400 text-sm mt-1">Erstelle und teile Checklisten für kollaboratives Testen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('checklists.title') }}</h1>
+        <p class="text-gray-400 text-sm mt-1">{{ $t('checklists.subtitle') }}</p>
       </div>
 
       <button
@@ -144,7 +146,7 @@ onMounted(() => {
         class="btn-primary"
       >
         <PlusIcon class="w-5 h-5" />
-        <span>Neue Checkliste</span>
+        <span>{{ $t('checklists.newChecklist') }}</span>
       </button>
     </div>
 
@@ -159,13 +161,13 @@ onMounted(() => {
       <!-- Empty State -->
       <div v-else-if="checklists.length === 0" class="p-12 text-center">
         <ClipboardDocumentListIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <p class="text-lg text-white font-medium">Keine Checklisten vorhanden</p>
-        <p class="text-gray-400 mb-6">Erstelle deine erste Checkliste für kollaboratives Testen</p>
+        <p class="text-lg text-white font-medium">{{ $t('checklists.noChecklists') }}</p>
+        <p class="text-gray-400 mb-6">{{ $t('checklists.createFirstChecklist') }}</p>
         <button
           @click="showCreateModal = true"
           class="btn-primary"
         >
-          Checkliste erstellen
+          {{ $t('checklists.createChecklist') }}
         </button>
       </div>
 
@@ -240,7 +242,7 @@ onMounted(() => {
               <button
                 @click="deleteChecklist(checklist)"
                 class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-5 h-5 text-gray-400 hover:text-red-400" />
               </button>
@@ -258,7 +260,7 @@ onMounted(() => {
       >
         <div class="modal w-full max-w-lg">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neue Checkliste erstellen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.createNewChecklist') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
@@ -276,11 +278,11 @@ onMounted(() => {
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
               <textarea
                 v-model="newChecklist.description"
                 rows="3"
-                placeholder="Optionale Beschreibung..."
+                :placeholder="$t('checklists.optionalDescription')"
                 class="textarea"
               ></textarea>
             </div>
@@ -293,7 +295,7 @@ onMounted(() => {
                   v-model="newChecklist.require_name"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Name bei Einträgen erforderlich</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.nameRequiredForEntries') }}</span>
               </label>
 
               <label class="flex items-center gap-3 cursor-pointer">
@@ -302,7 +304,7 @@ onMounted(() => {
                   v-model="newChecklist.allow_add_items"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Externe dürfen Punkte hinzufügen</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.externalsCanAddItems') }}</span>
               </label>
 
               <label class="flex items-center gap-3 cursor-pointer">
@@ -320,15 +322,11 @@ onMounted(() => {
             <button
               @click="showCreateModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="createChecklist"
               class="btn-primary"
-            >
-              Erstellen
-            </button>
+            >{{ $t('common.create') }}</button>
           </div>
         </div>
       </div>

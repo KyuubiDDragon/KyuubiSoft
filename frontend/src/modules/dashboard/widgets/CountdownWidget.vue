@@ -17,7 +17,7 @@ defineEmits(['open-config'])
     <!-- No date configured -->
     <div v-if="!widget.config?.date" class="text-center py-6">
       <ClockIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-      <p class="text-gray-500 text-sm mb-3">Kein Datum festgelegt</p>
+      <p class="text-gray-500 text-sm mb-3">{{ $t('dashboardModule.keinDatumFestgelegt') }}</p>
       <button @click="$emit('open-config')" class="btn-secondary text-xs">Countdown einrichten</button>
     </div>
 
@@ -29,7 +29,7 @@ defineEmits(['open-config'])
       <div v-else class="grid grid-cols-4 gap-2">
         <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.days }}</p>
-          <p class="text-xs text-gray-500">Tage</p>
+          <p class="text-xs text-gray-500">{{ $t('time.days') }}</p>
         </div>
         <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.hours }}</p>

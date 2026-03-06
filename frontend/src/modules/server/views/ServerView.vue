@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -26,6 +27,7 @@ import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -81,14 +83,14 @@ const autoRefresh = ref(false)
 // Cron schedule presets
 const cronPresets = [
   { label: 'Jede Minute', value: '* * * * *' },
-  { label: 'Alle 5 Minuten', value: '*/5 * * * *' },
-  { label: 'Alle 15 Minuten', value: '*/15 * * * *' },
-  { label: 'Alle 30 Minuten', value: '*/30 * * * *' },
-  { label: 'Stündlich', value: '0 * * * *' },
-  { label: 'Täglich (00:00)', value: '0 0 * * *' },
-  { label: 'Täglich (03:00)', value: '0 3 * * *' },
-  { label: 'Wöchentlich (Sonntag)', value: '0 0 * * 0' },
-  { label: 'Monatlich (1. Tag)', value: '0 0 1 * *' },
+  { label: t('server.alle5Minuten'), value: '*/5 * * * *' },
+  { label: t('server.alle15Minuten'), value: '*/15 * * * *' },
+  { label: t('server.alle30Minuten'), value: '*/30 * * * *' },
+  { label: t('cron.hourly'), value: '0 * * * *' },
+  { label: t('server.taeglich0000'), value: '0 0 * * *' },
+  { label: t('server.taeglich0300'), value: '0 3 * * *' },
+  { label: t('server.woechentlichSonntag'), value: '0 0 * * 0' },
+  { label: t('server.monatlich1Tag'), value: '0 0 1 * *' },
   { label: 'Bei Systemstart', value: '@reboot' },
 ]
 
@@ -154,24 +156,24 @@ async function addCustomService() {
 
   try {
     await api.post('/api/v1/server/services/custom', { name: newServiceName.value.trim() })
-    uiStore.showSuccess('Service hinzugefügt')
+    uiStore.showSuccess(t('server.serviceHinzugefuegt'))
     showAddServiceModal.value = false
     newServiceName.value = ''
     await loadCustomServices()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(e.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
 async function removeCustomService(serviceName) {
-  if (!await confirm({ message: `Service "${serviceName}" wirklich aus der Liste entfernen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Service "${serviceName}" wirklich aus der Liste entfernen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/server/services/custom/${encodeURIComponent(serviceName)}`)
     uiStore.showSuccess('Service entfernt')
     await loadCustomServices()
   } catch (e) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('server.serverfehlerbeimentfernen'))
   }
 }
 
@@ -221,24 +223,24 @@ async function addCrontab() {
 
   try {
     await api.post('/api/v1/server/crontabs', newCrontab.value)
-    uiStore.showSuccess('Crontab hinzugefügt')
+    uiStore.showSuccess(t('server.crontabHinzugefuegt'))
     showCrontabModal.value = false
     newCrontab.value = { schedule: '', command: '' }
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(e.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
 async function deleteCrontab(line) {
-  if (!await confirm({ message: 'Diesen Crontab-Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('server.diesenCrontabeintragWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete('/api/v1/server/crontabs', { data: { line } })
-    uiStore.showSuccess('Crontab gelöscht')
+    uiStore.showSuccess(t('server.crontabGeloescht'))
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -249,13 +251,13 @@ async function saveCrontabRaw() {
     showEditCrontabModal.value = false
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(e.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Process Actions
 async function killProcess(pid, signal = 'TERM') {
-  if (!await confirm({ message: `Prozess ${pid} wirklich beenden?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Prozess ${pid} wirklich beenden?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     const response = await api.post('/api/v1/server/processes/kill', { pid, signal })
@@ -263,11 +265,11 @@ async function killProcess(pid, signal = 'TERM') {
     if (data.terminated) {
       uiStore.showSuccess('Prozess beendet')
     } else {
-      uiStore.showWarning('Signal gesendet, Prozess läuft noch')
+      uiStore.showWarning(t('server.signalGesendetProzessLaeuftNoch'))
     }
     await loadProcesses()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || 'Fehler beim Beenden')
+    uiStore.showError(e.response?.data?.message || t('server.fehlerBeimBeenden'))
   }
 }
 
@@ -297,7 +299,7 @@ async function controlService(service, action) {
     reload: 'neu laden',
   }
 
-  if (!await confirm({ message: `${service} wirklich ${actionNames[action] || action}?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `${service} wirklich ${actionNames[action] || action}?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.post('/api/v1/server/services/control', { service, action })
@@ -308,7 +310,7 @@ async function controlService(service, action) {
       await viewService(selectedService.value)
     }
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || 'Fehler bei Service-Kontrolle')
+    uiStore.showError(e.response?.data?.message || t('server.fehlerBeiServicekontrolle'))
   }
 }
 
@@ -377,7 +379,7 @@ watch(activeTab, (newTab) => {
           Server Manager
         </h1>
         <p class="text-gray-400 mt-1">
-          {{ systemInfo?.hostname || 'Server' }} - {{ systemInfo?.os || 'Loading...' }}
+          {{ systemInfo?.hostname || $t('server.server') }} - {{ systemInfo?.os || 'Loading...' }}
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -519,7 +521,7 @@ watch(activeTab, (newTab) => {
         <div v-show="importantServicesExpanded" class="p-4 pt-0">
           <div v-if="customServices.length === 0" class="text-center text-gray-500 py-8">
             <Cog6ToothIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Keine wichtigen Services hinterlegt</p>
+            <p>{{ $t('server.keineWichtigenServicesHinterlegt') }}</p>
             <p class="text-sm mt-1">Klicke auf "Hinzufuegen" um Services zu deiner Liste hinzuzufuegen</p>
           </div>
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -544,7 +546,7 @@ watch(activeTab, (newTab) => {
                   v-if="!service.active"
                   @click="controlService(service.name, 'start')"
                   class="btn-icon text-green-400 hover:bg-green-500/20"
-                  title="Starten"
+                  :title="$t('server.starten')"
                 >
                   <PlayIcon class="w-4 h-4" />
                 </button>
@@ -552,7 +554,7 @@ watch(activeTab, (newTab) => {
                   v-if="service.active"
                   @click="controlService(service.name, 'restart')"
                   class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                  title="Neustarten"
+                  :title="$t('server.neustarten')"
                 >
                   <ArrowPathIcon class="w-4 h-4" />
                 </button>
@@ -560,14 +562,14 @@ watch(activeTab, (newTab) => {
                   v-if="service.active"
                   @click="controlService(service.name, 'stop')"
                   class="btn-icon text-red-400 hover:bg-red-500/20"
-                  title="Stoppen"
+                  :title="$t('server.stoppen')"
                 >
                   <StopIcon class="w-4 h-4" />
                 </button>
                 <button
                   @click="removeCustomService(service.name)"
                   class="btn-icon text-gray-400 hover:text-red-400 hover:bg-red-500/20"
-                  title="Aus Liste entfernen"
+                  :title="$t('server.serverauslisteentfernen')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -579,12 +581,12 @@ watch(activeTab, (newTab) => {
 
       <!-- Service Filter -->
       <div class="flex flex-wrap items-center gap-4">
-        <h3 class="text-lg font-medium text-white">Alle Services</h3>
+        <h3 class="text-lg font-medium text-white">{{ $t('server.alleServices') }}</h3>
         <select v-model="serviceFilter" @change="loadServices" class="input w-40">
-          <option value="all">Alle</option>
+          <option value="all">{{ $t('common.all') }}</option>
           <option value="running">Laufend</option>
           <option value="failed">Fehlgeschlagen</option>
-          <option value="enabled">Aktiviert</option>
+          <option value="enabled">{{ $t('common.enabled') }}</option>
         </select>
         <input
           v-model="serviceSearch"
@@ -601,8 +603,8 @@ watch(activeTab, (newTab) => {
           <thead class="bg-white/[0.04]">
             <tr class="text-left text-sm text-gray-400">
               <th class="p-3">Service</th>
-              <th class="p-3">Status</th>
-              <th class="p-3 hidden sm:table-cell">Beschreibung</th>
+              <th class="p-3">{{ $t('common.status') }}</th>
+              <th class="p-3 hidden sm:table-cell">{{ $t('common.description') }}</th>
               <th class="p-3 text-right">Aktionen</th>
             </tr>
           </thead>
@@ -642,7 +644,7 @@ watch(activeTab, (newTab) => {
                   <button
                     @click="controlService(service.name, 'restart')"
                     class="btn-icon text-blue-400 hover:bg-blue-500/20"
-                    title="Neustarten"
+                    :title="$t('server.neustarten')"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
                   </button>
@@ -657,7 +659,7 @@ watch(activeTab, (newTab) => {
     <!-- Crontabs Tab -->
     <div v-if="activeTab === 'crontabs'" class="space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-medium text-white">Crontab Einträge</h3>
+        <h3 class="text-lg font-medium text-white">{{ $t('server.crontabEintraege') }}</h3>
         <div class="flex gap-2">
           <button @click="showEditCrontabModal = true" class="btn-secondary">
             <DocumentTextIcon class="w-4 h-4 mr-1" />
@@ -665,14 +667,14 @@ watch(activeTab, (newTab) => {
           </button>
           <button @click="showCrontabModal = true" class="btn-primary">
             <PlusIcon class="w-4 h-4 mr-1" />
-            Hinzufügen
+            {{ $t('common.add') }}
           </button>
         </div>
       </div>
 
       <div v-if="crontabs.length === 0" class="card p-8 text-center text-gray-400">
         <ClockIcon class="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p>Keine Crontab-Einträge vorhanden</p>
+        <p>{{ $t('server.keineCrontabeintraegeVorhanden') }}</p>
       </div>
 
       <div v-else class="space-y-2">
@@ -698,7 +700,7 @@ watch(activeTab, (newTab) => {
               v-if="cron.enabled"
               @click="deleteCrontab(cron.line)"
               class="btn-icon text-red-400 hover:bg-red-500/20 flex-shrink-0"
-              title="Löschen"
+              :title="$t('common.delete')"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
@@ -789,7 +791,7 @@ watch(activeTab, (newTab) => {
       >
         <div class="modal w-full max-w-lg">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neuer Crontab</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('server.neuerCrontab') }}</h2>
             <button @click="showCrontabModal = false" class="btn-icon">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -799,7 +801,7 @@ watch(activeTab, (newTab) => {
             <div>
               <label class="label">Schedule</label>
               <select v-model="newCrontab.schedule" class="input mb-2">
-                <option value="">Eigene Eingabe...</option>
+                <option value="">{{ $t('server.eigeneEingabe') }}</option>
                 <option v-for="preset in cronPresets" :key="preset.value" :value="preset.value">
                   {{ preset.label }} ({{ preset.value }})
                 </option>
@@ -828,7 +830,7 @@ watch(activeTab, (newTab) => {
                 Abbrechen
               </button>
               <button type="submit" class="btn-primary flex-1">
-                Hinzufügen
+                {{ $t('common.add') }}
               </button>
             </div>
           </form>
@@ -885,13 +887,13 @@ watch(activeTab, (newTab) => {
 
           <div class="flex-1 overflow-auto p-4 space-y-4">
             <div>
-              <h4 class="text-sm font-medium text-gray-300 mb-2">Status</h4>
+              <h4 class="text-sm font-medium text-gray-300 mb-2">{{ $t('common.status') }}</h4>
               <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-40 whitespace-pre-wrap">{{ serviceStatus || 'Loading...' }}</pre>
             </div>
 
             <div>
               <h4 class="text-sm font-medium text-gray-300 mb-2">Logs (letzte 50 Zeilen)</h4>
-              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || 'Keine Logs verfügbar' }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || $t('server.keineLogsVerfuegbar') }}</pre>
             </div>
           </div>
 
@@ -927,7 +929,7 @@ watch(activeTab, (newTab) => {
               </button>
             </div>
             <button @click="showServiceModal = false" class="btn-secondary">
-              Schließen
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>

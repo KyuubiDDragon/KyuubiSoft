@@ -5,7 +5,7 @@
       <!-- Compose button -->
       <button class="btn-primary w-full mb-4 flex items-center justify-center gap-2" @click="showCompose = true">
         <PencilSquareIcon class="w-5 h-5" />
-        Verfassen
+        {{ $t('emailModule.compose') }}
       </button>
 
       <!-- Folders -->
@@ -29,7 +29,7 @@
 
       <!-- Accounts -->
       <div class="border-t border-white/[0.06] pt-3 mt-3">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">Konten</p>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">{{ $t('emailModule.accounts') }}</p>
         <button
           v-for="account in emailStore.accounts"
           :key="account.id"
@@ -45,14 +45,14 @@
           class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-500 rounded-lg transition-colors hover:bg-white/[0.04] hover:text-gray-300 mt-1"
           @click="selectAccount(null)"
         >
-          Alle Konten anzeigen
+          {{ $t('emailModule.showAllAccounts') }}
         </button>
         <button
           class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-500 rounded-lg transition-colors hover:bg-white/[0.04] hover:text-gray-300 mt-1"
           @click="showAccountModal = true"
         >
           <PlusIcon class="w-4 h-4" />
-          Konto hinzufügen
+          {{ $t('emailModule.addAccount') }}
         </button>
       </div>
     </div>
@@ -66,7 +66,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Nachrichten durchsuchen..."
+            :placeholder="$t('emailModule.searchMessages')"
             class="input pl-9 w-full text-sm"
             @keyup.enter="handleSearch"
           />
@@ -82,7 +82,7 @@
       <div v-else-if="emailStore.messages.length === 0" class="flex-1 flex items-center justify-center p-4">
         <div class="text-center">
           <InboxIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p class="text-gray-500 text-sm">Keine Nachrichten</p>
+          <p class="text-gray-500 text-sm">{{ $t('emailModule.keineNachrichten') }}</p>
         </div>
       </div>
 
@@ -108,7 +108,7 @@
             </div>
           </div>
           <p class="text-sm truncate" :class="msg.is_read ? 'text-gray-500' : 'text-gray-300'">
-            {{ msg.subject || '(Kein Betreff)' }}
+            {{ msg.subject || '($t('emailModule.noSubject'))' }}
           </p>
           <p class="text-xs text-gray-600 truncate mt-0.5">
             {{ (msg.body_preview || msg.body_text || '').substring(0, 80) }}
@@ -123,7 +123,7 @@
           :disabled="emailStore.pagination.page <= 1"
           @click="changePage(emailStore.pagination.page - 1)"
         >
-          Zurück
+          {{ $t('emailModule.previous') }}
         </button>
         <span>{{ emailStore.pagination.page }} / {{ emailStore.pagination.pages }}</span>
         <button
@@ -131,7 +131,7 @@
           :disabled="emailStore.pagination.page >= emailStore.pagination.pages"
           @click="changePage(emailStore.pagination.page + 1)"
         >
-          Weiter
+          {{ $t('emailModule.next') }}
         </button>
       </div>
     </div>
@@ -142,7 +142,7 @@
       <div v-if="!emailStore.currentMessage" class="h-full flex items-center justify-center">
         <div class="text-center">
           <EnvelopeOpenIcon class="w-16 h-16 text-gray-700 mx-auto mb-4" />
-          <p class="text-gray-500">Nachricht auswählen zum Lesen</p>
+          <p class="text-gray-500">{{ $t('emailModule.nachrichtAuswaehlenZumLesen') }}</p>
         </div>
       </div>
 
@@ -157,21 +157,21 @@
                 class="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
                 :class="emailStore.currentMessage.is_starred ? 'text-yellow-500' : 'text-gray-500'"
                 @click="handleToggleStar(emailStore.currentMessage.id)"
-                title="Stern umschalten"
+                :title="$t('emailModule.toggleStar')"
               >
                 <StarIcon class="w-5 h-5" />
               </button>
               <button
                 class="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-gray-500 hover:text-white"
                 @click="handleToggleRead(emailStore.currentMessage.id)"
-                title="Lesestatus umschalten"
+                :title="$t('emailModule.toggleRead')"
               >
                 <EnvelopeIcon class="w-5 h-5" />
               </button>
               <button
                 class="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-gray-500 hover:text-red-400"
                 @click="handleDelete(emailStore.currentMessage.id)"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-5 h-5" />
               </button>
@@ -208,7 +208,7 @@
             class="prose prose-invert max-w-none text-sm email-body"
             v-html="sanitizeHtml(emailStore.currentMessage.body_html)"
           />
-          <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap font-sans">{{ emailStore.currentMessage.body_text || 'Kein Inhalt' }}</pre>
+          <pre v-else class="text-sm text-gray-300 whitespace-pre-wrap font-sans">{{ emailStore.currentMessage.body_text || '{{ $t('emailModule.noContent') }}' }}</pre>
         </div>
       </div>
     </div>
@@ -219,7 +219,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCompose = false" />
         <div class="modal w-full max-w-2xl relative">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-white">Neue Nachricht</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('emailModule.neueNachricht') }}</h2>
             <button class="text-gray-400 hover:text-white transition-colors" @click="showCompose = false">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -228,7 +228,7 @@
           <form @submit.prevent="handleSend" class="space-y-4">
             <!-- Account selector -->
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Von</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.von') }}</label>
               <select v-model="composeForm.account_id" class="select w-full">
                 <option v-for="account in emailStore.activeAccounts" :key="account.id" :value="account.id">
                   {{ account.name }} &lt;{{ account.email }}&gt;
@@ -237,27 +237,27 @@
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">An</label>
-              <input v-model="composeForm.to" type="text" class="input w-full" placeholder="empfaenger@beispiel.de" required />
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.to') }}</label>
+              <input v-model="composeForm.to" type="text" class="input w-full" :placeholder="$t('emailModule.recipientPlaceholder')" required />
             </div>
 
             <div>
               <label class="block text-sm text-gray-400 mb-1">CC</label>
-              <input v-model="composeForm.cc" type="text" class="input w-full" placeholder="cc@beispiel.de" />
+              <input v-model="composeForm.cc" type="text" class="input w-full" :placeholder="$t('emailModule.ccPlaceholder')" />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Betreff</label>
-              <input v-model="composeForm.subject" type="text" class="input w-full" placeholder="Betreff eingeben..." />
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.subject') }}</label>
+              <input v-model="composeForm.subject" type="text" class="input w-full" :placeholder="$t('emailModule.subjectPlaceholder')" />
             </div>
 
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Nachricht</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.message') }}</label>
               <textarea
                 v-model="composeForm.body"
                 class="textarea w-full"
                 rows="12"
-                placeholder="Nachricht schreiben..."
+                :placeholder="$t('emailModule.writeMessage')"
               />
             </div>
 
@@ -268,15 +268,15 @@
                 @click="handleSaveDraft"
                 :disabled="emailStore.sendingMessage"
               >
-                Entwurf speichern
+                {{ $t('emailModule.saveDraft') }}
               </button>
               <div class="flex items-center gap-3">
                 <button type="button" class="btn-secondary" @click="showCompose = false">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary" :disabled="emailStore.sendingMessage">
-                  <span v-if="emailStore.sendingMessage">Senden...</span>
-                  <span v-else>Senden</span>
+                  <span v-if="emailStore.sendingMessage">{{ $t('emailModule.sending') }}</span>
+                  <span v-else>{{ $t('emailModule.send') }}</span>
                 </button>
               </div>
             </div>
@@ -291,7 +291,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showAccountModal = false" />
         <div class="modal w-full max-w-lg relative">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-white">{{ editingAccount ? 'Konto bearbeiten' : 'E-Mail-Konto hinzufügen' }}</h2>
+            <h2 class="text-lg font-semibold text-white">{{ editingAccount ? $t('emailModule.editAccount') : $t('emailModule.addEmailAccount') }}</h2>
             <button class="text-gray-400 hover:text-white transition-colors" @click="closeAccountModal">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -300,61 +300,61 @@
           <form @submit.prevent="handleSaveAccount" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
-                <label class="block text-sm text-gray-400 mb-1">Anzeigename</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.displayName') }}</label>
                 <input v-model="accountForm.name" type="text" class="input w-full" placeholder="Mein E-Mail" required />
               </div>
 
               <div class="col-span-2">
-                <label class="block text-sm text-gray-400 mb-1">E-Mail-Adresse</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.emailAddress') }}</label>
                 <input v-model="accountForm.email" type="email" class="input w-full" placeholder="mail@beispiel.de" required />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">IMAP-Server</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.emailimapserver') }}</label>
                 <input v-model="accountForm.imap_host" type="text" class="input w-full" placeholder="imap.beispiel.de" required />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">IMAP-Port</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.imapPort') }}</label>
                 <input v-model.number="accountForm.imap_port" type="number" class="input w-full" />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">SMTP-Server</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.emailsmtpserver') }}</label>
                 <input v-model="accountForm.smtp_host" type="text" class="input w-full" placeholder="smtp.beispiel.de" required />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">SMTP-Port</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.smtpPort') }}</label>
                 <input v-model.number="accountForm.smtp_port" type="number" class="input w-full" />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">IMAP-Verschlüsselung</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.imapverschluesselung') }}</label>
                 <select v-model="accountForm.imap_encryption" class="select w-full">
                   <option value="ssl">SSL</option>
                   <option value="tls">TLS</option>
-                  <option value="none">Keine</option>
+                  <option value="none">{{ $t('common.none') }}</option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">SMTP-Verschlüsselung</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('emailModule.smtpverschluesselung') }}</label>
                 <select v-model="accountForm.smtp_encryption" class="select w-full">
                   <option value="ssl">SSL</option>
                   <option value="tls">TLS</option>
-                  <option value="none">Keine</option>
+                  <option value="none">{{ $t('common.none') }}</option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Benutzername</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('passwords.username') }}</label>
                 <input v-model="accountForm.username" type="text" class="input w-full" placeholder="Benutzername" required />
               </div>
 
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Passwort</label>
-                <input v-model="accountForm.password" type="password" class="input w-full" :placeholder="editingAccount ? 'Unverändert lassen...' : 'Passwort'" :required="!editingAccount" />
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('auth.password') }}</label>
+                <input v-model="accountForm.password" type="password" class="input w-full" :placeholder="editingAccount ? $t('emailModule.unveraendertLassen') : $t('auth.password')" :required="!editingAccount" />
               </div>
             </div>
 
@@ -365,15 +365,15 @@
                 class="btn-danger"
                 @click="handleDeleteAccount"
               >
-                Löschen
+                {{ $t('common.delete') }}
               </button>
               <div v-else />
               <div class="flex items-center gap-3">
                 <button type="button" class="btn-secondary" @click="closeAccountModal">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary">
-                  {{ editingAccount ? 'Speichern' : 'Hinzufügen' }}
+                  {{ editingAccount ? $t('common.save') : $t('common.add') }}
                 </button>
               </div>
             </div>
@@ -403,6 +403,8 @@ import {
   PlusIcon,
 } from '@heroicons/vue/24/outline'
 import type { Component } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const emailStore = useEmailStore()
 
@@ -437,7 +439,7 @@ const accountForm = ref({
 const folderIcons: Record<string, Component> = {
   'INBOX': InboxIcon,
   'Gesendet': PaperAirplaneIcon,
-  'Entwürfe': DocumentTextIcon,
+  t('contracts.drafts'): DocumentTextIcon,
   'Papierkorb': TrashIcon,
   'Spam': ExclamationTriangleIcon,
 }

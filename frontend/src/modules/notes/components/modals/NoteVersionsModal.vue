@@ -5,6 +5,7 @@ import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useI18n } from 'vue-i18n'
 import {
   XMarkIcon,
   ClockIcon,
@@ -34,6 +35,7 @@ const notesStore = useNotesStore()
 const uiStore = useUiStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+const { t } = useI18n()
 
 const isLoading = ref(false)
 const isRestoring = ref(false)
@@ -62,7 +64,7 @@ function formatRelativeTime(date) {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return 'Gerade eben'
+  if (diffMins < 1) return t('notes.time.justNow')
   if (diffMins < 60) return `vor ${diffMins} Min.`
   if (diffHours < 24) return `vor ${diffHours} Std.`
   if (diffDays < 7) return `vor ${diffDays} Tagen`
@@ -75,7 +77,7 @@ async function loadVersions() {
   try {
     versions.value = await notesStore.getVersions(props.noteId)
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Versionen')
+    uiStore.showError(t('notes.errors.loadVersions'))
   } finally {
     isLoading.value = false
   }
@@ -89,22 +91,22 @@ async function preview(version) {
     previewContent.value = fullVersion.content
     showPreview.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Vorschau')
+    uiStore.showError(t('notes.errors.loadPreview'))
   }
 }
 
 // Restore version
 async function restore(version) {
-  if (!await confirm({ message: `Version ${version.version_number} wiederherstellen? Der aktuelle Inhalt wird als neue Version gespeichert.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notes.confirmRestoreVersion', { version: version.version_number }), type: 'danger', confirmText: t('notes.restore') })) return
 
   isRestoring.value = true
   try {
     await notesStore.restoreVersion(props.noteId, version.id)
-    uiStore.showSuccess(`Version ${version.version_number} wiederhergestellt`)
+    uiStore.showSuccess(t('notes.versionRestored', { version: version.version_number }))
     emit('restored')
     emit('close')
   } catch (error) {
-    uiStore.showError('Fehler beim Wiederherstellen')
+    uiStore.showError(t('notes.errors.restore'))
   } finally {
     isRestoring.value = false
   }
@@ -140,7 +142,7 @@ watch(() => props.show, (show) => {
           <div class="flex items-center gap-3">
             <ClockIcon class="w-5 h-5 text-primary-400" />
             <div>
-              <h2 class="text-lg font-semibold text-white">Versionsgeschichte</h2>
+              <h2 class="text-lg font-semibold text-white">{{ $t('notes.versionHistory') }}</h2>
               <p class="text-sm text-gray-500">{{ currentTitle }}</p>
             </div>
           </div>
@@ -164,7 +166,7 @@ watch(() => props.show, (show) => {
             <!-- Empty -->
             <div v-else-if="versions.length === 0" class="text-center py-12 text-gray-500">
               <ClockIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Keine Versionen vorhanden</p>
+              <p>{{ $t('notes.noVersions') }}</p>
             </div>
 
             <!-- Versions -->
@@ -182,13 +184,13 @@ watch(() => props.show, (show) => {
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-medium text-white">
-                        Version {{ version.version_number }}
+                        {{ $t('notes.version') }} {{ version.version_number }}
                       </span>
                       <span
                         v-if="version.version_number === versions[0]?.version_number"
                         class="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400"
                       >
-                        Aktuell
+                        {{ $t('notes.current') }}
                       </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">
@@ -198,15 +200,15 @@ watch(() => props.show, (show) => {
                       {{ version.change_summary }}
                     </p>
                     <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                      <span v-if="version.created_by_name">von {{ version.created_by_name }}</span>
-                      <span>{{ version.word_count }} Wörter</span>
+                      <span v-if="version.created_by_name">{{ $t('notes.by') }} {{ version.created_by_name }}</span>
+                      <span>{{ version.word_count }} {{ $t('notes.words') }}</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-1">
                     <button
                       @click.stop="preview(version)"
                       class="p-1.5 text-gray-500 hover:text-white hover:bg-dark-600 rounded"
-                      title="Vorschau"
+                      :title="$t('notes.preview')"
                     >
                       <EyeIcon class="w-4 h-4" />
                     </button>
@@ -215,7 +217,7 @@ watch(() => props.show, (show) => {
                       @click.stop="restore(version)"
                       :disabled="isRestoring"
                       class="p-1.5 text-gray-500 hover:text-primary-400 hover:bg-dark-600 rounded disabled:opacity-50"
-                      title="Wiederherstellen"
+                      :title="$t('notes.restore')"
                     >
                       <ArrowPathIcon class="w-4 h-4" />
                     </button>
@@ -231,7 +233,7 @@ watch(() => props.show, (show) => {
               <div class="flex items-center gap-2">
                 <DocumentTextIcon class="w-4 h-4 text-gray-400" />
                 <span class="text-sm font-medium text-white">
-                  Version {{ selectedVersion?.version_number }}
+                  {{ $t('notes.version') }} {{ selectedVersion?.version_number }}
                 </span>
               </div>
               <div class="flex items-center gap-2">
@@ -242,7 +244,7 @@ watch(() => props.show, (show) => {
                   class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50"
                 >
                   <ArrowPathIcon class="w-4 h-4" />
-                  Wiederherstellen
+                  {{ $t('notes.restore') }}
                 </button>
                 <button
                   @click="closePreview"
@@ -259,7 +261,7 @@ watch(() => props.show, (show) => {
                 v-html="sanitizeHtml(previewContent)"
               />
               <div v-else class="flex items-center justify-center h-full text-gray-500">
-                Vorschau wird geladen...
+                {{ $t('notes.loadingPreview') }}
               </div>
             </div>
           </div>

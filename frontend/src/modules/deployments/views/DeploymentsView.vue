@@ -19,8 +19,11 @@ import {
   CodeBracketIcon,
 } from '@heroicons/vue/24/outline'
 import { useDeploymentStore } from '@/modules/deployments/stores/deploymentStore'
+import { useI18n } from 'vue-i18n'
 
 const deploymentStore = useDeploymentStore()
+
+const { t } = useI18n()
 
 // Local state
 const showPipelineModal = ref(false)
@@ -71,18 +74,18 @@ function resetPipelineForm() {
 
 // Status badge helpers
 const statusConfig = {
-  pending: { label: 'Ausstehend', class: 'bg-gray-500/15 text-gray-400' },
-  running: { label: 'Läuft', class: 'bg-amber-500/15 text-amber-400' },
-  success: { label: 'Erfolgreich', class: 'bg-emerald-500/15 text-emerald-400' },
-  failed: { label: 'Fehlgeschlagen', class: 'bg-red-500/15 text-red-400' },
-  cancelled: { label: 'Abgebrochen', class: 'bg-gray-500/15 text-gray-500' },
-  rolled_back: { label: 'Zurückgerollt', class: 'bg-purple-500/15 text-purple-400' },
+  pending: { label: t('deploymentsModule.statusPending'), class: 'bg-gray-500/15 text-gray-400' },
+  running: { label: t('deploymentsModule.statusRunning'), class: 'bg-amber-500/15 text-amber-400' },
+  success: { label: t('deploymentsModule.statusSuccess'), class: 'bg-emerald-500/15 text-emerald-400' },
+  failed: { label: t('deploymentsModule.statusFailed'), class: 'bg-red-500/15 text-red-400' },
+  cancelled: { label: t('deploymentsModule.statusCancelled'), class: 'bg-gray-500/15 text-gray-500' },
+  rolled_back: { label: t('deploymentsModule.deploymentsstatusrolledback'), class: 'bg-purple-500/15 text-purple-400' },
 }
 
 const environmentConfig = {
-  production: { label: 'Production', class: 'bg-red-500/15 text-red-400' },
-  staging: { label: 'Staging', class: 'bg-amber-500/15 text-amber-400' },
-  development: { label: 'Development', class: 'bg-blue-500/15 text-blue-400' },
+  production: { label: t('deploymentsModule.envProduction'), class: 'bg-red-500/15 text-red-400' },
+  staging: { label: t('deploymentsModule.envStaging'), class: 'bg-amber-500/15 text-amber-400' },
+  development: { label: t('deploymentsModule.envDevelopment'), class: 'bg-blue-500/15 text-blue-400' },
 }
 
 function getStatusBadge(status) {
@@ -114,11 +117,11 @@ function formatRelativeTime(dateString) {
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
 
-  if (diffSec < 60) return 'gerade eben'
-  if (diffMin < 60) return `vor ${diffMin} Min.`
-  if (diffHour < 24) return `vor ${diffHour} Std.`
-  if (diffDay === 1) return 'gestern'
-  if (diffDay < 7) return `vor ${diffDay} Tagen`
+  if (diffSec < 60) return t('deploymentsModule.justNow')
+  if (diffMin < 60) return t('deployments.minutesAgo', { count: diffMin })
+  if (diffHour < 24) return t('deployments.hoursAgo', { count: diffHour })
+  if (diffDay === 1) return t('deploymentsModule.yesterday')
+  if (diffDay < 7) return t('deployments.daysAgo', { count: diffDay })
 
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
 }
@@ -318,12 +321,12 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Deployments</h1>
-        <p class="text-gray-400 mt-1">Deployment-Pipelines verwalten und überwachen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('deploymentsModule.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('deploymentsModule.subtitle') }}</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Pipeline erstellen
+        {{ $t('deploymentsModule.createPipeline') }}
       </button>
     </div>
 
@@ -335,7 +338,7 @@ onMounted(async () => {
             <RocketLaunchIcon class="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Total Deployments</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('deploymentsModule.totalDeployments') }}</p>
             <p class="text-xl font-bold text-white">{{ deploymentStore.stats.total }}</p>
           </div>
         </div>
@@ -346,7 +349,7 @@ onMounted(async () => {
             <CheckCircleIcon class="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Erfolgsrate</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('deploymentsModule.successRate') }}</p>
             <p class="text-xl font-bold text-white">{{ deploymentStore.stats.success_rate }}%</p>
           </div>
         </div>
@@ -357,7 +360,7 @@ onMounted(async () => {
             <ClockIcon class="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Durchschn. Dauer</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('deploymentsModule.avgDuration') }}</p>
             <p class="text-xl font-bold text-white">{{ formatDuration(deploymentStore.stats.avg_duration_ms) }}</p>
           </div>
         </div>
@@ -368,7 +371,7 @@ onMounted(async () => {
             <XCircleIcon class="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Letzte Fehler</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wider">{{ $t('deploymentsModule.recentFailures') }}</p>
             <p class="text-xl font-bold text-white">{{ deploymentStore.stats.recent_failures?.length || 0 }}</p>
           </div>
         </div>
@@ -386,11 +389,11 @@ onMounted(async () => {
       class="card-glass p-12 text-center"
     >
       <RocketLaunchIcon class="w-12 h-12 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-300 mb-2">Keine Pipelines vorhanden.</h3>
-      <p class="text-gray-500 mb-6">Erstellen Sie Ihre erste Deployment-Pipeline.</p>
+      <h3 class="text-lg font-medium text-gray-300 mb-2">{{ $t('deploymentsModule.noPipelines') }}</h3>
+      <p class="text-gray-500 mb-6">{{ $t('deploymentsModule.noPipelinesHint') }}</p>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Pipeline erstellen
+        {{ $t('deploymentsModule.createPipeline') }}
       </button>
     </div>
 
@@ -425,7 +428,7 @@ onMounted(async () => {
                   <span>{{ pipeline.branch }}</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <span>{{ pipeline.steps?.length || 0 }} Schritte</span>
+                  <span>{{ pipeline.steps?.length || 0 }} {{ $t('deploymentsModule.steps') }}</span>
                 </div>
               </div>
 
@@ -454,7 +457,7 @@ onMounted(async () => {
               :disabled="deploymentStore.deploying"
             >
               <PlayIcon class="w-4 h-4 mr-1.5" />
-              Deploy
+              {{ $t('deploymentsModule.deploy') }}
             </button>
           </div>
 
@@ -462,23 +465,23 @@ onMounted(async () => {
           <div class="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
             <button @click="openEditModal(pipeline)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PencilSquareIcon class="w-4 h-4 mr-1" />
-              Bearbeiten
+              {{ $t('common.edit') }}
             </button>
             <button @click="toggleDeploymentHistory(pipeline.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <EyeIcon class="w-4 h-4 mr-1" />
-              Verlauf
+              {{ $t('deploymentsModule.history') }}
               <component :is="expandedPipeline === pipeline.id ? ChevronUpIcon : ChevronDownIcon" class="w-3 h-3 ml-1" />
             </button>
             <div class="flex-1"></div>
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === pipeline.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
+              <span class="text-xs text-red-400 mr-2">{{ $t('deploymentsModule.confirmDelete') }}</span>
               <button @click="handleDelete(pipeline.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
-                Ja
+                {{ $t('deploymentsModule.yes') }}
               </button>
               <button @click="cancelDelete" class="btn-ghost text-xs text-gray-400 hover:text-white">
-                Nein
+                {{ $t('deploymentsModule.no') }}
               </button>
             </template>
             <button
@@ -487,24 +490,24 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
 
           <!-- Deployment History (expandable) -->
           <div v-if="expandedPipeline === pipeline.id" class="mt-3 pt-3 border-t border-white/[0.06]">
             <div v-if="deploymentStore.deployments.length === 0" class="text-center text-gray-500 text-sm py-4">
-              Keine Deployments vorhanden.
+              {{ $t('deploymentsModule.noDeployments') }}
             </div>
             <div v-else class="overflow-x-auto">
               <table class="table-glass w-full">
                 <thead>
                   <tr>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Status</th>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Commit</th>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Gestartet</th>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Dauer</th>
-                    <th class="text-right text-xs text-gray-500 font-medium pb-2">Aktionen</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('common.status') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('deploymentsModule.commit') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('deploymentsModule.started') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('deploymentsModule.duration') }}</th>
+                    <th class="text-right text-xs text-gray-500 font-medium pb-2">{{ $t('common.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -536,21 +539,21 @@ onMounted(async () => {
                         @click="showDeploymentDetail(dep)"
                         class="btn-ghost text-xs text-primary-400 hover:text-primary-300"
                       >
-                        Details
+                        {{ $t('deploymentsModule.details') }}
                       </button>
                       <button
                         v-if="dep.status === 'success'"
                         @click="confirmRollback(dep.id)"
                         class="btn-ghost text-xs text-purple-400 hover:text-purple-300"
                       >
-                        Rollback
+                        {{ $t('deploymentsModule.rollback') }}
                       </button>
                       <button
                         v-if="dep.status === 'pending' || dep.status === 'running'"
                         @click="handleCancelDeployment(dep.id)"
                         class="btn-ghost text-xs text-red-400 hover:text-red-300"
                       >
-                        Abbrechen
+                        {{ $t('common.cancel') }}
                       </button>
                     </td>
                   </tr>
@@ -573,7 +576,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ editingPipeline ? 'Pipeline bearbeiten' : 'Pipeline erstellen' }}
+              {{ editingPipeline ? $t('deploymentsModule.editPipeline') : $t('deploymentsModule.createPipeline') }}
             </h3>
             <button @click="closePipelineModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -584,29 +587,29 @@ onMounted(async () => {
           <div class="p-5 overflow-y-auto space-y-4">
             <!-- Name -->
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Name *</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('common.name') }} *</label>
               <input
                 v-model="pipelineForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="z.B. Production Deploy"
+                :placeholder="$t('deploymentsModule.pipelineNamePlaceholder')"
               />
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Beschreibung</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('common.description') }}</label>
               <input
                 v-model="pipelineForm.description"
                 type="text"
                 class="input w-full"
-                placeholder="Optionale Beschreibung"
+                :placeholder="$t('deploymentsModule.optionalDescription')"
               />
             </div>
 
             <!-- Repository URL -->
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Repository URL</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.repositoryUrl') }}</label>
               <input
                 v-model="pipelineForm.repository"
                 type="text"
@@ -618,7 +621,7 @@ onMounted(async () => {
             <!-- Branch + Environment -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Branch</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.branch') }}</label>
                 <input
                   v-model="pipelineForm.branch"
                   type="text"
@@ -627,7 +630,7 @@ onMounted(async () => {
                 />
               </div>
               <div>
-                <label class="block text-sm text-gray-400 mb-1">Umgebung</label>
+                <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.environment') }}</label>
                 <select v-model="pipelineForm.environment" class="select w-full">
                   <option value="production">Production</option>
                   <option value="staging">Staging</option>
@@ -638,9 +641,9 @@ onMounted(async () => {
 
             <!-- Server Connection -->
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Server-Verbindung</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.serverConnection') }}</label>
               <select v-model="pipelineForm.connection_id" class="select w-full">
-                <option :value="null">Lokal ausfuehren (kein SSH)</option>
+                <option :value="null">{{ $t('deploymentsModule.executeLocal') }}</option>
                 <option
                   v-for="conn in deploymentStore.availableConnections"
                   :key="conn.id"
@@ -650,17 +653,17 @@ onMounted(async () => {
                 </option>
               </select>
               <p class="text-xs text-gray-600 mt-1">
-                SSH-Verbindung für die Ausführung der Deployment-Schritte.
+                {{ $t('deploymentsModule.sshConnectionHint') }}
               </p>
             </div>
 
             <!-- Steps Builder -->
             <div>
               <div class="flex items-center justify-between mb-2">
-                <label class="block text-sm text-gray-400">Deployment-Schritte *</label>
+                <label class="block text-sm text-gray-400">{{ $t('deploymentsModule.deploymentSteps') }} *</label>
                 <button @click="addStep" class="btn-ghost text-xs text-primary-400 hover:text-primary-300">
                   <PlusIcon class="w-3.5 h-3.5 mr-1" />
-                  Schritt hinzufuegen
+                  {{ $t('deploymentsModule.addStep') }}
                 </button>
               </div>
               <div class="space-y-3">
@@ -670,13 +673,13 @@ onMounted(async () => {
                   class="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-2"
                 >
                   <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-500 font-medium">Schritt {{ index + 1 }}</span>
+                    <span class="text-xs text-gray-500 font-medium">{{ $t('deployments.stepNumber', { n: index + 1 }) }}</span>
                     <div class="flex items-center gap-1">
                       <button
                         v-if="index > 0"
                         @click="moveStep(index, -1)"
                         class="text-gray-500 hover:text-white p-0.5"
-                        title="Nach oben"
+                        :title="$t('deploymentsModule.moveUp')"
                       >
                         <ChevronUpIcon class="w-3.5 h-3.5" />
                       </button>
@@ -684,7 +687,7 @@ onMounted(async () => {
                         v-if="index < pipelineForm.steps.length - 1"
                         @click="moveStep(index, 1)"
                         class="text-gray-500 hover:text-white p-0.5"
-                        title="Nach unten"
+                        :title="$t('deploymentsModule.moveDown')"
                       >
                         <ChevronDownIcon class="w-3.5 h-3.5" />
                       </button>
@@ -692,7 +695,7 @@ onMounted(async () => {
                         v-if="pipelineForm.steps.length > 1"
                         @click="removeStep(index)"
                         class="text-red-400/60 hover:text-red-400 p-0.5 ml-1"
-                        title="Entfernen"
+                        :title="$t('deploymentsModule.remove')"
                       >
                         <XMarkIcon class="w-3.5 h-3.5" />
                       </button>
@@ -703,13 +706,13 @@ onMounted(async () => {
                       v-model="step.name"
                       type="text"
                       class="input w-full text-sm"
-                      placeholder="Schrittname"
+                      :placeholder="$t('deploymentsModule.stepName')"
                     />
                     <input
                       v-model.number="step.timeout"
                       type="number"
                       class="input w-full text-sm"
-                      placeholder="Timeout (Sek.)"
+                      :placeholder="$t('deploymentsModule.timeoutSec')"
                       min="1"
                     />
                   </div>
@@ -717,7 +720,7 @@ onMounted(async () => {
                     v-model="step.command"
                     type="text"
                     class="input w-full text-sm font-mono"
-                    placeholder="Befehl, z.B. git pull origin main"
+                    :placeholder="$t('deploymentsModule.commandPlaceholder')"
                   />
                 </div>
               </div>
@@ -726,7 +729,7 @@ onMounted(async () => {
             <!-- Toggles -->
             <div class="space-y-3 pt-2">
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-400">Auto-Deploy bei Push</span>
+                <span class="text-sm text-gray-400">{{ $t('deploymentsModule.autoDeployOnPush') }}</span>
                 <button
                   @click="pipelineForm.auto_deploy = !pipelineForm.auto_deploy"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -739,7 +742,7 @@ onMounted(async () => {
                 </button>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-400">Benachrichtigung bei Erfolg</span>
+                <span class="text-sm text-gray-400">{{ $t('deploymentsModule.notifyOnSuccess') }}</span>
                 <button
                   @click="pipelineForm.notify_on_success = !pipelineForm.notify_on_success"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -752,7 +755,7 @@ onMounted(async () => {
                 </button>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-400">Benachrichtigung bei Fehler</span>
+                <span class="text-sm text-gray-400">{{ $t('deploymentsModule.notifyOnFailure') }}</span>
                 <button
                   @click="pipelineForm.notify_on_failure = !pipelineForm.notify_on_failure"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -769,9 +772,9 @@ onMounted(async () => {
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closePipelineModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closePipelineModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="handleSavePipeline" class="btn-primary">
-              {{ editingPipeline ? 'Speichern' : 'Erstellen' }}
+              {{ editingPipeline ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -787,7 +790,7 @@ onMounted(async () => {
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="closeDeployModal"></div>
         <div class="relative card-glass w-full max-w-md">
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Deployment starten</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('deploymentsModule.startDeployment') }}</h3>
             <button @click="closeDeployModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -797,29 +800,29 @@ onMounted(async () => {
               Pipeline: <span class="text-white font-medium">{{ deployTargetPipeline.name }}</span>
             </p>
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Commit Hash (optional)</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.commitHashOptional') }}</label>
               <input
                 v-model="deployForm.commit_hash"
                 type="text"
                 class="input w-full font-mono"
-                placeholder="z.B. a1b2c3d"
+                :placeholder="$t('deploymentsModule.commitHashPlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Commit Nachricht (optional)</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('deploymentsModule.commitMessageOptional') }}</label>
               <input
                 v-model="deployForm.commit_message"
                 type="text"
                 class="input w-full"
-                placeholder="z.B. Feature X implementiert"
+                :placeholder="$t('deploymentsModule.commitMessagePlaceholder')"
               />
             </div>
           </div>
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeDeployModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeDeployModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="handleDeploy" class="btn-primary" :disabled="deploymentStore.deploying">
               <PlayIcon class="w-4 h-4 mr-1.5" />
-              {{ deploymentStore.deploying ? 'Wird deployed...' : 'Jetzt deployen' }}
+              {{ deploymentStore.deploying ? $t('deploymentsModule.deploying') : $t('deploymentsModule.deployNow') }}
             </button>
           </div>
         </div>
@@ -836,7 +839,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-2xl max-h-[80vh] flex flex-col">
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <div>
-              <h3 class="text-lg font-semibold text-white">Deployment Details</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('deploymentsModule.deploymentDetails') }}</h3>
               <p class="text-xs text-gray-500 mt-0.5 font-mono">{{ selectedDeployment.id }}</p>
             </div>
             <button @click="closeDeploymentDetailModal" class="btn-icon-sm">
@@ -847,7 +850,7 @@ onMounted(async () => {
             <!-- Summary -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Status</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('common.status') }}</p>
                 <span
                   class="text-xs px-2 py-0.5 rounded-full"
                   :class="getStatusBadge(selectedDeployment.status).class"
@@ -856,23 +859,23 @@ onMounted(async () => {
                 </span>
               </div>
               <div>
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Dauer</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('deploymentsModule.duration') }}</p>
                 <p class="text-sm text-white">{{ formatDuration(selectedDeployment.duration_ms) }}</p>
               </div>
               <div>
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Gestartet</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('deploymentsModule.started') }}</p>
                 <p class="text-sm text-white">{{ formatTimestamp(selectedDeployment.started_at) }}</p>
               </div>
               <div>
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Beendet</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('deploymentsModule.finished') }}</p>
                 <p class="text-sm text-white">{{ formatTimestamp(selectedDeployment.finished_at) }}</p>
               </div>
               <div v-if="selectedDeployment.commit_hash">
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Commit</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('deploymentsModule.commit') }}</p>
                 <code class="text-sm text-primary-400 font-mono">{{ shortHash(selectedDeployment.commit_hash) }}</code>
               </div>
               <div v-if="selectedDeployment.commit_message">
-                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Nachricht</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $t('deploymentsModule.message') }}</p>
                 <p class="text-sm text-gray-300">{{ selectedDeployment.commit_message }}</p>
               </div>
             </div>
@@ -890,14 +893,14 @@ onMounted(async () => {
               <div class="flex items-start gap-2">
                 <ArrowUturnLeftIcon class="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
                 <p class="text-sm text-purple-400">
-                  Rollback von Deployment <code class="font-mono">{{ shortHash(selectedDeployment.rollback_of) }}</code>
+                  {{ $t('deploymentsModule.rollbackOfDeployment') }} <code class="font-mono">{{ shortHash(selectedDeployment.rollback_of) }}</code>
                 </p>
               </div>
             </div>
 
             <!-- Steps Log -->
             <div v-if="selectedDeployment.steps_log && selectedDeployment.steps_log.length > 0">
-              <h4 class="text-sm text-gray-400 font-medium mb-3">Schritte</h4>
+              <h4 class="text-sm text-gray-400 font-medium mb-3">{{ $t('deploymentsModule.steps') }}</h4>
               <div class="space-y-2">
                 <div
                   v-for="(step, index) in selectedDeployment.steps_log"
@@ -938,18 +941,18 @@ onMounted(async () => {
                 <ArrowUturnLeftIcon class="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-white">Rollback bestaetigen</h3>
-                <p class="text-xs text-gray-500">Dieser Vorgang kann nicht rueckgaengig gemacht werden.</p>
+                <h3 class="text-lg font-semibold text-white">{{ $t('deploymentsModule.confirmRollback') }}</h3>
+                <p class="text-xs text-gray-500">{{ $t('deploymentsModule.cannotUndo') }}</p>
               </div>
             </div>
             <p class="text-sm text-gray-400 mb-4">
-              Möchten Sie dieses Deployment wirklich zurückrollen? Es wird ein neues Rollback-Deployment erstellt.
+              {{ $t('deploymentsModule.rollbackConfirmMessage') }}
             </p>
             <div class="flex items-center justify-end gap-3">
-              <button @click="cancelRollback" class="btn-secondary">Abbrechen</button>
+              <button @click="cancelRollback" class="btn-secondary">{{ $t('common.cancel') }}</button>
               <button @click="handleRollback" class="btn-primary bg-purple-600 hover:bg-purple-500" :disabled="deploymentStore.deploying">
                 <ArrowUturnLeftIcon class="w-4 h-4 mr-1.5" />
-                Rollback starten
+                {{ $t('deploymentsModule.startRollback') }}
               </button>
             </div>
           </div>

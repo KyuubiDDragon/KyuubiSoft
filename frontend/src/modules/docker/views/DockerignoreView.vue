@@ -8,7 +8,7 @@ import DockerignoreGenerator from '@/modules/toolbox/components/tools/Dockerigno
       <h1 class="text-2xl font-bold text-white flex items-center gap-2">
         <span>🚫</span> .dockerignore Generator
       </h1>
-      <p class="text-gray-400 mt-1">Erstelle .dockerignore Dateien für deine Projekte</p>
+      <p class="text-gray-400 mt-1">{{ $t('dockerModule.dockermoduleerstelledockerignoredateienfuerdeineprojekte') }}</p>
     </div>
 
     <div class="card p-6">

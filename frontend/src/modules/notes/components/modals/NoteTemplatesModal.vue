@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotesStore } from '../../stores/notesStore'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -31,6 +32,7 @@ const emit = defineEmits(['close', 'create'])
 
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const isLoading = ref(false)
 const templates = ref({
@@ -80,15 +82,15 @@ const filteredTemplates = computed(() => {
 })
 
 // Category labels
-const categoryLabels = {
-  all: 'Alle',
-  meetings: 'Meetings',
-  personal: 'Persönlich',
-  work: 'Arbeit',
-  development: 'Entwicklung',
-  creative: 'Kreativ',
-  user_note: 'Meine Vorlagen'
-}
+const categoryLabels = computed(() => ({
+  all: t('notesModule.templates.all'),
+  meetings: t('notesModule.templates.meetings'),
+  personal: t('notesModule.templates.personal'),
+  work: t('notesModule.templates.work'),
+  development: t('notesModule.templates.development'),
+  creative: t('notesModule.templates.creative'),
+  user_note: t('notesModule.templates.myTemplates')
+}))
 
 // Load templates
 async function loadTemplates() {
@@ -96,7 +98,7 @@ async function loadTemplates() {
   try {
     templates.value = await notesStore.getTemplates()
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Vorlagen')
+    uiStore.showError(t('notesModule.errors.loadTemplates'))
   } finally {
     isLoading.value = false
   }
@@ -110,9 +112,9 @@ async function selectTemplate(template) {
     })
     emit('create', noteData)
     emit('close')
-    uiStore.showSuccess('Notiz aus Vorlage erstellt')
+    uiStore.showSuccess(t('notesModule.noteCreatedFromTemplate'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen der Notiz')
+    uiStore.showError(t('notesModule.errors.createNote'))
   }
 }
 
@@ -144,7 +146,7 @@ onMounted(() => {
       <div class="bg-dark-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col overflow-hidden">
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
-          <h2 class="text-lg font-semibold text-white">Vorlage auswählen</h2>
+          <h2 class="text-lg font-semibold text-white">{{ $t('notesModule.templates.selectTemplate') }}</h2>
           <button
             @click="$emit('close')"
             class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg"
@@ -179,7 +181,7 @@ onMounted(() => {
 
           <!-- Empty -->
           <div v-else-if="filteredTemplates.length === 0" class="text-center py-12 text-gray-500">
-            Keine Vorlagen gefunden
+            {{ $t('notesModule.templates.noTemplatesFound') }}
           </div>
 
           <!-- Templates grid -->
@@ -192,8 +194,8 @@ onMounted(() => {
               <div class="w-12 h-12 rounded-lg bg-dark-700 flex items-center justify-center mb-3 group-hover:bg-primary-600/20">
                 <PlusIcon class="w-6 h-6 text-gray-500 group-hover:text-primary-400" />
               </div>
-              <span class="font-medium text-gray-300">Leere Notiz</span>
-              <span class="text-xs text-gray-500 mt-1">Ohne Vorlage starten</span>
+              <span class="font-medium text-gray-300">{{ $t('notesModule.templates.emptyNote') }}</span>
+              <span class="text-xs text-gray-500 mt-1">{{ $t('notesModule.templates.startWithoutTemplate') }}</span>
             </button>
 
             <!-- Template cards -->
@@ -228,7 +230,7 @@ onMounted(() => {
                     'bg-purple-500/20 text-purple-400'
                   ]"
                 >
-                  {{ template.source === 'system' ? 'System' : template.source === 'note' ? 'Eigene' : 'Benutzerdefiniert' }}
+                  {{ template.source === 'system' ? $t('notesModule.templates.system') : template.source === 'note' ? $t('notesModule.templates.own') : $t('notesModule.templates.custom') }}
                 </span>
                 <span v-if="template.category" class="text-xs text-gray-500">
                   {{ categoryLabels[template.category] || template.category }}

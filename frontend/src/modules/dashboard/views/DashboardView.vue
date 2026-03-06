@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
 import api from '@/core/api/axios'
@@ -30,6 +31,7 @@ import {
   LinkIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
@@ -477,34 +479,34 @@ function handleWidgetConfig(widget) {
     <div class="page-header">
       <div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          Willkommen zurück, <span class="text-gradient">{{ authStore.user?.username || 'User' }}</span>
+          {{ $t('dashboardModule.welcomeBack') }} <span class="text-gradient">{{ authStore.user?.username || 'User' }}</span>
         </h1>
-        <p class="page-subtitle">Dein persönliches Dashboard</p>
+        <p class="page-subtitle">{{ $t('dashboardModule.personalDashboard') }}</p>
       </div>
       <div class="flex items-center gap-2">
         <template v-if="isEditMode">
           <button @click="resetDashboard" class="btn-secondary btn-sm">
-            Zurücksetzen
+            {{ $t('dashboardModule.reset') }}
           </button>
           <button @click="showAddWidget = true" class="btn-secondary btn-sm">
             <PlusIcon class="w-4 h-4" />
-            Widget hinzufügen
+            {{ $t('dashboardModule.addWidget') }}
           </button>
           <button
             v-if="hasUnsavedChanges"
             @click="discardChanges"
             class="btn-ghost btn-sm text-red-400 hover:text-red-300"
           >
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button @click="saveLayout(true)" class="btn-primary btn-sm">
             <CheckIcon class="w-4 h-4" />
-            Speichern
+            {{ $t('common.save') }}
           </button>
         </template>
         <button v-else @click="isEditMode = true" class="btn-secondary btn-sm">
           <Cog6ToothIcon class="w-4 h-4" />
-          Anpassen
+          {{ $t('dashboardModule.customize') }}
         </button>
       </div>
     </div>
@@ -520,11 +522,11 @@ function handleWidgetConfig(widget) {
     <!-- Edit Mode Info Bar -->
     <div v-if="isEditMode" class="glass-sm rounded-2xl px-5 py-3.5 flex items-center gap-4 border-primary-500/20 bg-primary-500/[0.06]">
       <div class="flex-1 text-sm text-primary-300/90">
-        <span class="font-semibold">Bearbeitungsmodus</span> — Widgets per Drag &amp; Drop verschieben, Ecken zum Anpassen der Größe ziehen
+        <span class="font-semibold">{{ $t('dashboardModule.editMode') }}</span> — {{ $t('dashboardModule.editModeHint') }}
       </div>
       <div v-if="hasUnsavedChanges" class="badge-warning shrink-0">
         <ExclamationTriangleIcon class="w-3.5 h-3.5" />
-        Ungespeichert
+        {{ $t('dashboardModule.unsaved') }}
       </div>
     </div>
 
@@ -601,10 +603,10 @@ function handleWidgetConfig(widget) {
         <div class="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-5">
           <ChartBarIcon class="empty-state-icon !mb-0 !w-8 !h-8" />
         </div>
-        <h3 class="empty-state-title">Dashboard noch leer</h3>
-        <p class="empty-state-text mb-6">Füge Widgets hinzu, um dein Dashboard zu personalisieren und wichtige Infos auf einen Blick zu sehen.</p>
+        <h3 class="empty-state-title">{{ $t('dashboardModule.emptyTitle') }}</h3>
+        <p class="empty-state-text mb-6">{{ $t('dashboardModule.emptyDescription') }}</p>
         <button @click="resetDashboard" class="btn-primary">
-          Standard-Layout laden
+          {{ $t('dashboardModule.loadDefaultLayout') }}
         </button>
       </div>
     </div>
@@ -626,7 +628,7 @@ function handleWidgetConfig(widget) {
         >
           <div class="modal max-w-lg animate-scale-in">
             <div class="modal-header">
-              <h2>Widget hinzufügen</h2>
+              <h2>{{ $t('dashboardModule.addWidget') }}</h2>
               <button @click="showAddWidget = false" class="btn-icon-sm">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -647,7 +649,7 @@ function handleWidgetConfig(widget) {
                 </div>
               </button>
               <p v-if="availableToAdd.length === 0" class="text-center text-gray-500 py-4">
-                Alle Widgets wurden bereits hinzugefügt
+                {{ $t('dashboardModule.allWidgetsAdded') }}
               </p>
             </div>
           </div>
@@ -671,7 +673,7 @@ function handleWidgetConfig(widget) {
         >
           <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
-              <h3 class="text-lg font-semibold text-white">Ort festlegen</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('dashboardModule.setLocation') }}</h3>
               <button @click="showWeatherConfig = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -683,7 +685,7 @@ function handleWidgetConfig(widget) {
                   @input="searchWeatherLocation"
                   type="text"
                   class="input pr-10"
-                  placeholder="Stadt suchen..."
+                  :placeholder="$t('dashboardModule.searchCity')"
                 />
                 <MapPinIcon class="w-5 h-5 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
@@ -710,7 +712,7 @@ function handleWidgetConfig(widget) {
               </div>
 
               <p v-else-if="weatherSearch.length >= 2" class="text-gray-500 text-sm text-center py-4">
-                Keine Ergebnisse gefunden
+                {{ $t('common.noResults') }}
               </p>
             </div>
           </div>
@@ -734,23 +736,23 @@ function handleWidgetConfig(widget) {
         >
           <div class="bg-dark-800 border border-dark-700 rounded-xl shadow-2xl w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
-              <h3 class="text-lg font-semibold text-white">Countdown einrichten</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('dashboardModule.configureCountdown') }}</h3>
               <button @click="showCountdownConfig = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
             <div class="p-6 space-y-4">
               <div>
-                <label class="label">Titel</label>
+                <label class="label">{{ $t('common.title') }}</label>
                 <input
                   v-model="countdownForm.title"
                   type="text"
                   class="input"
-                  placeholder="z.B. Urlaub, Geburtstag..."
+                  :placeholder="$t('dashboardModule.countdownPlaceholder')"
                 />
               </div>
               <div>
-                <label class="label">Datum & Uhrzeit</label>
+                <label class="label">{{ $t('dashboardModule.dateAndTime') }}</label>
                 <input
                   v-model="countdownForm.date"
                   type="datetime-local"
@@ -758,7 +760,7 @@ function handleWidgetConfig(widget) {
                 />
               </div>
               <button @click="saveCountdownConfig" class="btn-primary w-full">
-                Speichern
+                {{ $t('common.save') }}
               </button>
             </div>
           </div>

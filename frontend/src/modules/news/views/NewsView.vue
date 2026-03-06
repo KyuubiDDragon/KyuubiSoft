@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   NewspaperIcon,
   RssIcon,
@@ -38,6 +39,7 @@ import { sanitizeHtml } from '@/core/services/sanitize'
 
 const uiStore = useUiStore()
 
+const { t } = useI18n()
 // State
 const feeds = ref([])
 const groupedFeeds = ref({})
@@ -135,7 +137,7 @@ async function loadNews() {
     newsItems.value = response.data.data.items || []
     totalItems.value = response.data.data.total || 0
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der News')
+    uiStore.showError(t('newsModule.fehlerBeimLadenDerNews'))
   } finally {
     isLoading.value = false
   }
@@ -163,12 +165,12 @@ async function refreshFeeds(silent = false) {
       } else if (successes > 0) {
         uiStore.showSuccess('Feeds aktualisiert, keine neuen Artikel')
       } else {
-        uiStore.showSuccess('Keine Feeds zum Aktualisieren')
+        uiStore.showSuccess(t('newsModule.keineFeedsZumAktualisieren'))
       }
     }
   } catch (error) {
     if (!silent) {
-      uiStore.showError('Fehler beim Aktualisieren: ' + (error.response?.data?.message || error.message))
+      uiStore.showError(t('newsModule.newsmodulefehlerbeimaktualisieren') + (error.response?.data?.message || error.message))
     }
   } finally {
     isRefreshing.value = false
@@ -185,7 +187,7 @@ async function toggleSubscription(feed) {
       feed.is_subscribed = 1
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Ändern des Abonnements')
+    uiStore.showError(t('newsModule.fehlerBeimAendernDesAbonnements'))
   }
 }
 
@@ -194,7 +196,7 @@ async function toggleSaved(item) {
     const response = await api.post(`/api/v1/news/items/${item.id}/save`)
     item.is_saved = response.data.data.is_saved ? 1 : 0
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -216,13 +218,13 @@ async function addFeed() {
 
   try {
     await api.post('/api/v1/news/feeds', newFeedForm.value)
-    uiStore.showSuccess('Feed hinzugefügt')
+    uiStore.showSuccess(t('newsModule.feedHinzugefuegt'))
     showAddFeedModal.value = false
     newFeedForm.value = { url: '', name: '', category: 'other' }
     await loadFeeds()
     await loadNews()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
   }
 }
 
@@ -282,7 +284,7 @@ function isLoadingContent(item) {
 }
 
 function getFullContent(item) {
-  return fullContentCache.value[item.id] || item.content || item.description || 'Kein Inhalt verfügbar'
+  return fullContentCache.value[item.id] || item.content || item.description || t('newsModule.keinInhaltVerfuegbar')
 }
 
 function formatDate(dateStr) {
@@ -393,7 +395,7 @@ onMounted(async () => {
         v-model="selectedFeed"
         class="select text-sm"
       >
-        <option :value="null">Alle Feeds</option>
+        <option :value="null">{{ $t('newsModule.alleFeeds') }}</option>
         <option
           v-for="feed in groupedFeeds[selectedCategory].filter(f => f.is_subscribed == 1)"
           :key="feed.id"
@@ -445,8 +447,8 @@ onMounted(async () => {
     <!-- No Subscriptions -->
     <div v-if="!isLoading && subscribedFeeds.length === 0" class="card p-12 text-center">
       <RssIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">Keine Feeds abonniert</h3>
-      <p class="text-gray-400 mb-6">Wähle in den Einstellungen deine Lieblingsquellen aus.</p>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.keineFeedsAbonniert') }}</h3>
+      <p class="text-gray-400 mb-6">{{ $t('newsModule.waehleInDenEinstellungenDeineLieblingsquellenAus') }}</p>
       <button @click="showSettingsModal = true" class="btn-primary">
         <AdjustmentsHorizontalIcon class="w-5 h-5 mr-2" />
         Feeds verwalten
@@ -531,7 +533,7 @@ onMounted(async () => {
                   @click="toggleSaved(item)"
                   class="p-1.5 rounded hover:bg-white/[0.04]"
                   :class="item.is_saved == 1 ? 'text-yellow-400' : 'text-gray-500'"
-                  title="Speichern"
+                  :title="$t('common.save')"
                 >
                   <BookmarkIconSolid v-if="item.is_saved == 1" class="w-5 h-5" />
                   <BookmarkIcon v-else class="w-5 h-5" />
@@ -539,7 +541,7 @@ onMounted(async () => {
                 <button
                   @click="openExternalLink(item.url)"
                   class="p-1.5 rounded hover:bg-white/[0.04] text-gray-500 hover:text-white"
-                  title="Original öffnen"
+                  :title="$t('newsModule.originalOeffnen')"
                 >
                   <ArrowTopRightOnSquareIcon class="w-5 h-5" />
                 </button>
@@ -587,7 +589,7 @@ onMounted(async () => {
           <!-- Loading indicator -->
           <div v-if="isLoadingContent(item)" class="flex items-center justify-center py-8">
             <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-            <span class="ml-3 text-gray-400">Lade vollständigen Artikel...</span>
+            <span class="ml-3 text-gray-400">{{ $t('newsModule.ladeVollstaendigenArtikel') }}</span>
           </div>
 
           <!-- Full content -->
@@ -618,7 +620,7 @@ onMounted(async () => {
               class="btn-primary"
             >
               <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
-              Originalartikel öffnen
+              {{ $t('newsModule.originalartikelOeffnen') }}
             </button>
           </div>
         </div>
@@ -628,7 +630,7 @@ onMounted(async () => {
     <!-- Empty State -->
     <div v-if="!isLoading && newsItems.length === 0 && subscribedFeeds.length > 0" class="card p-12 text-center">
       <NewspaperIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">Keine Artikel gefunden</h3>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.keineArtikelGefunden') }}</h3>
       <p class="text-gray-400 mb-6">Versuche andere Filter oder aktualisiere die Feeds.</p>
       <button @click="refreshFeeds" class="btn-primary" :disabled="isRefreshing">
         <ArrowPathIcon class="w-5 h-5 mr-2" :class="{ 'animate-spin': isRefreshing }" />
@@ -644,7 +646,7 @@ onMounted(async () => {
       >
         <div class="modal w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Feed-Einstellungen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('newsModule.feedeinstellungen') }}</h2>
             <button @click="showSettingsModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -652,10 +654,10 @@ onMounted(async () => {
 
           <div class="p-4 overflow-y-auto flex-1">
             <div class="flex items-center justify-between mb-4">
-              <p class="text-gray-400">Wähle die Quellen aus, die du abonnieren möchtest.</p>
+              <p class="text-gray-400">{{ $t('newsModule.waehleDieQuellenAusDieDuAbonnieren') }}</p>
               <button @click="showAddFeedModal = true" class="btn-secondary text-sm">
                 <PlusIcon class="w-4 h-4 mr-1" />
-                Eigenen Feed hinzufügen
+                {{ $t('newsModule.eigenenFeedHinzufuegen') }}
               </button>
             </div>
 
@@ -710,7 +712,7 @@ onMounted(async () => {
       >
         <div class="modal w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Eigenen Feed hinzufügen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('newsModule.eigenenFeedHinzufuegen') }}</h2>
             <button @click="showAddFeedModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -733,12 +735,12 @@ onMounted(async () => {
                 v-model="newFeedForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="Wird aus Feed gelesen, wenn leer"
+                :placeholder="$t('newsModule.wirdAusFeedGelesenWennLeer')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('snippetsModule.kategorie') }}</label>
               <select
                 v-model="newFeedForm.category"
                 class="select w-full"
@@ -749,8 +751,8 @@ onMounted(async () => {
           </div>
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
-            <button @click="showAddFeedModal = false" class="btn-secondary">Abbrechen</button>
-            <button @click="addFeed" class="btn-primary">Hinzufügen</button>
+            <button @click="showAddFeedModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+            <button @click="addFeed" class="btn-primary">{{ $t('common.add') }}</button>
           </div>
         </div>
       </div>
@@ -812,7 +814,7 @@ onMounted(async () => {
             <!-- Loading indicator -->
             <div v-if="isLoadingContent(selectedArticle)" class="flex items-center justify-center py-8">
               <div class="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-              <span class="ml-3 text-gray-400">Lade vollständigen Artikel...</span>
+              <span class="ml-3 text-gray-400">{{ $t('newsModule.ladeVollstaendigenArtikel') }}</span>
             </div>
 
             <div
@@ -835,10 +837,10 @@ onMounted(async () => {
           </div>
 
           <div class="p-4 border-t border-white/[0.06] flex justify-between">
-            <button @click="selectedArticle = null" class="btn-secondary">Schließen</button>
+            <button @click="selectedArticle = null" class="btn-secondary">{{ $t('common.close') }}</button>
             <button @click="openExternalLink(selectedArticle.url)" class="btn-primary">
               <ArrowTopRightOnSquareIcon class="w-5 h-5 mr-2" />
-              Originalartikel öffnen
+              {{ $t('newsModule.originalartikelOeffnen') }}
             </button>
           </div>
         </div>

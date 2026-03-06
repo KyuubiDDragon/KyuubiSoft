@@ -20,6 +20,8 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useDnsStore } from '@/modules/dns/stores/dnsStore'
 import DnsPropagationChecker from '@/modules/dns/components/DnsPropagationChecker.vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const dnsStore = useDnsStore()
 
@@ -81,7 +83,7 @@ const exportContent = ref('')
 const recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA']
 
 const providers = [
-  { value: 'manual', label: 'Manuell' },
+  { value: 'manual', label: t('dnsModule.manual') },
   { value: 'cloudflare', label: 'Cloudflare' },
   { value: 'route53', label: 'AWS Route 53' },
   { value: 'digitalocean', label: 'DigitalOcean' },
@@ -89,7 +91,7 @@ const providers = [
   { value: 'webtropia', label: 'Webtropia' },
   { value: 'namecheap', label: 'Namecheap' },
   { value: 'godaddy', label: 'GoDaddy' },
-  { value: 'other', label: 'Sonstiger' },
+  { value: 'other', label: t('dnsModule.other') },
 ]
 
 const needsPriority = computed(() => {
@@ -401,21 +403,21 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">DNS Manager</h1>
-        <p class="text-gray-400 mt-1">Domains und DNS-Records verwalten</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('dnsModule.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('dnsModule.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-3">
         <button @click="openCloudflareModal" class="btn-secondary">
           <CloudIcon class="w-5 h-5 mr-2" />
-          Von Cloudflare importieren
+          {{ $t('dnsModule.importFromCloudflare') }}
         </button>
         <button @click="openWebtropiaModal" class="btn-secondary">
           <GlobeAltIcon class="w-5 h-5 mr-2" />
-          Von Webtropia importieren
+          {{ $t('dnsModule.importFromWebtropia') }}
         </button>
         <button @click="openCreateDomainModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Domain hinzufügen
+          {{ $t('dnsModule.addDomain') }}
         </button>
       </div>
     </div>
@@ -431,11 +433,11 @@ onMounted(async () => {
       class="card-glass p-12 text-center"
     >
       <GlobeAltIcon class="w-12 h-12 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-300 mb-2">Keine Domains vorhanden.</h3>
-      <p class="text-gray-500 mb-6">Fügen Sie Ihre erste Domain hinzu, um DNS-Records zu verwalten.</p>
+      <h3 class="text-lg font-medium text-gray-300 mb-2">{{ $t('dnsModule.noDomains') }}</h3>
+      <p class="text-gray-500 mb-6">{{ $t('dnsModule.noDomainsHint') }}</p>
       <button @click="openCreateDomainModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Domain hinzufügen
+        {{ $t('dnsModule.addDomain') }}
       </button>
     </div>
 
@@ -455,7 +457,7 @@ onMounted(async () => {
               </div>
               <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
                 <span>{{ domain.record_count }} Records</span>
-                <span>Erstellt: {{ formatTimestamp(domain.created_at) }}</span>
+                <span>{{ $t('dnsModule.created') }}: {{ formatTimestamp(domain.created_at) }}</span>
               </div>
               <p v-if="domain.notes" class="text-sm text-gray-400 mt-2">{{ domain.notes }}</p>
             </div>
@@ -465,11 +467,11 @@ onMounted(async () => {
           <div class="flex items-center gap-2 pt-3 mt-3 border-t border-white/[0.06]">
             <button @click="toggleDomain(domain.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <component :is="expandedDomains.has(domain.id) ? ChevronUpIcon : ChevronDownIcon" class="w-4 h-4 mr-1" />
-              Records {{ expandedDomains.has(domain.id) ? 'ausblenden' : 'anzeigen' }}
+              {{ expandedDomains.has(domain.id) ? $t('dnsModule.hideRecords') : $t('dnsModule.showRecords') }}
             </button>
             <button @click="openCreateRecordModal(domain.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PlusIcon class="w-4 h-4 mr-1" />
-              Record hinzufügen
+              {{ $t('dnsModule.addRecord') }}
             </button>
             <button @click="openExportModal(domain.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
@@ -499,13 +501,13 @@ onMounted(async () => {
             </template>
             <button @click="openEditDomainModal(domain)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PencilSquareIcon class="w-4 h-4 mr-1" />
-              Bearbeiten
+              {{ $t('common.edit') }}
             </button>
             <div class="flex-1"></div>
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === domain.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
+              <span class="text-xs text-red-400 mr-2">{{ $t('deploymentsModule.confirmDelete') }}</span>
               <button @click="handleDeleteDomain(domain.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
                 Ja
               </button>
@@ -519,7 +521,7 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -536,9 +538,9 @@ onMounted(async () => {
             v-else-if="getDomainRecords(domain.id).length === 0"
             class="p-6 text-center text-sm text-gray-500"
           >
-            Keine DNS-Records vorhanden.
+            {{ $t('dnsModule.noRecords') }}
             <button @click="openCreateRecordModal(domain.id)" class="text-primary-400 hover:text-primary-300 ml-1">
-              Jetzt hinzufügen
+              {{ $t('dnsModule.addNow') }}
             </button>
           </div>
 
@@ -547,12 +549,12 @@ onMounted(async () => {
             <table class="table-glass w-full">
               <thead>
                 <tr>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3">Typ</th>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3">Name</th>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3">Wert</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.type') }}</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('common.name') }}</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.value') }}</th>
                   <th class="text-left text-xs text-gray-500 font-medium p-3">TTL</th>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3">Priorität</th>
-                  <th class="text-right text-xs text-gray-500 font-medium p-3">Aktionen</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3">{{ $t('dnsModule.priority') }}</th>
+                  <th class="text-right text-xs text-gray-500 font-medium p-3">{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -575,14 +577,14 @@ onMounted(async () => {
                       <button
                         @click="openPropagationChecker(record, domain.name)"
                         class="btn-ghost text-xs text-cyan-400/60 hover:text-cyan-400"
-                        title="Propagation prüfen"
+                        :title="$t('dnsModule.checkPropagation')"
                       >
                         <SignalIcon class="w-4 h-4" />
                       </button>
                       <button
                         @click="openEditRecordModal(record, domain.id)"
                         class="btn-ghost text-xs text-gray-400 hover:text-white"
-                        title="Bearbeiten"
+                        :title="$t('common.edit')"
                       >
                         <PencilSquareIcon class="w-4 h-4" />
                       </button>
@@ -605,7 +607,7 @@ onMounted(async () => {
                         v-else
                         @click="confirmDeleteRecord(record.id)"
                         class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
-                        title="Löschen"
+                        :title="$t('common.delete')"
                       >
                         <TrashIcon class="w-4 h-4" />
                       </button>
@@ -630,7 +632,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ editingDomain ? 'Domain bearbeiten' : 'Domain hinzufügen' }}
+              {{ editingDomain ? $t('dnsModule.editDomain') : $t('dnsModule.addDomain') }}
             </h3>
             <button @click="closeDomainModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -640,17 +642,17 @@ onMounted(async () => {
           <!-- Body -->
           <div class="p-5 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Domain-Name</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.domainName') }}</label>
               <input
                 v-model="domainForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="beispiel.de"
+                :placeholder="$t('dnsModule.domainPlaceholder')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Provider</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.provider') }}</label>
               <select v-model="domainForm.provider" class="select w-full">
                 <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
               </select>
@@ -672,21 +674,21 @@ onMounted(async () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Notizen</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.notes') }}</label>
               <textarea
                 v-model="domainForm.notes"
                 class="input w-full"
                 rows="3"
-                placeholder="Optionale Notizen zur Domain..."
+                :placeholder="$t('dnsModule.notesPlaceholder')"
               ></textarea>
             </div>
           </div>
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeDomainModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeDomainModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="saveDomain" class="btn-primary" :disabled="!domainForm.name.trim()">
-              {{ editingDomain ? 'Speichern' : 'Erstellen' }}
+              {{ editingDomain ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -704,7 +706,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ editingRecord ? 'DNS-Record bearbeiten' : 'DNS-Record hinzufügen' }}
+              {{ editingRecord ? $t('dnsModule.editRecord') : $t('dnsModule.addRecord') }}
             </h3>
             <button @click="closeRecordModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -714,25 +716,25 @@ onMounted(async () => {
           <!-- Body -->
           <div class="p-5 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Typ</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.type') }}</label>
               <select v-model="recordForm.type" class="select w-full">
                 <option v-for="t in recordTypes" :key="t" :value="t">{{ t }}</option>
               </select>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Name</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('common.name') }}</label>
               <input
                 v-model="recordForm.name"
                 type="text"
                 class="input w-full"
-                placeholder="@ oder Subdomain"
+                :placeholder="$t('dnsModule.subdomainPlaceholder')"
               />
-              <p class="text-xs text-gray-500 mt-1">@ für die Root-Domain, oder z.B. www, mail, etc.</p>
+              <p class="text-xs text-gray-500 mt-1">{{ $t('dnsModule.subdomainHint') }}</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Wert</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.value') }}</label>
               <textarea
                 v-model="recordForm.value"
                 class="input w-full"
@@ -751,7 +753,7 @@ onMounted(async () => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">TTL (Sekunden)</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.ttlSeconds') }}</label>
                 <input
                   v-model.number="recordForm.ttl"
                   type="number"
@@ -763,7 +765,7 @@ onMounted(async () => {
               </div>
 
               <div v-if="needsPriority">
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">Priorität</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.priority') }}</label>
                 <input
                   v-model.number="recordForm.priority"
                   type="number"
@@ -781,14 +783,14 @@ onMounted(async () => {
                 v-model="recordForm.notes"
                 type="text"
                 class="input w-full"
-                placeholder="Optionale Notizen..."
+                :placeholder="$t('dnsModule.optionalNotes')"
               />
             </div>
           </div>
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeRecordModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeRecordModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="saveRecord" class="btn-primary" :disabled="!recordForm.value.trim()">
               {{ editingRecord ? 'Speichern' : 'Erstellen' }}
             </button>
@@ -807,7 +809,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-2xl flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Zone-Datei exportieren</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('dnsModule.exportZoneFile') }}</h3>
             <button @click="closeExportModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -819,7 +821,7 @@ onMounted(async () => {
               <span class="text-xs text-gray-500 uppercase tracking-wider">BIND Zone-Datei</span>
               <button @click="copyExportContent" class="btn-ghost text-xs text-primary-400 hover:text-primary-300">
                 <ClipboardDocumentIcon class="w-4 h-4 mr-1" />
-                Kopieren
+                {{ $t('common.copy') }}
               </button>
             </div>
             <pre class="font-mono text-xs text-gray-300 bg-black/30 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap max-h-[50vh] overflow-y-auto">{{ exportContent }}</pre>
@@ -827,7 +829,7 @@ onMounted(async () => {
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeExportModal" class="btn-secondary">Schliessen</button>
+            <button @click="closeExportModal" class="btn-secondary">{{ $t('common.close') }}</button>
           </div>
         </div>
       </div>
@@ -843,7 +845,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-2xl flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Zone-Datei importieren</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('dnsModule.importZoneFile') }}</h3>
             <button @click="closeImportModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -852,7 +854,7 @@ onMounted(async () => {
           <!-- Body -->
           <div class="p-5 space-y-4">
             <p class="text-sm text-gray-400">
-              Fügen Sie den Inhalt einer BIND Zone-Datei ein. Unterstützte Record-Typen: A, AAAA, CNAME, MX, TXT, NS, SRV, CAA.
+              {{ $t('dnsModule.importHint') }}
             </p>
             <textarea
               v-model="importContent"
@@ -867,10 +869,10 @@ www 3600 IN CNAME beispiel.de.
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeImportModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeImportModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="handleImport" class="btn-primary" :disabled="!importContent.trim()">
               <ArrowUpTrayIcon class="w-4 h-4 mr-2" />
-              Importieren
+              {{ $t('dnsModule.import') }}
             </button>
           </div>
         </div>
@@ -900,13 +902,13 @@ www 3600 IN CNAME beispiel.de.
           <div class="p-5 space-y-4">
             <!-- Token Input -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Cloudflare API Token</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.cloudflareApiToken') }}</label>
               <div class="flex gap-2">
                 <input
                   v-model="cfToken"
                   type="password"
                   class="input flex-1"
-                  placeholder="Cloudflare API Token eingeben..."
+                  :placeholder="$t('dnsModule.cfTokenPlaceholder')"
                 />
                 <button
                   @click="loadCloudflareZones"
@@ -914,17 +916,17 @@ www 3600 IN CNAME beispiel.de.
                   class="btn-primary"
                 >
                   <ArrowPathIcon v-if="cfZonesLoading" class="w-4 h-4 mr-1 animate-spin" />
-                  Zonen laden
+                  {{ $t('dnsModule.loadZones') }}
                 </button>
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                Erstelle einen API Token unter Cloudflare Dashboard &rarr; My Profile &rarr; API Tokens
+                {{ $t('dnsModule.cfTokenHint') }} &rarr; My Profile &rarr; API Tokens
               </p>
             </div>
 
             <!-- Zones List -->
             <div v-if="cfZones.length > 0" class="space-y-2">
-              <h4 class="text-sm font-medium text-gray-300">Verfügbare Zonen ({{ cfZones.length }})</h4>
+              <h4 class="text-sm font-medium text-gray-300">{{ $t('dnsModule.availableZones') }} ({{ cfZones.length }})</h4>
               <div class="max-h-[40vh] overflow-y-auto space-y-1">
                 <div
                   v-for="zone in cfZones"
@@ -947,7 +949,7 @@ www 3600 IN CNAME beispiel.de.
                     class="btn-primary text-xs ml-3"
                   >
                     <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
-                    Importieren
+                    {{ $t('dnsModule.import') }}
                   </button>
                 </div>
               </div>
@@ -955,13 +957,13 @@ www 3600 IN CNAME beispiel.de.
 
             <!-- No zones -->
             <div v-else-if="!cfZonesLoading && cfToken.trim() && cfZones.length === 0" class="text-sm text-gray-500 text-center py-4">
-              Keine Zonen gefunden. Bitte Token prüfen.
+              {{ $t('dnsModule.noZonesFound') }}
             </div>
           </div>
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeCloudflareModal" class="btn-secondary">Schliessen</button>
+            <button @click="closeCloudflareModal" class="btn-secondary">{{ $t('common.close') }}</button>
           </div>
         </div>
       </div>
@@ -989,12 +991,12 @@ www 3600 IN CNAME beispiel.de.
           <!-- Body -->
           <div class="p-5 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Webtropia API Token</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.webtropiaApiToken') }}</label>
               <input
                 v-model="wtToken"
                 type="password"
                 class="input w-full"
-                placeholder="Webtropia/myLoc API Token eingeben..."
+                :placeholder="$t('dnsModule.wtTokenPlaceholder')"
               />
               <p class="text-xs text-gray-500 mt-1">
                 OAuth-Token aus dem myLoc ZKM-Panel
@@ -1002,7 +1004,7 @@ www 3600 IN CNAME beispiel.de.
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Domain-Name (Zone)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('dnsModule.domainNameZone') }}</label>
               <input
                 v-model="wtZoneName"
                 type="text"
@@ -1010,14 +1012,14 @@ www 3600 IN CNAME beispiel.de.
                 placeholder="beispiel.de"
               />
               <p class="text-xs text-gray-500 mt-1">
-                Der exakte Domain-Name, wie er bei Webtropia konfiguriert ist
+                {{ $t('dnsModule.wtDomainHint') }}
               </p>
             </div>
           </div>
 
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="closeWebtropiaModal" class="btn-secondary">Abbrechen</button>
+            <button @click="closeWebtropiaModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button
               @click="verifyAndImportWebtropia"
               :disabled="!wtToken.trim() || !wtZoneName.trim() || wtVerifying || wtImporting"
@@ -1025,7 +1027,7 @@ www 3600 IN CNAME beispiel.de.
             >
               <ArrowPathIcon v-if="wtVerifying || wtImporting" class="w-4 h-4 mr-1 animate-spin" />
               <ArrowDownTrayIcon v-else class="w-4 h-4 mr-1" />
-              {{ wtVerifying ? 'Pruefen...' : wtImporting ? 'Importieren...' : 'Importieren' }}
+              {{ wtVerifying ? $t('dnsModule.verifying') : wtImporting ? $t('dnsModule.importing') : $t('dnsModule.import') }}
             </button>
           </div>
         </div>

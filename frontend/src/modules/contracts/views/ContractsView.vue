@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -20,6 +21,7 @@ import ContractSignatureModal from '../components/ContractSignatureModal.vue'
 import ContractPdfPreview from '../components/ContractPdfPreview.vue'
 import ContractShareModal from '../components/ContractShareModal.vue'
 
+const { t } = useI18n()
 const uiStore = useUiStore()
 const { downloadPdf } = useContractHtml()
 
@@ -90,7 +92,7 @@ async function openContractDetail(contract) {
     selectedContract.value = response.data.data
     showDetailPanel.value = true
   } catch {
-    uiStore.showError('Fehler beim Laden des Vertrags')
+    uiStore.showError(t('contracts.errorLoadingContract'))
   }
 }
 
@@ -137,7 +139,7 @@ async function handleDownloadPdf(contract, editedHtml) {
     const res = await api.get(`/api/v1/contracts/${contract.id}`)
     await downloadPdf(res.data.data, editedHtml || undefined)
   } catch {
-    uiStore.showError('Fehler beim PDF-Download')
+    uiStore.showError(t('contracts.errorPdfDownload'))
   }
 }
 
@@ -185,15 +187,15 @@ const typeColors = {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Verträge</h1>
-        <p class="text-sm text-gray-400 mt-0.5">Verträge erstellen, verwalten und unterschreiben</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('contractsModule.title') }}</h1>
+        <p class="text-sm text-gray-400 mt-0.5">{{ $t('contractsModule.subtitle') }}</p>
       </div>
       <button
         @click="showWizard = true"
         class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-500 transition-colors"
       >
         <PlusIcon class="w-4 h-4" />
-        Neuer Vertrag
+        {{ $t('contractsModule.newContract') }}
       </button>
     </div>
 
@@ -242,7 +244,7 @@ const typeColors = {
     <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
       <div v-if="isLoading" class="p-12 text-center text-gray-500">Lade Verträge...</div>
       <div v-else-if="filteredContracts.length === 0" class="p-12 text-center text-gray-500">
-        <p class="text-lg font-medium">Keine Verträge gefunden</p>
+        <p class="text-lg font-medium">{{ $t('contracts.noContractsFound') }}</p>
         <p class="text-sm mt-1">Erstellen Sie Ihren ersten Vertrag mit dem Button oben.</p>
       </div>
       <table v-else class="w-full">
@@ -298,10 +300,10 @@ const typeColors = {
                 <button @click="handleDownloadPdf(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="PDF">
                   <ArrowDownTrayIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDuplicate(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" title="Duplizieren">
+                <button @click="handleDuplicate(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06]" :title="$t('contracts.duplicate')">
                   <DocumentDuplicateIcon class="w-4 h-4" />
                 </button>
-                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" title="Löschen">
+                <button @click="handleDelete(contract)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10" :title="$t('common.delete')">
                   <TrashIcon class="w-4 h-4" />
                 </button>
               </div>

@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import {
@@ -98,18 +102,18 @@ async function loadBoard(user, pw) {
     const msg = e.response?.data?.message || ''
     if (status === 401) {
       if (user) {
-        authError.value = 'Ungültiger Benutzername oder Passwort'
+        authError.value = t('kanbanModule.kanbanmoduleungueltigerbenutzernameoderpasswort')
       }
       state.value = 'auth'
     } else if (status === 403) {
       state.value = 'error'
-      errorMessage.value = msg || 'Dieser Link ist abgelaufen'
+      errorMessage.value = msg || t('kanban.linkExpired')
     } else if (status === 404) {
       state.value = 'error'
-      errorMessage.value = 'Board nicht gefunden'
+      errorMessage.value = t('kanban.boardNotFound')
     } else {
       state.value = 'error'
-      errorMessage.value = msg || 'Ein Fehler ist aufgetreten'
+      errorMessage.value = msg || t('errors.generic')
     }
   }
 }
@@ -209,7 +213,7 @@ async function saveEditCard() {
 }
 
 async function deleteCard(card) {
-  if (!window.confirm('Karte wirklich löschen?')) return
+  if (!window.confirm(t('kanbanModule.karteWirklichLoeschen'))) return
   try {
     await axios.delete(`${apiBase}/kanban/public/${token.value}/cards/${card.id}`, {
       data: getAuthPayload(),
@@ -356,7 +360,7 @@ function formatDate(dateStr) {
         <div
           class="w-12 h-12 mx-auto border-4 border-primary-500 border-t-transparent rounded-full animate-spin"
         ></div>
-        <p class="mt-4 text-gray-400">Lädt...</p>
+        <p class="mt-4 text-gray-400">{{ $t('kanbanModule.laedt') }}</p>
       </div>
     </div>
 
@@ -370,18 +374,18 @@ function formatDate(dateStr) {
             <LockClosedIcon class="w-8 h-8 text-primary-400" />
           </div>
           <h1 class="text-xl font-bold text-white">Kanban Board</h1>
-          <p class="text-gray-400 text-sm mt-1">Bitte anmelden um das Board zu sehen</p>
+          <p class="text-gray-400 text-sm mt-1">{{ $t('kanbanModule.bitteAnmeldenUmDasBoardZuSehen') }}</p>
         </div>
 
         <form @submit.prevent="submitAuth" class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Benutzername</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ $t('passwords.username') }}</label>
             <div class="relative">
               <UserIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 v-model="username"
                 type="text"
-                placeholder="Benutzername"
+                :placeholder="$t('kanban.username')"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg pl-10 pr-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                 autocomplete="username"
               />
@@ -389,7 +393,7 @@ function formatDate(dateStr) {
           </div>
 
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Passwort</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ $t('auth.password') }}</label>
             <div class="relative">
               <LockClosedIcon
                 class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"
@@ -397,7 +401,7 @@ function formatDate(dateStr) {
               <input
                 v-model="password"
                 type="password"
-                placeholder="Passwort"
+                :placeholder="$t('auth.password')"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg pl-10 pr-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                 autocomplete="current-password"
               />
@@ -411,7 +415,7 @@ function formatDate(dateStr) {
             :disabled="isSubmitting || !username || !password"
             class="w-full py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {{ isSubmitting ? 'Prüfe...' : 'Anmelden' }}
+            {{ isSubmitting ? $t('contractsModule.pruefe') : 'Anmelden' }}
           </button>
         </form>
       </div>
@@ -432,7 +436,7 @@ function formatDate(dateStr) {
             />
           </svg>
         </div>
-        <h1 class="text-2xl font-bold text-white mb-2">Zugriff nicht möglich</h1>
+        <h1 class="text-2xl font-bold text-white mb-2">{{ $t('kanbanModule.kanbanmodulezugriffnichtmoeglich') }}</h1>
         <p class="text-gray-400">{{ errorMessage }}</p>
       </div>
     </div>
@@ -455,12 +459,12 @@ function formatDate(dateStr) {
           <div v-if="canEdit" class="ml-auto">
             <span
               class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium"
-            >Bearbeitung aktiv</span>
+            >{{ $t('kanban.editingActive') }}</span>
           </div>
           <div v-else class="ml-auto">
             <span
               class="px-2 py-1 bg-gray-500/20 text-gray-400 rounded-lg text-xs font-medium"
-            >Nur Lesen</span>
+            >{{ $t('kanbanModule.nurLesen') }}</span>
           </div>
         </div>
       </div>
@@ -495,7 +499,7 @@ function formatDate(dateStr) {
                 v-if="canEdit"
                 @click="startAddCard(column.id)"
                 class="ml-auto p-1 text-gray-500 hover:text-primary-400 transition-colors rounded"
-                title="Karte hinzufügen"
+                :title="$t('kanbanModule.karteHinzufuegen')"
               >
                 <PlusIcon class="w-4 h-4" />
               </button>
@@ -512,7 +516,7 @@ function formatDate(dateStr) {
               <input
                 v-model="newCardTitle"
                 type="text"
-                placeholder="Titel der Karte..."
+                :placeholder="$t('kanban.cardTitlePlaceholder')"
                 class="w-full bg-dark-600 border border-dark-500 rounded px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                 @keydown.enter="saveNewCard(column.id)"
                 @keydown.escape="cancelAddCard"
@@ -520,7 +524,7 @@ function formatDate(dateStr) {
               />
               <textarea
                 v-model="newCardDescription"
-                placeholder="Beschreibung (optional)"
+                :placeholder="$t('scripts.scriptsbeschreibungoptional')"
                 rows="2"
                 class="w-full bg-dark-600 border border-dark-500 rounded px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
               ></textarea>
@@ -528,10 +532,10 @@ function formatDate(dateStr) {
                 v-model="newCardPriority"
                 class="w-full bg-dark-600 border border-dark-500 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
               >
-                <option value="low">Niedrig</option>
-                <option value="medium">Mittel</option>
-                <option value="high">Hoch</option>
-                <option value="urgent">Dringend</option>
+                <option value="low">{{ $t('kanban.low') }}</option>
+                <option value="medium">{{ $t('kanbanModule.mittel') }}</option>
+                <option value="high">{{ $t('kanban.high') }}</option>
+                <option value="urgent">{{ $t('kanban.urgent') }}</option>
               </select>
               <div class="flex gap-2">
                 <button
@@ -539,7 +543,7 @@ function formatDate(dateStr) {
                   :disabled="!newCardTitle.trim() || savingCard"
                   class="flex-1 py-1.5 bg-primary-600 text-white rounded text-sm hover:bg-primary-500 disabled:opacity-50"
                 >
-                  {{ savingCard ? 'Speichert...' : 'Hinzufügen' }}
+                  {{ savingCard ? 'Speichert...' : $t('common.add') }}
                 </button>
                 <button
                   @click="cancelAddCard"
@@ -664,7 +668,7 @@ function formatDate(dateStr) {
       </div>
 
       <!-- Footer -->
-      <div class="mt-4 text-center text-sm text-gray-600">Erstellt mit KyuubiSoft</div>
+      <div class="mt-4 text-center text-sm text-gray-600">{{ $t('kanbanModule.erstelltMitKyuubisoft') }}</div>
     </div>
 
     <!-- Card Detail Modal (read-only) -->
@@ -730,7 +734,7 @@ function formatDate(dateStr) {
 
             <!-- Description -->
             <div v-if="viewingCard.description">
-              <h4 class="text-sm font-medium text-gray-400 mb-1">Beschreibung</h4>
+              <h4 class="text-sm font-medium text-gray-400 mb-1">{{ $t('common.description') }}</h4>
               <p class="text-gray-300 text-sm whitespace-pre-wrap">{{ viewingCard.description }}</p>
             </div>
 
@@ -788,14 +792,14 @@ function formatDate(dateStr) {
           class="relative bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md p-6 space-y-4"
         >
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-white">Karte bearbeiten</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('kanban.editCard') }}</h3>
             <button @click="cancelEditCard" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
 
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Titel</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ $t('kanban.titleLabel') }}</label>
             <input
               v-model="editForm.title"
               type="text"
@@ -804,7 +808,7 @@ function formatDate(dateStr) {
           </div>
 
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Beschreibung</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ $t('common.description') }}</label>
             <textarea
               v-model="editForm.description"
               rows="3"
@@ -814,19 +818,19 @@ function formatDate(dateStr) {
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Priorität</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('quickCapture.priority') }}</label>
               <select
                 v-model="editForm.priority"
                 class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
               >
-                <option value="low">Niedrig</option>
-                <option value="medium">Mittel</option>
-                <option value="high">Hoch</option>
-                <option value="urgent">Dringend</option>
+                <option value="low">{{ $t('kanban.low') }}</option>
+                <option value="medium">{{ $t('kanbanModule.mittel') }}</option>
+                <option value="high">{{ $t('kanban.high') }}</option>
+                <option value="urgent">{{ $t('kanban.urgent') }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1">Fällig am</label>
+              <label class="block text-sm text-gray-400 mb-1">{{ $t('kanbanModule.faelligAm') }}</label>
               <input
                 v-model="editForm.due_date"
                 type="date"
@@ -842,14 +846,14 @@ function formatDate(dateStr) {
               class="flex-1 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 disabled:opacity-50 font-medium text-sm flex items-center justify-center gap-2"
             >
               <CheckIcon class="w-4 h-4" />
-              {{ savingEdit ? 'Speichert...' : 'Speichern' }}
+              {{ savingEdit ? 'Speichert...' : $t('common.save') }}
             </button>
             <button
               @click="deleteCard(editingCard)"
               class="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 text-sm flex items-center gap-2"
             >
               <TrashIcon class="w-4 h-4" />
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
         </div>

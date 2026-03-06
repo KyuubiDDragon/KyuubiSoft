@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMockupStore } from '../stores/mockupStore'
 import {
   LanguageIcon,
@@ -79,7 +80,7 @@ const featureCategories = ref([
       // Poland: White-Red horizontal
       { id: 'pl', label: 'Polski', chipText: 'PL', bgGradient: 'linear-gradient(180deg, #FFFFFF 50%, #DC143C 50%)', textColor: '#DC143C', textShadow: '0 0 2px rgba(255,255,255,0.8)' },
       // Turkey: Red with white crescent hint
-      { id: 'tr', label: 'Türkçe', chipText: 'TR', bgGradient: 'linear-gradient(135deg, #E30A17 0%, #E30A17 100%)', textColor: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.5)' },
+      { id: 'tr', label: t('mockupEditor.tuerke'), chipText: 'TR', bgGradient: 'linear-gradient(135deg, #E30A17 0%, #E30A17 100%)', textColor: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.5)' },
     ]
   },
   {
@@ -422,7 +423,7 @@ const positionLabel = computed(() => {
           :disabled="!newCustomText.trim()"
           class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-gray-900 text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Hinzufügen
+          {{ $t('common.add') }}
         </button>
       </div>
 

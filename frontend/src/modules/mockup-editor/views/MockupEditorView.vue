@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMockupStore } from '../stores/mockupStore'
 import { useToast } from '@/composables/useToast'
 import MockupCanvas from '../components/MockupCanvas.vue'
@@ -36,6 +37,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
+const { t } = useI18n()
 const mockupStore = useMockupStore()
 
 // State
@@ -88,8 +90,8 @@ watch([showTemplateSelector, showProperties], () => {
 
 // Element types available for creation
 const elementTypes = [
-  { type: 'text', label: 'Text', icon: DocumentTextIcon, description: 'Textfeld hinzufügen' },
-  { type: 'image', label: 'Bild', icon: PhotoIcon, description: 'Bildplatzhalter hinzufügen' },
+  { type: 'text', label: 'Text', icon: DocumentTextIcon, description: t('mockupEditor.textfeldHinzufuegen') },
+  { type: 'image', label: 'Bild', icon: PhotoIcon, description: t('mockupEditor.bildplatzhalterHinzufuegen') },
   { type: 'line', label: 'Linie', icon: MinusIcon, description: 'Dekorative Linie' },
   { type: 'button', label: 'Button', icon: CursorArrowRaysIcon, description: 'Call-to-Action Button' },
   { type: 'chip', label: 'Tag/Chip', icon: TagIcon, description: 'Feature-Tag Badge' },
@@ -101,7 +103,7 @@ const handleAddElement = (type) => {
   mockupStore.addElement(type)
   showAddElementMenu.value = false
   showProperties.value = true
-  toast.success('Element hinzugefügt')
+  toast.success(t('mockupEditor.elementHinzugefuegt'))
 }
 
 const handleDuplicateElement = () => {
@@ -113,7 +115,7 @@ const handleDuplicateElement = () => {
 const handleDeleteElement = () => {
   if (!mockupStore.selectedElementId) return
   mockupStore.deleteElement(mockupStore.selectedElementId)
-  toast.success('Element gelöscht')
+  toast.success(t('mockupEditor.elementGeloescht'))
 }
 
 // Alignment
@@ -142,7 +144,7 @@ const handleSaveAsTemplate = () => {
 
 const confirmSaveTemplate = async () => {
   if (!saveTemplateName.value.trim()) {
-    toast.error('Bitte gib einen Namen ein')
+    toast.error(t('mockupEditor.bitteGibEinenNamenEin'))
     return
   }
 
@@ -154,7 +156,7 @@ const confirmSaveTemplate = async () => {
     toast.success('Template gespeichert!')
     showSaveTemplateModal.value = false
   } catch (err) {
-    toast.error('Speichern fehlgeschlagen')
+    toast.error(t('mockupEditor.speichernFehlgeschlagen'))
   }
 }
 
@@ -165,7 +167,7 @@ const handleSaveDraft = async () => {
     await mockupStore.saveDraft()
     toast.success('Entwurf gespeichert!')
   } catch (err) {
-    toast.error('Speichern fehlgeschlagen')
+    toast.error(t('mockupEditor.speichernFehlgeschlagen'))
   }
 }
 
@@ -195,7 +197,7 @@ const handleZoomReset = () => {
 
 const handleReset = () => {
   mockupStore.resetMockup()
-  toast.success('Mockup zurückgesetzt')
+  toast.success(t('mockupEditor.mockupZurueckgesetzt'))
 }
 
 const handleNewMockup = () => {
@@ -299,14 +301,14 @@ onUnmounted(() => {
             <MagnifyingGlassMinusIcon class="w-4 h-4" />
           </button>
           <span class="text-gray-300 text-sm min-w-[48px] text-center">{{ zoomPercent }}%</span>
-          <button @click="handleZoomIn" class="p-1 text-gray-400 hover:text-white transition-colors" title="Vergrössern">
+          <button @click="handleZoomIn" class="p-1 text-gray-400 hover:text-white transition-colors" :title="$t('mockupEditor.vergroessern')">
             <MagnifyingGlassPlusIcon class="w-4 h-4" />
           </button>
           <div class="w-px h-4 bg-white/[0.06] mx-1" />
           <button @click="fitCanvasToView" class="p-1 text-gray-400 hover:text-white transition-colors" title="An Fenster anpassen">
             <span class="text-xs">Fit</span>
           </button>
-          <button @click="handleZoomReset" class="p-1 text-gray-400 hover:text-white transition-colors" title="Zoom zurücksetzen">
+          <button @click="handleZoomReset" class="p-1 text-gray-400 hover:text-white transition-colors" :title="$t('mockupEditor.zoomZuruecksetzen')">
             <span class="text-xs">100%</span>
           </button>
         </div>
@@ -348,7 +350,7 @@ onUnmounted(() => {
             <button @click="showSaveMenu = !showSaveMenu"
                     class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
               <CloudArrowUpIcon class="w-4 h-4" />
-              <span class="text-sm">Speichern</span>
+              <span class="text-sm">{{ $t('common.save') }}</span>
             </button>
 
             <!-- Dropdown Menu -->
@@ -363,7 +365,7 @@ onUnmounted(() => {
                     <FolderIcon class="w-5 h-5 text-blue-400" />
                     <div>
                       <div class="text-sm text-white font-medium">Als Entwurf speichern</div>
-                      <div class="text-xs text-gray-500">Später weiterbearbeiten</div>
+                      <div class="text-xs text-gray-500">{{ $t('mockupEditor.spaeterWeiterbearbeiten') }}</div>
                     </div>
                   </button>
                   <button
@@ -373,7 +375,7 @@ onUnmounted(() => {
                     <BookmarkIcon class="w-5 h-5 text-amber-400" />
                     <div>
                       <div class="text-sm text-white font-medium">Als Template speichern</div>
-                      <div class="text-xs text-gray-500">Wiederverwendbare Vorlage</div>
+                      <div class="text-xs text-gray-500">{{ $t('mockupEditor.mockupeditorwiederverwendbarevorlage') }}</div>
                     </div>
                   </button>
                 </div>
@@ -411,7 +413,7 @@ onUnmounted(() => {
             </button>
             <button @click="handleDeleteElement"
                     class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-                    title="Element löschen">
+                    :title="$t('mockupEditor.elementLoeschen')">
               <TrashIcon class="w-4 h-4" />
             </button>
           </template>

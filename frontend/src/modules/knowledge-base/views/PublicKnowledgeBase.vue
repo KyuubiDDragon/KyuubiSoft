@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { ref, computed, onMounted, watch } from 'vue'
 import {
   MagnifyingGlassIcon,
@@ -14,6 +15,7 @@ import {
 import { useKnowledgeBaseStore } from '@/modules/knowledge-base/stores/knowledgeBaseStore'
 
 const store = useKnowledgeBaseStore()
+const { t } = useI18n()
 
 // State
 const searchQuery = ref('')
@@ -139,7 +141,7 @@ onMounted(async () => {
           <div class="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
             <BookOpenIcon class="w-6 h-6 text-primary-400" />
           </div>
-          <h1 class="text-3xl font-bold text-white">Wissensbasis</h1>
+          <h1 class="text-3xl font-bold text-white">{{ $t('knowledgeBase.title') }}</h1>
         </div>
 
         <!-- Search Bar -->
@@ -149,7 +151,7 @@ onMounted(async () => {
             v-model="searchQuery"
             @keyup.enter="performSearch"
             type="text"
-            placeholder="Artikel suchen..."
+            :placeholder="$t('knowledgeBase.searchArticles')"
             class="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
           />
         </div>
@@ -164,7 +166,7 @@ onMounted(async () => {
         class="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeftIcon class="w-4 h-4" />
-        <span class="text-sm">Zurück</span>
+        <span class="text-sm">{{ $t('common.back') }}</span>
       </button>
 
       <!-- Loading -->
@@ -187,13 +189,13 @@ onMounted(async () => {
             <div class="flex-1 min-w-0">
               <h3 class="text-white font-medium mb-1 group-hover:text-primary-300 transition-colors">{{ cat.name }}</h3>
               <p v-if="cat.description" class="text-gray-500 text-sm line-clamp-2 mb-2">{{ cat.description }}</p>
-              <span class="text-xs text-gray-600">{{ cat.article_count || 0 }} Artikel</span>
+              <span class="text-xs text-gray-600">{{ cat.article_count || 0 }} {{ $t('knowledgeBase.articles') }}</span>
             </div>
           </div>
         </div>
 
         <div v-if="store.publicCategories.length === 0" class="col-span-full text-center py-16 text-gray-500">
-          Keine Kategorien verfügbar
+          {{ $t('knowledgeBase.keineKategorienVerfuegbar') }}
         </div>
       </div>
 
@@ -206,7 +208,7 @@ onMounted(async () => {
 
         <!-- Articles in selected category are fetched via search. Show a message to search. -->
         <div v-if="store.searchResults.length === 0 && !store.loading" class="text-center py-12">
-          <p class="text-gray-500 mb-4">Nutzen Sie die Suche oben, um Artikel in dieser Kategorie zu finden.</p>
+          <p class="text-gray-500 mb-4">{{ $t('knowledgeBase.nutzenSieDieSucheObenUmArtikel') }}</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -326,14 +328,14 @@ onMounted(async () => {
                 class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
               >
                 <HandThumbUpIcon class="w-5 h-5" />
-                <span>Ja</span>
+                <span>{{ $t('knowledgeBase.yes') }}</span>
               </button>
               <button
                 @click="showFeedback = true"
                 class="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
               >
                 <HandThumbDownIcon class="w-5 h-5" />
-                <span>Nein</span>
+                <span>{{ $t('knowledgeBase.no') }}</span>
               </button>
             </div>
 
@@ -343,7 +345,7 @@ onMounted(async () => {
                 v-model="feedbackText"
                 class="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
                 rows="3"
-                placeholder="Was können wir verbessern? (optional)"
+                :placeholder="$t('knowledgeBase.knowledgebasewaskoennenwirverbessernoptional')"
               ></textarea>
               <button
                 @click="rate(false)"
@@ -355,7 +357,7 @@ onMounted(async () => {
           </div>
 
           <div v-else class="text-center py-2">
-            <p class="text-gray-400">Vielen Dank für Ihr Feedback!</p>
+            <p class="text-gray-400">{{ $t('knowledgeBase.vielenDankFuerIhrFeedback') }}</p>
           </div>
 
           <!-- Stats -->

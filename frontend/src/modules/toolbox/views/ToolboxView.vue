@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 // Tool Components - Developer
@@ -83,7 +84,7 @@ const toolCategories = [
       {
         id: 'regex-tester',
         name: 'Regex Tester',
-        description: 'Reguläre Ausdrücke testen und debuggen',
+        description: t('toolbox.regulaereAusdrueckeTestenUndDebuggen'),
         icon: '🔍',
         component: RegexTester,
       },
@@ -97,7 +98,7 @@ const toolCategories = [
       {
         id: 'cron-parser',
         name: 'Cron Parser',
-        description: 'Cron-Ausdrücke erklären und testen',
+        description: t('toolbox.cronausdrueckeErklaerenUndTesten'),
         icon: '⏰',
         component: CronParser,
       },
@@ -132,7 +133,7 @@ const toolCategories = [
       {
         id: 'base-converter',
         name: 'Base Converter',
-        description: 'Binär, Oktal, Dezimal, Hex umrechnen',
+        description: t('toolbox.binaerOktalDezimalHexUmrechnen'),
         icon: '🔢',
         component: BaseConverter,
       },
@@ -188,7 +189,7 @@ const toolCategories = [
       {
         id: 'gitignore-generator',
         name: '.gitignore Generator',
-        description: 'Gitignore Dateien für verschiedene Projekte erstellen',
+        description: t('toolbox.gitignoreDateienFuerVerschiedeneProjekteErstellen'),
         icon: '📁',
         component: GitignoreGenerator,
       },
@@ -209,7 +210,7 @@ const toolCategories = [
       {
         id: 'dockerfile-generator',
         name: 'Dockerfile Generator',
-        description: 'Dockerfiles für verschiedene Sprachen erstellen',
+        description: t('toolbox.dockerfilesFuerVerschiedeneSprachenErstellen'),
         icon: '📄',
         component: DockerfileGenerator,
       },
@@ -230,7 +231,7 @@ const toolCategories = [
       {
         id: 'dockerignore-generator',
         name: '.dockerignore Generator',
-        description: 'Dockerignore Dateien generieren',
+        description: t('toolbox.dockerignoreDateienGenerieren'),
         icon: '🚫',
         component: DockerignoreGenerator,
       },
@@ -243,15 +244,15 @@ const toolCategories = [
     tools: [
       {
         id: 'youtube-downloader',
-        name: 'YouTube Downloader',
-        description: 'Videos und Audio von YouTube laden',
+        name: t('toolbox.youtubeDownloader'),
+        description: t('toolbox.videosUndAudioVonYoutubeLaden'),
         icon: '📺',
         route: '/youtube-downloader',
       },
       {
         id: 'qr-code',
         name: 'QR Code Generator',
-        description: 'QR Codes für URLs, Text, WiFi erstellen',
+        description: t('toolbox.qrCodesFuerUrlsTextWifiErstellen'),
         icon: '📱',
         component: QrCodeGenerator,
       },
@@ -272,7 +273,7 @@ const toolCategories = [
       {
         id: 'favicon-generator',
         name: 'Favicon Generator',
-        description: 'Favicons in allen Größen erstellen',
+        description: t('toolbox.faviconsInAllenGroessenErstellen'),
         icon: '⭐',
         component: FaviconGenerator,
       },
@@ -280,42 +281,42 @@ const toolCategories = [
   },
   {
     id: 'productivity',
-    name: 'Produktivität',
+    name: t('dashboard.productivity'),
     icon: '⚡',
     tools: [
       {
         id: 'password-generator',
         name: 'Password Generator',
-        description: 'Sichere Passwörter generieren',
+        description: t('toolbox.sicherePasswoerterGenerieren'),
         icon: '🔑',
         component: PasswordGenerator,
       },
       {
         id: 'pomodoro',
-        name: 'Pomodoro Timer',
-        description: 'Focus-Timer mit Pausen-Intervallen',
+        name: t('toolbox.pomodoroTimer'),
+        description: t('toolbox.focustimerMitPausenintervallen'),
         icon: '🍅',
         component: PomodoroTimer,
       },
       {
         id: 'unit-converter',
         name: 'Unit Converter',
-        description: 'Einheiten umrechnen (Länge, Gewicht, etc.)',
+        description: t('toolbox.einheitenUmrechnenLaengeGewichtEtc'),
         icon: '📐',
         component: UnitConverter,
       },
       {
         id: 'quick-notes',
         name: 'Quick Notes',
-        description: 'Schnelle Notizen mit Auto-Save',
+        description: t('toolbox.schnelleNotizenMitAutosave'),
         icon: '📓',
         component: QuickNotes,
         fullWidth: true,
       },
       {
         id: 'meeting-timer',
-        name: 'Meeting Timer',
-        description: 'Meeting-Timer mit Redezeit-Tracking',
+        name: t('toolbox.meetingTimer'),
+        description: t('toolbox.meetingtimerMitRedezeittracking'),
         icon: '👥',
         component: MeetingTimer,
       },
@@ -343,7 +344,7 @@ const toolCategories = [
       {
         id: 'ssl-checker',
         name: 'SSL Checker',
-        description: 'SSL-Zertifikate prüfen',
+        description: t('toolbox.sslzertifikatePruefen'),
         icon: '🛡️',
         component: SslChecker,
       },
@@ -364,7 +365,7 @@ const toolCategories = [
       {
         id: 'security-headers',
         name: 'Security Headers',
-        description: 'HTTP Security Headers prüfen und bewerten',
+        description: t('toolbox.httpSecurityHeadersPruefenUndBewerten'),
         icon: '🔐',
         component: SecurityHeadersChecker,
       },

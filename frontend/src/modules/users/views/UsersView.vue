@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -7,6 +8,7 @@ import { XMarkIcon, PlusIcon, TrashIcon, PencilIcon, ShieldCheckIcon, ClockIcon,
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const users = ref([])
 const pendingUsers = ref([])
 const roles = ref([])
@@ -63,7 +65,7 @@ async function loadUsers() {
     const response = await api.get('/api/v1/users')
     users.value = response.data.data?.items || response.data.data || []
   } catch (err) {
-    error.value = 'Fehler beim Laden der Benutzer'
+    error.value = t('users.fehlerBeimLadenDerBenutzer')
     console.error(err)
   } finally {
     isLoading.value = false
@@ -86,7 +88,7 @@ async function approveUser(user) {
     await Promise.all([loadUsers(), loadPendingUsers()])
   } catch (err) {
     console.error('Approve error:', err)
-    uiStore.showError(err.response?.data?.error || 'Fehler beim Freischalten')
+    uiStore.showError(err.response?.data?.error || t('users.fehlerBeimFreischalten'))
   }
 }
 
@@ -100,7 +102,7 @@ async function rejectUser(user) {
     await loadPendingUsers()
   } catch (err) {
     console.error('Reject error:', err)
-    uiStore.showError(err.response?.data?.error || 'Fehler beim Ablehnen')
+    uiStore.showError(err.response?.data?.error || t('users.fehlerBeimAblehnen'))
   }
 }
 
@@ -213,7 +215,7 @@ async function loadUserPermissions() {
     userRolePermissions.value = data.role_permissions || []
   } catch (err) {
     console.error('Failed to load user permissions:', err)
-    uiStore.showError('Fehler beim Laden der Berechtigungen')
+    uiStore.showError(t('users.usersfehlerbeimladenderberechtigungen'))
   } finally {
     isLoadingPermissions.value = false
   }
@@ -225,11 +227,11 @@ async function assignPermissionToUser(permissionName) {
     await api.post(`/api/v1/users/${selectedUser.value.id}/permissions`, {
       permission: permissionName
     })
-    uiStore.showSuccess('Berechtigung hinzugefügt')
+    uiStore.showSuccess(t('users.berechtigungHinzugefuegt'))
     await loadUserPermissions()
   } catch (err) {
     console.error('Failed to assign permission:', err)
-    uiStore.showError(err.response?.data?.error || 'Fehler beim Hinzufügen der Berechtigung')
+    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimhinzufuegenderberechtigung'))
   }
 }
 
@@ -237,11 +239,11 @@ async function removePermissionFromUser(permissionName) {
   if (!selectedUser.value) return
   try {
     await api.delete(`/api/v1/users/${selectedUser.value.id}/permissions/${encodeURIComponent(permissionName)}`)
-    uiStore.showSuccess('Berechtigung entfernt')
+    uiStore.showSuccess(t('users.berechtigungEntfernt'))
     await loadUserPermissions()
   } catch (err) {
     console.error('Failed to remove permission:', err)
-    uiStore.showError(err.response?.data?.error || 'Fehler beim Entfernen der Berechtigung')
+    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimentfernenderberechtigung'))
   }
 }
 
@@ -274,19 +276,19 @@ function getFilteredPermissions() {
 
 function getModuleLabel(module) {
   const labels = {
-    users: 'Benutzer',
+    users: t('navigation.users'),
     docker: 'Docker',
     tickets: 'Tickets',
-    backups: 'Backups',
+    backups: t('backups.backups'),
     kanban: 'Kanban',
     storage: 'Speicher',
-    passwords: 'Passwörter',
-    wiki: 'Wiki',
-    notes: 'Notizen',
-    calendar: 'Kalender',
+    passwords: t('passwords.title'),
+    wiki: t('users.wiki'),
+    notes: t('passwords.notes'),
+    calendar: t('navigation.calendar'),
     logs: 'Logs',
     mails: 'Mails',
-    projects: 'Projekte',
+    projects: t('projects.title'),
     settings: 'Einstellungen',
     features: 'Features',
     general: 'Allgemein',
@@ -341,7 +343,7 @@ async function saveUser() {
     await loadUsers()
   } catch (err) {
     console.error('Save error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Speichern'
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern')
   } finally {
     isSaving.value = false
   }
@@ -357,7 +359,7 @@ async function deleteUser() {
     await loadUsers()
   } catch (err) {
     console.error('Delete error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || 'Fehler beim Löschen'
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.fehlerBeimLoeschen')
   } finally {
     isSaving.value = false
   }
@@ -413,8 +415,8 @@ function canDeleteUser(user) {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Benutzer</h1>
-        <p class="text-gray-400 mt-1">Verwalte alle Benutzer des Systems</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('navigation.users') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('users.usersverwalteallebenutzerdessystems') }}</p>
       </div>
       <button
         @click="openCreateModal"
@@ -526,7 +528,7 @@ function canDeleteUser(user) {
                 <div class="ml-4">
                   <div class="text-sm font-medium text-white">{{ user.username }}</div>
                   <div v-if="toBool(user.restricted_to_projects)" class="text-xs text-orange-400">
-                    Eingeschränkter Zugriff
+                    {{ $t('users.eingeschraenkterZugriff') }}
                   </div>
                 </div>
               </div>
@@ -578,14 +580,14 @@ function canDeleteUser(user) {
               <button
                 @click="openPermissionsModal(user)"
                 class="text-yellow-400 hover:text-yellow-300 mr-3"
-                title="Berechtigungen verwalten"
+                title=$t('users.berechtigungenVerwalten')
               >
                 <KeyIcon class="w-5 h-5 inline" />
               </button>
               <button
                 @click="openEditModal(user)"
                 class="text-primary-400 hover:text-primary-300 mr-3"
-                title="Benutzer bearbeiten"
+                :title="$t('users.usersbenutzerbearbeiten')"
               >
                 <PencilIcon class="w-5 h-5 inline" />
               </button>
@@ -593,7 +595,7 @@ function canDeleteUser(user) {
                 v-if="canDeleteUser(user)"
                 @click="openDeleteModal(user)"
                 class="text-red-400 hover:text-red-300"
-                title="Benutzer löschen"
+                :title="$t('users.benutzerLoeschen')"
               >
                 <TrashIcon class="w-5 h-5 inline" />
               </button>
@@ -618,7 +620,7 @@ function canDeleteUser(user) {
           <!-- Modal Header -->
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ isEditing ? 'Benutzer bearbeiten' : 'Neuer Benutzer' }}
+              {{ isEditing ? 'Benutzer bearbeiten' : $t('users.neuerBenutzer') }}
             </h3>
             <button @click="closeModals" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-6 h-6" />
@@ -645,7 +647,7 @@ function canDeleteUser(user) {
 
             <!-- Username -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Benutzername</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('passwords.username') }}</label>
               <input
                 v-model="formData.username"
                 type="text"
@@ -656,18 +658,18 @@ function canDeleteUser(user) {
 
             <!-- Password (only for create) -->
             <div v-if="!isEditing">
-              <label class="block text-sm font-medium text-gray-300 mb-1">Passwort</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('auth.password') }}</label>
               <input
                 v-model="formData.password"
                 type="password"
                 class="input"
-                placeholder="Mindestens 12 Zeichen"
+                :placeholder="$t('users.mindestens12Zeichen')"
               />
             </div>
 
             <!-- Roles -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Rollen</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('users.rollen') }}</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="role in roles"
@@ -699,8 +701,8 @@ function canDeleteUser(user) {
                   class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                 />
                 <div>
-                  <span class="text-sm font-medium text-gray-300">Aktiv</span>
-                  <p class="text-xs text-gray-500">Benutzer kann sich einloggen</p>
+                  <span class="text-sm font-medium text-gray-300">{{ $t('common.active') }}</span>
+                  <p class="text-xs text-gray-500">{{ $t('users.benutzerKannSichEinloggen') }}</p>
                 </div>
               </label>
 
@@ -712,7 +714,7 @@ function canDeleteUser(user) {
                 />
                 <div>
                   <span class="text-sm font-medium text-gray-300">2FA erforderlich</span>
-                  <p class="text-xs text-gray-500">Benutzer muss 2FA beim nächsten Login einrichten</p>
+                  <p class="text-xs text-gray-500">{{ $t('users.benutzerMuss2faBeimNaechstenLoginEinrichten') }}</p>
                 </div>
               </label>
 
@@ -723,15 +725,15 @@ function canDeleteUser(user) {
                   class="w-5 h-5 rounded border-white/[0.06] bg-white/[0.04] text-primary-600 focus:ring-primary-500"
                 />
                 <div>
-                  <span class="text-sm font-medium text-gray-300">Auf Projekte einschränken</span>
-                  <p class="text-xs text-gray-500">Benutzer sieht nur ausgewählte Projekte</p>
+                  <span class="text-sm font-medium text-gray-300">{{ $t('users.usersaufprojekteeinschraenken') }}</span>
+                  <p class="text-xs text-gray-500">{{ $t('users.usersbenutzersiehtnurausgewaehlteprojekte') }}</p>
                 </div>
               </label>
             </div>
 
             <!-- Project Selection (only when restricted) -->
             <div v-if="formData.restricted_to_projects" class="space-y-2">
-              <label class="block text-sm font-medium text-gray-300">Erlaubte Projekte</label>
+              <label class="block text-sm font-medium text-gray-300">{{ $t('users.userserlaubteprojekte') }}</label>
               <div v-if="projects.length === 0" class="text-sm text-gray-500">
                 Keine Projekte vorhanden
               </div>
@@ -751,7 +753,7 @@ function canDeleteUser(user) {
                 </label>
               </div>
               <p v-if="formData.allowed_project_ids.length === 0" class="text-xs text-orange-400">
-                Keine Projekte ausgewählt - Benutzer hat keinen Zugriff
+                {{ $t('users.keineProjekteAusgewaehltBenutzerHatKeinenZugriff') }}
               </p>
             </div>
           </div>
@@ -769,7 +771,7 @@ function canDeleteUser(user) {
               :disabled="isSaving"
               class="btn-primary disabled:opacity-50"
             >
-              {{ isSaving ? 'Speichern...' : (isEditing ? 'Speichern' : 'Erstellen') }}
+              {{ isSaving ? $t('common.saving') : (isEditing ? $t('common.save') : $t('common.create')) }}
             </button>
           </div>
         </div>
@@ -784,11 +786,11 @@ function canDeleteUser(user) {
       >
         <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">Benutzer löschen</h3>
+            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.benutzerLoeschen') }}</h3>
             <p class="text-gray-400">
               Bist du sicher, dass du den Benutzer
               <span class="text-white font-medium">{{ selectedUser?.username }}</span>
-              löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+              {{ $t('users.loeschenMoechtestDieseAktionKannNichtRueckgaengig') }}
             </p>
 
             <div v-if="formErrors.general" class="mt-4 bg-red-900/50 border border-red-700 rounded-lg p-3">
@@ -807,7 +809,7 @@ function canDeleteUser(user) {
               :disabled="isSaving"
               class="btn-danger disabled:opacity-50"
             >
-              {{ isSaving ? 'Löschen...' : 'Löschen' }}
+              {{ isSaving ? $t('users.loeschen') : $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -863,7 +865,7 @@ function canDeleteUser(user) {
                 <input
                   v-model="permissionSearch"
                   type="text"
-                  placeholder="Berechtigungen suchen..."
+                  placeholder=$t('users.berechtigungenSuchen')
                   class="input"
                 />
               </div>
@@ -927,7 +929,7 @@ function canDeleteUser(user) {
                           @click="assignPermissionToUser(permission.name)"
                           class="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
                         >
-                          Hinzufügen
+                          {{ $t('common.add') }}
                         </button>
                       </div>
                     </div>

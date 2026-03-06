@@ -3,8 +3,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { sanitizeHtml } from '@/core/services/sanitize'
 import api from '@/core/api/axios'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const loading = ref(true)
 const error = ref(null)
@@ -16,7 +18,7 @@ const token = computed(() => route.params.token)
 // Load public note
 async function loadNote() {
   if (!token.value) {
-    error.value = 'Ungültiger Link'
+    error.value = t('notesModule.public.invalidLink')
     loading.value = false
     return
   }
@@ -27,9 +29,9 @@ async function loadNote() {
   } catch (err) {
     console.error('Failed to load public note:', err)
     if (err.response?.status === 404) {
-      error.value = 'Diese Seite existiert nicht oder wurde entfernt.'
+      error.value = t('notesModule.public.pageNotFound')
     } else {
-      error.value = 'Fehler beim Laden der Seite.'
+      error.value = t('notesModule.public.loadError')
     }
   } finally {
     loading.value = false
@@ -60,7 +62,7 @@ onMounted(() => {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
-        <p class="mt-4 text-gray-400">Lädt...</p>
+        <p class="mt-4 text-gray-400">{{ $t('common.loading') }}</p>
       </div>
     </div>
 
@@ -70,7 +72,7 @@ onMounted(() => {
         <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h1 class="text-2xl font-bold text-white mb-2">Seite nicht gefunden</h1>
+        <h1 class="text-2xl font-bold text-white mb-2">{{ $t('notesModule.public.pageNotFoundTitle') }}</h1>
         <p class="text-gray-400">{{ error }}</p>
       </div>
     </div>
@@ -95,16 +97,16 @@ onMounted(() => {
 
         <!-- Title -->
         <h1 class="text-4xl font-bold text-white mb-4">
-          {{ note.title || 'Untitled' }}
+          {{ note.title || $t('notesModule.untitled') }}
         </h1>
 
         <!-- Meta -->
         <div v-if="note.show_date" class="flex items-center gap-4 text-sm text-gray-500">
           <span v-if="note.author">
-            Von {{ note.author }}
+            {{ $t('notesModule.public.by') }} {{ note.author }}
           </span>
           <span v-if="note.updated_at">
-            Aktualisiert am {{ formatDate(note.updated_at) }}
+            {{ $t('notesModule.public.updatedAt') }} {{ formatDate(note.updated_at) }}
           </span>
         </div>
       </header>
@@ -119,13 +121,13 @@ onMounted(() => {
       <footer class="mt-16 pt-8 border-t border-dark-700">
         <div class="flex items-center justify-between text-sm text-gray-500">
           <span>
-            {{ note.word_count || 0 }} Wörter
+            {{ note.word_count || 0 }} {{ $t('notesModule.words') }}
           </span>
           <a
             href="/"
             class="text-primary-400 hover:text-primary-300 transition-colors"
           >
-            Erstellt mit KyuubiSoft
+            {{ $t('notesModule.public.createdWith') }}
           </a>
         </div>
       </footer>

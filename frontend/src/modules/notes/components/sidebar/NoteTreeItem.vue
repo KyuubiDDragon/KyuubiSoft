@@ -241,7 +241,7 @@ const dropIndicatorClass = computed(() => {
       <button
         @click.stop="createChild"
         class="flex-shrink-0 rounded p-0.5 text-gray-500 opacity-0 group-hover:opacity-100 hover:bg-dark-600 hover:text-white"
-        title="Unternotiz erstellen"
+        :title="$t('notesModule.sidebar.createSubNote')"
       >
         <PlusIcon class="h-3.5 w-3.5" />
       </button>

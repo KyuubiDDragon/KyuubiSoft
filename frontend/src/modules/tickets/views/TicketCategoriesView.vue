@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -17,6 +18,7 @@ import {
 import draggable from 'vuedraggable'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -68,7 +70,7 @@ async function fetchCategories() {
     const flatResponse = await api.get('/api/v1/tickets/categories', { params: { all: true } })
     flatCategories.value = flatResponse.data.data.categories || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Kategorien')
+    uiStore.showError(t('tickets.ticketsfehlerbeimladenderkategorien'))
   } finally {
     loading.value = false
   }
@@ -121,28 +123,28 @@ async function saveCategory() {
 
     if (editingCategory.value) {
       await api.put(`/api/v1/tickets/categories/${editingCategory.value.id}`, data)
-      uiStore.showSuccess('Kategorie aktualisiert')
+      uiStore.showSuccess(t('tickets.kategorieAktualisiert'))
     } else {
       await api.post('/api/v1/tickets/categories', data)
-      uiStore.showSuccess('Kategorie erstellt')
+      uiStore.showSuccess(t('tickets.kategorieErstellt'))
     }
     showModal.value = false
     fetchCategories()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
 // Delete category
 async function deleteCategory(category) {
-  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/tickets/categories/${category.id}`)
-    uiStore.showSuccess('Kategorie gelöscht')
+    uiStore.showSuccess(t('tickets.kategorieGeloescht'))
     fetchCategories()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
   }
 }
 
@@ -167,7 +169,7 @@ async function onReorder() {
   try {
     await api.post('/api/v1/tickets/categories/reorder', { order })
   } catch (error) {
-    uiStore.showError('Fehler beim Sortieren')
+    uiStore.showError(t('tickets.fehlerBeimSortieren'))
     fetchCategories()
   }
 }
@@ -189,14 +191,14 @@ onMounted(() => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">Ticket-Kategorien</h1>
-        <p class="text-gray-400 text-sm mt-1">Kategorien für Support-Tickets verwalten</p>
+        <p class="text-gray-400 text-sm mt-1">{{ $t('tickets.kategorienFuerSupportticketsVerwalten') }}</p>
       </div>
       <button
         @click="openModal()"
         class="btn-primary flex items-center gap-2"
       >
         <PlusIcon class="w-5 h-5" />
-        <span>Neue Kategorie</span>
+        <span>{{ $t('tickets.ticketsneuekategorie') }}</span>
       </button>
     </div>
 

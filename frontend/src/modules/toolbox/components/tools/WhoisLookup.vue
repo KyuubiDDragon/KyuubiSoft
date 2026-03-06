@@ -92,7 +92,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
 
     <!-- Loading -->
     <div v-if="isLoading" class="text-center py-8 text-gray-400">
-      Führe WHOIS-Abfrage durch...
+      {{ $t('toolbox.fuehreWhoisabfrageDurch') }}
     </div>
 
     <!-- Error -->
@@ -123,7 +123,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
         </div>
 
         <div v-if="result.parsed.expiryDate" class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Läuft ab</span>
+          <span class="text-xs text-gray-500">{{ $t('toolbox.laeuftAb') }}</span>
           <div class="text-white">
             {{ formatDate(result.parsed.expiryDate) }}
             <span
@@ -137,7 +137,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
         </div>
 
         <div v-if="result.parsed.updatedDate" class="p-3 bg-white/[0.04] rounded-lg">
-          <span class="text-xs text-gray-500">Zuletzt aktualisiert</span>
+          <span class="text-xs text-gray-500">{{ $t('tickets.zuletztAktualisiert') }}</span>
           <div class="text-white">{{ formatDate(result.parsed.updatedDate) }}</div>
         </div>
 
@@ -151,11 +151,11 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
           <div class="text-white">{{ result.parsed.registrantCountry }}</div>
         </div>
 
-        <div v-if="result.parsed.nameServers?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
+        <div v-if=$t('toolbox.resultparsednameserverslength') class="p-3 bg-white/[0.04] rounded-lg col-span-2">
           <span class="text-xs text-gray-500">Nameserver</span>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
-              v-for="ns in result.parsed.nameServers"
+              v-for=$t('toolbox.nsInResultparsednameservers')
               :key="ns"
               class="px-2 py-0.5 text-xs bg-white/[0.08] text-gray-300 rounded font-mono"
             >
@@ -165,7 +165,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
         </div>
 
         <div v-if="result.parsed.status?.length" class="p-3 bg-white/[0.04] rounded-lg col-span-2">
-          <span class="text-xs text-gray-500">Status</span>
+          <span class="text-xs text-gray-500">{{ $t('common.status') }}</span>
           <div class="flex flex-wrap gap-2 mt-1">
             <span
               v-for="status in result.parsed.status"
@@ -192,7 +192,7 @@ const quickDomains = ['google.com', 'github.com', 'cloudflare.com']
 
     <!-- Info -->
     <div class="text-xs text-gray-500">
-      <p>WHOIS-Daten zeigen Registrierungsinformationen zu einer Domain. Einige Daten können durch Datenschutzservices verborgen sein.</p>
+      <p>{{ $t('toolbox.whoisdatenZeigenRegistrierungsinformationenZuEinerDomainEinige') }}</p>
     </div>
   </div>
 </template>

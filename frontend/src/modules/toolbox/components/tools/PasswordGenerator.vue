@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DocumentDuplicateIcon, CheckIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 
 const password = ref('')
@@ -54,7 +55,7 @@ function generatePassword() {
   }
 
   if (!charset) {
-    password.value = 'Mindestens ein Zeichensatz erforderlich'
+    password.value = t('toolbox.mindestensEinZeichensatzErforderlich')
     return
   }
 
@@ -93,10 +94,10 @@ onMounted(() => {
           readonly
           class="flex-1 bg-transparent text-lg font-mono text-white focus:outline-none"
         />
-        <button @click="generatePassword" class="btn-icon" title="Neu generieren">
+        <button @click="generatePassword" class="btn-icon" :title="$t('toolbox.neuGenerieren')">
           <ArrowPathIcon class="w-5 h-5" />
         </button>
-        <button @click="copyPassword" class="btn-icon" :title="copied ? 'Kopiert!' : 'Kopieren'">
+        <button @click="copyPassword" class="btn-icon" :title="copied ? 'Kopiert!' : $t('common.copy')">
           <CheckIcon v-if="copied" class="w-5 h-5 text-green-400" />
           <DocumentDuplicateIcon v-else class="w-5 h-5" />
         </button>
@@ -120,7 +121,7 @@ onMounted(() => {
       <!-- Length Slider -->
       <div>
         <div class="flex justify-between mb-2">
-          <label class="text-sm text-gray-400">Länge</label>
+          <label class="text-sm text-gray-400">{{ $t('toolbox.laenge') }}</label>
           <span class="text-sm font-medium text-white">{{ length }}</span>
         </div>
         <input
@@ -146,7 +147,7 @@ onMounted(() => {
             class="w-4 h-4 rounded border-gray-600 text-primary-500 focus:ring-primary-500"
             @change="generatePassword"
           />
-          <span class="text-sm text-gray-300">Großbuchstaben (A-Z)</span>
+          <span class="text-sm text-gray-300">{{ $t('toolbox.grossbuchstabenAz') }}</span>
         </label>
 
         <label class="flex items-center gap-2 cursor-pointer">
@@ -186,7 +187,7 @@ onMounted(() => {
             class="w-4 h-4 rounded border-gray-600 text-primary-500 focus:ring-primary-500"
             @change="generatePassword"
           />
-          <span class="text-sm text-gray-300">Ähnliche Zeichen ausschließen (O, 0, l, 1, I)</span>
+          <span class="text-sm text-gray-300">{{ $t('toolbox.aehnlicheZeichenAusschliessenO0L1') }}</span>
         </label>
       </div>
     </div>

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import {
   CheckCircleIcon,
@@ -49,7 +50,7 @@ const overallStatus = computed(() => {
 
 const overallLabel = computed(() => {
   switch (overallStatus.value) {
-    case 'operational': return 'Alle Systeme betriebsbereit'
+    case 'operational': return t('statusPage.alleSystemeBetriebsbereit')
     case 'degraded': return 'Einige Systeme beeintraechtigt'
     case 'partial_outage': return 'Einige Systeme beeintraechtigt'
     case 'major_outage': return 'Schwerwiegende Stoerung'
@@ -117,7 +118,7 @@ function getBarClass(status) {
 }
 
 function getBarTooltip(day) {
-  if (!day) return 'Keine Daten'
+  if (!day) return t('statusPage.keineDaten')
   if (day.uptime !== null) return `${day.date}: ${day.uptime}%`
   return `${day.date}: Keine Daten`
 }
@@ -172,7 +173,7 @@ function formatDate(dateStr) {
       <div class="text-center">
         <XCircleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
         <h1 class="text-2xl font-bold text-white mb-2">Statusseite nicht verfuegbar</h1>
-        <p class="text-gray-400">Bitte versuche es spaeter erneut.</p>
+        <p class="text-gray-400">{{ $t('statusPage.bitteVersucheEsSpaeterErneut') }}</p>
       </div>
     </div>
 
@@ -200,7 +201,7 @@ function formatDate(dateStr) {
 
       <!-- Monitors Grid -->
       <div v-if="data.monitors && data.monitors.length > 0" class="space-y-6 mb-8">
-        <template v-for="(group, gi) in groupedMonitors" :key="gi">
+        <template v-for=$t('statusPage.groupGiInGroupedmonitors') :key="gi">
           <div v-if="group.name" class="mb-2">
             <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider">{{ group.name }}</h3>
           </div>
@@ -241,8 +242,8 @@ function formatDate(dateStr) {
 
             <!-- Labels -->
             <div class="flex justify-between mt-1">
-              <span class="text-xs text-gray-600">90 Tage</span>
-              <span class="text-xs text-gray-600">Heute</span>
+              <span class="text-xs text-gray-600">{{ $t('statusPage.90Tage') }}</span>
+              <span class="text-xs text-gray-600">{{ $t('time.today') }}</span>
             </div>
           </div>
         </template>

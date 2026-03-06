@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -26,6 +27,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -165,7 +167,7 @@ const saveRepository = async () => {
 }
 
 const deleteRepository = async (id) => {
-  if (!await confirm({ message: 'Repository wirklich entfernen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('gitRepo.confirmRemove'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/git/repositories/${id}`)
     await loadRepositories()
@@ -193,14 +195,14 @@ const syncAllRepositories = async () => {
     syncingAll.value = true
     const response = await api.post('/api/v1/git/repositories/sync-all')
     const result = response.data.data
-    toast.success(`${result.synced}/${result.total} Repositories synchronisiert`)
+    toast.success(`${result.synced}/${result.total} ${t('gitRepo.reposSynced')}`)
     if (result.failed > 0) {
-      toast.warning(`${result.failed} fehlgeschlagen`)
+      toast.warning(`${result.failed} ${t('gitRepo.failed')}`)
     }
     await loadRepositories()
     await loadStats()
   } catch (error) {
-    toast.error('Synchronisierung fehlgeschlagen')
+    toast.error(t('gitRepo.syncFailed'))
     console.error('Failed to sync all repositories:', error)
   } finally {
     syncingAll.value = false
@@ -334,12 +336,12 @@ const formatRelativeTime = (dateStr) => {
   const date = new Date(dateStr).getTime()
   const diff = now - date
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'gerade eben'
-  if (mins < 60) return `vor ${mins} Min`
+  if (mins < 1) return t('gitRepo.justNow')
+  if (mins < 60) return `${mins} ${t('gitRepo.minutesAgo')}`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `vor ${hours} Std`
+  if (hours < 24) return `${hours} ${t('gitRepo.hoursAgo')}`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `vor ${days} Tagen`
+  if (days < 30) return `${days} ${t('gitRepo.daysAgo')}`
   return new Date(dateStr).toLocaleDateString('de-DE')
 }
 
@@ -364,7 +366,7 @@ onMounted(() => {
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-3xl font-bold text-white">Git Repositories</h1>
-        <p class="text-gray-400">Verwalte und überwache deine Git Repositories</p>
+        <p class="text-gray-400">{{ $t('gitModule.verwalteUndUeberwacheDeineGitRepositories') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="syncAllRepositories" :disabled="syncingAll" class="btn-secondary">
@@ -393,11 +395,11 @@ onMounted(() => {
         <div class="text-2xl font-bold text-white">{{ stats.total_repositories }}</div>
       </div>
       <div class="bg-blue-900/20 rounded-lg p-4 shadow-glass">
-        <div class="text-blue-400 text-sm">Offene PRs</div>
+        <div class="text-blue-400 text-sm">{{ $t('gitRepo.openPRs') }}</div>
         <div class="text-2xl font-bold text-blue-300">{{ stats.total_open_prs }}</div>
       </div>
       <div class="bg-amber-900/20 rounded-lg p-4 shadow-glass">
-        <div class="text-amber-400 text-sm">Offene Issues</div>
+        <div class="text-amber-400 text-sm">{{ $t('gitRepo.openIssues') }}</div>
         <div class="text-2xl font-bold text-amber-300">{{ stats.total_open_issues }}</div>
       </div>
       <div class="bg-white/[0.03] rounded-lg p-4 shadow-glass">
@@ -432,7 +434,7 @@ onMounted(() => {
             <component :is="group.isCollapsed ? ChevronRightIcon : ChevronDownIcon" class="w-5 h-5 text-gray-400" />
           </div>
           <div v-else class="px-4 py-3 bg-white/[0.03]">
-            <span class="font-medium text-white">Ohne Ordner</span>
+            <span class="font-medium text-white">{{ $t('ssl.sslohneordner') }}</span>
             <span class="text-sm text-gray-500 ml-2">({{ group.repositories.length }})</span>
           </div>
 
@@ -457,7 +459,7 @@ onMounted(() => {
                   <p class="text-sm text-gray-500 truncate max-w-md">{{ repo.repo_url }}</p>
                 </div>
                 <div class="flex items-center gap-4 text-xs">
-                  <div v-if="repo.last_sync_at" class="flex items-center gap-1 text-gray-500" :title="'Letzter Sync: ' + formatDate(repo.last_sync_at)">
+                  <div v-if="repo.last_sync_at" class="flex items-center gap-1 text-gray-500" :title="$t('gitRepo.lastSync') + ': ' + formatDate(repo.last_sync_at)">
                     <ClockIcon class="w-3.5 h-3.5" />
                     {{ formatRelativeTime(repo.last_sync_at) }}
                   </div>
@@ -501,8 +503,8 @@ onMounted(() => {
       <div v-if="repositories.length === 0"
            class="text-center py-12 bg-white/[0.04] rounded-lg shadow-glass">
         <CodeBracketIcon class="w-12 h-12 mx-auto text-gray-400" />
-        <h3 class="mt-4 text-lg font-medium text-white">Keine Repositories</h3>
-        <p class="mt-2 text-gray-500">Füge dein erstes Git Repository hinzu.</p>
+        <h3 class="mt-4 text-lg font-medium text-white">{{ $t('gitRepo.noRepos') }}</h3>
+        <p class="mt-2 text-gray-500">{{ $t('gitRepo.addFirstRepo') }}</p>
         <button @click="showModal = true" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
           Repository hinzufügen
@@ -517,7 +519,7 @@ onMounted(() => {
           <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
           <div class="relative bg-white/[0.04] rounded-lg shadow-float w-full max-w-lg p-6">
             <h2 class="text-xl font-bold text-white mb-4">
-              {{ editingRepo ? 'Repository bearbeiten' : 'Neues Repository' }}
+              {{ editingRepo ? $t('gitRepo.editRepo') : $t('gitRepo.newRepo') }}
             </h2>
             <form @submit.prevent="saveRepository" class="space-y-4">
               <div>
@@ -525,24 +527,24 @@ onMounted(() => {
                 <input v-model="form.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="label">Repository URL</label>
+                <label class="label">{{ $t('gitRepo.repoUrl') }}</label>
                 <input v-model="form.repo_url" type="url" required placeholder="https://github.com/user/repo" class="input" />
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Provider</label>
+                  <label class="label">{{ $t('gitRepo.provider') }}</label>
                   <select v-model="form.provider" class="input">
                     <option v-for="p in providers" :key="p.value" :value="p.value">{{ p.label }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Branch</label>
+                  <label class="label">{{ $t('gitRepo.branch') }}</label>
                   <input v-model="form.default_branch" type="text" class="input" />
                 </div>
               </div>
               <div>
-                <label class="label">API Token (optional)</label>
-                <input v-model="form.api_token" type="password" placeholder="Für private Repositories" class="input" />
+                <label class="label">{{ $t('gitRepo.apiTokenOptional') }}</label>
+                <input v-model="form.api_token" type="password" :placeholder="$t('gitRepo.forPrivateRepos')" class="input" />
               </div>
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2">
@@ -577,7 +579,7 @@ onMounted(() => {
                 <input v-model="folderForm.name" type="text" required class="input" />
               </div>
               <div>
-                <label class="label">Farbe</label>
+                <label class="label">{{ $t('common.color') }}</label>
                 <div class="flex gap-2">
                   <button v-for="color in folderColors" :key="color" type="button"
                           @click="folderForm.color = color"
@@ -588,7 +590,7 @@ onMounted(() => {
               </div>
               <div class="flex justify-end gap-3 pt-4">
                 <button type="button" @click="showFolderModal = false" class="btn-secondary">Abbrechen</button>
-                <button type="submit" class="btn-primary">Erstellen</button>
+                <button type="submit" class="btn-primary">{{ $t('common.create') }}</button>
               </div>
             </form>
           </div>
@@ -603,7 +605,7 @@ onMounted(() => {
         <div class="relative card-glass w-full max-w-3xl flex flex-col max-h-[85vh]">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Von Account importieren</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('gitRepo.importFromAccount') }}</h3>
             <button @click="closeImportModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -614,14 +616,14 @@ onMounted(() => {
             <!-- Provider + Token -->
             <div class="flex gap-3">
               <div class="w-40">
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">Provider</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('gitRepo.provider') }}</label>
                 <select v-model="importProvider" class="select w-full">
                   <option value="github">GitHub</option>
                   <option value="gitlab">GitLab</option>
                 </select>
               </div>
               <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">API Token</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('gitRepo.apiToken') }}</label>
                 <div class="flex gap-2">
                   <input
                     v-model="importToken"
@@ -643,9 +645,9 @@ onMounted(() => {
 
             <!-- Folder assignment -->
             <div v-if="importRepos.length > 0 && folders.length > 0">
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Ordner zuweisen (optional)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('gitRepo.assignFolder') }}</label>
               <select v-model="importFolderId" class="select w-full">
-                <option value="">Kein Ordner</option>
+                <option value="">{{ $t('gitRepo.noFolder') }}</option>
                 <option v-for="folder in folders" :key="folder.id" :value="folder.id">{{ folder.name }}</option>
               </select>
             </div>
@@ -654,7 +656,7 @@ onMounted(() => {
             <div v-if="importRepos.length > 0" class="space-y-2">
               <div class="flex items-center justify-between">
                 <h4 class="text-sm font-medium text-gray-300">
-                  {{ importRepos.length }} Repositories gefunden
+                  {{ importRepos.length }} $t('gitRepo.reposFound')
                   <span v-if="importSelectedIds.size > 0" class="text-primary-400 ml-1">
                     ({{ importSelectedIds.size }} ausgewaehlt)
                   </span>
@@ -753,7 +755,7 @@ onMounted(() => {
                 <p class="text-gray-500">{{ selectedRepo.repository.repo_url }}</p>
               </div>
               <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-600">
-                <span class="sr-only">Schließen</span>
+                <span class="sr-only">{{ $t('common.close') }}</span>
                 &times;
               </button>
             </div>
@@ -762,7 +764,7 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-6">
               <!-- Pull Requests -->
               <div>
-                <h3 class="font-semibold text-white mb-3">Pull Requests</h3>
+                <h3 class="font-semibold text-white mb-3">{{ $t('gitRepo.pullRequests') }}</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto">
                   <div v-for="pr in selectedRepo.pull_requests" :key="pr.id"
                        class="p-3 bg-white/[0.03] rounded-lg">
@@ -776,13 +778,13 @@ onMounted(() => {
                       {{ pr.author }} - {{ formatDate(pr.external_updated_at) }}
                     </div>
                   </div>
-                  <div v-if="!selectedRepo.pull_requests?.length" class="text-gray-500 text-sm">Keine PRs</div>
+                  <div v-if="!selectedRepo.pull_requests?.length" class="text-gray-500 text-sm">{{ $t('gitRepo.noPRs') }}</div>
                 </div>
               </div>
 
               <!-- Issues -->
               <div>
-                <h3 class="font-semibold text-white mb-3">Issues</h3>
+                <h3 class="font-semibold text-white mb-3">{{ $t('gitRepo.issues') }}</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto">
                   <div v-for="issue in selectedRepo.issues" :key="issue.id"
                        class="p-3 bg-white/[0.03] rounded-lg">
@@ -796,14 +798,14 @@ onMounted(() => {
                       {{ issue.author }} - {{ formatDate(issue.external_updated_at) }}
                     </div>
                   </div>
-                  <div v-if="!selectedRepo.issues?.length" class="text-gray-500 text-sm">Keine Issues</div>
+                  <div v-if="!selectedRepo.issues?.length" class="text-gray-500 text-sm">{{ $t('gitRepo.noIssues') }}</div>
                 </div>
               </div>
             </div>
 
             <!-- Recent Commits -->
             <div class="mt-6">
-              <h3 class="font-semibold text-white mb-3">Letzte Commits</h3>
+              <h3 class="font-semibold text-white mb-3">{{ $t('gitRepo.latestCommits') }}</h3>
               <div class="space-y-2 max-h-60 overflow-y-auto">
                 <div v-for="commit in selectedRepo.commits?.slice(0, 10)" :key="commit.id"
                      class="p-3 bg-white/[0.03] rounded-lg flex items-start gap-3">

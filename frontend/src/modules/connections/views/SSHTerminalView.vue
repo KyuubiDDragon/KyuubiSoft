@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
@@ -16,6 +17,7 @@ import {
 const route   = useRoute()
 const router  = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast   = useToast()
 
 // State
@@ -45,7 +47,7 @@ async function fetchConnection() {
     connection.value = res.data.data
 
     if (!['ssh', 'sftp'].includes(connection.value.type)) {
-      uiStore.showError('Diese Verbindung unterstützt kein SSH')
+      uiStore.showError(t('connections.noSshSupport'))
       router.push('/connections')
     }
   } catch {
@@ -82,7 +84,7 @@ async function openTerminal() {
     connectWebSocket(wsUrl)
   } catch (err) {
     wsStatus.value = 'error'
-    wsError.value  = err.response?.data?.message || 'Fehler beim Erstellen der Terminal-Session'
+    wsError.value  = err.response?.data?.message || t('connections.errorCreatingTerminal')
     toast.error(wsError.value)
   }
 }
@@ -174,8 +176,8 @@ function connectWebSocket(url) {
 
   ws.onerror = () => {
     wsStatus.value = 'error'
-    wsError.value  = 'WebSocket-Verbindungsfehler zum Terminal-Server'
-    term?.writeln('\r\n\x1b[31mWebSocket-Fehler\x1b[0m')
+    wsError.value  = t('connections.websocketConnectionError')
+    term?.writeln(t('connections.websocketError'))
   }
 
   ws.onclose = () => {
@@ -280,7 +282,7 @@ onUnmounted(() => {
                 'text-gray-500': wsStatus === 'disconnected',
               }"
             >
-              {{ { connected: 'Verbunden', connecting: 'Verbinde…', disconnected: 'Getrennt', error: 'Fehler' }[wsStatus] }}
+              {{ { connected: 'Verbunden', connecting: 'Verbinde…', disconnected: 'Getrennt', error: $t('common.error') }[wsStatus] }}
             </span>
           </div>
 
@@ -288,7 +290,7 @@ onUnmounted(() => {
             v-if="wsStatus !== 'connecting'"
             @click="reconnect"
             class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-            title="Neu verbinden"
+            :title="$t('connections.reconnect')"
           >
             <ArrowPathIcon class="w-4 h-4" />
           </button>
@@ -297,7 +299,7 @@ onUnmounted(() => {
             v-if="wsStatus === 'connected'"
             @click="disconnect"
             class="p-2 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-            title="Trennen"
+            :title="$t('connections.sshDisconnect')"
           >
             <XMarkIcon class="w-4 h-4" />
           </button>

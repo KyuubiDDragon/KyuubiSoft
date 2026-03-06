@@ -13,7 +13,7 @@ defineProps({ widget: Object, data: Array })
       >
         {{ note.content }}
       </div>
-      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">Keine Notizen</p>
+      <p v-if="!data?.length" class="text-gray-500 text-sm text-center py-4">{{ $t('widgets.noNotes') }}</p>
     </div>
   </div>
 </template>

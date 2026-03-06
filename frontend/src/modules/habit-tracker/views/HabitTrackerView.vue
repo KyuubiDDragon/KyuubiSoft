@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { ref, computed, onMounted } from 'vue'
 import {
   PlusIcon,
@@ -10,6 +11,7 @@ import {
   SparklesIcon,
 } from '@heroicons/vue/24/outline'
 import { useHabitStore } from '../stores/habitStore'
+const { t } = useI18n()
 
 const habitStore = useHabitStore()
 
@@ -67,7 +69,7 @@ async function saveHabit() {
 }
 
 async function deleteHabit(habit) {
-  if (!confirm(`"${habit.name}" wirklich löschen?`)) return
+  if (!confirm(`"${habit.name}" ${t('habitTracker.reallyDelete')}`)) return
   await habitStore.deleteHabit(habit.id)
 }
 
@@ -98,7 +100,7 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Habit Tracker</h1>
+        <h1 class="text-2xl font-bold text-white">{{ $t('habitTracker.title') }}</h1>
         <p class="text-gray-400 mt-1">
           Heute: {{ completedCount }}/{{ totalActive }} Habits erledigt
         </p>
@@ -164,7 +166,7 @@ onMounted(async () => {
         <div class="flex items-center gap-3 mb-4 text-xs text-gray-500">
           <span class="flex items-center gap-1">
             <FireIcon class="w-3 h-3 text-orange-400" />
-            {{ habit.streak }} Tag{{ habit.streak !== 1 ? 'e' : '' }}
+            {{ habit.streak }} {{ habit.streak !== 1 ? $t('habitTracker.days') : $t('habitTracker.day') }}
           </span>
           <span class="capitalize">{{ habit.frequency }}</span>
         </div>
@@ -204,8 +206,8 @@ onMounted(async () => {
     <!-- Empty State -->
     <div v-else-if="!habitStore.isLoading" class="card p-12 text-center">
       <SparklesIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">Keine Habits vorhanden</h3>
-      <p class="text-gray-500 mb-4">Erstelle deinen ersten Habit und starte eine neue Gewohnheit.</p>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('habitTracker.keineHabitsVorhanden') }}</h3>
+      <p class="text-gray-500 mb-4">{{ $t('habitTracker.createFirstHint') }}</p>
       <button @click="openCreate" class="btn-primary">
         <PlusIcon class="w-4 h-4 mr-2" />
         Ersten Habit erstellen
@@ -219,30 +221,30 @@ onMounted(async () => {
         <div v-if="showForm" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showForm = false">
           <div class="bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-float w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">{{ editingHabit ? 'Habit bearbeiten' : 'Neuer Habit' }}</h3>
+              <h3 class="text-lg font-semibold text-white">{{ editingHabit ? 'Habit bearbeiten' : $t('habitTracker.neuerHabit') }}</h3>
               <button @click="showForm = false" class="text-gray-400 hover:text-white">
                 <XMarkIcon class="w-5 h-5" />
               </button>
             </div>
             <div class="p-6 space-y-4">
               <div>
-                <label class="label">Name *</label>
-                <input v-model="form.name" type="text" class="input" placeholder="z.B. Sport, Lesen, Meditation..." />
+                <label class="label">{{ $t('common.name') }} *</label>
+                <input v-model="form.name" type="text" class="input" :placeholder="$t('habitTracker.namePlaceholder')" />
               </div>
               <div>
-                <label class="label">Beschreibung</label>
-                <textarea v-model="form.description" class="input" rows="2" placeholder="Optional"></textarea>
+                <label class="label">{{ $t('common.description') }}</label>
+                <textarea v-model="form.description" class="input" rows="2" :placeholder="$t('bookmarksModule.optional')"></textarea>
               </div>
               <div>
-                <label class="label">Häufigkeit</label>
+                <label class="label">{{ $t('habitTracker.haeufigkeit') }}</label>
                 <select v-model="form.frequency" class="input">
-                  <option value="daily">Täglich</option>
-                  <option value="weekly">Wöchentlich</option>
-                  <option value="monthly">Monatlich</option>
+                  <option value="daily">{{ $t('habitTracker.taeglich') }}</option>
+                  <option value="weekly">{{ $t('habitTracker.woechentlich') }}</option>
+                  <option value="monthly">{{ $t('habitTracker.monthly') }}</option>
                 </select>
               </div>
               <div>
-                <label class="label">Farbe</label>
+                <label class="label">{{ $t('common.color') }}</label>
                 <div class="flex gap-2 flex-wrap">
                   <button
                     v-for="color in colorOptions"
@@ -255,9 +257,9 @@ onMounted(async () => {
                 </div>
               </div>
               <div class="flex gap-3 pt-2">
-                <button @click="showForm = false" class="btn-secondary flex-1">Abbrechen</button>
+                <button @click="showForm = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
                 <button @click="saveHabit" class="btn-primary flex-1" :disabled="!form.name.trim()">
-                  {{ editingHabit ? 'Speichern' : 'Erstellen' }}
+                  {{ editingHabit ? $t('common.save') : $t('common.create') }}
                 </button>
               </div>
             </div>

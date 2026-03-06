@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -25,6 +26,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -96,11 +98,11 @@ const compressionOptions = [
 ]
 
 const cronPresets = [
-  { value: '0 3 * * *', label: 'Täglich um 3:00 Uhr' },
-  { value: '0 3 * * 0', label: 'Wöchentlich (Sonntag 3:00)' },
+  { value: '0 3 * * *', label: 't('backups.dailyAt3am') },
+  { value: '0 3 * * 0', label: 't('backups.weeklySunday3am') },
   { value: '0 3 1 * *', label: 'Monatlich (1. des Monats)' },
   { value: '0 */6 * * *', label: 'Alle 6 Stunden' },
-  { value: '0 * * * *', label: 'Stündlich' },
+  { value: '0 * * * *', label: 't('cron.hourly') },
 ]
 
 // Computed
@@ -282,7 +284,7 @@ async function createBackup() {
 }
 
 async function deleteBackup(backup) {
-  if (!await confirm({ message: 'Backup wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: 't('backups.confirmDeleteBackup'), type: 'danger', confirmText: 'Löschen' })) return
   try {
     await api.delete(`/api/v1/backups/${backup.id}`)
     uiStore.showSuccess('Backup gelöscht')
@@ -454,7 +456,7 @@ onMounted(fetchData)
           :class="activeTab === 'schedules' ? 'border-primary-500 text-white' : 'border-transparent text-gray-400 hover:text-white'"
         >
           <ClockIcon class="w-4 h-4 inline mr-2" />
-          Zeitpläne
+          {{ $t('backups.schedules') }}
         </button>
         <button
           @click="activeTab = 'targets'"
@@ -477,7 +479,7 @@ onMounted(fetchData)
     <div v-else-if="activeTab === 'backups'" class="space-y-4">
       <div v-if="backups.length === 0" class="card p-12 text-center">
         <CloudArrowUpIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-white mb-2">Keine Backups vorhanden</h3>
+        <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.noBackups') }}</h3>
         <p class="text-gray-500 mb-4">Erstelle dein erstes Backup, um deine Daten zu sichern.</p>
         <button @click="openBackupModal" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
@@ -529,7 +531,7 @@ onMounted(fetchData)
                     v-if="backup.status === 'completed'"
                     @click="downloadBackup(backup)"
                     class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
-                    title="Download"
+                    :title="$t('common.download')"
                   >
                     <DocumentArrowDownIcon class="w-4 h-4" />
                   </button>
@@ -537,14 +539,14 @@ onMounted(fetchData)
                     v-if="backup.status === 'completed'"
                     @click="openRestoreConfirm(backup)"
                     class="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
-                    title="Wiederherstellen"
+                    :title="$t('common.restore')"
                   >
                     <ArrowPathIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteBackup(backup)"
                     class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                    title="Löschen"
+                    {{ $t('common.delete') }}
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -567,7 +569,7 @@ onMounted(fetchData)
 
       <div v-if="schedules.length === 0" class="card p-12 text-center">
         <ClockIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-white mb-2">Keine Zeitpläne</h3>
+        <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.noSchedules') }}</h3>
         <p class="text-gray-500 mb-4">Erstelle automatische Backup-Zeitpläne.</p>
       </div>
 
@@ -633,13 +635,13 @@ onMounted(fetchData)
       <div class="flex justify-end">
         <button @click="openTargetModal()" class="btn-secondary">
           <PlusIcon class="w-4 h-4 mr-2" />
-          Speicherziel hinzufügen
+          {{ $t('backups.addStorageTarget') }}
         </button>
       </div>
 
       <div v-if="targets.length === 0" class="card p-12 text-center">
         <ServerStackIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 class="text-lg font-semibold text-white mb-2">Keine Speicherziele</h3>
+        <h3 class="text-lg font-semibold text-white mb-2">{{ $t('backups.noStorageTargets') }}</h3>
         <p class="text-gray-500 mb-4">Füge ein Speicherziel hinzu (Lokal, S3, SFTP, WebDAV).</p>
       </div>
 
@@ -683,21 +685,21 @@ onMounted(fetchData)
               <button
                 @click="testTarget(target)"
                 class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
-                title="Verbindung testen"
+                :title="$t('connections.testConnection')"
               >
                 <PlayIcon class="w-4 h-4" />
               </button>
               <button
                 @click="openTargetModal(target)"
                 class="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg"
-                title="Bearbeiten"
+                :title="$t('common.edit')"
               >
                 <Cog6ToothIcon class="w-4 h-4" />
               </button>
               <button
                 @click="deleteTarget(target)"
                 class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                title="Löschen"
+                {{ $t('common.delete') }}
               >
                 <TrashIcon class="w-4 h-4" />
               </button>
@@ -819,7 +821,7 @@ onMounted(fetchData)
                   v-model="targetForm.name"
                   type="text"
                   class="input"
-                  placeholder="z.B. Lokaler Speicher"
+                  :placeholder="$t('backups.localStoragePlaceholder')"
                   required
                 />
               </div>
@@ -850,7 +852,7 @@ onMounted(fetchData)
                   v-model="targetForm.config.path"
                   type="text"
                   class="input"
-                  placeholder="/backups"
+                  :placeholder="'/backups'"
                 />
               </div>
 
@@ -862,7 +864,7 @@ onMounted(fetchData)
                     v-model="targetForm.config.endpoint"
                     type="text"
                     class="input"
-                    placeholder="s3.amazonaws.com"
+                    :placeholder="'s3.amazonaws.com'"
                   />
                 </div>
                 <div>
@@ -871,7 +873,7 @@ onMounted(fetchData)
                     v-model="targetForm.config.bucket"
                     type="text"
                     class="input"
-                    placeholder="my-backups"
+                    :placeholder="'my-backups'"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -939,7 +941,7 @@ onMounted(fetchData)
                     v-model="targetForm.config.path"
                     type="text"
                     class="input"
-                    placeholder="/backups"
+                    :placeholder="'/backups'"
                   />
                 </div>
               </template>
@@ -1028,7 +1030,7 @@ onMounted(fetchData)
                   v-model="scheduleForm.name"
                   type="text"
                   class="input"
-                  placeholder="z.B. Tägliches Backup"
+                  :placeholder="$t('backups.dailyBackupPlaceholder')"
                   required
                 />
               </div>

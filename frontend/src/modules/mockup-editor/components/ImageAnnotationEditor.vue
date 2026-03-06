@@ -272,7 +272,7 @@ onUnmounted(() => {
                 v-if="selectedAnnotationId"
                 @click="deleteSelectedAnnotation"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors"
-                title="Löschen (Del)"
+                :title="$t('mockupEditor.loeschenDel')"
               >
                 <TrashIcon class="w-5 h-5" />
               </button>
@@ -281,7 +281,7 @@ onUnmounted(() => {
                 v-if="annotations.length > 0"
                 @click="clearAllAnnotations"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                title="Alle löschen"
+                :title="$t('mockupEditor.alleLoeschen')"
               >
                 <XMarkIcon class="w-5 h-5" />
               </button>

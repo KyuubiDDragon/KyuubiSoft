@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
 import DatabaseCell from './DatabaseCell.vue'
@@ -22,6 +23,7 @@ const emit = defineEmits(['updated'])
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
 
+const { t } = useI18n()
 const isLoading = ref(true)
 const database = ref(null)
 const expandedRows = ref(new Set())
@@ -54,7 +56,7 @@ async function loadDatabase() {
     database.value = await databaseStore.fetchDatabase(props.databaseId)
   } catch (error) {
     console.error('Error loading database:', error)
-    uiStore.showError('Fehler beim Laden der Datenbank')
+    uiStore.showError(t('notesModule.database.loadError'))
   } finally {
     isLoading.value = false
   }
@@ -72,8 +74,8 @@ function toggleRow(rowId) {
 
 // Get row title
 function getRowTitle(row) {
-  if (!titleProperty.value) return 'Ohne Titel'
-  return row.cells?.[titleProperty.value.id]?.value || 'Ohne Titel'
+  if (!titleProperty.value) return 't('notesModule.database.untitled')'
+  return row.cells?.[titleProperty.value.id]?.value || 't('notesModule.database.untitled')'
 }
 
 // Add new row
@@ -83,7 +85,7 @@ async function addRow() {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('notesModule.database.createError'))
   }
 }
 
@@ -94,7 +96,7 @@ async function handleCellUpdate(rowId, propertyId, value) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('notesModule.database.updateError'))
   }
 }
 
@@ -107,7 +109,7 @@ async function deleteRow(rowId, event) {
     await loadDatabase()
     emit('updated')
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.database.deleteError'))
   }
 }
 
@@ -231,7 +233,7 @@ function formatPreview(property, row) {
                     @click.stop
                     class="text-primary-400 hover:underline"
                   >
-                    Link
+                    {{ $t('notesModule.database.link') }}
                   </a>
                 </template>
                 <template v-else>
@@ -295,7 +297,7 @@ function formatPreview(property, row) {
 
       <!-- Empty state -->
       <div v-if="rows.length === 0" class="text-center py-8 text-gray-500">
-        <p>Keine Einträge vorhanden</p>
+        <p>{{ $t('notesModule.database.noEntries') }}</p>
       </div>
 
       <!-- Add row button -->
@@ -304,7 +306,7 @@ function formatPreview(property, row) {
         class="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
       >
         <PlusIcon class="w-4 h-4" />
-        Neuer Eintrag
+        {{ $t('notesModule.database.newEntry') }}
       </button>
     </div>
   </div>

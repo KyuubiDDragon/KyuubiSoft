@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const input = ref('')
 const inputType = ref('text') // 'text' or 'file'
 const fileInput = ref(null)
@@ -217,7 +218,7 @@ async function generateHashes(data) {
     ])
 
     hashes.value = {
-      md5: typeof data === 'string' ? md5(data) : '(nur für Text verfügbar)',
+      md5: typeof data === 'string' ? md5(data) : t('toolbox.nurFuerTextVerfuegbar'),
       sha1,
       sha256,
       sha384,
@@ -299,7 +300,7 @@ function clearAll() {
         @click="clearAll"
         class="ml-auto text-xs text-gray-400 hover:text-white"
       >
-        Löschen
+        {{ $t('common.delete') }}
       </button>
     </div>
 
@@ -319,7 +320,7 @@ function clearAll() {
         <span class="text-2xl">📄</span>
         <div>
           <div class="text-white font-medium">{{ fileName }}</div>
-          <div class="text-sm text-gray-400">Datei geladen</div>
+          <div class="text-sm text-gray-400">{{ $t('toolbox.dateiGeladen') }}</div>
         </div>
       </div>
     </div>
@@ -356,8 +357,8 @@ function clearAll() {
     <div class="text-xs text-gray-500 space-y-1">
       <p class="font-medium">Hinweise:</p>
       <ul class="list-disc list-inside space-y-0.5">
-        <li>MD5 und SHA1 sind veraltet und sollten nicht für Sicherheitszwecke verwendet werden</li>
-        <li>SHA256 ist der empfohlene Standard für die meisten Anwendungen</li>
+        <li>{{ $t('toolbox.md5UndSha1SindVeraltetUndSollten') }}</li>
+        <li>{{ $t('toolbox.sha256IstDerEmpfohleneStandardFuerDie') }}</li>
         <li>Hashes werden lokal im Browser berechnet</li>
       </ul>
     </div>

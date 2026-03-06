@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   ClockIcon,
   PlusIcon,
@@ -16,6 +17,7 @@ import {
 import { useCronStore } from '@/modules/cron/stores/cronStore'
 import CronJobModal from '@/modules/cron/components/CronJobModal.vue'
 
+const { t } = useI18n()
 const cronStore = useCronStore()
 
 // Local state
@@ -30,7 +32,7 @@ const deleteConfirmId = ref(null)
 const groupedJobs = computed(() => {
   const groups = {}
   for (const job of cronStore.jobs) {
-    const key = job.connection_name || 'Lokal'
+    const key = job.connection_name || t('cron.local')
     if (!groups[key]) {
       groups[key] = []
     }
@@ -126,12 +128,12 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Cron Jobs</h1>
-        <p class="text-gray-400 mt-1">Geplante Aufgaben verwalten und überwachen</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('cron.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('cron.subtitle') }}</p>
       </div>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Job erstellen
+        {{ $t('cron.createJob') }}
       </button>
     </div>
 
@@ -146,11 +148,11 @@ onMounted(async () => {
       class="card-glass p-12 text-center"
     >
       <ClockIcon class="w-12 h-12 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-300 mb-2">Keine Cron-Jobs vorhanden.</h3>
-      <p class="text-gray-500 mb-6">Erstellen Sie Ihren ersten geplanten Job.</p>
+      <h3 class="text-lg font-medium text-gray-300 mb-2">{{ $t('cron.noJobs') }}</h3>
+      <p class="text-gray-500 mb-6">{{ $t('cron.createFirstJob') }}</p>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Job erstellen
+        {{ $t('cron.createJob') }}
       </button>
     </div>
 
@@ -175,7 +177,7 @@ onMounted(async () => {
                   class="text-xs px-2 py-0.5 rounded-full"
                   :class="job.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-gray-500/15 text-gray-500'"
                 >
-                  {{ job.is_active ? 'Aktiv' : 'Inaktiv' }}
+                  {{ job.is_active ? $t('common.active') : $t('common.inactive') }}
                 </span>
               </div>
 
@@ -194,7 +196,7 @@ onMounted(async () => {
               <!-- Last run info -->
               <div v-if="job.last_run_at" class="flex items-center gap-2 mt-2 text-xs text-gray-500">
                 <ClockIcon class="w-3.5 h-3.5" />
-                <span>Letzter Lauf: {{ formatTimestamp(job.last_run_at) }}</span>
+                <span>{{ $t('cron.lastRun') }}: {{ formatTimestamp(job.last_run_at) }}</span>
               </div>
             </div>
 
@@ -217,23 +219,23 @@ onMounted(async () => {
           <div class="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
             <button @click="openEditModal(job)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <PencilSquareIcon class="w-4 h-4 mr-1" />
-              Bearbeiten
+              {{ $t('common.edit') }}
             </button>
             <button @click="toggleHistory(job.id)" class="btn-ghost text-xs text-gray-400 hover:text-white">
               <EyeIcon class="w-4 h-4 mr-1" />
-              Verlauf
+              {{ $t('cron.history') }}
               <component :is="expandedHistory === job.id ? ChevronUpIcon : ChevronDownIcon" class="w-3 h-3 ml-1" />
             </button>
             <div class="flex-1"></div>
 
             <!-- Delete with confirmation -->
             <template v-if="deleteConfirmId === job.id">
-              <span class="text-xs text-red-400 mr-2">Wirklich löschen?</span>
+              <span class="text-xs text-red-400 mr-2">{{ $t('cron.confirmDelete') }}</span>
               <button @click="handleDelete(job.id)" class="btn-ghost text-xs text-red-400 hover:text-red-300">
-                Ja
+                {{ $t('common.yes') }}
               </button>
               <button @click="cancelDelete" class="btn-ghost text-xs text-gray-400 hover:text-white">
-                Nein
+                {{ $t('common.no') }}
               </button>
             </template>
             <button
@@ -242,23 +244,23 @@ onMounted(async () => {
               class="btn-ghost text-xs text-red-400/60 hover:text-red-400"
             >
               <TrashIcon class="w-4 h-4 mr-1" />
-              Löschen
+              {{ $t('common.delete') }}
             </button>
           </div>
 
           <!-- History panel (expandable) -->
           <div v-if="expandedHistory === job.id" class="mt-3 pt-3 border-t border-white/[0.06]">
             <div v-if="cronStore.history.length === 0" class="text-center text-gray-500 text-sm py-4">
-              Keine Ausführungshistorie vorhanden.
+              {{ $t('cron.noHistory') }}
             </div>
             <div v-else class="overflow-x-auto">
               <table class="table-glass w-full">
                 <thead>
                   <tr>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Gestartet</th>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Dauer</th>
-                    <th class="text-left text-xs text-gray-500 font-medium pb-2">Exit-Code</th>
-                    <th class="text-right text-xs text-gray-500 font-medium pb-2">Aktionen</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('cron.started') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('cron.duration') }}</th>
+                    <th class="text-left text-xs text-gray-500 font-medium pb-2">{{ $t('cron.exitCode') }}</th>
+                    <th class="text-right text-xs text-gray-500 font-medium pb-2">{{ $t('common.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,7 +293,7 @@ onMounted(async () => {
                         @click="showOutput(entry)"
                         class="btn-ghost text-xs text-primary-400 hover:text-primary-300"
                       >
-                        Ausgabe
+                        {{ $t('cron.output') }}
                       </button>
                       <span v-else class="text-xs text-gray-600">-</span>
                     </td>
@@ -322,7 +324,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-3xl max-h-[80vh] flex flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Ausführungsausgabe</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('cron.executionOutput') }}</h3>
             <button @click="closeOutputModal" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -332,19 +334,19 @@ onMounted(async () => {
           <div class="p-5 overflow-y-auto space-y-4">
             <!-- Stdout -->
             <div v-if="selectedHistoryEntry.stdout">
-              <h4 class="text-xs text-gray-500 uppercase tracking-wider mb-2">Standardausgabe (stdout)</h4>
+              <h4 class="text-xs text-gray-500 uppercase tracking-wider mb-2">{{ $t('cron.stdout') }}</h4>
               <pre class="font-mono text-xs text-gray-300 bg-black/30 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">{{ selectedHistoryEntry.stdout }}</pre>
             </div>
 
             <!-- Stderr -->
             <div v-if="selectedHistoryEntry.stderr">
-              <h4 class="text-xs text-gray-500 uppercase tracking-wider mb-2">Fehlerausgabe (stderr)</h4>
+              <h4 class="text-xs text-gray-500 uppercase tracking-wider mb-2">{{ $t('cron.stderr') }}</h4>
               <pre class="font-mono text-xs text-red-400 bg-black/30 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">{{ selectedHistoryEntry.stderr }}</pre>
             </div>
 
             <!-- No output -->
             <div v-if="!selectedHistoryEntry.stdout && !selectedHistoryEntry.stderr" class="text-center text-gray-500 py-8">
-              Keine Ausgabe vorhanden.
+              {{ $t('cron.noOutput') }}
             </div>
           </div>
         </div>

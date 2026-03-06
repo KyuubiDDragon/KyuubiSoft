@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDatabaseStore } from '../../stores/databaseStore'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -26,6 +27,7 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -38,7 +40,7 @@ const newOptionColor = ref('gray')
 
 // Property type info
 const typeInfo = computed(() => {
-  return databaseStore.propertyTypes.find(t => t.value === props.property.type) || { icon: '?', label: 'Unknown' }
+  return databaseStore.propertyTypes.find(pt => pt.value === props.property.type) || { icon: '?', label: t('notesModule.database.unknown') }
 })
 
 // Select options
@@ -63,24 +65,24 @@ async function saveRename() {
     })
     isRenaming.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Umbenennen')
+    uiStore.showError(t('notesModule.database.renameError'))
   }
 }
 
 // Delete property
 async function deleteProperty() {
   if (props.property.is_primary) {
-    uiStore.showError('Primäre Spalte kann nicht gelöscht werden')
+    uiStore.showError(t('notesModule.database.cannotDeletePrimary'))
     return
   }
 
-  if (!await confirm({ message: `Spalte "${props.property.name}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('notes.database.confirmDeleteColumn', { name: props.property.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await databaseStore.deleteProperty(props.databaseId, props.property.id)
     showMenu.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.database.deleteError'))
   }
 }
 
@@ -92,7 +94,7 @@ async function hideProperty() {
     })
     showMenu.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Ausblenden')
+    uiStore.showError(t('notesModule.database.hideError'))
   }
 }
 
@@ -114,7 +116,7 @@ async function addOption() {
     newOptionName.value = ''
     newOptionColor.value = 'gray'
   } catch (error) {
-    uiStore.showError('Fehler beim Hinzufügen')
+    uiStore.showError(t('notesModule.database.addOptionError'))
   }
 }
 
@@ -127,7 +129,7 @@ async function deleteOption(optionId) {
       config: { options: currentOptions }
     })
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('notesModule.database.deleteError'))
   }
 }
 </script>
@@ -163,7 +165,7 @@ async function deleteOption(optionId) {
       class="absolute top-full left-0 mt-1 w-56 bg-white/[0.04] border border-white/[0.06] rounded-xl shadow-glass z-20 overflow-hidden"
     >
       <div class="p-2 border-b border-white/[0.06]">
-        <div class="text-xs text-gray-500 mb-1">Typ</div>
+        <div class="text-xs text-gray-500 mb-1">{{ $t('notesModule.database.type') }}</div>
         <div class="flex items-center gap-2 text-sm text-gray-300">
           <span>{{ typeInfo.icon }}</span>
           <span>{{ typeInfo.label }}</span>
@@ -176,7 +178,7 @@ async function deleteOption(optionId) {
           class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <PencilIcon class="w-4 h-4" />
-          Umbenennen
+          {{ $t('notesModule.database.rename') }}
         </button>
 
         <!-- Options editor for select/multi_select -->
@@ -186,7 +188,7 @@ async function deleteOption(optionId) {
           class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <ArrowsUpDownIcon class="w-4 h-4" />
-          Optionen bearbeiten
+          {{ $t('notesModule.database.editOptions') }}
         </button>
 
         <button
@@ -194,7 +196,7 @@ async function deleteOption(optionId) {
           class="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-white/[0.04] rounded"
         >
           <EyeSlashIcon class="w-4 h-4" />
-          Ausblenden
+          {{ $t('notesModule.database.hide') }}
         </button>
 
         <hr class="my-1 border-white/[0.06]" />
@@ -208,13 +210,13 @@ async function deleteOption(optionId) {
           ]"
         >
           <TrashIcon class="w-4 h-4" />
-          Löschen
+          {{ $t('common.delete') }}
         </button>
       </div>
 
       <!-- Options editor panel -->
       <div v-if="showOptionsEditor && ['select', 'multi_select'].includes(property.type)" class="border-t border-white/[0.06] p-2">
-        <div class="text-xs text-gray-500 mb-2">Optionen</div>
+        <div class="text-xs text-gray-500 mb-2">{{ $t('notesModule.database.options') }}</div>
 
         <!-- Existing options -->
         <div class="space-y-1 mb-2 max-h-32 overflow-y-auto">
@@ -251,7 +253,7 @@ async function deleteOption(optionId) {
           <input
             v-model="newOptionName"
             type="text"
-            placeholder="Option..."
+            :placeholder="$t('notesModule.database.optionPlaceholder')"
             class="input flex-1"
             @keydown.enter="addOption"
           />

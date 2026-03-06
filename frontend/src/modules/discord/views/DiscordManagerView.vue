@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDiscordStore } from '../stores/discordStore'
 import { useUiStore } from '@/stores/ui'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -31,6 +32,7 @@ import { StarIcon as StarSolidIcon } from '@heroicons/vue/24/solid'
 import AddBotModal from '../components/AddBotModal.vue'
 
 const discordStore = useDiscordStore()
+const { t } = useI18n()
 const uiStore = useUiStore()
 const { confirm } = useConfirmDialog()
 
@@ -217,7 +219,7 @@ async function selectBackupChannel(channel) {
 
 async function deleteBackupConfirm(backup) {
   const confirmed = await confirm({
-    title: 'Backup löschen',
+    title: 't('discordModule.backupLoeschen'),
     message: `Möchtest du das Backup "${backup.target_name}" wirklich löschen? Alle gesicherten Nachrichten und Medien werden unwiderruflich gelöscht.`,
     confirmText: 'Löschen',
     confirmClass: 'btn-danger',
@@ -735,7 +737,7 @@ async function createBackup() {
 
 async function deleteBackup(backup) {
   if (!await confirm({
-    title: 'Backup löschen?',
+    title: 't('discordModule.backupLoeschen1'),
     message: `Backup von "${backup.target_name}" wirklich löschen?`,
     type: 'danger'
   })) return
@@ -820,8 +822,8 @@ function openDeleteModal(channel) {
 
 async function createDeleteJob() {
   if (!await confirm({
-    title: 'Nachrichten löschen?',
-    message: 'Diese Aktion kann nicht rückgängig gemacht werden! Deine Nachrichten werden permanent gelöscht.',
+    title: 't('discordModule.nachrichtenLoeschen1'),
+    message: 't('discordModule.dieseAktionKannNichtRueckgaengigGemachtWerden'),
     type: 'danger'
   })) return
 
@@ -1041,7 +1043,7 @@ const filteredBots = computed(() => {
       <div class="flex gap-3">
         <button @click="showAddAccountModal = true" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Account hinzufügen
+          {{ $t('discordModule.accountHinzufuegen') }}
         </button>
       </div>
     </div>
@@ -1087,7 +1089,7 @@ const filteredBots = computed(() => {
       <p class="text-gray-400 mb-6">Füge deinen Discord User Token hinzu, um loszulegen.</p>
       <button @click="showAddAccountModal = true" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Account hinzufügen
+        {{ $t('discordModule.accountHinzufuegen') }}
       </button>
     </div>
 
@@ -1341,7 +1343,7 @@ const filteredBots = computed(() => {
                   <button
                     @click.stop="deleteBackupConfirm(backup)"
                     class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04] transition-colors"
-                    title="Backup löschen"
+                    {{ $t('discordModule.titlebackupLoeschen') }}
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
@@ -1374,7 +1376,7 @@ const filteredBots = computed(() => {
               <MagnifyingGlassIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
               <p>Keine Backups mit "{{ backupSearchQuery }}" gefunden</p>
               <button @click="backupSearchQuery = ''; backupStatusFilter = ''" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
-                Filter zurücksetzen
+                {{ $t('tickets.filterZuruecksetzen') }}
               </button>
             </div>
             <div v-else-if="allBackups.length === 0" class="p-12 text-center text-gray-500">
@@ -1481,7 +1483,7 @@ const filteredBots = computed(() => {
               <p class="text-sm text-gray-400 mb-4">Füge einen Discord Bot hinzu um Server zu sichern</p>
               <button @click="showAddBotModal = true" class="btn-primary">
                 <PlusIcon class="w-5 h-5 mr-2" />
-                Bot hinzufügen
+                {{ $t('discordModule.botHinzufuegen') }}
               </button>
             </div>
           </div>
@@ -1577,7 +1579,7 @@ const filteredBots = computed(() => {
               <button
                 @click="deleteBackupConfirm(selectedViewBackup)"
                 class="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/[0.04]/50"
-                title="Backup löschen"
+                {{ $t('discordModule.titlebackupLoeschen') }}
               >
                 <TrashIcon class="w-5 h-5" />
               </button>
@@ -1892,7 +1894,7 @@ const filteredBots = computed(() => {
             <FunnelIcon class="w-12 h-12 mx-auto text-gray-600 mb-3" />
             <p class="text-gray-400">Keine Links mit aktuellem Filter gefunden.</p>
             <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-2">
-              Filter zurücksetzen
+              {{ $t('tickets.filterZuruecksetzen') }}
             </button>
           </div>
 
@@ -1953,7 +1955,7 @@ const filteredBots = computed(() => {
               </button>
               <button @click="openDeleteModal(selectedDM)" class="btn-danger">
                 <TrashIcon class="w-5 h-5 mr-2" />
-                Meine Nachrichten löschen
+                {{ $t('discordModule.meineNachrichtenLoeschen') }}
               </button>
             </div>
           </div>
@@ -2086,7 +2088,7 @@ const filteredBots = computed(() => {
               <MagnifyingGlassIcon class="w-8 h-8 mx-auto mb-2" />
               <p class="text-sm">Keine Medien gefunden</p>
               <button @click="mediaSearchQuery = ''; mediaTypeFilter = 'all'" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
-                Filter zurücksetzen
+                {{ $t('tickets.filterZuruecksetzen') }}
               </button>
             </div>
 
@@ -2184,7 +2186,7 @@ const filteredBots = computed(() => {
               <FunnelIcon class="w-8 h-8 mx-auto mb-2" />
               <p class="text-sm">Keine Links mit aktuellem Filter</p>
               <button @click="linkSearchQuery = ''; hiddenDomains = []" class="text-primary-400 hover:text-primary-300 text-sm mt-1">
-                Filter zurücksetzen
+                {{ $t('tickets.filterZuruecksetzen') }}
               </button>
             </div>
           </div>

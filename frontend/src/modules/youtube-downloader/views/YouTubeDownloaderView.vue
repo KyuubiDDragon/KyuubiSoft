@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -12,6 +13,7 @@ import {
 
 const uiStore = useUiStore()
 
+const { t } = useI18n()
 // State
 const url = ref('')
 const loading = ref(false)
@@ -44,7 +46,7 @@ const videoFormats = computed(() => {
 // Methods
 async function fetchInfo() {
   if (!url.value.trim()) {
-    uiStore.showError('Bitte URL eingeben')
+    uiStore.showError(t('youtubeDownloader.youtubedownloaderbitteurleingeben'))
     return
   }
 
@@ -55,7 +57,7 @@ async function fetchInfo() {
     const res = await api.post('/api/v1/youtube/info', { url: url.value })
     videoInfo.value = res.data.data
   } catch (error) {
-    uiStore.showError(error.response?.data?.error || 'Video nicht gefunden')
+    uiStore.showError(error.response?.data?.error || t('youtubeDownloader.videoNichtGefunden'))
   } finally {
     loading.value = false
   }
@@ -63,7 +65,7 @@ async function fetchInfo() {
 
 async function downloadVideo() {
   if (!url.value.trim()) {
-    uiStore.showError('Bitte URL eingeben')
+    uiStore.showError(t('youtubeDownloader.youtubedownloaderbitteurleingeben'))
     return
   }
 
@@ -85,16 +87,16 @@ async function downloadVideo() {
     link.click()
     document.body.removeChild(link)
 
-    uiStore.showSuccess('Download gestartet!')
+    uiStore.showSuccess(t('youtubeDownloader.youtubedownloaderdownloadgestartet'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.error || 'Download fehlgeschlagen')
+    uiStore.showError(error.response?.data?.error || t('youtubeDownloader.youtubedownloaderdownloadfehlgeschlagen'))
   } finally {
     downloading.value = false
   }
 }
 
 function formatBytes(bytes) {
-  if (!bytes) return 'Unbekannt'
+  if (!bytes) return t('documentsModule.unbekannt')
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
@@ -113,7 +115,7 @@ function clearForm() {
     <!-- Header -->
     <div>
       <h1 class="text-2xl font-bold text-white">YouTube Downloader</h1>
-      <p class="text-gray-400 mt-1">Videos und Audio von YouTube herunterladen</p>
+      <p class="text-gray-400 mt-1">{{ $t('youtubeDownloader.youtubedownloadervideosundaudiovonyoutubeherunterladen') }}</p>
     </div>
 
     <!-- Disclaimer -->
@@ -121,12 +123,12 @@ function clearForm() {
       <div class="flex gap-3">
         <ExclamationTriangleIcon class="w-6 h-6 text-yellow-500 flex-shrink-0" />
         <div class="text-sm text-yellow-200">
-          <p class="font-semibold mb-1">Wichtiger Hinweis</p>
+          <p class="font-semibold mb-1">{{ $t('youtubeDownloader.youtubedownloaderwichtigerhinweis') }}</p>
           <p class="text-yellow-300/80">
-            Dieses Tool ist nur für den Download von urheberrechtsfreien Inhalten,
+            {{ $t('youtubeDownloader.diesesToolIstNurFuerDenDownload') }}
             Creative Commons Videos oder eigenen Inhalten gedacht.
-            Das Herunterladen von urheberrechtlich geschütztem Material ohne Erlaubnis
-            kann gegen geltendes Recht verstoßen.
+            {{ $t('youtubeDownloader.dasHerunterladenVonUrheberrechtlichGeschuetztemMaterialOhne') }}
+            {{ $t('youtubeDownloader.kannGegenGeltendesRechtVerstossen') }}
           </p>
         </div>
       </div>
@@ -155,7 +157,7 @@ function clearForm() {
           @click="clearForm"
           class="btn-ghost"
         >
-          Zurücksetzen
+          {{ $t('common.reset') }}
         </button>
       </div>
     </div>
@@ -197,15 +199,15 @@ function clearForm() {
                   class="w-4 h-4 rounded border-gray-600 text-primary-500 focus:ring-primary-500"
                 />
                 <MusicalNoteIcon class="w-5 h-5 text-gray-400" />
-                <span class="text-gray-300">Nur Audio (MP3)</span>
+                <span class="text-gray-300">{{ $t('youtubeDownloader.youtubedownloadernuraudiomp3') }}</span>
               </label>
             </div>
 
             <!-- Format Selection (only for video) -->
             <div v-if="!audioOnly && videoFormats.length > 0">
-              <label class="text-sm text-gray-400 mb-2 block">Qualität</label>
+              <label class="text-sm text-gray-400 mb-2 block">{{ $t('youtubeDownloader.youtubedownloaderqualitaet') }}</label>
               <select v-model="selectedFormat" class="input w-64">
-                <option value="best">Beste Qualität</option>
+                <option value="best">{{ $t('youtubeDownloader.youtubedownloaderbestequalitaet') }}</option>
                 <option v-for="fmt in videoFormats" :key="fmt.format_id" :value="fmt.format_id">
                   {{ fmt.resolution }} ({{ fmt.ext }}) - {{ formatBytes(fmt.filesize) }}
                 </option>
@@ -220,7 +222,7 @@ function clearForm() {
             >
               <ArrowDownTrayIcon v-if="!downloading" class="w-5 h-5 mr-2" />
               <span v-else class="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              {{ downloading ? 'Wird heruntergeladen...' : (audioOnly ? 'Audio herunterladen' : 'Video herunterladen') }}
+              {{ downloading ? $t('storage.wirdHeruntergeladen') : (audioOnly ? $t('youtubeDownloader.audioHerunterladen') : $t('youtubeDownloader.videoHerunterladen')) }}
             </button>
           </div>
         </div>
@@ -232,7 +234,7 @@ function clearForm() {
       <FilmIcon class="w-16 h-16 text-gray-600 mb-4" />
       <h3 class="text-lg font-medium text-gray-400 mb-2">YouTube URL eingeben</h3>
       <p class="text-gray-500 max-w-md">
-        Füge eine YouTube-URL ein und klicke auf Suchen,
+        {{ $t('youtubeDownloader.fuegeEineYoutubeurlEinUndKlickeAuf') }}
         um Video-Informationen zu laden und den Download zu starten.
       </p>
     </div>

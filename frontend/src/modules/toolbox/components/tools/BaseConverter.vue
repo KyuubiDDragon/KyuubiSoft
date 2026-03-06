@@ -1,12 +1,16 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, watch } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const inputValue = ref('255')
 const inputBase = ref(10)
 const errorMessage = ref('')
 
 const bases = [
-  { value: 2, name: 'Binär', prefix: '0b' },
+  { value: 2, name: t('toolbox.binaer'), prefix: '0b' },
   { value: 8, name: 'Oktal', prefix: '0o' },
   { value: 10, name: 'Dezimal', prefix: '' },
   { value: 16, name: 'Hexadezimal', prefix: '0x' },
@@ -60,7 +64,7 @@ const conversions = computed(() => {
   const dec = decimalValue.value
 
   if (isNaN(dec)) {
-    return bases.map(b => ({ ...b, result: 'Ungültige Eingabe', error: true }))
+    return bases.map(b => ({ ...b, result: t('toolbox.ungueltigeEingabe'), error: true }))
   }
 
   return bases.map(base => ({
@@ -86,7 +90,7 @@ const additionalFormats = computed(() => {
   if (dec >= 0) {
     const bin = dec.toString(2).padStart(Math.ceil(dec.toString(2).length / 8) * 8, '0')
     const grouped = bin.match(/.{1,4}/g)?.join(' ') || bin
-    results.push({ name: 'Binär (gruppiert)', value: grouped })
+    results.push({ name: t('toolbox.binaerGruppiert'), value: grouped })
   }
 
   // Hex with groups
@@ -125,7 +129,7 @@ const presets = [
     <!-- Input -->
     <div class="grid grid-cols-3 gap-4">
       <div class="col-span-2">
-        <label class="text-sm text-gray-400 mb-1 block">Eingabe</label>
+        <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.eingabe') }}</label>
         <input
           v-model="inputValue"
           type="text"
@@ -178,7 +182,7 @@ const presets = [
 
     <!-- Additional Formats -->
     <div v-if="additionalFormats.length > 0" class="space-y-2">
-      <h4 class="text-sm text-gray-400">Weitere Formate</h4>
+      <h4 class="text-sm text-gray-400">{{ $t('toolbox.weitereFormate') }}</h4>
       <div
         v-for="format in additionalFormats"
         :key="format.name"

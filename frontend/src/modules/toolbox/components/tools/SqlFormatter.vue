@@ -130,14 +130,14 @@ function setExample(type) {
     <div class="flex flex-wrap gap-4">
       <label class="flex items-center gap-2 text-sm text-gray-300">
         <input type="checkbox" v-model="uppercase" class="rounded bg-white/[0.08]" />
-        Großbuchstaben
+        {{ $t('toolbox.grossbuchstaben') }}
       </label>
       <label class="flex items-center gap-2 text-sm text-gray-300">
         <input type="checkbox" v-model="lineBreakBeforeAnd" class="rounded bg-white/[0.08]" />
         AND/OR in neuer Zeile
       </label>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-400">Einrückung:</span>
+        <span class="text-sm text-gray-400">{{ $t('toolbox.einrueckung') }}</span>
         <select v-model.number="indentSize" class="input py-1 px-2 w-16">
           <option :value="2">2</option>
           <option :value="4">4</option>
@@ -157,7 +157,7 @@ function setExample(type) {
     <!-- Input -->
     <div>
       <div class="flex items-center justify-between mb-1">
-        <label class="text-xs text-gray-400">SQL Eingabe</label>
+        <label class="text-xs text-gray-400">{{ $t('toolbox.sqlEingabe') }}</label>
         <button @click="minify" class="text-xs text-gray-500 hover:text-white">Minifizieren</button>
       </div>
       <textarea
@@ -171,7 +171,7 @@ function setExample(type) {
     <div v-if="output">
       <div class="flex items-center justify-between mb-1">
         <label class="text-xs text-gray-400">Formatiert</label>
-        <button @click="copyOutput" class="text-xs text-primary-400 hover:text-primary-300">Kopieren</button>
+        <button @click="copyOutput" class="text-xs text-primary-400 hover:text-primary-300">{{ $t('common.copy') }}</button>
       </div>
       <pre class="p-3 bg-white/[0.02] rounded-lg text-sm font-mono max-h-64 overflow-auto"><code class="text-blue-400">{{ output }}</code></pre>
     </div>

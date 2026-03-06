@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
@@ -21,6 +22,7 @@ const props = defineProps({
 const emit = defineEmits(['items-changed'])
 
 const toast = useToast()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 const items = ref([...(props.invoice.items || [])])
@@ -32,7 +34,7 @@ const deletingItemId = ref(null)
 
 // New item form
 const showNewItemForm = ref(false)
-const newItemForm = ref({ description: '', quantity: 1, unit: 'Stunde', unit_price: 0 })
+const newItemForm = ref({ description: '', quantity: 1, unit: t('invoices.hour'), unit_price: 0 })
 
 // Catalog
 const showCatalogPicker = ref(false)
@@ -40,7 +42,7 @@ const catalogSearch = ref('')
 const serviceCatalog = ref([])
 const catalogLoaded = ref(false)
 
-const itemUnits = ['Stunde', 'Stück', 'Pauschal', 'Tag', 'Monat', 'km']
+const itemUnits = [t('invoices.hour'), t('invoicesModule.stueck'), t('invoices.flatRate'), t('invoices.day'), t('invoices.monthUnit'), 'km']
 
 // Watch invoice changes
 import { watch } from 'vue'
@@ -110,20 +112,20 @@ async function saveEdit(item) {
     await api.put(`/api/v1/invoices/${props.invoice.id}/items/${item.id}`, payload)
     emit('items-changed')
   } catch {
-    toast.error('Position konnte nicht gespeichert werden')
+    toast.error(t('invoices.itemSaveError'))
     emit('items-changed') // reload from server
   }
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: 'Position wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('invoicesModule.positionWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
   deletingItemId.value = item.id
   items.value = items.value.filter(i => i.id !== item.id)
   try {
     await api.delete(`/api/v1/invoices/${props.invoice.id}/items/${item.id}`)
     emit('items-changed')
   } catch {
-    toast.error('Position konnte nicht gelöscht werden')
+    toast.error(t('invoicesModule.positionKonnteNichtGeloeschtWerden'))
     emit('items-changed')
   } finally {
     deletingItemId.value = null
@@ -132,7 +134,7 @@ async function deleteItem(item) {
 
 async function saveNewItem() {
   if (!newItemForm.value.description.trim()) {
-    toast.warning('Beschreibung ist erforderlich')
+    toast.warning(t('tickets.beschreibungIstErforderlich'))
     return
   }
   savingItem.value = true
@@ -140,17 +142,17 @@ async function saveNewItem() {
     const payload = {
       description: newItemForm.value.description.trim(),
       quantity: parseFloat(newItemForm.value.quantity) || 1,
-      unit: newItemForm.value.unit || 'Stück',
+      unit: newItemForm.value.unit || t('invoicesModule.stueck'),
       unit_price: parseFloat(newItemForm.value.unit_price) || 0,
     }
     const res = await api.post(`/api/v1/invoices/${props.invoice.id}/items`, payload)
     const created = res.data.data
     if (created) items.value.push(created)
     showNewItemForm.value = false
-    newItemForm.value = { description: '', quantity: 1, unit: 'Stunde', unit_price: 0 }
+    newItemForm.value = { description: '', quantity: 1, unit: t('invoices.hour'), unit_price: 0 }
     emit('items-changed')
   } catch {
-    toast.error('Position konnte nicht gespeichert werden')
+    toast.error(t('invoices.itemSaveError'))
   } finally {
     savingItem.value = false
   }
@@ -158,7 +160,7 @@ async function saveNewItem() {
 
 function openNewItemForm() {
   showCatalogPicker.value = false
-  newItemForm.value = { description: '', quantity: 1, unit: 'Stunde', unit_price: 0 }
+  newItemForm.value = { description: '', quantity: 1, unit: t('invoices.hour'), unit_price: 0 }
   showNewItemForm.value = true
   nextTick(() => {
     document.getElementById('new-item-description')?.focus()
@@ -173,7 +175,7 @@ async function openCatalogPicker() {
       serviceCatalog.value = res.data.data?.items ?? []
       catalogLoaded.value = true
     } catch {
-      toast.warning('Leistungskatalog konnte nicht geladen werden')
+      toast.warning(t('invoices.catalogLoadError'))
     }
   }
   catalogSearch.value = ''
@@ -211,7 +213,7 @@ async function onDragEnd() {
     <!-- Toolbar -->
     <div class="flex items-center justify-between gap-3">
       <h3 class="text-sm font-semibold text-gray-300">
-        {{ items.length }} Position{{ items.length !== 1 ? 'en' : '' }}
+        {{ items.length }} {{ items.length !== 1 ? $t('invoices.positions') : $t('invoices.position') }}
       </h3>
       <div class="flex gap-2">
         <button
@@ -219,14 +221,14 @@ async function onDragEnd() {
           class="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.06] text-gray-300 hover:text-white rounded-lg transition-colors border border-white/[0.08]"
         >
           <DocumentTextIcon class="w-4 h-4" />
-          Aus Katalog
+          {{ $t('invoices.fromCatalog') }}
         </button>
         <button
           @click="openNewItemForm"
           class="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
         >
           <PlusIcon class="w-4 h-4" />
-          Position hinzufügen
+          {{ $t('invoices.addItem') }}
         </button>
       </div>
     </div>
@@ -247,7 +249,7 @@ async function onDragEnd() {
             id="catalog-search"
             v-model="catalogSearch"
             type="text"
-            placeholder="Leistung suchen..."
+            :placeholder="$t('invoices.searchService')"
             class="flex-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
           />
           <button @click="showCatalogPicker = false" class="text-gray-500 hover:text-white">
@@ -256,8 +258,8 @@ async function onDragEnd() {
         </div>
         <div v-if="filteredCatalog.length === 0" class="px-4 py-6 text-center text-gray-500 text-sm">
           {{ serviceCatalog.length === 0
-            ? 'Kein Leistungskatalog vorhanden. Lege einen an unter Einstellungen → Rechnungen.'
-            : 'Keine Leistungen gefunden.' }}
+            ? $t('invoicesModule.keinLeistungskatalogVorhandenLegeEinenAnUnter')
+            : $t('invoicesModule.keineLeistungenGefunden') }}
         </div>
         <div v-else class="max-h-56 overflow-y-auto divide-y divide-white/[0.06]">
           <button
@@ -284,10 +286,10 @@ async function onDragEnd() {
         <thead class="bg-white/[0.08]">
           <tr>
             <th class="w-8 px-3 py-2.5"></th>
-            <th class="px-3 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Beschreibung</th>
-            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">Menge</th>
-            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">Preis</th>
-            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">Gesamt</th>
+            <th class="px-3 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ $t('common.description') }}</th>
+            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">{{ $t('invoices.quantity') }}</th>
+            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">{{ $t('invoices.price') }}</th>
+            <th class="px-3 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">{{ $t('contractsModule.gesamt') }}</th>
             <th class="px-3 py-2.5 w-10"></th>
           </tr>
         </thead>
@@ -337,7 +339,7 @@ async function onDragEnd() {
                   v-else
                   @click="startEdit(item, 'description')"
                   class="cursor-text text-white whitespace-pre-line hover:text-primary-300 transition-colors min-h-[1.5rem] rounded px-1 -mx-1 hover:bg-white/[0.06]/50 py-0.5"
-                  title="Klicken zum Bearbeiten"
+                  :title="$t('invoicesModule.invoicesmoduleklickenzumbearbeiten')"
                 >
                   {{ item.description || '–' }}
                 </div>
@@ -372,7 +374,7 @@ async function onDragEnd() {
                   v-else
                   @click="startEdit(item, 'quantity')"
                   class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-white/[0.06]/50 rounded px-1 py-0.5 inline-block"
-                  title="Klicken zum Bearbeiten"
+                  :title="$t('invoicesModule.invoicesmoduleklickenzumbearbeiten')"
                 >
                   {{ parseFloat(item.quantity).toLocaleString('de-DE') }} {{ item.unit }}
                 </div>
@@ -399,7 +401,7 @@ async function onDragEnd() {
                   v-else
                   @click="startEdit(item, 'unit_price')"
                   class="cursor-text text-gray-300 hover:text-primary-300 transition-colors hover:bg-white/[0.06]/50 rounded px-1 py-0.5 inline-block"
-                  title="Klicken zum Bearbeiten"
+                  :title="$t('invoicesModule.invoicesmoduleklickenzumbearbeiten')"
                 >
                   {{ formatCurrency(item.unit_price) }}
                 </div>
@@ -416,7 +418,7 @@ async function onDragEnd() {
                   @click="deleteItem(item)"
                   :disabled="deletingItemId === item.id"
                   class="opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10"
-                  title="Position löschen"
+                  :title="$t('invoicesModule.positionLoeschen')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>
@@ -427,7 +429,7 @@ async function onDragEnd() {
           <template #footer>
             <tr v-if="items.length === 0">
               <td colspan="6" class="px-4 py-8 text-center text-gray-500 text-sm">
-                Noch keine Positionen – füge eine oben hinzu.
+                {{ $t('invoices.noItemsYet') }}
               </td>
             </tr>
           </template>
@@ -436,17 +438,17 @@ async function onDragEnd() {
         <!-- Totals row -->
         <tfoot class="border-t-2 border-white/[0.08] bg-white/[0.03]">
           <tr v-if="parseFloat(invoice.tax_rate) > 0">
-            <td colspan="4" class="px-3 py-2 text-right text-sm text-gray-400">Netto</td>
+            <td colspan="4" class="px-3 py-2 text-right text-sm text-gray-400">{{ $t('invoices.net') }}</td>
             <td class="px-3 py-2 text-right text-sm text-gray-300">{{ formatCurrency(localSubtotal) }}</td>
             <td></td>
           </tr>
           <tr v-if="parseFloat(invoice.tax_rate) > 0">
-            <td colspan="4" class="px-3 py-2 text-right text-sm text-gray-400">MwSt. ({{ invoice.tax_rate }}%)</td>
+            <td colspan="4" class="px-3 py-2 text-right text-sm text-gray-400">{{ $t('invoices.vat') }} ({{ invoice.tax_rate }}%)</td>
             <td class="px-3 py-2 text-right text-sm text-gray-300">{{ formatCurrency(localTax) }}</td>
             <td></td>
           </tr>
           <tr>
-            <td colspan="4" class="px-3 py-3 text-right text-base font-bold text-white">Gesamt</td>
+            <td colspan="4" class="px-3 py-3 text-right text-base font-bold text-white">{{ $t('invoices.total') }}</td>
             <td class="px-3 py-3 text-right text-lg font-bold text-white">{{ formatCurrency(localTotal) }}</td>
             <td></td>
           </tr>
@@ -465,25 +467,25 @@ async function onDragEnd() {
     >
       <div v-if="showNewItemForm" class="bg-white/[0.04] border border-primary-500/30 rounded-xl p-4 space-y-3 shadow-glass">
         <div class="flex items-center justify-between">
-          <h4 class="text-sm font-semibold text-white">Neue Position</h4>
+          <h4 class="text-sm font-semibold text-white">{{ $t('invoices.newItem') }}</h4>
           <button @click="showNewItemForm = false" class="text-gray-500 hover:text-white">
             <XMarkIcon class="w-4 h-4" />
           </button>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Beschreibung *</label>
+          <label class="block text-xs text-gray-400 mb-1">{{ $t('common.description') }} *</label>
           <textarea
             id="new-item-description"
             v-model="newItemForm.description"
             rows="2"
-            placeholder="Leistungsbeschreibung..."
+            :placeholder="$t('invoices.serviceDescription')"
             class="input text-sm w-full resize-none"
             @keydown.esc="showNewItemForm = false"
           ></textarea>
         </div>
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Menge</label>
+            <label class="block text-xs text-gray-400 mb-1">{{ $t('invoices.quantity') }}</label>
             <input
               v-model.number="newItemForm.quantity"
               type="number" min="0" step="0.01"
@@ -491,13 +493,13 @@ async function onDragEnd() {
             />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Einheit</label>
+            <label class="block text-xs text-gray-400 mb-1">{{ $t('invoices.unit') }}</label>
             <select v-model="newItemForm.unit" class="input text-sm w-full">
               <option v-for="u in itemUnits" :key="u" :value="u">{{ u }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Einzelpreis (€)</label>
+            <label class="block text-xs text-gray-400 mb-1">{{ $t('invoices.unitPrice') }}</label>
             <input
               v-model.number="newItemForm.unit_price"
               type="number" min="0" step="0.01"
@@ -507,14 +509,14 @@ async function onDragEnd() {
         </div>
         <!-- Live preview of total -->
         <div class="flex items-center justify-between text-sm border-t border-white/[0.06] pt-2">
-          <span class="text-gray-500">Positionsbetrag:</span>
+          <span class="text-gray-500">{{ $t('invoices.itemAmount') }}:</span>
           <span class="text-white font-semibold">
             {{ formatCurrency((parseFloat(newItemForm.quantity) || 0) * (parseFloat(newItemForm.unit_price) || 0)) }}
           </span>
         </div>
         <div class="flex gap-2 justify-end">
           <button @click="showNewItemForm = false" class="btn-secondary text-sm px-4 py-1.5">
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button
             @click="saveNewItem"
@@ -522,7 +524,7 @@ async function onDragEnd() {
             class="btn-primary text-sm px-4 py-1.5 flex items-center gap-1.5"
           >
             <CheckIcon class="w-4 h-4" />
-            {{ savingItem ? 'Speichern...' : 'Hinzufügen' }}
+            {{ savingItem ? $t('invoices.saving') : $t('common.add') }}
           </button>
         </div>
       </div>

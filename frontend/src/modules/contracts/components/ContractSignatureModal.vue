@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { XMarkIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
@@ -102,14 +103,14 @@ function saveSignature() {
       >
         <div class="modal w-full max-w-lg">
           <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 class="text-lg font-bold text-white">Unterschrift</h2>
+            <h2 class="text-lg font-bold text-white">{{ $t('contracts.signature') }}</h2>
             <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04]">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
 
           <div class="p-6">
-            <p class="text-sm text-gray-400 mb-4">Zeichnen Sie Ihre Unterschrift in das Feld unten. Sie koennen auch den Touchscreen verwenden.</p>
+            <p class="text-sm text-gray-400 mb-4">{{ $t('contracts.drawSignatureInField') }}</p>
 
             <div class="bg-white rounded-xl overflow-hidden border border-gray-200">
               <canvas
@@ -130,9 +131,7 @@ function saveSignature() {
                 <TrashIcon class="w-4 h-4" /> Loeschen
               </button>
               <div class="flex gap-2">
-                <button @click="$emit('close')" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04]">
-                  Abbrechen
-                </button>
+                <button @click="$emit('close')" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04]">{{ $t('common.cancel') }}</button>
                 <button @click="saveSignature" class="px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-500">
                   Unterschrift speichern
                 </button>

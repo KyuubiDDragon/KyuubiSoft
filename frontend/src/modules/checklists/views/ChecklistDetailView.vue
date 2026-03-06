@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeftIcon,
@@ -33,6 +34,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
 
@@ -139,7 +141,7 @@ async function loadChecklist() {
     })
     expandedCategories.value[null] = true // Uncategorized always expanded
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Checkliste')
+    uiStore.showError(t('checklists.errorLoadingChecklist'))
     router.push({ name: 'checklists' })
   } finally {
     isLoading.value = false
@@ -168,7 +170,7 @@ async function updateSettings() {
     newPassword.value = ''
     uiStore.showSuccess('Einstellungen gespeichert')
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -185,9 +187,9 @@ async function addCategory() {
     expandedCategories.value[response.data.data.id] = true
     showAddCategoryModal.value = false
     newCategory.value = { name: '', description: '' }
-    uiStore.showSuccess('Kategorie erstellt')
+    uiStore.showSuccess(t('tickets.kategorieErstellt'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -198,14 +200,14 @@ async function updateCategory(category) {
       description: category.description,
     })
     editingCategory.value = null
-    uiStore.showSuccess('Kategorie aktualisiert')
+    uiStore.showSuccess(t('tickets.kategorieAktualisiert'))
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteCategory(category) {
-  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen? Die Punkte werden nicht gelöscht.`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen? Die Punkte werden nicht gelöscht.`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/categories/${category.id}`)
@@ -217,9 +219,9 @@ async function deleteCategory(category) {
       }
       return item
     })
-    uiStore.showSuccess('Kategorie gelöscht')
+    uiStore.showSuccess(t('tickets.kategorieGeloescht'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -237,7 +239,7 @@ async function addItem() {
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     uiStore.showSuccess('Testpunkt erstellt')
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
@@ -248,7 +250,7 @@ async function addBatchItems() {
     .filter(line => line.length > 0)
 
   if (lines.length === 0) {
-    toast.warning('Bitte gib mindestens einen Testpunkt ein')
+    toast.warning(t('checklists.enterAtLeastOneItem'))
     return
   }
 
@@ -316,36 +318,36 @@ async function updateItem(item) {
     editingItem.value = null
     uiStore.showSuccess('Testpunkt aktualisiert')
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: `Testpunkt "${item.title}" wirklich löschen?`, type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: `Testpunkt "${item.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/items/${item.id}`)
     checklist.value.items = checklist.value.items.filter(i => i.id !== item.id)
-    uiStore.showSuccess('Testpunkt gelöscht')
+    uiStore.showSuccess(t('checklists.testPointDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
 async function duplicateChecklist() {
-  if (!await confirm({ message: 'Checkliste duplizieren? Es wird eine Kopie mit allen Kategorien und Testpunkten erstellt (ohne Einträge).', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmDuplicate'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     const response = await api.post(`/api/v1/checklists/${checklistId.value}/duplicate`)
-    uiStore.showSuccess('Checkliste dupliziert')
+    uiStore.showSuccess(t('checklists.checklistDuplicated'))
     router.push({ name: 'checklist-detail', params: { id: response.data.data.id } })
   } catch (error) {
-    uiStore.showError('Fehler beim Duplizieren')
+    uiStore.showError(t('checklists.errorDuplicating'))
   }
 }
 
 async function resetEntries() {
-  if (!await confirm({ message: 'Alle Testeinträge wirklich zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden!', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmResetAll'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.post(`/api/v1/checklists/${checklistId.value}/reset`)
@@ -359,14 +361,14 @@ async function resetEntries() {
       in_progress_count: 0,
       entry_count: 0,
     }))
-    uiStore.showSuccess('Alle Einträge wurden zurückgesetzt')
+    uiStore.showSuccess(t('checklists.allEntriesReset'))
   } catch (error) {
-    uiStore.showError('Fehler beim Zurücksetzen')
+    uiStore.showError(t('checklists.errorResetting'))
   }
 }
 
 async function deleteEntry(entry, item) {
-  if (!await confirm({ message: 'Eintrag wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteEntry'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}`)
@@ -378,9 +380,9 @@ async function deleteEntry(entry, item) {
     else if (entry.status === 'in_progress') item.in_progress_count--
     item.entry_count--
 
-    toast.success('Eintrag gelöscht')
+    toast.success(t('checklists.entryDeleted'))
   } catch (error) {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('common.errorDeleting'))
   }
 }
 
@@ -395,7 +397,7 @@ async function uploadEntryImage(entry, event) {
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    toast.warning('Bild darf maximal 5MB groß sein')
+    toast.warning(t('checklists.imageMaxSize5mb'))
     return
   }
 
@@ -412,7 +414,7 @@ async function uploadEntryImage(entry, event) {
     entry.image_path = response.data.data.image_path
     toast.success('Bild hochgeladen')
   } catch (error) {
-    toast.error(error.response?.data?.error || 'Fehler beim Hochladen')
+    toast.error(error.response?.data?.error || t('checklists.errorUploading'))
   } finally {
     uploadingEntryId.value = null
     event.target.value = ''
@@ -420,14 +422,14 @@ async function uploadEntryImage(entry, event) {
 }
 
 async function deleteEntryImage(entry) {
-  if (!await confirm({ message: 'Bild wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteImage'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/entries/${entry.id}/image`)
     entry.image_path = null
-    toast.success('Bild gelöscht')
+    toast.success(t('checklists.imageDeleted'))
   } catch (error) {
-    toast.error('Fehler beim Löschen')
+    toast.error(t('common.errorDeleting'))
   }
 }
 
@@ -536,7 +538,7 @@ watch(() => route.params.id, () => {
           <button
             @click="loadChecklist"
             class="p-2 hover:bg-white/[0.04] rounded-lg transition-colors"
-            title="Aktualisieren"
+            :title="$t('common.refresh')"
           >
             <ArrowPathIcon class="w-5 h-5 text-gray-400" />
           </button>
@@ -552,7 +554,7 @@ watch(() => route.params.id, () => {
             @click="openPublicView"
             class="px-3 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-white transition-colors"
           >
-            Öffentliche Ansicht
+            {{ $t('checklists.publicView') }}
           </button>
           <button
             @click="showSettingsModal = true"
@@ -566,7 +568,7 @@ watch(() => route.params.id, () => {
       <!-- Progress Card -->
       <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-gray-400 text-sm">Gesamtfortschritt</span>
+          <span class="text-gray-400 text-sm">{{ $t('checklists.overallProgress') }}</span>
           <span class="text-white font-medium">{{ totalProgress.completed }} / {{ totalProgress.total }} Tests</span>
         </div>
         <div class="w-full h-3 bg-white/[0.08] rounded-full overflow-hidden">
@@ -588,7 +590,7 @@ watch(() => route.params.id, () => {
             class="flex items-center gap-2 btn-secondary"
           >
             <FolderIcon class="w-4 h-4" />
-            <span>Kategorie</span>
+            <span>{{ $t('checklists.category') }}</span>
           </button>
           <button
             @click="showAddItemModal = true"
@@ -600,7 +602,7 @@ watch(() => route.params.id, () => {
           <button
             @click="showBatchAddModal = true"
             class="flex items-center gap-2 btn-secondary"
-            title="Mehrere Testpunkte auf einmal hinzufügen"
+            :title="$t('checklists.addMultipleItems')"
           >
             <ListBulletIcon class="w-4 h-4" />
             <span>Mehrere</span>
@@ -610,7 +612,7 @@ watch(() => route.params.id, () => {
           <button
             @click="duplicateChecklist"
             class="flex items-center gap-2 btn-secondary"
-            title="Checkliste duplizieren"
+            title=$t('checklists.duplicateChecklist')
           >
             <DocumentDuplicateIcon class="w-4 h-4" />
             <span class="hidden sm:inline">Duplizieren</span>
@@ -618,10 +620,10 @@ watch(() => route.params.id, () => {
           <button
             @click="resetEntries"
             class="flex items-center gap-2 px-3 py-2 bg-white/[0.04] hover:bg-red-600/20 text-gray-300 hover:text-red-400 rounded-lg transition-colors"
-            title="Alle Einträge zurücksetzen"
+            :title="$t('checklists.resetAllEntries')"
           >
             <ArrowUturnLeftIcon class="w-4 h-4" />
-            <span class="hidden sm:inline">Zurücksetzen</span>
+            <span class="hidden sm:inline">{{ $t('common.reset') }}</span>
           </button>
         </div>
       </div>
@@ -653,14 +655,14 @@ watch(() => route.params.id, () => {
               <button
                 @click="openAddItemInCategory(category.id)"
                 class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
-                title="Testpunkt hinzufügen"
+                :title="$t('checklists.addTestItem')"
               >
                 <PlusIcon class="w-4 h-4 text-primary-400" />
               </button>
               <button
                 @click="openBatchAddInCategory(category.id)"
                 class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
-                title="Mehrere Testpunkte hinzufügen"
+                :title="$t('checklists.addMultipleTestItems')"
               >
                 <ListBulletIcon class="w-4 h-4 text-gray-400" />
               </button>
@@ -684,7 +686,7 @@ watch(() => route.params.id, () => {
           <!-- Items -->
           <div v-if="expandedCategories[category.id]" class="divide-y divide-white/[0.06]">
             <div v-if="category.items.length === 0" class="p-8 text-center text-gray-500">
-              Keine Testpunkte in dieser Kategorie
+              {{ $t('checklists.noTestItems') }}
             </div>
 
             <div
@@ -784,7 +786,7 @@ watch(() => route.params.id, () => {
                           <button
                             @click="deleteEntry(entry, item)"
                             class="p-1.5 hover:bg-white/[0.04] rounded transition-colors"
-                            title="Eintrag löschen"
+                            :title="$t('checklists.deleteEntry')"
                           >
                             <TrashIcon class="w-4 h-4 text-gray-400 hover:text-red-400" />
                           </button>
@@ -802,7 +804,7 @@ watch(() => route.params.id, () => {
                         <button
                           @click="deleteEntryImage(entry)"
                           class="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Bild löschen"
+                          :title="$t('checklists.deleteImage')"
                         >
                           <XMarkIcon class="w-4 h-4 text-white" />
                         </button>
@@ -924,7 +926,7 @@ watch(() => route.params.id, () => {
             <!-- Password Protection -->
             <div class="pt-4 border-t border-white/[0.06]">
               <label class="block text-sm font-medium text-gray-300 mb-1">
-                Passwortschutz
+                {{ $t('checklists.passwordProtection') }}
                 <span v-if="checklist.has_password" class="text-green-400 text-xs ml-2">(aktiv)</span>
               </label>
               <div class="flex gap-2">
@@ -945,15 +947,11 @@ watch(() => route.params.id, () => {
             <button
               @click="showSettingsModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="updateSettings"
               class="btn-primary"
-            >
-              Speichern
-            </button>
+            >{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>
@@ -976,7 +974,7 @@ watch(() => route.params.id, () => {
               <input
                 v-model="newCategory.name"
                 type="text"
-                placeholder="z.B. Login-Tests"
+                :placeholder="$t('checklists.sectionPlaceholder')"
                 class="input"
                 @keyup.enter="addCategory"
               />
@@ -997,15 +995,11 @@ watch(() => route.params.id, () => {
             <button
               @click="showAddCategoryModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="addCategory"
               class="btn-primary"
-            >
-              Erstellen
-            </button>
+            >{{ $t('common.create') }}</button>
           </div>
         </div>
       </div>
@@ -1028,7 +1022,7 @@ watch(() => route.params.id, () => {
               <input
                 v-model="newItem.title"
                 type="text"
-                placeholder="z.B. Login mit E-Mail"
+                :placeholder="$t('checklists.testPointPlaceholder')"
                 class="input"
                 @keyup.enter="addItem"
               />
@@ -1050,7 +1044,7 @@ watch(() => route.params.id, () => {
                 v-model="newItem.category_id"
                 class="input"
               >
-                <option :value="null">Keine Kategorie</option>
+                <option :value="null">{{ $t('checklists.noCategory') }}</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
                 </option>
@@ -1073,15 +1067,11 @@ watch(() => route.params.id, () => {
             <button
               @click="showAddItemModal = false; newItem.category_id = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="addItem"
               class="btn-primary"
-            >
-              Erstellen
-            </button>
+            >{{ $t('common.create') }}</button>
           </div>
         </div>
       </div>
@@ -1105,11 +1095,11 @@ watch(() => route.params.id, () => {
               <textarea
                 v-model="batchAdd.items"
                 rows="8"
-                placeholder="Login mit E-Mail&#10;Login mit Google&#10;Passwort vergessen || Überprüfe ob E-Mail gesendet wird&#10;Logout-Funktion"
+                :placeholder="$t('checklists.bulkImportPlaceholder')"
                 class="textarea font-mono text-sm"
               ></textarea>
               <p class="text-gray-500 text-xs mt-1">
-                Tipp: Für Beschreibung <code class="bg-white/[0.08] px-1 rounded">||</code> oder Tab verwenden: <code class="bg-white/[0.08] px-1 rounded">Titel || Beschreibung</code>
+                {{ $t('checklists.bulkImportTip') }} <code class="bg-white/[0.08] px-1 rounded">||</code> {{ $t('checklists.bulkImportTipSeparator') }}: <code class="bg-white/[0.08] px-1 rounded">{{ $t('checklists.bulkImportTipExample') }}</code>
               </p>
             </div>
 
@@ -1119,7 +1109,7 @@ watch(() => route.params.id, () => {
                 v-model="batchAdd.category_id"
                 class="input"
               >
-                <option :value="null">Keine Kategorie</option>
+                <option :value="null">{{ $t('checklists.noCategory') }}</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
                 </option>
@@ -1150,9 +1140,7 @@ watch(() => route.params.id, () => {
             <button
               @click="showBatchAddModal = false; batchAdd.category_id = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="addBatchItems"
               class="btn-primary"
@@ -1200,7 +1188,7 @@ watch(() => route.params.id, () => {
                 v-model="editingItem.category_id"
                 class="input"
               >
-                <option :value="null">Keine Kategorie</option>
+                <option :value="null">{{ $t('checklists.noCategory') }}</option>
                 <option v-for="cat in checklist?.categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
                 </option>
@@ -1223,15 +1211,11 @@ watch(() => route.params.id, () => {
             <button
               @click="editingItem = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="updateItem(editingItem)"
               class="btn-primary"
-            >
-              Speichern
-            </button>
+            >{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>
@@ -1272,15 +1256,11 @@ watch(() => route.params.id, () => {
             <button
               @click="editingCategory = null"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >
-              Abbrechen
-            </button>
+            >{{ $t('common.cancel') }}</button>
             <button
               @click="updateCategory(editingCategory)"
               class="btn-primary"
-            >
-              Speichern
-            </button>
+            >{{ $t('common.save') }}</button>
           </div>
         </div>
       </div>

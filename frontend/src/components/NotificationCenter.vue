@@ -237,7 +237,7 @@ function formatTime(dateStr) {
             class="text-center py-8"
           >
             <BellIcon class="w-12 h-12 text-gray-600 mx-auto mb-2" />
-            <p class="text-gray-500 text-sm">Keine Benachrichtigungen</p>
+            <p class="text-gray-500 text-sm">{{ $t('notifications.empty') }}</p>
           </div>
 
           <div
@@ -304,7 +304,7 @@ function formatTime(dateStr) {
             @click="isOpen = false"
             class="text-xs text-gray-400 hover:text-primary-400 transition-colors"
           >
-            Benachrichtigungseinstellungen
+            {{ $t('notifications.settings') }}
           </router-link>
         </div>
       </div>

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   XMarkIcon,
@@ -23,6 +24,7 @@ import api from '@/core/api/axios'
 const financeStore = useFinanceStore()
 const toast = useToast()
 
+const { t } = useI18n()
 // Active tab
 const activeTab = ref('expenses')
 
@@ -125,7 +127,7 @@ function formatCurrency(amount) {
 
 function getCategoryName(categoryId, list) {
   const cat = list.find(c => c.id === categoryId)
-  return cat?.name || 'Ohne Kategorie'
+  return cat?.name || t('financeModule.ohneKategorie')
 }
 
 function getCategoryColor(categoryId, list) {
@@ -143,7 +145,7 @@ async function viewReceipt(fileId) {
     window.open(url, '_blank')
     setTimeout(() => URL.revokeObjectURL(url), 10000)
   } catch {
-    toast.error('Beleg konnte nicht geöffnet werden')
+    toast.error(t('financeModule.belegKonnteNichtGeoeffnetWerden'))
   }
 }
 
@@ -225,12 +227,12 @@ async function saveExpense() {
     showExpenseForm.value = false
     await loadExpenseData()
   } catch (e) {
-    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Unbekannter Fehler'))
+    toast.error(t('financeModule.speichernFehlgeschlagen') + (e?.response?.data?.message ?? e?.message ?? t('financeModule.unbekannterFehler')))
   }
 }
 
 async function deleteExpense(expense) {
-  if (!confirm(`"${expense.description}" wirklich löschen?`)) return
+  if (!confirm(`"${expense.description}" ${t('financeModule.reallyDelete')}`)) return
   await financeStore.deleteExpense(expense.id)
   await financeStore.fetchSummary({ from: fromDate.value, to: toDate.value })
 }
@@ -243,7 +245,7 @@ async function saveCategory() {
 }
 
 async function deleteCategory(cat) {
-  if (!confirm(`Kategorie "${cat.name}" löschen?`)) return
+  if (!confirm(`${t('financeModule.categoryDelete')} "${cat.name}"?`)) return
   await financeStore.deleteCategory(cat.id)
 }
 
@@ -309,12 +311,12 @@ async function saveIncome() {
     showIncomeForm.value = false
     await loadIncomeData()
   } catch (e) {
-    toast.error('Speichern fehlgeschlagen: ' + (e?.response?.data?.message ?? e?.message ?? 'Unbekannter Fehler'))
+    toast.error(t('financeModule.speichernFehlgeschlagen') + (e?.response?.data?.message ?? e?.message ?? t('financeModule.unbekannterFehler')))
   }
 }
 
 async function deleteIncome(entry) {
-  if (!confirm(`"${entry.description}" wirklich löschen?`)) return
+  if (!confirm(`"${entry.description}" ${t('financeModule.reallyDelete')}`)) return
   await financeStore.deleteIncomeEntry(entry.id)
   await financeStore.fetchIncomeSummary({ from: fromDate.value, to: toDate.value })
 }
@@ -327,7 +329,7 @@ async function saveIncomeCategory() {
 }
 
 async function deleteIncomeCategory(cat) {
-  if (!confirm(`Kategorie "${cat.name}" löschen?`)) return
+  if (!confirm(`${t('financeModule.categoryDelete')} "${cat.name}"?`)) return
   await financeStore.deleteIncomeCategory(cat.id)
 }
 
@@ -384,7 +386,7 @@ async function downloadEuerPdf() {
 
   const categoryRows = (data.expenses_by_category || []).map(c => `
     <tr style="border-bottom:1px solid #f3f4f6;">
-      <td style="padding:5px 10px;">${c.name || 'Ohne Kategorie'}</td>
+      <td style="padding:5px 10px;">${c.name || t('financeModule.ohneKategorie')}</td>
       <td style="padding:5px 10px;text-align:right;">${fmt(c.total)}</td>
     </tr>`).join('')
 
@@ -430,16 +432,16 @@ async function downloadEuerPdf() {
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
         <thead>
           <tr style="background:#f9fafb;">
-            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e5e7eb;">Monat</th>
-            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#16a34a;">Einnahmen</th>
-            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#dc2626;">Ausgaben</th>
-            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;">Gewinn/Verlust</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e5e7eb;">{{ $t('financeModule.month') }}</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#16a34a;">{{ $t('financeModule.income') }}</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;color:#dc2626;">{{ $t('financeModule.expenses') }}</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e5e7eb;">{{ $t('financeModule.profitLoss') }}</th>
           </tr>
         </thead>
         <tbody>${monthRows}</tbody>
         <tfoot>
           <tr style="font-weight:700;background:#f9fafb;">
-            <td style="padding:8px 10px;">Gesamt</td>
+            <td style="padding:8px 10px;">{{ $t('financeModule.total') }}</td>
             <td style="padding:8px 10px;text-align:right;color:#16a34a;">${fmt(data.total_income)}</td>
             <td style="padding:8px 10px;text-align:right;color:#dc2626;">${fmt(data.total_expenses)}</td>
             <td style="padding:8px 10px;text-align:right;color:${data.profit >= 0 ? '#2563eb' : '#ea580c'};">${fmt(data.profit)}</td>
@@ -448,7 +450,7 @@ async function downloadEuerPdf() {
       </table>
 
       ${categoryRows ? `
-      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">Ausgaben nach Kategorie</h3>
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">{{ $t('financeModule.expensesByCategory') }}</h3>
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <tbody>${categoryRows}</tbody>
       </table>` : ''}
@@ -480,8 +482,8 @@ onMounted(loadExpenseData)
     <!-- Header -->
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <h1 class="text-2xl font-bold text-white">Finanzen</h1>
-        <p class="text-gray-400 mt-1">Ausgaben, Einnahmen & EÜR-Auswertung</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('financeModule.title') }}</h1>
+        <p class="text-gray-400 mt-1">{{ $t('financeModule.ausgabenEinnahmenEuerauswertung') }}</p>
       </div>
       <div class="flex items-center gap-2">
         <input
@@ -501,17 +503,17 @@ onMounted(loadExpenseData)
         </select>
 
         <template v-if="activeTab === 'expenses'">
-          <button @click="showCategoryForm = true" class="btn-secondary text-sm">Kategorien</button>
+          <button @click="showCategoryForm = true" class="btn-secondary text-sm">{{ $t('financeModule.categories') }}</button>
           <button @click="openCreateExpense" class="btn-primary text-sm">
             <PlusIcon class="w-4 h-4 mr-1" />
-            Ausgabe
+            {{ $t('financeModule.expense') }}
           </button>
         </template>
         <template v-if="activeTab === 'income'">
-          <button @click="showIncomeCategoryForm = true" class="btn-secondary text-sm">Kategorien</button>
+          <button @click="showIncomeCategoryForm = true" class="btn-secondary text-sm">{{ $t('financeModule.categories') }}</button>
           <button @click="openCreateIncome" class="btn-primary text-sm">
             <PlusIcon class="w-4 h-4 mr-1" />
-            Einnahme
+            {{ $t('financeModule.incomeEntry') }}
           </button>
         </template>
         <template v-if="activeTab === 'euer'">
@@ -530,7 +532,7 @@ onMounted(loadExpenseData)
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-white/[0.06]">
       <button
-        v-for="tab in [{ id: 'expenses', label: 'Ausgaben' }, { id: 'income', label: 'Einnahmen' }, { id: 'euer', label: 'EÜR' }]"
+        v-for="tab in [{ id: 'expenses', label: $t('financeModule.expenses') }, { id: 'income', label: $t('financeModule.income') }, { id: 'euer', label: $t('financeModule.euer') }]"
         :key="tab.id"
         @click="switchTab(tab.id)"
         class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
@@ -548,7 +550,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
               <ArrowTrendingDownIcon class="w-5 h-5 text-red-400" />
             </div>
-            <span class="text-gray-400 text-sm">Ausgaben gesamt</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.totalExpenses') }}</span>
           </div>
           <p class="text-2xl font-bold text-red-400">{{ formatCurrency(totalThisMonth) }}</p>
         </div>
@@ -557,7 +559,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
               <ChartPieIcon class="w-5 h-5 text-primary-400" />
             </div>
-            <span class="text-gray-400 text-sm">Kategorien</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.categories') }}</span>
           </div>
           <p class="text-2xl font-bold text-white">{{ financeStore.categories.length }}</p>
         </div>
@@ -566,7 +568,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
               <BanknotesIcon class="w-5 h-5 text-yellow-400" />
             </div>
-            <span class="text-gray-400 text-sm">Transaktionen</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.transactions') }}</span>
           </div>
           <p class="text-2xl font-bold text-white">{{ financeStore.expenses.length }}</p>
         </div>
@@ -574,11 +576,11 @@ onMounted(loadExpenseData)
 
       <!-- Category breakdown -->
       <div v-if="topCategories.length > 0" class="card p-6">
-        <h3 class="text-white font-semibold mb-4">Ausgaben nach Kategorie</h3>
+        <h3 class="text-white font-semibold mb-4">{{ $t('financeModule.expensesByCategory') }}</h3>
         <div class="space-y-3">
           <div v-for="cat in topCategories" :key="cat.id" class="flex items-center gap-3">
             <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: cat.color }"></span>
-            <span class="text-sm text-gray-300 flex-1">{{ cat.name || 'Ohne Kategorie' }}</span>
+            <span class="text-sm text-gray-300 flex-1">{{ cat.name || $t('financeModule.ohneKategorie') }}</span>
             <div class="flex-1 h-2 bg-white/[0.08] rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-500"
@@ -593,14 +595,14 @@ onMounted(loadExpenseData)
       <!-- Expense list -->
       <div class="card">
         <div class="px-6 py-4 border-b border-white/[0.06]">
-          <h3 class="font-semibold text-white">Transaktionen</h3>
+          <h3 class="font-semibold text-white">{{ $t('financeModule.transactions') }}</h3>
         </div>
         <div v-if="financeStore.isLoading" class="p-6">
           <div v-for="i in 3" :key="i" class="h-12 bg-white/[0.04] rounded mb-3 animate-pulse"></div>
         </div>
         <div v-else-if="financeStore.expenses.length === 0" class="p-12 text-center">
           <BanknotesIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p class="text-gray-500">Keine Ausgaben in diesem Zeitraum</p>
+          <p class="text-gray-500">{{ $t('financeModule.noExpensesInPeriod') }}</p>
         </div>
         <div v-else>
           <div
@@ -616,10 +618,10 @@ onMounted(loadExpenseData)
               <div class="flex items-center gap-2">
                 <p class="text-sm text-white truncate">{{ expense.description }}</p>
                 <span v-if="expense.expense_type === 'mileage'" class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 flex items-center gap-1">
-                  <TruckIcon class="w-3 h-3" /> Fahrtkosten
+                  <TruckIcon class="w-3 h-3" /> {{ $t('financeModule.mileage') }}
                 </span>
                 <span v-else-if="expense.expense_type === 'entertainment'" class="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 flex items-center gap-1">
-                  <UserGroupIcon class="w-3 h-3" /> Bewirtung 70%
+                  <UserGroupIcon class="w-3 h-3" /> {{ $t('financeModule.entertainment70') }}
                 </span>
               </div>
               <p class="text-xs text-gray-500">
@@ -627,7 +629,7 @@ onMounted(loadExpenseData)
                 <span v-if="expense.expense_type === 'mileage' && expense.mileage_km"> · {{ expense.mileage_km }} km</span>
               </p>
             </div>
-            <button v-if="expense.receipt_file_id" @click.stop="viewReceipt(expense.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+            <button v-if="expense.receipt_file_id" @click.stop="viewReceipt(expense.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" :title="$t('financeModule.viewReceipt')">
               <PaperClipIcon class="w-3.5 h-3.5" />
             </button>
             <span class="text-sm font-medium text-red-400 flex-shrink-0">
@@ -654,7 +656,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
               <ArrowTrendingUpIcon class="w-5 h-5 text-green-400" />
             </div>
-            <span class="text-gray-400 text-sm">Einnahmen gesamt</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.totalIncome') }}</span>
           </div>
           <p class="text-2xl font-bold text-green-400">{{ formatCurrency(totalIncomeThisMonth) }}</p>
         </div>
@@ -663,7 +665,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
               <ChartPieIcon class="w-5 h-5 text-primary-400" />
             </div>
-            <span class="text-gray-400 text-sm">Kategorien</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.categories') }}</span>
           </div>
           <p class="text-2xl font-bold text-white">{{ financeStore.incomeCategories.length }}</p>
         </div>
@@ -672,7 +674,7 @@ onMounted(loadExpenseData)
             <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
               <BanknotesIcon class="w-5 h-5 text-yellow-400" />
             </div>
-            <span class="text-gray-400 text-sm">Transaktionen</span>
+            <span class="text-gray-400 text-sm">{{ $t('financeModule.transactions') }}</span>
           </div>
           <p class="text-2xl font-bold text-white">{{ financeStore.incomeEntries.length }}</p>
         </div>
@@ -680,11 +682,11 @@ onMounted(loadExpenseData)
 
       <!-- Income category breakdown -->
       <div v-if="topIncomeCategories.length > 0" class="card p-6">
-        <h3 class="text-white font-semibold mb-4">Einnahmen nach Kategorie</h3>
+        <h3 class="text-white font-semibold mb-4">{{ $t('financeModule.incomeByCategory') }}</h3>
         <div class="space-y-3">
           <div v-for="cat in topIncomeCategories" :key="cat.id" class="flex items-center gap-3">
             <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: cat.color }"></span>
-            <span class="text-sm text-gray-300 flex-1">{{ cat.name || 'Ohne Kategorie' }}</span>
+            <span class="text-sm text-gray-300 flex-1">{{ cat.name || $t('financeModule.ohneKategorie') }}</span>
             <div class="flex-1 h-2 bg-white/[0.08] rounded-full overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-500"
@@ -699,14 +701,14 @@ onMounted(loadExpenseData)
       <!-- Income list -->
       <div class="card">
         <div class="px-6 py-4 border-b border-white/[0.06]">
-          <h3 class="font-semibold text-white">Einnahmen</h3>
+          <h3 class="font-semibold text-white">{{ $t('financeModule.income') }}</h3>
         </div>
         <div v-if="financeStore.incomeIsLoading" class="p-6">
           <div v-for="i in 3" :key="i" class="h-12 bg-white/[0.04] rounded mb-3 animate-pulse"></div>
         </div>
         <div v-else-if="financeStore.incomeEntries.length === 0" class="p-12 text-center">
           <ArrowTrendingUpIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p class="text-gray-500">Keine Einnahmen in diesem Zeitraum</p>
+          <p class="text-gray-500">{{ $t('financeModule.noIncomeInPeriod') }}</p>
         </div>
         <div v-else>
           <div
@@ -726,7 +728,7 @@ onMounted(loadExpenseData)
                 · {{ entry.income_date }}
               </p>
             </div>
-            <button v-if="entry.receipt_file_id" @click.stop="viewReceipt(entry.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+            <button v-if="entry.receipt_file_id" @click.stop="viewReceipt(entry.receipt_file_id)" class="text-gray-500 hover:text-primary-400 transition-colors" :title="$t('financeModule.viewReceipt')">
               <PaperClipIcon class="w-3.5 h-3.5" />
             </button>
             <span class="text-sm font-medium text-green-400 flex-shrink-0">
@@ -759,12 +761,12 @@ onMounted(loadExpenseData)
               <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                 <ArrowTrendingUpIcon class="w-5 h-5 text-green-400" />
               </div>
-              <span class="text-gray-400 text-sm">Einnahmen {{ selectedYear }}</span>
+              <span class="text-gray-400 text-sm">{{ $t('financeModule.income') }} {{ selectedYear }}</span>
             </div>
             <p class="text-2xl font-bold text-green-400">{{ formatCurrency(financeStore.euer.total_income) }}</p>
             <p class="text-xs text-gray-500 mt-1">
-              Manuell: {{ formatCurrency(financeStore.euer.income_manual) }} ·
-              Rechnungen: {{ formatCurrency(financeStore.euer.income_invoices) }}
+              {{ $t('financeModule.manual') }}: {{ formatCurrency(financeStore.euer.income_manual) }} ·
+              {{ $t('financeModule.invoices') }}: {{ formatCurrency(financeStore.euer.income_invoices) }}
             </p>
           </div>
           <div class="card p-4">
@@ -772,14 +774,14 @@ onMounted(loadExpenseData)
               <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
                 <ArrowTrendingDownIcon class="w-5 h-5 text-red-400" />
               </div>
-              <span class="text-gray-400 text-sm">Ausgaben {{ selectedYear }}</span>
+              <span class="text-gray-400 text-sm">{{ $t('financeModule.expenses') }} {{ selectedYear }}</span>
             </div>
             <p class="text-2xl font-bold text-red-400">{{ formatCurrency(financeStore.euer.total_expenses) }}</p>
             <p v-if="financeStore.euer.mileage_total > 0" class="text-xs text-gray-500 mt-1">
-              Fahrtkosten: {{ formatCurrency(financeStore.euer.mileage_total) }}
+              {{ $t('financeModule.mileage') }}: {{ formatCurrency(financeStore.euer.mileage_total) }}
             </p>
             <p v-if="financeStore.euer.entertainment_gross > 0" class="text-xs text-gray-500">
-              Bewirtung (70%): {{ formatCurrency(financeStore.euer.entertainment_deductible) }} von {{ formatCurrency(financeStore.euer.entertainment_gross) }}
+              {{ $t('financeModule.entertainment70') }}: {{ formatCurrency(financeStore.euer.entertainment_deductible) }} {{ $t('financeModule.of') }} {{ formatCurrency(financeStore.euer.entertainment_gross) }}
             </p>
           </div>
           <div class="card p-4">
@@ -793,7 +795,7 @@ onMounted(loadExpenseData)
                   :class="financeStore.euer.profit >= 0 ? 'text-blue-400' : 'text-orange-400'"
                 />
               </div>
-              <span class="text-gray-400 text-sm">Gewinn / Verlust</span>
+              <span class="text-gray-400 text-sm">{{ $t('financeModule.profitLoss') }}</span>
             </div>
             <p
               class="text-2xl font-bold"
@@ -807,17 +809,17 @@ onMounted(loadExpenseData)
         <!-- Monthly breakdown table -->
         <div class="card overflow-hidden">
           <div class="px-6 py-4 border-b border-white/[0.06]">
-            <h3 class="font-semibold text-white">Monatsübersicht {{ selectedYear }}</h3>
+            <h3 class="font-semibold text-white">{{ $t('financeModule.monthlyOverview') }} {{ selectedYear }}</h3>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-white/[0.03]">
                 <tr>
-                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">Monat</th>
-                  <th class="px-4 py-3 text-right text-sm font-medium text-green-400">Einnahmen</th>
-                  <th class="px-4 py-3 text-right text-sm font-medium text-red-400">Ausgaben</th>
-                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">Gewinn/Verlust</th>
-                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400 w-48">Verlauf</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400">{{ $t('financeModule.month') }}</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-green-400">{{ $t('financeModule.income') }}</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-red-400">{{ $t('financeModule.expenses') }}</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-400">{{ $t('financeModule.profitLoss') }}</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-400 w-48">{{ $t('financeModule.trend') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-white/[0.06]">
@@ -856,7 +858,7 @@ onMounted(loadExpenseData)
               </tbody>
               <tfoot class="bg-white/[0.03]">
                 <tr>
-                  <td class="px-4 py-3 text-sm font-bold text-white">Gesamt</td>
+                  <td class="px-4 py-3 text-sm font-bold text-white">{{ $t('financeModule.total') }}</td>
                   <td class="px-4 py-3 text-sm font-bold text-right text-green-400">{{ formatCurrency(financeStore.euer.total_income) }}</td>
                   <td class="px-4 py-3 text-sm font-bold text-right text-red-400">{{ formatCurrency(financeStore.euer.total_expenses) }}</td>
                   <td
@@ -874,7 +876,7 @@ onMounted(loadExpenseData)
 
         <!-- Expenses by category -->
         <div v-if="financeStore.euer.expenses_by_category.length > 0" class="card p-6">
-          <h3 class="text-white font-semibold mb-4">Ausgaben nach Kategorie {{ selectedYear }}</h3>
+          <h3 class="text-white font-semibold mb-4">{{ $t('financeModule.expensesByCategory') }} {{ selectedYear }}</h3>
           <div class="space-y-3">
             <div
               v-for="cat in financeStore.euer.expenses_by_category"
@@ -882,7 +884,7 @@ onMounted(loadExpenseData)
               class="flex items-center gap-3"
             >
               <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: cat.color || '#6B7280' }"></span>
-              <span class="text-sm text-gray-300 w-40 truncate">{{ cat.name || 'Ohne Kategorie' }}</span>
+              <span class="text-sm text-gray-300 w-40 truncate">{{ cat.name || $t('financeModule.ohneKategorie') }}</span>
               <div class="flex-1 h-2 bg-white/[0.08] rounded-full overflow-hidden">
                 <div
                   class="h-full rounded-sm transition-all duration-500 bg-red-500/70"
@@ -897,7 +899,7 @@ onMounted(loadExpenseData)
 
       <div v-else class="card p-12 text-center">
         <DocumentChartBarIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-        <p class="text-gray-500">Noch keine Daten für {{ selectedYear }}</p>
+        <p class="text-gray-500">{{ $t('financeModule.noDataForYear') }} {{ selectedYear }}</p>
       </div>
     </template>
 
@@ -910,13 +912,13 @@ onMounted(loadExpenseData)
         <div v-if="showExpenseForm" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="showExpenseForm = false">
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">{{ editingExpense ? 'Ausgabe bearbeiten' : 'Neue Ausgabe' }}</h3>
+              <h3 class="text-lg font-semibold text-white">{{ editingExpense ? $t('financeModule.editExpense') : $t('financeModule.newExpense') }}</h3>
               <button @click="showExpenseForm = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
             </div>
             <div class="p-6 space-y-4">
               <!-- Ausgabentyp -->
               <div>
-                <label class="label">Ausgabentyp</label>
+                <label class="label">{{ $t('financeModule.expenseType') }}</label>
                 <div class="grid grid-cols-3 gap-2">
                   <button
                     type="button"
@@ -925,7 +927,7 @@ onMounted(loadExpenseData)
                     :class="expenseForm.expense_type === 'general' ? 'border-primary-500 bg-primary-500/10 text-primary-300' : 'border-white/[0.06] text-gray-400 hover:border-white/[0.08]'"
                   >
                     <BanknotesIcon class="w-5 h-5" />
-                    Allgemein
+                    {{ $t('financeModule.general') }}
                   </button>
                   <button
                     type="button"
@@ -934,7 +936,7 @@ onMounted(loadExpenseData)
                     :class="expenseForm.expense_type === 'mileage' ? 'border-blue-500 bg-blue-500/10 text-blue-300' : 'border-white/[0.06] text-gray-400 hover:border-white/[0.08]'"
                   >
                     <TruckIcon class="w-5 h-5" />
-                    Fahrtkosten
+                    {{ $t('financeModule.mileage') }}
                   </button>
                   <button
                     type="button"
@@ -943,23 +945,23 @@ onMounted(loadExpenseData)
                     :class="expenseForm.expense_type === 'entertainment' ? 'border-purple-500 bg-purple-500/10 text-purple-300' : 'border-white/[0.06] text-gray-400 hover:border-white/[0.08]'"
                   >
                     <UserGroupIcon class="w-5 h-5" />
-                    Bewirtung
+                    {{ $t('financeModule.entertainment') }}
                   </button>
                 </div>
               </div>
 
               <!-- Bewirtungskosten Hinweis -->
               <div v-if="expenseForm.expense_type === 'entertainment'" class="bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2 text-sm text-purple-300">
-                Bewirtungskosten sind steuerlich nur zu <strong>70%</strong> absetzbar (§4 Abs.5 Nr.2 EStG). Die EÜR wird automatisch korrigiert.
+                {{ $t('financeModule.entertainmentHint') }}
               </div>
 
               <div>
-                <label class="label">Beschreibung *</label>
+                <label class="label">{{ $t('common.description') }} *</label>
                 <input
                   v-model="expenseForm.description"
                   type="text"
                   class="input"
-                  :placeholder="expenseForm.expense_type === 'mileage' ? 'z.B. Kundenbesuch München' : expenseForm.expense_type === 'entertainment' ? 'z.B. Geschäftsessen mit Kunde XY' : 'z.B. Bürobedarf, Software...'"
+                  :placeholder="expenseForm.expense_type === 'mileage' ? $t('financeModule.placeholderMileage') : expenseForm.expense_type === 'entertainment' ? $t('financeModule.placeholderEntertainment') : $t('financeModule.placeholderGeneral')"
                 />
               </div>
 
@@ -967,21 +969,21 @@ onMounted(loadExpenseData)
               <template v-if="expenseForm.expense_type === 'mileage'">
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="label">Kilometer *</label>
+                    <label class="label">{{ $t('financeModule.kilometers') }} *</label>
                     <input v-model="expenseForm.mileage_km" type="number" step="0.1" min="0" class="input" placeholder="0" />
-                    <p class="text-xs text-gray-500 mt-1">Betrag wird auto. berechnet (0,30 €/km)</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $t('financeModule.autoCalculated') }}</p>
                   </div>
                   <div>
-                    <label class="label">Datum</label>
+                    <label class="label">{{ $t('financeModule.date') }}</label>
                     <input v-model="expenseForm.expense_date" type="date" class="input" />
                   </div>
                 </div>
                 <div>
-                  <label class="label">Route</label>
-                  <input v-model="expenseForm.mileage_route" type="text" class="input" placeholder="z.B. München → Augsburg" />
+                  <label class="label">{{ $t('financeModule.route') }}</label>
+                  <input v-model="expenseForm.mileage_route" type="text" class="input" placeholder=$t('financeModule.zbMuenchenAugsburg') />
                 </div>
                 <div>
-                  <label class="label">Betrag (€) <span class="text-gray-500 font-normal">— auto aus km</span></label>
+                  <label class="label">{{ $t('financeModule.amount') }} (€) <span class="text-gray-500 font-normal">— {{ $t('financeModule.autoFromKm') }}</span></label>
                   <input v-model="expenseForm.amount" type="number" step="0.01" min="0" class="input" />
                 </div>
               </template>
@@ -990,34 +992,34 @@ onMounted(loadExpenseData)
               <template v-else>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="label">Betrag *</label>
+                    <label class="label">{{ $t('financeModule.amount') }} *</label>
                     <input v-model="expenseForm.amount" type="number" step="0.01" min="0" class="input" placeholder="0.00" />
                   </div>
                   <div>
-                    <label class="label">Datum</label>
+                    <label class="label">{{ $t('financeModule.date') }}</label>
                     <input v-model="expenseForm.expense_date" type="date" class="input" />
                   </div>
                 </div>
               </template>
 
               <div>
-                <label class="label">Kategorie</label>
+                <label class="label">{{ $t('financeModule.category') }}</label>
                 <select v-model="expenseForm.category_id" class="input">
-                  <option value="">Ohne Kategorie</option>
+                  <option value="">{{ $t('financeModule.noCategory') }}</option>
                   <option v-for="cat in financeStore.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
               </div>
               <div>
-                <label class="label">Beleg / Quittung</label>
+                <label class="label">{{ $t('financeModule.receipt') }}</label>
                 <div class="flex items-center gap-2">
                   <label class="flex-1 flex items-center gap-2 cursor-pointer border border-dashed border-white/[0.06] hover:border-primary-500 rounded-lg p-3 transition-colors">
                     <PaperClipIcon class="w-4 h-4 text-gray-400" />
                     <span class="text-sm text-gray-400">
-                      {{ receiptFile ? receiptFile.name : (expenseForm.receipt_file_id ? 'Beleg vorhanden (ersetzen...)' : 'Datei auswählen...') }}
+                      {{ receiptFile ? receiptFile.name : (expenseForm.receipt_file_id ? $t('financeModule.receiptPresent') : $t('financeModule.selectFile')) }}
                     </span>
                     <input type="file" class="hidden" accept="image/*,.pdf" @change="e => receiptFile = e.target.files[0]" />
                   </label>
-                  <button v-if="expenseForm.receipt_file_id && !receiptFile" @click="viewReceipt(expenseForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+                  <button v-if="expenseForm.receipt_file_id && !receiptFile" @click="viewReceipt(expenseForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" :title="$t('financeModule.viewReceipt')">
                     <ArrowDownTrayIcon class="w-4 h-4" />
                   </button>
                   <button v-if="receiptFile" @click="receiptFile = null; expenseForm.receipt_file_id = null" class="p-2 text-gray-500 hover:text-red-400">
@@ -1026,18 +1028,18 @@ onMounted(loadExpenseData)
                 </div>
               </div>
               <div>
-                <label class="label">Notizen</label>
-                <textarea v-model="expenseForm.notes" class="input" rows="2" placeholder="Optional"></textarea>
+                <label class="label">{{ $t('financeModule.notes') }}</label>
+                <textarea v-model="expenseForm.notes" class="input" rows="2" :placeholder="$t('financeModule.optional')"></textarea>
               </div>
               <div class="flex gap-3 pt-2">
-                <button @click="showExpenseForm = false" class="btn-secondary flex-1">Abbrechen</button>
+                <button @click="showExpenseForm = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
                 <button
                   @click="saveExpense"
                   class="btn-primary flex-1"
                   :disabled="!expenseForm.description || !expenseForm.amount || receiptUploading"
                 >
-                  <span v-if="receiptUploading">Hochladen...</span>
-                  <span v-else>{{ editingExpense ? 'Speichern' : 'Hinzufügen' }}</span>
+                  <span v-if="receiptUploading">{{ $t('financeModule.uploading') }}</span>
+                  <span v-else>{{ editingExpense ? $t('common.save') : $t('common.add') }}</span>
                 </button>
               </div>
             </div>
@@ -1053,7 +1055,7 @@ onMounted(loadExpenseData)
         <div v-if="showCategoryForm" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="showCategoryForm = false">
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Ausgaben-Kategorien</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('financeModule.expenseCategories') }}</h3>
               <button @click="showCategoryForm = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
             </div>
             <div class="p-6 space-y-4">
@@ -1063,11 +1065,11 @@ onMounted(loadExpenseData)
                   <span class="flex-1 text-sm text-white">{{ cat.name }}</span>
                   <button @click="deleteCategory(cat)" class="p-1 text-gray-500 hover:text-red-400"><TrashIcon class="w-3.5 h-3.5" /></button>
                 </div>
-                <p v-if="financeStore.categories.length === 0" class="text-gray-500 text-sm text-center py-2">Keine Kategorien</p>
+                <p v-if="financeStore.categories.length === 0" class="text-gray-500 text-sm text-center py-2">{{ $t('financeModule.noCategories') }}</p>
               </div>
               <div class="border-t border-dark-700 pt-4">
-                <p class="text-sm font-medium text-gray-300 mb-3">Neue Kategorie</p>
-                <input v-model="categoryForm.name" type="text" class="input mb-3" placeholder="Name..." />
+                <p class="text-sm font-medium text-gray-300 mb-3">{{ $t('financeModule.newCategory') }}</p>
+                <input v-model="categoryForm.name" type="text" class="input mb-3" :placeholder="$t('financeModule.namePlaceholder')" />
                 <div class="flex gap-2 mb-3 flex-wrap">
                   <button
                     v-for="color in colorOptions" :key="color"
@@ -1078,7 +1080,7 @@ onMounted(loadExpenseData)
                   ></button>
                 </div>
                 <button @click="saveCategory" class="btn-primary w-full" :disabled="!categoryForm.name.trim()">
-                  Kategorie erstellen
+                  {{ $t('financeModule.createCategory') }}
                 </button>
               </div>
             </div>
@@ -1094,48 +1096,48 @@ onMounted(loadExpenseData)
         <div v-if="showIncomeForm" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="showIncomeForm = false">
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">{{ editingIncome ? 'Einnahme bearbeiten' : 'Neue Einnahme' }}</h3>
+              <h3 class="text-lg font-semibold text-white">{{ editingIncome ? $t('financeModule.editIncome') : $t('financeModule.newIncome') }}</h3>
               <button @click="showIncomeForm = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
             </div>
             <div class="p-6 space-y-4">
               <div>
-                <label class="label">Beschreibung *</label>
-                <input v-model="incomeForm.description" type="text" class="input" placeholder="z.B. Kundenzahlung, Projekt XY..." />
+                <label class="label">{{ $t('common.description') }} *</label>
+                <input v-model="incomeForm.description" type="text" class="input" :placeholder="$t('financeModule.incomePlaceholder')" />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Betrag *</label>
+                  <label class="label">{{ $t('financeModule.amount') }} *</label>
                   <input v-model="incomeForm.amount" type="number" step="0.01" min="0" class="input" placeholder="0.00" />
                 </div>
                 <div>
-                  <label class="label">Datum</label>
+                  <label class="label">{{ $t('financeModule.date') }}</label>
                   <input v-model="incomeForm.income_date" type="date" class="input" />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Kategorie</label>
+                  <label class="label">{{ $t('financeModule.category') }}</label>
                   <select v-model="incomeForm.category_id" class="input">
-                    <option value="">Ohne Kategorie</option>
+                    <option value="">{{ $t('financeModule.noCategory') }}</option>
                     <option v-for="cat in financeStore.incomeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                   </select>
                 </div>
                 <div>
-                  <label class="label">Quelle</label>
-                  <input v-model="incomeForm.source" type="text" class="input" placeholder="z.B. PayPal, Bar..." />
+                  <label class="label">{{ $t('financeModule.source') }}</label>
+                  <input v-model="incomeForm.source" type="text" class="input" :placeholder="$t('financeModule.sourcePlaceholder')" />
                 </div>
               </div>
               <div>
-                <label class="label">Beleg / Nachweis</label>
+                <label class="label">{{ $t('financeModule.receiptProof') }}</label>
                 <div class="flex items-center gap-2">
                   <label class="flex-1 flex items-center gap-2 cursor-pointer border border-dashed border-white/[0.06] hover:border-primary-500 rounded-lg p-3 transition-colors">
                     <PaperClipIcon class="w-4 h-4 text-gray-400" />
                     <span class="text-sm text-gray-400">
-                      {{ incomeReceiptFile ? incomeReceiptFile.name : (incomeForm.receipt_file_id ? 'Beleg vorhanden (ersetzen...)' : 'Datei auswählen...') }}
+                      {{ incomeReceiptFile ? incomeReceiptFile.name : (incomeForm.receipt_file_id ? $t('financeModule.receiptPresent') : $t('financeModule.selectFile')) }}
                     </span>
                     <input type="file" class="hidden" accept="image/*,.pdf" @change="e => incomeReceiptFile = e.target.files[0]" />
                   </label>
-                  <button v-if="incomeForm.receipt_file_id && !incomeReceiptFile" @click="viewReceipt(incomeForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" title="Beleg ansehen">
+                  <button v-if="incomeForm.receipt_file_id && !incomeReceiptFile" @click="viewReceipt(incomeForm.receipt_file_id)" type="button" class="p-2 text-gray-400 hover:text-primary-400 transition-colors" :title="$t('financeModule.viewReceipt')">
                     <ArrowDownTrayIcon class="w-4 h-4" />
                   </button>
                   <button v-if="incomeReceiptFile" @click="incomeReceiptFile = null; incomeForm.receipt_file_id = null" class="p-2 text-gray-500 hover:text-red-400">
@@ -1144,18 +1146,18 @@ onMounted(loadExpenseData)
                 </div>
               </div>
               <div>
-                <label class="label">Notizen</label>
-                <textarea v-model="incomeForm.notes" class="input" rows="2" placeholder="Optional"></textarea>
+                <label class="label">{{ $t('financeModule.notes') }}</label>
+                <textarea v-model="incomeForm.notes" class="input" rows="2" :placeholder="$t('financeModule.optional')"></textarea>
               </div>
               <div class="flex gap-3 pt-2">
-                <button @click="showIncomeForm = false" class="btn-secondary flex-1">Abbrechen</button>
+                <button @click="showIncomeForm = false" class="btn-secondary flex-1">{{ $t('common.cancel') }}</button>
                 <button
                   @click="saveIncome"
                   class="btn-primary flex-1"
                   :disabled="!incomeForm.description || !incomeForm.amount || incomeReceiptUploading"
                 >
-                  <span v-if="incomeReceiptUploading">Hochladen...</span>
-                  <span v-else>{{ editingIncome ? 'Speichern' : 'Hinzufügen' }}</span>
+                  <span v-if="incomeReceiptUploading">{{ $t('financeModule.uploading') }}</span>
+                  <span v-else>{{ editingIncome ? $t('common.save') : $t('common.add') }}</span>
                 </button>
               </div>
             </div>
@@ -1171,7 +1173,7 @@ onMounted(loadExpenseData)
         <div v-if="showIncomeCategoryForm" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="showIncomeCategoryForm = false">
           <div class="modal w-full max-w-md">
             <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 class="text-lg font-semibold text-white">Einnahmen-Kategorien</h3>
+              <h3 class="text-lg font-semibold text-white">{{ $t('financeModule.incomeCategories') }}</h3>
               <button @click="showIncomeCategoryForm = false" class="text-gray-400 hover:text-white"><XMarkIcon class="w-5 h-5" /></button>
             </div>
             <div class="p-6 space-y-4">
@@ -1181,11 +1183,11 @@ onMounted(loadExpenseData)
                   <span class="flex-1 text-sm text-white">{{ cat.name }}</span>
                   <button @click="deleteIncomeCategory(cat)" class="p-1 text-gray-500 hover:text-red-400"><TrashIcon class="w-3.5 h-3.5" /></button>
                 </div>
-                <p v-if="financeStore.incomeCategories.length === 0" class="text-gray-500 text-sm text-center py-2">Keine Kategorien</p>
+                <p v-if="financeStore.incomeCategories.length === 0" class="text-gray-500 text-sm text-center py-2">{{ $t('financeModule.noCategories') }}</p>
               </div>
               <div class="border-t border-dark-700 pt-4">
-                <p class="text-sm font-medium text-gray-300 mb-3">Neue Kategorie</p>
-                <input v-model="incomeCategoryForm.name" type="text" class="input mb-3" placeholder="Name..." />
+                <p class="text-sm font-medium text-gray-300 mb-3">{{ $t('financeModule.newCategory') }}</p>
+                <input v-model="incomeCategoryForm.name" type="text" class="input mb-3" :placeholder="$t('financeModule.namePlaceholder')" />
                 <div class="flex gap-2 mb-3 flex-wrap">
                   <button
                     v-for="color in incomeColorOptions" :key="color"
@@ -1196,7 +1198,7 @@ onMounted(loadExpenseData)
                   ></button>
                 </div>
                 <button @click="saveIncomeCategory" class="btn-primary w-full" :disabled="!incomeCategoryForm.name.trim()">
-                  Kategorie erstellen
+                  {{ $t('financeModule.createCategory') }}
                 </button>
               </div>
             </div>

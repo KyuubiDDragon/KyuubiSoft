@@ -1,6 +1,10 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed, watch } from 'vue'
 
+import { useI18n } from 'vue-i18n'
 const input = ref('')
 const selectedEncoding = ref('base64')
 const mode = ref('encode')
@@ -8,11 +12,11 @@ const mode = ref('encode')
 const encodings = [
   { value: 'base64', name: 'Base64', desc: 'Standard Base64 Encoding' },
   { value: 'base64url', name: 'Base64 URL-Safe', desc: 'URL-sichere Base64 Variante' },
-  { value: 'url', name: 'URL Encoding', desc: 'Prozent-Kodierung für URLs' },
-  { value: 'urlComponent', name: 'URL Component', desc: 'Vollständige URL-Komponenten-Kodierung' },
-  { value: 'html', name: 'HTML Entities', desc: 'HTML-Zeichen-Entitäten' },
+  { value: 'url', name: 'URL Encoding', desc: t('toolbox.prozentkodierungFuerUrls') },
+  { value: 'urlComponent', name: 'URL Component', desc: t('toolbox.vollstaendigeUrlkomponentenkodierung') },
+  { value: 'html', name: 'HTML Entities', desc: t('toolbox.htmlzeichenentitaeten') },
   { value: 'hex', name: 'Hexadezimal', desc: 'Hex-Darstellung des Textes' },
-  { value: 'binary', name: 'Binär', desc: 'Binäre Darstellung' },
+  { value: 'binary', name: t('toolbox.binaer'), desc: t('toolbox.binaereDarstellung') },
   { value: 'unicode', name: 'Unicode Escape', desc: 'JavaScript Unicode Escapes' },
   { value: 'rot13', name: 'ROT13', desc: 'Einfache Buchstabenverschiebung' },
 ]
@@ -22,7 +26,7 @@ function encodeBase64(text) {
   try {
     return btoa(unescape(encodeURIComponent(text)))
   } catch {
-    return 'Fehler: Ungültige Zeichen'
+    return t('toolbox.fehlerUngueltigeZeichen')
   }
 }
 
@@ -30,7 +34,7 @@ function decodeBase64(text) {
   try {
     return decodeURIComponent(escape(atob(text.trim())))
   } catch {
-    return 'Fehler: Ungültiges Base64'
+    return t('toolbox.fehlerUngueltigesBase64')
   }
 }
 
@@ -52,7 +56,7 @@ function decodeUrl(text) {
   try {
     return decodeURI(text)
   } catch {
-    return 'Fehler: Ungültige URL-Kodierung'
+    return t('toolbox.fehlerUngueltigeUrlkodierung')
   }
 }
 
@@ -64,7 +68,7 @@ function decodeUrlComponent(text) {
   try {
     return decodeURIComponent(text)
   } catch {
-    return 'Fehler: Ungültige URL-Komponente'
+    return t('toolbox.fehlerUngueltigeUrlkomponente')
   }
 }
 
@@ -95,7 +99,7 @@ function decodeHex(text) {
     const bytes = text.trim().split(/\s+/).map(h => parseInt(h, 16))
     return new TextDecoder().decode(new Uint8Array(bytes))
   } catch {
-    return 'Fehler: Ungültiges Hex'
+    return t('toolbox.fehlerUngueltigesHex')
   }
 }
 
@@ -110,7 +114,7 @@ function decodeBinary(text) {
     const bytes = text.trim().split(/\s+/).map(b => parseInt(b, 2))
     return new TextDecoder().decode(new Uint8Array(bytes))
   } catch {
-    return 'Fehler: Ungültiges Binär'
+    return t('toolbox.fehlerUngueltigesBinaer')
   }
 }
 
@@ -132,7 +136,7 @@ function decodeUnicode(text) {
       String.fromCharCode(parseInt(hex, 16))
     )
   } catch {
-    return 'Fehler: Ungültiges Unicode'
+    return t('toolbox.fehlerUngueltigesUnicode')
   }
 }
 
@@ -327,10 +331,10 @@ function setExample(type) {
 
     <!-- Info -->
     <div class="text-xs text-gray-500 space-y-1">
-      <p><strong>Base64:</strong> Standard-Kodierung für Binärdaten in Text</p>
-      <p><strong>URL Encoding:</strong> Für sichere URL-Parameter</p>
+      <p><strong>Base64:</strong>{{ $t('toolbox.standardkodierungFuerBinaerdatenInText') }}</p>
+      <p><strong>URL Encoding:</strong>{{ $t('toolbox.fuerSichereUrlparameter') }}</p>
       <p><strong>HTML Entities:</strong> Verhindert XSS-Angriffe in HTML</p>
-      <p><strong>ROT13:</strong> Einfache Verschleierung (keine echte Verschlüsselung)</p>
+      <p><strong>ROT13:</strong>{{ $t('toolbox.toolboxeinfacheverschleierungkeineechteverschluesselung') }}</p>
     </div>
   </div>
 </template>

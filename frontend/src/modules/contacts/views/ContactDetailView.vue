@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useContactsStore } from '@/stores/contacts'
 import { useUiStore } from '@/stores/ui'
@@ -29,6 +30,7 @@ const route = useRoute()
 const router = useRouter()
 const contactsStore = useContactsStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 const { confirm } = useConfirmDialog()
 
 // State
@@ -65,7 +67,7 @@ const activityForm = ref({
 })
 
 const activityTypes = [
-  { value: 'note', label: 'Notiz', icon: DocumentTextIcon },
+  { value: 'note', label: t('quickCapture.note'), icon: DocumentTextIcon },
   { value: 'email', label: 'E-Mail', icon: EnvelopeIcon },
   { value: 'call', label: 'Anruf', icon: PhoneArrowUpRightIcon },
   { value: 'meeting', label: 'Meeting', icon: CalendarDaysIcon },
@@ -84,7 +86,7 @@ onMounted(async () => {
     await contactsStore.loadContact(id)
     await contactsStore.loadActivities(id)
   } catch (error) {
-    uiStore.showError('Kontakt nicht gefunden')
+    uiStore.showError(t('contacts.contactNotFound'))
     router.push('/contacts')
   }
 })
@@ -133,9 +135,9 @@ async function saveEdit() {
     await contactsStore.updateContact(contact.value.id, editForm.value)
     await contactsStore.loadContact(contact.value.id)
     isEditing.value = false
-    uiStore.showSuccess('Kontakt aktualisiert')
+    uiStore.showSuccess(t('contacts.contactUpdated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
 }
 
@@ -143,7 +145,7 @@ async function toggleFavorite() {
   try {
     await contactsStore.toggleFavorite(contact.value.id)
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
 }
 
@@ -152,15 +154,15 @@ async function deleteContact() {
   if (!await confirm({
     message: `"${contact.value.first_name} ${contact.value.last_name}" wirklich löschen? Alle Aktivitäten werden ebenfalls gelöscht.`,
     type: 'danger',
-    confirmText: 'Löschen',
+    confirmText: t('common.delete'),
   })) return
 
   try {
     await contactsStore.deleteContact(contact.value.id)
-    uiStore.showSuccess('Kontakt gelöscht')
+    uiStore.showSuccess(t('contacts.contactDeleted'))
     router.push('/contacts')
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -176,27 +178,27 @@ function openActivityForm() {
 
 async function saveActivity() {
   if (!activityForm.value.subject && !activityForm.value.description) {
-    uiStore.showError('Betreff oder Beschreibung erforderlich')
+    uiStore.showError(t('contacts.subjectOrDescriptionRequired'))
     return
   }
 
   try {
     await contactsStore.createActivity(contact.value.id, activityForm.value)
     showActivityForm.value = false
-    uiStore.showSuccess('Aktivität erstellt')
+    uiStore.showSuccess(t('contacts.activityCreated'))
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen')
+    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
 }
 
 async function deleteActivity(activity) {
-  if (!await confirm({ message: 'Aktivität wirklich löschen?', type: 'danger', confirmText: 'Löschen' })) return
+  if (!await confirm({ message: t('contacts.confirmDeleteActivity'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await contactsStore.deleteActivity(contact.value.id, activity.id)
-    uiStore.showSuccess('Aktivität gelöscht')
+    uiStore.showSuccess(t('contacts.activityDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -219,7 +221,7 @@ function getActivityIcon(type) {
 
 function getActivityLabel(type) {
   const found = activityTypes.find(t => t.value === type)
-  return found?.label || 'Notiz'
+  return found?.label || t('quickCapture.note')
 }
 
 function getActivityColor(type) {
@@ -256,14 +258,14 @@ function formatDate(dateStr) {
       <div class="flex items-center justify-between">
         <button @click="router.push('/contacts')" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
           <ArrowLeftIcon class="w-5 h-5" />
-          <span>Zurück zu Kontakte</span>
+          <span>{{ $t('contacts.backToContacts') }}</span>
         </button>
 
         <div class="flex items-center gap-2">
           <button
             @click="toggleFavorite"
             class="p-2 rounded-lg text-gray-400 hover:text-yellow-500 hover:bg-white/[0.04] transition-colors"
-            :title="contact.is_favorite ? 'Von Favoriten entfernen' : 'Zu Favoriten hinzufügen'"
+            :title="contact.is_favorite ? 'Von Favoriten entfernen' : $t('favorites.addToFavorites')"
           >
             <StarIconSolid v-if="contact.is_favorite" class="w-5 h-5 text-yellow-500" />
             <StarIcon v-else class="w-5 h-5" />
@@ -273,13 +275,11 @@ function formatDate(dateStr) {
             @click="startEditing"
             class="btn-secondary flex items-center gap-2"
           >
-            <PencilIcon class="w-4 h-4" />
-            Bearbeiten
-          </button>
+            <PencilIcon class="w-4 h-4" />{{ $t('common.edit') }}</button>
           <button
             @click="deleteContact"
             class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-            title="Kontakt löschen"
+            :title="$t('contacts.confirmDeleteContact')"
           >
             <TrashIcon class="w-5 h-5" />
           </button>
@@ -365,7 +365,7 @@ function formatDate(dateStr) {
             <!-- Meta -->
             <div class="flex items-center gap-4 mt-4 text-xs text-gray-500">
               <span>Erstellt: {{ formatDate(contact.created_at) }}</span>
-              <span v-if="contact.last_contact_at">Letzter Kontakt: {{ formatDate(contact.last_contact_at) }}</span>
+              <span v-if="contact.last_contact_at">$t('contacts.lastContact') + ':' {{ formatDate(contact.last_contact_at) }}</span>
             </div>
           </div>
 
@@ -409,7 +409,7 @@ function formatDate(dateStr) {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">E-Mail</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('contacts.email') }}</label>
               <input v-model="editForm.email" type="email" class="input w-full" />
             </div>
 
@@ -469,7 +469,7 @@ function formatDate(dateStr) {
                   v-model="tagInput"
                   type="text"
                   class="input flex-1"
-                  placeholder="Tag hinzufügen..."
+                  :placeholder="$t('quickCapture.addTag')"
                   @keydown.enter.prevent="addTag"
                 />
                 <button @click="addTag" class="btn-secondary px-3">+</button>
@@ -482,8 +482,8 @@ function formatDate(dateStr) {
             </div>
 
             <div class="flex items-center justify-end gap-3">
-              <button @click="cancelEditing" class="btn-secondary">Abbrechen</button>
-              <button @click="saveEdit" class="btn-primary">Speichern</button>
+              <button @click="cancelEditing" class="btn-secondary">{{ $t('common.cancel') }}</button>
+              <button @click="saveEdit" class="btn-primary">{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -494,11 +494,11 @@ function formatDate(dateStr) {
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-white flex items-center gap-2">
             <ClockIcon class="w-5 h-5 text-gray-400" />
-            Aktivitäten
+            {{ $t('contacts.activities') }}
           </h2>
           <button @click="openActivityForm" class="btn-primary flex items-center gap-2 text-sm">
             <PlusIcon class="w-4 h-4" />
-            Aktivität hinzufügen
+            {{ $t('contacts.addActivity') }}
           </button>
         </div>
 
@@ -523,12 +523,12 @@ function formatDate(dateStr) {
 
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-1">Betreff</label>
-              <input v-model="activityForm.subject" type="text" class="input w-full" placeholder="Betreff der Aktivität..." />
+              <input v-model="activityForm.subject" type="text" class="input w-full" :placeholder="$t('contacts.activitySubject')" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
-              <textarea v-model="activityForm.description" rows="3" class="input w-full resize-none" placeholder="Beschreibung..."></textarea>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
+              <textarea v-model="activityForm.description" rows="3" class="input w-full resize-none" placeholder=$t('common.description')></textarea>
             </div>
 
             <div>
@@ -537,8 +537,8 @@ function formatDate(dateStr) {
             </div>
 
             <div class="flex items-center justify-end gap-3">
-              <button @click="showActivityForm = false" class="btn-secondary">Abbrechen</button>
-              <button @click="saveActivity" class="btn-primary">Speichern</button>
+              <button @click="showActivityForm = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
+              <button @click="saveActivity" class="btn-primary">{{ $t('common.save') }}</button>
             </div>
           </div>
         </div>
@@ -550,8 +550,8 @@ function formatDate(dateStr) {
 
         <div v-else-if="contactsStore.activities.length === 0" class="text-center py-8 text-gray-500">
           <ChatBubbleLeftIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Noch keine Aktivitäten</p>
-          <p class="text-sm mt-1">Fügen Sie die erste Aktivität für diesen Kontakt hinzu.</p>
+          <p>{{ $t('contacts.noActivitiesYet') }}</p>
+          <p class="text-sm mt-1">{{ $t('contacts.addFirstActivity') }}</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -581,7 +581,7 @@ function formatDate(dateStr) {
             <button
               @click="deleteActivity(activity)"
               class="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-              title="Löschen"
+              :title="$t('common.delete')"
             >
               <TrashIcon class="w-4 h-4" />
             </button>

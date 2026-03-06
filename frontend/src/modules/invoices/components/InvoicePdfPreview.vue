@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useInvoiceHtml } from '../composables/useInvoiceHtml'
 import { ArrowDownTrayIcon, ArrowPathIcon, CodeBracketIcon, EyeIcon, CheckIcon } from '@heroicons/vue/24/outline'
@@ -11,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['download'])
 
+const { t } = useI18n()
 const { generateHtml, loadLogoDataUrl } = useInvoiceHtml()
 
 const htmlContent = ref('')
@@ -97,11 +99,11 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
       <div class="flex items-center gap-2">
         <div v-if="isLoading" class="flex items-center gap-2 text-gray-400 text-sm">
           <ArrowPathIcon class="w-4 h-4 animate-spin" />
-          Vorschau wird aktualisiert...
+          {{ $t('invoices.previewUpdating') }}
         </div>
         <p v-else class="text-sm text-gray-400">
-          A4-Vorschau · Aktualisiert sich automatisch
-          <span v-if="hasEdits" class="ml-2 text-amber-400 font-medium">· Manuell bearbeitet</span>
+          {{ $t('invoices.a4PreviewAutoUpdate') }}
+          <span v-if="hasEdits" class="ml-2 text-amber-400 font-medium">· {{ $t('invoices.manuallyEdited') }}</span>
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -115,7 +117,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
         >
           <CodeBracketIcon v-if="!editMode" class="w-4 h-4" />
           <EyeIcon v-else class="w-4 h-4" />
-          {{ editMode ? 'Vorschau' : 'HTML bearbeiten' }}
+          {{ editMode ? $t('invoices.preview') : $t('invoices.editHtml') }}
         </button>
         <!-- Save -->
         <button
@@ -135,7 +137,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
         >
           <ArrowPathIcon class="w-3.5 h-3.5" />
-          Zurücksetzen
+          {{ $t('invoices.reset') }}
         </button>
         <!-- Download -->
         <button
@@ -143,7 +145,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
           class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-sm transition-colors font-medium"
         >
           <ArrowDownTrayIcon class="w-4 h-4" />
-          PDF herunterladen
+          {{ $t('invoices.downloadPdf') }}
         </button>
       </div>
     </div>
@@ -153,7 +155,7 @@ watch(() => props.invoice, () => refreshPreview(), { deep: true, immediate: true
       <!-- HTML Editor -->
       <div class="flex-1 flex flex-col min-w-0">
         <div class="px-4 py-2 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
-          <span class="text-xs text-gray-500 font-mono">HTML-Quelltext</span>
+          <span class="text-xs text-gray-500 font-mono">{{ $t('invoices.htmlSource') }}</span>
           <span v-if="hasEdits" class="text-xs text-amber-400">Geändert</span>
         </div>
         <textarea

@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import {
   LinkIcon,
   XMarkIcon,
@@ -45,12 +48,12 @@ const isValidUrl = computed(() => {
 // Submit
 function submit() {
   if (!url.value.trim()) {
-    error.value = 'Bitte gib eine URL ein'
+    error.value = t('notesModule.embed.enterUrl')
     return
   }
 
   if (!isValidUrl.value) {
-    error.value = 'Ungültige URL'
+    error.value = t('notesModule.embed.invalidUrl')
     return
   }
 
@@ -94,7 +97,7 @@ function handlePaste(event) {
         <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
           <h3 class="text-lg font-semibold text-white flex items-center gap-2">
             <LinkIcon class="w-5 h-5 text-primary-400" />
-            Embed einfügen
+            {{ $t('notesModule.embed.insertEmbed') }}
           </h3>
           <button
             @click="close"
@@ -108,7 +111,7 @@ function handlePaste(event) {
         <div class="p-6">
           <!-- URL Input -->
           <div class="mb-4">
-            <label class="block text-sm text-gray-400 mb-2">URL einfügen</label>
+            <label class="block text-sm text-gray-400 mb-2">{{ $t('notesModule.embed.pasteUrl') }}</label>
             <div class="relative">
               <input
                 v-model="url"
@@ -132,7 +135,7 @@ function handlePaste(event) {
 
           <!-- Supported providers -->
           <div>
-            <p class="text-sm text-gray-500 mb-3">Unterstützte Plattformen:</p>
+            <p class="text-sm text-gray-500 mb-3">{{ $t('notesModule.embed.supportedPlatforms') }}</p>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="provider in supportedProviders"
@@ -151,7 +154,7 @@ function handlePaste(event) {
             @click="close"
             class="px-4 py-2 text-gray-400 hover:text-white"
           >
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button
             @click="submit"
@@ -163,7 +166,7 @@ function handlePaste(event) {
                 : 'bg-dark-600 text-gray-500 cursor-not-allowed'
             ]"
           >
-            Einfügen
+            {{ $t('notesModule.embed.insert') }}
           </button>
         </div>
       </div>

@@ -19,6 +19,8 @@ import {
   LockOpenIcon,
 } from '@heroicons/vue/24/outline'
 import { useEnvironmentStore } from '@/modules/environments/stores/environmentStore'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const envStore = useEnvironmentStore()
 
@@ -69,7 +71,7 @@ const groupedEnvironments = computed(() => {
 
   const groups = {}
   for (const env of filtered) {
-    const key = env.project_name || 'Ohne Projekt'
+    const key = env.project_name || t('environmentsModule.noProject')
     if (!groups[key]) {
       groups[key] = []
     }
@@ -96,12 +98,12 @@ function formatTimestamp(dateString) {
 
 function getActionLabel(action) {
   const labels = {
-    created: 'Erstellt',
-    updated: 'Aktualisiert',
-    variables_updated: 'Variablen aktualisiert',
-    variable_deleted: 'Variable gelöscht',
-    duplicated: 'Dupliziert',
-    imported: 'Importiert',
+    created: t('environmentsModule.actionCreated'),
+    updated: t('environmentsModule.actionUpdated'),
+    variables_updated: t('environmentsModule.actionVarsUpdated'),
+    variable_deleted: t('environmentsModule.actionVarDeleted'),
+    duplicated: t('environmentsModule.actionDuplicated'),
+    imported: t('environmentsModule.actionImported'),
   }
   return labels[action] || action
 }
@@ -109,7 +111,7 @@ function getActionLabel(action) {
 // Select environment
 async function selectEnvironment(envId) {
   if (hasUnsavedChanges.value) {
-    if (!confirm('Ungespeicherte Änderungen verwerfen?')) return
+    if (!confirm(t('environmentsModule.discardChanges'))) return
   }
   selectedEnvId.value = envId
   envStore.currentEnvironment =
@@ -331,8 +333,8 @@ onMounted(async () => {
     <div class="w-80 flex-shrink-0 flex flex-col space-y-4">
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-bold text-white">Umgebungsvariablen</h1>
-        <p class="text-gray-400 text-sm mt-1">Secrets und Konfiguration verwalten</p>
+        <h1 class="text-2xl font-bold text-white">{{ $t('environmentsModule.title') }}</h1>
+        <p class="text-gray-400 text-sm mt-1">{{ $t('environmentsModule.subtitle') }}</p>
       </div>
 
       <!-- Search -->
@@ -341,7 +343,7 @@ onMounted(async () => {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Umgebung suchen..."
+          :placeholder="$t('environmentsModule.searchEnv')"
           class="input pl-9 w-full"
         />
       </div>
@@ -349,7 +351,7 @@ onMounted(async () => {
       <!-- New Button -->
       <button @click="openCreateModal" class="btn-primary w-full">
         <PlusIcon class="w-5 h-5 mr-2" />
-        Neue Umgebung
+        {{ $t('environmentsModule.newEnv') }}
       </button>
 
       <!-- Loading -->
@@ -361,7 +363,7 @@ onMounted(async () => {
       <div v-else class="flex-1 overflow-y-auto space-y-4 pr-1">
         <div v-if="Object.keys(groupedEnvironments).length === 0" class="text-center text-gray-500 py-8">
           <KeyIcon class="w-10 h-10 mx-auto mb-3 text-gray-600" />
-          <p class="text-sm">Keine Umgebungen vorhanden.</p>
+          <p class="text-sm">{{ $t('environmentsModule.keineUmgebungenVorhanden') }}</p>
         </div>
 
         <div v-for="(envs, groupName) in groupedEnvironments" :key="groupName">
@@ -399,8 +401,8 @@ onMounted(async () => {
       <div v-if="!selectedEnvironment" class="flex-1 flex items-center justify-center">
         <div class="text-center">
           <KeyIcon class="w-16 h-16 text-gray-700 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-400 mb-2">Keine Umgebung ausgewählt</h3>
-          <p class="text-gray-600 text-sm">Waehlen Sie eine Umgebung aus der Liste oder erstellen Sie eine neue.</p>
+          <h3 class="text-lg font-medium text-gray-400 mb-2">{{ $t('environmentsModule.keineUmgebungAusgewaehlt') }}</h3>
+          <p class="text-gray-600 text-sm">{{ $t('environmentsModule.waehlenSieEineUmgebungAusDerListe') }}</p>
         </div>
       </div>
 
@@ -419,11 +421,11 @@ onMounted(async () => {
             <div class="flex items-center gap-2 flex-shrink-0">
               <button @click="openEditModal" class="btn-secondary text-xs">
                 <PencilSquareIcon class="w-4 h-4 mr-1" />
-                Bearbeiten
+                {{ $t('common.edit') }}
               </button>
               <button @click="handleDuplicate" class="btn-secondary text-xs">
                 <DocumentDuplicateIcon class="w-4 h-4 mr-1" />
-                Duplizieren
+                {{ $t('environmentsModule.duplicate') }}
               </button>
               <button @click="handleExport" class="btn-secondary text-xs">
                 <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
@@ -434,7 +436,7 @@ onMounted(async () => {
                 Import
               </button>
               <template v-if="deleteConfirmId === selectedEnvId">
-                <span class="text-xs text-red-400 ml-2">Wirklich löschen?</span>
+                <span class="text-xs text-red-400 ml-2">{{ $t('environmentsModule.wirklichLoeschen') }}</span>
                 <button @click="handleDeleteEnv" class="btn-secondary text-xs text-red-400 border-red-500/30 hover:bg-red-500/10">Ja</button>
                 <button @click="deleteConfirmId = null" class="btn-secondary text-xs">Nein</button>
               </template>
@@ -473,12 +475,12 @@ onMounted(async () => {
         <div v-if="activeTab === 'variables'" class="flex-1 flex flex-col min-h-0">
           <!-- Save bar -->
           <div v-if="hasUnsavedChanges" class="card-glass p-3 mb-4 flex items-center justify-between border border-yellow-500/20">
-            <span class="text-sm text-yellow-400">Ungespeicherte Änderungen vorhanden</span>
+            <span class="text-sm text-yellow-400">{{ $t('environmentsModule.unsavedChanges') }}</span>
             <div class="flex gap-2">
-              <button @click="syncEditingVariables" class="btn-secondary text-xs">Verwerfen</button>
+              <button @click="syncEditingVariables" class="btn-secondary text-xs">{{ $t('environmentsModule.discard') }}</button>
               <button @click="saveVariables" class="btn-primary text-xs">
                 <CheckIcon class="w-4 h-4 mr-1" />
-                Speichern
+                {{ $t('common.save') }}
               </button>
             </div>
           </div>
@@ -488,10 +490,10 @@ onMounted(async () => {
             <table class="table-glass w-full">
               <thead>
                 <tr>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[35%]">Schlüssel</th>
-                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[45%]">Wert</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[35%]">{{ $t('environmentsModule.key') }}</th>
+                  <th class="text-left text-xs text-gray-500 font-medium p-3 w-[45%]">{{ $t('environmentsModule.value') }}</th>
                   <th class="text-center text-xs text-gray-500 font-medium p-3 w-[10%]">Secret</th>
-                  <th class="text-right text-xs text-gray-500 font-medium p-3 w-[10%]">Aktionen</th>
+                  <th class="text-right text-xs text-gray-500 font-medium p-3 w-[10%]">{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -515,7 +517,7 @@ onMounted(async () => {
                       @input="markChanged"
                       :type="variable.is_secret ? 'password' : 'text'"
                       class="input w-full font-mono text-sm"
-                      placeholder="Wert eingeben..."
+                      :placeholder="$t('environmentsModule.enterValue')"
                     />
                   </td>
                   <td class="p-2 text-center">
@@ -554,15 +556,15 @@ onMounted(async () => {
             <!-- Empty state -->
             <div v-if="editingVariables.length === 0" class="text-center py-12">
               <KeyIcon class="w-10 h-10 text-gray-700 mx-auto mb-3" />
-              <p class="text-sm text-gray-500">Keine Variablen vorhanden.</p>
-              <p class="text-xs text-gray-600 mt-1">Fügen Sie die erste Variable hinzu.</p>
+              <p class="text-sm text-gray-500">{{ $t('environmentsModule.noVars') }}</p>
+              <p class="text-xs text-gray-600 mt-1">{{ $t('environmentsModule.addFirstVar') }}</p>
             </div>
 
             <!-- Add variable button -->
             <div class="p-3 border-t border-white/[0.04]">
               <button @click="addVariable" class="btn-secondary text-xs w-full justify-center">
                 <PlusIcon class="w-4 h-4 mr-1" />
-                Variable hinzufügen
+                {{ $t('environmentsModule.addVariable') }}
               </button>
             </div>
           </div>
@@ -573,7 +575,7 @@ onMounted(async () => {
           <div class="card-glass">
             <div v-if="envStore.history.length === 0" class="text-center py-12 text-gray-500">
               <ClockIcon class="w-10 h-10 mx-auto mb-3 text-gray-700" />
-              <p class="text-sm">Keine Historie vorhanden.</p>
+              <p class="text-sm">{{ $t('environmentsModule.noHistory') }}</p>
             </div>
 
             <div v-else class="divide-y divide-white/[0.04]">
@@ -640,7 +642,7 @@ onMounted(async () => {
         <div class="relative card-glass w-full max-w-lg">
           <div class="modal-header flex items-center justify-between p-5 border-b border-white/[0.06]">
             <h3 class="text-lg font-semibold text-white">
-              {{ showCreateModal ? 'Neue Umgebung erstellen' : 'Umgebung bearbeiten' }}
+              {{ showCreateModal ? $t('environmentsModule.createNew') : $t('environmentsModule.editEnv') }}
             </h3>
             <button @click="showCreateModal = false; showEditModal = false" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
@@ -648,45 +650,45 @@ onMounted(async () => {
           </div>
           <div class="modal-body p-5 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Name *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('common.name') }} *</label>
               <input
                 v-model="envForm.name"
                 @input="onNameInput"
                 type="text"
                 class="input w-full"
-                placeholder="z.B. Produktion, Staging, Entwicklung..."
+                :placeholder="$t('environmentsModule.envNamePlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Slug</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('environmentsModule.slug') }}</label>
               <input
                 v-model="envForm.slug"
                 type="text"
                 class="input w-full font-mono"
-                placeholder="automatisch generiert"
+                :placeholder="$t('environmentsModule.autoGenerated')"
               />
-              <p class="text-xs text-gray-600 mt-1">Eindeutiger Bezeichner (URL-sicher)</p>
+              <p class="text-xs text-gray-600 mt-1">{{ $t('environmentsModule.slugHint') }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('common.description') }}</label>
               <textarea
                 v-model="envForm.description"
                 class="input w-full"
                 rows="3"
-                placeholder="Optionale Beschreibung..."
+                :placeholder="$t('deploymentsModule.optionalDescription')"
               ></textarea>
             </div>
           </div>
           <div class="modal-footer flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
             <button @click="showCreateModal = false; showEditModal = false" class="btn-secondary">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="showCreateModal ? handleCreate() : handleUpdate()"
               class="btn-primary"
               :disabled="!envForm.name.trim()"
             >
-              {{ showCreateModal ? 'Erstellen' : 'Speichern' }}
+              {{ showCreateModal ? $t('common.create') : $t('common.save') }}
             </button>
           </div>
         </div>
@@ -702,14 +704,14 @@ onMounted(async () => {
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showImportModal = false"></div>
         <div class="relative card-glass w-full max-w-2xl">
           <div class="modal-header flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Variablen importieren (.env)</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('environmentsModule.importVars') }}</h3>
             <button @click="showImportModal = false" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>
           <div class="modal-body p-5 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1.5">.env Inhalt einfuegen</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ $t('environmentsModule.pasteEnvContent') }}</label>
               <textarea
                 v-model="importContent"
                 class="input w-full font-mono text-sm"
@@ -725,14 +727,14 @@ SECRET_KEY=abc123"
                 type="checkbox"
                 class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-600 focus:ring-primary-500"
               />
-              <span class="text-sm text-gray-400">Bestehende Variablen überschreiben</span>
+              <span class="text-sm text-gray-400">{{ $t('environmentsModule.overwriteExisting') }}</span>
             </label>
           </div>
           <div class="modal-footer flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="showImportModal = false" class="btn-secondary">Abbrechen</button>
+            <button @click="showImportModal = false" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="handleImport" class="btn-primary" :disabled="!importContent.trim()">
               <ArrowUpTrayIcon class="w-4 h-4 mr-1" />
-              Importieren
+              {{ $t('common.import') }}
             </button>
           </div>
         </div>
@@ -748,7 +750,7 @@ SECRET_KEY=abc123"
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showExportModal = false"></div>
         <div class="relative card-glass w-full max-w-2xl">
           <div class="modal-header flex items-center justify-between p-5 border-b border-white/[0.06]">
-            <h3 class="text-lg font-semibold text-white">Umgebung exportieren</h3>
+            <h3 class="text-lg font-semibold text-white">{{ $t('environmentsModule.exportEnv') }}</h3>
             <button @click="showExportModal = false" class="btn-icon-sm">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -760,13 +762,13 @@ SECRET_KEY=abc123"
             </div>
           </div>
           <div class="modal-footer flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
-            <button @click="showExportModal = false" class="btn-secondary">Schliessen</button>
+            <button @click="showExportModal = false" class="btn-secondary">{{ $t('common.close') }}</button>
             <button @click="copyExport" class="btn-secondary">
-              In Zwischenablage kopieren
+              {{ $t('environmentsModule.copyToClipboard') }}
             </button>
             <button @click="downloadExport" class="btn-primary">
               <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
-              Herunterladen
+              {{ $t('common.download') }}
             </button>
           </div>
         </div>

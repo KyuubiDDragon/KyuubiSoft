@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import {
   XMarkIcon,
@@ -90,7 +94,7 @@ async function enableShare() {
     sharePassword.value = ''
     emit('updated')
   } catch (e) {
-    error.value = e.response?.data?.message || 'Fehler beim Aktivieren'
+    error.value = e.response?.data?.message || t('contracts.errorActivating')
   } finally {
     isLoading.value = false
   }
@@ -104,7 +108,7 @@ async function disableShare() {
     resetState()
     emit('updated')
   } catch (e) {
-    error.value = e.response?.data?.message || 'Fehler beim Deaktivieren'
+    error.value = e.response?.data?.message || t('contracts.errorDeactivating')
   } finally {
     isLoading.value = false
   }
@@ -148,7 +152,7 @@ async function copyLink() {
           <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <div class="flex items-center gap-2">
               <LinkIcon class="w-5 h-5 text-primary-400" />
-              <h2 class="text-lg font-bold text-white">Vertrag teilen</h2>
+              <h2 class="text-lg font-bold text-white">{{ $t('contracts.shareContract') }}</h2>
             </div>
             <button @click="$emit('close')" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.04]">
               <XMarkIcon class="w-5 h-5" />
@@ -178,7 +182,7 @@ async function copyLink() {
                   >
                     <CheckIcon v-if="copied" class="w-4 h-4" />
                     <ClipboardDocumentIcon v-else class="w-4 h-4" />
-                    {{ copied ? 'Kopiert!' : 'Kopieren' }}
+                    {{ copied ? 'Kopiert!' : $t('common.copy') }}
                   </button>
                 </div>
               </div>
@@ -191,7 +195,7 @@ async function copyLink() {
                 </div>
                 <div v-if="setPassword" class="flex items-center gap-1.5 text-amber-400">
                   <LockClosedIcon class="w-4 h-4" />
-                  <span>Passwortgeschützt</span>
+                  <span>{{ $t('links.passwortgeschuetzt') }}</span>
                 </div>
                 <div v-if="shareExpiresAt" class="flex items-center gap-1.5 text-gray-400">
                   <CalendarIcon class="w-4 h-4" />
@@ -201,7 +205,7 @@ async function copyLink() {
 
               <!-- Info -->
               <div class="text-xs text-gray-500 bg-white/[0.03] rounded-lg p-3">
-                Der Empfänger kann den Vertrag einsehen und als Kunde (Auftraggeber) direkt online unterschreiben.
+                {{ $t('contracts.shareDescription') }}
                 Die Unterschrift wird automatisch im System gespeichert.
               </div>
 
@@ -233,7 +237,7 @@ async function copyLink() {
                   v-if="setPassword"
                   v-model="sharePassword"
                   type="text"
-                  placeholder="Passwort eingeben..."
+                  placeholder=$t('contracts.enterPassword')
                   class="input text-sm w-full"
                 />
               </div>

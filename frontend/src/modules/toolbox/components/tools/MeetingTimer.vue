@@ -157,7 +157,7 @@ onUnmounted(() => {
         {{ isOvertime ? '+' : '' }}{{ formatTime(isOvertime ? overtimeSeconds : remainingSeconds) }}
       </div>
       <div class="text-sm text-gray-400">
-        {{ isOvertime ? 'Überzogen' : 'Verbleibend' }}
+        {{ isOvertime ? $t('toolbox.ueberzogen') : 'Verbleibend' }}
       </div>
 
       <!-- Progress Bar -->
@@ -235,7 +235,7 @@ onUnmounted(() => {
           placeholder="Name eingeben..."
         />
         <button @click="addParticipant" class="btn-secondary px-4">
-          Hinzufügen
+          {{ $t('common.add') }}
         </button>
       </div>
 
@@ -270,7 +270,7 @@ onUnmounted(() => {
         </div>
 
         <div v-if="participants.length === 0" class="text-center text-gray-500 text-sm py-4">
-          Füge Teilnehmer hinzu, um die Redezeit zu tracken
+          {{ $t('toolbox.fuegeTeilnehmerHinzuUmDieRedezeitZu') }}
         </div>
       </div>
     </div>

@@ -137,7 +137,7 @@ function swapTexts() {
         </label>
         <label class="flex items-center gap-2 text-sm text-gray-400">
           <input type="checkbox" v-model="ignoreCase" class="rounded bg-white/[0.04] border-white/[0.06]" />
-          Groß/Klein ignorieren
+          {{ $t('toolbox.grosskleinIgnorieren') }}
         </label>
       </div>
 
@@ -149,7 +149,7 @@ function swapTexts() {
           Tauschen
         </button>
         <button @click="clearAll" class="text-xs text-gray-400 hover:text-white">
-          Löschen
+          {{ $t('common.delete') }}
         </button>
       </div>
     </div>
@@ -165,11 +165,11 @@ function swapTexts() {
         ></textarea>
       </div>
       <div>
-        <label class="text-sm text-gray-400 mb-1 block">Geändert (B)</label>
+        <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.geaendertB') }}</label>
         <textarea
           v-model="textB"
           class="input w-full h-40 font-mono text-sm"
-          placeholder="Geänderten Text hier eingeben..."
+          :placeholder="$t('toolbox.geaendertenTextHierEingeben')"
         ></textarea>
       </div>
     </div>

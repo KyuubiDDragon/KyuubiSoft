@@ -1,5 +1,9 @@
 <script setup>
+import { useI18n } from \'vue-i18n\'
+
+const { t } = useI18n()
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DocumentDuplicateIcon, CheckIcon } from '@heroicons/vue/24/outline'
 
 const activeTab = ref('json')
@@ -22,7 +26,7 @@ function formatJson() {
     output.value = JSON.stringify(parsed, null, 2)
     error.value = ''
   } catch (e) {
-    error.value = 'Ungültiges JSON: ' + e.message
+    error.value = t('toolbox.ungueltigesJson') + e.message
     output.value = ''
   }
 }
@@ -33,7 +37,7 @@ function minifyJson() {
     output.value = JSON.stringify(parsed)
     error.value = ''
   } catch (e) {
-    error.value = 'Ungültiges JSON: ' + e.message
+    error.value = t('toolbox.ungueltigesJson') + e.message
     output.value = ''
   }
 }
@@ -44,7 +48,7 @@ function validateJson() {
     output.value = '✓ Valides JSON'
     error.value = ''
   } catch (e) {
-    error.value = 'Ungültiges JSON: ' + e.message
+    error.value = t('toolbox.ungueltigesJson') + e.message
     output.value = ''
   }
 }
@@ -65,7 +69,7 @@ function decodeBase64() {
     output.value = decodeURIComponent(escape(atob(input.value)))
     error.value = ''
   } catch (e) {
-    error.value = 'Decoding fehlgeschlagen: Ungültiger Base64 String'
+    error.value = t('toolbox.decodingFehlgeschlagenUngueltigerBase64String')
     output.value = ''
   }
 }
@@ -81,7 +85,7 @@ function decodeUrl() {
     output.value = decodeURIComponent(input.value)
     error.value = ''
   } catch (e) {
-    error.value = 'Decoding fehlgeschlagen: Ungültiger URL String'
+    error.value = t('toolbox.decodingFehlgeschlagenUngueltigerUrlString')
     output.value = ''
   }
 }
@@ -154,7 +158,7 @@ function clearAll() {
         <button @click="formatJson" class="btn-primary">Formatieren</button>
         <button @click="minifyJson" class="btn-secondary">Minifizieren</button>
         <button @click="validateJson" class="btn-secondary">Validieren</button>
-        <button @click="clearAll" class="btn-ghost">Löschen</button>
+        <button @click="clearAll" class="btn-ghost">{{ $t('common.delete') }}</button>
       </div>
     </div>
 
@@ -171,7 +175,7 @@ function clearAll() {
       <div class="flex gap-2">
         <button @click="encodeBase64" class="btn-primary">Encode</button>
         <button @click="decodeBase64" class="btn-secondary">Decode</button>
-        <button @click="clearAll" class="btn-ghost">Löschen</button>
+        <button @click="clearAll" class="btn-ghost">{{ $t('common.delete') }}</button>
       </div>
     </div>
 
@@ -188,13 +192,13 @@ function clearAll() {
       <div class="flex gap-2">
         <button @click="encodeUrl" class="btn-primary">Encode</button>
         <button @click="decodeUrl" class="btn-secondary">Decode</button>
-        <button @click="clearAll" class="btn-ghost">Löschen</button>
+        <button @click="clearAll" class="btn-ghost">{{ $t('common.delete') }}</button>
       </div>
     </div>
 
     <!-- UUID Tab -->
     <div v-if="activeTab === 'uuid'" class="space-y-4">
-      <p class="text-sm text-gray-400">Generiere zufällige UUIDs (Version 4)</p>
+      <p class="text-sm text-gray-400">{{ $t('toolbox.toolboxgenerierezufaelligeuuidsversion4') }}</p>
       <div class="flex gap-2">
         <button @click="generateUuidV4" class="btn-primary">1x UUID</button>
         <button @click="generateMultipleUuids" class="btn-secondary">10x UUIDs</button>
@@ -213,7 +217,7 @@ function clearAll() {
       <button
         @click="copyOutput"
         class="absolute top-8 right-2 btn-icon"
-        :title="copied ? 'Kopiert!' : 'Kopieren'"
+        :title="copied ? 'Kopiert!' : $t('common.copy')"
       >
         <CheckIcon v-if="copied" class="w-4 h-4 text-green-400" />
         <DocumentDuplicateIcon v-else class="w-4 h-4" />

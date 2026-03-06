@@ -67,7 +67,7 @@ const recentEntries = computed(() => {
             </span>
           </div>
           <p class="text-xs text-gray-500 mt-0.5">
-            {{ entry.user_name || entry.user_email || 'System' }}
+            {{ entry.user_name || entry.user_email || $t('common.system') }}
           </p>
         </div>
         <span class="text-2xs text-gray-600 whitespace-nowrap mt-0.5">

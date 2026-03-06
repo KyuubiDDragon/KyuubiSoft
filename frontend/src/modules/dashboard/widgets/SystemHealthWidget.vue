@@ -17,7 +17,7 @@ function getBarColor(usage) {
       <router-link to="/system" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.open') }}</router-link>
     </div>
 
-    <p class="text-xs text-gray-500 mb-4">Uptime: {{ data?.uptime || '-' }}</p>
+    <p class="text-xs text-gray-500 mb-4">{{ t('dashboard.uptime') }}: {{ data?.uptime || '-' }}</p>
 
     <!-- CPU -->
     <div class="mb-3">

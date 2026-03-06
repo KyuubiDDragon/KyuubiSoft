@@ -75,7 +75,7 @@ const recentDeployments = computed(() => {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="text-sm text-white truncate">
-              {{ entry.pipeline_name || 'Deployment' }}
+              {{ entry.pipeline_name || $t('widgets.deployment') }}
             </span>
             <code v-if="entry.commit_hash" class="text-2xs text-gray-500 font-mono">{{ shortHash(entry.commit_hash) }}</code>
           </div>

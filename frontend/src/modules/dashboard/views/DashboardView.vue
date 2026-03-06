@@ -98,10 +98,52 @@ const widgetIcons = {
   recent_activity: ArrowPathIcon,
 }
 
+// Widget title i18n key mapping
+const widgetTitleKeys = {
+  quick_stats: 'widgets.quickStats',
+  recent_tasks: 'widgets.recentTasks',
+  recent_documents: 'widgets.recentDocuments',
+  uptime_status: 'widgets.uptimeStatus',
+  time_tracking_today: 'widgets.timeTrackingToday',
+  kanban_summary: 'widgets.kanbanSummary',
+  productivity_chart: 'widgets.productivity',
+  calendar_preview: 'widgets.calendarPreview',
+  quick_notes: 'widgets.quickNotes',
+  recent_activity: 'widgets.recentActivity',
+  recurring_tasks_upcoming: 'widgets.recurringTasks',
+  favorites_quick_access: 'widgets.favorites',
+  storage_usage: 'widgets.storageUsage',
+  password_health: 'widgets.passwordHealth',
+  project_progress: 'widgets.projectProgress',
+  checklist_progress: 'widgets.checklistProgress',
+  weather: 'widgets.weather',
+  countdown: 'widgets.countdown',
+  custom_links: 'widgets.customLinks',
+  quote_of_day: 'widgets.quoteOfDay',
+  link_stats: 'widgets.linkStats',
+  backup_status: 'widgets.backupStatus',
+  system_health: 'widgets.systemHealth',
+  github_activity: 'widgets.githubActivity',
+  pomodoro_timer: 'widgets.pomodoroTimer',
+  audit_activity: 'widgets.auditActivity',
+  cron_jobs: 'widgets.cronJobs',
+  deployment_status: 'widgets.deploymentStatus',
+}
+
+function localizeWidgetTitles(widgetList) {
+  for (const widget of widgetList) {
+    const key = widgetTitleKeys[widget.widget_type]
+    if (key) {
+      widget.title = t(key)
+    }
+  }
+}
+
 async function fetchWidgets() {
   try {
     const response = await api.get('/api/v1/dashboard/widgets')
     widgets.value = response.data.data
+    localizeWidgetTitles(widgets.value)
   } catch (error) {
     console.error('Failed to fetch widgets:', error)
   }
@@ -218,7 +260,7 @@ async function addWidget(widgetType) {
 
   const newWidget = {
     widget_type: widgetType,
-    title: widgetInfo.title,
+    title: widgetTitleKeys[widgetType] ? t(widgetTitleKeys[widgetType]) : widgetInfo.title,
     position_x: position.x,
     position_y: position.y,
     width: defaultWidth,
@@ -479,7 +521,7 @@ function handleWidgetConfig(widget) {
     <div class="page-header">
       <div>
         <h1 class="text-2xl font-bold text-white tracking-tight">
-          {{ $t('dashboardModule.welcomeBack') }} <span class="text-gradient">{{ authStore.user?.username || 'User' }}</span>
+          {{ $t('dashboardModule.welcomeBack') }} <span class="text-gradient">{{ authStore.user?.username || $t('common.user') }}</span>
         </h1>
         <p class="page-subtitle">{{ $t('dashboardModule.personalDashboard') }}</p>
       </div>
@@ -644,7 +686,7 @@ function handleWidgetConfig(widget) {
                   <component :is="widgetIcons[widget.type] || ChartBarIcon" class="w-5 h-5 text-primary-400" />
                 </div>
                 <div>
-                  <p class="text-white font-medium">{{ widget.title }}</p>
+                  <p class="text-white font-medium">{{ widget.title_key ? $t(widget.title_key) : widget.title }}</p>
                   <p class="text-xs text-gray-500">{{ widget.default_width }}x{{ widget.default_height }}</p>
                 </div>
               </button>

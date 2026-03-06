@@ -19,7 +19,7 @@ defineProps({ widget: Object, data: Array })
         <div class="flex-1 min-w-0">
           <p class="text-sm text-white truncate">{{ event.title }}</p>
           <p class="text-xs text-gray-500">
-            {{ event.source_type === 'kanban' ? 'Kanban' : event.source_type === 'task' ? $t('widgets.task') : $t('widgets.event') }}
+            {{ event.source_type === 'kanban' ? $t('widgets.kanban') : event.source_type === 'task' ? $t('widgets.task') : $t('widgets.event') }}
           </p>
         </div>
         <span class="text-xs text-gray-400">{{ formatDate(event.start_date) }}</span>

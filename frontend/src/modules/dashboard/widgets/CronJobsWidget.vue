@@ -57,7 +57,7 @@ const recentExecutions = computed(() => {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="text-sm text-white truncate">
-              {{ entry.job_name || entry.command || 'Cron Job' }}
+              {{ entry.job_name || entry.command || $t('widgets.cronJob') }}
             </span>
             <code v-if="entry.expression" class="text-2xs text-gray-500 font-mono">{{ entry.expression }}</code>
           </div>

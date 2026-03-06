@@ -498,7 +498,7 @@ function formatDate(dateString) {
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
                 <label class="label">Name *</label>
-                <input v-model="form.name" type="text" class="input" required placeholder=$t('connections.myServer') />
+                <input v-model="form.name" type="text" class="input" required :placeholder="$t('connections.myServer')" />
               </div>
 
               <div>

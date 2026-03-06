@@ -557,7 +557,7 @@ const categoryColors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '
             <div class="space-y-4">
               <div>
                 <label class="label">Name</label>
-                <input v-model="categoryForm.name" type="text" class="input" placeholder=$t('tickets.kategoriename') />
+                <input v-model="categoryForm.name" type="text" class="input" :placeholder="$t('tickets.kategoriename')" />
               </div>
 
               <div>

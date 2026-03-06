@@ -436,7 +436,7 @@ onUnmounted(() => {
           </div>
           <button
             @click="terminateSessions"
-            :disabled=$t('system.isterminatingsessions')
+            :disabled="isTerminatingSessions"
             class="btn-danger"
           >
             {{ isTerminatingSessions ? $t('system.wirdBeendet') : 'Sessions beenden' }}

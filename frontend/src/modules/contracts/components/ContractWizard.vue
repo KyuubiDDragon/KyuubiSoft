@@ -599,9 +599,9 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                 <div v-if="isCustom">
                   <label class="label flex items-center gap-1.5 mb-2">
                     {{ $t('contracts.contractText') }}
-                    <FieldTooltip>{{ $t('contracts.gibHierDeinenIndividuellen{{ $t('contracts.contractText') }}EinDu') }}</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.customContractHint') }}</FieldTooltip>
                   </label>
-                  <TipTapEditor v-model="form.content_html" placeholder="{{ $t('contracts.contractText') }} eingeben..." min-height="300px" />
+                  <TipTapEditor v-model="form.content_html" :placeholder="$t('contracts.enterContractText')" min-height="300px" />
                 </div>
 
                 <!-- License specific -->
@@ -1143,7 +1143,7 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <div>
                     <label class="label flex items-center gap-1.5">
                       {{ $t('contracts.noticePeriodDays') }}
-                      <FieldTooltip>{{ $t('contracts.anzahlTageVor{{ $t('contracts.endDate') }}BisWannGekuendigt') }}</FieldTooltip>
+                      <FieldTooltip>{{ $t('contracts.noticePeriodHint') }}</FieldTooltip>
                     </label>
                     <input v-model.number="form.notice_period_days" type="number" min="0" class="input" />
                   </div>
@@ -1340,11 +1340,11 @@ const isCustom = computed(() => form.value.contract_type === 'custom')
                   <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                     <input v-model="form.save_as_template" type="checkbox" class="checkbox" />
                     Als Vorlage speichern
-                    <FieldTooltip>{{ $t('contracts.speichertDen{{ $t('contracts.contractText') }}AlsWiederverwendbareVorlageBeim') }}</FieldTooltip>
+                    <FieldTooltip>{{ $t('contracts.saveAsTemplateHint') }}</FieldTooltip>
                   </label>
                   <div v-if="form.save_as_template" class="mt-3">
                     <label class="label">Vorlagenname *</label>
-                    <input v-model="form.template_name" type="text" class="input" placeholder=$t('contracts.hintCustomTitle') />
+                    <input v-model="form.template_name" type="text" class="input" :placeholder="$t('contracts.hintCustomTitle')" />
                   </div>
                 </div>
               </div>

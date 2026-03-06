@@ -612,7 +612,7 @@ watch(() => route.params.id, () => {
           <button
             @click="duplicateChecklist"
             class="flex items-center gap-2 btn-secondary"
-            title=$t('checklists.duplicateChecklist')
+            :title="$t('checklists.duplicateChecklist')"
           >
             <DocumentDuplicateIcon class="w-4 h-4" />
             <span class="hidden sm:inline">Duplizieren</span>

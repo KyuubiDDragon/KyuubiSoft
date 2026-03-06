@@ -254,7 +254,7 @@ function formatDate(dateStr) {
         <input
           v-model="contactsStore.filters.search"
           type="text"
-          placeholder=$t('contacts.searchContacts')
+          :placeholder="$t('contacts.searchContacts')"
           class="input pl-10 w-full"
         />
       </div>

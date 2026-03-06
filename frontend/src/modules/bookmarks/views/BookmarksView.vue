@@ -631,7 +631,7 @@ function isGroupExpanded(groupId) {
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingBookmark ? $t('bookmarks.editBookmark') : '{{ $t('bookmarks.newBookmark') }}' }}
+              {{ editingBookmark ? $t('bookmarks.editBookmark') : $t('bookmarks.newBookmark') }}
             </h2>
             <button @click="showModal = false" class="text-gray-400 hover:text-white">
               <XMarkIcon class="w-5 h-5" />
@@ -781,7 +781,7 @@ function isGroupExpanded(groupId) {
                 v-model="groupForm.name"
                 type="text"
                 class="input"
-                placeholder=$t('bookmarks.groupName')
+                :placeholder="$t('bookmarks.groupName')"
                 required
               />
             </div>

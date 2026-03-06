@@ -580,7 +580,7 @@ function canDeleteUser(user) {
               <button
                 @click="openPermissionsModal(user)"
                 class="text-yellow-400 hover:text-yellow-300 mr-3"
-                title=$t('users.berechtigungenVerwalten')
+                :title="$t('users.berechtigungenVerwalten')"
               >
                 <KeyIcon class="w-5 h-5 inline" />
               </button>
@@ -865,7 +865,7 @@ function canDeleteUser(user) {
                 <input
                   v-model="permissionSearch"
                   type="text"
-                  placeholder=$t('users.berechtigungenSuchen')
+                  :placeholder="$t('users.berechtigungenSuchen')"
                   class="input"
                 />
               </div>

@@ -740,7 +740,7 @@ watch(() => projectStore.selectedProjectId, () => {
                         v-model="form.ssh_password"
                         type="password"
                         class="input w-full"
-                        placeholder=$t('dockerModule.optionalWennPrivateKeyVerwendetWird')
+                        :placeholder="$t('dockerModule.optionalWennPrivateKeyVerwendetWird')"
                       />
                     </div>
                     <div>

@@ -1,9 +1,8 @@
 <script setup>
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-import { ref, computed, watch, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { XMarkIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useNotificationRulesStore } from '@/modules/notification-rules/stores/notificationRulesStore'
 
@@ -266,7 +265,7 @@ async function handleSave() {
                 v-model="form.name"
                 type="text"
                 class="input w-full"
-                placeholder=$t('notificationRules.zbServerausfallBenachrichtigung')
+                :placeholder="$t('notificationRules.zbServerausfallBenachrichtigung')"
               />
             </div>
 

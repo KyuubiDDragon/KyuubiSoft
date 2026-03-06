@@ -1,10 +1,9 @@
 <script setup>
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
 import { ref } from 'vue'
 
 import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const domain = ref('')
 const isLoading = ref(false)
 const results = ref(null)

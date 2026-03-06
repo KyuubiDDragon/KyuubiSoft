@@ -98,7 +98,7 @@ async function rejectUser(user) {
   }
   try {
     await api.post(`/api/v1/users/${user.id}/reject`)
-    uiStore.showSuccess('Registrierung abgelehnt')
+    uiStore.showSuccess(t('users.registrationRejected'))
     await loadPendingUsers()
   } catch (err) {
     console.error('Reject error:', err)

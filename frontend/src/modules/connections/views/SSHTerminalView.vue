@@ -51,7 +51,7 @@ async function fetchConnection() {
       router.push('/connections')
     }
   } catch {
-    uiStore.showError('Verbindung nicht gefunden')
+    uiStore.showError(t('connections.connectionNotFound'))
     router.push('/connections')
   } finally {
     loading.value = false

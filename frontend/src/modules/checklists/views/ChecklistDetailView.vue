@@ -168,7 +168,7 @@ async function updateSettings() {
     checklist.value = { ...checklist.value, ...response.data.data }
     showSettingsModal.value = false
     newPassword.value = ''
-    uiStore.showSuccess('Einstellungen gespeichert')
+    uiStore.showSuccess(t('checklists.settingsSaved'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
   }
@@ -176,7 +176,7 @@ async function updateSettings() {
 
 async function addCategory() {
   if (!newCategory.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 
@@ -227,7 +227,7 @@ async function deleteCategory(category) {
 
 async function addItem() {
   if (!newItem.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('common.titleRequired'))
     return
   }
 
@@ -237,7 +237,7 @@ async function addItem() {
     checklist.value.items.push({ ...response.data.data, entries: [], passed_count: 0, failed_count: 0, entry_count: 0 })
     showAddItemModal.value = false
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
-    uiStore.showSuccess('Testpunkt erstellt')
+    uiStore.showSuccess(t('checklists.itemCreated'))
   } catch (error) {
     uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
   }
@@ -316,7 +316,7 @@ async function updateItem(item) {
       required_testers: item.required_testers,
     })
     editingItem.value = null
-    uiStore.showSuccess('Testpunkt aktualisiert')
+    uiStore.showSuccess(t('checklists.itemUpdated'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }

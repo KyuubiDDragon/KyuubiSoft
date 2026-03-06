@@ -153,10 +153,10 @@ async function saveConnection() {
 
     if (editingConnection.value) {
       await api.put(`/api/v1/connections/${editingConnection.value.id}`, data)
-      uiStore.showSuccess('Verbindung aktualisiert')
+      uiStore.showSuccess(t('connections.connectionUpdated'))
     } else {
       await api.post('/api/v1/connections', data)
-      uiStore.showSuccess('Verbindung erstellt')
+      uiStore.showSuccess(t('connections.connectionCreated'))
     }
 
     await loadConnections()

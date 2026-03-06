@@ -117,7 +117,7 @@
     "invalidCredentials": "Ungültige Anmeldedaten",
     "invalidEmail": "Ungültige E-Mail-Adresse",
     "login": "Anmelden",
-    "loginSuccess": "Erfolgreich angemeldet",
+    "loginSuccess": "Erfolgreich angemeldet!",
     "logout": "Abmelden",
     "logoutSuccess": "Erfolgreich abgemeldet",
     "password": "Passwort",
@@ -258,7 +258,18 @@
     "source": "Quelle",
     "target": "Ziel",
     "retention": "Aufbewahrung",
-    "days": "Tage"
+    "days": "Tage",
+    "errorLoadingData": "Fehler beim Laden der Backup-Daten",
+    "targetUpdated": "Speicherziel aktualisiert",
+    "targetCreated": "Speicherziel erstellt",
+    "connectionSuccess": "Verbindung erfolgreich!",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "connectionTestFailed": "Verbindungstest fehlgeschlagen",
+    "scheduleUpdated": "Zeitplan aktualisiert",
+    "scheduleCreated": "Zeitplan erstellt",
+    "restoreCompleted": "Wiederherstellung abgeschlossen!",
+    "restoreFailed": "Wiederherstellung fehlgeschlagen",
+    "downloadFailed": "Download fehlgeschlagen"
   },
   "backupsModule": {
     "aktiveZeitplaene": "Aktive Zeitpläne",
@@ -549,7 +560,8 @@
     "titleRequired": "Titel ist erforderlich",
     "nameRequired": "Name ist erforderlich",
     "itemCreated": "Testpunkt erstellt",
-    "itemUpdated": "Testpunkt aktualisiert"
+    "itemUpdated": "Testpunkt aktualisiert",
+    "settingsSaved": "Einstellungen gespeichert"
   },
   "checklistsModule": {
     "alleEintraegeWurdenZurueckgesetzt": "Alle Einträge wurden zurückgesetzt",
@@ -696,7 +708,33 @@
     "selectAll": "Alle auswählen",
     "deselectAll": "Alle abwählen",
     "confirmDeleteItem": "\"{name}\" wirklich löschen?",
-    "confirmDeleteItemWithDetail": "\"{name}\" wirklich löschen? {detail}"
+    "confirmDeleteItemWithDetail": "\"{name}\" wirklich löschen? {detail}",
+    "errorLoading": "Fehler beim Laden",
+    "errorSaving": "Fehler beim Speichern",
+    "errorUpdating": "Fehler beim Aktualisieren",
+    "errorToggling": "Fehler beim Umschalten",
+    "errorRemoving": "Fehler beim Entfernen",
+    "errorCopying": "Fehler beim Kopieren",
+    "errorSyncing": "Fehler beim Synchronisieren",
+    "errorCancelling": "Fehler beim Abbrechen",
+    "errorChecking": "Fehler beim Check",
+    "errorMoving": "Fehler beim Verschieben",
+    "errorSearching": "Fehler bei der Suche",
+    "errorDownloading": "Fehler beim Herunterladen",
+    "savedSuccessfully": "Erfolgreich gespeichert",
+    "deletedSuccessfully": "Erfolgreich gelöscht",
+    "updatedSuccessfully": "Erfolgreich aktualisiert",
+    "statusUpdated": "Status aktualisiert",
+    "nameRequired": "Name ist erforderlich",
+    "titleRequired": "Titel ist erforderlich",
+    "urlRequired": "URL ist erforderlich",
+    "emailRequired": "E-Mail ist erforderlich",
+    "readOnly": "Nur Lesen",
+    "linkCopied": "Link kopiert!",
+    "copiedToClipboard": "In Zwischenablage kopiert",
+    "linkCopiedToClipboard": "Link in die Zwischenablage kopiert!",
+    "unknownError": "Unbekannter Fehler",
+    "uploadFailed": "Upload fehlgeschlagen"
   },
   "connections": {
     "connectionDeleted": "Verbindung gelöscht",
@@ -722,7 +760,10 @@
     "websocketConnectionError": "WebSocket-Verbindungsfehler zum Terminalserver",
     "testConnection": "Verbindung testen",
     "confirmDelete": "Verbindung \"{name}\" wirklich löschen?",
-    "confirmDeleteTag": "Tag \"{name}\" wirklich löschen?"
+    "confirmDeleteTag": "Tag \"{name}\" wirklich löschen?",
+    "connectionUpdated": "Verbindung aktualisiert",
+    "connectionCreated": "Verbindung erstellt",
+    "connectionNotFound": "Verbindung nicht gefunden"
   },
   "connectionsModule": {
     "connectionserrorcreatingterminal": "connections.errorCreatingTerminal",
@@ -771,7 +812,8 @@
     "lastNamePlaceholder": "Mustermann",
     "companyPlaceholder": "Firma GmbH",
     "cityPlaceholder": "Berlin",
-    "countryPlaceholder": "Deutschland"
+    "countryPlaceholder": "Deutschland",
+    "firstAndLastNameRequired": "Vorname und Nachname sind erforderlich"
   },
   "contactsModule": {
     "aeltesteZuerst": "Älteste zuerst",
@@ -1580,8 +1622,8 @@
   },
   "discordModule": {
     "account": "Account",
-    "accountAdded": "Account Added",
-    "accountRemoved": "Account Removed",
+    "accountAdded": "Discord Account hinzugefügt",
+    "accountRemoved": "Account entfernt",
     "activebackupslength0": "activeBackups.length > 0",
     "addAccount": "Add Account",
     "addBot": "Add Bot",
@@ -1590,15 +1632,15 @@
     "allbackupslength0": "allBackups.length === 0",
     "alleChannelsNachrichtenMedienEinstellungenSichern": "Alle Channels, Nachrichten, Medien & Einstellungen sichern",
     "backupAuswaehlen": "Backup auswählen",
-    "backupCompleted": "Backup Completed",
+    "backupCompleted": "Backup abgeschlossen",
     "backupDeleted": "Backup Deleted",
-    "backupFailed": "Backup Failed",
+    "backupFailed": "Backup fehlgeschlagen: {msg}",
     "backupInActivebackups": "backup in activeBackups",
     "backupInFilteredallbackups": "backup in filteredAllBackups",
     "backupLoeschen": "Backup löschen",
     "backupsmoduleletztesbackup": "backupsModule.letztesBackup",
     "botAddedSuccess": "Bot Added Success",
-    "botRemoved": "Bot Removed",
+    "botRemoved": "Bot entfernt",
     "botValidated": "Bot Validated",
     "botserverslength0": "botServers.length === 0",
     "channelInSelectedbotserverchannels": "channel in selectedBotServer.channels",
@@ -1628,14 +1670,14 @@
     "discordsyncservers": "discord.syncServers",
     "enableIntents": "Enable Intents",
     "enterCredentials": "Enter Credentials",
-    "errorAdding": "Error Adding",
+    "errorAdding": "Fehler beim Hinzufügen",
     "errorAddingBot": "Error Adding Bot",
     "errorCancelling": "Error Cancelling",
     "errorCopying": "Error Copying",
-    "errorCreatingJob": "Error Creating Job",
+    "errorCreatingJob": "Fehler beim Erstellen des Jobs",
     "errorDeleting": "Error Deleting",
-    "errorLoadingLinks": "Error Loading Links",
-    "errorLoadingMessages": "Error Loading Messages",
+    "errorLoadingLinks": "Fehler beim Laden der Links",
+    "errorLoadingMessages": "Fehler beim Laden der Nachrichten",
     "errorRemoving": "Error Removing",
     "errorSearching": "Error Searching",
     "errorSyncing": "Error Syncing",
@@ -1647,10 +1689,10 @@
     "getstatusbadgeclassselectedviewbackupstatus": "getStatusBadgeClass(selectedViewBackup.status)",
     "goToBot": "Go To Bot",
     "invalidBotToken": "Invalid Bot Token",
-    "inviteLinkCopied": "Invite Link Copied",
+    "inviteLinkCopied": "Invite-Link kopiert!",
     "isloadingbackupdetails": "isLoadingBackupDetails",
     "isstartingbotbackup": "isStartingBotBackup",
-    "jobCancelled": "Job Cancelled",
+    "jobCancelled": "Job abgebrochen",
     "keineChannelsGefunden": "Keine Channels gefunden",
     "keineLinksGefunden": "Keine Links gefunden",
     "keineLinksMitAktuellemFilter": "Keine Links mit aktuellem Filter",
@@ -1671,7 +1713,7 @@
     "openbackupmodalchannel": "openBackupModal(channel)",
     "openbackupmodalnullSelectedserver": "openBackupModal(null, selectedServer)",
     "openbackupmodalselecteddm": "openBackupModal(selectedDM)",
-    "pleaseEnterToken": "Please Enter Token",
+    "pleaseEnterToken": "Bitte Token eingeben",
     "removeAccount": "Remove Account",
     "removeBot": "Remove Bot",
     "resetFilters": "Reset Filters",
@@ -1735,7 +1777,13 @@
     "noMediaSmall": "Keine Medien gefunden",
     "noLinksWithFilterSmall": "Keine Links mit aktuellem Filter",
     "noMediaOrLinks": "Keine Medien oder Links gefunden. Erstelle ein Backup um Inhalte zu sammeln.",
-    "noMessagesFound": "Keine Nachrichten gefunden"
+    "noMessagesFound": "Keine Nachrichten gefunden",
+    "errorCreatingBackup": "Fehler beim Erstellen des Backups",
+    "minTwoCharsRequired": "Mindestens 2 Zeichen erforderlich",
+    "deleteJobStarted": "Lösch-Job gestartet",
+    "guildIdCopied": "Guild ID kopiert!",
+    "errorStartingBackup": "Fehler beim Starten des Backups",
+    "backupFailedMsg": "Backup \"{name}\" fehlgeschlagen: {msg}"
   },
   "dns": {
     "addDomain": "Domain bearbeiten",
@@ -2992,7 +3040,9 @@
     "listsmoduleneueneintraghinzufuegen": "listsModule.neuenEintragHinzufuegen",
     "neuenEintragHinzufuegen": "Neuen Eintrag hinzufügen...",
     "verwalteDeineListenUndAufgaben": "Verwalte deine Listen und Aufgaben",
-    "zieheEintraegeAmGriffUmSieNeu": "Ziehe Einträge am Griff um sie neu anzuordnen"
+    "zieheEintraegeAmGriffUmSieNeu": "Ziehe Einträge am Griff um sie neu anzuordnen",
+    "listCreated": "Liste erstellt",
+    "listUpdated": "Liste aktualisiert"
   },
   "logs": {
     "fehlerBeimLadenDerContainer": "Fehler beim Laden der Container",
@@ -3125,7 +3175,8 @@
     "waehleDieQuellenAusDieDuAbonnieren": "Wähle die Quellen aus, die du abonnieren möchtest.",
     "waehleInDenEinstellungenDeineLieblingsquellenAus": "Wähle in den Einstellungen deine Lieblingsquellen aus.",
     "wirdAusFeedGelesenWennLeer": "Wird aus Feed gelesen, wenn leer",
-    "originalartikelOeffnen": "Originalartikel öffnen"
+    "originalartikelOeffnen": "Originalartikel öffnen",
+    "feedsUpdatedNoNew": "Feeds aktualisiert, keine neuen Artikel"
   },
   "notes": {
     "archive": "Dearchivieren",
@@ -3765,9 +3816,29 @@
     "title": "Projekte",
     "link": "Verknüpfen",
     "unlink": "Verknüpfung lösen",
-    "noItemsLinked": "Keine Einträge verknüpft",
+    "noItemsLinked": "Noch keine Elemente verknüpft",
     "milestones": "Meilensteine",
-    "budget": "Budget"
+    "budget": "Budget",
+    "memberRemoved": "Mitglied entfernt",
+    "nameRequired": "Name ist erforderlich",
+    "emailRequired": "E-Mail ist erforderlich",
+    "noProjectsAvailable": "Kein Projekt vorhanden",
+    "clickToCreate": "Klicken um ein Projekt zu erstellen",
+    "linkedItems": "Verknüpfte Elemente",
+    "trackedTime": "Erfasste Zeit",
+    "color": "Farbe",
+    "allStatus": "Alle Status",
+    "allTypes": "Alle Typen",
+    "useButtonsToLink": "Verwende die Buttons oben um Dokumente, Listen etc. zu verknüpfen",
+    "projectMembers": "Projektmitglieder",
+    "addMember": "Mitglied hinzufügen",
+    "emailAddress": "E-Mail Adresse",
+    "readOnly": "Lesen",
+    "restrictedNote": "Eingeschränkte Benutzer sehen nur Inhalte in Projekten, denen sie zugewiesen sind.",
+    "currentMembers": "Aktuelle Mitglieder",
+    "noMembersYet": "Noch keine Mitglieder hinzugefügt",
+    "noAvailableItems": "Keine verfügbaren Elemente",
+    "confirmDeleteProject": "Projekt \"{name}\" wirklich löschen?"
   },
   "projectsModule": {
     "berechtigungAktualisiert": "Berechtigung aktualisiert",
@@ -3959,7 +4030,12 @@
     "stoppen": "Stoppen",
     "taeglich0000": "Täglich (00:00)",
     "taeglich0300": "Täglich (03:00)",
-    "woechentlichSonntag": "Wöchentlich (Sonntag)"
+    "woechentlichSonntag": "Wöchentlich (Sonntag)",
+    "serviceNameRequired": "Service-Name ist erforderlich",
+    "serviceRemoved": "Service entfernt",
+    "scheduleAndCommandRequired": "Schedule und Command sind erforderlich",
+    "crontabSaved": "Crontab gespeichert",
+    "processTerminated": "Prozess beendet"
   },
   "settings": {
     "aiAssistant": "AI Assistent",
@@ -4750,7 +4826,11 @@
     "filterZuruecksetzen": "Filter zurücksetzen",
     "internerKommentarNurFuerTeamSichtbar": "Interner Kommentar – nur für das Team sichtbar",
     "keineStatusaenderungen": "Keine Statusänderungen",
-    "teilenSieDiesenLinkMitIhrenKunden": "Teilen Sie diesen Link mit Ihren Kunden"
+    "teilenSieDiesenLinkMitIhrenKunden": "Teilen Sie diesen Link mit Ihren Kunden",
+    "ticketNotFound": "Ticket nicht gefunden",
+    "ticketUpdated": "Ticket aktualisiert",
+    "ticketAssigned": "Ticket zugewiesen",
+    "ticketCreated": "Ticket erstellt"
   },
   "time": {
     "days": "Tage",
@@ -4764,7 +4844,17 @@
     "yesterday": "Gestern",
     "daysAgo": "Vor {n} Tagen",
     "hoursAgo": "Vor {n} Stunden",
-    "minutesAgo": "Vor {n} Min."
+    "minutesAgo": "Vor {n} Min.",
+    "errorLoadingData": "Fehler beim Laden der Daten",
+    "errorStopping": "Fehler beim Stoppen",
+    "noProject": "Kein Projekt",
+    "taskNameRequired": "Aufgabenname ist erforderlich",
+    "timerStarted": "Timer gestartet",
+    "errorStarting": "Fehler beim Starten",
+    "timerStopped": "Timer gestoppt",
+    "entryUpdated": "Eintrag aktualisiert",
+    "entryCreated": "Eintrag erstellt",
+    "entryDeleted": "Eintrag gelöscht"
   },
   "timeTracking": {
     "abrechenbar": "Abrechenbar",
@@ -5157,7 +5247,19 @@
     "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver",
     "checkNow": "Jetzt prüfen",
     "confirmDeleteMonitor": "Monitor \"{name}\" wirklich löschen?",
-    "confirmDeleteFolder": "Ordner \"{name}\" wirklich löschen?"
+    "confirmDeleteFolder": "Ordner \"{name}\" wirklich löschen?",
+    "noProject": "Kein Projekt",
+    "hostnameRequired": "Hostname ist erforderlich",
+    "monitorUpdated": "Monitor aktualisiert",
+    "monitorCreated": "Monitor erstellt",
+    "monitorDeleted": "Monitor gelöscht",
+    "monitorPaused": "Monitor pausiert",
+    "monitorResumed": "Monitor fortgesetzt",
+    "folderNameRequired": "Ordnername ist erforderlich",
+    "folderUpdated": "Ordner aktualisiert",
+    "folderCreated": "Ordner erstellt",
+    "folderDeleted": "Ordner gelöscht",
+    "monitorsMoved": "Monitore verschoben"
   },
   "users": {
     "aufProjekteEinschraenken": "Auf Projekte einschränken",
@@ -5212,7 +5314,8 @@
     "eingeschraenkterZugriff": "Eingeschränkter Zugriff",
     "keineProjekteAusgewaehltBenutzerHatKeinenZugriff": "Keine Projekte ausgewählt – Benutzer hat keinen Zugriff",
     "loeschenMoechtest": "Möchtest du löschen",
-    "loeschenMoechtestDieseAktionKannNichtRueckgaengig": "Möchtest du löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+    "loeschenMoechtestDieseAktionKannNichtRueckgaengig": "Möchtest du löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "registrationRejected": "Registrierung abgelehnt"
   },
   "webhooks": {
     "benachrichtigungenAnDiscordSlackOderAndereDienste": "Benachrichtigungen an Discord, Slack oder andere Dienste senden",
@@ -5226,7 +5329,9 @@
     "webhookErstellt": "Webhook erstellt",
     "webhookGeloescht": "Webhook gelöscht",
     "disable": "Deaktivieren",
-    "enable": "Aktivieren"
+    "enable": "Aktivieren",
+    "testSentSuccess": "Test erfolgreich gesendet",
+    "testFailed": "Test fehlgeschlagen"
   },
   "widgets": {
     "boards": "Boards",
@@ -5501,7 +5606,10 @@
     "unitDay": "Tag",
     "unitMonth": "Monat",
     "unitKm": "km",
-    "errorPrefix": "Fehler: {msg}"
+    "errorPrefix": "Fehler: {msg}",
+    "errorRegenerating": "Fehler beim Regenerieren",
+    "noInvoicesYet": "Noch keine Rechnungen",
+    "dataReloaded": "Rechnungsdaten wurden neu geladen"
   },
   "shortcuts": {
     "openDashboard": "Dashboard öffnen",

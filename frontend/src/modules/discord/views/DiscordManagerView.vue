@@ -390,7 +390,7 @@ async function pollActiveBackups() {
         activeBackups.value.splice(i, 1)
         discordStore.loadBackups() // Refresh backups list
       } else if (updated.status === 'failed') {
-        uiStore.showError(`Backup "${updated.target_name}" fehlgeschlagen: ${updated.error_message || 'Unbekannter Fehler'}`)
+        uiStore.showError(`Backup "${updated.target_name}" fehlgeschlagen: ${updated.error_message || t('common.unknownError')}`)
         activeBackups.value.splice(i, 1)
         discordStore.loadBackups()
       } else {
@@ -568,7 +568,7 @@ watch(() => discordStore.selectedAccount, async (newVal) => {
 // Methods
 async function addAccount() {
   if (!tokenInput.value.trim()) {
-    uiStore.showError('Bitte Token eingeben')
+    uiStore.showError(t('discordModule.pleaseEnterToken'))
     return
   }
 
@@ -576,11 +576,11 @@ async function addAccount() {
   try {
     await discordStore.addAccount(tokenInput.value.trim())
     await discordStore.syncAccount(discordStore.selectedAccount)
-    uiStore.showSuccess('Discord Account hinzugefügt')
+    uiStore.showSuccess(t('discordModule.accountAdded'))
     tokenInput.value = ''
     showAddAccountModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Hinzufügen')
+    uiStore.showError(error.response?.data?.message || t('discordModule.errorAdding'))
   } finally {
     isAddingAccount.value = false
   }
@@ -595,9 +595,9 @@ async function removeAccount(account) {
 
   try {
     await discordStore.deleteAccount(account.id)
-    uiStore.showSuccess('Account entfernt')
+    uiStore.showSuccess(t('discordModule.accountRemoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('common.errorRemoving'))
   }
 }
 
@@ -606,7 +606,7 @@ async function syncAccount(accountId) {
     const result = await discordStore.syncAccount(accountId)
     uiStore.showSuccess(`${result.servers_synced} Server und ${result.dm_channels_synced} DMs synchronisiert`)
   } catch (error) {
-    uiStore.showError('Fehler beim Synchronisieren')
+    uiStore.showError(t('common.errorSyncing'))
   }
 }
 
@@ -725,13 +725,13 @@ async function createBackup() {
       activeBackups.value.push(backup)
       startBackupPolling()
     } else if (backup && backup.status === 'completed') {
-      uiStore.showSuccess('Backup abgeschlossen')
+      uiStore.showSuccess(t('discordModule.backupCompleted'))
       discordStore.loadBackups()
     } else if (backup && backup.status === 'failed') {
-      uiStore.showError(`Backup fehlgeschlagen: ${backup.error_message || 'Unbekannter Fehler'}`)
+      uiStore.showError(`Backup fehlgeschlagen: ${backup.error_message || t('common.unknownError')}`)
     }
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen des Backups')
+    uiStore.showError(t('discordModule.errorCreatingBackup'))
   }
 }
 
@@ -744,9 +744,9 @@ async function deleteBackup(backup) {
 
   try {
     await discordStore.deleteBackup(backup.id)
-    uiStore.showSuccess('Backup gelöscht')
+    uiStore.showSuccess(t('backups.backupDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -761,7 +761,7 @@ async function viewBackupMessages(backup) {
     ownerDiscordId.value = result.owner_discord_id || null
     showMessagesModal.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Nachrichten')
+    uiStore.showError(t('discordModule.errorLoadingMessages'))
   }
 }
 
@@ -776,13 +776,13 @@ async function searchMessages() {
     )
     backupMessages.value = result.items || []
   } catch (error) {
-    uiStore.showError('Fehler bei der Suche')
+    uiStore.showError(t('common.errorSearching'))
   }
 }
 
 async function performGlobalSearch() {
   if (globalSearchQuery.value.length < 2) {
-    uiStore.showError('Mindestens 2 Zeichen erforderlich')
+    uiStore.showError(t('discordModule.minTwoCharsRequired'))
     return
   }
 
@@ -792,7 +792,7 @@ async function performGlobalSearch() {
     globalSearchResults.value = result.items || []
     globalSearchTotal.value = result.total || 0
   } catch (error) {
-    uiStore.showError('Fehler bei der Suche')
+    uiStore.showError(t('common.errorSearching'))
   } finally {
     isSearching.value = false
   }
@@ -804,7 +804,7 @@ async function loadAllLinks() {
     const result = await discordStore.loadLinks()
     links.value = result.items || []
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Links')
+    uiStore.showError(t('discordModule.errorLoadingLinks'))
   } finally {
     isLoadingLinks.value = false
   }
@@ -838,19 +838,19 @@ async function createDeleteJob() {
     if (deleteForm.keyword_filter) data.keyword_filter = deleteForm.keyword_filter
 
     await discordStore.createDeleteJob(data)
-    uiStore.showSuccess('Lösch-Job gestartet')
+    uiStore.showSuccess(t('discordModule.deleteJobStarted'))
     showDeleteModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Erstellen des Jobs')
+    uiStore.showError(t('discordModule.errorCreatingJob'))
   }
 }
 
 async function cancelDeleteJob(job) {
   try {
     await discordStore.cancelDeleteJob(job.id)
-    uiStore.showSuccess('Job abgebrochen')
+    uiStore.showSuccess(t('discordModule.jobCancelled'))
   } catch (error) {
-    uiStore.showError('Fehler beim Abbrechen')
+    uiStore.showError(t('common.errorCancelling'))
   }
 }
 
@@ -905,7 +905,7 @@ async function syncBot(bot) {
     const result = await discordStore.syncBot(bot.id)
     uiStore.showSuccess(`${result.servers_synced} Server synchronisiert`)
   } catch (error) {
-    uiStore.showError('Fehler beim Synchronisieren')
+    uiStore.showError(t('common.errorSyncing'))
   } finally {
     isSyncingBot.value = false
   }
@@ -921,9 +921,9 @@ async function removeBot(bot) {
   try {
     await discordStore.deleteBot(bot.id)
     selectedBot.value = null
-    uiStore.showSuccess('Bot entfernt')
+    uiStore.showSuccess(t('discordModule.botRemoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Entfernen')
+    uiStore.showError(t('common.errorRemoving'))
   }
 }
 
@@ -931,9 +931,9 @@ async function copyInviteUrl(bot, extended = false) {
   try {
     const result = await discordStore.getBotInviteUrl(bot.id, extended)
     await navigator.clipboard.writeText(result.invite_url)
-    uiStore.showSuccess('Invite-Link kopiert!')
+    uiStore.showSuccess(t('discordModule.inviteLinkCopied'))
   } catch (error) {
-    uiStore.showError('Fehler beim Kopieren')
+    uiStore.showError(t('common.errorCopying'))
   }
 }
 
@@ -976,7 +976,7 @@ async function startBotServerBackup() {
     // Start polling for backup progress
     startBackupPolling()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Starten des Backups')
+    uiStore.showError(error.response?.data?.message || t('discordModule.errorStartingBackup'))
   } finally {
     isStartingBotBackup.value = false
   }
@@ -1274,7 +1274,7 @@ const filteredBots = computed(() => {
                 />
               </div>
               <select v-model="backupStatusFilter" class="input py-2 text-sm w-36">
-                <option value="">Alle Status</option>
+                <option value="">{{ $t('projects.allStatus') }}</option>
                 <option value="completed">Abgeschlossen</option>
                 <option value="running">Läuft</option>
                 <option value="pending">Wartend</option>
@@ -1644,7 +1644,7 @@ const filteredBots = computed(() => {
               <XCircleIcon class="w-5 h-5 text-red-400 flex-shrink-0" />
               <div>
                 <h4 class="font-medium text-red-400 text-sm">Backup fehlgeschlagen</h4>
-                <p class="text-xs text-red-300 mt-1">{{ selectedViewBackup.error_message || 'Unbekannter Fehler' }}</p>
+                <p class="text-xs text-red-300 mt-1">{{ selectedViewBackup.error_message || t('common.unknownError') }}</p>
               </div>
             </div>
           </div>
@@ -2324,7 +2324,7 @@ const filteredBots = computed(() => {
                 <span class="text-xs text-gray-500">Guild ID:</span>
                 <code class="text-xs text-gray-400 bg-white/[0.04] px-2 py-1 rounded font-mono">{{ selectedBotServer.discord_guild_id }}</code>
                 <button
-                  @click="navigator.clipboard.writeText(selectedBotServer.discord_guild_id); uiStore.showSuccess('Guild ID kopiert!')"
+                  @click="navigator.clipboard.writeText(selectedBotServer.discord_guild_id); uiStore.showSuccess(t('discordModule.guildIdCopied'))"
                   class="p-1 text-gray-500 hover:text-primary-400 rounded"
                   title="Guild ID kopieren"
                 >

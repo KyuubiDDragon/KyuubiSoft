@@ -163,7 +163,7 @@ async function refreshFeeds(silent = false) {
       } else if (totalNew > 0) {
         uiStore.showSuccess(`${totalNew} neue Artikel geladen`)
       } else if (successes > 0) {
-        uiStore.showSuccess('Feeds aktualisiert, keine neuen Artikel')
+        uiStore.showSuccess(t('newsModule.feedsUpdatedNoNew'))
       } else {
         uiStore.showSuccess(t('newsModule.keineFeedsZumAktualisieren'))
       }
@@ -212,7 +212,7 @@ async function markAsRead(item) {
 
 async function addFeed() {
   if (!newFeedForm.value.url) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('common.urlRequired'))
     return
   }
 

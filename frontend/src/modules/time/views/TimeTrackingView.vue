@@ -84,7 +84,7 @@ async function fetchData() {
     projects.value = projectsRes.data.data.projects || []
     stats.value = statsRes.data.data
   } catch (error) {
-    uiStore.showError('Fehler beim Laden der Daten')
+    uiStore.showError(t('time.errorLoadingData'))
   } finally {
     loading.value = false
   }
@@ -93,7 +93,7 @@ async function fetchData() {
 // Start timer
 async function startTimer() {
   if (!quickForm.value.task_name.trim()) {
-    uiStore.showError('Aufgabenname ist erforderlich')
+    uiStore.showError(t('time.taskNameRequired'))
     return
   }
 
@@ -105,10 +105,10 @@ async function startTimer() {
     runningEntry.value = response.data.data.entry
     quickForm.value.task_name = ''
     quickForm.value.project_id = null
-    uiStore.showSuccess('Timer gestartet')
+    uiStore.showSuccess(t('time.timerStarted'))
     startLocalTimer()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Starten')
+    uiStore.showError(error.response?.data?.message || t('time.errorStarting'))
   }
 }
 
@@ -118,12 +118,12 @@ async function stopTimer() {
 
   try {
     await api.post(`/api/v1/time/${runningEntry.value.id}/stop`)
-    uiStore.showSuccess('Timer gestoppt')
+    uiStore.showSuccess(t('time.timerStopped'))
     stopLocalTimer()
     runningEntry.value = null
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Stoppen')
+    uiStore.showError(t('time.errorStopping'))
   }
 }
 
@@ -222,22 +222,22 @@ function openModal(entry = null) {
 // Save entry
 async function saveEntry() {
   if (!form.value.task_name.trim()) {
-    uiStore.showError('Aufgabenname ist erforderlich')
+    uiStore.showError(t('time.taskNameRequired'))
     return
   }
 
   try {
     if (editingEntry.value) {
       await api.put(`/api/v1/time/${editingEntry.value.id}`, form.value)
-      uiStore.showSuccess('Eintrag aktualisiert')
+      uiStore.showSuccess(t('time.entryUpdated'))
     } else {
       await api.post('/api/v1/time', form.value)
-      uiStore.showSuccess('Eintrag erstellt')
+      uiStore.showSuccess(t('time.entryCreated'))
     }
     showModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || 'Fehler beim Speichern')
+    uiStore.showError(error.response?.data?.message || t('common.errorSaving'))
   }
 }
 
@@ -247,10 +247,10 @@ async function deleteEntry(entry) {
 
   try {
     await api.delete(`/api/v1/time/${entry.id}`)
-    uiStore.showSuccess('Eintrag gelöscht')
+    uiStore.showSuccess(t('time.entryDeleted'))
     await fetchData()
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -336,7 +336,7 @@ watch(runningEntry, (val) => {
           v-model="quickForm.project_id"
           class="select"
         >
-          <option :value="null">Kein Projekt</option>
+          <option :value="null">{{ $t('time.noProject') }}</option>
           <option v-for="project in projects" :key="project.id" :value="project.id">
             {{ project.name }}
           </option>
@@ -552,7 +552,7 @@ watch(runningEntry, (val) => {
                 v-model="form.project_id"
                 class="select w-full"
               >
-                <option :value="null">Kein Projekt</option>
+                <option :value="null">{{ $t('time.noProject') }}</option>
                 <option v-for="project in projects" :key="project.id" :value="project.id">
                   {{ project.name }}
                 </option>

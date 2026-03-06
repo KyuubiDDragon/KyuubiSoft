@@ -105,7 +105,7 @@ function openCreateModal() {
 
 async function createLink() {
   if (!linkForm.value.url) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('common.urlRequired'))
     return
   }
 
@@ -190,7 +190,7 @@ async function copyToClipboard(text) {
     await navigator.clipboard.writeText(text)
     copied.value = true
     setTimeout(() => copied.value = false, 2000)
-    uiStore.showSuccess('In Zwischenablage kopiert')
+    uiStore.showSuccess(t('common.copiedToClipboard'))
   } catch (error) {
     uiStore.showError(t('links.kopierenFehlgeschlagen'))
   }

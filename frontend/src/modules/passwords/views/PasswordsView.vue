@@ -227,7 +227,7 @@ function openEditCategory(cat) {
 
 async function saveCategory() {
   if (!categoryForm.value.name) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 

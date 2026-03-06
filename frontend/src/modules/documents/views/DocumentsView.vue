@@ -422,7 +422,7 @@ function copyDocumentLink(token) {
   }
   const url = getPublicUrl(token)
   navigator.clipboard.writeText(url).then(() => {
-    uiStore.showSuccess('Link kopiert!')
+    uiStore.showSuccess(t('common.linkCopied'))
   }).catch(() => {
     uiStore.showError(t('documentsModule.linkCopyFailed'))
   })

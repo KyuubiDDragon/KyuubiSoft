@@ -90,8 +90,8 @@ function getActionLabel(action) {
     '2fa.enabled': '2FA aktiviert',
     '2fa.disabled': '2FA deaktiviert',
     // Lists
-    'list.create': 'Liste erstellt',
-    'list.update': 'Liste aktualisiert',
+    'list.create': t('listsModule.listCreated'),
+    'list.update': t('listsModule.listUpdated'),
     'list.delete': t('system.listeGeloescht'),
     // Documents
     'document.create': t('system.dokumentErstellt'),
@@ -103,8 +103,8 @@ function getActionLabel(action) {
     'snippet.update': t('snippetsModule.snippetAktualisiert'),
     'snippet.delete': t('snippetsModule.snippetGeloescht'),
     // Connections
-    'connection.create': 'Verbindung erstellt',
-    'connection.update': 'Verbindung aktualisiert',
+    'connection.create': t('connections.connectionCreated'),
+    'connection.update': t('connections.connectionUpdated'),
     'connection.delete': t('connections.connectionDeleted'),
     // Kanban
     'kanban.create': 'Kanban-Board erstellt',

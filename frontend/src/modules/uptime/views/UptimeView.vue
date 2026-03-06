@@ -201,7 +201,7 @@ async function loadData() {
     stats.value = statsRes.data.data
     monitorTypes.value = typesRes.data.data || {}
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('common.errorLoading'))
   } finally {
     isLoading.value = false
   }
@@ -218,32 +218,32 @@ async function loadProjects() {
 
 async function saveMonitor() {
   if (!form.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 
   if (showUrlField.value && !form.value.url.trim()) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('common.urlRequired'))
     return
   }
 
   if (showHostnameField.value && !form.value.hostname.trim()) {
-    uiStore.showError('Hostname ist erforderlich')
+    uiStore.showError(t('uptime.hostnameRequired'))
     return
   }
 
   try {
     if (editingMonitor.value) {
       await api.put(`/api/v1/uptime/${editingMonitor.value.id}`, form.value)
-      uiStore.showSuccess('Monitor aktualisiert')
+      uiStore.showSuccess(t('uptime.monitorUpdated'))
     } else {
       await api.post('/api/v1/uptime', form.value)
-      uiStore.showSuccess('Monitor erstellt')
+      uiStore.showSuccess(t('uptime.monitorCreated'))
     }
     await loadData()
     showModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('common.errorSaving'))
   }
 }
 
@@ -253,9 +253,9 @@ async function deleteMonitor(monitor) {
   try {
     await api.delete(`/api/v1/uptime/${monitor.id}`)
     monitors.value = monitors.value.filter(m => m.id !== monitor.id)
-    uiStore.showSuccess('Monitor gelöscht')
+    uiStore.showSuccess(t('uptime.monitorDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -265,9 +265,9 @@ async function togglePause(monitor) {
       is_paused: !monitor.is_paused,
     })
     monitor.is_paused = !monitor.is_paused
-    uiStore.showSuccess(monitor.is_paused ? 'Monitor pausiert' : 'Monitor fortgesetzt')
+    uiStore.showSuccess(monitor.is_paused ? t('uptime.monitorPaused') : t('uptime.monitorResumed'))
   } catch (error) {
-    uiStore.showError('Fehler beim Aktualisieren')
+    uiStore.showError(t('common.errorUpdating'))
   }
 }
 
@@ -283,7 +283,7 @@ async function checkNow(monitor) {
     }
     uiStore.showSuccess(`Check abgeschlossen: ${result.status.toUpperCase()}`)
   } catch (error) {
-    uiStore.showError('Fehler beim Check')
+    uiStore.showError(t('common.errorChecking'))
   } finally {
     checkingId.value = null
   }
@@ -295,29 +295,29 @@ async function openDetail(monitor) {
     selectedMonitor.value = response.data.data
     showDetailModal.value = true
   } catch (error) {
-    uiStore.showError('Fehler beim Laden')
+    uiStore.showError(t('common.errorLoading'))
   }
 }
 
 // Folder operations
 async function saveFolder() {
   if (!folderForm.value.name.trim()) {
-    uiStore.showError('Ordnername ist erforderlich')
+    uiStore.showError(t('uptime.folderNameRequired'))
     return
   }
 
   try {
     if (editingFolder.value) {
       await api.put(`/api/v1/uptime/folders/${editingFolder.value.id}`, folderForm.value)
-      uiStore.showSuccess('Ordner aktualisiert')
+      uiStore.showSuccess(t('uptime.folderUpdated'))
     } else {
       await api.post('/api/v1/uptime/folders', folderForm.value)
-      uiStore.showSuccess('Ordner erstellt')
+      uiStore.showSuccess(t('uptime.folderCreated'))
     }
     await loadData()
     showFolderModal.value = false
   } catch (error) {
-    uiStore.showError('Fehler beim Speichern')
+    uiStore.showError(t('common.errorSaving'))
   }
 }
 
@@ -327,9 +327,9 @@ async function deleteFolder(folder) {
   try {
     await api.delete(`/api/v1/uptime/folders/${folder.id}`)
     await loadData()
-    uiStore.showSuccess('Ordner gelöscht')
+    uiStore.showSuccess(t('uptime.folderDeleted'))
   } catch (error) {
-    uiStore.showError('Fehler beim Löschen')
+    uiStore.showError(t('common.errorDeleting'))
   }
 }
 
@@ -353,9 +353,9 @@ async function moveToFolder(monitorIds, folderId) {
     })
     await loadData()
     selectedMonitorIds.value = []
-    uiStore.showSuccess('Monitore verschoben')
+    uiStore.showSuccess(t('uptime.monitorsMoved'))
   } catch (error) {
-    uiStore.showError('Fehler beim Verschieben')
+    uiStore.showError(t('common.errorMoving'))
   }
 }
 
@@ -511,13 +511,13 @@ function toggleMonitorSelection(monitorId) {
           </option>
         </select>
         <select v-model="filters.type" class="input text-sm">
-          <option value="">Alle Typen</option>
+          <option value="">{{ $t('projects.allTypes') }}</option>
           <option v-for="(info, type) in monitorTypes" :key="type" :value="type">
             {{ info.name }}
           </option>
         </select>
         <select v-model="filters.status" class="input text-sm">
-          <option value="">Alle Status</option>
+          <option value="">{{ $t('projects.allStatus') }}</option>
           <option value="up">Online</option>
           <option value="down">Offline</option>
           <option value="pending">Ausstehend</option>

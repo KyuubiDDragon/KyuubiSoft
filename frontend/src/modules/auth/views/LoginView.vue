@@ -37,7 +37,7 @@ async function handleSubmit() {
       return
     }
 
-    uiStore.showSuccess('Erfolgreich angemeldet!')
+    uiStore.showSuccess(t('auth.loginSuccess'))
 
     // Redirect to intended page or dashboard
     const redirectTo = route.query.redirect || '/'

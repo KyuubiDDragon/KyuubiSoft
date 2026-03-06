@@ -127,7 +127,7 @@ function cancelEditing() {
 
 async function saveEdit() {
   if (!editForm.value.first_name || !editForm.value.last_name) {
-    uiStore.showError('Vorname und Nachname sind erforderlich')
+    uiStore.showError(t('contacts.firstAndLastNameRequired'))
     return
   }
 

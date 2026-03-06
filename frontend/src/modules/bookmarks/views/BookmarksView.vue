@@ -166,7 +166,7 @@ async function loadGroups() {
 
 async function saveBookmark() {
   if (!form.value.url.trim()) {
-    uiStore.showError('URL ist erforderlich')
+    uiStore.showError(t('common.urlRequired'))
     return
   }
 

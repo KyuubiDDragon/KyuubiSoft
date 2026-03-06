@@ -150,7 +150,7 @@ function closeModal() {
 
 async function saveContact() {
   if (!contactForm.value.first_name || !contactForm.value.last_name) {
-    uiStore.showError('Vorname und Nachname sind erforderlich')
+    uiStore.showError(t('contacts.firstAndLastNameRequired'))
     return
   }
 

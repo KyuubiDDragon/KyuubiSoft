@@ -152,7 +152,7 @@ function openModal(project = null) {
 // Save project
 async function saveProject() {
   if (!form.value.name.trim()) {
-    uiStore.showError('Name ist erforderlich')
+    uiStore.showError(t('common.nameRequired'))
     return
   }
 
@@ -177,7 +177,7 @@ async function saveProject() {
 
 // Delete project
 async function deleteProject(project) {
-  if (!await confirm({ message: `Projekt "${project.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('projects.confirmDeleteProject', { name: project.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/projects/${project.id}`)
@@ -214,7 +214,7 @@ async function updateStatus(project, status) {
     if (selectedProject.value?.id === project.id) {
       selectedProject.value.status = status
     }
-    uiStore.showSuccess('Status aktualisiert')
+    uiStore.showSuccess(t('common.statusUpdated'))
   } catch (error) {
     uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
   }
@@ -374,7 +374,7 @@ async function openMembersModal() {
 // Add project member
 async function addMember() {
   if (!newMemberEmail.value.trim()) {
-    uiStore.showError('E-Mail ist erforderlich')
+    uiStore.showError(t('common.emailRequired'))
     return
   }
 
@@ -397,7 +397,7 @@ async function removeMember(userId) {
 
   try {
     await api.delete(`/api/v1/projects/${selectedProject.value.id}/shares/${userId}`)
-    uiStore.showSuccess('Mitglied entfernt')
+    uiStore.showSuccess(t('projects.memberRemoved'))
     await fetchProjectShares()
   } catch (error) {
     uiStore.showError(t('server.serverfehlerbeimentfernen'))
@@ -475,7 +475,7 @@ onMounted(() => {
             v-model="statusFilter"
             class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
           >
-            <option value="">Alle Status</option>
+            <option value="">{{ $t('projects.allStatus') }}</option>
             <option v-for="status in statusOptions" :key="status.value" :value="status.value">
               {{ status.label }}
             </option>
@@ -485,7 +485,7 @@ onMounted(() => {
             class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors flex items-center gap-2"
           >
             <PlusIcon class="w-5 h-5" />
-            <span>Neues Projekt</span>
+            <span>{{ $t('projects.newProject') }}</span>
           </button>
         </template>
       </div>
@@ -565,8 +565,8 @@ onMounted(() => {
         class="bg-dark-800 border-2 border-dashed border-dark-600 rounded-xl p-8 cursor-pointer hover:border-white/[0.08] transition-colors flex flex-col items-center justify-center text-center col-span-full"
       >
         <FolderIcon class="w-12 h-12 text-gray-500 mb-3" />
-        <p class="text-gray-400">Kein Projekt vorhanden</p>
-        <p class="text-primary-500 mt-1">Klicken um ein Projekt zu erstellen</p>
+        <p class="text-gray-400">{{ $t('projects.noProjectsAvailable') }}</p>
+        <p class="text-primary-500 mt-1">{{ $t('projects.clickToCreate') }}</p>
       </div>
     </div>
 
@@ -581,7 +581,7 @@ onMounted(() => {
             </div>
             <div>
               <p class="text-2xl font-bold text-white">{{ selectedProject.linked_items?.length || 0 }}</p>
-              <p class="text-sm text-gray-400">Verknüpfte Elemente</p>
+              <p class="text-sm text-gray-400">{{ $t('projects.linkedItems') }}</p>
             </div>
           </div>
         </div>
@@ -592,7 +592,7 @@ onMounted(() => {
             </div>
             <div>
               <p class="text-2xl font-bold text-white">{{ formatTime(selectedProject.time_stats?.total_seconds) }}</p>
-              <p class="text-sm text-gray-400">Erfasste Zeit</p>
+              <p class="text-sm text-gray-400">{{ $t('projects.trackedTime') }}</p>
             </div>
           </div>
         </div>
@@ -631,7 +631,7 @@ onMounted(() => {
               v-model="linkedItemsFilter"
               class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-500"
             >
-              <option value="">Alle Typen</option>
+              <option value="">{{ $t('projects.allTypes') }}</option>
               <option v-for="type in linkTypes" :key="type.value" :value="type.value">
                 {{ type.label }}
               </option>
@@ -697,8 +697,8 @@ onMounted(() => {
           </div>
           <div v-else class="text-center py-8">
             <LinkIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-            <p class="text-gray-400">Noch keine Elemente verknüpft</p>
-            <p class="text-sm text-gray-500">Verwende die Buttons oben um Dokumente, Listen etc. zu verknüpfen</p>
+            <p class="text-gray-400">{{ $t('projects.noItemsLinked') }}</p>
+            <p class="text-sm text-gray-500">{{ $t('projects.useButtonsToLink') }}</p>
           </div>
         </div>
       </div>
@@ -714,7 +714,7 @@ onMounted(() => {
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingProject ? 'Projekt bearbeiten' : 'Neues Projekt' }}
+              {{ editingProject ? $t('projects.editProject') : $t('projects.newProject') }}
             </h2>
             <button @click="showModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -723,7 +723,7 @@ onMounted(() => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.name') }} *</label>
               <input
                 v-model="form.name"
                 type="text"
@@ -733,7 +733,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
               <textarea
                 v-model="form.description"
                 rows="3"
@@ -743,7 +743,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Farbe</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('projects.color') }}</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="color in colors"
@@ -797,7 +797,7 @@ onMounted(() => {
               <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
             <div v-else-if="linkableItems.length === 0" class="text-center py-8">
-              <p class="text-gray-400">Keine verfügbaren Elemente</p>
+              <p class="text-gray-400">{{ $t('projects.noAvailableItems') }}</p>
             </div>
             <div v-else class="space-y-2">
               <button
@@ -838,12 +838,12 @@ onMounted(() => {
           <div class="p-4 space-y-4 overflow-y-auto flex-1">
             <!-- Add member form -->
             <div class="bg-dark-700 rounded-lg p-4">
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Mitglied hinzufügen</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('projects.addMember') }}</h3>
               <div class="flex gap-2">
                 <input
                   v-model="newMemberEmail"
                   type="email"
-                  placeholder="E-Mail Adresse"
+                  :placeholder="$t('projects.emailAddress')"
                   class="flex-1 bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
                   @keyup.enter="addMember"
                 />
@@ -851,7 +851,7 @@ onMounted(() => {
                   v-model="newMemberPermission"
                   class="bg-dark-600 border border-dark-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option value="view">Lesen</option>
+                  <option value="view">{{ $t('projects.readOnly') }}</option>
                   <option value="edit">{{ $t('common.edit') }}</option>
                 </select>
                 <button
@@ -862,18 +862,18 @@ onMounted(() => {
                 </button>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                Eingeschränkte Benutzer sehen nur Inhalte in Projekten, denen sie zugewiesen sind.
+                {{ $t('projects.restrictedNote') }}
               </p>
             </div>
 
             <!-- Members list -->
             <div>
-              <h3 class="text-sm font-medium text-gray-300 mb-3">Aktuelle Mitglieder</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-3">{{ $t('projects.currentMembers') }}</h3>
               <div v-if="loadingShares" class="flex items-center justify-center py-8">
                 <div class="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
               <div v-else-if="projectShares.length === 0" class="text-center py-8 text-gray-500">
-                Noch keine Mitglieder hinzugefügt
+                {{ $t('projects.noMembersYet') }}
               </div>
               <div v-else class="space-y-2">
                 <div

@@ -55,7 +55,7 @@ async function loadChecklists() {
 
 async function createChecklist() {
   if (!newChecklist.value.title.trim()) {
-    uiStore.showError('Titel ist erforderlich')
+    uiStore.showError(t('common.titleRequired'))
     return
   }
 

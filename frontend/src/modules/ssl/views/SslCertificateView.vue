@@ -236,7 +236,7 @@ const getStatusLabel = (status) => {
 
 const formatDate = (date) => {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('de-DE')
+  return new Date(date).toLocaleDateString(undefined)
 }
 
 const getDaysColor = (days) => {
@@ -407,7 +407,7 @@ onMounted(() => {
             </h2>
             <form @submit.prevent="saveCertificate" class="space-y-4">
               <div>
-                <label class="label">Name</label>
+                <label class="label">{{ $t('common.name') }}</label>
                 <input v-model="form.name" type="text" required class="input" />
               </div>
               <div class="grid grid-cols-3 gap-4">
@@ -416,7 +416,7 @@ onMounted(() => {
                   <input v-model="form.hostname" type="text" required placeholder="example.com" class="input" />
                 </div>
                 <div>
-                  <label class="label">Port</label>
+                  <label class="label">{{ $t('ssl.port') }}</label>
                   <input v-model.number="form.port" type="number" min="1" max="65535" class="input" />
                 </div>
               </div>
@@ -467,7 +467,7 @@ onMounted(() => {
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ $t('ssl.newFolder') }}</h2>
             <form @submit.prevent="saveFolder" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('common.name') }}</label>
                 <input v-model="folderForm.name" type="text" required
                        class="input" />
               </div>
@@ -508,11 +508,11 @@ onMounted(() => {
             <!-- Certificate Info -->
             <div class="grid grid-cols-2 gap-4 mb-6">
               <div class="bg-white/[0.04] p-4 rounded-xl">
-                <div class="text-sm text-gray-500">Subject</div>
+                <div class="text-sm text-gray-500">{{ $t('ssl.subject') }}</div>
                 <div class="font-medium">{{ selectedCert.certificate.subject || '-' }}</div>
               </div>
               <div class="bg-white/[0.04] p-4 rounded-xl">
-                <div class="text-sm text-gray-500">Issuer</div>
+                <div class="text-sm text-gray-500">{{ $t('ssl.issuer') }}</div>
                 <div class="font-medium">{{ selectedCert.certificate.issuer || '-' }}</div>
               </div>
               <div class="bg-white/[0.04] p-4 rounded-xl">
@@ -527,7 +527,7 @@ onMounted(() => {
 
             <!-- SANs -->
             <div v-if="selectedCert.certificate.san_domains?.length" class="mb-6">
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Subject Alternative Names</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $t('ssl.subjectAlternativeNames') }}</h3>
               <div class="flex flex-wrap gap-2">
                 <span v-for="san in selectedCert.certificate.san_domains" :key="san"
                       class="px-2 py-1 bg-white/[0.04] rounded text-sm">

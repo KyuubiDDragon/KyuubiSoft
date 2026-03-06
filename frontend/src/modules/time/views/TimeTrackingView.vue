@@ -23,7 +23,7 @@ import {
 import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const projectStore = useProjectStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
@@ -178,13 +178,13 @@ function formatDurationShort(seconds) {
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return date.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 function formatTime(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(locale.value === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
 // Open modal for manual entry
@@ -329,7 +329,7 @@ watch(runningEntry, (val) => {
           v-model="quickForm.task_name"
           type="text"
           class="input flex-1"
-          placeholder="Was arbeitest du gerade?"
+          :placeholder="$t('time.whatAreYouWorkingOn')"
           @keyup.enter="startTimer"
         />
         <select
@@ -350,7 +350,7 @@ watch(runningEntry, (val) => {
         <button
           @click="openModal()"
           class="p-3 bg-white/[0.04] text-white rounded-lg hover:bg-white/[0.04] transition-colors"
-          title="Manueller Eintrag"
+          :title="$t('time.manualEntry')"
         >
           <PlusIcon class="w-6 h-6" />
         </button>
@@ -366,7 +366,7 @@ watch(runningEntry, (val) => {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ formatDurationShort(stats.totals?.total_seconds) }}</p>
-            <p class="text-sm text-gray-400">Gesamt (30 Tage)</p>
+            <p class="text-sm text-gray-400">{{ $t('time.total30Days') }}</p>
           </div>
         </div>
       </div>
@@ -377,7 +377,7 @@ watch(runningEntry, (val) => {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ formatDurationShort(stats.totals?.billable_seconds) }}</p>
-            <p class="text-sm text-gray-400">Abrechenbar</p>
+            <p class="text-sm text-gray-400">{{ $t('time.billable') }}</p>
           </div>
         </div>
       </div>
@@ -399,7 +399,7 @@ watch(runningEntry, (val) => {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ stats.totals?.total_earnings?.toFixed(2) || '0.00' }} EUR</p>
-            <p class="text-sm text-gray-400">Verdienst</p>
+            <p class="text-sm text-gray-400">{{ $t('time.earnings') }}</p>
           </div>
         </div>
       </div>
@@ -412,7 +412,7 @@ watch(runningEntry, (val) => {
         @change="fetchData"
         class="select"
       >
-        <option value="">Alle Projekte</option>
+        <option value="">{{ $t('time.allProjects') }}</option>
         <option v-for="project in projects" :key="project.id" :value="project.id">
           {{ project.name }}
         </option>
@@ -423,7 +423,7 @@ watch(runningEntry, (val) => {
         @change="fetchData"
         class="input"
       />
-      <span class="text-gray-400">bis</span>
+      <span class="text-gray-400">{{ $t('time.to') }}</span>
       <input
         v-model="filterTo"
         type="date"
@@ -470,7 +470,7 @@ watch(runningEntry, (val) => {
                     </span>
                     <span v-if="entry.is_billable" class="flex items-center gap-1 text-green-400">
                       <CurrencyEuroIcon class="w-4 h-4" />
-                      {{ entry.hourly_rate ? `${entry.hourly_rate}/h` : 'abrechenbar' }}
+                      {{ entry.hourly_rate ? `${entry.hourly_rate}/h` : $t('time.billable') }}
                     </span>
                   </div>
                 </div>
@@ -504,7 +504,7 @@ watch(runningEntry, (val) => {
       <div v-if="groupedEntries.length === 0" class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 text-center">
         <ClockIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
         <p class="text-gray-400">{{ $t('time.noTimeEntries') }}</p>
-        <p class="text-sm text-gray-500 mt-1">Starte den Timer oben um Zeit zu erfassen</p>
+        <p class="text-sm text-gray-500 mt-1">{{ $t('time.startTimerHint') }}</p>
       </div>
     </div>
 
@@ -518,7 +518,7 @@ watch(runningEntry, (val) => {
         <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingEntry ? 'Eintrag bearbeiten' : 'Manueller Eintrag' }}
+              {{ editingEntry ? $t('time.editEntry') : $t('time.manualEntry') }}
             </h2>
             <button @click="showModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -527,27 +527,27 @@ watch(runningEntry, (val) => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Aufgabe *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.task') }} *</label>
               <input
                 v-model="form.task_name"
                 type="text"
                 class="input w-full"
-                placeholder="Was hast du gemacht?"
+                :placeholder="$t('time.whatDidYouDo')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.description') }}</label>
               <textarea
                 v-model="form.description"
                 rows="2"
                 class="textarea w-full resize-none"
-                placeholder="Optionale Details..."
+                :placeholder="$t('time.optionalDetails')"
               ></textarea>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Projekt</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('common.project') }}</label>
               <select
                 v-model="form.project_id"
                 class="select w-full"
@@ -561,7 +561,7 @@ watch(runningEntry, (val) => {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Start *</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.start') }} *</label>
                 <input
                   v-model="form.started_at"
                   type="datetime-local"
@@ -569,7 +569,7 @@ watch(runningEntry, (val) => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Ende</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.end') }}</label>
                 <input
                   v-model="form.ended_at"
                   type="datetime-local"
@@ -585,7 +585,7 @@ watch(runningEntry, (val) => {
                   type="checkbox"
                   class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300">Abrechenbar</span>
+                <span class="text-gray-300">{{ $t('time.billable') }}</span>
               </label>
               <div v-if="form.is_billable" class="flex items-center gap-2">
                 <input

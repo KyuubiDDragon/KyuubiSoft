@@ -115,7 +115,7 @@ const handleDuplicateElement = () => {
 const handleDeleteElement = () => {
   if (!mockupStore.selectedElementId) return
   mockupStore.deleteElement(mockupStore.selectedElementId)
-  toast.success(t('mockupEditor.elementGeloescht'))
+  toast.success(t('mockupEditor.elementDeleted'))
 }
 
 // Alignment
@@ -413,7 +413,7 @@ onUnmounted(() => {
             </button>
             <button @click="handleDeleteElement"
                     class="flex items-center gap-1.5 px-2 py-1.5 text-gray-300 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-                    :title="$t('mockupEditor.elementLoeschen')">
+                    :title="$t('mockupEditor.deleteElement')">
               <TrashIcon class="w-4 h-4" />
             </button>
           </template>
@@ -423,7 +423,7 @@ onUnmounted(() => {
           <button @click="handleReset"
                   class="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors">
             <ArrowPathIcon class="w-4 h-4" />
-            <span class="text-sm">Zurücksetzen</span>
+            <span class="text-sm">{{ $t('common.reset') }}</span>
           </button>
 
           <button @click="showTemplateSelector = true"
@@ -473,8 +473,8 @@ onUnmounted(() => {
         <template v-else>
           <div class="text-center">
             <PhotoIcon class="w-16 h-16 mx-auto text-gray-600" />
-            <h2 class="mt-4 text-xl font-semibold text-gray-400">Wähle ein Template</h2>
-            <p class="mt-2 text-gray-500">Wähle ein Template aus der Liste, um zu beginnen.</p>
+            <h2 class="mt-4 text-xl font-semibold text-gray-400">{{ $t('mockupEditor.selectTemplate') }}</h2>
+            <p class="mt-2 text-gray-500">{{ $t('mockupEditor.selectTemplateHint') }}</p>
           </div>
         </template>
       </div>
@@ -571,14 +571,14 @@ onUnmounted(() => {
                 @click="showSaveTemplateModal = false"
                 class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button
                 @click="confirmSaveTemplate"
                 :disabled="mockupStore.isLoading"
                 class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50"
               >
-                {{ mockupStore.isLoading ? 'Speichert...' : 'Speichern' }}
+                {{ mockupStore.isLoading ? 'Speichert...' : $t('common.save') }}
               </button>
             </div>
           </div>

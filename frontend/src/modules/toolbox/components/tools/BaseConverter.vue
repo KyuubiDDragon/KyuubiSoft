@@ -149,7 +149,7 @@ const presets = [
 
     <!-- Validation Error -->
     <div v-if="!isValidForBase(inputValue, inputBase)" class="text-red-400 text-sm">
-      Ungültige Zeichen für Basis {{ inputBase }}
+      {{ $t('toolbox.invalidCharsForBase', { base: inputBase }) }}
     </div>
 
     <!-- Results -->

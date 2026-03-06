@@ -378,7 +378,7 @@ watch(() => props.contract, (val) => {
                 <div class="flex items-center justify-between mb-4">
                   <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('contracts.linkedInvoices') }}</p>
                   <button @click="showInvoiceLinker = true" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-500 transition-colors">
-                    <LinkIcon class="w-3.5 h-3.5" /> Rechnung verknüpfen
+                    <LinkIcon class="w-3.5 h-3.5" /> {{ $t('contracts.linkInvoice') }}
                   </button>
                 </div>
 

@@ -109,7 +109,7 @@ async function fetchTickets() {
     tickets.value = response.data.data.tickets || []
     total.value = response.data.data.total || 0
   } catch (error) {
-    uiStore.showError(t('tickets.fehlerBeimLadenDerTickets'))
+    uiStore.showError(t('tickets.errorLoadingTickets'))
   } finally {
     loading.value = false
   }
@@ -162,7 +162,7 @@ async function createTicket() {
     // Navigate to the new ticket
     router.push(`/tickets/${response.data.data.ticket.id}`)
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(error.response?.data?.message || t('links.errorCreating'))
   }
 }
 
@@ -301,10 +301,10 @@ onMounted(() => {
         <button
           @click="showPublicLinkModal = true"
           class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
-          :title="$t('tickets.oeffentlichenSupportlinkTeilen')"
+          :title="$t('tickets.shareSupportLink')"
         >
           <LinkIcon class="w-5 h-5" />
-          <span class="hidden sm:inline">{{ $t('tickets.oeffentlicherLink') }}</span>
+          <span class="hidden sm:inline">{{ $t('tickets.publicLink') }}</span>
         </button>
         <button
           @click="showFilterPanel = !showFilterPanel"
@@ -532,7 +532,7 @@ onMounted(() => {
     <!-- Empty state -->
     <div v-else class="bg-dark-800 border border-dark-700 rounded-xl p-12 text-center">
       <TicketIcon class="w-16 h-16 text-gray-500 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-white mb-2">{{ $t('tickets.keineTicketsGefunden') }}</h3>
+      <h3 class="text-xl font-semibold text-white mb-2">{{ $t('tickets.noTicketsFound') }}</h3>
       <p class="text-gray-400 mb-6">
         {{ activeFiltersCount > 0 ? 'Versuchen Sie andere Filteroptionen.' : $t('tickets.erstellenSieIhrErstesTicket') }}
       </p>
@@ -601,7 +601,7 @@ onMounted(() => {
                   v-model="form.category_id"
                   class="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option value="">{{ $t('tickets.ticketskeinekategorie') }}</option>
+                  <option value="">{{ $t('tickets.noCategory') }}</option>
                   <option v-for="c in categories" :key="c.id" :value="c.id">
                     {{ c.name }}
                   </option>
@@ -628,7 +628,7 @@ onMounted(() => {
               @click="showCreateModal = false; resetForm()"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="createTicket"
@@ -649,7 +649,7 @@ onMounted(() => {
       >
         <div class="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-lg overflow-hidden">
           <div class="flex items-center justify-between p-4 border-b border-dark-700">
-            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.oeffentlicherSupportlink') }}</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('tickets.publicSupportLink') }}</h2>
             <button
               @click="showPublicLinkModal = false"
               class="p-1 text-gray-400 hover:text-white rounded"
@@ -684,7 +684,7 @@ onMounted(() => {
                 <li>{{ $t('tickets.1KundenOeffnenDenLink') }}</li>
                 <li>2. Geben Name, E-Mail und Anliegen ein</li>
                 <li>3. Erhalten einen Zugriffscode zum Verfolgen</li>
-                <li>{{ $t('tickets.4TicketsErscheinenHierInIhrerUebersicht') }}</li>
+                <li>{{ $t('tickets.ticketsOverview') }}</li>
               </ul>
             </div>
           </div>

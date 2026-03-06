@@ -84,24 +84,24 @@ function getActionLabel(action) {
     'user.login': 'Anmeldung',
     'user.logout': 'Abmeldung',
     'user.register': 'Registrierung',
-    'user.update': t('system.benutzerAktualisiert'),
-    'user.delete': t('system.benutzerGeloescht'),
+    'user.update': t('system.userUpdated'),
+    'user.delete': t('system.userDeleted'),
     'user.password_change': t('system.passwortGeaendert'),
     '2fa.enabled': '2FA aktiviert',
     '2fa.disabled': '2FA deaktiviert',
     // Lists
     'list.create': t('listsModule.listCreated'),
     'list.update': t('listsModule.listUpdated'),
-    'list.delete': t('system.listeGeloescht'),
+    'list.delete': t('system.listDeleted'),
     // Documents
-    'document.create': t('system.dokumentErstellt'),
-    'document.update': t('system.dokumentAktualisiert'),
-    'document.delete': t('system.dokumentGeloescht'),
+    'document.create': t('system.documentCreated'),
+    'document.update': t('system.documentUpdated'),
+    'document.delete': t('system.documentDeleted'),
     'document.share': t('system.dokumentGeteilt'),
     // Snippets
-    'snippet.create': t('snippetsModule.snippetErstellt'),
-    'snippet.update': t('snippetsModule.snippetAktualisiert'),
-    'snippet.delete': t('snippetsModule.snippetGeloescht'),
+    'snippet.create': t('snippetsModule.snippetCreated'),
+    'snippet.update': t('snippetsModule.snippetUpdated'),
+    'snippet.delete': t('snippetsModule.snippetDeleted'),
     // Connections
     'connection.create': t('connections.connectionCreated'),
     'connection.update': t('connections.connectionUpdated'),
@@ -109,50 +109,50 @@ function getActionLabel(action) {
     // Kanban
     'kanban.create': 'Kanban-Board erstellt',
     'kanban.update': 'Kanban-Board aktualisiert',
-    'kanban.delete': t('system.kanbanboardGeloescht'),
+    'kanban.delete': t('system.kanbanBoardDeleted'),
     // Projects
-    'project.create': t('system.projektErstellt'),
-    'project.update': t('system.projektAktualisiert'),
-    'project.delete': t('system.projektGeloescht'),
+    'project.create': t('system.projectCreated'),
+    'project.update': t('system.projectUpdated'),
+    'project.delete': t('system.projectDeleted'),
     // Invoices
-    'invoice.create': t('system.rechnungErstellt'),
-    'invoice.update': t('system.rechnungAktualisiert'),
-    'invoice.delete': t('system.rechnungGeloescht'),
+    'invoice.create': t('system.invoiceCreated'),
+    'invoice.update': t('system.invoiceUpdated'),
+    'invoice.delete': t('system.invoiceDeleted'),
     // Checklists
     'checklist.create': t('checklists.checklistCreated'),
-    'checklist.update': t('system.checklisteAktualisiert'),
+    'checklist.update': t('system.checklistUpdated'),
     'checklist.delete': t('checklists.checklistDeleted'),
     // Passwords
-    'password.create': t('system.passwortErstellt'),
-    'password.update': t('system.passwortAktualisiert'),
-    'password.delete': t('system.passwortGeloescht'),
+    'password.create': t('system.passwordCreated'),
+    'password.update': t('system.passwordUpdated'),
+    'password.delete': t('system.passwordDeleted'),
     'password.view': t('system.passwortAngezeigt'),
     // Recurring Tasks
-    'recurring_task.create': t('system.wiederkehrendeAufgabeErstellt'),
-    'recurring_task.update': t('system.wiederkehrendeAufgabeAktualisiert'),
-    'recurring_task.delete': t('system.wiederkehrendeAufgabeGeloescht'),
+    'recurring_task.create': t('system.recurringTaskCreated'),
+    'recurring_task.update': t('system.recurringTaskUpdated'),
+    'recurring_task.delete': t('system.recurringTaskDeleted'),
     'recurring_task.process': t('system.wiederkehrendeAufgabeAusgefuehrt'),
     // Templates
     'template.create': 'Template erstellt',
     'template.update': 'Template aktualisiert',
-    'template.delete': t('system.templateGeloescht'),
+    'template.delete': t('system.templateDeleted'),
     'template.use': 'Template verwendet',
     // Tags
-    'tag.create': t('bookmarksModule.tagErstellt'),
-    'tag.update': t('system.tagAktualisiert'),
-    'tag.delete': t('bookmarksModule.tagGeloescht'),
+    'tag.create': t('bookmarksModule.tagCreated'),
+    'tag.update': t('system.tagUpdated'),
+    'tag.delete': t('bookmarksModule.tagDeleted'),
     'tag.merge': t('system.tagsZusammengefuehrt'),
     // API Keys
     'api_key.create': 'API-Key erstellt',
     'api_key.revoke': 'API-Key widerrufen',
-    'api_key.delete': t('system.apikeyGeloescht'),
+    'api_key.delete': t('system.apiKeyDeleted'),
     // Export/Import
     'export.create': t('system.exportDurchgefuehrt'),
     'import.create': t('system.importDurchgefuehrt'),
     // System
     'cache.clear': 'Cache geleert',
     'sessions.terminate_all': 'Sessions beendet',
-    'system.settings_update': t('system.systemeinstellungenGeaendert'),
+    'system.settings_update': t('system.systemSettingsChanged'),
   }
   return labels[action] || action
 }
@@ -248,7 +248,7 @@ async function clearCache() {
     toast.success(t('system.cacheClearedSuccess'))
     loadAuditLogs()
   } catch (err) {
-    toast.error(t('system.fehlerBeimLeerenDesCaches') + (err.response?.data?.error || err.message))
+    toast.error(t('system.errorClearingCache') + (err.response?.data?.error || err.message))
   } finally {
     isClearingCache.value = false
   }
@@ -263,7 +263,7 @@ async function terminateSessions() {
     toast.success(response.data.message || t('system.sessionsTerminated'))
     loadAuditLogs()
   } catch (err) {
-    toast.error(t('system.fehlerBeimBeendenDerSessions') + (err.response?.data?.error || err.message))
+    toast.error(t('system.errorEndingSessions') + (err.response?.data?.error || err.message))
   } finally {
     isTerminatingSessions.value = false
   }
@@ -449,7 +449,7 @@ onUnmounted(() => {
     <div class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-white">Audit Log</h2>
-        <span class="text-sm text-gray-400">{{ auditPagination.total }} Einträge</span>
+        <span class="text-sm text-gray-400">{{ auditPagination.total }} {{ $t('common.entries') }}</span>
       </div>
 
       <!-- Filters -->
@@ -492,7 +492,7 @@ onUnmounted(() => {
 
       <div v-if="isLoadingLogs" class="text-gray-400 py-4">Lade Audit Logs...</div>
 
-      <div v-else-if="auditLogs.length === 0" class="text-gray-400 py-4">{{ $t('system.keineAuditLogsVorhanden') }}</div>
+      <div v-else-if="auditLogs.length === 0" class="text-gray-400 py-4">{{ $t('system.noAuditLogs') }}</div>
 
       <div v-else>
         <div class="overflow-x-auto">
@@ -574,7 +574,7 @@ onUnmounted(() => {
             :disabled="auditPagination.page <= 1"
             class="px-3 py-1 bg-white/[0.04] text-white rounded hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Zurück
+            {{ $t('common.back') }}
           </button>
           <span class="text-gray-400">Seite {{ auditPagination.page }} von {{ totalPages }}</span>
           <button

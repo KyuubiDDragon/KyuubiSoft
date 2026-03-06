@@ -73,7 +73,7 @@ async function selectDockerHost(host) {
     const res = await api.get(`/api/v1/logs/docker-hosts/${host.id}/containers`)
     dockerContainers.value = res.data.data.items || []
   } catch {
-    toast.error(t('logs.fehlerBeimLadenDerContainer'))
+    toast.error(t('logs.errorLoadingContainers'))
   }
 }
 
@@ -118,7 +118,7 @@ async function fetchLogs() {
       scrollToBottom()
     }
   } catch (err) {
-    toast.error(t('logs.fehlerBeimLadenDerLogs') + (err.response?.data?.message || err.message))
+    toast.error(t('logs.errorLoadingLogs') + (err.response?.data?.message || err.message))
   } finally {
     loading.value = false
   }
@@ -243,7 +243,7 @@ onUnmounted(() => {
         <!-- Docker sources -->
         <template v-if="sourceType === 'docker'">
           <div v-if="dockerHosts.length === 0" class="text-gray-500 text-xs text-center py-6">
-            {{ $t('logs.keineDockerhostsVerfuegbar') }}
+            {{ $t('logs.noDockerHosts') }}
           </div>
 
           <template v-for="host in dockerHosts" :key="host.id">
@@ -300,7 +300,7 @@ onUnmounted(() => {
       <div v-if="!selectedContainer && !selectedFile" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <DocumentTextIcon class="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p class="text-sm">Log-Quelle auswählen</p>
+          <p class="text-sm">{{ $t('logs.selectLogSource') }}</p>
         </div>
       </div>
 
@@ -369,7 +369,7 @@ onUnmounted(() => {
 
         <!-- Log count -->
         <div class="px-4 py-1 border-b border-white/[0.06] text-xs text-gray-600 flex-shrink-0">
-          {{ filteredLogs.length.toLocaleString() }} Einträge
+          {{ filteredLogs.length.toLocaleString() }} {{ $t('common.entries') }}
           <span v-if="filterText || filterLevel">(gefiltert von {{ logs.length.toLocaleString() }})</span>
         </div>
 

@@ -276,7 +276,7 @@ generate()
 
     <!-- Generate Button -->
     <button @click="generate" class="btn-primary w-full">
-      Generieren ({{ count }} Einträge)
+      {{ $t('toolbox.generate') }} ({{ count }} {{ $t('common.entries') }})
     </button>
 
     <!-- Output -->

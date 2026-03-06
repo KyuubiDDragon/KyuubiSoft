@@ -12,7 +12,7 @@ const statusConfig = computed(() => ({
   success: { label: t('widgets.statusSuccess'), dotClass: 'bg-emerald-400' },
   failed: { label: t('widgets.statusFailed'), dotClass: 'bg-red-400' },
   cancelled: { label: t('widgets.statusCancelled'), dotClass: 'bg-gray-500' },
-  rolled_back: { label: t('dashboardModule.widgetsstatusrolledback'), dotClass: 'bg-purple-400' },
+  rolled_back: { label: t('dashboardModule.statusRolledBack'), dotClass: 'bg-purple-400' },
 }))
 
 function getStatusDot(status) {
@@ -39,7 +39,7 @@ function formatRelativeTime(dateString) {
   if (diffDay === 1) return t('time.yesterday')
   if (diffDay < 7) return t('time.daysAgo', { n: diffDay })
 
-  return date.toLocaleDateString('de-DE', {
+  return date.toLocaleDateString(undefined, {
     day: '2-digit',
     month: '2-digit',
   })

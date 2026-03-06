@@ -84,7 +84,7 @@ async function fetchData() {
     stats.value = statsRes.data.data
   } catch (error) {
     console.error('Failed to fetch links:', error)
-    uiStore.showError(t('links.fehlerBeimLadenDerLinks'))
+    uiStore.showError(t('links.errorLoadingLinks'))
   } finally {
     isLoading.value = false
   }
@@ -121,11 +121,11 @@ async function createLink() {
     }
 
     await api.post('/api/v1/links', payload)
-    uiStore.showSuccess(t('links.linkErstellt'))
+    uiStore.showSuccess(t('links.linkCreated'))
     showCreateModal.value = false
     await fetchData()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(error.response?.data?.message || t('links.errorCreating'))
   } finally {
     isProcessing.value = false
   }
@@ -137,10 +137,10 @@ async function deleteLink(link) {
 
   try {
     await api.delete(`/api/v1/links/${link.id}`)
-    uiStore.showSuccess(t('links.linkGeloescht'))
+    uiStore.showSuccess(t('links.linkDeleted'))
     await fetchData()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -152,7 +152,7 @@ async function toggleActive(link) {
     })
     link.is_active = !link.is_active
   } catch (error) {
-    uiStore.showError(t('links.fehlerBeimUmschalten'))
+    uiStore.showError(t('links.errorToggling'))
   }
 }
 
@@ -166,7 +166,7 @@ async function viewStats(link) {
     const response = await api.get(`/api/v1/links/${link.id}/stats`)
     linkStats.value = response.data.data
   } catch (error) {
-    uiStore.showError(t('links.fehlerBeimLadenDerStatistiken'))
+    uiStore.showError(t('links.errorLoadingStats'))
   }
 }
 
@@ -180,7 +180,7 @@ async function viewQr(link) {
     const response = await api.get(`/api/v1/links/${link.id}/qr`)
     qrData.value = response.data.data
   } catch (error) {
-    uiStore.showError(t('links.fehlerBeimLadenDesQrcodes'))
+    uiStore.showError(t('links.errorLoadingQrCode'))
   }
 }
 
@@ -310,7 +310,7 @@ onMounted(fetchData)
     <!-- Links List -->
     <div v-else-if="filteredLinks.length === 0" class="card p-12 text-center">
       <LinkIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('links.keineLinksVorhanden') }}</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('links.noLinks') }}</h3>
       <p class="text-gray-500 mb-4">Erstelle deinen ersten kurzen Link.</p>
       <button @click="openCreateModal" class="btn-primary">
         <PlusIcon class="w-4 h-4 mr-2" />
@@ -387,7 +387,7 @@ onMounted(fetchData)
               </span>
               <span v-if="link.expires_at" class="flex items-center gap-1">
                 <ClockIcon class="w-3 h-3" />
-                Läuft ab: {{ formatDate(link.expires_at) }}
+                {{ $t('common.expiresAt') }} {{ formatDate(link.expires_at) }}
               </span>
               <span v-if="link.max_clicks" class="flex items-center gap-1">
                 Max: {{ link.max_clicks }}
@@ -524,12 +524,12 @@ onMounted(fetchData)
 
               <div class="flex gap-2 pt-4">
                 <button type="button" @click="showCreateModal = false" class="btn-secondary flex-1">
-                  Abbrechen
+                  {{ $t('common.cancel') }}
                 </button>
                 <button type="submit" class="btn-primary flex-1" :disabled="isProcessing">
                   <ArrowPathIcon v-if="isProcessing" class="w-4 h-4 mr-2 animate-spin" />
                   <LinkIcon v-else class="w-4 h-4 mr-2" />
-                  Erstellen
+                  {{ $t('common.create') }}
                 </button>
               </div>
             </form>

@@ -161,7 +161,7 @@ async function addCustomService() {
     newServiceName.value = ''
     await loadCustomServices()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(e.response?.data?.message || t('newsModule.errorAdding'))
   }
 }
 
@@ -173,7 +173,7 @@ async function removeCustomService(serviceName) {
     uiStore.showSuccess(t('server.serviceRemoved'))
     await loadCustomServices()
   } catch (e) {
-    uiStore.showError(t('server.serverfehlerbeimentfernen'))
+    uiStore.showError(t('server.errorRemoving'))
   }
 }
 
@@ -228,19 +228,19 @@ async function addCrontab() {
     newCrontab.value = { schedule: '', command: '' }
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(e.response?.data?.message || t('newsModule.errorAdding'))
   }
 }
 
 async function deleteCrontab(line) {
-  if (!await confirm({ message: t('server.diesenCrontabeintragWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('server.confirmDeleteCrontab'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete('/api/v1/server/crontabs', { data: { line } })
-    uiStore.showSuccess(t('server.crontabGeloescht'))
+    uiStore.showSuccess(t('server.crontabDeleted'))
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -251,7 +251,7 @@ async function saveCrontabRaw() {
     showEditCrontabModal.value = false
     await loadCrontabs()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(e.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -265,11 +265,11 @@ async function killProcess(pid, signal = 'TERM') {
     if (data.terminated) {
       uiStore.showSuccess(t('server.processTerminated'))
     } else {
-      uiStore.showWarning(t('server.signalGesendetProzessLaeuftNoch'))
+      uiStore.showWarning(t('server.signalSentProcessRunning'))
     }
     await loadProcesses()
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || t('server.fehlerBeimBeenden'))
+    uiStore.showError(e.response?.data?.message || t('server.errorTerminating'))
   }
 }
 
@@ -310,7 +310,7 @@ async function controlService(service, action) {
       await viewService(selectedService.value)
     }
   } catch (e) {
-    uiStore.showError(e.response?.data?.message || t('server.fehlerBeiServicekontrolle'))
+    uiStore.showError(e.response?.data?.message || t('server.errorServiceControl'))
   }
 }
 
@@ -521,7 +521,7 @@ watch(activeTab, (newTab) => {
         <div v-show="importantServicesExpanded" class="p-4 pt-0">
           <div v-if="customServices.length === 0" class="text-center text-gray-500 py-8">
             <Cog6ToothIcon class="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>{{ $t('server.keineWichtigenServicesHinterlegt') }}</p>
+            <p>{{ $t('server.noImportantServices') }}</p>
             <p class="text-sm mt-1">Klicke auf "Hinzufuegen" um Services zu deiner Liste hinzuzufuegen</p>
           </div>
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -674,7 +674,7 @@ watch(activeTab, (newTab) => {
 
       <div v-if="crontabs.length === 0" class="card p-8 text-center text-gray-400">
         <ClockIcon class="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p>{{ $t('server.keineCrontabeintraegeVorhanden') }}</p>
+        <p>{{ $t('server.noCrontabEntries') }}</p>
       </div>
 
       <div v-else class="space-y-2">
@@ -827,7 +827,7 @@ watch(activeTab, (newTab) => {
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showCrontabModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
                 {{ $t('common.add') }}
@@ -860,10 +860,10 @@ watch(activeTab, (newTab) => {
 
           <div class="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showEditCrontabModal = false" class="btn-secondary">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button @click="saveCrontabRaw" class="btn-primary">
-              Speichern
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>
@@ -893,7 +893,7 @@ watch(activeTab, (newTab) => {
 
             <div>
               <h4 class="text-sm font-medium text-gray-300 mb-2">Logs (letzte 50 Zeilen)</h4>
-              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || $t('server.keineLogsVerfuegbar') }}</pre>
+              <pre class="bg-white/[0.02] p-4 rounded-lg text-xs text-gray-300 font-mono overflow-auto max-h-60 whitespace-pre-wrap">{{ serviceLogs || $t('server.noLogsAvailable') }}</pre>
             </div>
           </div>
 
@@ -965,7 +965,7 @@ watch(activeTab, (newTab) => {
 
             <div class="flex gap-3 pt-4">
               <button type="button" @click="showAddServiceModal = false" class="btn-secondary flex-1">
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
                 Hinzufuegen

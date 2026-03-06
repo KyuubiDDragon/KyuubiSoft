@@ -669,7 +669,7 @@ onMounted(async () => {
                 :placeholder="domainForm.provider === 'cloudflare' ? 'Cloudflare API Token...' : 'Webtropia/myLoc API Token...'"
               />
               <p class="text-xs text-gray-500 mt-1">
-                {{ domainForm.provider === 'cloudflare' ? 'Wird für Sync mit Cloudflare benötigt.' : 'OAuth-Token aus dem myLoc ZKM-Panel. Wird für Sync benötigt.' }}
+                {{ domainForm.provider === 'cloudflare' ? $t('dns.cloudflareApiHint') : $t('dns.mylocApiHint') }}
               </p>
             </div>
 
@@ -792,7 +792,7 @@ onMounted(async () => {
           <div class="flex items-center justify-end gap-3 p-5 border-t border-white/[0.06]">
             <button @click="closeRecordModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
             <button @click="saveRecord" class="btn-primary" :disabled="!recordForm.value.trim()">
-              {{ editingRecord ? 'Speichern' : 'Erstellen' }}
+              {{ editingRecord ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>
@@ -860,10 +860,7 @@ onMounted(async () => {
               v-model="importContent"
               class="input w-full font-mono text-xs"
               rows="12"
-              placeholder="; Zone-Datei hier einfügen...
-@ 3600 IN A 192.168.1.1
-www 3600 IN CNAME beispiel.de.
-@ 3600 IN MX 10 mail.beispiel.de."
+              :placeholder="$t('dns.zonePastePlaceholder')"
             ></textarea>
           </div>
 

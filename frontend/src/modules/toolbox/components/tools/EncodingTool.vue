@@ -333,7 +333,7 @@ function setExample(type) {
       <p><strong>Base64:</strong>{{ $t('toolbox.standardkodierungFuerBinaerdatenInText') }}</p>
       <p><strong>URL Encoding:</strong>{{ $t('toolbox.fuerSichereUrlparameter') }}</p>
       <p><strong>HTML Entities:</strong> Verhindert XSS-Angriffe in HTML</p>
-      <p><strong>ROT13:</strong>{{ $t('toolbox.toolboxeinfacheverschleierungkeineechteverschluesselung') }}</p>
+      <p><strong>ROT13:</strong>{{ $t('toolbox.simpleObfuscation') }}</p>
     </div>
   </div>
 </template>

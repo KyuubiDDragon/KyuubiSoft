@@ -206,7 +206,7 @@ onMounted(async () => {
     <!-- Empty State -->
     <div v-else-if="!habitStore.isLoading" class="card p-12 text-center">
       <SparklesIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('habitTracker.keineHabitsVorhanden') }}</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('habitTracker.noHabits') }}</h3>
       <p class="text-gray-500 mb-4">{{ $t('habitTracker.createFirstHint') }}</p>
       <button @click="openCreate" class="btn-primary">
         <PlusIcon class="w-4 h-4 mr-2" />

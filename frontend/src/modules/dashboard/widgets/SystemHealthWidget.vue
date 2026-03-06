@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 
 function getBarColor(usage) {
@@ -12,7 +14,7 @@ function getBarColor(usage) {
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/system" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.oeffnen') }}</router-link>
+      <router-link to="/system" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.open') }}</router-link>
     </div>
 
     <p class="text-xs text-gray-500 mb-4">Uptime: {{ data?.uptime || '-' }}</p>
@@ -20,7 +22,7 @@ function getBarColor(usage) {
     <!-- CPU -->
     <div class="mb-3">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-sm text-gray-400">CPU ({{ data?.cpu?.cores || 0 }} Kerne)</span>
+        <span class="text-sm text-gray-400">CPU ({{ data?.cpu?.cores || 0 }} {{ t('dashboard.cores') }})</span>
         <span class="text-sm font-medium text-white">{{ data?.cpu?.usage || 0 }}%</span>
       </div>
       <div class="w-full h-2 rounded-full bg-white/[0.08]">
@@ -50,7 +52,7 @@ function getBarColor(usage) {
     <!-- Disk -->
     <div>
       <div class="flex items-center justify-between mb-1">
-        <span class="text-sm text-gray-400">Festplatte ({{ data?.disk?.used || '0 GB' }} / {{ data?.disk?.total || '0 GB' }})</span>
+        <span class="text-sm text-gray-400">{{ t('dashboard.disk') }} ({{ data?.disk?.used || '0 GB' }} / {{ data?.disk?.total || '0 GB' }})</span>
         <span class="text-sm font-medium text-white">{{ data?.disk?.usage || 0 }}%</span>
       </div>
       <div class="w-full h-2 rounded-full bg-white/[0.08]">

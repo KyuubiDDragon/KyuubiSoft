@@ -93,7 +93,7 @@ async function loadFiles() {
     // Load thumbnails after files are loaded
     loadThumbnails()
   } catch (error) {
-    uiStore.showError(t('storage.storagefehlerbeimladenderdateien'))
+    uiStore.showError(t('storage.errorLoadingFiles'))
   } finally {
     isLoading.value = false
   }
@@ -167,10 +167,10 @@ async function deleteFile(file) {
   try {
     await api.delete(`/api/v1/storage/${file.id}`)
     files.value = files.value.filter(f => f.id !== file.id)
-    uiStore.showSuccess(t('storage.dateiGeloescht'))
+    uiStore.showSuccess(t('storage.fileDeleted'))
     loadStats()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -204,7 +204,7 @@ async function createShare() {
     const response = await api.post(`/api/v1/storage/${selectedFile.value.id}/share`, payload)
     shares.value.unshift(response.data.data)
     shareForm.value = { password: '', max_downloads: null, expires_at: '' }
-    uiStore.showSuccess(t('storage.freigabeErstellt'))
+    uiStore.showSuccess(t('storage.shareCreated'))
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
@@ -213,7 +213,7 @@ async function createShare() {
     }
     loadStats()
   } catch (error) {
-    uiStore.showError(t('storage.storagefehlerbeimerstellenderfreigabe'))
+    uiStore.showError(t('storage.errorCreatingShare'))
   } finally {
     isShareLoading.value = false
   }
@@ -221,12 +221,12 @@ async function createShare() {
 
 async function deleteShare(share) {
   if (!selectedFile.value) return
-  if (!await confirm({ message: t('storage.freigabeWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('storage.confirmDeleteShare'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/storage/${selectedFile.value.id}/share?share_id=${share.id}`)
     shares.value = shares.value.filter(s => s.id !== share.id)
-    uiStore.showSuccess(t('storage.freigabeGeloescht'))
+    uiStore.showSuccess(t('storage.shareDeleted'))
 
     // Update file in list
     const index = files.value.findIndex(f => f.id === selectedFile.value.id)
@@ -235,7 +235,7 @@ async function deleteShare(share) {
     }
     loadStats()
   } catch (error) {
-    uiStore.showError(t('storage.storagefehlerbeimloeschenderfreigabe'))
+    uiStore.showError(t('storage.errorDeletingShare'))
   }
 }
 
@@ -252,7 +252,7 @@ async function toggleShareActive(share) {
     }
     uiStore.showSuccess(response.data.data.is_active ? t('storage.freigabeAktiviert') : t('storage.freigabeDeaktiviert'))
   } catch (error) {
-    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
+    uiStore.showError(t('storage.errorChangingStatus'))
   }
 }
 
@@ -284,7 +284,7 @@ async function renameFile() {
     showRenameModal.value = false
     uiStore.showSuccess(t('storage.dateiUmbenannt'))
   } catch (error) {
-    uiStore.showError(t('storage.fehlerBeimUmbenennen'))
+    uiStore.showError(t('storage.errorRenaming'))
   }
 }
 
@@ -527,8 +527,8 @@ onUnmounted(() => {
       <!-- Empty State -->
       <div v-else-if="files.length === 0" class="p-12 text-center">
         <CloudArrowUpIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <p class="text-lg text-white font-medium">{{ $t('storage.storagekeinedateienvorhanden') }}</p>
-        <p class="text-gray-400 mb-4">{{ $t('storage.storageladedeineerstedateihochoderziehe') }}</p>
+        <p class="text-lg text-white font-medium">{{ $t('storage.noFiles') }}</p>
+        <p class="text-gray-400 mb-4">{{ $t('storage.uploadFirstFile') }}</p>
         <button
           @click="fileInput.click()"
           class="btn-primary"
@@ -766,7 +766,7 @@ onUnmounted(() => {
                       Passwort
                     </span>
                     <span v-if="share.expires_at" class="text-orange-400">
-                      Läuft ab: {{ formatDate(share.expires_at) }}
+                      {{ $t('common.expiresAt') }} {{ formatDate(share.expires_at) }}
                     </span>
                   </div>
                 </div>
@@ -872,7 +872,7 @@ onUnmounted(() => {
               @click="showRenameModal = false"
               class="btn-secondary"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="renameFile"

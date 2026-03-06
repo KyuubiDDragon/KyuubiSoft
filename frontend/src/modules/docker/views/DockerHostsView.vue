@@ -625,7 +625,7 @@ watch(() => projectStore.selectedProjectId, () => {
               <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
                 <h4 class="text-sm font-medium text-white mb-3">{{ $t('dockerModule.portainerIntegration') }}</h4>
                 <p class="text-xs text-gray-400 mb-3">
-                  Konfiguriere Portainer, um Compose-Dateien direkt von der Portainer API zu laden, wenn sie nicht im Dateisystem verfügbar sind.
+                  {{ $t('dockerModule.portainerHint') }}
                 </p>
                 <div class="grid grid-cols-1 gap-3">
                   <div>
@@ -689,7 +689,7 @@ watch(() => projectStore.selectedProjectId, () => {
               <div v-if="editMode" class="border-t border-white/[0.06] pt-4 mt-4">
                 <h4 class="text-sm font-medium text-white mb-3">{{ $t('dockerModule.sshAccess') }}</h4>
                 <p class="text-xs text-gray-400 mb-3">
-                  SSH-Zugang für das Lesen von Compose-Dateien auf Remote-Servern. Ermöglicht Backups für nicht über Portainer erstellte Stacks.
+                  {{ $t('dockerModule.sshHint') }}
                 </p>
                 <div class="grid grid-cols-1 gap-3">
                   <div class="flex items-center gap-3">
@@ -750,7 +750,7 @@ watch(() => projectStore.selectedProjectId, () => {
                         class="textarea w-full h-24 text-xs font-mono"
                         placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
                       ></textarea>
-                      <p class="text-xs text-gray-500 mt-1">Falls kein Passwort verwendet wird, hier den Private Key einfügen</p>
+                      <p class="text-xs text-gray-500 mt-1">{{ $t('dockerModule.privateKeyHint') }}</p>
                     </div>
                   </template>
                 </div>

@@ -82,7 +82,7 @@
       <div v-else-if="emailStore.messages.length === 0" class="flex-1 flex items-center justify-center p-4">
         <div class="text-center">
           <InboxIcon class="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p class="text-gray-500 text-sm">{{ $t('emailModule.keineNachrichten') }}</p>
+          <p class="text-gray-500 text-sm">{{ $t('emailModule.noMessages') }}</p>
         </div>
       </div>
 

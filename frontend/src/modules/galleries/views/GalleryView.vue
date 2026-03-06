@@ -125,7 +125,7 @@ const saveGallery = async () => {
 }
 
 const deleteGallery = async (id) => {
-  if (!await confirm({ message: t('galleriesModule.galerieWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('galleriesModule.confirmDeleteGallery'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/galleries/${id}`)
     await loadGalleries()
@@ -220,7 +220,7 @@ onMounted(() => {
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $t('galleriesModule.title') }}</h1>
-        <p class="text-gray-500 dark:text-gray-400">{{ $t('galleriesModule.erstelleUndTeileOeffentlicheSammlungen') }}</p>
+        <p class="text-gray-500 dark:text-gray-400">{{ $t('galleriesModule.createAndShareCollections') }}</p>
       </div>
       <button @click="showModal = true" class="btn-primary">
         <PlusIcon class="w-5 h-5 mr-2" />
@@ -263,7 +263,7 @@ onMounted(() => {
             <div>
               <h3 class="font-semibold text-gray-900 dark:text-white">{{ gallery.name }}</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                {{ gallery.description || $t('galleriesModule.keineBeschreibung') }}
+                {{ gallery.description || $t('galleriesModule.noDescription') }}
               </p>
             </div>
           </div>
@@ -308,8 +308,8 @@ onMounted(() => {
       <div v-if="galleries.length === 0" class="col-span-full">
         <div class="text-center py-12 bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06]">
           <PhotoIcon class="w-12 h-12 mx-auto text-gray-400" />
-          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">{{ $t('galleriesModule.keineGalerien') }}</h3>
-          <p class="mt-2 text-gray-500">{{ $t('galleriesModule.erstelleDeineErsteOeffentlicheGalerie') }}</p>
+          <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">{{ $t('galleriesModule.noGalleries') }}</h3>
+          <p class="mt-2 text-gray-500">{{ $t('galleriesModule.createYourFirstGallery') }}</p>
           <button @click="showModal = true" class="mt-4 btn-primary">
             <PlusIcon class="w-5 h-5 mr-2" />
             Galerie erstellen
@@ -359,12 +359,12 @@ onMounted(() => {
               </div>
               <div>
                 <label class="label">{{ $t('links.linkspasswortoptional') }}</label>
-                <input v-model="form.password" type="password" :placeholder="$t('galleriesModule.galleriesmoduleleerlassenfuerkeinenschutz')" class="input" />
+                <input v-model="form.password" type="password" :placeholder="$t('galleriesModule.leaveEmptyForNoProtection')" class="input" />
               </div>
               <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input v-model="form.is_public" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('galleriesModule.oeffentlich') }}</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('galleriesModule.public') }}</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.show_header" type="checkbox" class="rounded" />

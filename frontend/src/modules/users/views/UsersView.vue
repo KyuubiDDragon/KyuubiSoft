@@ -65,7 +65,7 @@ async function loadUsers() {
     const response = await api.get('/api/v1/users')
     users.value = response.data.data?.items || response.data.data || []
   } catch (err) {
-    error.value = t('users.fehlerBeimLadenDerBenutzer')
+    error.value = t('users.errorLoadingUsers')
     console.error(err)
   } finally {
     isLoading.value = false
@@ -88,12 +88,12 @@ async function approveUser(user) {
     await Promise.all([loadUsers(), loadPendingUsers()])
   } catch (err) {
     console.error('Approve error:', err)
-    uiStore.showError(err.response?.data?.error || t('users.fehlerBeimFreischalten'))
+    uiStore.showError(err.response?.data?.error || t('users.errorApproving'))
   }
 }
 
 async function rejectUser(user) {
-  if (!confirm(`Möchtest du die Registrierung von "${user.username || user.email}" wirklich ablehnen? Der Benutzer wird gelöscht.`)) {
+  if (!confirm(t('users.confirmRejectRegistration', { name: user.username || user.email }))) {
     return
   }
   try {
@@ -102,7 +102,7 @@ async function rejectUser(user) {
     await loadPendingUsers()
   } catch (err) {
     console.error('Reject error:', err)
-    uiStore.showError(err.response?.data?.error || t('users.fehlerBeimAblehnen'))
+    uiStore.showError(err.response?.data?.error || t('users.errorRejecting'))
   }
 }
 
@@ -215,7 +215,7 @@ async function loadUserPermissions() {
     userRolePermissions.value = data.role_permissions || []
   } catch (err) {
     console.error('Failed to load user permissions:', err)
-    uiStore.showError(t('users.usersfehlerbeimladenderberechtigungen'))
+    uiStore.showError(t('users.errorLoadingPermissions'))
   } finally {
     isLoadingPermissions.value = false
   }
@@ -231,7 +231,7 @@ async function assignPermissionToUser(permissionName) {
     await loadUserPermissions()
   } catch (err) {
     console.error('Failed to assign permission:', err)
-    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimhinzufuegenderberechtigung'))
+    uiStore.showError(err.response?.data?.error || t('users.errorAddingPermission'))
   }
 }
 
@@ -243,7 +243,7 @@ async function removePermissionFromUser(permissionName) {
     await loadUserPermissions()
   } catch (err) {
     console.error('Failed to remove permission:', err)
-    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimentfernenderberechtigung'))
+    uiStore.showError(err.response?.data?.error || t('users.errorRemovingPermission'))
   }
 }
 
@@ -343,7 +343,7 @@ async function saveUser() {
     await loadUsers()
   } catch (err) {
     console.error('Save error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern')
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.errorSaving')
   } finally {
     isSaving.value = false
   }
@@ -359,7 +359,7 @@ async function deleteUser() {
     await loadUsers()
   } catch (err) {
     console.error('Delete error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.fehlerBeimLoeschen')
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.errorDeleting')
   } finally {
     isSaving.value = false
   }
@@ -416,7 +416,7 @@ function canDeleteUser(user) {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">{{ $t('navigation.users') }}</h1>
-        <p class="text-gray-400 mt-1">{{ $t('users.usersverwalteallebenutzerdessystems') }}</p>
+        <p class="text-gray-400 mt-1">{{ $t('users.manageAllUsers') }}</p>
       </div>
       <button
         @click="openCreateModal"
@@ -580,7 +580,7 @@ function canDeleteUser(user) {
               <button
                 @click="openPermissionsModal(user)"
                 class="text-yellow-400 hover:text-yellow-300 mr-3"
-                :title="$t('users.berechtigungenVerwalten')"
+                :title="$t('users.managePermissions')"
               >
                 <KeyIcon class="w-5 h-5 inline" />
               </button>
@@ -595,7 +595,7 @@ function canDeleteUser(user) {
                 v-if="canDeleteUser(user)"
                 @click="openDeleteModal(user)"
                 class="text-red-400 hover:text-red-300"
-                :title="$t('users.benutzerLoeschen')"
+                :title="$t('users.deleteUser')"
               >
                 <TrashIcon class="w-5 h-5 inline" />
               </button>
@@ -753,7 +753,7 @@ function canDeleteUser(user) {
                 </label>
               </div>
               <p v-if="formData.allowed_project_ids.length === 0" class="text-xs text-orange-400">
-                {{ $t('users.keineProjekteAusgewaehltBenutzerHatKeinenZugriff') }}
+                {{ $t('users.noProjectsSelectedNoAccess') }}
               </p>
             </div>
           </div>
@@ -764,7 +764,7 @@ function canDeleteUser(user) {
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveUser"
@@ -786,11 +786,11 @@ function canDeleteUser(user) {
       >
         <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.benutzerLoeschen') }}</h3>
+            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.deleteUser') }}</h3>
             <p class="text-gray-400">
               Bist du sicher, dass du den Benutzer
               <span class="text-white font-medium">{{ selectedUser?.username }}</span>
-              {{ $t('users.loeschenMoechtestDieseAktionKannNichtRueckgaengig') }}
+              {{ $t('users.confirmDeleteIrreversible') }}
             </p>
 
             <div v-if="formErrors.general" class="mt-4 bg-red-900/50 border border-red-700 rounded-lg p-3">
@@ -802,14 +802,14 @@ function canDeleteUser(user) {
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="deleteUser"
               :disabled="isSaving"
               class="btn-danger disabled:opacity-50"
             >
-              {{ isSaving ? $t('users.loeschen') : $t('common.delete') }}
+              {{ isSaving ? $t('users.delete') : $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -952,7 +952,7 @@ function canDeleteUser(user) {
               @click="closeModals"
               class="btn-secondary"
             >
-              Schließen
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>

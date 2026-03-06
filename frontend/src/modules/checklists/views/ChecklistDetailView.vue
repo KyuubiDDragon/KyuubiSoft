@@ -170,7 +170,7 @@ async function updateSettings() {
     newPassword.value = ''
     uiStore.showSuccess(t('checklists.settingsSaved'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -187,9 +187,9 @@ async function addCategory() {
     expandedCategories.value[response.data.data.id] = true
     showAddCategoryModal.value = false
     newCategory.value = { name: '', description: '' }
-    uiStore.showSuccess(t('tickets.kategorieErstellt'))
+    uiStore.showSuccess(t('tickets.categoryCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -200,14 +200,14 @@ async function updateCategory(category) {
       description: category.description,
     })
     editingCategory.value = null
-    uiStore.showSuccess(t('tickets.kategorieAktualisiert'))
+    uiStore.showSuccess(t('tickets.categoryUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
 async function deleteCategory(category) {
-  if (!await confirm({ message: `Kategorie "${category.name}" wirklich löschen? Die Punkte werden nicht gelöscht.`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteCategory', { name: category.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/categories/${category.id}`)
@@ -219,7 +219,7 @@ async function deleteCategory(category) {
       }
       return item
     })
-    uiStore.showSuccess(t('tickets.kategorieGeloescht'))
+    uiStore.showSuccess(t('tickets.categoryDeleted'))
   } catch (error) {
     uiStore.showError(t('common.errorDeleting'))
   }
@@ -239,7 +239,7 @@ async function addItem() {
     newItem.value = { title: '', description: '', category_id: null, required_testers: -1 }
     uiStore.showSuccess(t('checklists.itemCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -318,12 +318,12 @@ async function updateItem(item) {
     editingItem.value = null
     uiStore.showSuccess(t('checklists.itemUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: `Testpunkt "${item.title}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('checklists.confirmDeleteItemMessage', { title: item.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/checklists/${checklistId.value}/items/${item.id}`)
@@ -507,7 +507,7 @@ watch(() => route.params.id, () => {
     <!-- Loading -->
     <div v-if="isLoading" class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-12 text-center">
       <div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-gray-400 mt-4">Lade Checkliste...</p>
+      <p class="text-gray-400 mt-4">{{ $t('checklists.loadingChecklist') }}</p>
     </div>
 
     <template v-else-if="checklist">
@@ -597,7 +597,7 @@ watch(() => route.params.id, () => {
             class="flex items-center gap-2 btn-primary"
           >
             <PlusIcon class="w-4 h-4" />
-            <span>Testpunkt</span>
+            <span>{{ $t('checklists.testPoint') }}</span>
           </button>
           <button
             @click="showBatchAddModal = true"
@@ -704,7 +704,7 @@ watch(() => route.params.id, () => {
                     <div class="flex items-center gap-1.5">
                       <UsersIcon class="w-4 h-4 text-gray-500" />
                       <span class="text-gray-400 text-sm">
-                        {{ item.required_testers === -1 ? '∞' : item.required_testers }} Tester benötigt
+                        {{ item.required_testers === -1 ? $t('checklists.testersRequiredInfinite') : $t('checklists.testersRequired', { count: item.required_testers }) }}
                       </span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -768,7 +768,7 @@ watch(() => route.params.id, () => {
                           <!-- Image Upload -->
                           <label
                             class="p-1.5 hover:bg-white/[0.04] rounded cursor-pointer transition-colors"
-                            :title="entry.image_path ? 'Bild ersetzen' : 'Bild hinzufügen'"
+                            :title="entry.image_path ? $t('checklists.replaceImage') : $t('checklists.addImage')"
                           >
                             <PhotoIcon
                               class="w-4 h-4"
@@ -845,12 +845,12 @@ watch(() => route.params.id, () => {
         v-if="(!checklist.items || checklist.items.length === 0) && (!checklist.categories || checklist.categories.length === 0)"
         class="bg-white/[0.04] rounded-xl border border-white/[0.06] p-12 text-center"
       >
-        <p class="text-gray-400 mb-4">Füge Testpunkte hinzu, um loszulegen</p>
+        <p class="text-gray-400 mb-4">{{ $t('checklists.addTestPointsToStart') }}</p>
         <button
           @click="showAddItemModal = true"
           class="btn-primary"
         >
-          Ersten Testpunkt erstellen
+          {{ $t('checklists.createFirstTestPoint') }}
         </button>
       </div>
     </template>
@@ -863,12 +863,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-lg">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Einstellungen</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.settingsTitle') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.titleLabel') }}</label>
               <input
                 v-model="checklist.title"
                 type="text"
@@ -877,7 +877,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="checklist.description"
                 rows="3"
@@ -892,7 +892,7 @@ watch(() => route.params.id, () => {
                   v-model="checklist.is_active"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Checkliste aktiv</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.checklistActive') }}</span>
               </label>
 
               <label class="flex items-center gap-3 cursor-pointer">
@@ -901,7 +901,7 @@ watch(() => route.params.id, () => {
                   v-model="checklist.require_name"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Name bei Einträgen erforderlich</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.nameRequiredForEntriesLabel') }}</span>
               </label>
 
               <label class="flex items-center gap-3 cursor-pointer">
@@ -910,7 +910,7 @@ watch(() => route.params.id, () => {
                   v-model="checklist.allow_add_items"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Externe dürfen Punkte hinzufügen</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.externalsCanAddItemsLabel') }}</span>
               </label>
 
               <label class="flex items-center gap-3 cursor-pointer">
@@ -919,7 +919,7 @@ watch(() => route.params.id, () => {
                   v-model="checklist.allow_comments"
                   class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
                 />
-                <span class="text-gray-300 text-sm">Kommentare/Notizen erlauben</span>
+                <span class="text-gray-300 text-sm">{{ $t('checklists.allowComments') }}</span>
               </label>
             </div>
 
@@ -933,12 +933,12 @@ watch(() => route.params.id, () => {
                 <input
                   v-model="newPassword"
                   type="password"
-                  :placeholder="checklist.has_password ? 'Neues Passwort (leer = entfernen)' : 'Passwort setzen (optional)'"
+                  :placeholder="checklist.has_password ? $t('checklists.passwordPlaceholderChange') : $t('checklists.passwordPlaceholderSet')"
                   class="input flex-1"
                 />
               </div>
               <p class="text-gray-500 text-xs mt-1">
-                {{ checklist.has_password ? 'Leer lassen um Passwort zu entfernen, oder neues Passwort eingeben' : 'Optional: Schütze die Checkliste mit einem Passwort' }}
+                {{ checklist.has_password ? $t('checklists.passwordHintChange') : $t('checklists.passwordHintSet') }}
               </p>
             </div>
           </div>
@@ -965,12 +965,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neue Kategorie</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.newCategory') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.nameRequiredLabel') }}</label>
               <input
                 v-model="newCategory.name"
                 type="text"
@@ -981,11 +981,11 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <input
                 v-model="newCategory.description"
                 type="text"
-                placeholder="Optional..."
+                :placeholder="$t('checklists.optionalDescription')"
                 class="input"
               />
             </div>
@@ -1013,12 +1013,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Neuer Testpunkt</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.newTestPoint') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.titleRequiredLabel') }}</label>
               <input
                 v-model="newItem.title"
                 type="text"
@@ -1029,17 +1029,17 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="newItem.description"
                 rows="2"
-                placeholder="Testanweisungen..."
+                :placeholder="$t('checklists.testInstructionsPlaceholder')"
                 class="textarea"
               ></textarea>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.categoryLabel') }}</label>
               <select
                 v-model="newItem.category_id"
                 class="input"
@@ -1052,14 +1052,14 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.requiredTestersLabel') }}</label>
               <input
                 v-model.number="newItem.required_testers"
                 type="number"
                 min="-1"
                 class="input"
               />
-              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞), sonst Anzahl der Tester</p>
+              <p class="text-gray-500 text-xs mt-1">{{ $t('checklists.requiredTestersHint') }}</p>
             </div>
           </div>
 
@@ -1085,13 +1085,13 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-lg">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Mehrere Testpunkte hinzufügen</h2>
-            <p class="text-gray-400 text-sm mt-1">Ein Testpunkt pro Zeile</p>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.addMultipleTestPoints') }}</h2>
+            <p class="text-gray-400 text-sm mt-1">{{ $t('checklists.oneTestPointPerLine') }}</p>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Testpunkte *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.testPointsLabel') }}</label>
               <textarea
                 v-model="batchAdd.items"
                 rows="8"
@@ -1104,7 +1104,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.categoryLabel') }}</label>
               <select
                 v-model="batchAdd.category_id"
                 class="input"
@@ -1117,21 +1117,19 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester (für alle)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.requiredTestersForAll') }}</label>
               <input
                 v-model.number="batchAdd.required_testers"
                 type="number"
                 min="-1"
                 class="input"
               />
-              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
+              <p class="text-gray-500 text-xs mt-1">{{ $t('checklists.requiredTestersHintShort') }}</p>
             </div>
 
             <div class="p-3 bg-white/[0.03] rounded-lg">
               <p class="text-gray-400 text-sm">
-                <span class="text-white font-medium">
-                  {{ batchAdd.items.split('\n').filter(l => l.trim()).length }}
-                </span> Testpunkt{{ batchAdd.items.split('\n').filter(l => l.trim()).length !== 1 ? 'e' : '' }} werden erstellt
+                {{ $t('checklists.testPointsWillBeCreated', { count: batchAdd.items.split('\n').filter(l => l.trim()).length }) }}
               </p>
             </div>
           </div>
@@ -1160,12 +1158,12 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Testpunkt bearbeiten</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.editTestPoint') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Titel</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.titleLabel') }}</label>
               <input
                 v-model="editingItem.title"
                 type="text"
@@ -1174,7 +1172,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <textarea
                 v-model="editingItem.description"
                 rows="2"
@@ -1183,7 +1181,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.categoryLabel') }}</label>
               <select
                 v-model="editingItem.category_id"
                 class="input"
@@ -1196,14 +1194,14 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Benötigte Tester</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.requiredTestersLabel') }}</label>
               <input
                 v-model.number="editingItem.required_testers"
                 type="number"
                 min="-1"
                 class="input"
               />
-              <p class="text-gray-500 text-xs mt-1">-1 = unbegrenzt (∞)</p>
+              <p class="text-gray-500 text-xs mt-1">{{ $t('checklists.requiredTestersHintShort') }}</p>
             </div>
           </div>
 
@@ -1229,7 +1227,7 @@ watch(() => route.params.id, () => {
       >
         <div class="modal w-full max-w-md">
           <div class="p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Kategorie bearbeiten</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('checklists.editCategory') }}</h2>
           </div>
 
           <div class="p-4 space-y-4">
@@ -1243,7 +1241,7 @@ watch(() => route.params.id, () => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Beschreibung</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('checklists.descriptionLabel') }}</label>
               <input
                 v-model="editingCategory.description"
                 type="text"

@@ -17,14 +17,14 @@ defineEmits(['open-config'])
     <!-- No date configured -->
     <div v-if="!widget.config?.date" class="text-center py-6">
       <ClockIcon class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-      <p class="text-gray-500 text-sm mb-3">{{ $t('dashboardModule.keinDatumFestgelegt') }}</p>
-      <button @click="$emit('open-config')" class="btn-secondary text-xs">Countdown einrichten</button>
+      <p class="text-gray-500 text-sm mb-3">{{ $t('dashboardModule.noDateSet') }}</p>
+      <button @click="$emit('open-config')" class="btn-secondary text-xs">{{ $t('dashboard.setupCountdown') }}</button>
     </div>
 
     <!-- Countdown display -->
     <div v-else-if="data" class="text-center">
       <div v-if="data.expired" class="py-4">
-        <p class="text-2xl font-bold text-green-400">Erreicht!</p>
+        <p class="text-2xl font-bold text-green-400">{{ $t('dashboard.reached') }}</p>
       </div>
       <div v-else class="grid grid-cols-4 gap-2">
         <div class="bg-white/[0.04] rounded-lg p-2">
@@ -33,18 +33,18 @@ defineEmits(['open-config'])
         </div>
         <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.hours }}</p>
-          <p class="text-xs text-gray-500">Std</p>
+          <p class="text-xs text-gray-500">{{ $t('dashboard.hours') }}</p>
         </div>
         <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.minutes }}</p>
-          <p class="text-xs text-gray-500">Min</p>
+          <p class="text-xs text-gray-500">{{ $t('dashboard.minutes') }}</p>
         </div>
         <div class="bg-white/[0.04] rounded-lg p-2">
           <p class="text-2xl font-bold text-white">{{ data.seconds }}</p>
-          <p class="text-xs text-gray-500">Sek</p>
+          <p class="text-xs text-gray-500">{{ $t('dashboard.seconds') }}</p>
         </div>
       </div>
-      <p class="text-xs text-gray-500 mt-3">{{ new Date(widget.config.date).toLocaleDateString('de-DE') }}</p>
+      <p class="text-xs text-gray-500 mt-3">{{ new Date(widget.config.date).toLocaleDateString(undefined) }}</p>
     </div>
   </div>
 </template>

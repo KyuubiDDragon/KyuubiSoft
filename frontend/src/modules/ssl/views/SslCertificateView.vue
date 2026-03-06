@@ -121,7 +121,7 @@ const saveCertificate = async () => {
 }
 
 const deleteCertificate = async (id) => {
-  if (!await confirm({ message: 'Zertifikat wirklich entfernen?', type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('ssl.confirmDeleteCertificate'), type: 'danger', confirmText: t('common.delete') })) return
   try {
     await api.delete(`/api/v1/ssl/certificates/${id}`)
     await loadCertificates()
@@ -225,11 +225,11 @@ const getStatusIcon = (status) => {
 const getStatusLabel = (status) => {
   const labels = {
     valid: t('ssl.gueltig'),
-    expiring_soon: t('ssl.laeuftBaldAb'),
-    expired: 'Abgelaufen',
+    expiring_soon: t('ssl.expiringSoon'),
+    expired: t('ssl.expired'),
     invalid: t('ssl.ungueltig'),
     error: t('common.error'),
-    pending: 'Ausstehend',
+    pending: t('ssl.pendingStatus'),
   }
   return labels[status] || status
 }
@@ -257,7 +257,7 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">SSL Zertifikate</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $t('ssl.sslCertificates') }}</h1>
         <p class="text-gray-500 dark:text-gray-400">{{ $t('ssl.ueberwacheSslzertifikateUndErhalteBenachrichtigungenVorAblauf') }}</p>
       </div>
       <div class="flex gap-2">
@@ -267,11 +267,11 @@ onMounted(() => {
         </button>
         <button @click="showFolderModal = true" class="btn-secondary">
           <FolderPlusIcon class="w-5 h-5 mr-2" />
-          Ordner
+          {{ $t('ssl.folderButton') }}
         </button>
         <button @click="showModal = true" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Zertifikat
+          {{ $t('ssl.certificateButton') }}
         </button>
       </div>
     </div>
@@ -287,11 +287,11 @@ onMounted(() => {
         <div class="text-2xl font-bold text-green-700 dark:text-green-300">{{ stats.valid }}</div>
       </div>
       <div class="bg-amber-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
-        <div class="text-amber-600 dark:text-amber-400 text-sm">Bald ablaufend</div>
+        <div class="text-amber-600 dark:text-amber-400 text-sm">{{ $t('ssl.expiringSoon') }}</div>
         <div class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ stats.expiring_soon }}</div>
       </div>
       <div class="bg-red-900/20 rounded-xl p-4 shadow-glass border border-white/[0.06]">
-        <div class="text-red-600 dark:text-red-400 text-sm">Abgelaufen</div>
+        <div class="text-red-600 dark:text-red-400 text-sm">{{ $t('ssl.expired') }}</div>
         <div class="text-2xl font-bold text-red-700 dark:text-red-300">{{ stats.expired }}</div>
       </div>
       <div class="bg-white/[0.04] rounded-xl p-4 shadow-glass border border-white/[0.06]">
@@ -387,11 +387,11 @@ onMounted(() => {
       <div v-if="certificates.length === 0"
            class="text-center py-12 bg-white/[0.04] rounded-xl shadow-glass border border-white/[0.06]">
         <ShieldCheckIcon class="w-12 h-12 mx-auto text-gray-400" />
-        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Keine Zertifikate</h3>
-        <p class="mt-2 text-gray-500">Füge dein erstes SSL-Zertifikat zur Überwachung hinzu.</p>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">{{ $t('ssl.noCertificates') }}</h3>
+        <p class="mt-2 text-gray-500">{{ $t('ssl.addFirstCertificate') }}</p>
         <button @click="showModal = true" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Zertifikat hinzufügen
+          {{ $t('ssl.addCertificate') }}
         </button>
       </div>
     </div>
@@ -403,7 +403,7 @@ onMounted(() => {
           <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showModal = false"></div>
           <div class="relative modal w-full max-w-lg p-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              {{ editingCert ? 'Zertifikat bearbeiten' : 'Neues Zertifikat' }}
+              {{ editingCert ? $t('ssl.editCertificate') : $t('ssl.newCertificate') }}
             </h2>
             <form @submit.prevent="saveCertificate" class="space-y-4">
               <div>
@@ -412,7 +412,7 @@ onMounted(() => {
               </div>
               <div class="grid grid-cols-3 gap-4">
                 <div class="col-span-2">
-                  <label class="label">Hostname</label>
+                  <label class="label">{{ $t('ssl.hostname') }}</label>
                   <input v-model="form.hostname" type="text" required placeholder="example.com" class="input" />
                 </div>
                 <div>
@@ -422,30 +422,30 @@ onMounted(() => {
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="label">Warnung (Tage)</label>
+                  <label class="label">{{ $t('ssl.warningDays') }}</label>
                   <input v-model.number="form.warn_days_before" type="number" min="1" class="input" />
                 </div>
                 <div>
-                  <label class="label">Kritisch (Tage)</label>
+                  <label class="label">{{ $t('ssl.criticalDays') }}</label>
                   <input v-model.number="form.critical_days_before" type="number" min="1" class="input" />
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input v-model="form.notify_on_expiry_warning" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Warnung</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('ssl.warning') }}</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.notify_on_expiry_critical" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Kritisch</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('ssl.critical') }}</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.notify_on_expired" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Abgelaufen</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('ssl.expired') }}</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input v-model="form.notify_on_renewed" type="checkbox" class="rounded" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Erneuert</span>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('ssl.renewed') }}</span>
                 </label>
               </div>
               <div class="flex justify-end gap-3 pt-4">
@@ -464,7 +464,7 @@ onMounted(() => {
         <div class="flex items-center justify-center min-h-screen px-4">
           <div class="fixed inset-0 bg-black/60 backdrop-blur-md" @click="showFolderModal = false"></div>
           <div class="relative modal w-full max-w-md p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Neuer Ordner</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ $t('ssl.newFolder') }}</h2>
             <form @submit.prevent="saveFolder" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
@@ -472,7 +472,7 @@ onMounted(() => {
                        class="input" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farbe</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('ssl.colorLabel') }}</label>
                 <div class="flex gap-2">
                   <button v-for="color in folderColors" :key="color" type="button"
                           @click="folderForm.color = color"
@@ -516,11 +516,11 @@ onMounted(() => {
                 <div class="font-medium">{{ selectedCert.certificate.issuer || '-' }}</div>
               </div>
               <div class="bg-white/[0.04] p-4 rounded-xl">
-                <div class="text-sm text-gray-500">Gültig von</div>
+                <div class="text-sm text-gray-500">{{ $t('ssl.validFrom') }}</div>
                 <div class="font-medium">{{ formatDate(selectedCert.certificate.valid_from) }}</div>
               </div>
               <div class="bg-white/[0.04] p-4 rounded-xl">
-                <div class="text-sm text-gray-500">Gültig bis</div>
+                <div class="text-sm text-gray-500">{{ $t('ssl.validUntilLabel') }}</div>
                 <div class="font-medium">{{ formatDate(selectedCert.certificate.valid_until) }}</div>
               </div>
             </div>
@@ -538,7 +538,7 @@ onMounted(() => {
 
             <!-- Recent Checks -->
             <div>
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Letzte Prüfungen</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $t('ssl.recentChecks') }}</h3>
               <div class="space-y-2 max-h-40 overflow-y-auto">
                 <div v-for="check in selectedCert.checks?.slice(0, 10)" :key="check.id"
                      class="flex items-center justify-between p-2 bg-white/[0.04] rounded">

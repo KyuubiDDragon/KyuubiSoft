@@ -37,7 +37,7 @@ watch(() => mockupStore.currentTemplate, (template) => {
 // Computed
 const formatOptions = [
   { value: 'png', label: 'PNG', description: t('mockupEditor.besteQualitaetUnterstuetztTransparenz') },
-  { value: 'jpg', label: 'JPG', description: t('mockupEditor.kleinereDateigroesseKeineTransparenz') },
+  { value: 'jpg', label: 'JPG', description: t('mockupEditor.smallerFileSizeNoTransparency') },
 ]
 
 const canBeTransparent = computed(() => {
@@ -121,7 +121,7 @@ const close = () => {
             <Transition name="slide-down">
               <div v-if="format === 'jpg'" class="space-y-3">
                 <label class="block text-sm font-medium text-gray-300">
-                  Qualität: {{ quality }}%
+                  {{ $t('mockupEditor.quality') }}: {{ quality }}%
                 </label>
                 <input
                   v-model="quality"
@@ -222,7 +222,7 @@ const close = () => {
               @click="close"
               class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="handleExport"

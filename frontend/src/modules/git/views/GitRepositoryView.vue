@@ -366,7 +366,7 @@ onMounted(() => {
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-3xl font-bold text-white">Git Repositories</h1>
-        <p class="text-gray-400">{{ $t('gitModule.verwalteUndUeberwacheDeineGitRepositories') }}</p>
+        <p class="text-gray-400">{{ $t('gitModule.manageGitRepos') }}</p>
       </div>
       <div class="flex gap-2">
         <button @click="syncAllRepositories" :disabled="syncingAll" class="btn-secondary">
@@ -507,7 +507,7 @@ onMounted(() => {
         <p class="mt-2 text-gray-500">{{ $t('gitRepo.addFirstRepo') }}</p>
         <button @click="showModal = true" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Repository hinzufügen
+          {{ $t('gitRepo.addRepository') }}
         </button>
       </div>
     </div>

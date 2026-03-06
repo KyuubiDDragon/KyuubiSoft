@@ -329,31 +329,31 @@ function executeSlashCommand(command) {
     case 'Text':
       editor.value.chain().focus().setParagraph().run()
       break
-    case 'Überschrift 1':
+    case t('notes.editor.slash.heading1'):
       editor.value.chain().focus().toggleHeading({ level: 1 }).run()
       break
-    case 'Überschrift 2':
+    case t('notes.editor.slash.heading2'):
       editor.value.chain().focus().toggleHeading({ level: 2 }).run()
       break
-    case 'Überschrift 3':
+    case t('notes.editor.slash.heading3'):
       editor.value.chain().focus().toggleHeading({ level: 3 }).run()
       break
-    case 'Aufzählung':
+    case t('notes.editor.slash.bulletList'):
       editor.value.chain().focus().toggleBulletList().run()
       break
-    case 'Nummerierung':
+    case t('notes.editor.slash.numberedList'):
       editor.value.chain().focus().toggleOrderedList().run()
       break
-    case 'Checkliste':
+    case t('notes.editor.slash.checklist'):
       editor.value.chain().focus().toggleTaskList().run()
       break
-    case 'Zitat':
+    case t('notes.editor.slash.quote'):
       editor.value.chain().focus().toggleBlockquote().run()
       break
-    case 'Codeblock':
+    case t('notes.editor.slash.codeBlock'):
       editor.value.chain().focus().toggleCodeBlock().run()
       break
-    case 'Trennlinie':
+    case t('notes.editor.slash.divider'):
       editor.value.chain().focus().setHorizontalRule().run()
       break
     case 'Info':
@@ -363,21 +363,21 @@ function executeSlashCommand(command) {
         content: [{ type: 'paragraph' }]
       }).run()
       break
-    case 'Warnung':
+    case t('notes.editor.slash.warning'):
       editor.value.chain().focus().insertContent({
         type: 'callout',
         attrs: { type: 'warning' },
         content: [{ type: 'paragraph' }]
       }).run()
       break
-    case 'Tipp':
+    case t('notes.editor.slash.tip'):
       editor.value.chain().focus().insertContent({
         type: 'callout',
         attrs: { type: 'tip' },
         content: [{ type: 'paragraph' }]
       }).run()
       break
-    case 'Gefahr':
+    case t('notes.editor.slash.danger'):
       editor.value.chain().focus().insertContent({
         type: 'callout',
         attrs: { type: 'danger' },
@@ -399,15 +399,15 @@ function executeSlashCommand(command) {
         ]
       }).run()
       break
-    case 'Tabelle':
+    case t('notes.editor.slash.table'):
       editor.value.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
       break
-    case 'Datenbank':
+    case t('notes.editor.slash.database'):
       editor.value.chain().focus().insertContent({
         type: 'inlineDatabase',
         attrs: {
           noteId: props.noteId,
-          name: 'Neue Datenbank',
+          name: t('notesModule.editor.newDatabase'),
           view: 'table'
         }
       }).run()
@@ -675,7 +675,7 @@ const slashMenuStyle = computed(() => {
         class="wiki-link-suggestions bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden min-w-[200px] max-w-[300px]"
       >
         <div class="px-3 py-2 text-xs text-gray-500 border-b border-dark-600">
-          Notizen verlinken
+          {{ $t('notesModule.editor.linkNotes') }}
         </div>
         <div class="max-h-[200px] overflow-y-auto">
           <button
@@ -696,9 +696,9 @@ const slashMenuStyle = computed(() => {
           </button>
         </div>
         <div class="px-3 py-1.5 text-xs text-gray-500 border-t border-dark-600 flex items-center gap-2">
-          <span class="bg-dark-600 px-1 rounded">↑↓</span> navigieren
-          <span class="bg-dark-600 px-1 rounded">↵</span> auswählen
-          <span class="bg-dark-600 px-1 rounded">esc</span> schließen
+          <span class="bg-dark-600 px-1 rounded">↑↓</span> {{ $t('notesModule.editor.navigate') }}
+          <span class="bg-dark-600 px-1 rounded">↵</span> {{ $t('notesModule.editor.select') }}
+          <span class="bg-dark-600 px-1 rounded">esc</span> {{ $t('notesModule.editor.close') }}
         </div>
       </div>
     </Teleport>
@@ -711,9 +711,9 @@ const slashMenuStyle = computed(() => {
         class="wiki-link-suggestions bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden min-w-[200px] max-w-[300px]"
       >
         <div class="px-3 py-3 text-sm text-gray-400">
-          <p class="mb-2">Keine Notiz gefunden für "{{ suggestionQuery }}"</p>
+          <p class="mb-2">{{ $t('notesModule.editor.noNoteFound', { query: suggestionQuery }) }}</p>
           <p class="text-xs text-gray-500">
-            Drücke <span class="bg-dark-600 px-1 rounded">↵</span> um eine neue Notiz zu erstellen
+            {{ $t('notesModule.editor.pressEnterToCreate', { key: '↵' }) }}
           </p>
         </div>
       </div>
@@ -727,7 +727,7 @@ const slashMenuStyle = computed(() => {
         class="slash-command-menu bg-dark-700 border border-dark-600 rounded-lg shadow-xl overflow-hidden min-w-[250px] max-w-[320px]"
       >
         <div class="px-3 py-2 text-xs text-gray-500 border-b border-dark-600">
-          Befehle
+          {{ $t('notesModule.editor.commands') }}
         </div>
         <div class="max-h-[300px] overflow-y-auto">
           <button
@@ -752,9 +752,9 @@ const slashMenuStyle = computed(() => {
           </button>
         </div>
         <div class="px-3 py-1.5 text-xs text-gray-500 border-t border-dark-600 flex items-center gap-2">
-          <span class="bg-dark-600 px-1 rounded">↑↓</span> navigieren
-          <span class="bg-dark-600 px-1 rounded">↵</span> auswählen
-          <span class="bg-dark-600 px-1 rounded">esc</span> schließen
+          <span class="bg-dark-600 px-1 rounded">↑↓</span> {{ $t('notesModule.editor.navigate') }}
+          <span class="bg-dark-600 px-1 rounded">↵</span> {{ $t('notesModule.editor.select') }}
+          <span class="bg-dark-600 px-1 rounded">esc</span> {{ $t('notesModule.editor.close') }}
         </div>
       </div>
     </Teleport>

@@ -174,10 +174,10 @@ async function runQuery() {
       allow_write: queryAllowWrite.value,
     })
     queryResult.value = res.data.data
-    toast.success(`${res.data.data.row_count} Zeilen in ${res.data.data.duration_ms}ms`)
+    toast.success(t('databaseBrowser.rowsIn', { count: res.data.data.row_count, ms: res.data.data.duration_ms }))
     loadHistory()
   } catch (err) {
-    queryError.value = err.response?.data?.message || 'Query fehlgeschlagen'
+    queryError.value = err.response?.data?.message || t('databaseBrowser.queryFailed')
     toast.error(queryError.value)
   } finally {
     queryRunning.value = false
@@ -236,7 +236,7 @@ onMounted(loadConnections)
       <div class="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
         <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
           <CircleStackIcon class="w-4 h-4 text-primary-400" />
-          Datenbanken
+          {{ $t('databaseBrowser.databases') }}
         </h2>
         <button @click="loadConnections" class="p-1 text-gray-400 hover:text-white rounded">
           <ArrowPathIcon class="w-3.5 h-3.5" />
@@ -310,8 +310,8 @@ onMounted(loadConnections)
       <div v-if="!selectedConn" class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <CircleStackIcon class="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Wähle eine Datenbankverbindung</p>
-          <p class="text-xs mt-1 text-gray-600">Verbindungen werden im Connections-Modul erstellt</p>
+          <p>{{ $t('databaseBrowser.selectConnection') }}</p>
+          <p class="text-xs mt-1 text-gray-600">{{ $t('databaseBrowser.connectionsCreatedIn') }}</p>
         </div>
       </div>
 
@@ -319,7 +319,7 @@ onMounted(loadConnections)
         <!-- Tabs -->
         <div class="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-white/[0.06] flex-shrink-0">
           <button
-            v-for="tab in [{ id: 'browser', label: 'Tabellen-Browser', icon: TableCellsIcon }, { id: 'query', label: 'SQL-Editor', icon: MagnifyingGlassIcon }, { id: 'history', label: 'Verlauf', icon: ClockIcon }]"
+            v-for="tab in [{ id: 'browser', label: $t('databaseBrowser.tableBrowserTab'), icon: TableCellsIcon }, { id: 'query', label: $t('databaseBrowser.sqlEditorTab'), icon: MagnifyingGlassIcon }, { id: 'history', label: $t('databaseBrowser.historyTab'), icon: ClockIcon }]"
             :key="tab.id"
             @click="activeTab = tab.id; if (tab.id === 'history') loadHistory()"
             class="flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px"
@@ -335,7 +335,7 @@ onMounted(loadConnections)
           <div v-if="!selectedTable" class="flex-1 flex items-center justify-center text-gray-500 text-sm">
             <div class="text-center">
               <TableCellsIcon class="w-8 h-8 mx-auto mb-2 opacity-30" />
-              Tabelle in der Sidebar auswählen
+              {{ $t('databaseBrowser.selectTable') }}
             </div>
           </div>
 
@@ -343,7 +343,7 @@ onMounted(loadConnections)
             <!-- Table header info -->
             <div class="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] flex-shrink-0">
               <span class="text-white font-mono text-sm font-semibold">{{ selectedSchema }}.{{ selectedTable.table_name }}</span>
-              <span class="text-gray-500 text-xs">{{ tableTotal.toLocaleString() }} Zeilen gesamt</span>
+              <span class="text-gray-500 text-xs">{{ tableTotal.toLocaleString() }} {{ $t('databaseBrowser.rowsTotal') }}</span>
             </div>
 
             <!-- Data grid -->
@@ -388,7 +388,7 @@ onMounted(loadConnections)
 
             <!-- Pagination -->
             <div class="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] flex-shrink-0 text-xs text-gray-400">
-              <span>Zeilen {{ tableOffset + 1 }} – {{ Math.min(tableOffset + tableLimit, tableTotal) }} von {{ tableTotal.toLocaleString() }}</span>
+              <span>{{ $t('databaseBrowser.rowsPagination', { from: tableOffset + 1, to: Math.min(tableOffset + tableLimit, tableTotal), total: tableTotal.toLocaleString() }) }}</span>
               <div class="flex gap-2">
                 <button
                   @click="loadMoreRows('prev')"
@@ -424,16 +424,16 @@ onMounted(loadConnections)
               class="flex items-center gap-1.5 px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-500 disabled:opacity-50 transition-colors"
             >
               <PlayIcon class="w-4 h-4" />
-              {{ queryRunning ? 'Wird ausgeführt…' : 'Ausführen' }}
+              {{ queryRunning ? $t('databaseBrowser.executing') : $t('databaseBrowser.execute') }}
             </button>
 
             <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
               <input v-model="queryAllowWrite" type="checkbox" class="rounded" />
-              Schreibzugriff erlauben
+              {{ $t('databaseBrowser.allowWrite') }}
             </label>
 
             <span v-if="queryResult" class="text-xs text-gray-500 ml-auto">
-              {{ queryResult.row_count }} Zeilen · {{ queryResult.duration_ms }}ms
+              {{ $t('databaseBrowser.rowsInMs', { count: queryResult.row_count, ms: queryResult.duration_ms }) }}
             </span>
           </div>
 
@@ -474,7 +474,7 @@ onMounted(loadConnections)
             </table>
 
             <div v-else-if="!queryRunning && !queryError" class="flex items-center justify-center py-12 text-gray-500 text-sm">
-              Query schreiben und ausführen
+              {{ $t('databaseBrowser.writeAndExecute') }}
             </div>
           </div>
         </div>
@@ -501,11 +501,11 @@ onMounted(loadConnections)
                   @click="useHistoryQuery(item.query)"
                   class="flex-shrink-0 text-xs text-primary-400 hover:text-primary-300 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  Verwenden
+                  {{ $t('databaseBrowser.use') }}
                 </button>
               </div>
               <div class="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                <span>{{ item.rows_returned ?? 0 }} Zeilen</span>
+                <span>{{ $t('databaseBrowser.rowsCount', { count: item.rows_returned ?? 0 }) }}</span>
                 <span v-if="item.duration_ms">{{ item.duration_ms }}ms</span>
                 <span>{{ item.executed_at }}</span>
               </div>

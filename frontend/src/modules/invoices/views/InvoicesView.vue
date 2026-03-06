@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
 import { useToast } from '@/composables/useToast'
@@ -29,6 +30,7 @@ import ClientModal from '../components/ClientModal.vue'
 
 const uiStore = useUiStore()
 const toast = useToast()
+const { t } = useI18n()
 const { downloadPdf } = useInvoiceHtml()
 
 const {
@@ -257,7 +259,7 @@ async function createFromTimeEntries() {
           title="Kleinunternehmer nach § 19 UStG"
         >
           <span class="font-mono text-xs font-bold">§19</span>
-          <span>{{ kleinunternehmerMode ? 'Kleinunternehmer' : 'Regelbesteuerung' }}</span>
+          <span>{{ kleinunternehmerMode ? $t('invoices.kleinunternehmerLabel') : $t('invoices.standardTaxation') }}</span>
         </button>
         <button @click="openCreateClient" class="btn-secondary">
           <UserIcon class="w-4 h-4 mr-2" />
@@ -279,8 +281,8 @@ async function createFromTimeEntries() {
       v-if="!invoiceSenderSettings.sender_address"
       class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 text-sm text-blue-300 flex items-center justify-between gap-4"
     >
-      <span>Absenderdaten fehlen. Hinterlege Name, Adresse, Steuernummer und Logo für rechtsgültige Rechnungen.</span>
-      <RouterLink to="/settings" class="shrink-0 underline hover:no-underline text-blue-200">Einstellungen → Rechnungen</RouterLink>
+      <span>{{ $t('invoices.senderDataMissing') }}</span>
+      <RouterLink to="/settings" class="shrink-0 underline hover:no-underline text-blue-200">{{ $t('invoices.settingsInvoices') }}</RouterLink>
     </div>
 
     <!-- Kleinunternehmer banner -->
@@ -289,7 +291,7 @@ async function createFromTimeEntries() {
       class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300 space-y-1"
     >
       <p><span class="font-semibold">$t('invoices.kleinunternehmerActive') + ':' </span> {{ $t('invoices.noVat') }}</p>
-      <p class="text-amber-400/70 text-xs">Grenzen 2025: Vorjahresumsatz ≤ 25.000 € · Laufendes Jahr voraussichtlich ≤ 100.000 €</p>
+      <p class="text-amber-400/70 text-xs">{{ $t('invoices.kleinunternehmerLimits') }}</p>
     </div>
 
     <!-- Stats -->
@@ -323,7 +325,7 @@ async function createFromTimeEntries() {
           </div>
           <div>
             <p class="text-xl font-bold text-yellow-400">{{ formatCurrency(stats.total_outstanding) }}</p>
-            <p class="text-xs text-gray-500">Ausstehend</p>
+            <p class="text-xs text-gray-500">{{ $t('invoices.outstanding') }}</p>
           </div>
         </div>
       </div>
@@ -343,7 +345,7 @@ async function createFromTimeEntries() {
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-white/[0.06]">
       <button
-        v-for="tab in [{ id: 'invoices', label: 'Rechnungen' }, { id: 'clients', label: $t('invoices.clients') }]"
+        v-for="tab in [{ id: 'invoices', label: $t('invoices.invoicesTab') }, { id: 'clients', label: $t('invoices.clients') }]"
         :key="tab.id"
         @click="activeTab = tab.id"
         class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
@@ -375,7 +377,7 @@ async function createFromTimeEntries() {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Suche nach Rechnungsnummer oder Kunde..."
+            :placeholder="$t('invoices.searchPlaceholder')"
             class="input pl-9 w-full"
           />
           <button
@@ -400,7 +402,7 @@ async function createFromTimeEntries() {
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.number') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.client') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ $t('invoices.date') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Fällig</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ $t('invoices.dueDate') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.amount') }}</th>
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $t('invoices.actions') }}</th>
@@ -518,7 +520,7 @@ async function createFromTimeEntries() {
           {{ searchQuery || statusFilter ? $t('common.noResults') : $t('invoices.noInvoicesYet') }}
         </h3>
         <p class="text-gray-500 mb-6">
-          {{ searchQuery || statusFilter ? $t('invoices.tryOtherCriteria') : 'Erstelle deine erste Rechnung.' }}
+          {{ searchQuery || statusFilter ? $t('invoices.tryOtherCriteria') : $t('invoices.createFirstInvoice') }}
         </p>
         <button v-if="!searchQuery && !statusFilter" @click="openCreateInvoice" class="btn-primary">
           <PlusIcon class="w-4 h-4 mr-2" />
@@ -560,7 +562,7 @@ async function createFromTimeEntries() {
               <button
                 @click="handleDeleteClient(client)"
                 class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-colors"
-                title="Löschen"
+                :title="$t('common.delete')"
               >
                 <TrashIcon class="w-4 h-4" />
               </button>

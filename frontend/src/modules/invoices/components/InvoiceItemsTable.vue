@@ -118,14 +118,14 @@ async function saveEdit(item) {
 }
 
 async function deleteItem(item) {
-  if (!await confirm({ message: t('invoicesModule.positionWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('invoicesModule.confirmDeleteItem'), type: 'danger', confirmText: t('common.delete') })) return
   deletingItemId.value = item.id
   items.value = items.value.filter(i => i.id !== item.id)
   try {
     await api.delete(`/api/v1/invoices/${props.invoice.id}/items/${item.id}`)
     emit('items-changed')
   } catch {
-    toast.error(t('invoicesModule.positionKonnteNichtGeloeschtWerden'))
+    toast.error(t('invoicesModule.itemCouldNotBeDeleted'))
     emit('items-changed')
   } finally {
     deletingItemId.value = null
@@ -258,8 +258,8 @@ async function onDragEnd() {
         </div>
         <div v-if="filteredCatalog.length === 0" class="px-4 py-6 text-center text-gray-500 text-sm">
           {{ serviceCatalog.length === 0
-            ? $t('invoicesModule.keinLeistungskatalogVorhandenLegeEinenAnUnter')
-            : $t('invoicesModule.keineLeistungenGefunden') }}
+            ? $t('invoicesModule.noServiceCatalog')
+            : $t('invoicesModule.noServicesFound') }}
         </div>
         <div v-else class="max-h-56 overflow-y-auto divide-y divide-white/[0.06]">
           <button
@@ -418,7 +418,7 @@ async function onDragEnd() {
                   @click="deleteItem(item)"
                   :disabled="deletingItemId === item.id"
                   class="opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10"
-                  :title="$t('invoicesModule.positionLoeschen')"
+                  :title="$t('invoicesModule.deleteItem')"
                 >
                   <TrashIcon class="w-4 h-4" />
                 </button>

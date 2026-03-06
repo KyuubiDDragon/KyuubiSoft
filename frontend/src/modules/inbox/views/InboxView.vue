@@ -46,7 +46,7 @@ const sortBy = ref('newest')
 
 // Move targets
 const moveTargets = [
-  { type: 'list', label: t('inboxModule.aufgabenliste'), icon: ListBulletIcon },
+  { type: 'list', label: t('inboxModule.taskList'), icon: ListBulletIcon },
   { type: 'document', label: t('inboxModule.dokument'), icon: DocumentTextIcon },
   { type: 'kanban', label: t('inboxModule.kanbanBoard'), icon: ViewColumnsIcon },
   { type: 'calendar', label: t('navigation.calendar'), icon: CalendarIcon },
@@ -232,7 +232,7 @@ function formatDate(date) {
           {{ inboxStore.stats.urgent }} dringend
         </span>
       </div>
-      <p class="text-gray-400">{{ $t('inboxModule.inboxmoduleerfasstegedankenundaufgabenhiersortierstdu') }}</p>
+      <p class="text-gray-400">{{ $t('inboxModule.capturedThoughtsAndTasks') }}</p>
     </div>
 
     <!-- Stats -->
@@ -326,7 +326,7 @@ function formatDate(date) {
         />
         <span class="flex-1">{{ $t('inboxModule.content') }}</span>
         <span class="w-24 text-center">Prioritat</span>
-        <span class="w-32 text-center">{{ $t('inboxModule.erstellt') }}</span>
+        <span class="w-32 text-center">{{ $t('inboxModule.created') }}</span>
         <span class="w-24 text-center">{{ $t('inboxModule.actions') }}</span>
       </div>
 
@@ -386,13 +386,13 @@ function formatDate(date) {
                 @click="updateItem(item)"
                 class="btn-primary text-sm"
               >
-                Speichern
+                {{ $t('common.save') }}
               </button>
               <button
                 @click="editingItem = null"
                 class="btn-secondary text-sm"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
             </div>
           </template>
@@ -535,7 +535,7 @@ function formatDate(date) {
               @click="showMoveModal = false"
               class="btn-secondary"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="confirmMove"

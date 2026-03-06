@@ -57,7 +57,7 @@ async function loadRoles() {
     const response = await api.get('/api/v1/roles')
     roles.value = response.data.data || []
   } catch (err) {
-    error.value = t('users.usersfehlerbeimladenderrollen')
+    error.value = t('users.errorLoadingRoles')
     console.error(err)
   } finally {
     isLoading.value = false
@@ -130,21 +130,21 @@ async function saveRole() {
         description: formData.value.description,
         hierarchy_level: formData.value.hierarchy_level,
       })
-      uiStore.showSuccess(t('users.rolleErfolgreichAktualisiert'))
+      uiStore.showSuccess(t('users.roleUpdatedSuccessfully'))
     } else {
       await api.post('/api/v1/roles', {
         name: formData.value.name,
         description: formData.value.description,
         hierarchy_level: formData.value.hierarchy_level,
       })
-      uiStore.showSuccess(t('users.rolleErfolgreichErstellt'))
+      uiStore.showSuccess(t('users.roleCreatedSuccessfully'))
     }
 
     closeModals()
     await loadRoles()
   } catch (err) {
     console.error('Save error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern')
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('webhooks.errorSaving')
   } finally {
     isSaving.value = false
   }
@@ -156,12 +156,12 @@ async function deleteRole() {
   isSaving.value = true
   try {
     await api.delete(`/api/v1/roles/${selectedRole.value.id}`)
-    uiStore.showSuccess(t('users.rolleErfolgreichGeloescht'))
+    uiStore.showSuccess(t('users.roleDeletedSuccessfully'))
     closeModals()
     await loadRoles()
   } catch (err) {
     console.error('Delete error:', err)
-    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.fehlerBeimLoeschen')
+    formErrors.value.general = err.response?.data?.error || err.response?.data?.message || t('bookmarksModule.errorDeleting')
   } finally {
     isSaving.value = false
   }
@@ -190,7 +190,7 @@ async function togglePermission(permissionName) {
     }
   } catch (err) {
     console.error('Toggle permission error:', err)
-    uiStore.showError(err.response?.data?.error || t('users.usersfehlerbeimaendernderberechtigung'))
+    uiStore.showError(err.response?.data?.error || t('users.errorChangingPermission'))
   }
 }
 
@@ -285,7 +285,7 @@ function canDeleteRole(role) {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">{{ $t('users.usersrollengruppen') }}</h1>
-        <p class="text-gray-400 mt-1">{{ $t('users.usersverwalterollenundderenberechtigungen') }}</p>
+        <p class="text-gray-400 mt-1">{{ $t('users.manageRolesAndPermissions') }}</p>
       </div>
       <button
         @click="openCreateModal"
@@ -450,7 +450,7 @@ function canDeleteRole(role) {
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveRole"
@@ -472,11 +472,11 @@ function canDeleteRole(role) {
       >
         <div class="modal w-full max-w-md mx-4">
           <div class="p-6">
-            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.rolleLoeschen') }}</h3>
+            <h3 class="text-lg font-semibold text-white mb-2">{{ $t('users.deleteRole') }}</h3>
             <p class="text-gray-400">
               Bist du sicher, dass du die Rolle
               <span class="text-white font-medium">{{ selectedRole?.name }}</span>
-              {{ $t('users.loeschenMoechtest') }}
+              {{ $t('users.confirmDelete') }}
             </p>
 
             <div v-if="formErrors.general" class="mt-4 bg-red-900/50 border border-red-700 rounded-lg p-3">
@@ -488,14 +488,14 @@ function canDeleteRole(role) {
               @click="closeModals"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="deleteRole"
               :disabled="isSaving"
               class="btn-danger disabled:opacity-50"
             >
-              {{ isSaving ? $t('users.loeschen') : $t('common.delete') }}
+              {{ isSaving ? $t('users.delete') : $t('common.delete') }}
             </button>
           </div>
         </div>
@@ -513,7 +513,7 @@ function canDeleteRole(role) {
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06] flex-shrink-0">
             <div>
               <h3 class="text-lg font-semibold text-white">
-                Berechtigungen für {{ selectedRole?.name }}
+                {{ $t('users.permissionsFor', { name: selectedRole?.name }) }}
               </h3>
               <p v-if="selectedRole?.description" class="text-sm text-gray-400">
                 {{ selectedRole?.description }}
@@ -529,7 +529,7 @@ function canDeleteRole(role) {
             <!-- System role warning -->
             <div v-if="selectedRole?.is_system" class="mb-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
               <p class="text-sm text-yellow-400">
-                Dies ist eine geschützte Systemrolle ({{ selectedRole?.name }}). Berechtigungen können nicht geändert werden.
+                {{ $t('users.protectedRoleHint', { name: selectedRole?.name }) }}
               </p>
             </div>
 

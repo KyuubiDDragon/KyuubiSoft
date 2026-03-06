@@ -164,7 +164,7 @@ async function saveContact() {
     }
     closeModal()
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -185,7 +185,7 @@ async function toggleFavorite(contact, event) {
   try {
     await contactsStore.toggleFavorite(contact.id)
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 

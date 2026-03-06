@@ -93,7 +93,7 @@ function duplicateNote(note) {
   const newNote = {
     ...note,
     id: Date.now().toString(),
-    title: note.title + ' (Kopie)',
+    title: note.title + ' ' + t('toolbox.kopieLabel'),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     pinned: false,
@@ -163,7 +163,7 @@ import { computed } from 'vue'
           @click="createNote"
           class="w-full btn-primary py-2 text-sm"
         >
-          + Neue Notiz
+          {{ $t('toolbox.neueNotizBtn') }}
         </button>
       </div>
 
@@ -196,14 +196,14 @@ import { computed } from 'vue'
                 <span v-if="note.pinned" class="text-xs">📌</span>
                 <h4 class="text-sm font-medium text-white truncate">{{ note.title }}</h4>
               </div>
-              <p class="text-xs text-gray-500 truncate">{{ note.content || $t('toolbox.keineVorschau') }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ note.content || $t('toolbox.noPreview') }}</p>
               <p class="text-xs text-gray-600 mt-1">{{ formatDate(note.updatedAt) }}</p>
             </div>
           </div>
         </div>
 
         <div v-if="filteredNotes.length === 0" class="p-4 text-center text-gray-500 text-sm">
-          {{ searchQuery ? $t('common.noResults') : $t('toolbox.keineNotizen') }}
+          {{ searchQuery ? $t('common.noResults') : $t('toolbox.noNotes') }}
         </div>
       </div>
 
@@ -228,7 +228,7 @@ import { computed } from 'vue'
             v-model="currentNote.title"
             type="text"
             class="flex-1 bg-transparent text-lg font-medium text-white focus:outline-none"
-            placeholder="Titel..."
+            :placeholder="$t('toolbox.titel')"
           />
 
           <!-- Color picker -->
@@ -247,7 +247,7 @@ import { computed } from 'vue'
             @click="togglePin(currentNote)"
             class="p-1 text-gray-400 hover:text-white"
             :class="currentNote.pinned ? 'text-yellow-400' : ''"
-            title="Anpinnen"
+            :title="$t('toolbox.anpinnen')"
           >
             📌
           </button>
@@ -255,7 +255,7 @@ import { computed } from 'vue'
           <button
             @click="duplicateNote(currentNote)"
             class="p-1 text-gray-400 hover:text-white"
-            title="Duplizieren"
+            :title="$t('toolbox.duplizieren')"
           >
             📋
           </button>
@@ -278,15 +278,15 @@ import { computed } from 'vue'
 
         <!-- Status bar -->
         <div class="px-3 py-2 border-t border-white/[0.06] text-xs text-gray-500 flex justify-between">
-          <span>{{ currentNote.content.length }} Zeichen</span>
-          <span>Zuletzt bearbeitet: {{ formatDate(currentNote.updatedAt) }}</span>
+          <span>{{ currentNote.content.length }} {{ $t('toolbox.zeichen') }}</span>
+          <span>{{ $t('toolbox.zuletztBearbeitet') }} {{ formatDate(currentNote.updatedAt) }}</span>
         </div>
       </template>
 
       <div v-else class="flex-1 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <div class="text-4xl mb-2">📝</div>
-          <p>Wähle eine Notiz oder erstelle eine neue</p>
+          <p>{{ $t('toolbox.waehleNotizOderErstelle') }}</p>
         </div>
       </div>
     </div>
@@ -298,16 +298,16 @@ import { computed } from 'vue'
       
     >
       <div class="bg-white/[0.04] rounded-lg p-6 max-w-sm">
-        <h3 class="text-lg font-medium text-white mb-2">Notiz löschen?</h3>
+        <h3 class="text-lg font-medium text-white mb-2">{{ $t('toolbox.notizLoeschen') }}</h3>
         <p class="text-gray-400 text-sm mb-4">
-          Möchtest du "{{ noteToDelete?.title }}" wirklich löschen?
+          {{ $t('toolbox.moechtestDuLoeschen') }} "{{ noteToDelete?.title }}"?
         </p>
         <div class="flex gap-2">
           <button @click="showDeleteConfirm = false" class="btn-secondary flex-1">
-            Abbrechen
+            {{ $t('common.cancel') }}
           </button>
           <button @click="deleteNote" class="btn-primary bg-red-600 hover:bg-red-500 flex-1">
-            Löschen
+            {{ $t('common.delete') }}
           </button>
         </div>
       </div>

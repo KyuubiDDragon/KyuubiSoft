@@ -48,8 +48,8 @@ const listForm = reactive({
 })
 
 const listTypes = [
-  { value: 'todo', label: 'Todo-Liste' },
-  { value: 'shopping', label: 'Einkaufsliste' },
+  { value: 'todo', label: t('lists.todoList') },
+  { value: 'shopping', label: t('lists.shoppingList') },
   { value: 'project', label: t('tickets.projekt') },
   { value: 'notes', label: t('passwords.notes') }
 ]
@@ -100,7 +100,7 @@ async function loadLists() {
     const response = await api.get('/api/v1/lists', { params })
     lists.value = response.data.data?.items || []
   } catch (error) {
-    uiStore.showError(t('listsModule.fehlerBeimLadenDerListen'))
+    uiStore.showError(t('listsModule.errorLoadingLists'))
   } finally {
     isLoading.value = false
   }
@@ -121,7 +121,7 @@ async function createList() {
     resetForm()
     uiStore.showSuccess(t('listsModule.listCreated'))
   } catch (error) {
-    uiStore.showError(t('listsModule.listsmodulefehlerbeimerstellenderliste'))
+    uiStore.showError(t('listsModule.errorCreatingList'))
   }
 }
 
@@ -133,12 +133,12 @@ async function updateList() {
     showEditModal.value = false
     uiStore.showSuccess(t('listsModule.listUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
 async function deleteList(listId) {
-  if (!await confirm({ message: t('listsModule.listeWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('listsModule.confirmDeleteList'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/lists/${listId}`)
@@ -146,9 +146,9 @@ async function deleteList(listId) {
     if (selectedList.value?.id === listId) {
       selectedList.value = null
     }
-    uiStore.showSuccess(t('system.listeGeloescht'))
+    uiStore.showSuccess(t('system.listDeleted'))
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -165,7 +165,7 @@ async function selectList(listId) {
       selectedList.value.items.sort((a, b) => a.sort_order - b.sort_order)
     }
   } catch (error) {
-    uiStore.showError(t('listsModule.fehlerBeimLadenDerListe'))
+    uiStore.showError(t('listsModule.errorLoadingList'))
   }
 }
 
@@ -180,7 +180,7 @@ async function addItem() {
     selectedList.value.items.push(response.data.data)
     newItemContent.value = ''
   } catch (error) {
-    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(t('newsModule.errorAdding'))
   }
 }
 
@@ -192,7 +192,7 @@ async function toggleItem(item) {
     )
     Object.assign(item, response.data.data)
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -201,7 +201,7 @@ async function deleteItem(itemId) {
     await api.delete(`/api/v1/lists/${selectedList.value.id}/items/${itemId}`)
     selectedList.value.items = selectedList.value.items.filter(i => i.id !== itemId)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -219,7 +219,7 @@ async function onDragEnd() {
       items: itemOrders
     })
   } catch (error) {
-    uiStore.showError(t('listsModule.listsmodulefehlerbeimspeichernderreihenfolge'))
+    uiStore.showError(t('listsModule.errorSavingOrder'))
     // Reload to get correct order
     await selectList(selectedList.value.id)
   }
@@ -264,12 +264,12 @@ function goBack() {
         </button>
         <div>
           <h1 class="text-2xl font-bold text-white">
-            {{ selectedList ? selectedList.title : 'Listen' }}
+            {{ selectedList ? selectedList.title : $t('lists.title') }}
           </h1>
           <p class="text-gray-400 mt-1">
             {{ selectedList
-              ? `${completedCount} von ${totalCount} erledigt`
-              : $t('listsModule.verwalteDeineListenUndAufgaben')
+              ? $t('lists.completedOf', { completed: completedCount, total: totalCount })
+              : $t('listsModule.manageYourListsAndTasks')
             }}
           </p>
         </div>
@@ -283,7 +283,7 @@ function goBack() {
         </button>
         <button v-if="!selectedList" @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Neue Liste
+          {{ $t('lists.newList') }}
         </button>
       </div>
     </div>
@@ -301,7 +301,7 @@ function goBack() {
           v-model="newItemContent"
           @keyup.enter="addItem"
           type="text"
-          :placeholder="$t('listsModule.listsmoduleneueneintraghinzufuegen')"
+          :placeholder="$t('listsModule.addNewEntry')"
           class="input flex-1"
         />
         <button @click="addItem" class="btn-primary">
@@ -312,7 +312,7 @@ function goBack() {
       <!-- Drag hint -->
       <p v-if="selectedList.items?.length > 1" class="text-xs text-gray-500 flex items-center gap-1">
         <Bars3Icon class="w-4 h-4" />
-        {{ $t('listsModule.zieheEintraegeAmGriffUmSieNeu') }}
+        {{ $t('listsModule.dragToReorder') }}
       </p>
 
       <!-- Items with Drag & Drop -->
@@ -360,7 +360,7 @@ function goBack() {
       </draggable>
 
       <div v-if="selectedList.items?.length === 0" class="text-center py-12 text-gray-400">
-        Keine Einträge vorhanden. Füge den ersten hinzu!
+        {{ $t('lists.noEntries') }}
       </div>
     </div>
 
@@ -369,11 +369,11 @@ function goBack() {
       <!-- Empty state -->
       <div v-if="lists.length === 0" class="card p-12 text-center">
         <ListBulletIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-        <h3 class="text-lg font-medium text-white mb-2">Keine Listen vorhanden</h3>
-        <p class="text-gray-400 mb-6">Erstelle deine erste Liste, um loszulegen.</p>
+        <h3 class="text-lg font-medium text-white mb-2">{{ $t('lists.noLists') }}</h3>
+        <p class="text-gray-400 mb-6">{{ $t('lists.createFirstList') }}</p>
         <button @click="openCreateModal" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-2" />
-          Erste Liste erstellen
+          {{ $t('lists.createFirst') }}
         </button>
       </div>
 
@@ -396,10 +396,10 @@ function goBack() {
           </div>
           <h3 class="text-lg font-medium text-white mt-4">{{ list.title }}</h3>
           <p class="text-gray-400 text-sm mt-1 line-clamp-2">
-            {{ list.description || $t('galleriesModule.keineBeschreibung') }}
+            {{ list.description || $t('galleriesModule.noDescription') }}
           </p>
           <div class="flex items-center justify-between mt-4">
-            <span class="text-sm text-gray-500">{{ list.item_count || 0 }} Einträge</span>
+            <span class="text-sm text-gray-500">{{ list.item_count || 0 }} {{ $t('lists.entries') }}</span>
             <button
               @click.stop="deleteList(list.id)"
               class="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
@@ -420,22 +420,22 @@ function goBack() {
       >
         <div class="modal p-6 w-full max-w-md">
           <h2 class="text-xl font-bold text-white mb-6">
-            {{ showEditModal ? 'Liste bearbeiten' : 'Neue Liste' }}
+            {{ showEditModal ? $t('lists.editList') : $t('lists.newList') }}
           </h2>
 
           <form @submit.prevent="showEditModal ? updateList() : createList()" class="space-y-4">
             <div>
-              <label class="label">Titel</label>
-              <input v-model="listForm.title" type="text" class="input" placeholder="Listenname" required />
+              <label class="label">{{ $t('lists.listTitle') }}</label>
+              <input v-model="listForm.title" type="text" class="input" :placeholder="$t('lists.listName')" required />
             </div>
 
             <div>
-              <label class="label">Beschreibung</label>
-              <textarea v-model="listForm.description" class="input" rows="2" placeholder="Optional"></textarea>
+              <label class="label">{{ $t('common.description') }}</label>
+              <textarea v-model="listForm.description" class="input" rows="2" :placeholder="$t('lists.optional')"></textarea>
             </div>
 
             <div>
-              <label class="label">Typ</label>
+              <label class="label">{{ $t('lists.type') }}</label>
               <select v-model="listForm.type" class="input">
                 <option v-for="type in listTypes" :key="type.value" :value="type.value">
                   {{ type.label }}
@@ -444,7 +444,7 @@ function goBack() {
             </div>
 
             <div>
-              <label class="label">Farbe</label>
+              <label class="label">{{ $t('projects.color') }}</label>
               <div class="flex gap-2">
                 <button
                   v-for="color in colors"
@@ -464,10 +464,10 @@ function goBack() {
                 @click="showCreateModal = false; showEditModal = false"
                 class="btn-secondary flex-1"
               >
-                Abbrechen
+                {{ $t('common.cancel') }}
               </button>
               <button type="submit" class="btn-primary flex-1">
-                {{ showEditModal ? 'Speichern' : 'Erstellen' }}
+                {{ showEditModal ? $t('common.save') : $t('common.create') }}
               </button>
             </div>
           </form>

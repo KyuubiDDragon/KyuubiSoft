@@ -136,10 +136,10 @@ async function saveWorkflow() {
 
     if (editMode.value && workflowForm.value.id) {
       await api.put(`/api/v1/workflows/${workflowForm.value.id}`, data)
-      uiStore.showSuccess(t('workflows.workflowAktualisiert'))
+      uiStore.showSuccess(t('workflows.workflowUpdated'))
     } else {
       await api.post('/api/v1/workflows', data)
-      uiStore.showSuccess(t('workflows.workflowErstellt'))
+      uiStore.showSuccess(t('workflows.workflowCreated'))
     }
 
     showCreateModal.value = false
@@ -166,7 +166,7 @@ async function deleteWorkflow(workflow) {
   try {
     await api.delete(`/api/v1/workflows/${workflow.id}`)
     workflows.value = workflows.value.filter(w => w.id !== workflow.id)
-    uiStore.showSuccess(t('workflows.workflowGeloescht'))
+    uiStore.showSuccess(t('workflows.workflowDeleted'))
   } catch (error) {
     uiStore.showError(t('common.errorDeleting'))
   }
@@ -202,14 +202,14 @@ async function showHistory(workflow) {
     runHistory.value = response.data.data
     showHistoryModal.value = true
   } catch (error) {
-    uiStore.showError(t('workflows.fehlerBeimLadenDerHistorie'))
+    uiStore.showError(t('workflows.errorLoadingHistory'))
   }
 }
 
 async function createFromTemplate(template) {
   try {
     await api.post(`/api/v1/workflows/templates/${template.id}`)
-    uiStore.showSuccess(t('workflows.workflowAusVorlageErstellt'))
+    uiStore.showSuccess(t('workflows.workflowCreatedFromTemplate'))
     showTemplatesModal.value = false
     await fetchWorkflows()
   } catch (error) {
@@ -306,7 +306,7 @@ function getStatusIcon(status) {
     <!-- Empty state -->
     <div v-else-if="workflows.length === 0" class="card p-12 text-center">
       <BoltIcon class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('workflows.keineWorkflows') }}</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ $t('workflows.noWorkflows') }}</h3>
       <p class="text-gray-500 mb-6">
         {{ $t('workflows.emptyDescription') }}
       </p>
@@ -503,7 +503,7 @@ function getStatusIcon(status) {
                 </div>
 
                 <div v-if="workflowForm.actions.length === 0" class="text-center py-8 bg-white/[0.03] rounded-lg">
-                  <p class="text-gray-500">{{ $t('workflows.keineAktionenDefiniert') }}</p>
+                  <p class="text-gray-500">{{ $t('workflows.noActionsDefined') }}</p>
                   <button @click="addAction" class="text-sm text-primary-400 hover:text-primary-300 mt-2">
                     {{ $t('workflows.addFirstAction') }}
                   </button>
@@ -659,7 +659,7 @@ function getStatusIcon(status) {
             <div class="p-6">
               <div v-if="runHistory.length === 0" class="text-center py-8">
                 <ClockIcon class="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                <p class="text-gray-500">{{ $t('workflows.nochKeineAusfuehrungen') }}</p>
+                <p class="text-gray-500">{{ $t('workflows.noExecutionsYet') }}</p>
               </div>
 
               <div v-else class="space-y-3">

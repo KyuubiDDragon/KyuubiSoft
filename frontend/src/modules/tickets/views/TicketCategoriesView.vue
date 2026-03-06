@@ -70,7 +70,7 @@ async function fetchCategories() {
     const flatResponse = await api.get('/api/v1/tickets/categories', { params: { all: true } })
     flatCategories.value = flatResponse.data.data.categories || []
   } catch (error) {
-    uiStore.showError(t('tickets.ticketsfehlerbeimladenderkategorien'))
+    uiStore.showError(t('tickets.errorLoadingCategories'))
   } finally {
     loading.value = false
   }
@@ -123,15 +123,15 @@ async function saveCategory() {
 
     if (editingCategory.value) {
       await api.put(`/api/v1/tickets/categories/${editingCategory.value.id}`, data)
-      uiStore.showSuccess(t('tickets.kategorieAktualisiert'))
+      uiStore.showSuccess(t('tickets.categoryUpdated'))
     } else {
       await api.post('/api/v1/tickets/categories', data)
-      uiStore.showSuccess(t('tickets.kategorieErstellt'))
+      uiStore.showSuccess(t('tickets.categoryCreated'))
     }
     showModal.value = false
     fetchCategories()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -141,10 +141,10 @@ async function deleteCategory(category) {
 
   try {
     await api.delete(`/api/v1/tickets/categories/${category.id}`)
-    uiStore.showSuccess(t('tickets.kategorieGeloescht'))
+    uiStore.showSuccess(t('tickets.categoryDeleted'))
     fetchCategories()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -169,7 +169,7 @@ async function onReorder() {
   try {
     await api.post('/api/v1/tickets/categories/reorder', { order })
   } catch (error) {
-    uiStore.showError(t('tickets.fehlerBeimSortieren'))
+    uiStore.showError(t('tickets.errorSorting'))
     fetchCategories()
   }
 }
@@ -191,7 +191,7 @@ onMounted(() => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">Ticket-Kategorien</h1>
-        <p class="text-gray-400 text-sm mt-1">{{ $t('tickets.kategorienFuerSupportticketsVerwalten') }}</p>
+        <p class="text-gray-400 text-sm mt-1">{{ $t('tickets.manageSupportCategories') }}</p>
       </div>
       <button
         @click="openModal()"
@@ -268,7 +268,7 @@ onMounted(() => {
                   Antwort: {{ category.sla_response_hours }}h
                 </div>
                 <div v-if="category.sla_resolution_hours" class="text-gray-400">
-                  Lösung: {{ category.sla_resolution_hours }}h
+                  {{ $t('tickets.resolution') }}: {{ category.sla_resolution_hours }}h
                 </div>
               </div>
 
@@ -399,7 +399,7 @@ onMounted(() => {
 
             <!-- Parent Category -->
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Übergeordnete Kategorie</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.parentCategory') }}</label>
               <select
                 v-model="form.parent_id"
                 class="select"
@@ -443,7 +443,7 @@ onMounted(() => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">SLA Lösungszeit (Stunden)</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('tickets.slaResolutionTime') }}</label>
                 <input
                   v-model.number="form.sla_resolution_hours"
                   type="number"
@@ -469,10 +469,10 @@ onMounted(() => {
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
             <button @click="showModal = false" class="btn-secondary">
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button @click="saveCategory" class="btn-primary">
-              {{ editingCategory ? 'Speichern' : 'Erstellen' }}
+              {{ editingCategory ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

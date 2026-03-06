@@ -170,7 +170,7 @@ async function fetchBoards() {
     const response = await api.get('/api/v1/kanban/boards', { params })
     boards.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError(t('kanbanModule.fehlerBeimLadenDerBoards'))
+    uiStore.showError(t('kanbanModule.errorLoadingBoards'))
   } finally {
     loading.value = false
   }
@@ -184,7 +184,7 @@ async function fetchBoard(boardId) {
     // Also fetch board users
     await fetchBoardUsers(boardId)
   } catch (error) {
-    uiStore.showError(t('kanbanModule.fehlerBeimLadenDesBoards'))
+    uiStore.showError(t('kanbanModule.errorLoadingBoard'))
     selectedBoard.value = null
   }
 }
@@ -244,7 +244,7 @@ async function saveBoard() {
     await fetchBoards()
     showBoardModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -254,13 +254,13 @@ async function deleteBoard(board) {
 
   try {
     await api.delete(`/api/v1/kanban/boards/${board.id}`)
-    uiStore.showSuccess(t('kanbanModule.boardGeloescht'))
+    uiStore.showSuccess(t('kanbanModule.boardDeleted'))
     if (selectedBoard.value?.id === board.id) {
       selectedBoard.value = null
     }
     await fetchBoards()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -311,7 +311,7 @@ async function saveColumn() {
     await fetchBoard(selectedBoard.value.id)
     showColumnModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -321,10 +321,10 @@ async function deleteColumn(column) {
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/columns/${column.id}`)
-    uiStore.showSuccess(t('kanbanModule.spalteGeloescht'))
+    uiStore.showSuccess(t('kanbanModule.columnDeleted'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -399,7 +399,7 @@ async function saveCard() {
     await fetchBoard(selectedBoard.value.id)
     showCardModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -409,10 +409,10 @@ async function deleteCard(card) {
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/cards/${card.id}`)
-    uiStore.showSuccess(t('kanbanModule.karteGeloescht'))
+    uiStore.showSuccess(t('kanbanModule.cardDeleted'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -429,7 +429,7 @@ async function onCardDragEnd(columnId, evt) {
       position: newIndex,
     })
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimVerschieben'))
+    uiStore.showError(t('bookmarksModule.errorMoving'))
     await fetchBoard(selectedBoard.value.id)
   }
 }
@@ -457,7 +457,7 @@ async function onColumnDragEnd() {
     }
   } catch (error) {
     console.error('Reorder error:', error)
-    uiStore.showError(t('tickets.fehlerBeimSortieren'))
+    uiStore.showError(t('tickets.errorSorting'))
     await fetchBoard(selectedBoard.value.id)
   }
 }
@@ -518,7 +518,7 @@ async function uploadAttachment(event) {
     cardForm.value.attachments.push(response.data.data)
     uiStore.showSuccess(t('kanban.imageUploaded'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('checklistsModule.fehlerBeimHochladen'))
+    uiStore.showError(error.response?.data?.message || t('checklistsModule.errorUploading'))
   } finally {
     isUploadingAttachment.value = false
     event.target.value = ''
@@ -529,7 +529,7 @@ async function uploadAttachment(event) {
 async function deleteAttachment(attachmentId) {
   if (!editingCard.value) return
 
-  if (!await confirm({ message: t('checklistsModule.bildWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('checklistsModule.confirmDeleteImage'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(
@@ -538,9 +538,9 @@ async function deleteAttachment(attachmentId) {
 
     // Remove from local attachments
     cardForm.value.attachments = cardForm.value.attachments.filter(a => a.id !== attachmentId)
-    uiStore.showSuccess(t('checklistsModule.bildGeloescht'))
+    uiStore.showSuccess(t('checklistsModule.imageDeleted'))
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -570,7 +570,7 @@ async function fetchBoardShares() {
     const response = await api.get(`/api/v1/kanban/boards/${selectedBoard.value.id}/shares`)
     boardShares.value = response.data.data || []
   } catch (error) {
-    uiStore.showError(t('storage.storagefehlerbeimladenderfreigaben'))
+    uiStore.showError(t('storage.errorLoadingShares'))
     boardShares.value = []
   } finally {
     loadingShares.value = false
@@ -599,7 +599,7 @@ async function addBoardShare() {
     newShareEmail.value = ''
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(error.response?.data?.message || t('newsModule.errorAdding'))
   }
 }
 
@@ -611,7 +611,7 @@ async function removeBoardShare(userId) {
     uiStore.showSuccess(t('kanbanModule.zugriffEntfernt'))
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError(t('server.serverfehlerbeimentfernen'))
+    uiStore.showError(t('server.errorRemoving'))
   }
 }
 
@@ -621,10 +621,10 @@ async function updateSharePermission(userId, permission) {
       user_id: userId,
       permission
     })
-    uiStore.showSuccess(t('projectsModule.berechtigungAktualisiert'))
+    uiStore.showSuccess(t('projectsModule.permissionUpdated'))
     await fetchBoardShares()
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -667,16 +667,16 @@ async function enablePublicShare() {
     const response = await api.post(`/api/v1/kanban/boards/${selectedBoard.value.id}/public`, payload)
     publicShareInfo.value = response.data.data
     publicShareUrl.value = response.data.data.url
-    uiStore.showSuccess(t('kanbanModule.oeffentlicherLinkErstellt'))
+    uiStore.showSuccess(t('kanbanModule.publicLinkCreated'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(error.response?.data?.message || t('links.errorCreating'))
   } finally {
     loadingPublicShare.value = false
   }
 }
 
 async function disablePublicShare() {
-  if (!await confirm({ message: t('kanbanModule.oeffentlichenZugangWirklichDeaktivieren'), type: 'danger', confirmText: t('kanbanModule.deaktivieren') })) return
+  if (!await confirm({ message: t('kanbanModule.confirmDisablePublicAccess'), type: 'danger', confirmText: t('kanbanModule.deaktivieren') })) return
 
   loadingPublicShare.value = true
   try {
@@ -684,9 +684,9 @@ async function disablePublicShare() {
     publicShareInfo.value = { active: false }
     publicShareUrl.value = ''
     publicShareForm.value = { username: '', password: '', can_edit: false, mode: 'readonly' }
-    uiStore.showSuccess(t('kanbanModule.oeffentlicherZugangDeaktiviert'))
+    uiStore.showSuccess(t('kanbanModule.publicAccessDisabled'))
   } catch (error) {
-    uiStore.showError(t('contractsModule.fehlerBeimDeaktivieren'))
+    uiStore.showError(t('contractsModule.errorDeactivating'))
   } finally {
     loadingPublicShare.value = false
   }
@@ -698,7 +698,7 @@ async function copyPublicLink() {
     publicShareCopied.value = true
     setTimeout(() => { publicShareCopied.value = false }, 2000)
   } catch (error) {
-    uiStore.showError(t('passwordsModule.passwordsmodulefehlerbeimkopieren'))
+    uiStore.showError(t('passwordsModule.errorCopying'))
   }
 }
 
@@ -735,19 +735,19 @@ async function saveTag() {
         `/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${editingTag.value.id}`,
         tagForm.value
       )
-      uiStore.showSuccess(t('system.tagAktualisiert'))
+      uiStore.showSuccess(t('system.tagUpdated'))
     } else {
       const response = await api.post(
         `/api/v1/kanban/boards/${selectedBoard.value.id}/tags`,
         tagForm.value
       )
       selectedBoard.value.tags.push(response.data.data)
-      uiStore.showSuccess(t('bookmarksModule.tagErstellt'))
+      uiStore.showSuccess(t('bookmarksModule.tagCreated'))
     }
     await fetchBoard(selectedBoard.value.id)
     showTagModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
@@ -756,10 +756,10 @@ async function deleteTag(tag) {
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/tags/${tag.id}`)
-    uiStore.showSuccess(t('bookmarksModule.tagGeloescht'))
+    uiStore.showSuccess(t('bookmarksModule.tagDeleted'))
     await fetchBoard(selectedBoard.value.id)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -797,7 +797,7 @@ async function toggleCardTag(tagId) {
       }
     }
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -834,7 +834,7 @@ async function fetchLinkableItems() {
   } catch (error) {
     console.error('Error fetching linkable items:', error)
     linkableItems.value = []
-    uiStore.showError(t('kanbanModule.fehlerBeimLadenDerElemente'))
+    uiStore.showError(t('kanbanModule.errorLoadingElements'))
   } finally {
     isLoadingLinkables.value = false
   }
@@ -858,7 +858,7 @@ async function addLink(item) {
     cardForm.value.links.push(response.data.data)
     uiStore.showSuccess(t('kanban.linked'))
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('kanbanModule.fehlerBeimVerlinken'))
+    uiStore.showError(error.response?.data?.message || t('kanbanModule.errorLinking'))
   }
 }
 
@@ -872,7 +872,7 @@ async function removeLink(linkId) {
     cardForm.value.links = cardForm.value.links.filter(l => l.id !== linkId)
     uiStore.showSuccess(t('kanban.linkRemoved'))
   } catch (error) {
-    uiStore.showError(t('server.serverfehlerbeimentfernen'))
+    uiStore.showError(t('server.errorRemoving'))
   }
 }
 
@@ -937,18 +937,18 @@ async function createChecklist() {
     checklists.value.push(response.data.data)
     newChecklistTitle.value = ''
   } catch (error) {
-    uiStore.showError(t('kanbanModule.kanbanmodulefehlerbeimerstellendercheckliste'))
+    uiStore.showError(t('kanbanModule.errorCreatingChecklist'))
   }
 }
 
 async function deleteChecklist(checklistId) {
-  if (!await confirm({ message: t('kanbanModule.checklisteWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('kanbanModule.confirmDeleteChecklist'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/checklists/${checklistId}`)
     checklists.value = checklists.value.filter(c => c.id !== checklistId)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -967,7 +967,7 @@ async function addChecklistItem(checklistId) {
     }
     newItemContents.value[checklistId] = ''
   } catch (error) {
-    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(t('newsModule.errorAdding'))
   }
 }
 
@@ -985,7 +985,7 @@ async function toggleChecklistItem(itemId) {
       }
     }
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -996,7 +996,7 @@ async function deleteChecklistItem(itemId) {
       checklist.items = checklist.items.filter(i => i.id !== itemId)
     }
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -1034,7 +1034,7 @@ async function addCommentAction() {
     comments.value.unshift(response.data.data)
     newComment.value = ''
   } catch (error) {
-    uiStore.showError(t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(t('newsModule.errorAdding'))
   }
 }
 
@@ -1058,18 +1058,18 @@ async function saveEditComment(commentId) {
     editingComment.value = null
     editCommentContent.value = ''
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
 async function deleteCommentAction(commentId) {
-  if (!await confirm({ message: t('tickets.kommentarWirklichLoeschen'), type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('tickets.confirmDeleteComment'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/kanban/boards/${selectedBoard.value.id}/comments/${commentId}`)
     comments.value = comments.value.filter(c => c.id !== commentId)
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -1279,7 +1279,7 @@ onMounted(async () => {
         class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 cursor-pointer hover:border-white/[0.08] transition-colors flex flex-col items-center justify-center text-center col-span-full"
       >
         <ViewColumnsIcon class="w-12 h-12 text-gray-500 mb-3" />
-        <p class="text-gray-400">{{ $t('kanbanModule.keinBoardVorhanden') }}</p>
+        <p class="text-gray-400">{{ $t('kanbanModule.noBoard') }}</p>
         <p class="text-primary-500 mt-1">{{ $t('kanban.clickToCreate') }}</p>
       </div>
     </div>
@@ -2088,7 +2088,7 @@ onMounted(async () => {
                             @click="saveEditComment(comment.id)"
                             class="px-2 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-500"
                           >
-                            Speichern
+                            {{ $t('common.save') }}
                           </button>
                           <button
                             @click="editingComment = null"

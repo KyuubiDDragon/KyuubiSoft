@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 </script>
 
@@ -8,7 +10,7 @@ defineProps({ widget: Object, data: Object })
 
     <div v-if="data?.productivity_score" class="mb-4">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-gray-400 text-sm">{{ $t('dashboardModule.produktivitaetsscore') }}</span>
+        <span class="text-gray-400 text-sm">{{ $t('dashboardModule.productivityScore') }}</span>
         <span class="text-2xl font-bold text-white">{{ data.productivity_score.score }}/100</span>
       </div>
       <div class="h-2 bg-white/[0.08] rounded-full overflow-hidden">
@@ -20,22 +22,22 @@ defineProps({ widget: Object, data: Object })
       </div>
       <div class="grid grid-cols-3 gap-2 mt-3 text-xs">
         <div class="text-center">
-          <p class="text-gray-500">{{ $t('calendarModule.aufgaben') }}</p>
+          <p class="text-gray-500">{{ $t('calendarModule.tasks') }}</p>
           <p class="text-white font-medium">{{ data.productivity_score.factors.tasks }}%</p>
         </div>
         <div class="text-center">
-          <p class="text-gray-500">Zeit</p>
+          <p class="text-gray-500">{{ t('dashboard.time') }}</p>
           <p class="text-white font-medium">{{ data.productivity_score.factors.time }}%</p>
         </div>
         <div class="text-center">
-          <p class="text-gray-500">Konsistenz</p>
+          <p class="text-gray-500">{{ t('dashboard.consistency') }}</p>
           <p class="text-white font-medium">{{ data.productivity_score.factors.consistency }}%</p>
         </div>
       </div>
     </div>
 
     <div v-if="data?.tasks_completed?.daily?.length" class="mt-4">
-      <p class="text-sm text-gray-400 mb-2">{{ $t('dashboardModule.dashboardmoduleerledigteaufgaben14tage') }}</p>
+      <p class="text-sm text-gray-400 mb-2">{{ $t('dashboardModule.completedTasks14Days') }}</p>
       <div class="flex items-end gap-1 h-20">
         <div
           v-for="(day, i) in data.tasks_completed.daily.slice(-14)"

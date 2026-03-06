@@ -230,7 +230,7 @@ watch(() => props.invoice?.id, () => {
                   <button
                     @click="$emit('delete', invoice)"
                     class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-white/[0.04] transition-colors"
-                    :title="$t('invoicesModule.rechnungLoeschen')"
+                    :title="$t('invoicesModule.deleteInvoice')"
                   >
                     <TrashIcon class="w-5 h-5" />
                   </button>
@@ -370,7 +370,7 @@ watch(() => props.invoice?.id, () => {
                   </div>
                 </div>
                 <div v-else class="bg-white/[0.02] rounded-xl p-6 border border-dashed border-white/[0.06] text-center">
-                  <p class="text-gray-500 text-sm">{{ $t('invoicesModule.invoicesmodulenochkeinepositionen') }}</p>
+                  <p class="text-gray-500 text-sm">{{ $t('invoicesModule.noItemsYet') }}</p>
                   <button
                     @click="activeTab = 'items'"
                     class="mt-2 text-sm text-primary-400 hover:text-primary-300 transition-colors"

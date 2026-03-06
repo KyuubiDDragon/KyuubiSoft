@@ -118,7 +118,7 @@ function getBarClass(status) {
 }
 
 function getBarTooltip(day) {
-  if (!day) return t('statusPage.keineDaten')
+  if (!day) return t('statusPage.noData')
   if (day.uptime !== null) return `${day.date}: ${day.uptime}%`
   return `${day.date}: Keine Daten`
 }

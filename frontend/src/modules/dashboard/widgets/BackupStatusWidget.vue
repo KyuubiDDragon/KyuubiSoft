@@ -1,6 +1,8 @@
 <script setup>
 import { formatDate } from './widgetUtils'
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 </script>
 
@@ -12,19 +14,19 @@ defineProps({ widget: Object, data: Object })
     </div>
     <div class="space-y-3">
       <div class="flex items-center justify-between">
-        <span class="text-gray-400 text-sm">Erfolgreiche Backups</span>
+        <span class="text-gray-400 text-sm">{{ t('dashboard.successfulBackups') }}</span>
         <span class="text-green-400 font-medium">{{ data?.successful_backups || 0 }}</span>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-gray-400 text-sm">Fehlgeschlagen</span>
+        <span class="text-gray-400 text-sm">{{ t('dashboard.failed') }}</span>
         <span class="text-red-400 font-medium">{{ data?.failed_backups || 0 }}</span>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-gray-400 text-sm">{{ $t('backupsModule.aktiveZeitplaene') }}</span>
+        <span class="text-gray-400 text-sm">{{ $t('backupsModule.activeSchedules') }}</span>
         <span class="text-white font-medium">{{ data?.active_schedules || 0 }}</span>
       </div>
       <div v-if="data?.last_successful" class="pt-2 border-t border-white/[0.06]">
-        <p class="text-xs text-gray-500">{{ $t('dashboardModule.dashboardmoduleletzteserfolgreichesbackup') }}</p>
+        <p class="text-xs text-gray-500">{{ $t('dashboardModule.lastSuccessfulBackup') }}</p>
         <p class="text-sm text-white">{{ formatDate(data.last_successful) }}</p>
       </div>
     </div>

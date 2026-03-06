@@ -401,8 +401,8 @@ function formatRelativeTime(date) {
         <div v-if="!currentNote" class="flex-1 flex items-center justify-center text-gray-500">
           <div class="text-center">
             <DocumentDuplicateIcon class="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <p class="text-lg mb-2">Keine Notiz ausgewählt</p>
-            <p class="text-sm mb-4">Wähle eine Notiz aus der Sidebar oder erstelle eine neue</p>
+            <p class="text-lg mb-2">{{ $t('notes.noNoteSelected') }}</p>
+            <p class="text-sm mb-4">{{ $t('notes.selectOrCreateNote') }}</p>
             <button
               @click="createNewNote()"
               class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 transition-colors"
@@ -561,7 +561,7 @@ function formatRelativeTime(date) {
           <!-- Status Bar -->
           <div class="flex items-center justify-between border-t border-dark-700 bg-dark-850 px-4 py-1 text-xs text-gray-500">
             <div class="flex items-center gap-4">
-              <span>{{ currentNote.word_count || 0 }} Wörter</span>
+              <span>{{ currentNote.word_count || 0 }} {{ $t('notes.words') }}</span>
               <span>Version {{ currentNote.content_version || 1 }}</span>
             </div>
             <div>

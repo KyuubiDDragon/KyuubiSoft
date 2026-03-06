@@ -68,7 +68,7 @@ async function createChecklist() {
     // Navigate to detail view
     router.push({ name: 'checklist-detail', params: { id: response.data.data.id } })
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 
@@ -95,7 +95,7 @@ async function toggleActive(checklist) {
     }
     uiStore.showSuccess(response.data.data.is_active ? t('checklists.checklistActivated') : t('checklists.checklistDeactivated'))
   } catch (error) {
-    uiStore.showError(t('storage.fehlerBeimAendernDesStatus'))
+    uiStore.showError(t('storage.errorChangingStatus'))
   }
 }
 

@@ -176,9 +176,9 @@ function swapTexts() {
 
     <!-- Stats -->
     <div v-if="diffResult.length > 0" class="flex gap-4 text-sm">
-      <span class="text-green-400">+{{ stats.added }} hinzugefügt</span>
+      <span class="text-green-400">+{{ stats.added }} {{ $t('toolbox.added') }}</span>
       <span class="text-red-400">-{{ stats.removed }} entfernt</span>
-      <span class="text-gray-400">{{ stats.same }} unverändert</span>
+      <span class="text-gray-400">{{ stats.same }} {{ $t('toolbox.unchanged') }}</span>
     </div>
 
     <!-- Diff Result -->

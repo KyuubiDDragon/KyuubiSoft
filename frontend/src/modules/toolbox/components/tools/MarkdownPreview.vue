@@ -194,14 +194,14 @@ console.log("Hello!");
           class="px-3 py-1 text-sm rounded transition-colors"
           :class="viewMode === 'preview' ? 'bg-primary-600 text-white' : 'bg-white/[0.04] text-gray-400'"
         >
-          Vorschau
+          {{ $t('toolbox.vorschau') }}
         </button>
       </div>
       <div class="flex gap-2">
-        <button @click="loadSample" class="text-xs text-gray-400 hover:text-white">Beispiel</button>
+        <button @click="loadSample" class="text-xs text-gray-400 hover:text-white">{{ $t('toolbox.beispiel') }}</button>
         <button @click="clearAll" class="text-xs text-gray-400 hover:text-white">{{ $t('common.delete') }}</button>
-        <button @click="copyMarkdown" class="text-xs text-primary-400 hover:text-primary-300">MD kopieren</button>
-        <button @click="copyHtml" class="text-xs text-primary-400 hover:text-primary-300">HTML kopieren</button>
+        <button @click="copyMarkdown" class="text-xs text-primary-400 hover:text-primary-300">{{ $t('toolbox.mdKopieren') }}</button>
+        <button @click="copyHtml" class="text-xs text-primary-400 hover:text-primary-300">{{ $t('toolbox.htmlKopieren') }}</button>
       </div>
     </div>
 
@@ -218,7 +218,7 @@ console.log("Hello!");
         <textarea
           v-model="markdown"
           class="input w-full h-96 font-mono text-sm resize-none"
-          placeholder="Markdown hier eingeben..."
+          :placeholder="$t('toolbox.markdownHierEingeben')"
         ></textarea>
       </div>
 
@@ -230,18 +230,18 @@ console.log("Hello!");
 
     <!-- Quick Reference -->
     <details class="text-sm">
-      <summary class="text-gray-400 cursor-pointer hover:text-white">Markdown Kurzreferenz</summary>
+      <summary class="text-gray-400 cursor-pointer hover:text-white">{{ $t('toolbox.markdownKurzreferenz') }}</summary>
       <div class="mt-2 p-3 bg-white/[0.04] rounded-lg grid grid-cols-2 gap-2 text-xs font-mono">
         <div><span class="text-gray-500"># </span>{{ $t('toolbox.ueberschrift1') }}</div>
         <div><span class="text-gray-500">## </span>{{ $t('toolbox.ueberschrift2') }}</div>
-        <div><span class="text-gray-500">**</span>fett<span class="text-gray-500">**</span></div>
-        <div><span class="text-gray-500">*</span>kursiv<span class="text-gray-500">*</span></div>
-        <div><span class="text-gray-500">- </span>Liste</div>
-        <div><span class="text-gray-500">1. </span>Nummerierte Liste</div>
+        <div><span class="text-gray-500">**</span>{{ $t('toolbox.fett') }}<span class="text-gray-500">**</span></div>
+        <div><span class="text-gray-500">*</span>{{ $t('toolbox.kursiv') }}<span class="text-gray-500">*</span></div>
+        <div><span class="text-gray-500">- </span>{{ $t('toolbox.liste') }}</div>
+        <div><span class="text-gray-500">1. </span>{{ $t('toolbox.numerierteListe') }}</div>
         <div><span class="text-gray-500">`</span>code<span class="text-gray-500">`</span></div>
-        <div><span class="text-gray-500">> </span>Zitat</div>
-        <div><span class="text-gray-500">[</span>Link<span class="text-gray-500">](url)</span></div>
-        <div><span class="text-gray-500">![</span>Bild<span class="text-gray-500">](url)</span></div>
+        <div><span class="text-gray-500">> </span>{{ $t('toolbox.zitat') }}</div>
+        <div><span class="text-gray-500">[</span>{{ $t('toolbox.link') }}<span class="text-gray-500">](url)</span></div>
+        <div><span class="text-gray-500">![</span>{{ $t('toolbox.bild') }}<span class="text-gray-500">](url)</span></div>
       </div>
     </details>
   </div>

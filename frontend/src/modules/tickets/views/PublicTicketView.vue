@@ -127,7 +127,7 @@ async function createTicket() {
     return
   }
   if (!captchaToken.value) {
-    error.value = t('tickets.bitteBestaetigenSieDassSieKeinRoboter')
+    error.value = t('tickets.confirmNotRobot')
     return
   }
 
@@ -154,7 +154,7 @@ async function createTicket() {
     }
     resetCaptcha()
   } catch (err) {
-    error.value = err.response?.data?.message || t('tickets.ticketsfehlerbeimerstellendestickets')
+    error.value = err.response?.data?.message || t('tickets.errorCreatingTicket')
     resetCaptcha()
   } finally {
     loading.value = false
@@ -199,7 +199,7 @@ async function addComment() {
     comments.value.push(response.data.data.comment)
     newComment.value = ''
   } catch (err) {
-    error.value = t('tickets.fehlerBeimHinzufuegenDesKommentars')
+    error.value = t('tickets.errorAddingComment')
   } finally {
     submittingComment.value = false
   }
@@ -421,7 +421,7 @@ onMounted(() => {
               class="w-full btn-primary flex items-center justify-center gap-2"
             >
               <div v-if="loading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>{{ loading ? $t('tickets.wirdErstellt') : 'Ticket absenden' }}</span>
+              <span>{{ loading ? $t('tickets.creating') : 'Ticket absenden' }}</span>
             </button>
           </div>
         </div>
@@ -509,7 +509,7 @@ onMounted(() => {
               <span class="text-white">{{ getPriorityInfo(ticket.priority).label }}</span>
             </div>
             <div>
-              <span class="text-gray-500 block">{{ $t('inboxModule.erstellt') }}</span>
+              <span class="text-gray-500 block">{{ $t('inboxModule.created') }}</span>
               <span class="text-white">{{ formatDate(ticket.created_at) }}</span>
             </div>
             <div>
@@ -581,7 +581,7 @@ onMounted(() => {
           </div>
 
           <div v-else class="border-t border-white/[0.06] pt-4 text-center text-gray-500">
-            {{ $t('tickets.diesesTicketWurdeGeschlossenKeineWeiterenNachrichten') }}
+            {{ $t('tickets.ticketClosed') }}
           </div>
         </div>
       </div>

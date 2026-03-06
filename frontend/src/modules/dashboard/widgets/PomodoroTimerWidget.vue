@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { PlayIcon, PauseIcon, ArrowPathIcon } from '@heroicons/vue/24/solid'
 
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 
 const WORK_DURATION = 25 * 60
@@ -26,7 +28,7 @@ const displayTime = computed(() => {
   return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 })
 
-const stateLabel = computed(() => isBreak.value ? 'Pause' : 'Arbeit')
+const stateLabel = computed(() => isBreak.value ? t('dashboard.pause') : t('dashboard.work'))
 
 const stateColor = computed(() => isBreak.value ? 'text-green-500' : 'text-primary-500')
 
@@ -117,7 +119,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Session counter -->
-      <p class="text-gray-500 text-sm mb-4">{{ sessions }}/{{ TOTAL_SESSIONS }} Sitzungen</p>
+      <p class="text-gray-500 text-sm mb-4">{{ sessions }}/{{ TOTAL_SESSIONS }} {{ $t('dashboard.sessions') }}</p>
 
       <!-- Controls -->
       <div class="flex items-center justify-center gap-3">

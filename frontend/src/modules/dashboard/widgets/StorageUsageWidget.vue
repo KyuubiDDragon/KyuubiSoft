@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 defineProps({ widget: Object, data: Object })
 </script>
 
@@ -6,7 +8,7 @@ defineProps({ widget: Object, data: Object })
   <div>
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-white">{{ widget.title }}</h3>
-      <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.oeffnen') }}</router-link>
+      <router-link to="/storage" class="text-sm text-primary-400 hover:text-primary-300">{{ $t('dashboardModule.open') }}</router-link>
     </div>
     <div class="text-center">
       <!-- Progress Ring -->
@@ -29,8 +31,8 @@ defineProps({ widget: Object, data: Object })
         <span class="absolute text-xl font-bold text-white">{{ data?.usage_percent || 0 }}%</span>
       </div>
       <p class="text-white font-medium">{{ data?.used_formatted || '0 B' }}</p>
-      <p class="text-gray-500 text-sm">von {{ data?.limit_formatted || '10 GB' }}</p>
-      <p class="text-gray-400 text-xs mt-2">{{ data?.file_count || 0 }} Dateien</p>
+      <p class="text-gray-500 text-sm">{{ t('dashboard.of') }} {{ data?.limit_formatted || '10 GB' }}</p>
+      <p class="text-gray-400 text-xs mt-2">{{ data?.file_count || 0 }} {{ t('dashboard.files') }}</p>
     </div>
   </div>
 </template>

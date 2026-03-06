@@ -62,13 +62,13 @@ async function loadContract(pw) {
     }
     contract.value = resData
     state.value = 'view'
-    if (contraclabels.value.party_b_signed_at) {
+    if (contract.value.party_b_signed_at) {
       state.value = 'signed'
     }
   } catch (e) {
     const status = e.response?.status
     const msg = e.response?.data?.message || ''
-    if (status === 401 && (msg.includes(t('auth.password')) || msg.includes('password'))) {
+    if (status === 401 && (msg.includes('password') || msg.includes('Passwort'))) {
       if (pw) {
         passwordError.value = labels.value.wrongPassword
         state.value = 'password'
@@ -202,7 +202,7 @@ const contractTypeLabels = {
   de: {
     license: 'Softwarelizenzvertrag',
     development: 'Softwareentwicklungsvertrag',
-    saas: t('contracts.saasContract'),
+    saas: 'SaaS-Vertrag',
     maintenance: 'Wartungsvertrag',
     nda: 'Geheimhaltungsvereinbarung',
     source_code_purchase: 'Source-Code-Kaufvertrag',
@@ -220,7 +220,7 @@ const contractTypeLabels = {
 }
 
 const paymentLabels = {
-  de: { 'one-time': 'Einmalig', monthly: t('cron.monthly'), quarterly: 'Quartalsweise', yearly: t('contracts.yearly') },
+  de: { 'one-time': 'Einmalig', monthly: 'Monatlich', quarterly: 'Quartalsweise', yearly: 'Jährlich' },
   en: { 'one-time': 'One-time', monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' },
 }
 

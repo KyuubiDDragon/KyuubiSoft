@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMockupStore } from '../stores/mockupStore'
 import {
   XMarkIcon,
@@ -15,6 +16,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const mockupStore = useMockupStore()
+const { t } = useI18n()
 
 // Current tool
 const currentTool = ref('circle') // circle, marker, arrow, text
@@ -44,12 +46,12 @@ const annotations = computed(() => {
 })
 
 // Available tools
-const tools = [
-  { id: 'circle', name: 'Kreis', icon: '○' },
-  { id: 'marker', name: 'Marker', icon: '①' },
-  { id: 'arrow', name: 'Pfeil', icon: '→' },
-  { id: 'text', name: 'Text', icon: 'T' },
-]
+const tools = computed(() => [
+  { id: 'circle', name: t('mockupEditor.circle'), icon: '○' },
+  { id: 'marker', name: t('mockupEditor.marker'), icon: '①' },
+  { id: 'arrow', name: t('mockupEditor.arrow'), icon: '→' },
+  { id: 'text', name: t('mockupEditor.text'), icon: 'T' },
+])
 
 // Colors
 const colors = [
@@ -227,7 +229,7 @@ onUnmounted(() => {
         <div class="relative bg-white/[0.04] rounded-xl shadow-float w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
           <!-- Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">Screenshot bearbeiten</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('mockupEditor.editScreenshot') }}</h2>
             <button @click="handleClose" class="p-1 text-gray-400 hover:text-white transition-colors">
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -272,7 +274,7 @@ onUnmounted(() => {
                 v-if="selectedAnnotationId"
                 @click="deleteSelectedAnnotation"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors"
-                :title="$t('mockupEditor.loeschenDel')"
+                :title="$t('mockupEditor.deleteDel')"
               >
                 <TrashIcon class="w-5 h-5" />
               </button>
@@ -281,7 +283,7 @@ onUnmounted(() => {
                 v-if="annotations.length > 0"
                 @click="clearAllAnnotations"
                 class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                :title="$t('mockupEditor.alleLoeschen')"
+                :title="$t('mockupEditor.deleteAll')"
               >
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -307,7 +309,7 @@ onUnmounted(() => {
                   draggable="false"
                 />
                 <div v-else class="w-[600px] h-[400px] bg-white/[0.04] rounded-lg flex items-center justify-center text-gray-500">
-                  Kein Bild vorhanden
+                  {{ $t('mockupEditor.noImage') }}
                 </div>
 
                 <!-- Annotations Layer -->
@@ -414,13 +416,13 @@ onUnmounted(() => {
 
             <!-- Properties Panel -->
             <div class="w-64 bg-white/[0.04] border-l border-white/[0.06] p-4 overflow-y-auto">
-              <h3 class="text-sm font-medium text-gray-400 mb-4">Eigenschaften</h3>
+              <h3 class="text-sm font-medium text-gray-400 mb-4">{{ $t('mockupEditor.properties') }}</h3>
 
               <template v-if="selectedAnnotationId">
                 <div class="space-y-4">
                   <!-- Annotation type info -->
                   <div>
-                    <label class="text-xs text-gray-500">Typ</label>
+                    <label class="text-xs text-gray-500">{{ $t('mockupEditor.type') }}</label>
                     <div class="text-white capitalize">
                       {{ annotations.find(a => a.id === selectedAnnotationId)?.type }}
                     </div>
@@ -439,7 +441,7 @@ onUnmounted(() => {
 
                   <!-- Size for markers -->
                   <div v-if="annotations.find(a => a.id === selectedAnnotationId)?.type === 'marker'">
-                    <label class="text-xs text-gray-500">Größe</label>
+                    <label class="text-xs text-gray-500">{{ $t('mockupEditor.size') }}</label>
                     <input
                       type="range"
                       min="20"
@@ -452,7 +454,7 @@ onUnmounted(() => {
 
                   <!-- Stroke width for circles and arrows -->
                   <div v-if="['circle', 'arrow'].includes(annotations.find(a => a.id === selectedAnnotationId)?.type)">
-                    <label class="text-xs text-gray-500">Strichstärke</label>
+                    <label class="text-xs text-gray-500">{{ $t('mockupEditor.strokeWidth') }}</label>
                     <input
                       type="range"
                       min="1"
@@ -465,7 +467,7 @@ onUnmounted(() => {
 
                   <!-- Circle size -->
                   <div v-if="annotations.find(a => a.id === selectedAnnotationId)?.type === 'circle'">
-                    <label class="text-xs text-gray-500">Breite (%)</label>
+                    <label class="text-xs text-gray-500">{{ $t('mockupEditor.widthPercent') }}</label>
                     <input
                       type="range"
                       min="5"
@@ -474,7 +476,7 @@ onUnmounted(() => {
                       @input="(e) => mockupStore.updateAnnotation(elementId, selectedAnnotationId, { width: parseInt(e.target.value) })"
                       class="w-full mt-1"
                     />
-                    <label class="text-xs text-gray-500 mt-2 block">Höhe (%)</label>
+                    <label class="text-xs text-gray-500 mt-2 block">{{ $t('mockupEditor.heightPercent') }}</label>
                     <input
                       type="range"
                       min="5"
@@ -487,7 +489,7 @@ onUnmounted(() => {
 
                   <!-- Color -->
                   <div>
-                    <label class="text-xs text-gray-500">Farbe</label>
+                    <label class="text-xs text-gray-500">{{ $t('mockupEditor.color') }}</label>
                     <div class="flex gap-1 mt-1">
                       <button
                         v-for="color in colors"
@@ -506,18 +508,18 @@ onUnmounted(() => {
                     class="w-full mt-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2"
                   >
                     <TrashIcon class="w-4 h-4" />
-                    Löschen
+                    {{ $t('common.delete') }}
                   </button>
                 </div>
               </template>
 
               <template v-else>
                 <p class="text-sm text-gray-500">
-                  Klicke auf das Bild um eine Annotation hinzuzufügen, oder wähle eine bestehende aus.
+                  {{ $t('mockupEditor.clickToAnnotate') }}
                 </p>
 
                 <div class="mt-4 space-y-2">
-                  <div class="text-xs text-gray-500">Aktives Tool</div>
+                  <div class="text-xs text-gray-500">{{ $t('mockupEditor.activeTool') }}</div>
                   <div class="flex flex-wrap gap-1">
                     <button
                       v-for="tool in tools"
@@ -532,10 +534,10 @@ onUnmounted(() => {
                 </div>
 
                 <div class="mt-4">
-                  <div class="text-xs text-gray-500 mb-2">Tastenkürzel</div>
+                  <div class="text-xs text-gray-500 mb-2">{{ $t('mockupEditor.shortcuts') }}</div>
                   <div class="text-xs text-gray-400 space-y-1">
-                    <div><kbd class="px-1 bg-white/[0.04] rounded">Del</kbd> - Löschen</div>
-                    <div><kbd class="px-1 bg-white/[0.04] rounded">Esc</kbd> - Abwählen/Schließen</div>
+                    <div><kbd class="px-1 bg-white/[0.04] rounded">Del</kbd> - {{ $t('mockupEditor.deleteShortcut') }}</div>
+                    <div><kbd class="px-1 bg-white/[0.04] rounded">Esc</kbd> - {{ $t('mockupEditor.deselectClose') }}</div>
                   </div>
                 </div>
               </template>
@@ -545,13 +547,13 @@ onUnmounted(() => {
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 px-4 py-3 border-t border-white/[0.06]">
             <span class="text-sm text-gray-500 mr-auto">
-              {{ annotations.length }} Annotation{{ annotations.length !== 1 ? 'en' : '' }}
+              {{ $t('mockupEditor.annotationCount', { count: annotations.length }) }}
             </span>
             <button
               @click="handleClose"
               class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-gray-900 font-medium rounded-lg transition-colors"
             >
-              Fertig
+              {{ $t('mockupEditor.done') }}
             </button>
           </div>
         </div>

@@ -53,7 +53,7 @@ async function fetchWebhooks() {
     const response = await api.get('/api/v1/webhooks')
     webhooks.value = response.data.data.items || []
   } catch (error) {
-    uiStore.showError(t('webhooks.fehlerBeimLadenDerWebhooks'))
+    uiStore.showError(t('webhooks.errorLoadingWebhooks'))
   } finally {
     loading.value = false
   }
@@ -110,28 +110,28 @@ async function saveWebhook() {
   try {
     if (editingWebhook.value) {
       await api.put(`/api/v1/webhooks/${editingWebhook.value.id}`, form.value)
-      uiStore.showSuccess(t('webhooks.webhookAktualisiert'))
+      uiStore.showSuccess(t('webhooks.webhookUpdated'))
     } else {
       await api.post('/api/v1/webhooks', form.value)
-      uiStore.showSuccess(t('webhooks.webhookErstellt'))
+      uiStore.showSuccess(t('webhooks.webhookCreated'))
     }
     await fetchWebhooks()
     showModal.value = false
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(error.response?.data?.message || t('webhooks.errorSaving'))
   }
 }
 
 // Delete webhook
 async function deleteWebhook(webhook) {
-  if (!await confirm({ message: `Webhook "${webhook.name}" wirklich löschen?`, type: 'danger', confirmText: t('common.delete') })) return
+  if (!await confirm({ message: t('webhooks.confirmDeleteWebhook', { name: webhook.name }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
     await api.delete(`/api/v1/webhooks/${webhook.id}`)
-    uiStore.showSuccess(t('webhooks.webhookGeloescht'))
+    uiStore.showSuccess(t('webhooks.webhookDeleted'))
     await fetchWebhooks()
   } catch (error) {
-    uiStore.showError(t('bookmarksModule.fehlerBeimLoeschen'))
+    uiStore.showError(t('bookmarksModule.errorDeleting'))
   }
 }
 
@@ -143,7 +143,7 @@ async function toggleActive(webhook) {
     })
     webhook.is_active = !webhook.is_active
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
@@ -189,10 +189,10 @@ const groupedEvents = computed(() => {
 // Category labels
 const categoryLabels = {
   document: t('navigation.documents'),
-  list: 'Listen',
-  kanban: 'Kanban',
+  list: t('webhooks.lists'),
+  kanban: t('webhooks.kanban'),
   project: t('projects.title'),
-  time: 'Zeiterfassung',
+  time: t('webhooks.timeTracking'),
 }
 
 onMounted(() => {
@@ -242,7 +242,7 @@ onMounted(() => {
                   class="px-2 py-0.5 text-xs rounded-full"
                   :class="webhook.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
                 >
-                  {{ webhook.is_active ? 'Aktiv' : 'Inaktiv' }}
+                  {{ webhook.is_active ? $t('webhooks.activeStatus') : $t('webhooks.inactiveStatus') }}
                 </span>
               </div>
               <p class="text-gray-500 text-sm mt-1 font-mono truncate max-w-md">{{ webhook.url }}</p>
@@ -262,9 +262,9 @@ onMounted(() => {
                   :class="webhook.last_status === 'success' ? 'text-green-400' : 'text-red-400'"
                 />
                 <span>
-                  Zuletzt: {{ new Date(webhook.last_triggered_at).toLocaleString('de-DE') }}
+                  {{ $t('webhooks.lastTriggered') }} {{ new Date(webhook.last_triggered_at).toLocaleString('de-DE') }}
                   <template v-if="webhook.failure_count > 0">
-                    ({{ webhook.failure_count }} Fehler)
+                    ({{ webhook.failure_count }} {{ $t('webhooks.failures') }})
                   </template>
                 </span>
               </div>
@@ -276,7 +276,7 @@ onMounted(() => {
               @click="testWebhook(webhook)"
               :disabled="testing === webhook.id"
               class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors disabled:opacity-50"
-              title="Test senden"
+              :title="$t('webhooks.sendTest')"
             >
               <BeakerIcon v-if="testing !== webhook.id" class="w-5 h-5" />
               <div v-else class="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
@@ -284,7 +284,7 @@ onMounted(() => {
             <button
               @click="toggleActive(webhook)"
               class="p-2 text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
-              :title="webhook.is_active ? 'Deaktivieren' : 'Aktivieren'"
+              :title="webhook.is_active ? $t('webhooks.deactivate') : $t('webhooks.activateLabel')"
             >
               <BellIcon class="w-5 h-5" :class="{ 'text-green-400': webhook.is_active }" />
             </button>
@@ -310,12 +310,12 @@ onMounted(() => {
         class="bg-white/[0.04] border-2 border-dashed border-white/[0.06] rounded-xl p-8 text-center"
       >
         <LinkIcon class="w-12 h-12 text-gray-500 mx-auto mb-3" />
-        <p class="text-gray-400">Keine Webhooks eingerichtet</p>
+        <p class="text-gray-400">{{ $t('webhooks.noWebhooksConfigured') }}</p>
         <button
           @click="openModal()"
           class="btn-primary mt-4"
         >
-          Webhook erstellen
+          {{ $t('webhooks.createWebhook') }}
         </button>
       </div>
     </div>
@@ -330,7 +330,7 @@ onMounted(() => {
         <div class="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <h2 class="text-lg font-semibold text-white">
-              {{ editingWebhook ? 'Webhook bearbeiten' : 'Neuer Webhook' }}
+              {{ editingWebhook ? $t('webhooks.editWebhook') : $t('webhooks.newWebhookTitle') }}
             </h2>
             <button @click="showModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
@@ -339,17 +339,17 @@ onMounted(() => {
 
           <div class="p-4 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('webhooks.nameLabel') }}</label>
               <input
                 v-model="form.name"
                 type="text"
                 class="input w-full"
-                placeholder="Mein Discord Webhook"
+                :placeholder="$t('webhooks.namePlaceholder')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Typ</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('webhooks.typeLabel') }}</label>
               <div class="flex gap-2">
                 <button
                   v-for="type in webhookTypes"
@@ -367,7 +367,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Webhook URL *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('webhooks.urlLabel') }}</label>
               <input
                 v-model="form.url"
                 type="url"
@@ -377,18 +377,18 @@ onMounted(() => {
             </div>
 
             <div v-if="form.type === 'custom'">
-              <label class="block text-sm font-medium text-gray-300 mb-1">Secret (optional)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('webhooks.secretLabel') }}</label>
               <input
                 v-model="form.secret"
                 type="text"
                 class="input w-full"
-                placeholder="HMAC Secret für Signatur"
+                :placeholder="$t('webhooks.secretPlaceholder')"
               />
-              <p class="text-xs text-gray-500 mt-1">Wird für X-Signature Header verwendet</p>
+              <p class="text-xs text-gray-500 mt-1">{{ $t('webhooks.secretHint') }}</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Events *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('webhooks.eventsLabel') }}</label>
               <div class="space-y-3">
                 <div v-for="(events, category) in groupedEvents" :key="category">
                   <h4 class="text-sm text-gray-400 mb-1">{{ categoryLabels[category] || category }}</h4>
@@ -415,13 +415,13 @@ onMounted(() => {
               @click="showModal = false"
               class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
-              Abbrechen
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="saveWebhook"
               class="btn-primary"
             >
-              {{ editingWebhook ? 'Speichern' : 'Erstellen' }}
+              {{ editingWebhook ? $t('common.save') : $t('common.create') }}
             </button>
           </div>
         </div>

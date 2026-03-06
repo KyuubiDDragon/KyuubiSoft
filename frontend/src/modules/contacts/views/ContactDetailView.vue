@@ -137,7 +137,7 @@ async function saveEdit() {
     isEditing.value = false
     uiStore.showSuccess(t('contacts.contactUpdated'))
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -145,14 +145,14 @@ async function toggleFavorite() {
   try {
     await contactsStore.toggleFavorite(contact.value.id)
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimaktualisieren'))
+    uiStore.showError(t('webhooks.errorUpdating'))
   }
 }
 
 async function deleteContact() {
   if (!contact.value) return
   if (!await confirm({
-    message: `"${contact.value.first_name} ${contact.value.last_name}" wirklich löschen? Alle Aktivitäten werden ebenfalls gelöscht.`,
+    message: t('contacts.confirmDeleteWithActivities', { name: `${contact.value.first_name} ${contact.value.last_name}` }),
     type: 'danger',
     confirmText: t('common.delete'),
   })) return
@@ -187,7 +187,7 @@ async function saveActivity() {
     showActivityForm.value = false
     uiStore.showSuccess(t('contacts.activityCreated'))
   } catch (error) {
-    uiStore.showError(t('links.bookmarksmodulefehlerbeimerstellen'))
+    uiStore.showError(t('links.errorCreating'))
   }
 }
 

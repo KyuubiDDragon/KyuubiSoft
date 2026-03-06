@@ -137,7 +137,7 @@ async function loadNews() {
     newsItems.value = response.data.data.items || []
     totalItems.value = response.data.data.total || 0
   } catch (error) {
-    uiStore.showError(t('newsModule.fehlerBeimLadenDerNews'))
+    uiStore.showError(t('newsModule.errorLoadingNews'))
   } finally {
     isLoading.value = false
   }
@@ -165,12 +165,12 @@ async function refreshFeeds(silent = false) {
       } else if (successes > 0) {
         uiStore.showSuccess(t('newsModule.feedsUpdatedNoNew'))
       } else {
-        uiStore.showSuccess(t('newsModule.keineFeedsZumAktualisieren'))
+        uiStore.showSuccess(t('newsModule.noFeedsToUpdate'))
       }
     }
   } catch (error) {
     if (!silent) {
-      uiStore.showError(t('newsModule.newsmodulefehlerbeimaktualisieren') + (error.response?.data?.message || error.message))
+      uiStore.showError(t('newsModule.errorUpdating') + (error.response?.data?.message || error.message))
     }
   } finally {
     isRefreshing.value = false
@@ -187,7 +187,7 @@ async function toggleSubscription(feed) {
       feed.is_subscribed = 1
     }
   } catch (error) {
-    uiStore.showError(t('newsModule.fehlerBeimAendernDesAbonnements'))
+    uiStore.showError(t('newsModule.errorChangingSubscription'))
   }
 }
 
@@ -196,7 +196,7 @@ async function toggleSaved(item) {
     const response = await api.post(`/api/v1/news/items/${item.id}/save`)
     item.is_saved = response.data.data.is_saved ? 1 : 0
   } catch (error) {
-    uiStore.showError(t('webhooks.bookmarksmodulefehlerbeimspeichern'))
+    uiStore.showError(t('webhooks.errorSaving'))
   }
 }
 
@@ -224,7 +224,7 @@ async function addFeed() {
     await loadFeeds()
     await loadNews()
   } catch (error) {
-    uiStore.showError(error.response?.data?.message || t('newsModule.fehlerBeimHinzufuegen'))
+    uiStore.showError(error.response?.data?.message || t('newsModule.errorAdding'))
   }
 }
 
@@ -284,7 +284,7 @@ function isLoadingContent(item) {
 }
 
 function getFullContent(item) {
-  return fullContentCache.value[item.id] || item.content || item.description || t('newsModule.keinInhaltVerfuegbar')
+  return fullContentCache.value[item.id] || item.content || item.description || t('newsModule.noContentAvailable')
 }
 
 function formatDate(dateStr) {
@@ -447,8 +447,8 @@ onMounted(async () => {
     <!-- No Subscriptions -->
     <div v-if="!isLoading && subscribedFeeds.length === 0" class="card p-12 text-center">
       <RssIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.keineFeedsAbonniert') }}</h3>
-      <p class="text-gray-400 mb-6">{{ $t('newsModule.waehleInDenEinstellungenDeineLieblingsquellenAus') }}</p>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.noFeedsSubscribed') }}</h3>
+      <p class="text-gray-400 mb-6">{{ $t('newsModule.selectFavoriteSources') }}</p>
       <button @click="showSettingsModal = true" class="btn-primary">
         <AdjustmentsHorizontalIcon class="w-5 h-5 mr-2" />
         Feeds verwalten
@@ -630,7 +630,7 @@ onMounted(async () => {
     <!-- Empty State -->
     <div v-if="!isLoading && newsItems.length === 0 && subscribedFeeds.length > 0" class="card p-12 text-center">
       <NewspaperIcon class="w-16 h-16 mx-auto text-gray-600 mb-4" />
-      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.keineArtikelGefunden') }}</h3>
+      <h3 class="text-lg font-medium text-white mb-2">{{ $t('newsModule.noArticlesFound') }}</h3>
       <p class="text-gray-400 mb-6">Versuche andere Filter oder aktualisiere die Feeds.</p>
       <button @click="refreshFeeds" class="btn-primary" :disabled="isRefreshing">
         <ArrowPathIcon class="w-5 h-5 mr-2" :class="{ 'animate-spin': isRefreshing }" />
@@ -646,7 +646,7 @@ onMounted(async () => {
       >
         <div class="modal w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <div class="flex items-center justify-between p-4 border-b border-white/[0.06]">
-            <h2 class="text-lg font-semibold text-white">{{ $t('newsModule.feedeinstellungen') }}</h2>
+            <h2 class="text-lg font-semibold text-white">{{ $t('newsModule.feedSettings') }}</h2>
             <button @click="showSettingsModal = false" class="p-1 text-gray-400 hover:text-white rounded">
               <XMarkIcon class="w-5 h-5" />
             </button>

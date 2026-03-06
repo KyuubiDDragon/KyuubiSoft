@@ -187,7 +187,7 @@ watch([text, bgColor, textColor, fontSize, fontFamily, borderRadius, mode], () =
         </select>
       </div>
       <div>
-        <label class="text-sm text-gray-400 mb-1 block">Textgröße: {{ fontSize }}%</label>
+        <label class="text-sm text-gray-400 mb-1 block">{{ $t('toolbox.textSize') }}: {{ fontSize }}%</label>
         <input
           v-model.number="fontSize"
           type="range"

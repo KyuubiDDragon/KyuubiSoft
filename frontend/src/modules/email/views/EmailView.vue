@@ -108,7 +108,7 @@
             </div>
           </div>
           <p class="text-sm truncate" :class="msg.is_read ? 'text-gray-500' : 'text-gray-300'">
-            {{ msg.subject || '($t('emailModule.noSubject'))' }}
+            {{ msg.subject || $t('emailModule.noSubject') }}
           </p>
           <p class="text-xs text-gray-600 truncate mt-0.5">
             {{ (msg.body_preview || msg.body_text || '').substring(0, 80) }}
@@ -439,7 +439,7 @@ const accountForm = ref({
 const folderIcons: Record<string, Component> = {
   'INBOX': InboxIcon,
   'Gesendet': PaperAirplaneIcon,
-  t('contracts.drafts'): DocumentTextIcon,
+  'Drafts': DocumentTextIcon,
   'Papierkorb': TrashIcon,
   'Spam': ExclamationTriangleIcon,
 }

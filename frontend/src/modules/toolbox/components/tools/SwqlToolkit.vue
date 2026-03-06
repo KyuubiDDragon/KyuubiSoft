@@ -1,5 +1,5 @@
 <script setup>
-import { useI18n } from \'vue-i18n\'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 import { ref, computed, watch } from 'vue'
@@ -1204,7 +1204,7 @@ const swqlCheatSheet = {
     title: 'Parameter',
     items: [
       { syntax: '@paramName', description: 'Parameter-Platzhalter in Query' },
-      { syntax: 'Get-SwisData $swis "..." @{paramName="value"}', description: 't('toolbox.powershellParameteruebergabe') }
+      { syntax: 'Get-SwisData $swis "..." @{paramName="value"}', description: t('toolbox.powershellParameterPassing') }
     ]
   },
   statusCodes: {

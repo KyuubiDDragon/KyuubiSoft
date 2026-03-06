@@ -26,7 +26,7 @@ const auditPagination = ref({ page: 1, perPage: 20, total: 0 })
 const auditFilters = ref({ action: '', user_id: '', entity_type: '' })
 const expandedLogId = ref(null)
 const availableEntityTypes = ref([
-  { value: '', label: 't('system.alleEntitaeten') },
+  { value: '', label: t('system.allEntities') },
   { value: 'user', label: t('navigation.users') },
   { value: 'list', label: 'Listen' },
   { value: 'document', label: t('navigation.documents') },

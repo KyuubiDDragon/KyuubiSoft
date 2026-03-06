@@ -205,7 +205,7 @@
     "addStorageTarget": "Füge ein Speicherziel hinzu (Lokal, S3, SFTP)",
     "backupDeleted": "Backup gelöscht",
     "backups": "Backups",
-    "confirmDeleteBackup": "Backup wirklich löschen?",
+    "confirmDeleteBackup": "Möchten Sie dieses Backup wirklich löschen?",
     "createAutoSchedules": "Erstelle automatische Backup-Zeitpläne",
     "createBackup": "Backup erstellen",
     "createSchedule": "Zeitplan erstellen",
@@ -239,7 +239,10 @@
     "dailyAt3am": "Täglich um 3:00 Uhr",
     "weeklySunday3am": "Wöchentlich (Sonntag 3:00)",
     "localStoragePlaceholder": "z.B. Lokaler Speicher",
-    "dailyBackupPlaceholder": "z.B. Tägliches Backup"
+    "dailyBackupPlaceholder": "z.B. Tägliches Backup",
+    "monthly": "Monatlich (1. des Monats)",
+    "every6hours": "Alle 6 Stunden",
+    "hourly": "Stündlich"
   },
   "backupsModule": {
     "aktiveZeitplaene": "Aktive Zeitpläne",
@@ -955,7 +958,10 @@
     "manuallyEdited": "Manuell bearbeitet.",
     "resetToOriginal": "Zurücksetzen",
     "active": "Aktiv",
-    "duration": "Laufzeit"
+    "duration": "Laufzeit",
+    "custom": "Individuell",
+    "customContractDescription": "Eigener Vertragstext",
+    "legalNotice": "Mit dem Klick auf \"Vertrag unterschreiben\" bestätigen Sie, dass Sie den Vertrag gelesen haben und ihm zustimmen."
   },
   "contractsModule": {
     "24Stunden": "24 Stunden",
@@ -1530,7 +1536,7 @@
     "clientIdPlaceholder": "Client Id Placeholder",
     "copyInviteLink": "Copy Invite Link",
     "createBotInPortal": "Create Bot In Portal",
-    "deleteMessages": "Delete Messages",
+    "deleteMessages": "Nachrichten löschen",
     "deletebackupconfirmbackup": "deleteBackupConfirm(backup)",
     "deletebackupconfirmselectedviewbackup": "deleteBackupConfirm(selectedViewBackup)",
     "dieseAktionKannNichtRueckgaengigGemachtWerden": "Diese Aktion kann nicht rückgängig gemacht werden! Deine Nachrichten werden permanent gelöscht.",
@@ -1631,7 +1637,10 @@
     "validate": "Validate",
     "viewbackupmessagesbackup": "viewBackupMessages(backup)",
     "wirdVerarbeitet": "Wird verarbeitet...",
-    "yourBotToken": "Your Bot Token"
+    "yourBotToken": "Your Bot Token",
+    "deleteBackup": "Backup löschen",
+    "confirmDeleteBackup": "Möchtest du das Backup \"{name}\" wirklich löschen? Alle gesicherten Nachrichten und Medien werden unwiderruflich gelöscht.",
+    "actionCannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden."
   },
   "dns": {
     "addDomain": "Domain bearbeiten",
@@ -2754,35 +2763,36 @@
         "codeBlock": "Code mit Syntax",
         "codeBlockDesc": "Code mit Syntax",
         "danger": "Gefahr",
-        "dangerDesc": "Gefahr",
+        "dangerDesc": "Wichtiger Warnhinweis",
         "database": "Datenbank",
-        "databaseDesc": "Datenbank",
-        "divider": "Horizontale Linie",
+        "databaseDesc": "Inline-Datenbank erstellen",
+        "divider": "Trennlinie",
         "dividerDesc": "Horizontale Linie",
         "embed": "Embed",
-        "embedDesc": "Embed",
+        "embedDesc": "YouTube, Twitter, etc. einbetten",
         "heading1": "Überschrift 1",
-        "heading1Desc": "Überschrift 1",
+        "heading1Desc": "Große Überschrift",
         "heading2": "Überschrift 2",
-        "heading2Desc": "Überschrift 2",
-        "heading3": "Kleine Überschrift",
+        "heading2Desc": "Mittlere Überschrift",
+        "heading3": "Überschrift 3",
         "heading3Desc": "Kleine Überschrift",
         "info": "Info",
-        "infoDesc": "Info",
-        "numberedList": "Nummerierte Liste",
+        "infoDesc": "Informationshinweis",
+        "numberedList": "Nummerierung",
         "numberedListDesc": "Nummerierte Liste",
-        "quote": "Zitat hervorheben",
+        "quote": "Zitat",
         "quoteDesc": "Zitat hervorheben",
         "table": "Tabelle",
-        "tableDesc": "Tabelle",
+        "tableDesc": "Tabelle einfügen",
         "text": "Normaler Absatztext",
         "textDesc": "Normaler Absatztext",
-        "tip": "Hilfreicher Tipp",
+        "tip": "Tipp",
         "tipDesc": "Hilfreicher Tipp",
         "toggle": "Toggle",
-        "toggleDesc": "Toggle",
-        "warning": "Warnhinweis",
-        "warningDesc": "Warnhinweis"
+        "toggleDesc": "Ausklappbarer Bereich",
+        "warning": "Warnung",
+        "warningDesc": "Warnhinweis",
+        "paragraphDesc": "Normaler Absatztext"
       },
       "toCreateNewNote": "um neue Notiz zu erstellen"
     },
@@ -4107,7 +4117,8 @@
     "wiederkehrendeAufgabeErstellt": "Wiederkehrende Aufgabe erstellt",
     "wiederkehrendeAufgabeGeloescht": "Wiederkehrende Aufgabe gelöscht",
     "wirdBeendet": "Wird beendet...",
-    "wirdGeleert": "Wird geleert..."
+    "wirdGeleert": "Wird geleert...",
+    "allEntities": "Alle Entitäten"
   },
   "tags": {
     "createFirst": "Erstelle deinen ersten Tag",
@@ -4266,7 +4277,8 @@
     "timetrackingkeinprojekt": "timeTracking.keinProjekt",
     "timetrackingmanuellereintrag": "timeTracking.manuellerEintrag",
     "timetrackingstartedentimerobenumzeitzu": "timeTracking.starteDenTimerObenUmZeitZu",
-    "verdienst": "Verdienst"
+    "verdienst": "Verdienst",
+    "confirmDeleteEntry": "Eintrag wirklich löschen?"
   },
   "toolbox": {
     "100Woerter": "100 Wörter",
@@ -4564,7 +4576,9 @@
     "zeitFuerEinePause": "Zeit für eine Pause!",
     "zugehoerigeNodeid": "Zugehörige Node-ID",
     "zurueckAnDieArbeit": "Zurück an die Arbeit!",
-    "zusaetzlicheInstruktionen": "Zusätzliche Instruktionen"
+    "zusaetzlicheInstruktionen": "Zusätzliche Instruktionen",
+    "uuidV4Desc": "Zufällig generiert, am häufigsten verwendet",
+    "powershellParameterPassing": "PowerShell Parameterübergabe"
   },
   "uptime": {
     "alleOrdner": "Alle Ordner",
@@ -4613,7 +4627,8 @@
     "uptimealleordner": "uptime.alleOrdner",
     "uptimeinordnerverschieben": "uptime.inOrdnerVerschieben",
     "uptimekeinemonitore": "uptime.keineMonitore",
-    "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver"
+    "uptimeueberwachewebsitesserverundgameserver": "uptime.ueberwacheWebsitesServerUndGameserver",
+    "checkNow": "Jetzt prüfen"
   },
   "users": {
     "aufProjekteEinschraenken": "Auf Projekte einschränken",

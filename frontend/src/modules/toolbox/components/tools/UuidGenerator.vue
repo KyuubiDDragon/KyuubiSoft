@@ -9,7 +9,7 @@ const uppercase = ref(false)
 const noDashes = ref(false)
 
 const versions = [
-  { value: 'v4', name: 'UUID v4 (Random)', desc: 't('toolbox.zufaelligGeneriertAmHaeufigstenVerwendet') },
+  { value: 'v4', name: 'UUID v4 (Random)', desc: t('toolbox.uuidV4Desc') },
   { value: 'v1', name: 'UUID v1 (Timestamp)', desc: 'Basiert auf Zeitstempel + MAC-Adresse' },
   { value: 'ulid', name: 'ULID', desc: 'Sortierbar, kompakter als UUID' },
   { value: 'nanoid', name: 'NanoID (21)', desc: 'Kurze, URL-sichere IDs' },

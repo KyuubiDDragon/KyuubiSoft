@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 import { useRoute } from 'vue-router'
+import { marked } from 'marked'
 import api from '@/core/api/axios'
 import { useCollaboration } from '@/composables/useCollaboration'
 import {
@@ -125,30 +126,15 @@ const connectionError = computed(() => {
   return collaboration.connectionError.value
 })
 
-// Simple Markdown to HTML conversion
+// Configure marked for proper Markdown rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
+
 function renderMarkdown(content) {
   if (!content) return ''
-
-  let html = content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-white mt-6 mb-3">$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-white mt-6 mb-4">$1</h1>')
-    .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-white">$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
-    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-white/[0.04] rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>')
-    .replace(/`(.*?)`/gim, '<code class="bg-white/[0.04] px-1.5 py-0.5 rounded text-primary-400">$1</code>')
-    .replace(/^\- (.*$)/gim, '<li class="ml-4">$1</li>')
-    .replace(/^\* (.*$)/gim, '<li class="ml-4">$1</li>')
-    .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal">$1</li>')
-    .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" class="text-primary-400 hover:underline" target="_blank">$1</a>')
-    .replace(/\n\n/gim, '</p><p class="text-gray-300 mb-4">')
-    .replace(/\n/gim, '<br>')
-
-  return `<p class="text-gray-300 mb-4">${html}</p>`
+  return marked.parse(content)
 }
 
 // Fetch document

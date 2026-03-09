@@ -50,6 +50,7 @@
     "html2pdf.js": "^0.12.1",
     "lib0": "^0.2.88",
     "lowlight": "^3.3.0",
+    "marked": "^17.0.4",
     "monaco-editor": "^0.55.1",
     "pinia": "^2.1.7",
     "qrcode": "^1.5.4",

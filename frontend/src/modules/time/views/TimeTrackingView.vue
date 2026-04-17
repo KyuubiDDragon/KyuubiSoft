@@ -395,7 +395,7 @@ watch(runningEntry, (val) => {
         />
         <select
           v-model="quickForm.project_id"
-          class="select"
+          class="select !w-56 flex-none"
         >
           <option :value="null">{{ $t('time.noProject') }}</option>
           <option v-for="project in projects" :key="project.id" :value="project.id">

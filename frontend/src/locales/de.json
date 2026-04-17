@@ -5615,7 +5615,12 @@
     "whatDidYouDo": "Was hast du gemacht?",
     "optionalDetails": "Optionale Details...",
     "start": "Start",
-    "end": "Ende"
+    "end": "Ende",
+    "monthOnlyEntry": "Ohne Datum (Monatseintrag)",
+    "monthlyEntry": "Monatseintrag",
+    "month": "Monat",
+    "monthRequired": "Monat ist erforderlich",
+    "hoursRequired": "Stunden sind erforderlich"
   },
   "timeTracking": {
     "abrechenbar": "Abrechenbar",

@@ -61,6 +61,9 @@ const form = ref({
   started_at: '',
   ended_at: '',
   duration_seconds: null,
+  month_only: false,
+  entry_month: '',
+  hours: null,
 })
 
 // Quick start form - use selected project as default
@@ -191,6 +194,7 @@ function formatTime(dateStr) {
 function openModal(entry = null) {
   editingEntry.value = entry
   if (entry) {
+    const isMonthOnly = !!entry.entry_month && !entry.started_at
     form.value = {
       task_name: entry.task_name,
       description: entry.description || '',
@@ -198,9 +202,14 @@ function openModal(entry = null) {
       is_billable: entry.is_billable,
       hourly_rate: entry.hourly_rate,
       tags: entry.tags || [],
-      started_at: entry.started_at?.slice(0, 16),
-      ended_at: entry.ended_at?.slice(0, 16),
+      started_at: entry.started_at?.slice(0, 16) || '',
+      ended_at: entry.ended_at?.slice(0, 16) || '',
       duration_seconds: entry.duration_seconds,
+      month_only: isMonthOnly,
+      entry_month: entry.entry_month || '',
+      hours: isMonthOnly && entry.duration_seconds
+        ? +(entry.duration_seconds / 3600).toFixed(2)
+        : null,
     }
   } else {
     const now = new Date()
@@ -214,6 +223,9 @@ function openModal(entry = null) {
       started_at: now.toISOString().slice(0, 16),
       ended_at: '',
       duration_seconds: null,
+      month_only: false,
+      entry_month: now.toISOString().slice(0, 7),
+      hours: null,
     }
   }
   showModal.value = true
@@ -226,12 +238,41 @@ async function saveEntry() {
     return
   }
 
+  const payload = {
+    task_name: form.value.task_name,
+    description: form.value.description,
+    project_id: form.value.project_id,
+    is_billable: form.value.is_billable,
+    hourly_rate: form.value.hourly_rate,
+    tags: form.value.tags,
+  }
+
+  if (form.value.month_only) {
+    if (!form.value.entry_month) {
+      uiStore.showError(t('time.monthRequired'))
+      return
+    }
+    if (!form.value.hours || form.value.hours <= 0) {
+      uiStore.showError(t('time.hoursRequired'))
+      return
+    }
+    payload.entry_month = form.value.entry_month
+    payload.duration_seconds = Math.round(form.value.hours * 3600)
+    payload.started_at = null
+    payload.ended_at = null
+  } else {
+    payload.started_at = form.value.started_at
+    payload.ended_at = form.value.ended_at || null
+    payload.duration_seconds = form.value.duration_seconds
+    payload.entry_month = null
+  }
+
   try {
     if (editingEntry.value) {
-      await api.put(`/api/v1/time/${editingEntry.value.id}`, form.value)
+      await api.put(`/api/v1/time/${editingEntry.value.id}`, payload)
       uiStore.showSuccess(t('time.entryUpdated'))
     } else {
-      await api.post('/api/v1/time', form.value)
+      await api.post('/api/v1/time', payload)
       uiStore.showSuccess(t('time.entryCreated'))
     }
     showModal.value = false
@@ -254,18 +295,38 @@ async function deleteEntry(entry) {
   }
 }
 
-// Group entries by date
+// Format month (YYYY-MM) for header
+function formatMonth(monthStr) {
+  if (!monthStr) return ''
+  const [y, m] = monthStr.split('-')
+  const d = new Date(Number(y), Number(m) - 1, 1)
+  return d.toLocaleDateString(locale.value === 'de' ? 'de-DE' : 'en-US', { month: 'long', year: 'numeric' })
+}
+
+// Group entries: day entries grouped by date, month-only entries grouped by month
 const groupedEntries = computed(() => {
   const groups = {}
   for (const entry of entries.value) {
-    const date = entry.started_at.split('T')[0]
-    if (!groups[date]) {
-      groups[date] = { date, entries: [], total_seconds: 0 }
+    let key, sortKey, label, isMonth
+    if (entry.entry_month && !entry.started_at) {
+      key = `m:${entry.entry_month}`
+      sortKey = `${entry.entry_month}-99`
+      label = formatMonth(entry.entry_month)
+      isMonth = true
+    } else {
+      const date = (entry.started_at || '').split('T')[0]
+      key = `d:${date}`
+      sortKey = date
+      label = formatDate(date)
+      isMonth = false
     }
-    groups[date].entries.push(entry)
-    groups[date].total_seconds += entry.duration_seconds || 0
+    if (!groups[key]) {
+      groups[key] = { key, sortKey, label, isMonth, entries: [], total_seconds: 0 }
+    }
+    groups[key].entries.push(entry)
+    groups[key].total_seconds += entry.duration_seconds || 0
   }
-  return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date))
+  return Object.values(groups).sort((a, b) => b.sortKey.localeCompare(a.sortKey))
 })
 
 // Get project by ID
@@ -439,9 +500,12 @@ watch(runningEntry, (val) => {
 
     <!-- Entries by Day -->
     <div v-else class="space-y-6">
-      <div v-for="group in groupedEntries" :key="group.date" class="space-y-2">
+      <div v-for="group in groupedEntries" :key="group.key" class="space-y-2">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-white">{{ formatDate(group.date) }}</h3>
+          <h3 class="text-lg font-semibold text-white">
+            {{ group.label }}
+            <span v-if="group.isMonth" class="ml-2 text-xs text-gray-400 font-normal">({{ $t('time.monthlyEntry') }})</span>
+          </h3>
           <span class="text-gray-400">{{ formatDurationShort(group.total_seconds) }}</span>
         </div>
 
@@ -464,7 +528,11 @@ watch(runningEntry, (val) => {
                       <FolderIcon class="w-4 h-4" />
                       {{ entry.project_name }}
                     </span>
-                    <span class="flex items-center gap-1">
+                    <span v-if="entry.entry_month && !entry.started_at" class="flex items-center gap-1">
+                      <CalendarIcon class="w-4 h-4" />
+                      {{ formatMonth(entry.entry_month) }}
+                    </span>
+                    <span v-else class="flex items-center gap-1">
                       <CalendarIcon class="w-4 h-4" />
                       {{ formatTime(entry.started_at) }} - {{ entry.ended_at ? formatTime(entry.ended_at) : $t('time.running') }}
                     </span>
@@ -559,7 +627,38 @@ watch(runningEntry, (val) => {
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                v-model="form.month_only"
+                type="checkbox"
+                class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.06] text-primary-600 focus:ring-primary-500"
+              />
+              <span class="text-gray-300">{{ $t('time.monthOnlyEntry') }}</span>
+            </label>
+
+            <div v-if="form.month_only" class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.month') }} *</label>
+                <input
+                  v-model="form.entry_month"
+                  type="month"
+                  class="input w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.hours') }} *</label>
+                <input
+                  v-model.number="form.hours"
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  class="input w-full"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div v-else class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">{{ $t('time.start') }} *</label>
                 <input

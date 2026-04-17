@@ -73,14 +73,18 @@ class TimeTrackingController
         }
 
         if ($from) {
-            $sql .= ' AND te.started_at >= ?';
+            $sql .= ' AND (te.started_at >= ? OR (te.started_at IS NULL AND te.entry_month >= ?))';
             $sqlParams[] = $from;
+            $sqlParams[] = substr($from, 0, 7);
+            $types[] = \PDO::PARAM_STR;
             $types[] = \PDO::PARAM_STR;
         }
 
         if ($to) {
-            $sql .= ' AND te.started_at <= ?';
+            $sql .= ' AND (te.started_at <= ? OR (te.started_at IS NULL AND te.entry_month <= ?))';
             $sqlParams[] = $to . ' 23:59:59';
+            $sqlParams[] = substr($to, 0, 7);
+            $types[] = \PDO::PARAM_STR;
             $types[] = \PDO::PARAM_STR;
         }
 
@@ -100,16 +104,18 @@ class TimeTrackingController
             $countParams[] = $projectId;
         }
         if ($from) {
-            $countSql .= ' AND te.started_at >= ?';
+            $countSql .= ' AND (te.started_at >= ? OR (te.started_at IS NULL AND te.entry_month >= ?))';
             $countParams[] = $from;
+            $countParams[] = substr($from, 0, 7);
         }
         if ($to) {
-            $countSql .= ' AND te.started_at <= ?';
+            $countSql .= ' AND (te.started_at <= ? OR (te.started_at IS NULL AND te.entry_month <= ?))';
             $countParams[] = $to . ' 23:59:59';
+            $countParams[] = substr($to, 0, 7);
         }
         $total = (int) $this->db->fetchOne($countSql, $countParams);
 
-        $sql .= ' ORDER BY te.started_at DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY COALESCE(te.started_at, CONCAT(te.entry_month, "-01 00:00:00")) DESC LIMIT ? OFFSET ?';
         $sqlParams[] = $limit;
         $sqlParams[] = $offset;
         $types[] = \PDO::PARAM_INT;
@@ -292,16 +298,28 @@ class TimeTrackingController
         $startedAt = $data['started_at'] ?? null;
         $endedAt = $data['ended_at'] ?? null;
         $durationSeconds = $data['duration_seconds'] ?? null;
+        $entryMonth = $data['entry_month'] ?? null;
 
-        if (!$startedAt) {
-            return JsonResponse::error( 'Startzeit ist erforderlich', 400);
-        }
+        if ($entryMonth) {
+            if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $entryMonth)) {
+                return JsonResponse::error('Ungültiges Monatsformat (YYYY-MM)', 400);
+            }
+            if (!$durationSeconds || (int) $durationSeconds <= 0) {
+                return JsonResponse::error('Dauer ist für Monatseinträge erforderlich', 400);
+            }
+            $startedAt = null;
+            $endedAt = null;
+        } else {
+            if (!$startedAt) {
+                return JsonResponse::error('Startzeit ist erforderlich', 400);
+            }
 
-        // Calculate duration if ended_at provided
-        if ($endedAt && !$durationSeconds) {
-            $start = new \DateTime($startedAt);
-            $end = new \DateTime($endedAt);
-            $durationSeconds = $end->getTimestamp() - $start->getTimestamp();
+            // Calculate duration if ended_at provided
+            if ($endedAt && !$durationSeconds) {
+                $start = new \DateTime($startedAt);
+                $end = new \DateTime($endedAt);
+                $durationSeconds = $end->getTimestamp() - $start->getTimestamp();
+            }
         }
 
         $id = Uuid::uuid4()->toString();
@@ -314,6 +332,7 @@ class TimeTrackingController
             'description' => $data['description'] ?? null,
             'started_at' => $startedAt,
             'ended_at' => $endedAt,
+            'entry_month' => $entryMonth,
             'duration_seconds' => $durationSeconds,
             'is_running' => 0,
             'is_billable' => !empty($data['is_billable']) ? 1 : 0,
@@ -359,14 +378,23 @@ class TimeTrackingController
             $params[] = $data['project_id'];
         }
 
-        if (isset($data['started_at'])) {
+        if (array_key_exists('started_at', $data)) {
             $updates[] = 'started_at = ?';
-            $params[] = $data['started_at'];
+            $params[] = $data['started_at'] ?: null;
         }
 
-        if (isset($data['ended_at'])) {
+        if (array_key_exists('ended_at', $data)) {
             $updates[] = 'ended_at = ?';
-            $params[] = $data['ended_at'];
+            $params[] = $data['ended_at'] ?: null;
+        }
+
+        if (array_key_exists('entry_month', $data)) {
+            $month = $data['entry_month'] ?: null;
+            if ($month !== null && !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+                return JsonResponse::error('Ungültiges Monatsformat (YYYY-MM)', 400);
+            }
+            $updates[] = 'entry_month = ?';
+            $params[] = $month;
         }
 
         if (isset($data['duration_seconds'])) {
@@ -425,6 +453,9 @@ class TimeTrackingController
         $from = $params['from'] ?? date('Y-m-d', strtotime('-30 days'));
         $to = $params['to'] ?? date('Y-m-d');
 
+        $fromMonth = substr($from, 0, 7);
+        $toMonth = substr($to, 0, 7);
+
         // Total time
         $totals = $this->db->fetchAssociative(
             'SELECT
@@ -433,8 +464,12 @@ class TimeTrackingController
                 SUM(CASE WHEN is_billable THEN duration_seconds ELSE 0 END) as billable_seconds,
                 SUM(CASE WHEN is_billable AND hourly_rate IS NOT NULL THEN duration_seconds * hourly_rate / 3600 ELSE 0 END) as total_earnings
              FROM time_entries
-             WHERE user_id = ? AND started_at >= ? AND started_at <= ?',
-            [$userId, $from, $to . ' 23:59:59']
+             WHERE user_id = ?
+               AND (
+                   (started_at >= ? AND started_at <= ?)
+                   OR (started_at IS NULL AND entry_month >= ? AND entry_month <= ?)
+               )',
+            [$userId, $from, $to . ' 23:59:59', $fromMonth, $toMonth]
         );
 
         // By project
@@ -445,10 +480,14 @@ class TimeTrackingController
                 SUM(te.duration_seconds) as total_seconds
              FROM time_entries te
              LEFT JOIN projects p ON p.id = te.project_id
-             WHERE te.user_id = ? AND te.started_at >= ? AND te.started_at <= ?
+             WHERE te.user_id = ?
+               AND (
+                   (te.started_at >= ? AND te.started_at <= ?)
+                   OR (te.started_at IS NULL AND te.entry_month >= ? AND te.entry_month <= ?)
+               )
              GROUP BY te.project_id
              ORDER BY total_seconds DESC',
-            [$userId, $from, $to . ' 23:59:59']
+            [$userId, $from, $to . ' 23:59:59', $fromMonth, $toMonth]
         );
 
         // By day
@@ -513,6 +552,10 @@ class TimeTrackingController
     {
         if ($entry['duration_seconds']) {
             return (int) $entry['duration_seconds'];
+        }
+
+        if (empty($entry['started_at'])) {
+            return 0;
         }
 
         if ($entry['is_running']) {

@@ -5615,7 +5615,12 @@
     "whatDidYouDo": "What did you do?",
     "optionalDetails": "Optional details...",
     "start": "Start",
-    "end": "End"
+    "end": "End",
+    "monthOnlyEntry": "Without date (monthly entry)",
+    "monthlyEntry": "Monthly entry",
+    "month": "Month",
+    "monthRequired": "Month is required",
+    "hoursRequired": "Hours are required"
   },
   "timeTracking": {
     "abrechenbar": "Billable",

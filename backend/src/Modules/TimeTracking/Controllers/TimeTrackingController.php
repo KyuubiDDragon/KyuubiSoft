@@ -115,7 +115,7 @@ class TimeTrackingController
         }
         $total = (int) $this->db->fetchOne($countSql, $countParams);
 
-        $sql .= ' ORDER BY COALESCE(te.started_at, CONCAT(te.entry_month, "-01 00:00:00")) DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY COALESCE(CAST(te.started_at AS CHAR), CONCAT(te.entry_month, "-99 23:59:59")) DESC, te.created_at DESC LIMIT ? OFFSET ?';
         $sqlParams[] = $limit;
         $sqlParams[] = $offset;
         $types[] = \PDO::PARAM_INT;

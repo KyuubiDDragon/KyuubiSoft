@@ -326,6 +326,10 @@ const groupedEntries = computed(() => {
     groups[key].entries.push(entry)
     groups[key].total_seconds += entry.duration_seconds || 0
   }
+  const entryRank = (e) => e.created_at || e.started_at || ''
+  for (const group of Object.values(groups)) {
+    group.entries.sort((a, b) => entryRank(b).localeCompare(entryRank(a)))
+  }
   return Object.values(groups).sort((a, b) => b.sortKey.localeCompare(a.sortKey))
 })
 

@@ -254,10 +254,43 @@ async function addBatchItems() {
     return
   }
 
+  // Lookup existing categories by name (case-insensitive) so we can reuse them
+  const categoryByName = new Map()
+  for (const cat of checklist.value?.categories || []) {
+    categoryByName.set(cat.name.trim().toLowerCase(), cat.id)
+  }
+
+  let currentCategoryId = batchAdd.value.category_id
   let successCount = 0
   let errorCount = 0
+  let categoriesCreated = 0
 
   for (const line of lines) {
+    // Category header: "# Name"
+    if (line.startsWith('#')) {
+      const name = line.slice(1).trim()
+      if (!name) continue
+
+      const key = name.toLowerCase()
+      if (categoryByName.has(key)) {
+        currentCategoryId = categoryByName.get(key)
+        continue
+      }
+
+      try {
+        const response = await api.post(`/api/v1/checklists/${checklistId.value}/categories`, { name })
+        const newCategory = response.data.data
+        checklist.value.categories = checklist.value.categories || []
+        checklist.value.categories.push(newCategory)
+        categoryByName.set(key, newCategory.id)
+        currentCategoryId = newCategory.id
+        categoriesCreated++
+      } catch (error) {
+        errorCount++
+      }
+      continue
+    }
+
     // Parse line: "Titel" or "Titel || Beschreibung" or "Titel\tBeschreibung"
     let title, description = ''
     if (line.includes('||')) {
@@ -274,7 +307,7 @@ async function addBatchItems() {
       const response = await api.post(`/api/v1/checklists/${checklistId.value}/items`, {
         title,
         description,
-        category_id: batchAdd.value.category_id,
+        category_id: currentCategoryId,
         required_testers: batchAdd.value.required_testers,
       })
       checklist.value.items = checklist.value.items || []
@@ -293,6 +326,9 @@ async function addBatchItems() {
 
   if (successCount > 0) {
     toast.success(t('checklists.itemCreatedCount', { count: successCount }))
+  }
+  if (categoriesCreated > 0) {
+    toast.success(t('checklists.categoriesCreatedCount', { count: categoriesCreated }))
   }
   if (errorCount > 0) {
     toast.error(t('checklists.itemFailedCount', { count: errorCount }))
@@ -1101,6 +1137,9 @@ watch(() => route.params.id, () => {
               <p class="text-gray-500 text-xs mt-1">
                 {{ $t('checklists.bulkImportTip') }} <code class="bg-white/[0.08] px-1 rounded">||</code> {{ $t('checklists.bulkImportTipSeparator') }}: <code class="bg-white/[0.08] px-1 rounded">{{ $t('checklists.bulkImportTipExample') }}</code>
               </p>
+              <p class="text-gray-500 text-xs mt-1">
+                {{ $t('checklists.bulkImportTipCategory') }} <code class="bg-white/[0.08] px-1 rounded">#</code>: <code class="bg-white/[0.08] px-1 rounded">{{ $t('checklists.bulkImportTipCategoryExample') }}</code>
+              </p>
             </div>
 
             <div>
@@ -1129,7 +1168,7 @@ watch(() => route.params.id, () => {
 
             <div class="p-3 bg-white/[0.03] rounded-lg">
               <p class="text-gray-400 text-sm">
-                {{ $t('checklists.testPointsWillBeCreated', { count: batchAdd.items.split('\n').filter(l => l.trim()).length }) }}
+                {{ $t('checklists.testPointsWillBeCreated', { count: batchAdd.items.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#')).length }) }}
               </p>
             </div>
           </div>

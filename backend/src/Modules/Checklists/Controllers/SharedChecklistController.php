@@ -29,17 +29,25 @@ class SharedChecklistController
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $userId = $request->getAttribute('user_id');
+        $projectId = $request->getQueryParams()['project_id'] ?? null;
+
+        $projectJoin = '';
+        $params = [$userId];
+        if ($projectId) {
+            $projectJoin = ' INNER JOIN project_links pl ON pl.linkable_id = c.id AND pl.linkable_type = ? AND pl.project_id = ?';
+            $params = ['checklist', $projectId, $userId];
+        }
 
         $checklists = $this->db->fetchAllAssociative(
-            'SELECT c.*,
+            'SELECT DISTINCT c.*,
                     (SELECT COUNT(*) FROM shared_checklist_items WHERE checklist_id = c.id) as item_count,
                     (SELECT COUNT(*) FROM shared_checklist_entries e
                      JOIN shared_checklist_items i ON e.item_id = i.id
                      WHERE i.checklist_id = c.id AND e.status IN ("passed", "failed")) as completed_entries
-             FROM shared_checklists c
+             FROM shared_checklists c' . $projectJoin . '
              WHERE c.user_id = ?
              ORDER BY c.updated_at DESC',
-            [$userId]
+            $params
         );
 
         return JsonResponse::success(['items' => $checklists]);
@@ -204,9 +212,10 @@ class SharedChecklistController
 
         $checklist = $this->getChecklistForUser($id, $userId, true);
 
-        // Cleanup favorites and tags
+        // Cleanup favorites, tags and project links
         $this->db->delete('favorites', ['item_type' => 'checklist', 'item_id' => $id]);
         $this->db->delete('taggables', ['taggable_type' => 'checklist', 'taggable_id' => $id]);
+        $this->db->delete('project_links', ['linkable_type' => 'checklist', 'linkable_id' => $id]);
 
         $this->db->delete('shared_checklists', ['id' => $id]);
 

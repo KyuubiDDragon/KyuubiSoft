@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -17,14 +17,20 @@ import {
 } from '@heroicons/vue/24/outline'
 import api from '@/core/api/axios'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const router = useRouter()
 const uiStore = useUiStore()
 const { t } = useI18n()
+const projectStore = useProjectStore()
 const toast = useToast()
 const { confirm } = useConfirmDialog()
+
+watch(() => projectStore.selectedProjectId, () => {
+  loadChecklists()
+})
 
 // State
 const checklists = ref([])
@@ -44,7 +50,10 @@ const copiedToken = ref(null)
 async function loadChecklists() {
   isLoading.value = true
   try {
-    const response = await api.get('/api/v1/checklists')
+    const params = projectStore.selectedProjectId
+      ? { project_id: projectStore.selectedProjectId }
+      : {}
+    const response = await api.get('/api/v1/checklists', { params })
     checklists.value = response.data.data.items || []
   } catch (error) {
     uiStore.showError(t('checklists.errorLoadingChecklists'))
@@ -61,12 +70,18 @@ async function createChecklist() {
 
   try {
     const response = await api.post('/api/v1/checklists', newChecklist.value)
-    checklists.value.unshift(response.data.data)
+    const created = response.data.data
+
+    if (projectStore.selectedProjectId) {
+      await projectStore.linkToSelectedProject('checklist', created.id)
+    }
+
+    checklists.value.unshift(created)
     showCreateModal.value = false
     resetNewChecklist()
     uiStore.showSuccess(t('checklists.checklistCreated'))
     // Navigate to detail view
-    router.push({ name: 'checklist-detail', params: { id: response.data.data.id } })
+    router.push({ name: 'checklist-detail', params: { id: created.id } })
   } catch (error) {
     uiStore.showError(t('links.errorCreating'))
   }

@@ -8,6 +8,7 @@ use App\Modules\Wiki\Services\WikiService;
 use App\Core\Http\JsonResponse;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Routing\RouteContext;
 
 class WikiController
 {
@@ -26,6 +27,9 @@ class WikiController
         $params = $request->getQueryParams();
 
         $filters = [];
+        if (!empty($params['project_id'])) {
+            $filters['project_id'] = $params['project_id'];
+        }
         if (isset($params['category_id'])) {
             $filters['category_id'] = $params['category_id'];
         }
@@ -50,10 +54,10 @@ class WikiController
     /**
      * Get a single page
      */
-    public function getPage(Request $request, Response $response, array $args): Response
+    public function getPage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $identifier = $args['id'];
+        $identifier = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $page = $this->wikiService->getPage($userId, $identifier);
 
@@ -76,6 +80,10 @@ class WikiController
             return JsonResponse::error('Title is required', 400);
         }
 
+        if (empty($data['project_id'])) {
+            return JsonResponse::error('Project is required', 400);
+        }
+
         $page = $this->wikiService->createPage($userId, $data);
 
         return JsonResponse::created($page);
@@ -84,10 +92,10 @@ class WikiController
     /**
      * Update a page
      */
-    public function updatePage(Request $request, Response $response, array $args): Response
+    public function updatePage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $pageId = $args['id'];
+        $pageId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $page = $this->wikiService->updatePage($userId, $pageId, $data);
@@ -102,10 +110,10 @@ class WikiController
     /**
      * Delete a page
      */
-    public function deletePage(Request $request, Response $response, array $args): Response
+    public function deletePage(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $pageId = $args['id'];
+        $pageId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $deleted = $this->wikiService->deletePage($userId, $pageId);
 
@@ -119,10 +127,10 @@ class WikiController
     /**
      * Get page history
      */
-    public function getPageHistory(Request $request, Response $response, array $args): Response
+    public function getPageHistory(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $pageId = $args['id'];
+        $pageId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $history = $this->wikiService->getPageHistory($userId, $pageId);
 
@@ -132,11 +140,12 @@ class WikiController
     /**
      * Restore page from history
      */
-    public function restoreFromHistory(Request $request, Response $response, array $args): Response
+    public function restoreFromHistory(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $pageId = $args['id'];
-        $historyId = $args['historyId'];
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $pageId = $route->getArgument('id');
+        $historyId = $route->getArgument('historyId');
 
         $page = $this->wikiService->restoreFromHistory($userId, $pageId, $historyId);
 
@@ -155,8 +164,10 @@ class WikiController
     public function getCategories(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $projectId = $params['project_id'] ?? null;
 
-        $categories = $this->wikiService->getCategories($userId);
+        $categories = $this->wikiService->getCategories($userId, $projectId);
 
         return JsonResponse::success($categories);
     }
@@ -181,10 +192,10 @@ class WikiController
     /**
      * Update a category
      */
-    public function updateCategory(Request $request, Response $response, array $args): Response
+    public function updateCategory(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $categoryId = $args['id'];
+        $categoryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody();
 
         $category = $this->wikiService->updateCategory($userId, $categoryId, $data);
@@ -199,10 +210,10 @@ class WikiController
     /**
      * Delete a category
      */
-    public function deleteCategory(Request $request, Response $response, array $args): Response
+    public function deleteCategory(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
-        $categoryId = $args['id'];
+        $categoryId = RouteContext::fromRequest($request)->getRoute()->getArgument('id');
 
         $deleted = $this->wikiService->deleteCategory($userId, $categoryId);
 
@@ -221,8 +232,10 @@ class WikiController
     public function getGraph(Request $request, Response $response): Response
     {
         $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+        $projectId = $params['project_id'] ?? null;
 
-        $graphData = $this->wikiService->getGraphData($userId);
+        $graphData = $this->wikiService->getGraphData($userId, $projectId);
 
         return JsonResponse::success($graphData);
     }
@@ -239,7 +252,8 @@ class WikiController
             return JsonResponse::error('Search query is required', 400);
         }
 
-        $results = $this->wikiService->search($userId, $params['q']);
+        $projectId = $params['project_id'] ?? null;
+        $results = $this->wikiService->search($userId, $params['q'], $projectId);
 
         return JsonResponse::success($results);
     }
@@ -253,8 +267,9 @@ class WikiController
         $params = $request->getQueryParams();
 
         $limit = min((int) ($params['limit'] ?? 10), 50);
+        $projectId = $params['project_id'] ?? null;
 
-        $pages = $this->wikiService->getRecentPages($userId, $limit);
+        $pages = $this->wikiService->getRecentPages($userId, $limit, $projectId);
 
         return JsonResponse::success($pages);
     }

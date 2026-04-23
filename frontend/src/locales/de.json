@@ -6358,6 +6358,8 @@
   },
   "wiki": {
     "alleSeiten": "Alle Seiten",
+    "selectProjectFirst": "Bitte zuerst ein Projekt auswählen",
+    "selectProjectDescription": "Das Wiki ist pro Projekt. Wähle oben ein Projekt aus, um dessen Seiten zu sehen oder zu erstellen.",
     "backlinks": "Backlinks",
     "by": "von",
     "categoryLabel": "Kategorie",

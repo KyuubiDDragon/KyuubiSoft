@@ -51,20 +51,56 @@ const filterProjectId = ref(projectStore.selectedProjectId || '')
 const filterFrom = ref('')
 const filterTo = ref('')
 
-// Export dropdown
-const exportMenuOpen = ref(false)
+// Export modal
+const showExportModal = ref(false)
 const isExporting = ref(false)
 
-async function exportEntries(format) {
-  exportMenuOpen.value = false
+const EXPORT_COLUMNS = [
+  'date', 'start', 'end', 'duration',
+  'project', 'task', 'description',
+  'billable', 'rate', 'amount', 'tags',
+]
+
+const exportOptions = ref({
+  format: 'pdf',
+  lang: (locale.value || 'de').startsWith('en') ? 'en' : 'de',
+  columns: Object.fromEntries(EXPORT_COLUMNS.map(c => [c, true])),
+})
+
+function openExportModal() {
+  exportOptions.value.lang = (locale.value || 'de').startsWith('en') ? 'en' : 'de'
+  showExportModal.value = true
+}
+
+function toggleAllColumns(value) {
+  for (const col of EXPORT_COLUMNS) {
+    exportOptions.value.columns[col] = value
+  }
+}
+
+const selectedColumnCount = computed(
+  () => EXPORT_COLUMNS.filter(c => exportOptions.value.columns[c]).length
+)
+
+async function runExport() {
   if (isExporting.value) return
+  const selected = EXPORT_COLUMNS.filter(c => exportOptions.value.columns[c])
+  if (selected.length === 0) {
+    uiStore.showError(t('time.exportNoColumns'))
+    return
+  }
+
   isExporting.value = true
   try {
-    const params = {}
+    const params = {
+      lang: exportOptions.value.lang,
+      columns: selected.join(','),
+    }
     if (filterProjectId.value) params.project_id = filterProjectId.value
     if (filterFrom.value) params.from = filterFrom.value
     if (filterTo.value) params.to = filterTo.value
 
+    const format = exportOptions.value.format
     const res = await api.get(`/api/v1/time/export/${format}`, {
       params,
       responseType: 'blob',
@@ -80,6 +116,8 @@ async function exportEntries(format) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+
+    showExportModal.value = false
   } catch (error) {
     uiStore.showError(t('time.exportError'))
   } finally {
@@ -533,37 +571,15 @@ watch(runningEntry, (val) => {
         class="input"
       />
 
-      <!-- Export dropdown -->
-      <div class="relative ml-auto">
-        <button
-          @click="exportMenuOpen = !exportMenuOpen"
-          :disabled="isExporting"
-          class="btn-secondary flex items-center gap-2 disabled:opacity-50"
-        >
-          <ArrowDownTrayIcon class="w-4 h-4" />
-          <span>{{ isExporting ? $t('time.exporting') : $t('time.export') }}</span>
-        </button>
-        <template v-if="exportMenuOpen">
-          <div
-            class="fixed inset-0 z-10"
-            @click="exportMenuOpen = false"
-          ></div>
-          <div class="absolute right-0 mt-2 w-44 bg-[#1a1a22] border border-white/[0.08] rounded-lg shadow-lg z-20 overflow-hidden">
-            <button
-              @click="exportEntries('pdf')"
-              class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/[0.04] transition-colors"
-            >
-              {{ $t('time.exportAsPdf') }}
-            </button>
-            <button
-              @click="exportEntries('csv')"
-              class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/[0.04] transition-colors"
-            >
-              {{ $t('time.exportAsCsv') }}
-            </button>
-          </div>
-        </template>
-      </div>
+      <!-- Export button -->
+      <button
+        @click="openExportModal"
+        :disabled="isExporting"
+        class="btn-secondary flex items-center gap-2 ml-auto disabled:opacity-50"
+      >
+        <ArrowDownTrayIcon class="w-4 h-4" />
+        <span>{{ isExporting ? $t('time.exporting') : $t('time.export') }}</span>
+      </button>
     </div>
 
     <!-- Loading -->
@@ -784,6 +800,111 @@ watch(runningEntry, (val) => {
               class="btn-primary"
             >
               {{ editingEntry ? $t('common.save') : $t('common.create') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Export Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showExportModal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+      >
+        <div class="modal w-full max-w-lg">
+          <div class="p-4 border-b border-white/[0.06] flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-white">{{ $t('time.exportTitle') }}</h2>
+            <button @click="showExportModal = false" class="text-gray-400 hover:text-white">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-5">
+            <!-- Format -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('time.exportFormat') }}</label>
+              <div class="flex gap-2">
+                <label
+                  v-for="fmt in ['pdf', 'csv']"
+                  :key="fmt"
+                  class="flex-1 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    :value="fmt"
+                    v-model="exportOptions.format"
+                    class="sr-only peer"
+                  />
+                  <div class="text-center px-4 py-2 rounded-lg border border-white/[0.08] text-sm text-gray-300 peer-checked:bg-primary-600/20 peer-checked:border-primary-500 peer-checked:text-white transition-colors uppercase font-medium">
+                    {{ fmt }}
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Language -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">{{ $t('time.exportLanguage') }}</label>
+              <div class="flex gap-2">
+                <label
+                  v-for="opt in [{v:'de', l:'Deutsch'}, {v:'en', l:'English'}]"
+                  :key="opt.v"
+                  class="flex-1 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    :value="opt.v"
+                    v-model="exportOptions.lang"
+                    class="sr-only peer"
+                  />
+                  <div class="text-center px-4 py-2 rounded-lg border border-white/[0.08] text-sm text-gray-300 peer-checked:bg-primary-600/20 peer-checked:border-primary-500 peer-checked:text-white transition-colors">
+                    {{ opt.l }}
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Columns -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-300">
+                  {{ $t('time.exportColumns') }}
+                  <span class="text-xs text-gray-500">({{ selectedColumnCount }}/{{ EXPORT_COLUMNS.length }})</span>
+                </label>
+                <div class="flex gap-3 text-xs">
+                  <button @click="toggleAllColumns(true)" class="text-primary-400 hover:text-primary-300">{{ $t('time.exportSelectAll') }}</button>
+                  <button @click="toggleAllColumns(false)" class="text-gray-400 hover:text-gray-300">{{ $t('time.exportClearAll') }}</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <label
+                  v-for="col in EXPORT_COLUMNS"
+                  :key="col"
+                  class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    v-model="exportOptions.columns[col]"
+                    class="w-4 h-4 rounded border-white/[0.06] text-primary-600 focus:ring-primary-500"
+                  />
+                  <span class="text-sm text-gray-200">{{ $t(`time.exportCol_${col}`) }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
+            <button
+              @click="showExportModal = false"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >{{ $t('common.cancel') }}</button>
+            <button
+              @click="runExport"
+              :disabled="isExporting || selectedColumnCount === 0"
+              class="btn-primary disabled:opacity-50"
+            >
+              {{ isExporting ? $t('time.exporting') : $t('time.export') }}
             </button>
           </div>
         </div>

@@ -441,6 +441,8 @@ class Router
                 $protected->delete('/time/{id}', [TimeTrackingController::class, 'delete']);
                 $protected->get('/time/stats', [TimeTrackingController::class, 'getStats']);
                 $protected->get('/time/projects', [TimeTrackingController::class, 'getProjects']);
+                $protected->get('/time/export/csv', [TimeTrackingController::class, 'exportCsv']);
+                $protected->get('/time/export/pdf', [TimeTrackingController::class, 'exportPdf']);
 
                 // Bookmarks
                 $protected->get('/bookmarks', [BookmarkController::class, 'index']);

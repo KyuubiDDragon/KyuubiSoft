@@ -572,4 +572,301 @@ class TimeTrackingController
 
         return 0;
     }
+
+    public function exportCsv(Request $request, Response $response): Response
+    {
+        [$entries, $filters] = $this->fetchForExport($request);
+        if ($entries === null) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
+
+        $csv = "\xEF\xBB\xBF"; // UTF-8 BOM so Excel detects encoding
+        $csv .= implode(';', [
+            'Datum',
+            'Start',
+            'Ende',
+            'Dauer (h:mm)',
+            'Dauer (Stunden)',
+            'Projekt',
+            'Aufgabe',
+            'Beschreibung',
+            'Abrechenbar',
+            'Stundensatz',
+            'Betrag',
+            'Tags',
+        ]) . "\r\n";
+
+        foreach ($entries as $entry) {
+            $started = $entry['started_at'] ? new \DateTime($entry['started_at']) : null;
+            $ended = $entry['ended_at'] ? new \DateTime($entry['ended_at']) : null;
+            $duration = (int) $entry['duration_seconds'];
+            $hours = $duration / 3600;
+            $rate = (float) ($entry['hourly_rate'] ?? 0);
+            $amount = $entry['is_billable'] ? $hours * $rate : 0;
+            $tags = is_array($entry['tags']) ? $entry['tags'] : json_decode($entry['tags'] ?? '[]', true);
+
+            $csv .= implode(';', array_map([$this, 'csvEscape'], [
+                $started ? $started->format('Y-m-d') : ($entry['entry_month'] ?? ''),
+                $started ? $started->format('H:i') : '',
+                $ended ? $ended->format('H:i') : ($entry['is_running'] ? 'läuft' : ''),
+                $this->formatDuration($duration),
+                number_format($hours, 2, ',', ''),
+                $entry['project_name'] ?? '',
+                $entry['task_name'] ?? '',
+                $entry['description'] ?? '',
+                $entry['is_billable'] ? 'ja' : 'nein',
+                number_format($rate, 2, ',', ''),
+                number_format($amount, 2, ',', ''),
+                is_array($tags) ? implode(', ', $tags) : '',
+            ])) . "\r\n";
+        }
+
+        $filename = 'time-entries-' . date('Y-m-d') . '.csv';
+
+        $response = $response
+            ->withHeader('Content-Type', 'text/csv; charset=utf-8')
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->getBody()->write($csv);
+
+        return $response;
+    }
+
+    public function exportPdf(Request $request, Response $response): Response
+    {
+        [$entries, $filters] = $this->fetchForExport($request);
+        if ($entries === null) {
+            return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
+        }
+
+        $totalSeconds = 0;
+        $billableSeconds = 0;
+        $billableAmount = 0.0;
+        foreach ($entries as $entry) {
+            $duration = (int) $entry['duration_seconds'];
+            $totalSeconds += $duration;
+            if ($entry['is_billable']) {
+                $billableSeconds += $duration;
+                $billableAmount += ($duration / 3600) * (float) ($entry['hourly_rate'] ?? 0);
+            }
+        }
+
+        $html = $this->buildPdfHtml($entries, $filters, $totalSeconds, $billableSeconds, $billableAmount);
+
+        $fontCacheDir = dirname(__DIR__, 4) . '/storage/cache/dompdf';
+        if (!is_dir($fontCacheDir)) {
+            mkdir($fontCacheDir, 0775, true);
+        }
+
+        $dompdf = new \Dompdf\Dompdf([
+            'isRemoteEnabled' => false,
+            'defaultFont' => 'Helvetica',
+            'fontDir' => $fontCacheDir,
+            'fontCache' => $fontCacheDir,
+            'tempDir' => sys_get_temp_dir(),
+            'chroot' => dirname(__DIR__, 4),
+        ]);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+
+        $filename = 'time-entries-' . date('Y-m-d') . '.pdf';
+
+        $response = $response
+            ->withHeader('Content-Type', 'application/pdf')
+            ->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->getBody()->write($dompdf->output());
+
+        return $response;
+    }
+
+    /**
+     * Run the same filter logic as index() but without pagination, returning
+     * all matching entries plus the filter context (for PDF header display).
+     * Returns [null, []] on access denial.
+     */
+    private function fetchForExport(Request $request): array
+    {
+        $userId = $request->getAttribute('user_id');
+        $params = $request->getQueryParams();
+
+        $projectId = $params['project_id'] ?? null;
+        $from = $params['from'] ?? null;
+        $to = $params['to'] ?? null;
+
+        $isRestricted = $this->projectAccess->isUserRestricted($userId);
+        $accessibleProjectIds = $isRestricted ? $this->projectAccess->getUserAccessibleProjectIds($userId) : [];
+
+        if ($projectId && $isRestricted && !in_array($projectId, $accessibleProjectIds)) {
+            return [null, []];
+        }
+
+        $sql = 'SELECT te.*, p.name as project_name, p.color as project_color
+                FROM time_entries te
+                LEFT JOIN projects p ON p.id = te.project_id
+                WHERE te.user_id = ?';
+        $sqlParams = [$userId];
+        $types = [\PDO::PARAM_STR];
+
+        if ($isRestricted && !$projectId) {
+            if (empty($accessibleProjectIds)) {
+                return [[], compact('projectId', 'from', 'to')];
+            }
+            $placeholders = implode(',', array_fill(0, count($accessibleProjectIds), '?'));
+            $sql .= " AND te.project_id IN ({$placeholders})";
+            foreach ($accessibleProjectIds as $pid) {
+                $sqlParams[] = $pid;
+                $types[] = \PDO::PARAM_STR;
+            }
+        }
+
+        if ($projectId) {
+            $sql .= ' AND te.project_id = ?';
+            $sqlParams[] = $projectId;
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        if ($from) {
+            $sql .= ' AND (te.started_at >= ? OR (te.started_at IS NULL AND te.entry_month >= ?))';
+            $sqlParams[] = $from;
+            $sqlParams[] = substr($from, 0, 7);
+            $types[] = \PDO::PARAM_STR;
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        if ($to) {
+            $sql .= ' AND (te.started_at <= ? OR (te.started_at IS NULL AND te.entry_month <= ?))';
+            $sqlParams[] = $to . ' 23:59:59';
+            $sqlParams[] = substr($to, 0, 7);
+            $types[] = \PDO::PARAM_STR;
+            $types[] = \PDO::PARAM_STR;
+        }
+
+        $sql .= ' ORDER BY COALESCE(CAST(te.started_at AS CHAR), CONCAT(te.entry_month, "-99 23:59:59")) DESC, te.created_at DESC';
+
+        $entries = $this->db->fetchAllAssociative($sql, $sqlParams, $types);
+
+        foreach ($entries as &$entry) {
+            $entry['tags'] = json_decode($entry['tags'] ?? '[]', true);
+            $entry['is_running'] = (bool) $entry['is_running'];
+            $entry['is_billable'] = (bool) $entry['is_billable'];
+            $entry['duration_seconds'] = $this->calculateDuration($entry);
+        }
+        unset($entry);
+
+        return [$entries, compact('projectId', 'from', 'to')];
+    }
+
+    private function csvEscape($value): string
+    {
+        $str = (string) $value;
+        if (strpbrk($str, ";\"\n\r") !== false) {
+            return '"' . str_replace('"', '""', $str) . '"';
+        }
+        return $str;
+    }
+
+    private function formatDuration(int $seconds): string
+    {
+        if ($seconds < 0) {
+            $seconds = 0;
+        }
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        return sprintf('%d:%02d', $hours, $minutes);
+    }
+
+    private function buildPdfHtml(array $entries, array $filters, int $totalSeconds, int $billableSeconds, float $billableAmount): string
+    {
+        $esc = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+
+        $filterLines = [];
+        if (!empty($filters['from']) || !empty($filters['to'])) {
+            $filterLines[] = 'Zeitraum: ' . ($filters['from'] ?: '…') . ' — ' . ($filters['to'] ?: '…');
+        }
+        $projectLabel = '';
+        if (!empty($filters['projectId']) && !empty($entries)) {
+            $projectLabel = $entries[0]['project_name'] ?? '';
+            if ($projectLabel !== '') {
+                $filterLines[] = 'Projekt: ' . $projectLabel;
+            }
+        }
+
+        $rows = '';
+        foreach ($entries as $entry) {
+            $started = $entry['started_at'] ? new \DateTime($entry['started_at']) : null;
+            $ended = $entry['ended_at'] ? new \DateTime($entry['ended_at']) : null;
+            $duration = (int) $entry['duration_seconds'];
+            $rate = (float) ($entry['hourly_rate'] ?? 0);
+            $amount = $entry['is_billable'] ? ($duration / 3600) * $rate : 0;
+
+            $rows .= '<tr>'
+                . '<td>' . $esc($started ? $started->format('d.m.Y') : ($entry['entry_month'] ?? '')) . '</td>'
+                . '<td>' . $esc($started ? $started->format('H:i') : '') . '</td>'
+                . '<td>' . $esc($ended ? $ended->format('H:i') : ($entry['is_running'] ? 'läuft' : '')) . '</td>'
+                . '<td class="num">' . $esc($this->formatDuration($duration)) . '</td>'
+                . '<td>' . $esc($entry['project_name'] ?? '—') . '</td>'
+                . '<td>' . $esc($entry['task_name'] ?? '') . '</td>'
+                . '<td>' . $esc($entry['description'] ?? '') . '</td>'
+                . '<td class="num">' . ($entry['is_billable'] ? number_format($amount, 2, ',', '.') . ' €' : '—') . '</td>'
+                . '</tr>';
+        }
+
+        if ($rows === '') {
+            $rows = '<tr><td colspan="8" style="text-align:center;color:#888;padding:20px;">Keine Einträge gefunden.</td></tr>';
+        }
+
+        $filtersHtml = '';
+        foreach ($filterLines as $line) {
+            $filtersHtml .= '<div>' . $esc($line) . '</div>';
+        }
+
+        $generatedAt = (new \DateTime())->format('d.m.Y H:i');
+
+        return '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { font-family: Helvetica, sans-serif; }
+  body { color: #222; font-size: 10px; }
+  h1 { font-size: 18px; margin: 0 0 4px 0; }
+  .meta { color: #666; font-size: 10px; margin-bottom: 12px; }
+  .summary { margin: 12px 0; padding: 8px 12px; background: #f3f4f6; border-radius: 4px; font-size: 11px; }
+  .summary strong { display: inline-block; min-width: 140px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #222; color: #fff; text-align: left; padding: 6px; font-size: 10px; }
+  td { padding: 5px 6px; border-bottom: 1px solid #e5e7eb; font-size: 9.5px; vertical-align: top; }
+  td.num { text-align: right; white-space: nowrap; }
+  tr:nth-child(even) td { background: #fafafa; }
+</style>
+</head>
+<body>
+  <h1>Zeiterfassungs-Export</h1>
+  <div class="meta">Erstellt am ' . $esc($generatedAt) . '</div>
+  ' . $filtersHtml . '
+  <div class="summary">
+    <div><strong>Einträge:</strong> ' . count($entries) . '</div>
+    <div><strong>Gesamtzeit:</strong> ' . $esc($this->formatDuration($totalSeconds)) . ' h</div>
+    <div><strong>Abrechenbar:</strong> ' . $esc($this->formatDuration($billableSeconds)) . ' h  (' . number_format($billableAmount, 2, ',', '.') . ' €)</div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Datum</th>
+        <th>Start</th>
+        <th>Ende</th>
+        <th>Dauer</th>
+        <th>Projekt</th>
+        <th>Aufgabe</th>
+        <th>Beschreibung</th>
+        <th>Betrag</th>
+      </tr>
+    </thead>
+    <tbody>' . $rows . '</tbody>
+  </table>
+</body>
+</html>';
+    }
 }

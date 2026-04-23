@@ -19,6 +19,7 @@ import {
   CalendarIcon,
   FolderIcon,
   TagIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
@@ -49,6 +50,42 @@ const currentDuration = ref(0)
 const filterProjectId = ref(projectStore.selectedProjectId || '')
 const filterFrom = ref('')
 const filterTo = ref('')
+
+// Export dropdown
+const exportMenuOpen = ref(false)
+const isExporting = ref(false)
+
+async function exportEntries(format) {
+  exportMenuOpen.value = false
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const params = {}
+    if (filterProjectId.value) params.project_id = filterProjectId.value
+    if (filterFrom.value) params.from = filterFrom.value
+    if (filterTo.value) params.to = filterTo.value
+
+    const res = await api.get(`/api/v1/time/export/${format}`, {
+      params,
+      responseType: 'blob',
+    })
+
+    const mime = format === 'pdf' ? 'application/pdf' : 'text/csv'
+    const blob = new Blob([res.data], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `time-entries-${new Date().toISOString().slice(0, 10)}.${format}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    uiStore.showError(t('time.exportError'))
+  } finally {
+    isExporting.value = false
+  }
+}
 
 // Form
 const form = ref({
@@ -471,7 +508,7 @@ watch(runningEntry, (val) => {
     </div>
 
     <!-- Filters -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 flex-wrap">
       <select
         v-model="filterProjectId"
         @change="fetchData"
@@ -495,6 +532,38 @@ watch(runningEntry, (val) => {
         @change="fetchData"
         class="input"
       />
+
+      <!-- Export dropdown -->
+      <div class="relative ml-auto">
+        <button
+          @click="exportMenuOpen = !exportMenuOpen"
+          :disabled="isExporting"
+          class="btn-secondary flex items-center gap-2 disabled:opacity-50"
+        >
+          <ArrowDownTrayIcon class="w-4 h-4" />
+          <span>{{ isExporting ? $t('time.exporting') : $t('time.export') }}</span>
+        </button>
+        <template v-if="exportMenuOpen">
+          <div
+            class="fixed inset-0 z-10"
+            @click="exportMenuOpen = false"
+          ></div>
+          <div class="absolute right-0 mt-2 w-44 bg-[#1a1a22] border border-white/[0.08] rounded-lg shadow-lg z-20 overflow-hidden">
+            <button
+              @click="exportEntries('pdf')"
+              class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/[0.04] transition-colors"
+            >
+              {{ $t('time.exportAsPdf') }}
+            </button>
+            <button
+              @click="exportEntries('csv')"
+              class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/[0.04] transition-colors"
+            >
+              {{ $t('time.exportAsCsv') }}
+            </button>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Loading -->

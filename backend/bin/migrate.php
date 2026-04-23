@@ -64,6 +64,7 @@ $migrationFiles = glob($migrationsPath . '/*.sql');
 sort($migrationFiles);
 
 $newMigrations = 0;
+$failedMigrations = [];
 
 foreach ($migrationFiles as $file) {
     $filename = basename($file);
@@ -84,14 +85,22 @@ foreach ($migrationFiles as $file) {
         $newMigrations++;
     } catch (PDOException $e) {
         echo "  ✗ Error: " . $e->getMessage() . "\n";
-        exit(1);
+        echo "    (continuing with remaining migrations)\n";
+        $failedMigrations[] = ['file' => $filename, 'error' => $e->getMessage()];
     }
 }
 
-if ($newMigrations === 0) {
+if ($newMigrations === 0 && empty($failedMigrations)) {
     echo "\nNo new migrations to run.\n";
 } else {
     echo "\nRan $newMigrations migration(s).\n";
+}
+
+if (!empty($failedMigrations)) {
+    echo "\n!!! " . count($failedMigrations) . " migration(s) failed:\n";
+    foreach ($failedMigrations as $fail) {
+        echo "  - {$fail['file']}: {$fail['error']}\n";
+    }
 }
 
 // Run seeders if --seed flag is provided
@@ -121,3 +130,7 @@ if (in_array('--seed', $argv)) {
 }
 
 echo "\nDone!\n";
+
+if (!empty($failedMigrations)) {
+    exit(1);
+}

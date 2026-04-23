@@ -292,7 +292,7 @@ class ProjectController
         $type = $data['type'] ?? '';
         $itemId = $data['item_id'] ?? '';
 
-        $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet'];
+        $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet', 'checklist'];
         if (!in_array($type, $validTypes)) {
             return JsonResponse::error( 'Ungültiger Linktyp', 400);
         }
@@ -359,7 +359,7 @@ class ProjectController
         $projectId = $route->getArgument('id');
         $type = $route->getArgument('type');
 
-        $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet'];
+        $validTypes = ['document', 'list', 'kanban_board', 'connection', 'snippet', 'checklist'];
         if (!in_array($type, $validTypes)) {
             return JsonResponse::error( 'Ungültiger Typ', 400);
         }
@@ -392,6 +392,12 @@ class ProjectController
             ),
             'snippet' => $this->db->fetchAllAssociative(
                 'SELECT id, title as name, language, category FROM snippets
+                 WHERE user_id = ? AND id NOT IN (SELECT linkable_id FROM project_links WHERE project_id = ? AND linkable_type = ?)
+                 ORDER BY updated_at DESC LIMIT 50',
+                [$userId, $projectId, $type]
+            ),
+            'checklist' => $this->db->fetchAllAssociative(
+                'SELECT id, title as name, updated_at FROM shared_checklists
                  WHERE user_id = ? AND id NOT IN (SELECT linkable_id FROM project_links WHERE project_id = ? AND linkable_type = ?)
                  ORDER BY updated_at DESC LIMIT 50',
                 [$userId, $projectId, $type]
@@ -530,6 +536,7 @@ class ProjectController
             'kanban_board' => $this->db->fetchAssociative('SELECT id, title, color FROM kanban_boards WHERE id = ?', [$itemId]),
             'connection' => $this->db->fetchAssociative('SELECT id, name, type, host FROM connections WHERE id = ?', [$itemId]),
             'snippet' => $this->db->fetchAssociative('SELECT id, title, language FROM snippets WHERE id = ?', [$itemId]),
+            'checklist' => $this->db->fetchAssociative('SELECT id, title FROM shared_checklists WHERE id = ?', [$itemId]),
             default => null,
         };
     }

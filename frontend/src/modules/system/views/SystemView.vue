@@ -5,6 +5,10 @@ import api from '@/core/api/axios'
 import { useToast } from '@/composables/useToast'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
+const toast = useToast()
+const { t } = useI18n()
+const { confirm } = useConfirmDialog()
+
 const systemInfo = ref({
   version: '1.0.0',
   environment: 'production',
@@ -25,7 +29,7 @@ const auditLogs = ref([])
 const auditPagination = ref({ page: 1, perPage: 20, total: 0 })
 const auditFilters = ref({ action: '', user_id: '', entity_type: '' })
 const expandedLogId = ref(null)
-const availableEntityTypes = ref([
+const availableEntityTypes = computed(() => [
   { value: '', label: t('system.allEntities') },
   { value: 'user', label: t('navigation.users') },
   { value: 'list', label: 'Listen' },
@@ -52,10 +56,6 @@ const isClearingCache = ref(false)
 const isTerminatingSessions = ref(false)
 
 let metricsInterval = null
-
-const toast = useToast()
-const { t } = useI18n()
-const { confirm } = useConfirmDialog()
 
 const totalPages = computed(() => Math.ceil(auditPagination.value.total / auditPagination.value.perPage))
 

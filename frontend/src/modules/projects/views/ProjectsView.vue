@@ -285,7 +285,7 @@ function formatTime(seconds) {
 
 // Get link icon
 function getLinkIcon(type) {
-  const linkType = linkTypes.find(t => t.value === type)
+  const linkType = linkTypes.value.find(t => t.value === type)
   return linkType?.icon || LinkIcon
 }
 

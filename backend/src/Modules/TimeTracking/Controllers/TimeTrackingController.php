@@ -580,45 +580,22 @@ class TimeTrackingController
             return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
         }
 
+        $lang = $this->parseLang($request);
+        $columns = $this->parseColumns($request);
+        $labels = $this->translations()[$lang];
+
         $csv = "\xEF\xBB\xBF"; // UTF-8 BOM so Excel detects encoding
-        $csv .= implode(';', [
-            'Datum',
-            'Start',
-            'Ende',
-            'Dauer (h:mm)',
-            'Dauer (Stunden)',
-            'Projekt',
-            'Aufgabe',
-            'Beschreibung',
-            'Abrechenbar',
-            'Stundensatz',
-            'Betrag',
-            'Tags',
-        ]) . "\r\n";
+        $csv .= implode(';', array_map([$this, 'csvEscape'], array_map(
+            fn (string $col) => $labels['col_' . $col],
+            $columns
+        ))) . "\r\n";
 
         foreach ($entries as $entry) {
-            $started = $entry['started_at'] ? new \DateTime($entry['started_at']) : null;
-            $ended = $entry['ended_at'] ? new \DateTime($entry['ended_at']) : null;
-            $duration = (int) $entry['duration_seconds'];
-            $hours = $duration / 3600;
-            $rate = (float) ($entry['hourly_rate'] ?? 0);
-            $amount = $entry['is_billable'] ? $hours * $rate : 0;
-            $tags = is_array($entry['tags']) ? $entry['tags'] : json_decode($entry['tags'] ?? '[]', true);
-
-            $csv .= implode(';', array_map([$this, 'csvEscape'], [
-                $started ? $started->format('Y-m-d') : ($entry['entry_month'] ?? ''),
-                $started ? $started->format('H:i') : '',
-                $ended ? $ended->format('H:i') : ($entry['is_running'] ? 'läuft' : ''),
-                $this->formatDuration($duration),
-                number_format($hours, 2, ',', ''),
-                $entry['project_name'] ?? '',
-                $entry['task_name'] ?? '',
-                $entry['description'] ?? '',
-                $entry['is_billable'] ? 'ja' : 'nein',
-                number_format($rate, 2, ',', ''),
-                number_format($amount, 2, ',', ''),
-                is_array($tags) ? implode(', ', $tags) : '',
-            ])) . "\r\n";
+            $row = [];
+            foreach ($columns as $col) {
+                $row[] = $this->cellValue($entry, $col, $lang, $labels);
+            }
+            $csv .= implode(';', array_map([$this, 'csvEscape'], $row)) . "\r\n";
         }
 
         $filename = 'time-entries-' . date('Y-m-d') . '.csv';
@@ -639,6 +616,9 @@ class TimeTrackingController
             return JsonResponse::error('Keine Berechtigung für dieses Projekt', 403);
         }
 
+        $lang = $this->parseLang($request);
+        $columns = $this->parseColumns($request);
+
         $totalSeconds = 0;
         $billableSeconds = 0;
         $billableAmount = 0.0;
@@ -651,7 +631,7 @@ class TimeTrackingController
             }
         }
 
-        $html = $this->buildPdfHtml($entries, $filters, $totalSeconds, $billableSeconds, $billableAmount);
+        $html = $this->buildPdfHtml($entries, $filters, $totalSeconds, $billableSeconds, $billableAmount, $lang, $columns);
 
         $fontCacheDir = dirname(__DIR__, 4) . '/storage/cache/dompdf';
         if (!is_dir($fontCacheDir)) {
@@ -777,44 +757,44 @@ class TimeTrackingController
         return sprintf('%d:%02d', $hours, $minutes);
     }
 
-    private function buildPdfHtml(array $entries, array $filters, int $totalSeconds, int $billableSeconds, float $billableAmount): string
+    private function buildPdfHtml(array $entries, array $filters, int $totalSeconds, int $billableSeconds, float $billableAmount, string $lang, array $columns): string
     {
         $esc = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+        $labels = $this->translations()[$lang];
 
         $filterLines = [];
         if (!empty($filters['from']) || !empty($filters['to'])) {
-            $filterLines[] = 'Zeitraum: ' . ($filters['from'] ?: '…') . ' — ' . ($filters['to'] ?: '…');
+            $filterLines[] = $labels['period'] . ': ' . ($filters['from'] ?: '…') . ' — ' . ($filters['to'] ?: '…');
         }
-        $projectLabel = '';
         if (!empty($filters['projectId']) && !empty($entries)) {
             $projectLabel = $entries[0]['project_name'] ?? '';
             if ($projectLabel !== '') {
-                $filterLines[] = 'Projekt: ' . $projectLabel;
+                $filterLines[] = $labels['col_project'] . ': ' . $projectLabel;
             }
+        }
+
+        $numericColumns = ['duration', 'rate', 'amount'];
+
+        $headerCells = '';
+        foreach ($columns as $col) {
+            $cls = in_array($col, $numericColumns, true) ? ' class="num"' : '';
+            $headerCells .= '<th' . $cls . '>' . $esc($labels['col_' . $col]) . '</th>';
         }
 
         $rows = '';
         foreach ($entries as $entry) {
-            $started = $entry['started_at'] ? new \DateTime($entry['started_at']) : null;
-            $ended = $entry['ended_at'] ? new \DateTime($entry['ended_at']) : null;
-            $duration = (int) $entry['duration_seconds'];
-            $rate = (float) ($entry['hourly_rate'] ?? 0);
-            $amount = $entry['is_billable'] ? ($duration / 3600) * $rate : 0;
-
-            $rows .= '<tr>'
-                . '<td>' . $esc($started ? $started->format('d.m.Y') : ($entry['entry_month'] ?? '')) . '</td>'
-                . '<td>' . $esc($started ? $started->format('H:i') : '') . '</td>'
-                . '<td>' . $esc($ended ? $ended->format('H:i') : ($entry['is_running'] ? 'läuft' : '')) . '</td>'
-                . '<td class="num">' . $esc($this->formatDuration($duration)) . '</td>'
-                . '<td>' . $esc($entry['project_name'] ?? '—') . '</td>'
-                . '<td>' . $esc($entry['task_name'] ?? '') . '</td>'
-                . '<td>' . $esc($entry['description'] ?? '') . '</td>'
-                . '<td class="num">' . ($entry['is_billable'] ? number_format($amount, 2, ',', '.') . ' €' : '—') . '</td>'
-                . '</tr>';
+            $rows .= '<tr>';
+            foreach ($columns as $col) {
+                $value = $this->cellValue($entry, $col, $lang, $labels);
+                $cls = in_array($col, $numericColumns, true) ? ' class="num"' : '';
+                $rows .= '<td' . $cls . '>' . $esc($value !== '' ? $value : '—') . '</td>';
+            }
+            $rows .= '</tr>';
         }
 
         if ($rows === '') {
-            $rows = '<tr><td colspan="8" style="text-align:center;color:#888;padding:20px;">Keine Einträge gefunden.</td></tr>';
+            $rows = '<tr><td colspan="' . count($columns) . '" style="text-align:center;color:#888;padding:20px;">'
+                . $esc($labels['no_entries']) . '</td></tr>';
         }
 
         $filtersHtml = '';
@@ -822,7 +802,13 @@ class TimeTrackingController
             $filtersHtml .= '<div>' . $esc($line) . '</div>';
         }
 
-        $generatedAt = (new \DateTime())->format('d.m.Y H:i');
+        $dateFmt = $lang === 'en' ? 'Y-m-d H:i' : 'd.m.Y H:i';
+        $generatedAt = (new \DateTime())->format($dateFmt);
+
+        $billableLine = $labels['billable_summary'] . ': ' . $this->formatDuration($billableSeconds) . ' h';
+        if (in_array('amount', $columns, true) || in_array('rate', $columns, true)) {
+            $billableLine .= '  (' . $this->formatMoney($billableAmount, $lang) . ')';
+        }
 
         return '<!DOCTYPE html>
 <html>
@@ -838,35 +824,130 @@ class TimeTrackingController
   table { width: 100%; border-collapse: collapse; margin-top: 8px; }
   th { background: #222; color: #fff; text-align: left; padding: 6px; font-size: 10px; }
   td { padding: 5px 6px; border-bottom: 1px solid #e5e7eb; font-size: 9.5px; vertical-align: top; }
-  td.num { text-align: right; white-space: nowrap; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
   tr:nth-child(even) td { background: #fafafa; }
 </style>
 </head>
 <body>
-  <h1>Zeiterfassungs-Export</h1>
-  <div class="meta">Erstellt am ' . $esc($generatedAt) . '</div>
+  <h1>' . $esc($labels['title']) . '</h1>
+  <div class="meta">' . $esc($labels['generated_at']) . ' ' . $esc($generatedAt) . '</div>
   ' . $filtersHtml . '
   <div class="summary">
-    <div><strong>Einträge:</strong> ' . count($entries) . '</div>
-    <div><strong>Gesamtzeit:</strong> ' . $esc($this->formatDuration($totalSeconds)) . ' h</div>
-    <div><strong>Abrechenbar:</strong> ' . $esc($this->formatDuration($billableSeconds)) . ' h  (' . number_format($billableAmount, 2, ',', '.') . ' €)</div>
+    <div><strong>' . $esc($labels['entries']) . ':</strong> ' . count($entries) . '</div>
+    <div><strong>' . $esc($labels['total_time']) . ':</strong> ' . $esc($this->formatDuration($totalSeconds)) . ' h</div>
+    <div><strong>' . $esc($billableLine) . '</strong></div>
   </div>
   <table>
-    <thead>
-      <tr>
-        <th>Datum</th>
-        <th>Start</th>
-        <th>Ende</th>
-        <th>Dauer</th>
-        <th>Projekt</th>
-        <th>Aufgabe</th>
-        <th>Beschreibung</th>
-        <th>Betrag</th>
-      </tr>
-    </thead>
+    <thead><tr>' . $headerCells . '</tr></thead>
     <tbody>' . $rows . '</tbody>
   </table>
 </body>
 </html>';
+    }
+
+    private function availableColumns(): array
+    {
+        return ['date', 'start', 'end', 'duration', 'project', 'task', 'description', 'billable', 'rate', 'amount', 'tags'];
+    }
+
+    private function parseLang(Request $request): string
+    {
+        $lang = strtolower((string) ($request->getQueryParams()['lang'] ?? ''));
+        return $lang === 'en' ? 'en' : 'de';
+    }
+
+    private function parseColumns(Request $request): array
+    {
+        $raw = (string) ($request->getQueryParams()['columns'] ?? '');
+        $requested = array_filter(array_map('trim', explode(',', $raw)));
+        $available = $this->availableColumns();
+        $selected = array_values(array_intersect($available, $requested));
+        return empty($selected) ? $available : $selected;
+    }
+
+    private function cellValue(array $entry, string $col, string $lang, array $labels): string
+    {
+        $started = $entry['started_at'] ? new \DateTime($entry['started_at']) : null;
+        $ended = $entry['ended_at'] ? new \DateTime($entry['ended_at']) : null;
+        $duration = (int) $entry['duration_seconds'];
+        $rate = (float) ($entry['hourly_rate'] ?? 0);
+        $amount = $entry['is_billable'] ? ($duration / 3600) * $rate : 0;
+        $tags = is_array($entry['tags']) ? $entry['tags'] : json_decode($entry['tags'] ?? '[]', true);
+        $dateFmt = $lang === 'en' ? 'Y-m-d' : 'd.m.Y';
+
+        return match ($col) {
+            'date' => $started ? $started->format($dateFmt) : ($entry['entry_month'] ?? ''),
+            'start' => $started ? $started->format('H:i') : '',
+            'end' => $ended ? $ended->format('H:i') : ($entry['is_running'] ? $labels['running'] : ''),
+            'duration' => $this->formatDuration($duration),
+            'project' => (string) ($entry['project_name'] ?? ''),
+            'task' => (string) ($entry['task_name'] ?? ''),
+            'description' => (string) ($entry['description'] ?? ''),
+            'billable' => $entry['is_billable'] ? $labels['yes'] : $labels['no'],
+            'rate' => $rate > 0 ? $this->formatMoney($rate, $lang) : '',
+            'amount' => $entry['is_billable'] ? $this->formatMoney($amount, $lang) : '',
+            'tags' => is_array($tags) ? implode(', ', $tags) : '',
+            default => '',
+        };
+    }
+
+    private function formatMoney(float $value, string $lang): string
+    {
+        if ($lang === 'en') {
+            return '€ ' . number_format($value, 2, '.', ',');
+        }
+        return number_format($value, 2, ',', '.') . ' €';
+    }
+
+    private function translations(): array
+    {
+        return [
+            'de' => [
+                'title' => 'Zeiterfassungs-Export',
+                'generated_at' => 'Erstellt am',
+                'period' => 'Zeitraum',
+                'entries' => 'Einträge',
+                'total_time' => 'Gesamtzeit',
+                'billable_summary' => 'Abrechenbar',
+                'no_entries' => 'Keine Einträge gefunden.',
+                'running' => 'läuft',
+                'yes' => 'ja',
+                'no' => 'nein',
+                'col_date' => 'Datum',
+                'col_start' => 'Start',
+                'col_end' => 'Ende',
+                'col_duration' => 'Dauer',
+                'col_project' => 'Projekt',
+                'col_task' => 'Aufgabe',
+                'col_description' => 'Beschreibung',
+                'col_billable' => 'Abrechenbar',
+                'col_rate' => 'Stundensatz',
+                'col_amount' => 'Betrag',
+                'col_tags' => 'Tags',
+            ],
+            'en' => [
+                'title' => 'Time Tracking Export',
+                'generated_at' => 'Created on',
+                'period' => 'Period',
+                'entries' => 'Entries',
+                'total_time' => 'Total time',
+                'billable_summary' => 'Billable',
+                'no_entries' => 'No entries found.',
+                'running' => 'running',
+                'yes' => 'yes',
+                'no' => 'no',
+                'col_date' => 'Date',
+                'col_start' => 'Start',
+                'col_end' => 'End',
+                'col_duration' => 'Duration',
+                'col_project' => 'Project',
+                'col_task' => 'Task',
+                'col_description' => 'Description',
+                'col_billable' => 'Billable',
+                'col_rate' => 'Hourly rate',
+                'col_amount' => 'Amount',
+                'col_tags' => 'Tags',
+            ],
+        ];
     }
 }

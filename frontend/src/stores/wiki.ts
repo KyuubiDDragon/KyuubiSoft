@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import api from '@/core/api/axios'
+import { useProjectStore } from '@/stores/project'
 
 // Interfaces
 interface WikiPage {
@@ -49,6 +50,7 @@ interface PageFilters {
   root_only?: boolean
   search?: string
   is_published?: boolean
+  project_id?: string
 }
 
 interface ApiError {
@@ -76,12 +78,22 @@ export const useWikiStore = defineStore('wiki', () => {
   const publishedPages: ComputedRef<WikiPage[]> = computed<WikiPage[]>(() => pages.value.filter(p => p.is_published))
   const rootPages: ComputedRef<WikiPage[]> = computed<WikiPage[]>(() => pages.value.filter(p => !p.parent_id))
 
+  function currentProjectId(): string | null {
+    return useProjectStore().selectedProjectId
+  }
+
   // Actions
   async function fetchPages(filters: PageFilters = {}): Promise<WikiPage[]> {
+    const projectId = filters.project_id ?? currentProjectId()
+    if (!projectId) {
+      pages.value = []
+      return pages.value
+    }
     loading.value = true
     error.value = null
     try {
       const params = new URLSearchParams()
+      params.append('project_id', projectId)
       if (filters.category_id) params.append('category_id', filters.category_id)
       if (filters.parent_id) params.append('parent_id', filters.parent_id)
       if (filters.root_only) params.append('root_only', 'true')
@@ -122,7 +134,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.post('/api/v1/wiki/pages', pageData)
+      const projectId = (pageData as { project_id?: string }).project_id ?? currentProjectId()
+      const payload = { ...pageData, project_id: projectId }
+      const response = await api.post('/api/v1/wiki/pages', payload)
       const newPage: WikiPage = response.data.data
       pages.value.unshift(newPage)
       currentPage.value = newPage
@@ -209,10 +223,15 @@ export const useWikiStore = defineStore('wiki', () => {
 
   // Categories
   async function fetchCategories(): Promise<WikiCategory[]> {
+    const projectId = currentProjectId()
+    if (!projectId) {
+      categories.value = []
+      return categories.value
+    }
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/api/v1/wiki/categories')
+      const response = await api.get(`/api/v1/wiki/categories?project_id=${projectId}`)
       categories.value = response.data.data || []
       return categories.value
     } catch (err: unknown) {
@@ -227,7 +246,9 @@ export const useWikiStore = defineStore('wiki', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.post('/api/v1/wiki/categories', categoryData)
+      const projectId = (categoryData as { project_id?: string }).project_id ?? currentProjectId()
+      const payload = { ...categoryData, project_id: projectId }
+      const response = await api.post('/api/v1/wiki/categories', payload)
       const newCategory: WikiCategory = response.data.data
       categories.value.push(newCategory)
       return newCategory
@@ -274,10 +295,15 @@ export const useWikiStore = defineStore('wiki', () => {
 
   // Graph & Search
   async function fetchGraphData(): Promise<GraphData> {
+    const projectId = currentProjectId()
+    if (!projectId) {
+      graphData.value = { nodes: [], edges: [] }
+      return graphData.value
+    }
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/api/v1/wiki/graph')
+      const response = await api.get(`/api/v1/wiki/graph?project_id=${projectId}`)
       graphData.value = response.data.data || { nodes: [], edges: [] }
       return graphData.value
     } catch (err: unknown) {
@@ -289,10 +315,15 @@ export const useWikiStore = defineStore('wiki', () => {
   }
 
   async function searchPages(query: string): Promise<WikiPage[]> {
+    const projectId = currentProjectId()
+    if (!projectId) {
+      searchResults.value = []
+      return searchResults.value
+    }
     loading.value = true
     error.value = null
     try {
-      const response = await api.get(`/api/v1/wiki/search?q=${encodeURIComponent(query)}`)
+      const response = await api.get(`/api/v1/wiki/search?q=${encodeURIComponent(query)}&project_id=${projectId}`)
       searchResults.value = response.data.data || []
       return searchResults.value
     } catch (err: unknown) {
@@ -304,10 +335,15 @@ export const useWikiStore = defineStore('wiki', () => {
   }
 
   async function fetchRecentPages(limit: number = 10): Promise<WikiPage[]> {
+    const projectId = currentProjectId()
+    if (!projectId) {
+      recentPages.value = []
+      return recentPages.value
+    }
     loading.value = true
     error.value = null
     try {
-      const response = await api.get(`/api/v1/wiki/pages/recent?limit=${limit}`)
+      const response = await api.get(`/api/v1/wiki/pages/recent?limit=${limit}&project_id=${projectId}`)
       recentPages.value = response.data.data || []
       return recentPages.value
     } catch (err: unknown) {

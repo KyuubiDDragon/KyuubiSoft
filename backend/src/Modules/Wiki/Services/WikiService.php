@@ -27,6 +27,11 @@ class WikiService
             ->orderBy('p.is_pinned', 'DESC')
             ->addOrderBy('p.updated_at', 'DESC');
 
+        if (!empty($filters['project_id'])) {
+            $qb->andWhere('p.project_id = :project_id')
+               ->setParameter('project_id', $filters['project_id']);
+        }
+
         if (!empty($filters['category_id'])) {
             $qb->andWhere('p.category_id = :category_id')
                ->setParameter('category_id', $filters['category_id']);
@@ -121,6 +126,7 @@ class WikiService
         $this->db->insert('wiki_pages', [
             'id' => $id,
             'user_id' => $userId,
+            'project_id' => $data['project_id'] ?? null,
             'slug' => $slug,
             'title' => $data['title'],
             'content' => $content,
@@ -304,17 +310,22 @@ class WikiService
     /**
      * Get all categories
      */
-    public function getCategories(string $userId): array
+    public function getCategories(string $userId, ?string $projectId = null): array
     {
-        return $this->db->fetchAllAssociative(
-            'SELECT c.*, COUNT(p.id) as page_count
-             FROM wiki_categories c
-             LEFT JOIN wiki_pages p ON c.id = p.category_id
-             WHERE c.user_id = ?
-             GROUP BY c.id
-             ORDER BY c.position ASC, c.name ASC',
-            [$userId]
-        );
+        $sql = 'SELECT c.*, COUNT(p.id) as page_count
+                FROM wiki_categories c
+                LEFT JOIN wiki_pages p ON c.id = p.category_id
+                WHERE c.user_id = ?';
+        $params = [$userId];
+
+        if ($projectId) {
+            $sql .= ' AND c.project_id = ?';
+            $params[] = $projectId;
+        }
+
+        $sql .= ' GROUP BY c.id ORDER BY c.position ASC, c.name ASC';
+
+        return $this->db->fetchAllAssociative($sql, $params);
     }
 
     /**
@@ -328,6 +339,7 @@ class WikiService
         $this->db->insert('wiki_categories', [
             'id' => $id,
             'user_id' => $userId,
+            'project_id' => $data['project_id'] ?? null,
             'name' => $data['name'],
             'slug' => $slug,
             'description' => $data['description'] ?? null,
@@ -405,13 +417,15 @@ class WikiService
     /**
      * Get graph data for visualization
      */
-    public function getGraphData(string $userId): array
+    public function getGraphData(string $userId, ?string $projectId = null): array
     {
-        // Get all pages as nodes
-        $pages = $this->db->fetchAllAssociative(
-            'SELECT id, title, slug, category_id FROM wiki_pages WHERE user_id = ?',
-            [$userId]
-        );
+        $sql = 'SELECT id, title, slug, category_id FROM wiki_pages WHERE user_id = ?';
+        $params = [$userId];
+        if ($projectId) {
+            $sql .= ' AND project_id = ?';
+            $params[] = $projectId;
+        }
+        $pages = $this->db->fetchAllAssociative($sql, $params);
 
         $nodes = [];
         foreach ($pages as $page) {
@@ -424,13 +438,16 @@ class WikiService
         }
 
         // Get all links as edges
-        $links = $this->db->fetchAllAssociative(
-            'SELECT l.source_page_id, l.target_page_id, l.link_text
-             FROM wiki_links l
-             JOIN wiki_pages p ON l.source_page_id = p.id
-             WHERE p.user_id = ?',
-            [$userId]
-        );
+        $linksSql = 'SELECT l.source_page_id, l.target_page_id, l.link_text
+                     FROM wiki_links l
+                     JOIN wiki_pages p ON l.source_page_id = p.id
+                     WHERE p.user_id = ?';
+        $linksParams = [$userId];
+        if ($projectId) {
+            $linksSql .= ' AND p.project_id = ?';
+            $linksParams[] = $projectId;
+        }
+        $links = $this->db->fetchAllAssociative($linksSql, $linksParams);
 
         $edges = [];
         foreach ($links as $link) {
@@ -450,31 +467,41 @@ class WikiService
     /**
      * Search wiki pages
      */
-    public function search(string $userId, string $query): array
+    public function search(string $userId, string $query, ?string $projectId = null): array
     {
-        return $this->db->fetchAllAssociative(
-            'SELECT id, title, slug, excerpt, updated_at
-             FROM wiki_pages
-             WHERE user_id = ? AND MATCH(title, content) AGAINST(? IN NATURAL LANGUAGE MODE)
-             LIMIT 20',
-            [$userId, $query]
-        );
+        $sql = 'SELECT id, title, slug, excerpt, updated_at
+                FROM wiki_pages
+                WHERE user_id = ? AND MATCH(title, content) AGAINST(? IN NATURAL LANGUAGE MODE)';
+        $params = [$userId, $query];
+        if ($projectId) {
+            $sql .= ' AND project_id = ?';
+            $params[] = $projectId;
+        }
+        $sql .= ' LIMIT 20';
+
+        return $this->db->fetchAllAssociative($sql, $params);
     }
 
     /**
      * Get recently updated pages
      */
-    public function getRecentPages(string $userId, int $limit = 10): array
+    public function getRecentPages(string $userId, int $limit = 10, ?string $projectId = null): array
     {
-        return $this->db->fetchAllAssociative(
-            'SELECT id, title, slug, excerpt, updated_at
-             FROM wiki_pages
-             WHERE user_id = ?
-             ORDER BY updated_at DESC
-             LIMIT ?',
-            [$userId, $limit],
-            ['string', 'integer']
-        );
+        $sql = 'SELECT id, title, slug, excerpt, updated_at
+                FROM wiki_pages
+                WHERE user_id = ?';
+        $params = [$userId];
+        $types = ['string'];
+        if ($projectId) {
+            $sql .= ' AND project_id = ?';
+            $params[] = $projectId;
+            $types[] = 'string';
+        }
+        $sql .= ' ORDER BY updated_at DESC LIMIT ?';
+        $params[] = $limit;
+        $types[] = 'integer';
+
+        return $this->db->fetchAllAssociative($sql, $params, $types);
     }
 
     // Private helper methods

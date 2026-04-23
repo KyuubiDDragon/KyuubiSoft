@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWikiStore } from '@/stores/wiki'
+import { useProjectStore } from '@/stores/project'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useToast } from '@/composables/useToast'
@@ -31,9 +32,12 @@ import {
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/vue/24/solid'
 
 const wikiStore = useWikiStore()
+const projectStore = useProjectStore()
 const toast = useToast()
 const { t } = useI18n()
 const { confirm } = useConfirmDialog()
+
+const hasProject = computed(() => !!projectStore.selectedProjectId)
 
 // State
 const sidebarCollapsed = ref(false)
@@ -101,6 +105,10 @@ const renderedContent = computed(() => {
 
 // Methods
 function createNewPage() {
+  if (!projectStore.selectedProjectId) {
+    toast.warning(t('wiki.selectProjectFirst'))
+    return
+  }
   currentPageId.value = null
   isCreating.value = true
   isEditing.value = false
@@ -241,7 +249,7 @@ async function saveCategory() {
 
 // History
 async function restoreVersion(historyId) {
-  if (!await confirm({ message: t('wiki.wikidieseversionwiederherstellenaktuellerinhaltwirdin'), type: 'danger', confirmText: t('common.restore') })) return
+  if (!await confirm({ message: t('wiki.dieseVersionWiederherstellenAktuellerInhaltWirdIn'), type: 'danger', confirmText: t('common.restore') })) return
 
   try {
     await wikiStore.restoreFromHistory(currentPageId.value, historyId)
@@ -403,13 +411,33 @@ document.addEventListener('click', (e) => {
   }
 })
 
-// Init
-onMounted(async () => {
+async function loadWikiData() {
+  if (!projectStore.selectedProjectId) {
+    wikiStore.pages.splice(0)
+    wikiStore.categories.splice(0)
+    wikiStore.recentPages.splice(0)
+    wikiStore.clearCurrentPage()
+    currentPageId.value = null
+    return
+  }
   await Promise.all([
     wikiStore.fetchPages(),
     wikiStore.fetchCategories(),
     wikiStore.fetchRecentPages()
   ])
+}
+
+watch(() => projectStore.selectedProjectId, () => {
+  currentPageId.value = null
+  selectedCategory.value = null
+  isEditing.value = false
+  isCreating.value = false
+  loadWikiData()
+})
+
+// Init
+onMounted(async () => {
+  await loadWikiData()
 })
 </script>
 
@@ -451,14 +479,17 @@ onMounted(async () => {
         <!-- Actions -->
         <div class="flex gap-2">
           <button
-            class="btn-primary flex-1 flex items-center justify-center gap-2 text-sm"
+            class="btn-primary flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!hasProject"
+            :title="!hasProject ? $t('wiki.selectProjectFirst') : ''"
             @click="createNewPage"
           >
             <PlusIcon class="w-4 h-4" />
             {{ $t('wiki.newPage') }}
           </button>
           <button
-            class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white"
+            class="p-2 bg-white/[0.04] hover:bg-white/[0.04] rounded-lg text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!hasProject"
             @click="showGraphView = true"
             title="Graph-Ansicht"
           >
@@ -489,7 +520,7 @@ onMounted(async () => {
             @click="selectedCategory = null"
           >
             <FolderIcon class="w-4 h-4" />
-            <span class="flex-1">{{ $t('wiki.wikialleseiten') }}</span>
+            <span class="flex-1">{{ $t('wiki.alleSeiten') }}</span>
             <span class="text-xs text-gray-500">{{ wikiStore.pages.length }}</span>
           </button>
 
@@ -552,17 +583,24 @@ onMounted(async () => {
 
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto">
+      <!-- No project selected -->
+      <div v-if="!hasProject" class="flex flex-col items-center justify-center h-full text-center p-8">
+        <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
+        <h3 class="text-xl font-semibold text-gray-400 mb-2">{{ $t('wiki.selectProjectFirst') }}</h3>
+        <p class="text-gray-500 max-w-md">{{ $t('wiki.selectProjectDescription') }}</p>
+      </div>
+
       <!-- Loading state -->
-      <div v-if="wikiStore.loading && currentPageId" class="flex flex-col items-center justify-center h-full text-center p-8">
+      <div v-else-if="wikiStore.loading && currentPageId" class="flex flex-col items-center justify-center h-full text-center p-8">
         <ArrowPathIcon class="w-12 h-12 text-indigo-400 animate-spin mb-4" />
-        <p class="text-gray-400">{{ $t('wiki.wikiseitewirdgeladen') }}</p>
+        <p class="text-gray-400">{{ $t('wiki.seiteWirdGeladen') }}</p>
       </div>
 
       <!-- No page selected -->
       <div v-else-if="!currentPageId && !isCreating" class="flex flex-col items-center justify-center h-full text-center p-8">
         <BookOpenIcon class="w-20 h-20 text-gray-600 mb-4" />
         <h3 class="text-xl font-semibold text-gray-400 mb-2">{{ $t('wiki.welcomeToWiki') }}</h3>
-        <p class="text-gray-500 mb-6">{{ $t('wiki.wikiwaehleeineseiteausdersidebaroder') }}</p>
+        <p class="text-gray-500 mb-6">{{ $t('wiki.waehleEineSeiteAusDerSidebarOder') }}</p>
         <button
           class="btn-primary flex items-center gap-2"
           @click="createNewPage"

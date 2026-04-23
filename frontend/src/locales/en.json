@@ -5623,7 +5623,12 @@
     "monthlyEntry": "Monthly entry",
     "month": "Month",
     "monthRequired": "Month is required",
-    "hoursRequired": "Hours are required"
+    "hoursRequired": "Hours are required",
+    "export": "Export",
+    "exporting": "Exporting…",
+    "exportAsPdf": "Export as PDF",
+    "exportAsCsv": "Export as CSV",
+    "exportError": "Export failed"
   },
   "timeTracking": {
     "abrechenbar": "Billable",

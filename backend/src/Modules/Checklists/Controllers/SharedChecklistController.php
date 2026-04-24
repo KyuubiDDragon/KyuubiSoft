@@ -477,6 +477,172 @@ class SharedChecklistController
     }
 
     /**
+     * Bulk-import categories and items from raw text in a single atomic request.
+     *
+     * Accepts either:
+     *   - { "text": "...raw lines...", "category_id": "<uuid>|null", "required_testers": -1|1|... }
+     *   - { "lines": ["..."], ... }
+     *
+     * Line syntax:
+     *   - "# Kategorie" starts a new category (created if not existing)
+     *   - "Titel"                → item with just a title
+     *   - "Titel || Beschreibung"
+     *   - "Titel\tBeschreibung"
+     */
+    public function importBatch(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $userId = $request->getAttribute('user_id');
+        $data = $request->getParsedBody() ?? [];
+
+        $this->getChecklistForUser($id, $userId, true);
+
+        $rawLines = [];
+        if (isset($data['lines']) && is_array($data['lines'])) {
+            $rawLines = $data['lines'];
+        } elseif (isset($data['text']) && is_string($data['text'])) {
+            $rawLines = preg_split('/\r\n|\r|\n/', $data['text']) ?: [];
+        } else {
+            throw new ValidationException('Feld "text" oder "lines" ist erforderlich');
+        }
+
+        $lines = [];
+        foreach ($rawLines as $line) {
+            $trimmed = trim((string) $line);
+            if ($trimmed !== '') {
+                $lines[] = $trimmed;
+            }
+        }
+
+        if (empty($lines)) {
+            throw new ValidationException('Keine Zeilen zum Importieren');
+        }
+
+        $defaultCategoryId = $data['category_id'] ?? null;
+        $requiredTestersInput = $data['required_testers'] ?? 1;
+        $requiredTesters = (int) $requiredTestersInput === -1
+            ? -1
+            : max(1, (int) $requiredTestersInput);
+
+        $existingCategories = $this->db->fetchAllAssociative(
+            'SELECT id, name FROM shared_checklist_categories WHERE checklist_id = ?',
+            [$id]
+        );
+        $categoryByName = [];
+        foreach ($existingCategories as $cat) {
+            $categoryByName[mb_strtolower(trim($cat['name']))] = $cat['id'];
+        }
+
+        $maxItemSort = (int) $this->db->fetchOne(
+            'SELECT COALESCE(MAX(sort_order), 0) FROM shared_checklist_items WHERE checklist_id = ?',
+            [$id]
+        );
+        $maxCategorySort = (int) $this->db->fetchOne(
+            'SELECT COALESCE(MAX(sort_order), 0) FROM shared_checklist_categories WHERE checklist_id = ?',
+            [$id]
+        );
+
+        $createdCategories = [];
+        $createdItems = [];
+        $now = date('Y-m-d H:i:s');
+        $currentCategoryId = $defaultCategoryId;
+
+        $this->db->beginTransaction();
+        try {
+            foreach ($lines as $line) {
+                if ($line[0] === '#') {
+                    $name = trim(substr($line, 1));
+                    if ($name === '') {
+                        continue;
+                    }
+                    $key = mb_strtolower($name);
+                    if (isset($categoryByName[$key])) {
+                        $currentCategoryId = $categoryByName[$key];
+                        continue;
+                    }
+
+                    $categoryId = Uuid::uuid4()->toString();
+                    $maxCategorySort++;
+                    $this->db->insert('shared_checklist_categories', [
+                        'id' => $categoryId,
+                        'checklist_id' => $id,
+                        'name' => $name,
+                        'description' => null,
+                        'sort_order' => $maxCategorySort,
+                        'created_at' => $now,
+                    ]);
+                    $categoryByName[$key] = $categoryId;
+                    $currentCategoryId = $categoryId;
+                    $createdCategories[] = [
+                        'id' => $categoryId,
+                        'checklist_id' => $id,
+                        'name' => $name,
+                        'description' => null,
+                        'sort_order' => $maxCategorySort,
+                        'created_at' => $now,
+                    ];
+                    continue;
+                }
+
+                $title = $line;
+                $description = '';
+                if (str_contains($line, '||')) {
+                    [$title, $description] = array_map('trim', explode('||', $line, 2));
+                } elseif (str_contains($line, "\t")) {
+                    [$title, $description] = array_map('trim', explode("\t", $line, 2));
+                }
+
+                if ($title === '') {
+                    continue;
+                }
+
+                $itemId = Uuid::uuid4()->toString();
+                $maxItemSort++;
+                $this->db->insert('shared_checklist_items', [
+                    'id' => $itemId,
+                    'checklist_id' => $id,
+                    'category_id' => $currentCategoryId,
+                    'title' => $title,
+                    'description' => $description !== '' ? $description : null,
+                    'required_testers' => $requiredTesters,
+                    'sort_order' => $maxItemSort,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $createdItems[] = [
+                    'id' => $itemId,
+                    'checklist_id' => $id,
+                    'category_id' => $currentCategoryId,
+                    'title' => $title,
+                    'description' => $description !== '' ? $description : null,
+                    'required_testers' => $requiredTesters,
+                    'sort_order' => $maxItemSort,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            $this->logActivity($id, null, null, 'Owner', 'batch_imported', [
+                'categories' => count($createdCategories),
+                'items' => count($createdItems),
+            ]);
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+
+        return JsonResponse::created([
+            'categories' => $createdCategories,
+            'items' => $createdItems,
+            'counts' => [
+                'categories' => count($createdCategories),
+                'items' => count($createdItems),
+            ],
+        ], 'Import abgeschlossen');
+    }
+
+    /**
      * Update an item
      */
     public function updateItem(ServerRequestInterface $request, ResponseInterface $response, string $id, string $itemId): ResponseInterface

@@ -244,98 +244,58 @@ async function addItem() {
 }
 
 async function addBatchItems() {
-  const lines = batchAdd.value.items
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
+  const text = batchAdd.value.items || ''
+  const hasContent = text.split('\n').some(line => line.trim().length > 0)
 
-  if (lines.length === 0) {
+  if (!hasContent) {
     toast.warning(t('checklists.enterAtLeastOneItem'))
     return
   }
 
-  // Lookup existing categories by name (case-insensitive) so we can reuse them
-  const categoryByName = new Map()
-  for (const cat of checklist.value?.categories || []) {
-    categoryByName.set(cat.name.trim().toLowerCase(), cat.id)
-  }
+  try {
+    const response = await api.post(`/api/v1/checklists/${checklistId.value}/import`, {
+      text,
+      category_id: batchAdd.value.category_id,
+      required_testers: batchAdd.value.required_testers,
+    })
 
-  let currentCategoryId = batchAdd.value.category_id
-  let successCount = 0
-  let errorCount = 0
-  let categoriesCreated = 0
+    const { categories = [], items = [], counts = {} } = response.data.data || {}
 
-  for (const line of lines) {
-    // Category header: "# Name"
-    if (line.startsWith('#')) {
-      const name = line.slice(1).trim()
-      if (!name) continue
-
-      const key = name.toLowerCase()
-      if (categoryByName.has(key)) {
-        currentCategoryId = categoryByName.get(key)
-        continue
+    if (categories.length > 0) {
+      checklist.value.categories = checklist.value.categories || []
+      for (const cat of categories) {
+        checklist.value.categories.push(cat)
+        if (expandedCategories.value[cat.id] === undefined) {
+          expandedCategories.value[cat.id] = true
+        }
       }
-
-      try {
-        const response = await api.post(`/api/v1/checklists/${checklistId.value}/categories`, { name })
-        const newCategory = response.data.data
-        checklist.value.categories = checklist.value.categories || []
-        checklist.value.categories.push(newCategory)
-        categoryByName.set(key, newCategory.id)
-        currentCategoryId = newCategory.id
-        categoriesCreated++
-      } catch (error) {
-        errorCount++
-      }
-      continue
     }
-
-    // Parse line: "Titel" or "Titel || Beschreibung" or "Titel\tBeschreibung"
-    let title, description = ''
-    if (line.includes('||')) {
-      [title, description] = line.split('||').map(s => s.trim())
-    } else if (line.includes('\t')) {
-      [title, description] = line.split('\t').map(s => s.trim())
-    } else {
-      title = line
-    }
-
-    if (!title) continue
-
-    try {
-      const response = await api.post(`/api/v1/checklists/${checklistId.value}/items`, {
-        title,
-        description,
-        category_id: currentCategoryId,
-        required_testers: batchAdd.value.required_testers,
-      })
+    if (items.length > 0) {
       checklist.value.items = checklist.value.items || []
-      checklist.value.items.push({
-        ...response.data.data,
-        entries: [],
-        passed_count: 0,
-        failed_count: 0,
-        entry_count: 0,
-      })
-      successCount++
-    } catch (error) {
-      errorCount++
+      for (const item of items) {
+        checklist.value.items.push({
+          ...item,
+          entries: [],
+          passed_count: 0,
+          failed_count: 0,
+          entry_count: 0,
+        })
+      }
     }
-  }
 
-  if (successCount > 0) {
-    toast.success(t('checklists.itemCreatedCount', { count: successCount }))
-  }
-  if (categoriesCreated > 0) {
-    toast.success(t('checklists.categoriesCreatedCount', { count: categoriesCreated }))
-  }
-  if (errorCount > 0) {
-    toast.error(t('checklists.itemFailedCount', { count: errorCount }))
-  }
+    if ((counts.items ?? items.length) > 0) {
+      toast.success(t('checklists.itemCreatedCount', { count: counts.items ?? items.length }))
+    }
+    if ((counts.categories ?? categories.length) > 0) {
+      toast.success(t('checklists.categoriesCreatedCount', { count: counts.categories ?? categories.length }))
+    }
 
-  showBatchAddModal.value = false
-  batchAdd.value = { items: '', category_id: null, required_testers: -1 }
+    showBatchAddModal.value = false
+    batchAdd.value = { items: '', category_id: null, required_testers: -1 }
+  } catch (error) {
+    const message = error?.response?.data?.message || t('checklists.errorCreating')
+    toast.error(message)
+  }
 }
 
 function openBatchAddInCategory(categoryId) {

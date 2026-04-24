@@ -832,6 +832,8 @@ class Router
                 $protected->post('/checklists/{id}/items', [SharedChecklistController::class, 'addItem']);
                 $protected->put('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'updateItem']);
                 $protected->delete('/checklists/{id}/items/{itemId}', [SharedChecklistController::class, 'deleteItem']);
+                // Checklist Bulk Import (single atomic request for large batches)
+                $protected->post('/checklists/{id}/import', [SharedChecklistController::class, 'importBatch']);
                 // Checklist Activity
                 $protected->get('/checklists/{id}/activity', [SharedChecklistController::class, 'getActivity']);
                 // Checklist Entries (Admin)

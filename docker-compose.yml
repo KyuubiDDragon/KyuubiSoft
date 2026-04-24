@@ -159,6 +159,33 @@ services:
       start_period: 10s
 
   # ===================
+  # MCP Server (Claude tool surface: checklists, time tracking, decisions)
+  # ===================
+  mcp:
+    build:
+      context: ./tools/mcp-server
+      dockerfile: Dockerfile
+    container_name: kyuubisoft_mcp
+    ports:
+      - "${MCP_PORT:-8092}:3333"
+    environment:
+      PORT: 3333
+      HOST: 0.0.0.0
+      MCP_DATA_DIR: /data
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+    volumes:
+      - mcp_data:/data
+    networks:
+      - kyuubisoft_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # ===================
   # phpMyAdmin (Development)
   # ===================
   phpmyadmin:
@@ -212,3 +239,5 @@ volumes:
     name: kyuubisoft_redis_data
   clamav_data:
     name: kyuubisoft_clamav_data
+  mcp_data:
+    name: kyuubisoft_mcp_data

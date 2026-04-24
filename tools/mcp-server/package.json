@@ -1,0 +1,19 @@
+{
+  "name": "kyuubisoft-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server providing checklists, time tracking, and a decision log for Claude inside the KyuubiSoft project.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "express": "^4.21.2",
+    "zod": "^3.23.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -9,6 +9,7 @@ Personal Dashboard & Tools Platform - Eine modulare, sichere und erweiterbare Pl
 - **Listen-Tool**: Todo-Listen, Einkaufslisten, Projekt-Listen
 - **Markdown Editor**: Dokumente mit Versionierung
 - **Dashboard**: Übersicht aller Aktivitäten
+- **MCP Server**: Checklists / Time Tracking / Decision Log für Claude (siehe `tools/mcp-server/`)
 
 ## Tech Stack
 

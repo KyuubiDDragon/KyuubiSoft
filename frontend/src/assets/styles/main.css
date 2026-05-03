@@ -916,3 +916,130 @@
 .xterm-glass-container {
   @apply rounded-xl overflow-hidden border border-white/[0.12] bg-black/40;
 }
+
+/* ============================================
+   Markdown rendering (Tailwind Typography overrides)
+   Used by: Documents, Notes, Wiki, Knowledge Base,
+   News, Email, Contracts, Toolbox/MarkdownPreview
+   ============================================ */
+.prose :where(code):not(:where([class~="not-prose"] *)) {
+  @apply px-1.5 py-0.5 rounded-md text-[0.875em] font-mono font-normal;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f0abfc;
+}
+
+/* Tailwind Typography wraps inline code with backticks via ::before/::after.
+   Remove them so inline code looks like a styled chip, not raw markdown. */
+.prose :where(code):not(:where([class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"] *))::after {
+  content: "";
+}
+
+.prose :where(pre):not(:where([class~="not-prose"] *)) {
+  @apply rounded-xl p-4 my-4 overflow-x-auto;
+  background-color: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+}
+
+.prose :where(pre code):not(:where([class~="not-prose"] *)) {
+  @apply p-0 bg-transparent border-0 text-inherit;
+  color: inherit;
+}
+
+.prose :where(pre code):not(:where([class~="not-prose"] *))::before,
+.prose :where(pre code):not(:where([class~="not-prose"] *))::after {
+  content: "";
+}
+
+.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+  @apply pl-4 my-4 italic;
+  border-left: 4px solid rgb(var(--color-primary, 99 102 241));
+  color: #d1d5db;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-right: 1rem;
+}
+
+.prose :where(blockquote p):not(:where([class~="not-prose"] *))::before,
+.prose :where(blockquote p):not(:where([class~="not-prose"] *))::after {
+  content: "";
+}
+
+.prose :where(a):not(:where([class~="not-prose"] *)) {
+  @apply underline underline-offset-2 transition-colors;
+  color: #818cf8;
+  text-decoration-color: rgba(129, 140, 248, 0.4);
+}
+
+.prose :where(a):not(:where([class~="not-prose"] *)):hover {
+  color: #a5b4fc;
+  text-decoration-color: rgba(165, 180, 252, 0.8);
+}
+
+.prose :where(hr):not(:where([class~="not-prose"] *)) {
+  @apply my-6 border-0;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.prose :where(table):not(:where([class~="not-prose"] *)) {
+  @apply my-4 w-full text-sm;
+  border-collapse: collapse;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.prose :where(thead):not(:where([class~="not-prose"] *)) {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prose :where(th):not(:where([class~="not-prose"] *)) {
+  @apply px-3 py-2 text-left font-semibold;
+  color: #f3f4f6;
+}
+
+.prose :where(td):not(:where([class~="not-prose"] *)) {
+  @apply px-3 py-2;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #d1d5db;
+}
+
+.prose :where(tbody tr):not(:where([class~="not-prose"] *)):hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.prose :where(img):not(:where([class~="not-prose"] *)) {
+  @apply rounded-lg my-4 max-w-full h-auto;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prose :where(kbd):not(:where([class~="not-prose"] *)) {
+  @apply px-1.5 py-0.5 rounded text-xs font-mono;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom-width: 2px;
+  color: #f3f4f6;
+}
+
+.prose :where(mark):not(:where([class~="not-prose"] *)) {
+  background-color: rgba(250, 204, 21, 0.25);
+  color: inherit;
+  padding: 0 0.125rem;
+  border-radius: 0.125rem;
+}
+
+/* GFM task lists */
+.prose :where(ul li input[type="checkbox"]):not(:where([class~="not-prose"] *)) {
+  @apply mr-2 align-middle;
+}
+
+/* Strikethrough (GFM) */
+.prose :where(del, s):not(:where([class~="not-prose"] *)) {
+  color: #9ca3af;
+}

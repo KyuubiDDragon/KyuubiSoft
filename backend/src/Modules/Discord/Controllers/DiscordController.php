@@ -32,7 +32,7 @@ class DiscordController
         private readonly DiscordBotRepository $botRepository
     ) {
         // Hash the APP_KEY to ensure it's exactly 32 bytes for AES-256-CBC
-        $appKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $appKey = \App\Core\Security\AppKey::require('APP_KEY');
         $this->encryptionKey = hash('sha256', $appKey, true);
         $this->storagePath = $_ENV['STORAGE_PATH'] ?? '/var/www/storage';
     }

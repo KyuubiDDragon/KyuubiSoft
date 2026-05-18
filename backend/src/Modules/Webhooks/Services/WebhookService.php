@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Webhooks\Services;
 
+use App\Core\Security\SsrfException;
+use App\Core\Security\SsrfGuard;
 use Doctrine\DBAL\Connection;
 use Ramsey\Uuid\Uuid;
 
@@ -49,6 +51,15 @@ class WebhookService
             $headers[] = 'X-Signature: ' . $signature;
         }
 
+        // SSRF guard — refuse to deliver webhooks to private/loopback hosts.
+        // Failure is recorded so the user sees why delivery was suppressed.
+        try {
+            SsrfGuard::assertSafe((string) $webhook['url']);
+        } catch (SsrfException $e) {
+            $this->recordSsrfBlocked($webhook, $event, $payload, $e->getMessage());
+            return;
+        }
+
         $ch = curl_init($webhook['url']);
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
@@ -56,9 +67,12 @@ class WebhookService
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 5, // Short timeout for async
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            // Redirects are not followed automatically — a redirect to a
+            // private IP would otherwise bypass the SSRF guard above.
+            CURLOPT_FOLLOWLOCATION => false,
         ]);
 
         $responseBody = curl_exec($ch);
@@ -87,6 +101,23 @@ class WebhookService
                 failure_count = IF(? = 1, 0, failure_count + 1)
              WHERE id = ?',
             [$success ? 'success' : 'failed', $success ? 1 : 0, $webhook['id']]
+        );
+    }
+
+    private function recordSsrfBlocked(array $webhook, string $event, array $payload, string $reason): void
+    {
+        $this->db->insert('webhook_logs', [
+            'id' => Uuid::uuid4()->toString(),
+            'webhook_id' => $webhook['id'],
+            'event_type' => $event,
+            'payload' => json_encode($payload),
+            'response_status' => 0,
+            'response_body' => '',
+            'error_message' => 'Blocked by SSRF guard: ' . $reason,
+        ]);
+        $this->db->executeStatement(
+            'UPDATE webhooks SET last_status = ?, failure_count = failure_count + 1 WHERE id = ?',
+            ['failed', $webhook['id']]
         );
     }
 

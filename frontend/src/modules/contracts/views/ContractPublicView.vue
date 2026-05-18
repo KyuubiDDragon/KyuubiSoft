@@ -9,6 +9,7 @@ import {
   ExclamationTriangleIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
+import { sanitizeHtmlWithLinks } from '@/core/services/sanitize'
 
 const route = useRoute()
 const token = computed(() => route.params.token)
@@ -435,7 +436,7 @@ const labels = computed(() => {
           <!-- Contract Content (all §-paragraphs) -->
           <div v-if="contract.content_html" class="p-8 border-b border-gray-100 dark:border-dark-700">
             <div class="text-xs text-gray-400 uppercase font-semibold mb-3">{{ labels.contractClauses }}</div>
-            <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 dark:prose-invert contract-content-wrapper" v-html="contract.content_html"></div>
+            <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 dark:prose-invert contract-content-wrapper" v-html="sanitizeHtmlWithLinks(contract.content_html || '')"></div>
           </div>
 
           <!-- Notes -->

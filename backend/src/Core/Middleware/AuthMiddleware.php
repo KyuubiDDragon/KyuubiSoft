@@ -73,12 +73,9 @@ class AuthMiddleware implements MiddlewareInterface
             return $cookies['access_token'];
         }
 
-        // Also check for token in query parameter (for media/file downloads)
-        $queryParams = $request->getQueryParams();
-        if (isset($queryParams['token'])) {
-            return $queryParams['token'];
-        }
-
+        // JWTs are intentionally NOT accepted via query string: they leak into
+        // access logs, browser history, and Referer headers. Use signed URLs
+        // (e.g. /discord/media/{id}/signed) for unauthenticated media access.
         return null;
     }
 }

@@ -38,14 +38,9 @@ const { confirm } = useConfirmDialog()
 
 // Helper for authenticated media URLs (fallback if signed_url not available)
 function getMediaUrl(media) {
-  // Prefer signed URL (shorter, more secure, no JWT in URL)
-  if (media?.signed_url) {
-    return media.signed_url
-  }
-  // Fallback to JWT-based URL
-  const token = localStorage.getItem('access_token')
-  const mediaId = typeof media === 'string' ? media : media?.id
-  return `/api/v1/discord/media/${mediaId}?token=${encodeURIComponent(token)}`
+  // Only signed URLs are supported here — JWTs must never appear in the URL
+  // (they leak into logs, history, and Referer headers).
+  return media?.signed_url || ''
 }
 
 onMounted(async () => {

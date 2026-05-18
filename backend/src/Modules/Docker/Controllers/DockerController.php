@@ -120,6 +120,9 @@ class DockerController
         if ($type === 'tcp' && empty($data['tcp_host'])) {
             throw new ValidationException('TCP host is required for TCP connections');
         }
+        if ($type === 'tcp') {
+            $this->assertValidTcpHost($data['tcp_host']);
+        }
 
         $id = $this->generateUuid();
         $hostData = [
@@ -197,6 +200,9 @@ class DockerController
             $updateData['socket_path'] = $data['socket_path'];
         }
         if (isset($data['tcp_host'])) {
+            if ($data['tcp_host'] !== null && $data['tcp_host'] !== '') {
+                $this->assertValidTcpHost($data['tcp_host']);
+            }
             $updateData['tcp_host'] = $data['tcp_host'];
         }
         if (isset($data['tcp_port'])) {
@@ -697,16 +703,18 @@ class DockerController
             throw new ValidationException('Invalid container ID');
         }
 
-        // Build docker command
+        // Build docker command — defensive: also escape tcp_host even though
+        // it is validated at create/update time.
         $dockerCmd = 'docker';
         if ($host['type'] === 'tcp' && !empty($host['tcp_host'])) {
-            $port = $host['tcp_port'] ?? 2375;
-            $dockerCmd .= " -H tcp://{$host['tcp_host']}:{$port}";
+            $this->assertValidTcpHost($host['tcp_host']);
+            $port = (int) ($host['tcp_port'] ?? 2375);
+            $dockerCmd .= ' -H ' . escapeshellarg('tcp://' . $host['tcp_host'] . ':' . $port);
         } elseif (!empty($host['socket_path']) && $host['socket_path'] !== '/var/run/docker.sock') {
-            $dockerCmd .= ' -H unix://' . escapeshellarg($host['socket_path']);
+            $dockerCmd .= ' -H ' . escapeshellarg('unix://' . $host['socket_path']);
         }
 
-        $cmd = "$dockerCmd logs --follow --tail $tail --timestamps $containerId 2>&1";
+        $cmd = "$dockerCmd logs --follow --tail " . (int) $tail . " --timestamps " . escapeshellarg($containerId) . " 2>&1";
 
         $response = $response
             ->withHeader('Content-Type', 'text/event-stream')
@@ -1058,31 +1066,30 @@ class DockerController
     {
         $dockerCmd = 'docker';
 
-        // Build host connection argument
+        // Build host connection argument — tcp_host is also escaped defensively.
         if ($host['type'] === 'tcp' && !empty($host['tcp_host'])) {
-            $port = $host['tcp_port'] ?? 2375;
-            $protocol = $host['tls_enabled'] ? 'tcp' : 'tcp';
-            $dockerCmd .= " -H {$protocol}://{$host['tcp_host']}:{$port}";
+            $this->assertValidTcpHost($host['tcp_host']);
+            $port = (int) ($host['tcp_port'] ?? 2375);
+            $dockerCmd .= ' -H ' . escapeshellarg('tcp://' . $host['tcp_host'] . ':' . $port);
 
             // Add TLS options if enabled
             if ($host['tls_enabled']) {
                 $dockerCmd .= ' --tls';
                 if (!empty($host['tls_ca'])) {
                     $caPath = $this->writeTempCert($host['tls_ca'], 'ca');
-                    $dockerCmd .= " --tlscacert=$caPath";
+                    $dockerCmd .= ' --tlscacert=' . escapeshellarg($caPath);
                 }
                 if (!empty($host['tls_cert'])) {
                     $certPath = $this->writeTempCert($host['tls_cert'], 'cert');
-                    $dockerCmd .= " --tlscert=$certPath";
+                    $dockerCmd .= ' --tlscert=' . escapeshellarg($certPath);
                 }
                 if (!empty($host['tls_key'])) {
                     $keyPath = $this->writeTempCert($host['tls_key'], 'key');
-                    $dockerCmd .= " --tlskey=$keyPath";
+                    $dockerCmd .= ' --tlskey=' . escapeshellarg($keyPath);
                 }
             }
         } elseif (!empty($host['socket_path']) && $host['socket_path'] !== '/var/run/docker.sock') {
-            $socketPath = escapeshellarg($host['socket_path']);
-            $dockerCmd .= " -H unix://$socketPath";
+            $dockerCmd .= ' -H ' . escapeshellarg('unix://' . $host['socket_path']);
         }
 
         $fullCommand = "$dockerCmd $command 2>&1";
@@ -1132,6 +1139,28 @@ class DockerController
             mt_rand(0, 0xffff),
             mt_rand(0, 0xffff)
         );
+    }
+
+    /**
+     * Reject anything that's not a plain hostname or IPv4/IPv6 literal.
+     * IPv6 may include `:` inside square brackets — strip them for the check.
+     */
+    private function assertValidTcpHost(mixed $host): void
+    {
+        if (!is_string($host) || $host === '') {
+            throw new ValidationException('TCP host is required');
+        }
+        $candidate = $host;
+        if (strlen($candidate) > 1 && $candidate[0] === '[' && substr($candidate, -1) === ']') {
+            $candidate = substr($candidate, 1, -1);
+        }
+        // Hostname (RFC1123-ish), IPv4 dotted, IPv6 colon-hex
+        if (!preg_match('/^[a-zA-Z0-9._:\-]+$/', $candidate)) {
+            throw new ValidationException('TCP host contains invalid characters');
+        }
+        if (strlen($candidate) > 253) {
+            throw new ValidationException('TCP host is too long');
+        }
     }
 
     // ========================================================================
@@ -2221,7 +2250,6 @@ class DockerController
         $userId = $request->getAttribute('user_id');
         $fileName = $this->getRouteArg($request, 'file');
         $body = $request->getParsedBody();
-        $targetDir = $body['target_dir'] ?? null;
         $deploy = $body['deploy'] ?? false;
 
         if (empty($fileName) || !preg_match('/^[a-zA-Z0-9_.-]+\.json$/', $fileName)) {
@@ -2237,32 +2265,36 @@ class DockerController
             }
 
             $data = json_decode(file_get_contents($backupPath), true);
-            $stackName = $data['stack_name'] ?? 'restored_stack';
+            $rawStackName = $data['stack_name'] ?? 'restored_stack';
+            $stackName = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $rawStackName) ?: 'restored_stack';
 
-            // Determine target directory
-            if (!$targetDir) {
-                $targetDir = $data['working_dir'] ?? null;
+            // Target dir is always inside the user's stacks directory, never
+            // taken from the request body or the backup JSON itself.
+            $stacksDir = $this->getStacksDirectory($userId);
+            $stacksRoot = realpath($stacksDir);
+            if ($stacksRoot === false) {
+                return JsonResponse::error('Stacks directory unavailable', 500);
+            }
+            $targetDir = $stacksRoot . '/' . $stackName . '_restored_' . date('YmdHis');
+
+            if (!mkdir($targetDir, 0755, true)) {
+                return JsonResponse::error('Failed to create target directory', 500);
             }
 
-            if (!$targetDir) {
-                // Create in user's stacks directory
-                $stacksDir = $this->getStacksDirectory($userId);
-                $targetDir = $stacksDir . '/' . $stackName . '_restored_' . date('YmdHis');
-            }
-
-            // Create directory if it doesn't exist
-            if (!is_dir($targetDir)) {
-                if (!mkdir($targetDir, 0755, true)) {
-                    return JsonResponse::error('Failed to create target directory', 500);
-                }
-            }
-
-            // Restore files
+            // Restore files — basename() prevents path traversal via crafted backup JSON
             $restoredFiles = [];
             foreach ($data['files'] ?? [] as $file) {
-                $targetPath = $targetDir . '/' . $file['name'];
-                file_put_contents($targetPath, $file['content']);
-                $restoredFiles[] = $file['name'];
+                $name = basename((string) ($file['name'] ?? ''));
+                if ($name === '' || $name === '.' || $name === '..') {
+                    continue;
+                }
+                $targetPath = $targetDir . '/' . $name;
+                $resolvedParent = realpath(dirname($targetPath));
+                if ($resolvedParent === false || !str_starts_with($resolvedParent . '/', $stacksRoot . '/')) {
+                    continue;
+                }
+                file_put_contents($targetPath, (string) ($file['content'] ?? ''));
+                $restoredFiles[] = $name;
             }
 
             $result = [
@@ -3143,7 +3175,7 @@ class DockerController
      */
     private function encryptCredential(string $value): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         $iv = random_bytes(16);
         $encrypted = openssl_encrypt($value, 'aes-256-cbc', $key, 0, $iv);
         return base64_encode($iv . $encrypted);
@@ -3154,7 +3186,7 @@ class DockerController
      */
     private function decryptCredential(string $encrypted): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         $data = base64_decode($encrypted);
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);

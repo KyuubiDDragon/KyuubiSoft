@@ -6,6 +6,8 @@ namespace App\Modules\Tools\Controllers;
 
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Security\SsrfException;
+use App\Core\Security\SsrfGuard;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -203,6 +205,12 @@ class ToolsController
         }
 
         try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return JsonResponse::error($e->getMessage(), 400);
+        }
+
+        try {
             $context = stream_context_create([
                 'http' => [
                     'method' => 'HEAD',
@@ -211,8 +219,8 @@ class ToolsController
                     'ignore_errors' => true,
                 ],
                 'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
                 ],
             ]);
 
@@ -642,18 +650,23 @@ class ToolsController
         }
 
         try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return JsonResponse::error($e->getMessage(), 400);
+        }
+
+        try {
             $context = stream_context_create([
                 'http' => [
                     'method' => 'HEAD',
                     'timeout' => 15,
-                    'follow_location' => 1,
-                    'max_redirects' => 5,
+                    'follow_location' => 0,
                     'ignore_errors' => true,
                     'user_agent' => 'Mozilla/5.0 (compatible; SecurityHeadersChecker/1.0)',
                 ],
                 'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
                 ],
             ]);
 
@@ -875,6 +888,12 @@ class ToolsController
         }
 
         try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return JsonResponse::error($e->getMessage(), 400);
+        }
+
+        try {
             // Use cURL for better reliability
             $html = $this->fetchUrlWithCurl($url);
 
@@ -916,37 +935,60 @@ class ToolsController
 
     private function fetchUrlWithCurl(string $url): string|false
     {
-        $ch = curl_init();
+        // Follow redirects manually so each hop can be SSRF-validated.
+        $maxRedirects = 5;
+        $current = $url;
 
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            CURLOPT_HTTPHEADER => [
-                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Cache-Control: no-cache',
-            ],
-            CURLOPT_ENCODING => '', // Accept all encodings (gzip, deflate, etc.)
-        ]);
+        for ($i = 0; $i <= $maxRedirects; $i++) {
+            try {
+                SsrfGuard::assertSafe($current);
+            } catch (SsrfException $e) {
+                return false;
+            }
 
-        $html = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $current,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_TIMEOUT => 15,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                CURLOPT_HTTPHEADER => [
+                    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Cache-Control: no-cache',
+                ],
+                CURLOPT_ENCODING => '',
+            ]);
 
-        curl_close($ch);
+            $body = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            $location = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+            curl_close($ch);
 
-        if ($error || $httpCode >= 400) {
-            return false;
+            if ($error) {
+                return false;
+            }
+
+            // Redirect — re-validate the new URL on the next iteration.
+            if (in_array($httpCode, [301, 302, 303, 307, 308], true) && $location !== '') {
+                $current = $location;
+                continue;
+            }
+
+            if ($httpCode >= 400) {
+                return false;
+            }
+
+            return $body;
         }
 
-        return $html;
+        return false;
     }
 
     private function parseMetaTags(string $html): array

@@ -138,8 +138,10 @@ class Router
                 $setup->post('/complete', [SetupController::class, 'complete']);
             });
 
-            // Public note access (no auth required)
+            // Public note access (no auth required). POST is accepted so the
+            // share password can be submitted in the body rather than the URL.
             $group->get('/public/notes/{token}', [PublicNoteController::class, 'show']);
+            $group->post('/public/notes/{token}', [PublicNoteController::class, 'show']);
 
             // Public Kanban attachment serving (filename is UUID, not guessable)
             $group->get('/kanban/attachments/{filename}', [KanbanController::class, 'serveAttachment']);

@@ -27,8 +27,16 @@ if (file_exists(BASE_PATH . '/.env')) {
     $dotenv->load();
 }
 
-$appKey  = $_ENV['APP_KEY'] ?? 'default-key-change-me';
-$legacyKey  = $appKey;                                    // old: raw string, flag=0
+// APP_KEY must be set explicitly. The script accepts a separate OLD_APP_KEY
+// (typically the previous insecure default 'default-key-change-me') for the
+// legacy-decrypt path. If you never ran with the insecure default, leave it
+// unset and the script will fall back to using APP_KEY for both sides.
+$appKey = $_ENV['APP_KEY'] ?? '';
+if ($appKey === '') {
+    fwrite(STDERR, "ERROR: APP_KEY environment variable must be set before running this migration.\n");
+    exit(1);
+}
+$legacyKey  = $_ENV['OLD_APP_KEY'] ?? $appKey;            // old: raw string, flag=0
 $derivedKey = hash('sha256', $appKey, true);              // new: 32-byte binary, OPENSSL_RAW_DATA
 
 $connectionParams = [

@@ -34,7 +34,7 @@ class EmailController
      */
     private function encryptPassword(string $password): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         return openssl_encrypt($password, 'aes-256-cbc', $key, 0, str_repeat('0', 16));
     }
 
@@ -43,7 +43,7 @@ class EmailController
      */
     private function decryptPassword(string $encrypted): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         return openssl_decrypt($encrypted, 'aes-256-cbc', $key, 0, str_repeat('0', 16));
     }
 

@@ -20,7 +20,7 @@ class DeploymentController
         private readonly Connection $db,
         private readonly NotificationService $notificationService
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = \App\Core\Security\AppKey::require('APP_KEY');
     }
 
     /**

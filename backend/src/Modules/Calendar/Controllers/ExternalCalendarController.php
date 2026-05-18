@@ -332,7 +332,7 @@ class ExternalCalendarController
 
     private function encryptPassword(string $password): string
     {
-        $key = $_ENV['APP_SECRET'] ?? 'default-secret-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_SECRET');
         $iv = openssl_random_pseudo_bytes(16);
         $encrypted = openssl_encrypt($password, 'AES-256-CBC', $key, 0, $iv);
         return base64_encode($iv . $encrypted);
@@ -340,7 +340,7 @@ class ExternalCalendarController
 
     private function decryptPassword(string $encrypted): string
     {
-        $key = $_ENV['APP_SECRET'] ?? 'default-secret-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_SECRET');
         $data = base64_decode($encrypted);
         $iv = substr($data, 0, 16);
         $encrypted = substr($data, 16);

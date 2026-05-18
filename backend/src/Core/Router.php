@@ -442,7 +442,9 @@ class Router
                 $protected->get('/time/stats', [TimeTrackingController::class, 'getStats']);
                 $protected->get('/time/projects', [TimeTrackingController::class, 'getProjects']);
                 $protected->get('/time/export/csv', [TimeTrackingController::class, 'exportCsv']);
+                $protected->get('/time/export/csv-template', [TimeTrackingController::class, 'exportCsvTemplate']);
                 $protected->get('/time/export/pdf', [TimeTrackingController::class, 'exportPdf']);
+                $protected->post('/time/import/csv', [TimeTrackingController::class, 'importCsv']);
 
                 // Bookmarks
                 $protected->get('/bookmarks', [BookmarkController::class, 'index']);

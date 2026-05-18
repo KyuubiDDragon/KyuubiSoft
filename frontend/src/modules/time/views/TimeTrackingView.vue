@@ -20,7 +20,11 @@ import {
   FolderIcon,
   TagIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  CheckCircleIcon,
+  DocumentTextIcon,
 } from '@heroicons/vue/24/outline'
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/vue/24/solid'
 import { PlayIcon as PlayIconSolid } from '@heroicons/vue/24/solid'
 
 const uiStore = useUiStore()
@@ -50,15 +54,22 @@ const currentDuration = ref(0)
 const filterProjectId = ref(projectStore.selectedProjectId || '')
 const filterFrom = ref('')
 const filterTo = ref('')
+const filterInvoiced = ref('') // '' | 'invoiced' | 'open'
 
 // Export modal
 const showExportModal = ref(false)
 const isExporting = ref(false)
 
+// Import modal
+const showImportModal = ref(false)
+const isImporting = ref(false)
+const importResult = ref(null)
+const importFileInput = ref(null)
+
 const EXPORT_COLUMNS = [
   'date', 'start', 'end', 'duration',
   'project', 'task', 'description',
-  'billable', 'rate', 'amount', 'tags',
+  'billable', 'invoiced', 'rate', 'amount', 'tags',
 ]
 
 const exportOptions = ref({
@@ -99,6 +110,7 @@ async function runExport() {
     if (filterProjectId.value) params.project_id = filterProjectId.value
     if (filterFrom.value) params.from = filterFrom.value
     if (filterTo.value) params.to = filterTo.value
+    if (filterInvoiced.value) params.invoiced = filterInvoiced.value
 
     const format = exportOptions.value.format
     const res = await api.get(`/api/v1/time/export/${format}`, {
@@ -125,12 +137,65 @@ async function runExport() {
   }
 }
 
+async function downloadCsvTemplate() {
+  try {
+    const res = await api.get('/api/v1/time/export/csv-template', {
+      params: { lang: exportOptions.value.lang },
+      responseType: 'blob',
+    })
+    const blob = new Blob([res.data], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'time-entries-template.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    uiStore.showError(t('time.exportError'))
+  }
+}
+
+function openImportModal() {
+  importResult.value = null
+  showImportModal.value = true
+}
+
+async function handleImportUpload(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  isImporting.value = true
+  importResult.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await api.post('/api/v1/time/import/csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    importResult.value = res.data.data
+    if (importResult.value?.imported > 0) {
+      uiStore.showSuccess(t('time.importSuccess', { count: importResult.value.imported }))
+      await fetchData()
+    }
+  } catch (error) {
+    uiStore.showError(error.response?.data?.message || t('time.importError'))
+  } finally {
+    isImporting.value = false
+    if (importFileInput.value) importFileInput.value.value = ''
+  }
+}
+
 // Form
 const form = ref({
   task_name: '',
   description: '',
   project_id: null,
   is_billable: false,
+  is_invoiced: false,
   hourly_rate: null,
   tags: [],
   started_at: '',
@@ -147,15 +212,31 @@ const quickForm = ref({
   project_id: projectStore.selectedProjectId || null,
 })
 
+// Build filter params shared by list + stats requests
+function buildFilterParams() {
+  const params = {}
+  if (filterProjectId.value) params.project_id = filterProjectId.value
+  if (filterFrom.value) params.from = filterFrom.value
+  if (filterTo.value) params.to = filterTo.value
+  if (filterInvoiced.value) params.invoiced = filterInvoiced.value
+  return params
+}
+
+// True when the user has narrowed the view (so the "30 Tage"-Default no longer applies to stats)
+const hasActiveFilters = computed(
+  () => !!(filterProjectId.value || filterFrom.value || filterTo.value || filterInvoiced.value)
+)
+
 // Fetch data
 async function fetchData() {
   loading.value = true
   try {
+    const params = buildFilterParams()
     const [entriesRes, runningRes, projectsRes, statsRes] = await Promise.all([
-      api.get('/api/v1/time', { params: { project_id: filterProjectId.value, from: filterFrom.value, to: filterTo.value } }),
+      api.get('/api/v1/time', { params }),
       api.get('/api/v1/time/running'),
       api.get('/api/v1/time/projects'),
-      api.get('/api/v1/time/stats'),
+      api.get('/api/v1/time/stats', { params }),
     ])
     entries.value = entriesRes.data.data.items || []
     runningEntry.value = runningRes.data.data.entry
@@ -165,6 +246,22 @@ async function fetchData() {
     uiStore.showError(t('time.errorLoadingData'))
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleInvoiced(entry) {
+  const newValue = !entry.is_invoiced
+  // Optimistic UI
+  entry.is_invoiced = newValue
+  try {
+    await api.put(`/api/v1/time/${entry.id}`, { is_invoiced: newValue })
+    // Refresh stats so the totals card follows the new state if a filter is active
+    if (hasActiveFilters.value || filterInvoiced.value) {
+      await fetchData()
+    }
+  } catch (error) {
+    entry.is_invoiced = !newValue
+    uiStore.showError(t('common.errorSaving'))
   }
 }
 
@@ -275,6 +372,7 @@ function openModal(entry = null) {
       description: entry.description || '',
       project_id: entry.project_id,
       is_billable: entry.is_billable,
+      is_invoiced: !!entry.is_invoiced,
       hourly_rate: entry.hourly_rate,
       tags: entry.tags || [],
       started_at: entry.started_at?.slice(0, 16) || '',
@@ -293,6 +391,7 @@ function openModal(entry = null) {
       description: '',
       project_id: null,
       is_billable: false,
+      is_invoiced: false,
       hourly_rate: null,
       tags: [],
       started_at: now.toISOString().slice(0, 16),
@@ -318,6 +417,7 @@ async function saveEntry() {
     description: form.value.description,
     project_id: form.value.project_id,
     is_billable: form.value.is_billable,
+    is_invoiced: form.value.is_invoiced,
     hourly_rate: form.value.hourly_rate,
     tags: form.value.tags,
   }
@@ -506,7 +606,7 @@ watch(runningEntry, (val) => {
           </div>
           <div>
             <p class="text-2xl font-bold text-white">{{ formatDurationShort(stats.totals?.total_seconds) }}</p>
-            <p class="text-sm text-gray-400">{{ $t('time.total30Days') }}</p>
+            <p class="text-sm text-gray-400">{{ hasActiveFilters ? $t('time.totalFiltered') : $t('time.total30Days') }}</p>
           </div>
         </div>
       </div>
@@ -570,16 +670,34 @@ watch(runningEntry, (val) => {
         @change="fetchData"
         class="input"
       />
-
-      <!-- Export button -->
-      <button
-        @click="openExportModal"
-        :disabled="isExporting"
-        class="btn-secondary flex items-center gap-2 ml-auto disabled:opacity-50"
+      <select
+        v-model="filterInvoiced"
+        @change="fetchData"
+        class="select"
       >
-        <ArrowDownTrayIcon class="w-4 h-4" />
-        <span>{{ isExporting ? $t('time.exporting') : $t('time.export') }}</span>
-      </button>
+        <option value="">{{ $t('time.invoicedAll') }}</option>
+        <option value="open">{{ $t('time.invoicedOpen') }}</option>
+        <option value="invoiced">{{ $t('time.invoicedDone') }}</option>
+      </select>
+
+      <!-- Import / Export buttons -->
+      <div class="flex items-center gap-2 ml-auto">
+        <button
+          @click="openImportModal"
+          class="btn-secondary flex items-center gap-2"
+        >
+          <ArrowUpTrayIcon class="w-4 h-4" />
+          <span>{{ $t('time.import') }}</span>
+        </button>
+        <button
+          @click="openExportModal"
+          :disabled="isExporting"
+          class="btn-secondary flex items-center gap-2 disabled:opacity-50"
+        >
+          <ArrowDownTrayIcon class="w-4 h-4" />
+          <span>{{ isExporting ? $t('time.exporting') : $t('time.export') }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -634,6 +752,17 @@ watch(runningEntry, (val) => {
               </div>
 
               <div class="flex items-center gap-4">
+                <button
+                  @click="toggleInvoiced(entry)"
+                  :title="entry.is_invoiced ? $t('time.markOpen') : $t('time.markInvoiced')"
+                  class="p-1.5 rounded transition-colors"
+                  :class="entry.is_invoiced
+                    ? 'text-green-400 hover:text-green-300'
+                    : 'text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100'"
+                >
+                  <CheckCircleIconSolid v-if="entry.is_invoiced" class="w-5 h-5" />
+                  <CheckCircleIcon v-else class="w-5 h-5" />
+                </button>
                 <span class="text-lg font-mono text-white">
                   {{ formatDurationShort(entry.duration_seconds) }}
                 </span>
@@ -786,6 +915,15 @@ watch(runningEntry, (val) => {
                 <span class="text-gray-400">EUR/h</span>
               </div>
             </div>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                v-model="form.is_invoiced"
+                type="checkbox"
+                class="w-4 h-4 rounded bg-white/[0.04] border-white/[0.06] text-primary-600 focus:ring-primary-500"
+              />
+              <span class="text-gray-300">{{ $t('time.invoiced') }}</span>
+            </label>
           </div>
 
           <div class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.06]">
@@ -894,18 +1032,102 @@ watch(runningEntry, (val) => {
             </div>
           </div>
 
-          <div class="p-4 border-t border-white/[0.06] flex justify-end gap-3">
+          <div class="p-4 border-t border-white/[0.06] flex justify-between items-center gap-3">
             <button
-              @click="showExportModal = false"
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-            >{{ $t('common.cancel') }}</button>
-            <button
-              @click="runExport"
-              :disabled="isExporting || selectedColumnCount === 0"
-              class="btn-primary disabled:opacity-50"
+              v-if="exportOptions.format === 'csv'"
+              @click="downloadCsvTemplate"
+              type="button"
+              class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1"
             >
-              {{ isExporting ? $t('time.exporting') : $t('time.export') }}
+              <DocumentTextIcon class="w-4 h-4" />
+              {{ $t('time.downloadCsvTemplate') }}
             </button>
+            <div v-else></div>
+            <div class="flex gap-3">
+              <button
+                @click="showExportModal = false"
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >{{ $t('common.cancel') }}</button>
+              <button
+                @click="runExport"
+                :disabled="isExporting || selectedColumnCount === 0"
+                class="btn-primary disabled:opacity-50"
+              >
+                {{ isExporting ? $t('time.exporting') : $t('time.export') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Import Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showImportModal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+      >
+        <div class="modal w-full max-w-lg">
+          <div class="p-4 border-b border-white/[0.06] flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-white">{{ $t('time.importTitle') }}</h2>
+            <button @click="showImportModal = false" class="text-gray-400 hover:text-white">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <p class="text-sm text-gray-400">{{ $t('time.importHint') }}</p>
+
+            <button
+              @click="downloadCsvTemplate"
+              type="button"
+              class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1"
+            >
+              <DocumentTextIcon class="w-4 h-4" />
+              {{ $t('time.downloadCsvTemplate') }}
+            </button>
+
+            <label class="block">
+              <input
+                ref="importFileInput"
+                type="file"
+                accept=".csv,text/csv"
+                :disabled="isImporting"
+                @change="handleImportUpload"
+                class="block w-full text-sm text-gray-300
+                       file:mr-3 file:py-2 file:px-4 file:rounded-lg
+                       file:border-0 file:text-sm file:font-medium
+                       file:bg-primary-600 file:text-white
+                       hover:file:bg-primary-500 file:cursor-pointer"
+              />
+            </label>
+
+            <div v-if="isImporting" class="flex items-center gap-2 text-gray-400 text-sm">
+              <div class="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+              {{ $t('time.importing') }}
+            </div>
+
+            <div v-if="importResult" class="space-y-2">
+              <div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-300">
+                {{ $t('time.importImported', { count: importResult.imported }) }}
+              </div>
+              <div
+                v-if="importResult.errors && importResult.errors.length"
+                class="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-300 max-h-48 overflow-y-auto space-y-1"
+              >
+                <div class="font-medium mb-1">{{ $t('time.importErrors', { count: importResult.errors.length }) }}</div>
+                <div v-for="(err, i) in importResult.errors" :key="i" class="text-xs">
+                  {{ $t('time.importRow', { row: err.row }) }}: {{ err.message }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 border-t border-white/[0.06] flex justify-end">
+            <button
+              @click="showImportModal = false"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >{{ $t('common.close') }}</button>
           </div>
         </div>
       </div>

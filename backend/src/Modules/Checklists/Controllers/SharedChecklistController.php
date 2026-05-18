@@ -859,13 +859,15 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
-        // Check password protection
+        // Check password protection. Unlike write endpoints (which throw
+        // ForbiddenException via assertChecklistPasswordIfRequired), the
+        // read endpoint returns a limited "requires_password" stub so the
+        // frontend knows to prompt the user.
         if (!empty($checklist['password_hash'])) {
             $params = $request->getQueryParams();
             $providedPassword = $params['password'] ?? null;
 
             if (!$providedPassword || !password_verify($providedPassword, $checklist['password_hash'])) {
-                // Return limited info for password-protected lists
                 return JsonResponse::success([
                     'id' => $checklist['id'],
                     'title' => $checklist['title'],
@@ -953,6 +955,33 @@ class SharedChecklistController
     }
 
     /**
+     * If the shared checklist is password-protected, require the same
+     * password the public read endpoint (`getPublic`) checks. Accepts the
+     * password from the request body (POST/PUT/DELETE), the query string, or
+     * the `X-Share-Password` header (case-insensitive). Throws
+     * ForbiddenException if missing or wrong.
+     */
+    private function assertChecklistPasswordIfRequired(array $checklist, ServerRequestInterface $request): void
+    {
+        if (empty($checklist['password_hash'])) {
+            return;
+        }
+        $body = $request->getParsedBody();
+        $query = $request->getQueryParams();
+        $headerPw = $request->getHeaderLine('X-Share-Password');
+        $candidates = [];
+        if (is_array($body) && isset($body['password'])) $candidates[] = (string) $body['password'];
+        if (isset($query['password'])) $candidates[] = (string) $query['password'];
+        if ($headerPw !== '') $candidates[] = $headerPw;
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '' && password_verify($candidate, $checklist['password_hash'])) {
+                return;
+            }
+        }
+        throw new ForbiddenException('Passwort erforderlich');
+    }
+
+    /**
      * Add a test entry (public)
      */
     public function addEntry(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
@@ -971,6 +1000,8 @@ class SharedChecklistController
         if (!$checklist['is_active']) {
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         if (empty($data['item_id'])) {
             throw new ValidationException('Testpunkt ist erforderlich');
@@ -1053,6 +1084,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id, i.title as item_title
@@ -1125,6 +1158,8 @@ class SharedChecklistController
             throw new NotFoundException('Checkliste nicht gefunden');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id
@@ -1170,6 +1205,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id
@@ -1208,6 +1245,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
@@ -1367,6 +1406,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         if (!$checklist['allow_add_items']) {
             throw new ForbiddenException('Das Hinzufügen von Einträgen ist nicht erlaubt');
         }
@@ -1436,6 +1477,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         if (!$checklist['allow_add_items']) {
             throw new ForbiddenException('Das Hinzufügen von Kategorien ist nicht erlaubt');
         }
@@ -1502,6 +1545,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         $item = $this->db->fetchAssociative(
             'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
             [$itemId, $checklist['id']]
@@ -1564,6 +1609,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         $item = $this->db->fetchAssociative(
             'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
             [$itemId, $checklist['id']]
@@ -1599,6 +1646,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         // Set SSE headers
         $response = $response
@@ -1663,6 +1712,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         $params = $request->getQueryParams();
         $since = $params['since'] ?? null;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Middleware;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Security\JwtManager;
 use App\Core\Services\CacheService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,7 +19,8 @@ class CsrfMiddleware implements MiddlewareInterface
     private const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
     public function __construct(
-        private readonly CacheService $cache
+        private readonly CacheService $cache,
+        private readonly JwtManager $jwtManager
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -42,7 +44,12 @@ class CsrfMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        // For cookie-based auth, validate CSRF token
+        // For cookie-based auth, validate CSRF token. CsrfMiddleware runs
+        // BEFORE the route-scoped AuthMiddleware, so `user_id` isn't set on
+        // the request yet — we must decode the JWT from the cookie ourselves
+        // to derive the subject before looking up the CSRF cache key.
+        // Previously this middleware bailed out when `user_id` was null,
+        // which effectively skipped the check entirely.
         $cookies = $request->getCookieParams();
         if (isset($cookies['access_token'])) {
             $csrfToken = $request->getHeaderLine(self::HEADER_NAME);
@@ -51,10 +58,18 @@ class CsrfMiddleware implements MiddlewareInterface
                 return JsonResponse::forbidden('CSRF token missing');
             }
 
-            $userId = $request->getAttribute('user_id');
-            if ($userId === null) {
-                // Auth hasn't run yet or user not authenticated
-                return $handler->handle($request);
+            try {
+                $payload = $this->jwtManager->validateAccessToken($cookies['access_token']);
+                $userId = $payload->sub ?? null;
+            } catch (\Throwable $e) {
+                // Bad JWT — defer to AuthMiddleware to return 401 with the
+                // proper error. We still refuse to let the request through
+                // without CSRF validation.
+                return JsonResponse::forbidden('CSRF token invalid');
+            }
+
+            if (!is_string($userId) || $userId === '') {
+                return JsonResponse::forbidden('CSRF token invalid');
             }
 
             $storedToken = $this->cache->get("csrf:{$userId}");

@@ -33,12 +33,26 @@ class AuthService
 
     public function register(RegisterRequest $request): array
     {
-        // Check if email already exists
+        // Uniform "pending approval" response regardless of whether the email
+        // already exists — prevents an attacker from enumerating user
+        // accounts by registering candidate addresses. The forgotPassword
+        // flow already follows this pattern; register was the last
+        // enumeration oracle.
+        $genericResponse = [
+            'pending_approval' => true,
+            'message' => 'Registrierung erfolgreich. Dein Konto muss erst von einem Administrator freigeschaltet werden.',
+        ];
+
         if ($this->userRepository->findByEmail($request->email)) {
-            throw new AuthException('Email already registered');
+            // Don't reveal that the address is already in use; return the
+            // same success-shaped response. We could optionally email the
+            // existing account here to notify them of the registration
+            // attempt — left out to keep behaviour minimal.
+            return $genericResponse;
         }
 
-        // Validate password strength
+        // Validate password strength (still throw — this is about the
+        // password the *attacker* supplied, not whether the email exists).
         $passwordErrors = $this->passwordHasher->validateStrength($request->password);
         if (!empty($passwordErrors)) {
             throw new AuthException(implode(', ', $passwordErrors));
@@ -66,11 +80,7 @@ class AuthService
         $user['roles'] = ['pending'];
         $user['permissions'] = [];
 
-        return [
-            'pending_approval' => true,
-            'message' => 'Registrierung erfolgreich. Dein Konto muss erst von einem Administrator freigeschaltet werden.',
-            'user' => $this->sanitizeUser($user),
-        ];
+        return $genericResponse + ['user' => $this->sanitizeUser($user)];
     }
 
     public function login(LoginRequest $request): array

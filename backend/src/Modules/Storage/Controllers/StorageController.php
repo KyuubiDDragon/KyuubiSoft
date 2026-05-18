@@ -568,10 +568,18 @@ class StorageController
             throw new NotFoundException('Freigabe nicht gefunden');
         }
 
-        // Validate share (but don't check password for thumbnails)
+        // Validate share basics (expiry, max downloads, etc).
         $validationResult = $this->validateShare($share);
         if ($validationResult !== true) {
             throw new ForbiddenException($validationResult);
+        }
+
+        // Password-protected shares cannot serve a thumbnail without
+        // auth — refuse outright. (We can't accept a password via an
+        // <img src> request, and serving the full original here would
+        // bypass the password check the download endpoint enforces.)
+        if (!empty($share['password_hash'])) {
+            throw new ForbiddenException('Passwortgeschützte Freigaben haben keine öffentliche Vorschau');
         }
 
         // Only serve thumbnails for images

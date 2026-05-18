@@ -10,6 +10,7 @@ use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
 use App\Core\Security\PasswordHasher;
 use App\Core\Security\RbacManager;
+use App\Modules\Auth\Repositories\RefreshTokenRepository;
 use App\Modules\Auth\Repositories\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,7 +22,8 @@ class UserController
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly PasswordHasher $passwordHasher,
-        private readonly RbacManager $rbacManager
+        private readonly RbacManager $rbacManager,
+        private readonly RefreshTokenRepository $refreshTokenRepository
     ) {}
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -229,6 +231,13 @@ class UserController
         $this->userRepository->update($userId, [
             'password_hash' => $this->passwordHasher->hash($newPassword),
         ]);
+
+        // Password rotation must invalidate every other session. If the user
+        // is changing their password because they suspect compromise, an
+        // attacker-held refresh token would otherwise stay valid until expiry
+        // and let them re-issue access tokens. AuthService::resetPassword
+        // already does this; in-app updatePassword used to skip it.
+        $this->refreshTokenRepository->revokeAllForUser($userId);
 
         return JsonResponse::success(null, 'Password updated successfully');
     }

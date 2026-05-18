@@ -474,6 +474,17 @@ class InvoiceController
             throw new NotFoundException('Invoice not found');
         }
 
+        // Item must actually belong to the invoice we just ownership-checked.
+        // Without this we would happily update any tenant's invoice_items
+        // row by passing its id in the URL.
+        $item = $this->db->fetchAssociative(
+            'SELECT * FROM invoice_items WHERE id = ? AND invoice_id = ?',
+            [$itemId, $invoiceId]
+        );
+        if (!$item) {
+            throw new NotFoundException('Invoice item not found');
+        }
+
         $updates = [];
         $params = [];
 
@@ -500,7 +511,6 @@ class InvoiceController
 
         // Recalculate item total
         if (isset($data['quantity']) || isset($data['unit_price'])) {
-            $item = $this->db->fetchAssociative('SELECT * FROM invoice_items WHERE id = ?', [$itemId]);
             $quantity = $data['quantity'] ?? $item['quantity'];
             $unitPrice = $data['unit_price'] ?? $item['unit_price'];
             $updates[] = 'total = ?';
@@ -509,8 +519,9 @@ class InvoiceController
 
         if (!empty($updates)) {
             $params[] = $itemId;
+            $params[] = $invoiceId;
             $this->db->executeStatement(
-                'UPDATE invoice_items SET ' . implode(', ', $updates) . ' WHERE id = ?',
+                'UPDATE invoice_items SET ' . implode(', ', $updates) . ' WHERE id = ? AND invoice_id = ?',
                 $params
             );
         }

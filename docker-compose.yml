@@ -51,7 +51,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       STORAGE_PATH: /var/www/storage
-      APP_KEY: ${APP_KEY:-your-32-character-encryption-key}
+      APP_KEY: ${APP_KEY:?APP_KEY must be set}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set}
+      COLLABORATION_HMAC_SECRET: ${COLLABORATION_HMAC_SECRET:?COLLABORATION_HMAC_SECRET must be set}
     depends_on:
       mysql:
         condition: service_healthy
@@ -126,7 +128,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-kyuubisoft}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       STORAGE_PATH: /var/www/storage
-      APP_KEY: ${APP_KEY:-your-32-character-encryption-key}
+      APP_KEY: ${APP_KEY:?APP_KEY must be set}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set}
     command: /bin/sh -c "while true; do php /var/www/html/bin/uptime-check.php >> /var/www/html/storage/logs/scheduler.log 2>&1; sleep 60; done"
     depends_on:
       mysql:
@@ -148,6 +151,8 @@ services:
     environment:
       PORT: 1234
       HOST: 0.0.0.0
+      COLLABORATION_HMAC_SECRET: ${COLLABORATION_HMAC_SECRET:?COLLABORATION_HMAC_SECRET must be set}
+      BACKEND_API_URL: ${BACKEND_API_URL:-http://backend:9000}
     networks:
       - kyuubisoft_network
     restart: unless-stopped

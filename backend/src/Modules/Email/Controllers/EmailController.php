@@ -30,21 +30,51 @@ class EmailController
     }
 
     /**
-     * Encrypt a password
+     * Encrypt a password with AES-256-CBC and a fresh random IV.
+     *
+     * Output format: base64(IV || ciphertext) with OPENSSL_RAW_DATA so the
+     * ciphertext is unambiguously framed and never reused across rows.
+     * The previous implementation used a fixed all-zero IV which broke
+     * IND-CPA — identical passwords produced identical ciphertexts.
      */
     private function encryptPassword(string $password): string
     {
         $key = \App\Core\Security\AppKey::require('APP_KEY');
-        return openssl_encrypt($password, 'aes-256-cbc', $key, 0, str_repeat('0', 16));
+        $iv = random_bytes(16);
+        $cipher = openssl_encrypt($password, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+        if ($cipher === false) {
+            throw new \RuntimeException('Failed to encrypt password');
+        }
+        return base64_encode($iv . $cipher);
     }
 
     /**
-     * Decrypt a password
+     * Decrypt a password. Accepts both the new format (base64 of IV ||
+     * cipher) and the legacy fixed-IV format so accounts that haven't been
+     * migrated yet keep working until `migrate_email_password_iv.php`
+     * upgrades them.
      */
     private function decryptPassword(string $encrypted): string
     {
         $key = \App\Core\Security\AppKey::require('APP_KEY');
-        return openssl_decrypt($encrypted, 'aes-256-cbc', $key, 0, str_repeat('0', 16));
+
+        $raw = base64_decode($encrypted, true);
+        if ($raw !== false && strlen($raw) > 16) {
+            $iv = substr($raw, 0, 16);
+            $cipher = substr($raw, 16);
+            $plain = @openssl_decrypt($cipher, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+            if ($plain !== false) {
+                return $plain;
+            }
+        }
+
+        // Legacy: ciphertext only, encrypted with the fixed all-zero IV.
+        $legacy = @openssl_decrypt($encrypted, 'aes-256-cbc', $key, 0, str_repeat('0', 16));
+        if ($legacy !== false) {
+            return $legacy;
+        }
+
+        throw new \RuntimeException('Failed to decrypt password');
     }
 
     // ==================== Accounts ====================

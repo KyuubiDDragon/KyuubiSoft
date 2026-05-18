@@ -1,0 +1,94 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, 'claude/*']
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Monday 06:00 UTC — catches newly disclosed CVEs even when no code changes.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  composer-audit:
+    name: composer audit (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: composer audit
+        working-directory: backend
+        run: composer audit --no-dev --format=plain
+
+  npm-audit:
+    name: npm audit (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      # `npm audit` exit codes: 0 = clean, 1 = vulnerabilities found.
+      # Fail the build on high or critical findings only; moderate/low are
+      # reported but don't block (tune via `--audit-level=moderate` if you
+      # want to be stricter).
+      - name: npm audit (production deps)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  npm-audit-collaboration:
+    name: npm audit (collaboration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install collaboration dependencies
+        working-directory: collaboration
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          elif [ -f package.json ]; then
+            npm install --no-audit --no-fund
+          else
+            echo "No package.json — skipping"
+            exit 0
+          fi
+
+      - name: npm audit (collaboration)
+        working-directory: collaboration
+        run: |
+          if [ -f package.json ]; then
+            npm audit --omit=dev --audit-level=high
+          fi

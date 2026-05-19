@@ -764,47 +764,8 @@ class SharedChecklistController
             throw new NotFoundException('Eintrag nicht gefunden');
         }
 
-        $uploadedFiles = $request->getUploadedFiles();
-        $uploadedFile = $uploadedFiles['image'] ?? null;
+        $filename = $this->processEntryImageUpload($request, $id, $entryId, $entry['image_path'] ?? null);
 
-        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            throw new ValidationException('Kein gültiges Bild hochgeladen');
-        }
-
-        // Validate file type
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $mimeType = $uploadedFile->getClientMediaType();
-        if (!in_array($mimeType, $allowedTypes)) {
-            throw new ValidationException('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt');
-        }
-
-        // Check file size (max 5MB)
-        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
-            throw new ValidationException('Bild darf maximal 5MB groß sein');
-        }
-
-        // Generate unique filename
-        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
-        $filename = 'checklist_' . $id . '_' . $entryId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-
-        // Ensure upload directory exists
-        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        // Delete old image if exists
-        if ($entry['image_path']) {
-            $oldImagePath = $uploadDir . $entry['image_path'];
-            if (file_exists($oldImagePath)) {
-                unlink($oldImagePath);
-            }
-        }
-
-        // Move uploaded file
-        $uploadedFile->moveTo($uploadDir . $filename);
-
-        // Update database
         $this->db->update('shared_checklist_entries', [
             'image_path' => $filename,
             'updated_at' => date('Y-m-d H:i:s'),
@@ -898,13 +859,15 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
-        // Check password protection
+        // Check password protection. Unlike write endpoints (which throw
+        // ForbiddenException via assertChecklistPasswordIfRequired), the
+        // read endpoint returns a limited "requires_password" stub so the
+        // frontend knows to prompt the user.
         if (!empty($checklist['password_hash'])) {
             $params = $request->getQueryParams();
             $providedPassword = $params['password'] ?? null;
 
             if (!$providedPassword || !password_verify($providedPassword, $checklist['password_hash'])) {
-                // Return limited info for password-protected lists
                 return JsonResponse::success([
                     'id' => $checklist['id'],
                     'title' => $checklist['title'],
@@ -992,6 +955,33 @@ class SharedChecklistController
     }
 
     /**
+     * If the shared checklist is password-protected, require the same
+     * password the public read endpoint (`getPublic`) checks. Accepts the
+     * password from the request body (POST/PUT/DELETE), the query string, or
+     * the `X-Share-Password` header (case-insensitive). Throws
+     * ForbiddenException if missing or wrong.
+     */
+    private function assertChecklistPasswordIfRequired(array $checklist, ServerRequestInterface $request): void
+    {
+        if (empty($checklist['password_hash'])) {
+            return;
+        }
+        $body = $request->getParsedBody();
+        $query = $request->getQueryParams();
+        $headerPw = $request->getHeaderLine('X-Share-Password');
+        $candidates = [];
+        if (is_array($body) && isset($body['password'])) $candidates[] = (string) $body['password'];
+        if (isset($query['password'])) $candidates[] = (string) $query['password'];
+        if ($headerPw !== '') $candidates[] = $headerPw;
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '' && password_verify($candidate, $checklist['password_hash'])) {
+                return;
+            }
+        }
+        throw new ForbiddenException('Passwort erforderlich');
+    }
+
+    /**
      * Add a test entry (public)
      */
     public function addEntry(ServerRequestInterface $request, ResponseInterface $response, string $token): ResponseInterface
@@ -1010,6 +1000,8 @@ class SharedChecklistController
         if (!$checklist['is_active']) {
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         if (empty($data['item_id'])) {
             throw new ValidationException('Testpunkt ist erforderlich');
@@ -1092,6 +1084,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id, i.title as item_title
@@ -1164,6 +1158,8 @@ class SharedChecklistController
             throw new NotFoundException('Checkliste nicht gefunden');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id
@@ -1209,6 +1205,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
             'SELECT e.*, i.checklist_id
@@ -1222,47 +1220,8 @@ class SharedChecklistController
             throw new NotFoundException('Eintrag nicht gefunden');
         }
 
-        $uploadedFiles = $request->getUploadedFiles();
-        $uploadedFile = $uploadedFiles['image'] ?? null;
+        $filename = $this->processEntryImageUpload($request, $checklist['id'], $entryId, $entry['image_path'] ?? null);
 
-        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            throw new ValidationException('Kein gültiges Bild hochgeladen');
-        }
-
-        // Validate file type
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $mimeType = $uploadedFile->getClientMediaType();
-        if (!in_array($mimeType, $allowedTypes)) {
-            throw new ValidationException('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt');
-        }
-
-        // Check file size (max 5MB)
-        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
-            throw new ValidationException('Bild darf maximal 5MB groß sein');
-        }
-
-        // Generate unique filename
-        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
-        $filename = 'checklist_' . $checklist['id'] . '_' . $entryId . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-
-        // Ensure upload directory exists
-        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        // Delete old image if exists
-        if ($entry['image_path']) {
-            $oldImagePath = $uploadDir . $entry['image_path'];
-            if (file_exists($oldImagePath)) {
-                unlink($oldImagePath);
-            }
-        }
-
-        // Move uploaded file
-        $uploadedFile->moveTo($uploadDir . $filename);
-
-        // Update database
         $this->db->update('shared_checklist_entries', [
             'image_path' => $filename,
             'updated_at' => date('Y-m-d H:i:s'),
@@ -1286,6 +1245,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         // Get entry and verify it belongs to this checklist
         $entry = $this->db->fetchAssociative(
@@ -1317,29 +1278,112 @@ class SharedChecklistController
     }
 
     /**
-     * Serve a checklist entry image
+     * Serve a checklist entry image. Content-Type is derived strictly from the
+     * stored extension (which we control at upload time), and we set
+     * `nosniff` + a sandboxing CSP so an attacker-uploaded SVG/HTML cannot run
+     * JS in the app origin even if it ever bypasses the upload validation.
      */
     public function serveImage(ServerRequestInterface $request, ResponseInterface $response, string $filename): ResponseInterface
     {
         $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
-        $filePath = $uploadDir . basename($filename); // Use basename to prevent directory traversal
+        $safeName = basename($filename);
+        $filePath = $uploadDir . $safeName;
 
         if (!file_exists($filePath)) {
             throw new NotFoundException('Bild nicht gefunden');
         }
 
-        // Get MIME type
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->file($filePath);
+        $ext = strtolower(pathinfo($safeName, PATHINFO_EXTENSION));
+        $extToMime = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+        ];
+        if (!isset($extToMime[$ext])) {
+            throw new NotFoundException('Bild nicht gefunden');
+        }
 
         $response = $response
-            ->withHeader('Content-Type', $mimeType)
+            ->withHeader('Content-Type', $extToMime[$ext])
             ->withHeader('Content-Length', (string) filesize($filePath))
-            ->withHeader('Cache-Control', 'public, max-age=31536000');
+            ->withHeader('Cache-Control', 'public, max-age=31536000')
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; sandbox");
 
         $response->getBody()->write(file_get_contents($filePath));
 
         return $response;
+    }
+
+    /**
+     * Validate + store an uploaded checklist entry image. Uses `getimagesize`
+     * (server-side, content-based) to detect the real image type, which
+     * rejects SVG, HTML, scripts, and other non-image payloads. The stored
+     * filename always uses a safe extension derived from the detected type,
+     * never the client-supplied filename.
+     */
+    private function processEntryImageUpload(
+        ServerRequestInterface $request,
+        string $checklistId,
+        string $entryId,
+        ?string $previousFilename
+    ): string {
+        $uploadedFiles = $request->getUploadedFiles();
+        $uploadedFile = $uploadedFiles['image'] ?? null;
+
+        if (!$uploadedFile || $uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            throw new ValidationException('Kein gültiges Bild hochgeladen');
+        }
+
+        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
+            throw new ValidationException('Bild darf maximal 5MB groß sein');
+        }
+
+        $uploadDir = __DIR__ . '/../../../../storage/checklist-images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Stage to a temp path first so we can introspect content before commit.
+        $stagedPath = $uploadDir . '.staged_' . bin2hex(random_bytes(8));
+        $uploadedFile->moveTo($stagedPath);
+
+        try {
+            $info = @getimagesize($stagedPath);
+            $typeToExt = [
+                IMAGETYPE_JPEG => 'jpg',
+                IMAGETYPE_PNG => 'png',
+                IMAGETYPE_GIF => 'gif',
+                IMAGETYPE_WEBP => 'webp',
+            ];
+            if (!is_array($info) || !isset($info[2], $typeToExt[$info[2]])) {
+                @unlink($stagedPath);
+                throw new ValidationException('Nur JPEG, PNG, GIF und WebP Bilder sind erlaubt');
+            }
+            $ext = $typeToExt[$info[2]];
+
+            $filename = 'checklist_' . $checklistId . '_' . $entryId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+            if (!rename($stagedPath, $uploadDir . $filename)) {
+                @unlink($stagedPath);
+                throw new \RuntimeException('Failed to store image');
+            }
+
+            if ($previousFilename) {
+                $oldImagePath = $uploadDir . basename($previousFilename);
+                if (file_exists($oldImagePath)) {
+                    @unlink($oldImagePath);
+                }
+            }
+
+            return $filename;
+        } catch (\Throwable $e) {
+            if (file_exists($stagedPath)) {
+                @unlink($stagedPath);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -1361,6 +1405,8 @@ class SharedChecklistController
         if (!$checklist['is_active']) {
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         if (!$checklist['allow_add_items']) {
             throw new ForbiddenException('Das Hinzufügen von Einträgen ist nicht erlaubt');
@@ -1431,6 +1477,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         if (!$checklist['allow_add_items']) {
             throw new ForbiddenException('Das Hinzufügen von Kategorien ist nicht erlaubt');
         }
@@ -1497,6 +1545,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         $item = $this->db->fetchAssociative(
             'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
             [$itemId, $checklist['id']]
@@ -1559,6 +1609,8 @@ class SharedChecklistController
             throw new ForbiddenException('Diese Checkliste ist deaktiviert');
         }
 
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
+
         $item = $this->db->fetchAssociative(
             'SELECT * FROM shared_checklist_items WHERE id = ? AND checklist_id = ?',
             [$itemId, $checklist['id']]
@@ -1594,6 +1646,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         // Set SSE headers
         $response = $response
@@ -1658,6 +1712,8 @@ class SharedChecklistController
         if (!$checklist) {
             throw new NotFoundException('Checkliste nicht gefunden');
         }
+
+        $this->assertChecklistPasswordIfRequired($checklist, $request);
 
         $params = $request->getQueryParams();
         $since = $params['since'] ?? null;

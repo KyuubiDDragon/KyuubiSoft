@@ -7,9 +7,13 @@ namespace App\Modules\News\Controllers;
 use App\Core\Http\JsonResponse;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
+use App\Core\Security\SsrfException;
+use App\Core\Security\SsrfGuard;
 use Doctrine\DBAL\Connection;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\RequestInterface as Psr7RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Ramsey\Uuid\Uuid;
@@ -680,11 +684,27 @@ class NewsController
     private function parseFeedUrl(string $url): array
     {
         try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            throw new \Exception('Feed URL rejected: ' . $e->getMessage());
+        }
+
+        try {
             $res = (new GuzzleClient([
                 'timeout'         => 15,
                 'connect_timeout' => 10,
-                'allow_redirects' => ['max' => 5],
-                'verify'          => false,
+                // Re-validate every redirect — Guzzle will pass each request
+                // through this callback before it leaves the box.
+                'allow_redirects' => [
+                    'max' => 5,
+                    'strict' => true,
+                    'referer' => false,
+                    'protocols' => ['http', 'https'],
+                    'on_redirect' => function ($_req, $_res, $uri) {
+                        SsrfGuard::assertSafe((string) $uri);
+                    },
+                ],
+                'verify'          => true,
                 'headers'         => [
                     'User-Agent' => 'KyuubiSoft News Reader/1.0 (compatible; RSS/Atom reader)',
                     'Accept'     => 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
@@ -692,6 +712,8 @@ class NewsController
             ]))->get($url);
         } catch (GuzzleException $e) {
             throw new \Exception('Could not fetch feed: ' . $e->getMessage());
+        } catch (SsrfException $e) {
+            throw new \Exception('Feed redirected to a forbidden target: ' . $e->getMessage());
         }
 
         if ($res->getStatusCode() >= 400) {
@@ -704,9 +726,11 @@ class NewsController
             throw new \Exception('Feed returned empty response');
         }
 
-        // Suppress XML errors
+        // Suppress XML errors and forbid network access during parsing. With
+        // libxml >= 2.9 external entity loading is off by default; LIBXML_NONET
+        // additionally blocks any network-resolved entities.
         libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($content);
+        $xml = @simplexml_load_string($content, \SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOERROR);
         if ($xml === false) {
             throw new \Exception('Invalid XML feed');
         }

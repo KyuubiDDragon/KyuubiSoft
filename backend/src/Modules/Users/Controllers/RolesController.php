@@ -119,6 +119,9 @@ class RolesController
             throw new ForbiddenException('Systemrollen können nicht bearbeitet werden');
         }
 
+        // Caller must outrank the target role (owner is exempt).
+        $this->assertCallerOutranksRole($currentUserId, (int) ($role['hierarchy_level'] ?? 0));
+
         $updateData = [];
 
         if (isset($data['name'])) {
@@ -143,6 +146,8 @@ class RolesController
             if ($hierarchyLevel >= 90 && !$this->rbacManager->hasRole($currentUserId, 'owner')) {
                 throw new ForbiddenException('Nur Owner können Rollen mit hohem Rang erstellen');
             }
+            // Cannot raise a role above the caller's own ceiling.
+            $this->assertCallerOutranksRole($currentUserId, $hierarchyLevel);
             $updateData['hierarchy_level'] = $hierarchyLevel;
         }
 
@@ -150,8 +155,11 @@ class RolesController
             $this->rbacManager->updateRole($roleId, $updateData);
         }
 
-        // Update permissions if provided
+        // Update permissions if provided. Each permission must already be held
+        // by the caller — prevents privilege escalation by editing a role they
+        // themselves hold.
         if (isset($data['permissions']) && is_array($data['permissions'])) {
+            $this->assertCallerCanGrantPermissions($currentUserId, $data['permissions']);
             $this->rbacManager->setRolePermissions($roleId, $data['permissions']);
         }
 
@@ -214,6 +222,7 @@ class RolesController
      */
     public function addPermission(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $currentUserId = $request->getAttribute('user_id');
         $roleId = (int) RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $data = $request->getParsedBody() ?? [];
 
@@ -232,6 +241,11 @@ class RolesController
             throw new ForbiddenException('Berechtigungen von Systemrollen können nicht geändert werden');
         }
 
+        // Caller must outrank the target role and must already hold the
+        // permission being granted (otherwise this is a privilege escalation).
+        $this->assertCallerOutranksRole($currentUserId, (int) ($role['hierarchy_level'] ?? 0));
+        $this->assertCallerCanGrantPermissions($currentUserId, [$permissionName]);
+
         $success = $this->rbacManager->assignPermissionToRole($roleId, $permissionName);
         if (!$success) {
             throw new ValidationException('Berechtigung existiert nicht');
@@ -249,6 +263,7 @@ class RolesController
      */
     public function removePermission(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        $currentUserId = $request->getAttribute('user_id');
         $roleId = (int) RouteContext::fromRequest($request)->getRoute()->getArgument('id');
         $permissionName = RouteContext::fromRequest($request)->getRoute()->getArgument('permission');
 
@@ -261,6 +276,8 @@ class RolesController
             throw new ForbiddenException('Berechtigungen von Systemrollen können nicht geändert werden');
         }
 
+        $this->assertCallerOutranksRole($currentUserId, (int) ($role['hierarchy_level'] ?? 0));
+
         $success = $this->rbacManager->removePermissionFromRole($roleId, $permissionName);
         if (!$success) {
             throw new ValidationException('Berechtigung existiert nicht');
@@ -271,5 +288,52 @@ class RolesController
         return JsonResponse::success([
             'permissions' => $permissions,
         ], 'Berechtigung entfernt');
+    }
+
+    /**
+     * Caller must already hold every permission they want to grant.
+     * Owners can grant anything.
+     */
+    private function assertCallerCanGrantPermissions(string $currentUserId, array $permissions): void
+    {
+        if ($this->rbacManager->hasRole($currentUserId, 'owner')) {
+            return;
+        }
+        foreach ($permissions as $permission) {
+            $name = is_string($permission) ? $permission : (string) ($permission['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+            if (!$this->rbacManager->hasPermission($currentUserId, $name)) {
+                throw new ForbiddenException(
+                    'Du kannst nur Berechtigungen vergeben, die du selbst besitzt: ' . $name
+                );
+            }
+        }
+    }
+
+    /**
+     * Caller must rank strictly above the target hierarchy level. Owners are
+     * exempt.
+     */
+    private function assertCallerOutranksRole(string $currentUserId, int $targetHierarchy): void
+    {
+        if ($this->rbacManager->hasRole($currentUserId, 'owner')) {
+            return;
+        }
+        $callerRoles = $this->rbacManager->getUserRoles($currentUserId);
+        $allRoles = $this->rbacManager->getAllRoles();
+        $byName = array_column($allRoles, 'hierarchy_level', 'name');
+
+        $callerMax = 0;
+        foreach ($callerRoles as $name) {
+            if (isset($byName[$name]) && $byName[$name] > $callerMax) {
+                $callerMax = (int) $byName[$name];
+            }
+        }
+
+        if ($targetHierarchy >= $callerMax) {
+            throw new ForbiddenException('Du kannst keine Rolle mit gleichem oder höherem Rang bearbeiten');
+        }
     }
 }

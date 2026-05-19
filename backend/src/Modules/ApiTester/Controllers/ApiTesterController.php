@@ -7,6 +7,8 @@ namespace App\Modules\ApiTester\Controllers;
 use App\Core\Exceptions\NotFoundException;
 use App\Core\Exceptions\ValidationException;
 use App\Core\Http\JsonResponse;
+use App\Core\Security\SsrfException;
+use App\Core\Security\SsrfGuard;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -358,6 +360,14 @@ class ApiTesterController
             }
         }
 
+        // SSRF guard — prevent the tester from probing internal services or
+        // cloud-metadata endpoints.
+        try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return JsonResponse::error($e->getMessage(), 400);
+        }
+
         // Build cURL request
         $ch = curl_init();
         $curlHeaders = [];
@@ -398,8 +408,11 @@ class ApiTesterController
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
             CURLOPT_TIMEOUT => 30,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
+            // Redirects are NOT followed automatically — each hop could point
+            // at a private IP. The user sees the redirect response and can
+            // re-send manually if desired (also re-validated by SsrfGuard).
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_HTTPHEADER => $curlHeaders,
             CURLOPT_SSL_VERIFYPEER => true,

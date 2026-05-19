@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Webhooks\Controllers;
 
 use App\Core\Http\JsonResponse;
+use App\Core\Security\SsrfException;
+use App\Core\Security\SsrfGuard;
 use Doctrine\DBAL\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -260,6 +262,12 @@ class WebhookController
             return JsonResponse::error( 'Gültige URL ist erforderlich', 400);
         }
 
+        try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return JsonResponse::error('Webhook-URL nicht erlaubt: ' . $e->getMessage(), 400);
+        }
+
         if (!in_array($type, ['discord', 'slack', 'custom'])) {
             return JsonResponse::error( 'Ungültiger Webhook-Typ', 400);
         }
@@ -352,6 +360,11 @@ class WebhookController
             $url = trim($data['url']);
             if (!filter_var($url, FILTER_VALIDATE_URL)) {
                 return JsonResponse::error( 'Gültige URL ist erforderlich', 400);
+            }
+            try {
+                SsrfGuard::assertSafe($url);
+            } catch (SsrfException $e) {
+                return JsonResponse::error('Webhook-URL nicht erlaubt: ' . $e->getMessage(), 400);
             }
             $updates[] = 'url = ?';
             $params[] = $url;

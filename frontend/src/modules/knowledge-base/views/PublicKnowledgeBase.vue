@@ -13,6 +13,7 @@ import {
   BookOpenIcon,
 } from '@heroicons/vue/24/outline'
 import { useKnowledgeBaseStore } from '@/modules/knowledge-base/stores/knowledgeBaseStore'
+import { sanitizeHtmlWithLinks } from '@/core/services/sanitize'
 
 const store = useKnowledgeBaseStore()
 const { t } = useI18n()
@@ -120,10 +121,27 @@ function formatDate(dateString) {
   })
 }
 
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 function highlightExcerpt(text, query) {
-  if (!text || !query) return text || ''
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<mark class="bg-primary-500/30 text-primary-200 rounded px-0.5">$1</mark>')
+  if (!text || !query) return escapeHtml(text || '')
+  // Escape the source text BEFORE we inject any markup, so attacker-supplied
+  // HTML in the excerpt cannot turn into live DOM.
+  const escapedText = escapeHtml(text)
+  const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  return escapedText.replace(regex, '<mark class="bg-primary-500/30 text-primary-200 rounded px-0.5">$1</mark>')
+}
+
+function renderArticleContent(html) {
+  return sanitizeHtmlWithLinks(String(html ?? ''))
 }
 
 // Lifecycle
@@ -311,10 +329,10 @@ onMounted(async () => {
             </span>
           </div>
 
-          <!-- Content -->
+          <!-- Content (sanitized to prevent stored XSS against anonymous visitors) -->
           <div
             class="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed"
-            v-html="viewingArticle.content"
+            v-html="renderArticleContent(viewingArticle.content)"
           ></div>
         </article>
 

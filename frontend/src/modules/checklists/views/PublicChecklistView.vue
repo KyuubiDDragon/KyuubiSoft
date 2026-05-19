@@ -64,6 +64,19 @@ const passwordInput = ref('')
 const passwordError = ref(false)
 const storedPassword = ref(sessionStorage.getItem(`checklist_password_${route.params.token}`) || '')
 
+// Local axios instance that automatically attaches the share password to every
+// outbound request via X-Share-Password. The backend's
+// assertChecklistPasswordIfRequired() reads this header so write/SSE/updates
+// endpoints stay accessible after the user has entered the password once.
+const api = axios.create()
+api.interceptors.request.use((cfg) => {
+  if (storedPassword.value) {
+    cfg.headers = cfg.headers || {}
+    cfg.headers['X-Share-Password'] = storedPassword.value
+  }
+  return cfg
+})
+
 // Filter/Search state
 const searchQuery = ref('')
 const statusFilter = ref('all') // 'all', 'pending', 'passed', 'failed', 'uncertain'
@@ -194,7 +207,7 @@ async function loadChecklist(silent = false) {
     const url = storedPassword.value
       ? `/api/v1/checklists/public/${token.value}?password=${encodeURIComponent(storedPassword.value)}`
       : `/api/v1/checklists/public/${token.value}`
-    const response = await axios.get(url)
+    const response = await api.get(url)
     const newData = response.data.data
 
     // Check if password is required
@@ -265,7 +278,7 @@ async function checkForUpdates() {
   if (!checklist.value) return
 
   try {
-    const response = await axios.get(`/api/v1/checklists/public/${token.value}/updates`, {
+    const response = await api.get(`/api/v1/checklists/public/${token.value}/updates`, {
       params: { since: lastSyncTime.value?.toISOString() }
     })
     const { version } = response.data.data
@@ -334,7 +347,7 @@ async function quickTest(item) {
   if (!name) return
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
       tester_name: name,
       status: 'passed',
@@ -364,7 +377,7 @@ async function quickFail(item) {
   if (!name) return
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
       tester_name: name,
       status: 'failed',
@@ -392,7 +405,7 @@ async function quickUncertain(item) {
   if (!name) return
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: item.id,
       tester_name: name,
       status: 'uncertain',
@@ -419,7 +432,7 @@ async function addEntry() {
   if (!name) return
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/entries`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/entries`, {
       item_id: selectedItem.value.id,
       tester_name: name,
       status: newEntry.value.status,
@@ -449,7 +462,7 @@ async function addEntry() {
 
 async function updateEntryStatus(entry, newStatus) {
   try {
-    await axios.put(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`, {
+    await api.put(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`, {
       status: newStatus,
     })
 
@@ -482,7 +495,7 @@ async function deleteEntry(entry, item) {
   if (!await confirm({ message: t('checklists.confirmDeleteEntry'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
-    await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`)
+    await api.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}`)
 
     item.entries = item.entries.filter(e => e.id !== entry.id)
     if (entry.status === 'passed') item.passed_count--
@@ -518,7 +531,7 @@ async function uploadEntryImage(entry, event) {
   formData.append('image', file)
 
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -537,7 +550,7 @@ async function deleteEntryImage(entry) {
   if (!await confirm({ message: t('checklists.confirmDeleteImage'), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
-    await axios.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`)
+    await api.delete(`/api/v1/checklists/public/${token.value}/entries/${entry.id}/image`)
     entry.image_path = null
   } catch (err) {
     toast.error(t('common.errorDeleting'))
@@ -559,7 +572,7 @@ async function addItem() {
   }
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/items`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/items`, {
       ...newItem.value,
       added_by: testerName.value.trim() || 'Anonym',
     })
@@ -600,7 +613,7 @@ async function addCategory() {
   }
 
   try {
-    const response = await axios.post(`/api/v1/checklists/public/${token.value}/categories`, {
+    const response = await api.post(`/api/v1/checklists/public/${token.value}/categories`, {
       ...newCategory.value,
       added_by: testerName.value.trim() || 'Anonym',
     })
@@ -633,7 +646,7 @@ async function updateItem() {
   }
 
   try {
-    const response = await axios.put(`/api/v1/checklists/public/${token.value}/items/${editingItem.value.id}`, {
+    const response = await api.put(`/api/v1/checklists/public/${token.value}/items/${editingItem.value.id}`, {
       title: editingItem.value.title,
       description: editingItem.value.description,
       category_id: editingItem.value.category_id,
@@ -662,7 +675,7 @@ async function deleteItem(item) {
   if (!await confirm({ message: t('checklists.confirmDeleteItem', { title: item.title }), type: 'danger', confirmText: t('common.delete') })) return
 
   try {
-    await axios.delete(`/api/v1/checklists/public/${token.value}/items/${item.id}?requested_by=${encodeURIComponent(testerName.value)}`)
+    await api.delete(`/api/v1/checklists/public/${token.value}/items/${item.id}?requested_by=${encodeURIComponent(testerName.value)}`)
 
     checklist.value.items = checklist.value.items.filter(i => i.id !== item.id)
     toast.success(t('checklists.testPointDeleted'))

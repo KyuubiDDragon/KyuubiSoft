@@ -14,7 +14,7 @@ class DatabaseBrowserService
     public function __construct(
         private readonly Redis $redis
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = \App\Core\Security\AppKey::require('APP_KEY');
     }
 
     /**

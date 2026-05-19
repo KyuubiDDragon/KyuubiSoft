@@ -26,7 +26,7 @@ class TerminalController
         private readonly AuthService $authService,
         private readonly Redis $redis
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = \App\Core\Security\AppKey::require('APP_KEY');
         $this->collaborationWsUrl = $_ENV['COLLABORATION_WS_URL'] ?? 'ws://collaboration:1234';
     }
 

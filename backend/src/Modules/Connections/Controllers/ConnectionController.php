@@ -23,7 +23,7 @@ class ConnectionController
         private readonly Connection $db,
         private readonly AuthService $authService
     ) {
-        $this->encryptionKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $this->encryptionKey = \App\Core\Security\AppKey::require('APP_KEY');
     }
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface

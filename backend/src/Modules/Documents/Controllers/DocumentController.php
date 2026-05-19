@@ -734,20 +734,16 @@ class DocumentController
         ]);
     }
 
-    // Poll for changes (long polling alternative to WebSocket)
+    // Poll for changes (long polling alternative to WebSocket). Same access
+    // checks as joinEditSession: must be editable, not expired, and pass the
+    // password gate when public_password is set. The previous version
+    // returned `content` plaintext without verifying the password.
     public function pollChanges(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
         $data = $request->getQueryParams();
 
-        $doc = $this->db->fetchAssociative(
-            'SELECT * FROM documents WHERE public_token = ? AND is_public = 1 AND public_can_edit = 1',
-            [$token]
-        );
-
-        if (!$doc) {
-            throw new NotFoundException('Document not found or not editable');
-        }
+        $doc = $this->getPublicEditableDocument($token, $data);
 
         $sessionToken = $data['session_token'] ?? null;
         $lastVersion = (int) ($data['last_version'] ?? 0);
@@ -804,17 +800,42 @@ class DocumentController
         return JsonResponse::success(null, 'Session ended');
     }
 
-    // Sync from collaboration server (internal API)
+    // Sync from collaboration server (internal API).
+    // Auth: HMAC-SHA256 of `<unix-ts>.<sha256(body)>` using
+    // COLLABORATION_HMAC_SECRET. Signature header format:
+    //   X-Internal-Signature: t=<unix-ts>,v1=<hex>
+    // Timestamps older than 5 minutes are rejected (replay protection).
     public function syncFromCollaboration(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // Verify this is an internal request from the collaboration server
-        $internalHeader = $request->getHeaderLine('X-Internal-Request');
-        if ($internalHeader !== 'collaboration-server') {
-            throw new ForbiddenException('Internal API only');
+        $secret = \App\Core\Security\AppKey::require('COLLABORATION_HMAC_SECRET');
+
+        $sigHeader = $request->getHeaderLine('X-Internal-Signature');
+        if ($sigHeader === '') {
+            throw new ForbiddenException('Missing signature');
+        }
+
+        $parts = [];
+        foreach (explode(',', $sigHeader) as $pair) {
+            $kv = explode('=', trim($pair), 2);
+            if (count($kv) === 2) {
+                $parts[$kv[0]] = $kv[1];
+            }
+        }
+        $ts = isset($parts['t']) ? (int) $parts['t'] : 0;
+        $sig = $parts['v1'] ?? '';
+        if ($ts <= 0 || $sig === '' || abs(time() - $ts) > 300) {
+            throw new ForbiddenException('Invalid or expired signature');
+        }
+
+        $rawBody = (string) $request->getBody();
+        $bodyHash = hash('sha256', $rawBody);
+        $expected = hash_hmac('sha256', $ts . '.' . $bodyHash, $secret);
+        if (!hash_equals($expected, $sig)) {
+            throw new ForbiddenException('Invalid signature');
         }
 
         $token = RouteContext::fromRequest($request)->getRoute()->getArgument('token');
-        $data = $request->getParsedBody() ?? [];
+        $data = json_decode($rawBody, true) ?? [];
 
         $doc = $this->db->fetchAssociative(
             'SELECT * FROM documents WHERE public_token = ? AND is_public = 1',

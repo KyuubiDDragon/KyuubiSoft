@@ -62,6 +62,32 @@ class PublicNoteController
             }
         }
 
+        // Password gate. Hashes are stored in `password_hash`; the legacy
+        // `password` field (plaintext) is still tolerated for backward
+        // compatibility with un-migrated installs but is otherwise ignored.
+        $passwordHash = $settings['password_hash'] ?? null;
+        $legacyPlain = $settings['password'] ?? null;
+        if ($passwordHash || (is_string($legacyPlain) && $legacyPlain !== '')) {
+            $body = $request->getParsedBody() ?? [];
+            $query = $request->getQueryParams();
+            $submitted = (string) ($body['password'] ?? $query['password'] ?? '');
+
+            if ($submitted === '') {
+                return JsonResponse::success(['requires_password' => true], 'Passwort erforderlich');
+            }
+
+            $ok = false;
+            if ($passwordHash) {
+                $ok = password_verify($submitted, $passwordHash);
+            } elseif ($legacyPlain !== null) {
+                // Legacy plaintext compare — kept only until the migration runs.
+                $ok = hash_equals((string) $legacyPlain, $submitted);
+            }
+            if (!$ok) {
+                return JsonResponse::error('Falsches Passwort', 401);
+            }
+        }
+
         // Track view count
         $this->db->executeStatement(
             "UPDATE notes SET public_views = COALESCE(public_views, 0) + 1 WHERE id = ?",
@@ -111,13 +137,28 @@ class PublicNoteController
             $token = $this->generateSecureToken();
         }
 
-        // Build settings
+        // Preserve any previously stored password hash unless the caller is
+        // explicitly changing the password.
+        $existingSettings = $note['public_settings'] ? json_decode($note['public_settings'], true) : [];
+        $existingHash = $existingSettings['password_hash'] ?? null;
+
+        $passwordHash = $existingHash;
+        if (array_key_exists('password', $data)) {
+            $newPassword = $data['password'];
+            if ($newPassword === null || $newPassword === '') {
+                $passwordHash = null;
+            } else {
+                $passwordHash = password_hash((string) $newPassword, PASSWORD_DEFAULT);
+            }
+        }
+
+        // Build settings — passwords are never stored in plaintext anymore.
         $settings = [
             'enabled' => !empty($data['enabled']),
             'show_author' => !empty($data['show_author']),
             'hide_date' => !empty($data['hide_date']),
             'allow_comments' => !empty($data['allow_comments']),
-            'password' => $data['password'] ?? null,
+            'password_hash' => $passwordHash,
             'expires_at' => $data['expires_at'] ?? null,
         ];
 
@@ -152,10 +193,17 @@ class PublicNoteController
         $settings = $note['public_settings'] ? json_decode($note['public_settings'], true) : [];
         $isShared = !empty($note['public_token']) && !empty($settings['enabled']);
 
+        // Never leak the password hash (or any legacy plaintext); just signal
+        // that a password is set.
+        $hasPassword = !empty($settings['password_hash']) || !empty($settings['password']);
+        $publicSettings = $settings;
+        unset($publicSettings['password_hash'], $publicSettings['password']);
+        $publicSettings['has_password'] = $hasPassword;
+
         $result = [
             'is_shared' => $isShared,
             'token' => $note['public_token'],
-            'settings' => $settings,
+            'settings' => $publicSettings,
             'views' => (int) ($note['public_views'] ?? 0),
         ];
 

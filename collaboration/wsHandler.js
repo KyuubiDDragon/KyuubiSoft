@@ -4,6 +4,20 @@ const awarenessProtocol = require('y-protocols/awareness');
 const encoding = require('lib0/encoding');
 const decoding = require('lib0/decoding');
 const map = require('lib0/map');
+const crypto = require('crypto');
+
+const COLLAB_HMAC_SECRET = process.env.COLLABORATION_HMAC_SECRET;
+if (!COLLAB_HMAC_SECRET) {
+  console.error('FATAL: COLLABORATION_HMAC_SECRET is not set — refusing to start');
+  process.exit(1);
+}
+
+function signBody(body) {
+  const ts = Math.floor(Date.now() / 1000);
+  const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
+  const sig = crypto.createHmac('sha256', COLLAB_HMAC_SECRET).update(`${ts}.${bodyHash}`).digest('hex');
+  return `t=${ts},v1=${sig}`;
+}
 
 // Message types
 const messageSync = 0;
@@ -99,17 +113,19 @@ const syncToDatabase = async (docName) => {
 
     const parsed = JSON.parse(data);
 
-    // Call backend API to save to database
+    // Call backend API to save to database. Body must be serialized once so
+    // the HMAC covers exactly the bytes we send on the wire.
+    const reqBody = JSON.stringify({
+      content: parsed.content,
+      xmlContent: parsed.xmlContent
+    });
     const response = await fetch(`${BACKEND_API_URL}/api/v1/documents/public/${docName}/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Internal-Request': 'collaboration-server'
+        'X-Internal-Signature': signBody(reqBody)
       },
-      body: JSON.stringify({
-        content: parsed.content,
-        xmlContent: parsed.xmlContent
-      })
+      body: reqBody
     });
 
     if (response.ok) {

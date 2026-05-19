@@ -782,16 +782,94 @@ class BackupService
     private function extractArchive(string $archiveFile, string $extractPath, string $compression): void
     {
         mkdir($extractPath, 0755, true);
+        $extractRoot = realpath($extractPath);
+        if ($extractRoot === false) {
+            throw new \RuntimeException('Extract path could not be resolved');
+        }
 
         if ($compression === 'zip') {
             $zip = new \ZipArchive();
-            $zip->open($archiveFile);
+            if ($zip->open($archiveFile) !== true) {
+                throw new \RuntimeException('Failed to open archive');
+            }
+
+            // Reject any entry that would resolve outside the extraction root
+            // (zip-slip protection — absolute paths, `..` segments, symlinks).
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $stat = $zip->statIndex($i);
+                $name = $stat['name'] ?? '';
+                if ($this->isUnsafeArchivePath($name)) {
+                    $zip->close();
+                    throw new \RuntimeException('Archive contains unsafe path: ' . $name);
+                }
+                $resolved = $this->canonicalJoin($extractRoot, $name);
+                if (!str_starts_with($resolved, $extractRoot . DIRECTORY_SEPARATOR) && $resolved !== $extractRoot) {
+                    $zip->close();
+                    throw new \RuntimeException('Archive contains escaping path: ' . $name);
+                }
+            }
+
             $zip->extractTo($extractPath);
             $zip->close();
         } else {
-            $cmd = 'tar -xzf ' . escapeshellarg($archiveFile) . ' -C ' . escapeshellarg($extractPath);
+            // List archive contents first and reject unsafe entries before extracting.
+            $listCmd = 'tar -tzf ' . escapeshellarg($archiveFile);
+            $entries = [];
+            exec($listCmd, $entries, $listStatus);
+            if ($listStatus !== 0) {
+                throw new \RuntimeException('Failed to read archive');
+            }
+            foreach ($entries as $name) {
+                if ($this->isUnsafeArchivePath($name)) {
+                    throw new \RuntimeException('Archive contains unsafe path: ' . $name);
+                }
+                $resolved = $this->canonicalJoin($extractRoot, $name);
+                if (!str_starts_with($resolved, $extractRoot . DIRECTORY_SEPARATOR) && $resolved !== $extractRoot) {
+                    throw new \RuntimeException('Archive contains escaping path: ' . $name);
+                }
+            }
+
+            $cmd = 'tar -xzf ' . escapeshellarg($archiveFile)
+                . ' -C ' . escapeshellarg($extractPath)
+                . ' --no-same-owner --no-same-permissions';
             exec($cmd);
         }
+    }
+
+    private function isUnsafeArchivePath(string $name): bool
+    {
+        if ($name === '' || str_starts_with($name, '/') || str_starts_with($name, '\\')) {
+            return true;
+        }
+        if (preg_match('#(^|[\\\\/])\.\.([\\\\/]|$)#', $name)) {
+            return true;
+        }
+        if (preg_match('/^[a-zA-Z]:[\\\\\/]/', $name)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Resolve `$entry` relative to `$root` without requiring the path to exist
+     * (realpath returns false for non-existent files).
+     */
+    private function canonicalJoin(string $root, string $entry): string
+    {
+        $combined = rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($entry, '/\\');
+        $parts = [];
+        foreach (preg_split('#[/\\\\]+#', $combined) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+            if ($segment === '..') {
+                array_pop($parts);
+                continue;
+            }
+            $parts[] = $segment;
+        }
+        $prefix = (DIRECTORY_SEPARATOR === '/') ? '/' : '';
+        return $prefix . implode(DIRECTORY_SEPARATOR, $parts);
     }
 
     private function findDatabaseFile(string $extractPath): ?string

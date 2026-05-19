@@ -622,7 +622,7 @@ class PushNotificationService
      */
     private function encrypt(string $data): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         $iv = random_bytes(16);
         $encrypted = openssl_encrypt($data, 'aes-256-cbc', $key, 0, $iv);
         return base64_encode($iv . $encrypted);
@@ -633,7 +633,7 @@ class PushNotificationService
      */
     private function decrypt(string $data): string
     {
-        $key = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $key = \App\Core\Security\AppKey::require('APP_KEY');
         $decoded = base64_decode($data);
         $iv = substr($decoded, 0, 16);
         $encrypted = substr($decoded, 16);

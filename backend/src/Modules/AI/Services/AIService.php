@@ -27,7 +27,7 @@ class AIService
         // Derive a proper 32-byte key from APP_KEY using SHA-256 (raw binary output).
         // Using the raw APP_KEY string directly was unsafe: AES-256-CBC requires exactly
         // 32 bytes, and OpenSSL would silently truncate/pad arbitrary-length strings.
-        $rawKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $rawKey = \App\Core\Security\AppKey::require('APP_KEY');
         $this->encryptionKey = hash('sha256', $rawKey, true);
         $this->toolsService  = new AIToolsService();
 
@@ -745,7 +745,7 @@ Wenn der Benutzer nach Docker, Server-Status, Prozessen oder Systeminformationen
 
         // Legacy fallback: data was encrypted with the raw APP_KEY string and flag=0
         // (base64-wrapped output). Try that combination before giving up.
-        $legacyKey = $_ENV['APP_KEY'] ?? 'default-key-change-me';
+        $legacyKey = \App\Core\Security\AppKey::require('APP_KEY');
         $legacyResult = openssl_decrypt($ciphertext, 'aes-256-cbc', $legacyKey, 0, $iv);
         if ($legacyResult !== false) {
             return $legacyResult;

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 // Set up environment variables for tests
 $_ENV['APP_KEY'] = 'test-app-key-for-unit-tests';
+$_ENV['APP_SECRET'] = 'test-app-secret-for-unit-tests';
 $_ENV['APP_ENV'] = 'testing';
 $_ENV['DB_HOST'] = 'localhost';
 $_ENV['DB_NAME'] = 'kyuubisoft_test';

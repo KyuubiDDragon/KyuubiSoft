@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
@@ -9,6 +10,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const form = reactive({
   login: '',

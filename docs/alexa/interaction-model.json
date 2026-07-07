@@ -1,0 +1,62 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "server status",
+      "intents": [
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        {
+          "name": "ServerStatusIntent",
+          "samples": [
+            "wie geht es dem server",
+            "wie sieht der server aus",
+            "gib mir den serverstatus",
+            "wie ist der status",
+            "wie läuft der server",
+            "server übersicht",
+            "status übersicht"
+          ]
+        },
+        {
+          "name": "ContainerStatusIntent",
+          "slots": [
+            { "name": "container", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "laufen alle container",
+            "wie viele container laufen",
+            "wie geht es den containern",
+            "status von {container}",
+            "läuft {container}",
+            "wie geht es dem container {container}",
+            "wie ist der container {container}"
+          ]
+        },
+        {
+          "name": "DiskStatusIntent",
+          "samples": [
+            "wie voll ist die festplatte",
+            "wie viel speicherplatz ist frei",
+            "festplattenbelegung",
+            "wie voll sind die platten",
+            "speicherplatz"
+          ]
+        },
+        {
+          "name": "ServicesStatusIntent",
+          "samples": [
+            "sind alle dienste online",
+            "wie geht es den diensten",
+            "läuft alles",
+            "gibt es probleme",
+            "sind alle webseiten erreichbar",
+            "wie steht es um die zertifikate"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}

@@ -23,7 +23,7 @@ class ApiKeyMiddleware implements MiddlewareInterface
      */
     private const SCOPE_NAMESPACES = [
         'lists', 'documents', 'kanban', 'snippets', 'bookmarks',
-        'time', 'projects', 'uptime', 'storage', 'checklists',
+        'time', 'projects', 'uptime', 'storage', 'checklists', 'status',
     ];
 
     /**

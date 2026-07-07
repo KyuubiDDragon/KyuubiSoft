@@ -222,6 +222,7 @@ class ApiKeyService
             'storage.write' => 'Cloud Storage hochladen',
             'checklists.read' => 'Checklisten lesen',
             'checklists.write' => 'Checklisten bearbeiten',
+            'status.read' => 'Server-/Docker-Status lesen (Monitoring)',
         ];
     }
 }

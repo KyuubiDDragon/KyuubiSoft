@@ -587,4 +587,33 @@ return [
             $c->get(MailService::class)
         );
     },
+
+    // Status Service — read-only, local-only health aggregation
+    \App\Modules\Status\Services\StatusService::class => function (ContainerInterface $c): \App\Modules\Status\Services\StatusService {
+        return new \App\Modules\Status\Services\StatusService(
+            $c->get(DBALConnection::class)
+        );
+    },
+
+    // Status Controller (JWT / API key with status.read)
+    \App\Modules\Status\Controllers\StatusController::class => function (ContainerInterface $c): \App\Modules\Status\Controllers\StatusController {
+        return new \App\Modules\Status\Controllers\StatusController(
+            $c->get(\App\Modules\Status\Services\StatusService::class)
+        );
+    },
+
+    // Alexa request verifier (Amazon signature validation)
+    \App\Modules\Status\Services\AlexaRequestVerifier::class => function (ContainerInterface $c): \App\Modules\Status\Services\AlexaRequestVerifier {
+        return new \App\Modules\Status\Services\AlexaRequestVerifier(
+            BASE_PATH . '/storage/cache/alexa_certs'
+        );
+    },
+
+    // Alexa self-hosted skill endpoint
+    \App\Modules\Status\Controllers\AlexaController::class => function (ContainerInterface $c): \App\Modules\Status\Controllers\AlexaController {
+        return new \App\Modules\Status\Controllers\AlexaController(
+            $c->get(\App\Modules\Status\Services\StatusService::class),
+            $c->get(\App\Modules\Status\Services\AlexaRequestVerifier::class)
+        );
+    },
 ];

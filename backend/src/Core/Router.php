@@ -1564,6 +1564,15 @@ class Router
                 $protected->get('/environments/{id}/export', [EnvironmentController::class, 'exportEnv']);
                 $protected->post('/environments/{id}/import', [EnvironmentController::class, 'importEnv']);
 
+                // Status (read-only, local-only) — for Alexa, dashboards, n8n, ...
+                // API keys need the `status.read` scope (GET → status.read).
+                $protected->get('/status/overview', [\App\Modules\Status\Controllers\StatusController::class, 'overview']);
+                $protected->get('/status/server', [\App\Modules\Status\Controllers\StatusController::class, 'server']);
+                $protected->get('/status/containers', [\App\Modules\Status\Controllers\StatusController::class, 'containers']);
+                $protected->get('/status/services', [\App\Modules\Status\Controllers\StatusController::class, 'services']);
+                // Container control (write) — API keys need the `status.write` scope.
+                $protected->post('/status/containers/{name}/{action}', [\App\Modules\Status\Controllers\StatusController::class, 'control']);
+
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 
             // Knowledge Base (public, no auth required)
@@ -1580,6 +1589,11 @@ class Router
 
             // Deployment Webhook (no auth required - protected by token)
             $group->post('/webhooks/deploy/{token}', [DeploymentController::class, 'webhookDeploy']);
+
+            // Alexa self-hosted skill endpoint (no auth cookie/JWT — every
+            // request is verified via Amazon signature + skill id inside the
+            // controller).
+            $group->post('/alexa/webhook', [\App\Modules\Status\Controllers\AlexaController::class, 'webhook']);
 
             // Public Ticket Routes (no auth required)
             $group->get('/public/ticket-categories', [TicketController::class, 'getCategories']);

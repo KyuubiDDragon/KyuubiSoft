@@ -8,6 +8,7 @@ use App\Core\Http\JsonResponse;
 use App\Modules\Status\Services\StatusService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Routing\RouteContext;
 
 /**
  * Read-only status endpoints for external integrations (Alexa skill,
@@ -70,6 +71,26 @@ class StatusController
             return JsonResponse::success($this->statusService->getServices($userId));
         } catch (\Throwable $e) {
             return JsonResponse::error('Failed to read services: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * POST /status/containers/{name}/{action} — control a local container.
+     * Write operation: API keys need the `status.write` scope.
+     */
+    public function control(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $route = RouteContext::fromRequest($request)->getRoute();
+        $name = (string) ($route?->getArgument('name') ?? '');
+        $action = (string) ($route?->getArgument('action') ?? '');
+        try {
+            $result = $this->statusService->controlContainer($name, $action);
+            if (!$result['ok']) {
+                return JsonResponse::error($result['message'], 400);
+            }
+            return JsonResponse::success(['message' => $result['message']]);
+        } catch (\Throwable $e) {
+            return JsonResponse::error('Failed to control container: ' . $e->getMessage(), 500);
         }
     }
 }

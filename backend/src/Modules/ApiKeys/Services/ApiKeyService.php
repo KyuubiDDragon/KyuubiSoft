@@ -223,6 +223,7 @@ class ApiKeyService
             'checklists.read' => 'Checklisten lesen',
             'checklists.write' => 'Checklisten bearbeiten',
             'status.read' => 'Server-/Docker-Status lesen (Monitoring)',
+            'status.write' => 'Container steuern (start/stop/restart)',
         ];
     }
 }

@@ -220,6 +220,50 @@ class StatusService
         ];
     }
 
+    /**
+     * Start / stop / restart a LOCAL container by name. Write operation.
+     *
+     * Strictly validated: the action must be one of the three known verbs and
+     * the name must match an existing local container (exact name). No host
+     * selection — only the local daemon is ever touched.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    public function controlContainer(string $name, string $action): array
+    {
+        if (!in_array($action, ['start', 'stop', 'restart'], true)) {
+            return ['ok' => false, 'message' => 'Unbekannte Aktion.'];
+        }
+        if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/', $name)) {
+            return ['ok' => false, 'message' => 'Ungültiger Container-Name.'];
+        }
+        if (!$this->dockerAvailable()) {
+            return ['ok' => false, 'message' => 'Docker ist nicht erreichbar.'];
+        }
+
+        // Confirm the container actually exists locally (exact-name match)
+        // before issuing any command.
+        $match = trim($this->execDocker(
+            'ps -a --filter ' . escapeshellarg('name=^/' . $name . '$') . ' --format ' . escapeshellarg('{{.Names}}')
+        ));
+        $names = array_filter(explode("\n", $match), fn($n) => trim($n) === $name);
+        if (empty($names)) {
+            return ['ok' => false, 'message' => "Container {$name} wurde nicht gefunden."];
+        }
+
+        $output = $this->execDocker($action . ' ' . escapeshellarg($name));
+        $failed = stripos($output, 'error') !== false
+            || stripos($output, 'no such container') !== false
+            || stripos($output, 'permission denied') !== false;
+
+        if ($failed) {
+            return ['ok' => false, 'message' => "Aktion für {$name} fehlgeschlagen."];
+        }
+
+        $verb = ['start' => 'gestartet', 'stop' => 'gestoppt', 'restart' => 'neu gestartet'][$action];
+        return ['ok' => true, 'message' => "Container {$name} wurde {$verb}."];
+    }
+
     // ------------------------------------------------------------------
     // Services (uptime monitors, SSL certs, cron jobs) — from the database
     // ------------------------------------------------------------------

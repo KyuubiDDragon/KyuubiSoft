@@ -107,15 +107,14 @@ class AlexaController
                 $ov = $this->statusService->getOverview($this->scopeUserId());
                 return $this->tell($this->summarySpeech($ov, false), $apl ? $this->overviewApl($ov) : null, true);
             })(),
-            'ContainerStatusIntent' => (function () use ($payload) {
-                return $this->tell($this->containerSpeech($payload), null, true);
-            })(),
-            'DiskStatusIntent' => (function () {
-                return $this->tell($this->diskSpeech(), null, true);
-            })(),
-            'ServicesStatusIntent' => (function () {
-                return $this->tell($this->servicesSpeech(), null, true);
-            })(),
+            'ContainerStatusIntent' => $this->tell($this->containerSpeech($payload), null, true),
+            'DiskStatusIntent' => $this->tell($this->diskSpeech(), null, true),
+            'ServicesStatusIntent' => $this->tell($this->servicesSpeech(), null, true),
+            'ContainerStartIntent' => $this->handleControlRequest($payload, 'start'),
+            'ContainerStopIntent' => $this->handleControlRequest($payload, 'stop'),
+            'ContainerRestartIntent' => $this->handleControlRequest($payload, 'restart'),
+            'AMAZON.YesIntent' => $this->handleControlConfirmation($payload, true),
+            'AMAZON.NoIntent' => $this->handleControlConfirmation($payload, false),
             'AMAZON.HelpIntent' => $this->tell(
                 'Ich kann dir den Zustand deines Servers und deiner Docker-Container nennen. ' .
                 'Frag zum Beispiel: Wie geht es dem Server? Oder: Laufen alle Container?',
@@ -125,6 +124,97 @@ class AlexaController
             'AMAZON.StopIntent', 'AMAZON.CancelIntent' => $this->tell('Okay.', null, true),
             default => $this->tell('Diese Frage kenne ich noch nicht.', null, false),
         };
+    }
+
+    // ------------------------------------------------------------------
+    // Control intents (write) — spoken confirmation via session attributes
+    // ------------------------------------------------------------------
+
+    /**
+     * Step 1 of a control command: read the container, then ask for spoken
+     * confirmation. The pending command is stashed in the session so the
+     * follow-up Yes/No can act on it. Nothing is executed here.
+     */
+    private function handleControlRequest(array $payload, string $action): array
+    {
+        if (!$this->controlEnabled()) {
+            return $this->tell('Das Steuern von Containern ist nicht aktiviert.', null, true);
+        }
+
+        $container = $this->slotValue($payload, 'container');
+
+        if ($container === null) {
+            return $this->tell(
+                'Ich habe nicht verstanden, welchen Container du meinst. ' .
+                'Sag zum Beispiel: starte den Container Nginx.',
+                null,
+                false
+            );
+        }
+
+        if (!$this->containerAllowed($container)) {
+            return $this->tell("Der Container {$container} darf nicht per Sprache gesteuert werden.", null, true);
+        }
+
+        $verb = ['start' => 'starten', 'stop' => 'stoppen', 'restart' => 'neu starten'][$action];
+        return $this->tell(
+            "Soll ich den Container {$container} wirklich {$verb}? Sag ja oder nein.",
+            null,
+            false,
+            'Sag ja, um fortzufahren, oder nein, um abzubrechen.',
+            ['pending_action' => $action, 'pending_container' => $container]
+        );
+    }
+
+    /**
+     * Step 2: the user answered yes/no to the confirmation. On yes, execute the
+     * stashed command; on no, discard it.
+     */
+    private function handleControlConfirmation(array $payload, bool $confirmed): array
+    {
+        $attributes = $payload['session']['attributes'] ?? [];
+        $action = $attributes['pending_action'] ?? null;
+        $container = $attributes['pending_container'] ?? null;
+
+        if ($action === null || $container === null) {
+            return $this->tell('Es gibt gerade nichts zu bestätigen.', null, true);
+        }
+
+        if (!$confirmed) {
+            return $this->tell('Alles klar, ich lasse es.', null, true);
+        }
+
+        // Re-check the gate at execution time, never trust only the session.
+        if (!$this->controlEnabled() || !$this->containerAllowed((string) $container)) {
+            return $this->tell('Das Steuern dieses Containers ist nicht erlaubt.', null, true);
+        }
+
+        $result = $this->statusService->controlContainer((string) $container, (string) $action);
+        return $this->tell($result['message'], null, true);
+    }
+
+    private function controlEnabled(): bool
+    {
+        return filter_var($_ENV['ALEXA_ALLOW_CONTROL'] ?? false, FILTER_VALIDATE_BOOL);
+    }
+
+    /**
+     * When ALEXA_CONTROL_ALLOWLIST is set, only its (comma-separated) container
+     * names may be controlled. Empty = all containers allowed.
+     */
+    private function containerAllowed(string $container): bool
+    {
+        $raw = trim((string) ($_ENV['ALEXA_CONTROL_ALLOWLIST'] ?? ''));
+        if ($raw === '') {
+            return true;
+        }
+        $allow = array_map('trim', explode(',', $raw));
+        foreach ($allow as $name) {
+            if ($name !== '' && strcasecmp($name, $container) === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -255,10 +345,17 @@ class AlexaController
     // ------------------------------------------------------------------
 
     /**
-     * Build an Alexa response. When $reprompt is null the session ends.
+     * Build an Alexa response. When $reprompt is set the session stays open.
+     * $sessionAttributes are echoed back so a follow-up turn (e.g. the Yes/No
+     * confirmation) can read the pending command.
      */
-    private function tell(string $speech, ?array $aplDirective, bool $endSession, ?string $reprompt = null): array
-    {
+    private function tell(
+        string $speech,
+        ?array $aplDirective,
+        bool $endSession,
+        ?string $reprompt = null,
+        array $sessionAttributes = []
+    ): array {
         $response = [
             'outputSpeech' => ['type' => 'SSML', 'ssml' => '<speak>' . $this->escapeSsml($speech) . '</speak>'],
             'shouldEndSession' => $endSession,
@@ -275,7 +372,11 @@ class AlexaController
             $response['directives'] = [$aplDirective];
         }
 
-        return ['version' => '1.0', 'response' => $response];
+        $envelope = ['version' => '1.0', 'response' => $response];
+        if (!empty($sessionAttributes)) {
+            $envelope['sessionAttributes'] = $sessionAttributes;
+        }
+        return $envelope;
     }
 
     /**

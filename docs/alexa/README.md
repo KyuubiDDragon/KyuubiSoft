@@ -21,8 +21,16 @@ Authentifizierung wahlweise per JWT (Web-UI) oder per **API-Key** mit dem Scope
 | `GET /api/v1/status/server` | Host: CPU %, RAM, Disks, Load, Uptime |
 | `GET /api/v1/status/containers` | Lokale Container inkl. Live-CPU/RAM |
 | `GET /api/v1/status/services` | Uptime-Monitore, SSL-Zertifikate, Cron-Jobs |
+| `POST /api/v1/status/containers/{name}/{action}` | Container steuern (`start`/`stop`/`restart`) — Scope `status.write` |
 
-Uptime/SSL/Cron sind auf den Benutzer des Keys beschränkt.
+Uptime/SSL/Cron sind auf den Benutzer des Keys beschränkt. Der Steuer-Endpunkt
+ist bewusst getrennt: ein reiner `status.read`-Key kann ihn nicht erreichen.
+
+```bash
+# Container neu starten (Schreibrecht nötig)
+curl -X POST https://deine-domain.tld/api/v1/status/containers/nginx/restart \
+  -H "X-API-Key: ks_...schreib-key..."
+```
 
 ### Beispiel
 
@@ -117,9 +125,32 @@ Uptime, Alerts) angezeigt.
 
 ---
 
-## 3. Ausblick: Steuerung per Sprache
+## 3. Steuerung per Sprache (start/stop/restart)
 
-Als nächster Schritt ist Steuern vorgesehen (Container start/stop/restart) mit
-gesprochener **Bestätigung** („Soll ich den Container X wirklich neu starten?").
-Dies erhält einen eigenen Write-Pfad und ist bewusst nicht Teil der read-only
-Endpunkte oben.
+Container lassen sich per Sprache steuern — **standardmäßig deaktiviert** und
+mit **gesprochener Bestätigung** abgesichert.
+
+Aktivierung in der `.env`:
+
+```env
+ALEXA_ALLOW_CONTROL=true
+# optional: nur diese Container per Sprache steuerbar (sonst alle)
+ALEXA_CONTROL_ALLOWLIST=nginx,webshop,gameserver
+```
+
+Ablauf (Beispiel):
+
+1. „Alexa, sag server status, starte den Container Nginx neu."
+2. Alexa: „Soll ich den Container Nginx wirklich neu starten? Sag ja oder nein."
+3. „Ja." → Alexa: „Container Nginx wurde neu gestartet."
+
+Sicherheitsnetz:
+
+- Steuern ist **opt-in** (`ALEXA_ALLOW_CONTROL`), sonst nur Lesen.
+- Jede destruktive Aktion verlangt eine **gesprochene Bestätigung**; die
+  ausstehende Aktion wird nur in den Session-Attributen gehalten.
+- Beim „Ja" werden Freigabe **und** Allowlist erneut geprüft — die Session
+  allein wird nie als Berechtigung akzeptiert.
+- Optionale **Allowlist** begrenzt, welche Container überhaupt steuerbar sind.
+- Der zugrunde liegende REST-Endpunkt verlangt den separaten Scope
+  `status.write` (ein `status.read`-Key kann nicht steuern).

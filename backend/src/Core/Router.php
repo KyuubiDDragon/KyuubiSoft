@@ -1570,6 +1570,8 @@ class Router
                 $protected->get('/status/server', [\App\Modules\Status\Controllers\StatusController::class, 'server']);
                 $protected->get('/status/containers', [\App\Modules\Status\Controllers\StatusController::class, 'containers']);
                 $protected->get('/status/services', [\App\Modules\Status\Controllers\StatusController::class, 'services']);
+                // Container control (write) — API keys need the `status.write` scope.
+                $protected->post('/status/containers/{name}/{action}', [\App\Modules\Status\Controllers\StatusController::class, 'control']);
 
             })->add(AuthMiddleware::class)->add(ApiKeyMiddleware::class);
 

@@ -7,6 +7,8 @@
         { "name": "AMAZON.StopIntent", "samples": [] },
         { "name": "AMAZON.CancelIntent", "samples": [] },
         { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        { "name": "AMAZON.YesIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
         {
           "name": "ServerStatusIntent",
           "samples": [
@@ -53,6 +55,38 @@
             "gibt es probleme",
             "sind alle webseiten erreichbar",
             "wie steht es um die zertifikate"
+          ]
+        },
+        {
+          "name": "ContainerStartIntent",
+          "slots": [ { "name": "container", "type": "AMAZON.SearchQuery" } ],
+          "samples": [
+            "starte {container}",
+            "starte den container {container}",
+            "starte container {container}",
+            "fahr {container} hoch"
+          ]
+        },
+        {
+          "name": "ContainerStopIntent",
+          "slots": [ { "name": "container", "type": "AMAZON.SearchQuery" } ],
+          "samples": [
+            "stoppe {container}",
+            "stoppe den container {container}",
+            "halte {container} an",
+            "fahr {container} runter",
+            "beende {container}"
+          ]
+        },
+        {
+          "name": "ContainerRestartIntent",
+          "slots": [ { "name": "container", "type": "AMAZON.SearchQuery" } ],
+          "samples": [
+            "starte {container} neu",
+            "starte den container {container} neu",
+            "mach einen neustart von {container}",
+            "reboote {container}",
+            "neustart von {container}"
           ]
         }
       ],

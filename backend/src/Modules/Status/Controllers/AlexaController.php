@@ -31,9 +31,17 @@ class AlexaController
     public function webhook(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         // --- 1. Read the RAW body (signature is over the exact bytes) ---
-        $body = $request->getBody();
-        $body->rewind();
-        $raw = $body->getContents();
+        // RawBodyPreserveMiddleware captures the untouched bytes before the JSON
+        // body parser consumes the stream. Fall back to reading the stream
+        // directly if the attribute is absent (e.g. middleware not registered).
+        $raw = $request->getAttribute('rawBody');
+        if (!is_string($raw)) {
+            $body = $request->getBody();
+            if ($body->isSeekable()) {
+                $body->rewind();
+            }
+            $raw = $body->getContents();
+        }
 
         $certUrl = $request->getHeaderLine('SignatureCertChainUrl');
         $signature = $request->getHeaderLine('Signature-256');

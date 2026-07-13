@@ -42,12 +42,13 @@ class LoggerService
                 break;
         }
 
-        // Also log errors to stderr in development
-        if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
-            $logger->pushHandler(
-                new StreamHandler('php://stderr', Level::Error)
-            );
-        }
+        // Always surface errors on stderr so `docker logs <container>` shows
+        // real application errors — the rotating file lives inside the container
+        // and is otherwise invisible. In debug mode, stream everything.
+        $stderrLevel = (($_ENV['APP_DEBUG'] ?? 'false') === 'true') ? $logLevel : Level::Error;
+        $logger->pushHandler(
+            new StreamHandler('php://stderr', $stderrLevel)
+        );
 
         return $logger;
     }

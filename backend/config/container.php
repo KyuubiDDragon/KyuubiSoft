@@ -613,7 +613,8 @@ return [
     \App\Modules\Status\Controllers\AlexaController::class => function (ContainerInterface $c): \App\Modules\Status\Controllers\AlexaController {
         return new \App\Modules\Status\Controllers\AlexaController(
             $c->get(\App\Modules\Status\Services\StatusService::class),
-            $c->get(\App\Modules\Status\Services\AlexaRequestVerifier::class)
+            $c->get(\App\Modules\Status\Services\AlexaRequestVerifier::class),
+            BASE_PATH . '/resources/alexa/dashboard-pager.json'
         );
     },
 ];

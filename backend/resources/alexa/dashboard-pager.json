@@ -56,7 +56,7 @@
       ],
       "items": [
         {
-          "type": "Container", "grow": 1, "alignItems": "center", "paddingTop": 22, "paddingBottom": 18,
+          "type": "Container", "grow": 1, "alignItems": "center", "justifyContent": "center", "paddingTop": 14, "paddingBottom": 14,
           "items": [
             {
               "type": "Container", "width": 150, "height": 150,
@@ -70,7 +70,7 @@
                 }
               ]
             },
-            { "type": "Text", "text": "${sub}", "fontSize": 17, "color": "@colorMuted", "textAlign": "center", "paddingTop": 14, "maxLines": 1 }
+            { "type": "Text", "text": "${sub}", "fontSize": 17, "color": "@colorMuted", "textAlign": "center", "paddingTop": 16, "maxLines": 1 }
           ]
         }
       ]
@@ -113,7 +113,7 @@
           "type": "Frame", "width": "100%", "borderRadius": 12, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "paddingLeft": 18, "paddingRight": 22, "paddingTop": 12, "paddingBottom": 12,
           "items": [
             {
-              "type": "Container", "direction": "row", "alignItems": "center", "spacing": 16,
+              "type": "Container", "direction": "row", "alignItems": "center", "width": "100%", "spacing": 20,
               "items": [
                 { "type": "StatusDot", "level": "${level}" },
                 { "type": "Container", "grow": 1, "shrink": 1,
@@ -134,7 +134,7 @@
       "parameters": [ { "name": "status" } ],
       "items": [
         {
-          "type": "Container", "width": "100%", "height": "100%", "paddingLeft": 40, "paddingRight": 40, "paddingTop": 28, "paddingBottom": 22,
+          "type": "Container", "width": "100%", "height": "100%", "paddingLeft": 40, "paddingRight": 40, "paddingTop": 30, "paddingBottom": 28,
           "items": [
             {
               "type": "Container", "direction": "row", "alignItems": "center", "justifyContent": "spaceBetween", "width": "100%",
@@ -161,7 +161,7 @@
               ]
             },
             {
-              "type": "Container", "direction": "row", "width": "100%", "spacing": 18, "paddingTop": 20,
+              "type": "Container", "direction": "row", "width": "100%", "spacing": 24, "paddingTop": 22,
               "items": [
                 { "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "items": [ { "type": "RingGauge", "pct": "${status.cpu.pct}", "value": "${status.cpu.value}", "label": "${status.cpu.label}", "sub": "${status.cpu.sub}", "level": "${status.cpu.level}" } ] },
                 { "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "items": [ { "type": "RingGauge", "pct": "${status.ram.pct}", "value": "${status.ram.value}", "label": "${status.ram.label}", "sub": "${status.ram.sub}", "level": "${status.ram.level}" } ] },
@@ -169,10 +169,10 @@
               ]
             },
             {
-              "type": "Container", "direction": "row", "width": "100%", "grow": 1, "spacing": 18, "paddingTop": 16,
+              "type": "Container", "direction": "row", "width": "100%", "spacing": 24, "paddingTop": 24,
               "items": [
                 {
-                  "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "paddingLeft": 26, "paddingRight": 26, "paddingTop": 20, "paddingBottom": 20,
+                  "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "paddingLeft": 26, "paddingRight": 26, "paddingTop": 22, "paddingBottom": 22,
                   "items": [
                     {
                       "type": "Container", "height": "100%", "justifyContent": "spaceBetween",
@@ -205,10 +205,10 @@
                   ]
                 },
                 {
-                  "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "paddingLeft": 26, "paddingRight": 26, "paddingTop": 20, "paddingBottom": 20,
+                  "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "paddingLeft": 26, "paddingRight": 26, "paddingTop": 22, "paddingBottom": 22,
                   "items": [
                     {
-                      "type": "Container", "height": "100%", "spacing": 12,
+                      "type": "Container", "height": "100%", "spacing": 16, "justifyContent": "spaceBetween",
                       "items": [
                         { "type": "Text", "text": "DIENSTE", "fontSize": 14, "letterSpacing": 3, "color": "@colorBrand" },
                         { "type": "Container", "direction": "row", "alignItems": "center", "spacing": 12, "paddingTop": 4,
@@ -234,7 +234,7 @@
               ]
             },
             {
-              "type": "Frame", "when": "${status.alerts.length > 0}", "width": "100%", "borderRadius": 12, "borderWidth": 1, "borderColor": "#fb5a7666", "backgroundColor": "#fb5a7614", "paddingLeft": 20, "paddingRight": 20, "paddingTop": 12, "paddingBottom": 12, "marginTop": 16,
+              "type": "Frame", "when": "${status.alerts.length > 0}", "width": "100%", "borderRadius": 12, "borderWidth": 1, "borderColor": "#fb5a7666", "backgroundColor": "#fb5a7614", "paddingLeft": 20, "paddingRight": 20, "paddingTop": 14, "paddingBottom": 14, "marginTop": 24,
               "items": [
                 {
                   "type": "Container", "direction": "row", "alignItems": "center", "spacing": 22,

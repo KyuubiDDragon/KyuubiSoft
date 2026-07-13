@@ -72,6 +72,12 @@ services:
       APP_KEY: ${APP_KEY:?APP_KEY must be set}
       APP_SECRET: ${APP_SECRET:?APP_SECRET must be set}
       COLLABORATION_HMAC_SECRET: ${COLLABORATION_HMAC_SECRET:?COLLABORATION_HMAC_SECRET must be set}
+      # Alexa skill (self-hosted endpoint /api/v1/alexa/webhook)
+      ALEXA_SKILL_ID: ${ALEXA_SKILL_ID:-}
+      ALEXA_USER_ID: ${ALEXA_USER_ID:-}
+      ALEXA_SKIP_VERIFICATION: ${ALEXA_SKIP_VERIFICATION:-false}
+      ALEXA_ALLOW_CONTROL: ${ALEXA_ALLOW_CONTROL:-false}
+      ALEXA_CONTROL_ALLOWLIST: ${ALEXA_CONTROL_ALLOWLIST:-}
     healthcheck:
       test: ["CMD-SHELL", "FCGI_CONNECT=localhost:9000 php-fpm-healthcheck || exit 1"]
       interval: 30s

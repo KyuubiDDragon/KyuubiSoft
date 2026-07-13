@@ -580,7 +580,8 @@ class AlexaController
             $maxMem = max($maxMem, (float) ($c['mem_percent'] ?? 0));
         }
 
-        $rank = fn (array $c): int => !empty($c['unhealthy']) ? 0 : (($c['state'] ?? '') === 'running' ? 1 : 2);
+        // Severity order (worst first): off/stopped (red) → unhealthy (yellow) → running.
+        $rank = fn (array $c): int => ($c['state'] ?? '') !== 'running' ? 0 : (!empty($c['unhealthy']) ? 1 : 2);
         usort($list, function ($a, $b) use ($rank) {
             if ($rank($a) !== $rank($b)) {
                 return $rank($a) <=> $rank($b);
@@ -593,8 +594,9 @@ class AlexaController
         $items = array_map(function ($c) use ($maxCpu, $maxMem, $de) {
             $cpu = $c['cpu_percent'] !== null ? (float) $c['cpu_percent'] : null;
             $mem = $c['mem_percent'] !== null ? (float) $c['mem_percent'] : null;
-            $level = !empty($c['unhealthy']) ? 'crit'
-                : (($c['state'] ?? '') !== 'running' ? 'idle'
+            // off/stopped = red (crit), unhealthy = yellow (warn), busy = yellow, else green.
+            $level = ($c['state'] ?? '') !== 'running' ? 'crit'
+                : (!empty($c['unhealthy']) ? 'warn'
                 : ((($cpu ?? 0) >= 50 || ($mem ?? 0) >= 75) ? 'warn' : 'ok'));
             return [
                 'name' => preg_replace('/^kyuubisoft[_-]?/', '', $c['name']),

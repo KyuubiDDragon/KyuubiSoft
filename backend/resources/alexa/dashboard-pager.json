@@ -161,7 +161,7 @@
               ]
             },
             {
-              "type": "Container", "direction": "row", "width": "100%", "grow": 1, "spacing": 24, "paddingTop": 26,
+              "type": "Container", "direction": "row", "width": "100%", "spacing": 24, "paddingTop": 22,
               "items": [
                 { "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "items": [ { "type": "RingGauge", "pct": "${status.cpu.pct}", "value": "${status.cpu.value}", "label": "${status.cpu.label}", "sub": "${status.cpu.sub}", "level": "${status.cpu.level}" } ] },
                 { "type": "Frame", "grow": 1, "borderRadius": 16, "borderWidth": 1, "borderColor": "@colorLine", "backgroundColor": "@colorSurface2", "items": [ { "type": "RingGauge", "pct": "${status.ram.pct}", "value": "${status.ram.value}", "label": "${status.ram.label}", "sub": "${status.ram.sub}", "level": "${status.ram.level}" } ] },

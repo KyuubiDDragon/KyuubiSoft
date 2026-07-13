@@ -8,6 +8,7 @@ use App\Core\Middleware\CorsMiddleware;
 use App\Core\Middleware\CsrfMiddleware;
 use App\Core\Middleware\ErrorMiddleware;
 use App\Core\Middleware\JsonBodyParserMiddleware;
+use App\Core\Middleware\RawBodyPreserveMiddleware;
 use DI\Bridge\Slim\Bridge;
 use DI\ContainerBuilder;
 use Psr\Container\ContainerInterface;
@@ -74,6 +75,11 @@ class Application
 
         // JSON Body Parser
         $this->app->add(JsonBodyParserMiddleware::class);
+
+        // Preserve the raw request body for signature-verified routes (Alexa).
+        // Added AFTER the body parser so it executes BEFORE it (Slim runs the
+        // last-added middleware first), capturing the untouched bytes.
+        $this->app->add(RawBodyPreserveMiddleware::class);
 
         // Routing middleware
         $this->app->addRoutingMiddleware();

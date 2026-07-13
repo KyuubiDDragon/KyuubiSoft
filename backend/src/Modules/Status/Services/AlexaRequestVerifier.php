@@ -134,24 +134,64 @@ class AlexaRequestVerifier
         }
         $cacheFile = $this->certCacheDir . '/' . sha1($url) . '.pem';
 
+        // NB: reading the cache is a LOCAL file read — unaffected by
+        // allow_url_fopen. Only the remote fetch below needs cURL. A cached file
+        // that is empty or not a PEM (e.g. a truncated write) is ignored and
+        // re-fetched, so a corrupt cache entry can never wedge verification.
         if (is_file($cacheFile)) {
             $cached = file_get_contents($cacheFile);
-            if ($cached !== false && $cached !== '') {
+            if (is_string($cached) && str_contains($cached, 'BEGIN CERTIFICATE')) {
                 return $cached;
             }
         }
 
-        $context = stream_context_create([
-            'http' => ['method' => 'GET', 'timeout' => 5],
-            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-        ]);
-        $pem = @file_get_contents($url, false, $context);
-        if ($pem === false || $pem === '') {
+        $pem = $this->fetchOverHttps($url);
+        if ($pem === null || $pem === '' || !str_contains($pem, 'BEGIN CERTIFICATE')) {
             return null;
         }
 
         @file_put_contents($cacheFile, $pem);
         return $pem;
+    }
+
+    /**
+     * Fetch a URL body over HTTPS using cURL.
+     *
+     * We deliberately do NOT use file_get_contents(): production PHP hardening
+     * disables `allow_url_fopen`, so the http(s) stream wrapper is unavailable
+     * and file_get_contents() on a URL fails with "no suitable wrapper could be
+     * found". cURL uses libcurl and works regardless. TLS verification stays
+     * strict — the cert chain URL has already been validated by the caller.
+     */
+    private function fetchOverHttps(string $url): ?string
+    {
+        if (!function_exists('curl_init')) {
+            return null;
+        }
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+
+        $body = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if (!is_string($body) || $body === '' || $status !== 200) {
+            return null;
+        }
+
+        return $body;
     }
 
     /**

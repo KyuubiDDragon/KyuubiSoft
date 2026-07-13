@@ -211,21 +211,8 @@ class ToolsController
         }
 
         try {
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'HEAD',
-                    'timeout' => 10,
-                    'follow_location' => 0,
-                    'ignore_errors' => true,
-                ],
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
-            ]);
-
             $startTime = microtime(true);
-            $headers = @get_headers($url, true, $context);
+            $headers = $this->fetchHeadersWithCurl($url, 10);
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
             if ($headers === false) {
@@ -277,14 +264,9 @@ class ToolsController
         }
 
         try {
-            $context = stream_context_create([
-                'http' => ['timeout' => 10],
-            ]);
-
-            $result = @file_get_contents(
+            $result = $this->httpGetWithCurl(
                 "http://ip-api.com/json/{$ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query",
-                false,
-                $context
+                10
             );
 
             if ($result === false) {
@@ -656,21 +638,7 @@ class ToolsController
         }
 
         try {
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'HEAD',
-                    'timeout' => 15,
-                    'follow_location' => 0,
-                    'ignore_errors' => true,
-                    'user_agent' => 'Mozilla/5.0 (compatible; SecurityHeadersChecker/1.0)',
-                ],
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
-            ]);
-
-            $headers = @get_headers($url, true, $context);
+            $headers = $this->fetchHeadersWithCurl($url, 15, 'Mozilla/5.0 (compatible; SecurityHeadersChecker/1.0)');
 
             if ($headers === false) {
                 return JsonResponse::error('Could not retrieve headers', 500);
@@ -931,6 +899,125 @@ class ToolsController
         } catch (\Exception $e) {
             return JsonResponse::error('Open Graph check failed: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Fetch a URL body with cURL. Used instead of file_get_contents() because
+     * production hardening disables allow_url_fopen, which makes the http(s)
+     * stream wrapper unavailable. TLS verification stays strict and the host is
+     * SSRF-validated.
+     */
+    private function httpGetWithCurl(string $url, int $timeout = 10): string|false
+    {
+        try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return false;
+        }
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return false;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+        ]);
+        $body = curl_exec($ch);
+        $error = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (!is_string($body) || $error !== '' || $httpCode >= 400) {
+            return false;
+        }
+        return $body;
+    }
+
+    /**
+     * Retrieve response headers with cURL (HEAD request), returned in the same
+     * shape as get_headers($url, true): index 0 is the status line, header names
+     * are keys, and repeated headers become arrays. Used instead of
+     * get_headers(), which relies on the URL stream wrapper (allow_url_fopen).
+     *
+     * @return array<int|string, string|array>|false
+     */
+    private function fetchHeadersWithCurl(string $url, int $timeout = 10, string $userAgent = ''): array|false
+    {
+        try {
+            SsrfGuard::assertSafe($url);
+        } catch (SsrfException $e) {
+            return false;
+        }
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return false;
+        }
+        $opts = [
+            CURLOPT_NOBODY => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+        ];
+        if ($userAgent !== '') {
+            $opts[CURLOPT_USERAGENT] = $userAgent;
+        }
+        curl_setopt_array($ch, $opts);
+        $raw = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if (!is_string($raw) || $error !== '') {
+            return false;
+        }
+        return $this->parseRawHeaders($raw);
+    }
+
+    /**
+     * Parse a raw HTTP header block into a get_headers($url, true)-compatible
+     * associative array (index 0 = status line; repeated headers become arrays).
+     *
+     * @return array<int|string, string|array>
+     */
+    private function parseRawHeaders(string $raw): array
+    {
+        // With FOLLOWLOCATION disabled there is a single header block; guard
+        // against a stray body separator regardless.
+        $block = preg_split('/\r?\n\r?\n/', trim($raw))[0] ?? '';
+        $lines = preg_split('/\r?\n/', $block) ?: [];
+
+        $headers = [];
+        $headers[0] = array_shift($lines) ?? '';
+
+        foreach ($lines as $line) {
+            if (!str_contains($line, ':')) {
+                continue;
+            }
+            [$key, $value] = explode(':', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            if (isset($headers[$key])) {
+                if (!is_array($headers[$key])) {
+                    $headers[$key] = [$headers[$key]];
+                }
+                $headers[$key][] = $value;
+            } else {
+                $headers[$key] = $value;
+            }
+        }
+
+        return $headers;
     }
 
     private function fetchUrlWithCurl(string $url): string|false
